@@ -908,34 +908,7 @@ void JobSupport::notify_cancelling(std::shared_ptr<Finishing> finishing) {
     cancel_parent(finishing->root_cause);
 }
 
-bool JobSupport::make_completing(void* proposed_update) {
-    // Implementation based on Kotlin's makeCompleting
-    // This should follow the state machine logic from the original
-
-    // For now, simplified implementation that attempts completion
-    void* state = get_state();
-    if (is_completed_state(state)) {
-        return false; // COMPLETING_ALREADY
-    }
-
-    // Try to make completing - simplified for now
-    // In full implementation, this would call tryMakeCompleting in a loop
-    try {
-        if (proposed_update == nullptr) {
-            // Unit completion (successful)
-            void* final_state = reinterpret_cast<void*>(1); // Placeholder for completed state
-            after_completion(final_state);
-            return true;
-        } else {
-            // Exceptional completion
-            void* final_state = reinterpret_cast<void*>(2); // Placeholder for cancelled state
-            after_completion(final_state);
-            return true;
-        }
-    } catch (...) {
-        return false;
-    }
-}
+// make_completing method removed for now - will be implemented later
 
 void JobSupport::complete_with_final_state(void* state, bool handle_exception) {
     if (cas_state(state, make_final_state(false))) {

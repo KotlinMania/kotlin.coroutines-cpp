@@ -138,8 +138,8 @@ protected:
     // JobImpl-specific properties
     virtual bool on_cancel_complete() const { return false; }
 
-    // Completion methods
-    bool make_completing(void* proposed_update);
+    // Completion methods - simplified for now
+protected:
 
     // Utility methods
     virtual std::string name_string() const;

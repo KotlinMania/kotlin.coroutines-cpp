@@ -6,7 +6,7 @@
  * in the companion header file: `include/kotlinx/coroutines/Job.hpp`.
  */
 
-#include "kotlinx/coroutines/Job.hpp"
+#include "../../../include/kotlinx/coroutines/Job.hpp"
 
 namespace kotlinx {
 namespace coroutines {

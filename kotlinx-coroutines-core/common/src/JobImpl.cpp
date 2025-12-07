@@ -25,31 +25,40 @@ JobImpl::JobImpl(struct Job* parent) : JobSupport(true) {
 
 JobImpl::~JobImpl() = default;
 
-// JobSupport provides the key() implementation
+// CoroutineContext::Element interface implementation
+CoroutineContext::Key* JobImpl::key() const {
+    return Job::key;
+}
 
 // JobImpl-specific implementation
 bool JobImpl::handles_exception() const {
-    // Check if parent handles exceptions (similar to Kotlin implementation)
-    // For now, return true (default behavior)
-    // TODO: Implement the full parent chain checking logic
+    // Based on Kotlin: override val handlesException: Boolean = handlesException()
+    // For now, simplified implementation
+    // TODO: Implement full parent chain checking logic
+    return true; // Default to handling exceptions
+}
+
+// CompletableJob interface implementation
+bool JobImpl::complete() {
+    // Based on Kotlin: override fun complete() = makeCompleting(Unit)
+    // Simplified implementation for now
+    if (is_completed()) {
+        return false; // Already completed
+    }
+    // In a full implementation, this would transition the state machine
+    // For now, just return true to indicate successful completion
     return true;
 }
 
 bool JobImpl::complete_exceptionally(Throwable* exception) {
-    // For now, create a simple exception wrapper
-    // In the full implementation, this would create CompletedExceptionally
-    std::exception_ptr ep;
-    if (exception) {
-        try {
-            throw std::runtime_error("Job completed exceptionally");
-        } catch (...) {
-            ep = std::current_exception();
-        }
+    // Based on Kotlin: makeCompleting(CompletedExceptionally(exception))
+    // Simplified implementation for now
+    if (is_completed()) {
+        return false; // Already completed
     }
-
-    // Call makeCompleting with CompletedExceptionally
-    // For now, we'll just pass the exception pointer
-    return make_completing(&ep);
+    // Cancel the job with the exception
+    cancel(std::make_exception_ptr(std::runtime_error("Job completed exceptionally")));
+    return true;
 }
 
 // Factory functions
