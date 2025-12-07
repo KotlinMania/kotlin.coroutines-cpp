@@ -1,9 +1,11 @@
-package kotlinx.coroutines.reactor
+// Transliterated from: reactive/kotlinx-coroutines-reactor/src/Convert.cpp
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import reactor.core.publisher.*
-import kotlin.coroutines.*
+// TODO: #include <kotlinx/coroutines/coroutines.hpp>
+// TODO: #include <kotlinx/coroutines/channels.hpp>
+// TODO: #include <reactor/core/publisher.hpp>
+// TODO: #include <kotlin/coroutines/continuation.hpp>
+
+namespace kotlinx { namespace coroutines { namespace reactor {
 
 /**
  * Converts this job to the hot reactive mono that signals
@@ -17,7 +19,13 @@ import kotlin.coroutines.*
  *
  * @param context -- the coroutine context from which the resulting mono is going to be signalled
  */
-public fun Job.asMono(context: CoroutineContext): Mono<Unit> = mono(context) { this@asMono.join() }
+// TODO: implement coroutine suspension
+Mono<Unit> as_mono(Job* job, CoroutineContext context) {
+    return mono(context, [job]() {
+        return job->join();
+    });
+}
+
 /**
  * Converts this deferred value to the hot reactive mono that signals
  * [success][MonoSink.success] or [error][MonoSink.error].
@@ -30,7 +38,13 @@ public fun Job.asMono(context: CoroutineContext): Mono<Unit> = mono(context) { t
  *
  * @param context -- the coroutine context from which the resulting mono is going to be signalled
  */
-public fun <T> Deferred<T?>.asMono(context: CoroutineContext): Mono<T> = mono(context) { this@asMono.await() }
+template<typename T>
+// TODO: implement coroutine suspension
+Mono<T> as_mono(Deferred<T*>* deferred, CoroutineContext context) {
+    return mono(context, [deferred]() {
+        return deferred->await();
+    });
+}
 
 /**
  * Converts a stream of elements received from the channel to the hot reactive flux.
@@ -40,10 +54,29 @@ public fun <T> Deferred<T?>.asMono(context: CoroutineContext): Mono<T> = mono(co
  * @param context -- the coroutine context from which the resulting flux is going to be signalled
  * @suppress
  */
-@Deprecated(message = "Deprecated in the favour of consumeAsFlow()",
-    level = DeprecationLevel.HIDDEN,
-    replaceWith = ReplaceWith("this.consumeAsFlow().asFlux(context)", imports = ["kotlinx.coroutines.flow.consumeAsFlow"]))
-public fun <T> ReceiveChannel<T>.asFlux(context: CoroutineContext = EmptyCoroutineContext): Flux<T> = flux(context) {
-    for (t in this@asFlux)
-        send(t)
+// @Deprecated message = "Deprecated in the favour of consumeAsFlow()",
+//     level = DeprecationLevel.HIDDEN,
+//     replaceWith = ReplaceWith("this.consumeAsFlow().asFlux(context)", imports = ["kotlinx.coroutines.flow.consumeAsFlow"])
+template<typename T>
+// TODO: implement coroutine suspension
+Flux<T> as_flux(ReceiveChannel<T>* channel, CoroutineContext context = EmptyCoroutineContext) {
+    return flux(context, [channel](auto& producer_scope) {
+        for (auto t : *channel) {
+            producer_scope.send(t);
+        }
+    });
 }
+
+} } } // namespace kotlinx::coroutines::reactor
+
+// TODO: Semantic implementation tasks:
+// 1. Implement Job type and join() method
+// 2. Implement Deferred<T> type and await() method
+// 3. Implement ReceiveChannel<T> type and iteration
+// 4. Implement Mono<T> and mono() builder function
+// 5. Implement Flux<T> and flux() builder function
+// 6. Implement CoroutineContext and EmptyCoroutineContext
+// 7. Implement Unit type
+// 8. Implement coroutine suspension mechanism
+// 9. Handle nullable types (T?) properly with std::optional or pointers
+// 10. Implement ProducerScope and send() method

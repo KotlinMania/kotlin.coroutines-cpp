@@ -1,36 +1,47 @@
-@file:Suppress("RedundantVisibilityModifier")
+// Transliterated from: integration/kotlinx-coroutines-play-services/src/Tasks.kt
 
-package kotlinx.coroutines.tasks
+// @file:Suppress("RedundantVisibilityModifier")
 
-import com.google.android.gms.tasks.*
-import kotlinx.coroutines.*
-import java.lang.Runnable
-import java.util.concurrent.Executor
-import kotlin.coroutines.*
+// TODO: #include equivalent
+// import com.google.android.gms.tasks.*
+// import kotlinx.coroutines.*
+// import java.lang.Runnable
+// import java.util.concurrent.Executor
+// import kotlin.coroutines.*
+
+namespace kotlinx {
+namespace coroutines {
+namespace tasks {
 
 /**
  * Converts this deferred to the instance of [Task].
  * If deferred is cancelled then resulting task will be cancelled as well.
  */
-public fun <T> Deferred<T>.asTask(): Task<T> {
-    val cancellation = CancellationTokenSource()
-    val source = TaskCompletionSource<T>(cancellation.token)
+template<typename T>
+Task<T> as_task(Deferred<T>& deferred) {
+    auto cancellation = CancellationTokenSource();
+    auto source = TaskCompletionSource<T>(cancellation.token());
 
-    invokeOnCompletion callback@{
-        if (it is CancellationException) {
-            cancellation.cancel()
-            return@callback
+    deferred.invoke_on_completion([&](const Throwable* it) {
+        // callback@
+        if (auto* ce = dynamic_cast<const CancellationException*>(it)) {
+            cancellation.cancel();
+            return; // return@callback
         }
 
-        val t = getCompletionExceptionOrNull()
-        if (t == null) {
-            source.setResult(getCompleted())
+        auto* t = deferred.get_completion_exception_or_null();
+        if (t == nullptr) {
+            source.set_result(deferred.get_completed());
         } else {
-            source.setException(t as? Exception ?: RuntimeExecutionException(t))
+            if (auto* exception = dynamic_cast<Exception*>(t)) {
+                source.set_exception(*exception);
+            } else {
+                source.set_exception(RuntimeExecutionException(*t));
+            }
         }
-    }
+    });
 
-    return source.task
+    return source.task();
 }
 
 /**
@@ -39,7 +50,10 @@ public fun <T> Deferred<T>.asTask(): Task<T> {
  * However, the opposite is not true: if the deferred is cancelled, the [Task] will not be cancelled.
  * For bi-directional cancellation, an overload that accepts [CancellationTokenSource] can be used.
  */
-public fun <T> Task<T>.asDeferred(): Deferred<T> = asDeferredImpl(null)
+template<typename T>
+Deferred<T> as_deferred(Task<T>& task) {
+    return as_deferred_impl(task, nullptr);
+}
 
 /**
  * Converts this task to an instance of [Deferred] with a [CancellationTokenSource] to control cancellation.
@@ -50,45 +64,53 @@ public fun <T> Task<T>.asDeferred(): Deferred<T> = asDeferredImpl(null)
  * Providing a [CancellationTokenSource] that is unrelated to the receiving [Task] is not supported and
  * leads to an unspecified behaviour.
  */
-@ExperimentalCoroutinesApi // Since 1.5.1, tentatively until 1.6.0
-public fun <T> Task<T>.asDeferred(cancellationTokenSource: CancellationTokenSource): Deferred<T> =
-    asDeferredImpl(cancellationTokenSource)
+// @ExperimentalCoroutinesApi // Since 1.5.1, tentatively until 1.6.0
+template<typename T>
+Deferred<T> as_deferred(Task<T>& task, CancellationTokenSource& cancellation_token_source) {
+    return as_deferred_impl(task, &cancellation_token_source);
+}
 
-private fun <T> Task<T>.asDeferredImpl(cancellationTokenSource: CancellationTokenSource?): Deferred<T> {
-    val deferred = CompletableDeferred<T>()
-    if (isComplete) {
-        val e = exception
-        if (e == null) {
-            if (isCanceled) {
-                deferred.cancel()
+template<typename T>
+Deferred<T> as_deferred_impl(Task<T>& task, CancellationTokenSource* cancellation_token_source) {
+    auto deferred = CompletableDeferred<T>();
+    if (task.is_complete()) {
+        auto* e = task.exception();
+        if (e == nullptr) {
+            if (task.is_canceled()) {
+                deferred.cancel();
             } else {
-                @Suppress("UNCHECKED_CAST")
-                deferred.complete(result as T)
+                // @Suppress("UNCHECKED_CAST")
+                deferred.complete(task.result());
             }
         } else {
-            deferred.completeExceptionally(e)
+            deferred.complete_exceptionally(*e);
         }
     } else {
         // Run the callback directly to avoid unnecessarily scheduling on the main thread.
-        addOnCompleteListener(DirectExecutor) {
-            val e = it.exception
-            if (e == null) {
-                @Suppress("UNCHECKED_CAST")
-                if (it.isCanceled) deferred.cancel() else deferred.complete(it.result as T)
+        task.add_on_complete_listener(kDirectExecutor, [&deferred](Task<T>& it) {
+            auto* e = it.exception();
+            if (e == nullptr) {
+                // @Suppress("UNCHECKED_CAST")
+                if (it.is_canceled()) {
+                    deferred.cancel();
+                } else {
+                    deferred.complete(it.result());
+                }
             } else {
-                deferred.completeExceptionally(e)
+                deferred.complete_exceptionally(*e);
             }
-        }
+        });
     }
 
-    if (cancellationTokenSource != null) {
-        deferred.invokeOnCompletion {
-            cancellationTokenSource.cancel()
-        }
+    if (cancellation_token_source != nullptr) {
+        deferred.invoke_on_completion([cancellation_token_source]() {
+            cancellation_token_source->cancel();
+        });
     }
     // Prevent casting to CompletableDeferred and manual completion.
-    @OptIn(InternalForInheritanceCoroutinesApi::class)
-    return object : Deferred<T> by deferred {}
+    // @OptIn(InternalForInheritanceCoroutinesApi::class)
+    // TODO: return wrapped deferred
+    return deferred;
 }
 
 /**
@@ -100,7 +122,11 @@ private fun <T> Task<T>.asDeferredImpl(cancellationTokenSource: CancellationToke
  *
  * For bi-directional cancellation, an overload that accepts [CancellationTokenSource] can be used.
  */
-public suspend fun <T> Task<T>.await(): T = awaitImpl(null)
+template<typename T>
+T await(Task<T>& task) {
+    // TODO: implement coroutine suspension
+    return await_impl(task, nullptr);
+}
 
 /**
  * Awaits the completion of the task that is linked to the given [CancellationTokenSource] to control cancellation.
@@ -113,51 +139,85 @@ public suspend fun <T> Task<T>.await(): T = awaitImpl(null)
  * Providing a [CancellationTokenSource] that is unrelated to the receiving [Task] is not supported and
  * leads to an unspecified behaviour.
  */
-@ExperimentalCoroutinesApi // Since 1.5.1, tentatively until 1.6.0
-public suspend fun <T> Task<T>.await(cancellationTokenSource: CancellationTokenSource): T =
-    awaitImpl(cancellationTokenSource)
+// @ExperimentalCoroutinesApi // Since 1.5.1, tentatively until 1.6.0
+template<typename T>
+T await(Task<T>& task, CancellationTokenSource& cancellation_token_source) {
+    // TODO: implement coroutine suspension
+    return await_impl(task, &cancellation_token_source);
+}
 
-private suspend fun <T> Task<T>.awaitImpl(cancellationTokenSource: CancellationTokenSource?): T {
+template<typename T>
+T await_impl(Task<T>& task, CancellationTokenSource* cancellation_token_source) {
+    // TODO: implement coroutine suspension
     // fast path
-    if (isComplete) {
-        val e = exception
-        return if (e == null) {
-            if (isCanceled) {
-                throw CancellationException("Task $this was cancelled normally.")
+    if (task.is_complete()) {
+        auto* e = task.exception();
+        if (e == nullptr) {
+            if (task.is_canceled()) {
+                throw CancellationException("Task " + task.to_string() + " was cancelled normally.");
             } else {
-                @Suppress("UNCHECKED_CAST")
-                result as T
+                // @Suppress("UNCHECKED_CAST")
+                return task.result();
             }
         } else {
-            throw e
+            throw *e;
         }
     }
 
-    return suspendCancellableCoroutine { cont ->
+    return suspend_cancellable_coroutine([&](CancellableContinuation<T>& cont) {
         // Run the callback directly to avoid unnecessarily scheduling on the main thread.
-        addOnCompleteListener(DirectExecutor) {
-            val e = it.exception
-            if (e == null) {
-                @Suppress("UNCHECKED_CAST")
-                if (it.isCanceled) cont.cancel() else cont.resume(it.result as T)
+        task.add_on_complete_listener(kDirectExecutor, [&cont](Task<T>& it) {
+            auto* e = it.exception();
+            if (e == nullptr) {
+                // @Suppress("UNCHECKED_CAST")
+                if (it.is_canceled()) {
+                    cont.cancel();
+                } else {
+                    cont.resume(it.result());
+                }
             } else {
-                cont.resumeWithException(e)
+                cont.resume_with_exception(*e);
             }
-        }
+        });
 
-        if (cancellationTokenSource != null) {
-            cont.invokeOnCancellation {
-                cancellationTokenSource.cancel()
-            }
+        if (cancellation_token_source != nullptr) {
+            cont.invoke_on_cancellation([cancellation_token_source]() {
+                cancellation_token_source->cancel();
+            });
         }
-    }
+    });
 }
 
 /**
  * An [Executor] that just directly executes the [Runnable].
  */
-private object DirectExecutor : Executor {
-    override fun execute(r: Runnable) {
-        r.run()
+// object DirectExecutor : Executor
+class DirectExecutor {
+public:
+    static DirectExecutor& instance() {
+        static DirectExecutor inst;
+        return inst;
     }
-}
+
+    void execute(Runnable& r) {
+        r.run();
+    }
+};
+
+const DirectExecutor& kDirectExecutor = DirectExecutor::instance();
+
+} // namespace tasks
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement Task/Deferred integration
+// 2. Implement CancellationTokenSource
+// 3. Implement TaskCompletionSource
+// 4. Implement CompletableDeferred
+// 5. Implement suspendCancellableCoroutine
+// 6. Implement invokeOnCompletion
+// 7. Handle template type parameters
+// 8. Implement RuntimeExecutionException
+// 9. Handle object singleton pattern for DirectExecutor
+// 10. Implement addOnCompleteListener callbacks

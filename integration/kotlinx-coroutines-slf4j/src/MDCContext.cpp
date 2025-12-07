@@ -1,15 +1,20 @@
-package kotlinx.coroutines.slf4j
+// Transliterated from: integration/kotlinx-coroutines-slf4j/src/MDCContext.kt
 
-import kotlinx.coroutines.*
-import org.slf4j.MDC
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.CoroutineContext
+// TODO: #include equivalent
+// import kotlinx.coroutines.*
+// import org.slf4j.MDC
+// import kotlin.coroutines.AbstractCoroutineContextElement
+// import kotlin.coroutines.CoroutineContext
+
+namespace kotlinx {
+namespace coroutines {
+namespace slf4j {
 
 /**
  * The value of [MDC] context map.
  * See [MDC.getCopyOfContextMap].
  */
-public typealias MDCContextMap = Map<String, String>?
+using MDCContextMap = std::map<std::string, std::string>*;
 
 /**
  * [MDC] context element for [CoroutineContext].
@@ -74,35 +79,62 @@ public typealias MDCContextMap = Map<String, String>?
  * Default value is the copy of the current thread's context map that is acquired via
  * [MDC.getCopyOfContextMap].
  */
-public class MDCContext(
-    /**
-     * The value of [MDC] context map.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    public val contextMap: MDCContextMap = MDC.getCopyOfContextMap()
-) : ThreadContextElement<MDCContextMap>, AbstractCoroutineContextElement(Key) {
+class MDCContext : public ThreadContextElement<MDCContextMap>,
+                   public AbstractCoroutineContextElement {
+public:
     /**
      * Key of [MDCContext] in [CoroutineContext].
      */
-    public companion object Key : CoroutineContext.Key<MDCContext>
+    class Key : public CoroutineContext::Key<MDCContext> {
+    public:
+        static Key& instance() {
+            static Key inst;
+            return inst;
+        }
+    };
+
+    /**
+     * The value of [MDC] context map.
+     */
+    // @Suppress("MemberVisibilityCanBePrivate")
+    const MDCContextMap context_map;
+
+    MDCContext(MDCContextMap context_map = MDC::get_copy_of_context_map())
+        : AbstractCoroutineContextElement(Key::instance()),
+          context_map(context_map) {}
 
     /** @suppress */
-    override fun updateThreadContext(context: CoroutineContext): MDCContextMap {
-        val oldState = MDC.getCopyOfContextMap()
-        setCurrent(contextMap)
-        return oldState
+    MDCContextMap update_thread_context(CoroutineContext& context) override {
+        auto old_state = MDC::get_copy_of_context_map();
+        set_current(context_map);
+        return old_state;
     }
 
     /** @suppress */
-    override fun restoreThreadContext(context: CoroutineContext, oldState: MDCContextMap) {
-        setCurrent(oldState)
+    void restore_thread_context(CoroutineContext& context, MDCContextMap old_state) override {
+        set_current(old_state);
     }
 
-    private fun setCurrent(contextMap: MDCContextMap) {
-        if (contextMap == null) {
-            MDC.clear()
+private:
+    void set_current(MDCContextMap context_map) {
+        if (context_map == nullptr) {
+            MDC::clear();
         } else {
-            MDC.setContextMap(contextMap)
+            MDC::set_context_map(*context_map);
         }
     }
-}
+};
+
+} // namespace slf4j
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement ThreadContextElement interface
+// 2. Implement AbstractCoroutineContextElement base class
+// 3. Implement MDC (SLF4J Mapped Diagnostic Context) integration
+// 4. Implement CoroutineContext::Key mechanism
+// 5. Implement updateThreadContext/restoreThreadContext
+// 6. Handle nullable map pointer semantics
+// 7. Implement companion object as singleton Key
+// 8. Set up proper SLF4J dependency

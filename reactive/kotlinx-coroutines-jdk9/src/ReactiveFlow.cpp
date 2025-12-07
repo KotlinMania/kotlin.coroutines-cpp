@@ -1,14 +1,18 @@
-package kotlinx.coroutines.jdk9
+// Transliterated from: reactive/kotlinx-coroutines-jdk9/src/ReactiveFlow.cpp
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.asPublisher as asReactivePublisher
-import kotlinx.coroutines.reactive.collect
-import kotlinx.coroutines.channels.*
-import org.reactivestreams.*
-import kotlin.coroutines.*
-import java.util.concurrent.Flow as JFlow
+// TODO: #include equivalent for kotlinx.coroutines.*
+// TODO: #include equivalent for kotlinx.coroutines.flow.*
+// TODO: #include equivalent for kotlinx.coroutines.reactive.asFlow
+// TODO: #include equivalent for kotlinx.coroutines.reactive.asPublisher as asReactivePublisher
+// TODO: #include equivalent for kotlinx.coroutines.reactive.collect
+// TODO: #include equivalent for kotlinx.coroutines.channels.*
+// TODO: #include equivalent for org.reactivestreams.*
+// TODO: #include equivalent for kotlin.coroutines.*
+// TODO: #include equivalent for java.util.concurrent.Flow as JFlow
+
+namespace kotlinx {
+namespace coroutines {
+namespace jdk9 {
 
 /**
  * Transforms the given reactive [Flow Publisher][JFlow.Publisher] into [Flow].
@@ -19,8 +23,10 @@ import java.util.concurrent.Flow as JFlow
  * If any of the resulting flow transformations fails, the subscription is immediately cancelled and all the in-flight
  * elements are discarded.
  */
-public fun <T : Any> JFlow.Publisher<T>.asFlow(): Flow<T> =
-    FlowAdapters.toPublisher(this).asFlow()
+template<typename T>
+/* Flow<T> */ auto as_flow(/* JFlow.Publisher<T>& publisher */) /* -> Flow<T> */ {
+    // return FlowAdapters.toPublisher(this).asFlow()
+}
 
 /**
  * Transforms the given flow into a reactive specification compliant [Flow Publisher][JFlow.Publisher].
@@ -31,9 +37,11 @@ public fun <T : Any> JFlow.Publisher<T>.asFlow(): Flow<T> =
  * inject additional context into the caller thread. By default, the [Unconfined][Dispatchers.Unconfined] dispatcher
  * is used, so calls are performed from an arbitrary thread.
  */
-@JvmOverloads // binary compatibility
-public fun <T : Any> Flow<T>.asPublisher(context: CoroutineContext = EmptyCoroutineContext): JFlow.Publisher<T> =
-    FlowAdapters.toFlowPublisher(asReactivePublisher(context))
+// @JvmOverloads // binary compatibility
+template<typename T>
+/* JFlow.Publisher<T> */ auto as_publisher(/* Flow<T>& flow, */ CoroutineContext context /* = EmptyCoroutineContext */) /* -> JFlow.Publisher<T> */ {
+    // return FlowAdapters.toFlowPublisher(asReactivePublisher(context))
+}
 
 /**
  * Subscribes to this [Flow Publisher][JFlow.Publisher] and performs the specified action for each received element.
@@ -41,5 +49,29 @@ public fun <T : Any> Flow<T>.asPublisher(context: CoroutineContext = EmptyCorout
  * If [action] throws an exception at some point, the subscription is cancelled, and the exception is rethrown from
  * [collect]. Also, if the publisher signals an error, that error is rethrown from [collect].
  */
-public suspend inline fun <T> JFlow.Publisher<T>.collect(action: (T) -> Unit): Unit =
-    FlowAdapters.toPublisher(this).collect(action)
+template<typename T>
+void collect(/* JFlow.Publisher<T>& publisher, */ std::function<void(T)> action) {
+    // TODO: implement coroutine suspension
+    // FlowAdapters.toPublisher(this).collect(action)
+}
+
+} // namespace jdk9
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement Flow<T> type
+// 2. Implement JFlow.Publisher<T> and JFlow.Subscriber<T> interfaces
+// 3. Implement JFlow.Subscription interface with request() method
+// 4. Implement FlowAdapters.toPublisher and FlowAdapters.toFlowPublisher adapters
+// 5. Implement asFlow() conversion from reactive Publisher to Flow
+// 6. Implement asReactivePublisher() conversion from Flow to reactive Publisher
+// 7. Implement buffer operator for Flow
+// 8. Implement Channel.BUFFERED constant
+// 9. Implement collect() as suspending function
+// 10. Handle subscription cancellation on flow failure
+// 11. Implement CoroutineContext and EmptyCoroutineContext
+// 12. Implement CoroutineDispatcher and Dispatchers.Unconfined
+// 13. Implement ThreadContextElement
+// 14. Add JvmOverloads equivalent for default parameters
+// 15. Implement inline function optimization

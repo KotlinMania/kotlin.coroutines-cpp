@@ -1,15 +1,22 @@
-package kotlinx.coroutines.jdk9
+// Transliterated from: reactive/kotlinx-coroutines-jdk9/test/PublisherAsFlowTest.cpp
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.testing.flow.*
-import kotlin.test.*
+// TODO: #include equivalent for kotlinx.coroutines.testing.*
+// TODO: #include equivalent for kotlinx.coroutines.*
+// TODO: #include equivalent for kotlinx.coroutines.channels.*
+// TODO: #include equivalent for kotlinx.coroutines.flow.*
+// TODO: #include equivalent for kotlinx.coroutines.testing.flow.*
+// TODO: #include equivalent for kotlin.test.*
 
-class PublisherAsFlowTest : TestBase() {
-    @Test
-    fun testCancellation() = runTest {
+namespace kotlinx {
+namespace coroutines {
+namespace jdk9 {
+
+class PublisherAsFlowTest : public TestBase {
+public:
+    // @Test
+    void test_cancellation() /* = runTest */ {
+        // TODO: implement coroutine suspension
+        /*
         var onNext = 0
         var onCancelled = 0
         var onError = 0
@@ -38,10 +45,13 @@ class PublisherAsFlowTest : TestBase() {
         assertEquals(1, onNext)
         assertEquals(1, onError)
         assertEquals(1, onCancelled)
+        */
     }
 
-    @Test
-    fun testBufferSize1() = runTest {
+    // @Test
+    void test_buffer_size1() /* = runTest */ {
+        // TODO: implement coroutine suspension
+        /*
         val publisher = flowPublish(currentDispatcher()) {
             expect(1)
             send(3)
@@ -59,10 +69,13 @@ class PublisherAsFlowTest : TestBase() {
         }
 
         finish(8)
+        */
     }
 
-    @Test
-    fun testBufferSizeDefault() = runTest {
+    // @Test
+    void test_buffer_size_default() /* = runTest */ {
+        // TODO: implement coroutine suspension
+        /*
         val publisher = flowPublish(currentDispatcher()) {
             repeat(64) {
                 send(it + 1)
@@ -76,10 +89,13 @@ class PublisherAsFlowTest : TestBase() {
         }
 
         finish(129)
+        */
     }
 
-    @Test
-    fun testDefaultCapacityIsProperlyOverwritten() = runTest {
+    // @Test
+    void test_default_capacity_is_properly_overwritten() /* = runTest */ {
+        // TODO: implement coroutine suspension
+        /*
         val publisher = flowPublish(currentDispatcher()) {
             expect(1)
             send(3)
@@ -95,10 +111,13 @@ class PublisherAsFlowTest : TestBase() {
         }
 
         finish(8)
+        */
     }
 
-    @Test
-    fun testBufferSize10() = runTest {
+    // @Test
+    void test_buffer_size10() /* = runTest */ {
+        // TODO: implement coroutine suspension
+        /*
         val publisher = flowPublish(currentDispatcher()) {
             expect(1)
             send(5)
@@ -116,34 +135,48 @@ class PublisherAsFlowTest : TestBase() {
         }
 
         finish(8)
+        */
     }
 
-    @Test
-    fun testConflated() = runTest {
+    // @Test
+    void test_conflated() /* = runTest */ {
+        // TODO: implement coroutine suspension
+        /*
         val publisher = flowPublish(currentDispatcher()) {
             for (i in 1..5) send(i)
         }
         val list = publisher.asFlow().conflate().toList()
         assertEquals(listOf(1, 5), list)
+        */
     }
 
-    @Test
-    fun testProduce() = runTest {
+    // @Test
+    void test_produce() /* = runTest */ {
+        // TODO: implement coroutine suspension
+        /*
         val flow = flowPublish(currentDispatcher()) { repeat(10) { send(it) } }.asFlow()
         check((0..9).toList(), flow.produceIn(this))
         check((0..9).toList(), flow.buffer(2).produceIn(this))
         check((0..9).toList(), flow.buffer(Channel.UNLIMITED).produceIn(this))
         check(listOf(0, 9), flow.conflate().produceIn(this))
+        */
     }
 
-    private suspend fun check(expected: List<Int>, channel: ReceiveChannel<Int>) {
+private:
+    void check(/* expected: List<Int>, channel: ReceiveChannel<Int> */ auto expected, auto channel) {
+        // TODO: implement coroutine suspension
+        /*
         val result = ArrayList<Int>(10)
         channel.consumeEach { result.add(it) }
         assertEquals(expected, result)
+        */
     }
 
-    @Test
-    fun testProduceCancellation() = runTest {
+public:
+    // @Test
+    void test_produce_cancellation() /* = runTest */ {
+        // TODO: implement coroutine suspension
+        /*
         expect(1)
         // publisher is an async coroutine, so it overproduces to the channel, but still gets cancelled
         val flow = flowPublish(currentDispatcher()) {
@@ -178,5 +211,35 @@ class PublisherAsFlowTest : TestBase() {
             }
         }
         finish(6)
+        */
     }
-}
+};
+
+} // namespace jdk9
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement currentDispatcher() function
+// 2. Implement coroutineContext access
+// 3. Implement CoroutineContext[Job] indexing operator
+// 4. Implement invokeOnCompletion() for Job
+// 5. Implement repeat() function
+// 6. Implement launchIn() extension
+// 7. Implement CoroutineScope class
+// 8. Implement onEach() flow operator
+// 9. Implement catch<T>() flow operator
+// 10. Implement buffer() flow operator
+// 11. Implement assertFalse() function
+// 12. Implement trySend() channel method
+// 13. Implement wrapperDispatcher() test helper
+// 14. Implement conflate() flow operator
+// 15. Implement toList() flow terminal operator
+// 16. Implement listOf() utility
+// 17. Implement produceIn() flow operator
+// 18. Implement Channel.UNLIMITED constant
+// 19. Implement ReceiveChannel<T> interface
+// 20. Implement consumeEach() extension
+// 21. Implement ArrayList<T> class
+// 22. Implement coroutineScope builder
+// 23. Implement when expression with range patterns

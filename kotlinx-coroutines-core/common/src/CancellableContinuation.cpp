@@ -1,8 +1,21 @@
-package kotlinx.coroutines
+// Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt
+//
+// TODO: Semantic implementation required
+// - Implement coroutine suspension mechanisms
+// - Implement cancellation infrastructure
+// - Add proper exception handling
+// - Implement thread-safety guarantees
+// - Add memory management for continuation state
+// - Implement prompt cancellation guarantee
+// - Add resource cleanup for closeable resources
 
-import kotlinx.coroutines.internal.*
-import kotlin.coroutines.*
-import kotlin.coroutines.intrinsics.*
+// TODO: #include equivalent
+// #include <kotlinx/coroutines/internal/...>
+// #include <kotlin/coroutines/Continuation.hpp>
+// #include <kotlin/coroutines/intrinsics/...>
+
+namespace kotlinx {
+namespace coroutines {
 
 /**
  * Cancellable [continuation][Continuation] is a thread-safe continuation primitive with the support of
@@ -109,9 +122,11 @@ import kotlin.coroutines.intrinsics.*
  *    +-----------+
  * ```
  */
-@OptIn(ExperimentalSubclassOptIn::class)
-@SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class)
-public interface CancellableContinuation<in T> : Continuation<T> {
+// @OptIn(ExperimentalSubclassOptIn::class)
+// @SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class)
+template<typename T>
+class CancellableContinuation : public Continuation<T> {
+public:
     /**
      * Returns `true` when this continuation is active -- it was created,
      * but not yet [resumed][Continuation.resumeWith] or [cancelled][CancellableContinuation.cancel].
@@ -119,7 +134,7 @@ public interface CancellableContinuation<in T> : Continuation<T> {
      * This state implies that [isCompleted] and [isCancelled] are `false`,
      * but this can change immediately after the invocation because of parallel calls to [cancel] and [resume].
      */
-    public val isActive: Boolean
+    virtual bool is_active() const = 0;
 
     /**
      * Returns `true` when this continuation was completed -- [resumed][Continuation.resumeWith] or
@@ -127,14 +142,14 @@ public interface CancellableContinuation<in T> : Continuation<T> {
      *
      * This state implies that [isActive] is `false`.
      */
-    public val isCompleted: Boolean
+    virtual bool is_completed() const = 0;
 
     /**
      * Returns `true` if this continuation was [cancelled][CancellableContinuation.cancel].
      *
      * It implies that [isActive] is `false` and [isCompleted] is `true`.
      */
-    public val isCancelled: Boolean
+    virtual bool is_cancelled() const = 0;
 
     /**
      * Tries to resume this continuation with the specified [value] and returns a non-null object token if successful,
@@ -146,8 +161,8 @@ public interface CancellableContinuation<in T> : Continuation<T> {
      *
      * @suppress **This is unstable API and it is subject to change.**
      */
-    @InternalCoroutinesApi
-    public fun tryResume(value: T, idempotent: Any? = null): Any?
+    // @InternalCoroutinesApi
+    virtual void* try_resume(T value, void* idempotent = nullptr) = 0;
 
     /**
      * Same as [tryResume] but with an [onCancellation] handler that is called if and only if the value is not
@@ -161,10 +176,13 @@ public interface CancellableContinuation<in T> : Continuation<T> {
      *
      * @suppress  **This is unstable API and it is subject to change.**
      */
-    @InternalCoroutinesApi
-    public fun <R: T> tryResume(
-        value: R, idempotent: Any?, onCancellation: ((cause: Throwable, value: R, context: CoroutineContext) -> Unit)?
-    ): Any?
+    // @InternalCoroutinesApi
+    template<typename R>
+    virtual void* try_resume(
+        R value,
+        void* idempotent,
+        std::function<void(Throwable*, R, CoroutineContext)> on_cancellation
+    ) = 0;
 
     /**
      * Tries to resume this continuation with the specified [exception] and returns a non-null object token if successful,
@@ -173,16 +191,16 @@ public interface CancellableContinuation<in T> : Continuation<T> {
      *
      * @suppress **This is unstable API and it is subject to change.**
      */
-    @InternalCoroutinesApi
-    public fun tryResumeWithException(exception: Throwable): Any?
+    // @InternalCoroutinesApi
+    virtual void* try_resume_with_exception(Throwable* exception) = 0;
 
     /**
      * Completes the execution of [tryResume] or [tryResumeWithException] on its non-null result.
      *
      * @suppress **This is unstable API and it is subject to change.**
      */
-    @InternalCoroutinesApi
-    public fun completeResume(token: Any)
+    // @InternalCoroutinesApi
+    virtual void complete_resume(void* token) = 0;
 
     /**
      * Internal function that setups cancellation behavior in [suspendCancellableCoroutine].
@@ -192,15 +210,15 @@ public interface CancellableContinuation<in T> : Continuation<T> {
      *
      * @suppress **This is unstable API and it is subject to change.**
      */
-    @InternalCoroutinesApi
-    public fun initCancellability()
+    // @InternalCoroutinesApi
+    virtual void init_cancellability() = 0;
 
     /**
      * Cancels this continuation with an optional cancellation `cause`. The result is `true` if this continuation was
      * cancelled as a result of this invocation, and `false` otherwise.
      * [cancel] might return `false` when the continuation was either [resumed][resume] or already [cancelled][cancel].
      */
-    public fun cancel(cause: Throwable? = null): Boolean
+    virtual bool cancel(Throwable* cause = nullptr) = 0;
 
     /**
      * Registers a [handler] to be **synchronously** invoked on [cancellation][cancel] (regular or exceptional) of this continuation.
@@ -226,7 +244,7 @@ public interface CancellableContinuation<in T> : Continuation<T> {
      * This [handler] can be invoked concurrently with the surrounding code.
      * There is no guarantee on the execution context in which the [handler] will be invoked.
      */
-    public fun invokeOnCancellation(handler: CompletionHandler)
+    virtual void invoke_on_cancellation(CompletionHandler handler) = 0;
 
     /**
      * Resumes this continuation with the specified [value] in the invoker thread without going through
@@ -236,8 +254,8 @@ public interface CancellableContinuation<in T> : Continuation<T> {
      *
      * **Note: This function is experimental.** Its signature general code may be changed in the future.
      */
-    @ExperimentalCoroutinesApi
-    public fun CoroutineDispatcher.resumeUndispatched(value: T)
+    // @ExperimentalCoroutinesApi
+    virtual void resume_undispatched(CoroutineDispatcher& dispatcher, T value) = 0;
 
     /**
      * Resumes this continuation with the specified [exception] in the invoker thread without going through
@@ -247,16 +265,12 @@ public interface CancellableContinuation<in T> : Continuation<T> {
      *
      * **Note: This function is experimental.** Its signature general code may be changed in the future.
      */
-    @ExperimentalCoroutinesApi
-    public fun CoroutineDispatcher.resumeUndispatchedWithException(exception: Throwable)
+    // @ExperimentalCoroutinesApi
+    virtual void resume_undispatched_with_exception(CoroutineDispatcher& dispatcher, Throwable* exception) = 0;
 
     /** @suppress */
-    @Deprecated(
-        "Use the overload that also accepts the `value` and the coroutine context in lambda",
-        level = DeprecationLevel.WARNING,
-        replaceWith = ReplaceWith("resume(value) { cause, _, _ -> onCancellation(cause) }")
-    ) // warning since 1.9.0, was experimental
-    public fun resume(value: T, onCancellation: ((cause: Throwable) -> Unit)?)
+    // @Deprecated("Use the overload that also accepts the `value` and the coroutine context in lambda")
+    virtual void resume(T value, std::function<void(Throwable*)> on_cancellation) = 0;
 
     /**
      * Resumes this continuation with the specified [value], calling the specified [onCancellation] if and only if
@@ -301,19 +315,20 @@ public interface CancellableContinuation<in T> : Continuation<T> {
      * It can be invoked concurrently with the surrounding code.
      * There is no guarantee on the execution context of its invocation.
      */
-    public fun <R: T> resume(
-        value: R, onCancellation: ((cause: Throwable, value: R, context: CoroutineContext) -> Unit)?
-    )
-}
+    template<typename R>
+    void resume(
+        R value,
+        std::function<void(Throwable*, R, CoroutineContext)> on_cancellation
+    );
+};
 
 /**
  * A version of `invokeOnCancellation` that accepts a class as a handler instead of a lambda, but identical otherwise.
  * This allows providing a custom [toString] instance that will look better during debugging.
  */
-internal fun <T> CancellableContinuation<T>.invokeOnCancellation(handler: CancelHandler) = when (this) {
-    is CancellableContinuationImpl -> invokeOnCancellationInternal(handler)
-    else -> throw UnsupportedOperationException("third-party implementation of CancellableContinuation is not supported")
-}
+template<typename T>
+void invoke_on_cancellation(CancellableContinuation<T>& cont, CancelHandler* handler);
+// TODO: implement coroutine suspension
 
 /**
  * Suspends the coroutine like [suspendCoroutine], but providing a [CancellableContinuation] to
@@ -420,62 +435,21 @@ internal fun <T> CancellableContinuation<T>.invokeOnCancellation(handler: Cancel
  * [CoroutineDispatcher] class, then there is no prompt cancellation guarantee. A custom continuation interceptor
  * can resume execution of a previously suspended coroutine even if its job was already cancelled.
  */
-public suspend inline fun <T> suspendCancellableCoroutine(
-    crossinline block: (CancellableContinuation<T>) -> Unit
-): T =
-    suspendCoroutineUninterceptedOrReturn { uCont ->
-        val cancellable = CancellableContinuationImpl(uCont.intercepted(), resumeMode = MODE_CANCELLABLE)
-        /*
-         * For non-atomic cancellation we setup parent-child relationship immediately
-         * in case when `block` blocks the current thread (e.g. Rx2 with trampoline scheduler), but
-         * properly supports cancellation.
-         */
-        cancellable.initCancellability()
-        block(cancellable)
-        cancellable.getResult()
-    }
+template<typename T>
+T suspend_cancellable_coroutine(std::function<void(CancellableContinuation<T>&)> block);
+// TODO: implement coroutine suspension
 
 /**
  * Suspends the coroutine similar to [suspendCancellableCoroutine], but an instance of
  * [CancellableContinuationImpl] is reused.
  */
-internal suspend inline fun <T> suspendCancellableCoroutineReusable(
-    crossinline block: (CancellableContinuationImpl<T>) -> Unit
-): T = suspendCoroutineUninterceptedOrReturn { uCont ->
-    val cancellable = getOrCreateCancellableContinuation(uCont.intercepted())
-    try {
-        block(cancellable)
-    } catch (e: Throwable) {
-        // Here we catch any unexpected exception from user-supplied block (e.g. invariant violation)
-        // and release claimed continuation in order to leave it in a reasonable state (see #3613)
-        cancellable.releaseClaimedReusableContinuation()
-        throw e
-    }
-    cancellable.getResult()
-}
+template<typename T>
+T suspend_cancellable_coroutine_reusable(std::function<void(CancellableContinuationImpl<T>&)> block);
+// TODO: implement coroutine suspension
 
-internal fun <T> getOrCreateCancellableContinuation(delegate: Continuation<T>): CancellableContinuationImpl<T> {
-    // If used outside our dispatcher
-    if (delegate !is DispatchedContinuation<T>) {
-        return CancellableContinuationImpl(delegate, MODE_CANCELLABLE)
-    }
-    /*
-     * Attempt to claim reusable instance.
-     *
-     * suspendCancellableCoroutineReusable { // <- claimed
-     *     // Any asynchronous cancellation is "postponed" while this block
-     *     // is being executed
-     * } // postponed cancellation is checked here.
-     *
-     * Claim can fail for the following reasons:
-     * 1) Someone tried to make idempotent resume.
-     *    Idempotent resume is internal (used only by us) and is used only in `select`,
-     *    thus leaking CC instance for indefinite time.
-     * 2) Continuation was cancelled. Then we should prevent any further reuse and bail out.
-     */
-    return delegate.claimReusableCancellableContinuation()?.takeIf { it.resetStateReusable() }
-        ?: return CancellableContinuationImpl(delegate, MODE_CANCELLABLE_REUSABLE)
-}
+template<typename T>
+CancellableContinuationImpl<T>* get_or_create_cancellable_continuation(Continuation<T>* delegate);
+// TODO: implement coroutine suspension
 
 /**
  * Disposes the specified [handle] when this continuation is cancelled.
@@ -487,11 +461,24 @@ internal fun <T> getOrCreateCancellableContinuation(delegate: Continuation<T>): 
  *
  * @suppress **This an internal API and should not be used from general code.**
  */
-@InternalCoroutinesApi
-public fun CancellableContinuation<*>.disposeOnCancellation(handle: DisposableHandle): Unit =
-    invokeOnCancellation(handler = DisposeOnCancel(handle))
+// @InternalCoroutinesApi
+void dispose_on_cancellation(CancellableContinuation<void>& cont, DisposableHandle* handle);
 
-private class DisposeOnCancel(private val handle: DisposableHandle) : CancelHandler {
-    override fun invoke(cause: Throwable?) = handle.dispose()
-    override fun toString(): String = "DisposeOnCancel[$handle]"
-}
+class DisposeOnCancel : public CancelHandler {
+private:
+    DisposableHandle* handle;
+
+public:
+    explicit DisposeOnCancel(DisposableHandle* handle) : handle(handle) {}
+
+    void invoke(Throwable* cause) override {
+        handle->dispose();
+    }
+
+    std::string to_string() const override {
+        return "DisposeOnCancel[" + handle->to_string() + "]";
+    }
+};
+
+} // namespace coroutines
+} // namespace kotlinx

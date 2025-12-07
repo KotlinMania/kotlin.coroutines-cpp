@@ -1,11 +1,17 @@
-package kotlinx.coroutines.reactive
+// Transliterated from: reactive/kotlinx-coroutines-reactive/src/Await.kt
+// TODO: Implement semantic correctness for reactive streams await operations
 
-import kotlinx.coroutines.*
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-import org.reactivestreams.Subscription
-import java.lang.IllegalStateException
-import kotlin.coroutines.*
+namespace kotlinx {
+namespace coroutines {
+namespace reactive {
+
+// TODO: #include <kotlinx/coroutines/coroutines.hpp>
+// TODO: #include <org/reactivestreams/Publisher.hpp>
+// TODO: #include <org/reactivestreams/Subscriber.hpp>
+// TODO: #include <org/reactivestreams/Subscription.hpp>
+// TODO: #include <exception>
+// TODO: #include <functional>
+// TODO: #include <optional>
 
 /**
  * Awaits the first value from the given publisher without blocking the thread and returns the resulting value, or, if
@@ -17,7 +23,11 @@ import kotlin.coroutines.*
  *
  * @throws NoSuchElementException if the publisher does not emit any value
  */
-public suspend fun <T> Publisher<T>.awaitFirst(): T = awaitOne(Mode.FIRST)
+// TODO: implement coroutine suspension
+template<typename T>
+T await_first(Publisher<T>& publisher) {
+    return await_one(publisher, Mode::kFirst);
+}
 
 /**
  * Awaits the first value from the given publisher, or returns the [default] value if none is emitted, without blocking
@@ -28,7 +38,11 @@ public suspend fun <T> Publisher<T>.awaitFirst(): T = awaitOne(Mode.FIRST)
  * If the [Job] of the current coroutine is cancelled while the suspending function is waiting, this
  * function immediately cancels its [Subscription] and resumes with [CancellationException].
  */
-public suspend fun <T> Publisher<T>.awaitFirstOrDefault(default: T): T = awaitOne(Mode.FIRST_OR_DEFAULT, default)
+// TODO: implement coroutine suspension
+template<typename T>
+T await_first_or_default(Publisher<T>& publisher, T default_value) {
+    return await_one(publisher, Mode::kFirstOrDefault, default_value);
+}
 
 /**
  * Awaits the first value from the given publisher, or returns `null` if none is emitted, without blocking the thread,
@@ -38,7 +52,11 @@ public suspend fun <T> Publisher<T>.awaitFirstOrDefault(default: T): T = awaitOn
  * If the [Job] of the current coroutine is cancelled while the suspending function is waiting, this
  * function immediately cancels its [Subscription] and resumes with [CancellationException].
  */
-public suspend fun <T> Publisher<T>.awaitFirstOrNull(): T? = awaitOne(Mode.FIRST_OR_DEFAULT)
+// TODO: implement coroutine suspension
+template<typename T>
+T* await_first_or_null(Publisher<T>& publisher) {
+    return await_one(publisher, Mode::kFirstOrDefault);
+}
 
 /**
  * Awaits the first value from the given publisher, or calls [defaultValue] to get a value if none is emitted, without
@@ -49,7 +67,12 @@ public suspend fun <T> Publisher<T>.awaitFirstOrNull(): T? = awaitOne(Mode.FIRST
  * If the [Job] of the current coroutine is cancelled while the suspending function is waiting, this
  * function immediately cancels its [Subscription] and resumes with [CancellationException].
  */
-public suspend fun <T> Publisher<T>.awaitFirstOrElse(defaultValue: () -> T): T = awaitOne(Mode.FIRST_OR_DEFAULT) ?: defaultValue()
+// TODO: implement coroutine suspension
+template<typename T>
+T await_first_or_else(Publisher<T>& publisher, std::function<T()> default_value) {
+    auto result = await_one(publisher, Mode::kFirstOrDefault);
+    return result ? *result : default_value();
+}
 
 /**
  * Awaits the last value from the given publisher without blocking the thread and
@@ -61,7 +84,11 @@ public suspend fun <T> Publisher<T>.awaitFirstOrElse(defaultValue: () -> T): T =
  *
  * @throws NoSuchElementException if the publisher does not emit any value
  */
-public suspend fun <T> Publisher<T>.awaitLast(): T = awaitOne(Mode.LAST)
+// TODO: implement coroutine suspension
+template<typename T>
+T await_last(Publisher<T>& publisher) {
+    return await_one(publisher, Mode::kLast);
+}
 
 /**
  * Awaits the single value from the given publisher without blocking the thread and returns the resulting value, or,
@@ -74,7 +101,11 @@ public suspend fun <T> Publisher<T>.awaitLast(): T = awaitOne(Mode.LAST)
  * @throws NoSuchElementException if the publisher does not emit any value
  * @throws IllegalArgumentException if the publisher emits more than one value
  */
-public suspend fun <T> Publisher<T>.awaitSingle(): T = awaitOne(Mode.SINGLE)
+// TODO: implement coroutine suspension
+template<typename T>
+T await_single(Publisher<T>& publisher) {
+    return await_one(publisher, Mode::kSingle);
+}
 
 /**
  * Awaits the single value from the given publisher, or returns the [default] value if none is emitted, without
@@ -99,12 +130,17 @@ public suspend fun <T> Publisher<T>.awaitSingle(): T = awaitOne(Mode.SINGLE)
  *
  * @suppress
  */
-@Deprecated(
-    message = "Deprecated without a replacement due to its name incorrectly conveying the behavior. " +
-        "Please consider using awaitFirstOrDefault().",
-    level = DeprecationLevel.HIDDEN
-) // Warning since 1.5, error in 1.6, hidden in 1.7
-public suspend fun <T> Publisher<T>.awaitSingleOrDefault(default: T): T = awaitOne(Mode.SINGLE_OR_DEFAULT, default)
+// @Deprecated(
+//     message = "Deprecated without a replacement due to its name incorrectly conveying the behavior. " +
+//         "Please consider using awaitFirstOrDefault().",
+//     level = DeprecationLevel.HIDDEN
+// ) // Warning since 1.5, error in 1.6, hidden in 1.7
+// TODO: implement coroutine suspension
+template<typename T>
+[[deprecated("Deprecated without a replacement due to its name incorrectly conveying the behavior. Please consider using await_first_or_default().")]]
+T await_single_or_default(Publisher<T>& publisher, T default_value) {
+    return await_one(publisher, Mode::kSingleOrDefault, default_value);
+}
 
 /**
  * Awaits the single value from the given publisher without blocking the thread and returns the resulting value, or, if
@@ -127,14 +163,19 @@ public suspend fun <T> Publisher<T>.awaitSingleOrDefault(default: T): T = awaitO
  * @throws IllegalArgumentException if the publisher emits more than one value
  * @suppress
  */
-@Deprecated(
-    message = "Deprecated without a replacement due to its name incorrectly conveying the behavior. " +
-        "There is a specialized version for Reactor's Mono, please use that where applicable. " +
-        "Alternatively, please consider using awaitFirstOrNull().",
-    level = DeprecationLevel.HIDDEN,
-    replaceWith = ReplaceWith("this.awaitSingleOrNull()", "kotlinx.coroutines.reactor")
-) // Warning since 1.5, error in 1.6, hidden in 1.7
-public suspend fun <T> Publisher<T>.awaitSingleOrNull(): T? = awaitOne(Mode.SINGLE_OR_DEFAULT)
+// @Deprecated(
+//     message = "Deprecated without a replacement due to its name incorrectly conveying the behavior. " +
+//         "There is a specialized version for Reactor's Mono, please use that where applicable. " +
+//         "Alternatively, please consider using awaitFirstOrNull().",
+//     level = DeprecationLevel.HIDDEN,
+//     replaceWith = ReplaceWith("this.awaitSingleOrNull()", "kotlinx.coroutines.reactor")
+// ) // Warning since 1.5, error in 1.6, hidden in 1.7
+// TODO: implement coroutine suspension
+template<typename T>
+[[deprecated("Deprecated without a replacement due to its name incorrectly conveying the behavior. There is a specialized version for Reactor's Mono, please use that where applicable. Alternatively, please consider using await_first_or_null().")]]
+T* await_single_or_null(Publisher<T>& publisher) {
+    return await_one(publisher, Mode::kSingleOrDefault);
+}
 
 /**
  * Awaits the single value from the given publisher, or calls [defaultValue] to get a value if none is emitted, without
@@ -157,168 +198,92 @@ public suspend fun <T> Publisher<T>.awaitSingleOrNull(): T? = awaitOne(Mode.SING
  * @throws IllegalArgumentException if the publisher emits more than one value
  * @suppress
  */
-@Deprecated(
-    message = "Deprecated without a replacement due to its name incorrectly conveying the behavior. " +
-        "Please consider using awaitFirstOrElse().",
-    level = DeprecationLevel.HIDDEN
-) // Warning since 1.5, error in 1.6, hidden in 1.7
-public suspend fun <T> Publisher<T>.awaitSingleOrElse(defaultValue: () -> T): T =
-    awaitOne(Mode.SINGLE_OR_DEFAULT) ?: defaultValue()
+// @Deprecated(
+//     message = "Deprecated without a replacement due to its name incorrectly conveying the behavior. " +
+//         "Please consider using awaitFirstOrElse().",
+//     level = DeprecationLevel.HIDDEN
+// ) // Warning since 1.5, error in 1.6, hidden in 1.7
+// TODO: implement coroutine suspension
+template<typename T>
+[[deprecated("Deprecated without a replacement due to its name incorrectly conveying the behavior. Please consider using await_first_or_else().")]]
+T await_single_or_else(Publisher<T>& publisher, std::function<T()> default_value) {
+    auto result = await_one(publisher, Mode::kSingleOrDefault);
+    return result ? *result : default_value();
+}
 
 // ------------------------ private ------------------------
 
-private enum class Mode(val s: String) {
-    FIRST("awaitFirst"),
-    FIRST_OR_DEFAULT("awaitFirstOrDefault"),
-    LAST("awaitLast"),
-    SINGLE("awaitSingle"),
-    SINGLE_OR_DEFAULT("awaitSingleOrDefault");
-    override fun toString(): String = s
-}
+enum class Mode {
+    kFirst,
+    kFirstOrDefault,
+    kLast,
+    kSingle,
+    kSingleOrDefault
+};
 
-private suspend fun <T> Publisher<T>.awaitOne(
-    mode: Mode,
-    default: T? = null
-): T = suspendCancellableCoroutine { cont ->
+// TODO: implement coroutine suspension
+template<typename T>
+T await_one(Publisher<T>& publisher, Mode mode, std::optional<T> default_value = std::nullopt) {
+    // TODO: Implement suspendCancellableCoroutine equivalent
     /* This implementation must obey
     https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2-subscriber-code
     The numbers of rules are taken from there. */
-    injectCoroutineContext(cont.context).subscribe(object : Subscriber<T> {
-        // It is unclear whether 2.13 implies (T: Any), but if so, it seems that we don't break anything by not adhering
-        private var subscription: Subscription? = null
-        private var value: T? = null
-        private var seenValue = false
-        private var inTerminalState = false
-
-        override fun onSubscribe(sub: Subscription) {
-            /** cancelling the new subscription due to rule 2.5, though the publisher would either have to
-             * subscribe more than once, which would break 2.12, or leak this [Subscriber]. */
-            if (subscription != null) {
-                withSubscriptionLock {
-                    sub.cancel()
-                }
-                return
-            }
-            subscription = sub
-            cont.invokeOnCancellation {
-                withSubscriptionLock {
-                    sub.cancel()
-                }
-            }
-            withSubscriptionLock {
-                sub.request(if (mode == Mode.FIRST || mode == Mode.FIRST_OR_DEFAULT) 1 else Long.MAX_VALUE)
-            }
-        }
-
-        override fun onNext(t: T) {
-            val sub = subscription.let {
-                if (it == null) {
-                    /** Enforce rule 1.9: expect [Subscriber.onSubscribe] before any other signals. */
-                    handleCoroutineException(cont.context,
-                        IllegalStateException("'onNext' was called before 'onSubscribe'"))
-                    return
-                } else {
-                    it
-                }
-            }
-            if (inTerminalState) {
-                gotSignalInTerminalStateException(cont.context, "onNext")
-                return
-            }
-            when (mode) {
-                Mode.FIRST, Mode.FIRST_OR_DEFAULT -> {
-                    if (seenValue) {
-                        moreThanOneValueProvidedException(cont.context, mode)
-                        return
-                    }
-                    seenValue = true
-                    withSubscriptionLock {
-                        sub.cancel()
-                    }
-                    cont.resume(t)
-                }
-                Mode.LAST, Mode.SINGLE, Mode.SINGLE_OR_DEFAULT -> {
-                    if ((mode == Mode.SINGLE || mode == Mode.SINGLE_OR_DEFAULT) && seenValue) {
-                        withSubscriptionLock {
-                            sub.cancel()
-                        }
-                        /* the check for `cont.isActive` is needed in case `sub.cancel() above calls `onComplete` or
-                         `onError` on its own. */
-                        if (cont.isActive) {
-                            cont.resumeWithException(IllegalArgumentException("More than one onNext value for $mode"))
-                        }
-                    } else {
-                        value = t
-                        seenValue = true
-                    }
-                }
-            }
-        }
-
-        @Suppress("UNCHECKED_CAST")
-        override fun onComplete() {
-            if (!tryEnterTerminalState("onComplete")) {
-                return
-            }
-            if (seenValue) {
-                /* the check for `cont.isActive` is needed because, otherwise, if the publisher doesn't acknowledge the
-                call to `cancel` for modes `SINGLE*` when more than one value was seen, it may call `onComplete`, and
-                here `cont.resume` would fail. */
-                if (mode != Mode.FIRST_OR_DEFAULT && mode != Mode.FIRST && cont.isActive) {
-                    cont.resume(value as T)
-                }
-                return
-            }
-            when {
-                (mode == Mode.FIRST_OR_DEFAULT || mode == Mode.SINGLE_OR_DEFAULT) -> {
-                    cont.resume(default as T)
-                }
-                cont.isActive -> {
-                    // the check for `cont.isActive` is just a slight optimization and doesn't affect correctness
-                    cont.resumeWithException(NoSuchElementException("No value received via onNext for $mode"))
-                }
-            }
-        }
-
-        override fun onError(e: Throwable) {
-            if (tryEnterTerminalState("onError")) {
-                cont.resumeWithException(e)
-            }
-        }
-
-        /**
-         * Enforce rule 2.4: assume that the [Publisher] is in a terminal state after [onError] or [onComplete].
-         */
-        private fun tryEnterTerminalState(signalName: String): Boolean {
-            if (inTerminalState) {
-                gotSignalInTerminalStateException(cont.context, signalName)
-                return false
-            }
-            inTerminalState = true
-            return true
-        }
-
-        /**
-         * Enforce rule 2.7: [Subscription.request] and [Subscription.cancel] must be executed serially
-         */
-        @Synchronized
-        private fun withSubscriptionLock(block: () -> Unit) {
-            block()
-        }
-    })
+    // TODO: Implement full subscriber logic with:
+    // - Subscription management
+    // - Value tracking (seenValue, value, inTerminalState)
+    // - onSubscribe, onNext, onComplete, onError handlers
+    // - Context injection via injectCoroutineContext
+    // - Serial execution enforcement via withSubscriptionLock
+    // - Cancellation handling
+    throw std::runtime_error("Not implemented");
 }
 
 /**
  * Enforce rule 2.4 (detect publishers that don't respect rule 1.7): don't process anything after a terminal
  * state was reached.
  */
-private fun gotSignalInTerminalStateException(context: CoroutineContext, signalName: String) =
-    handleCoroutineException(context,
-        IllegalStateException("'$signalName' was called after the publisher already signalled being in a terminal state"))
+void got_signal_in_terminal_state_exception(const CoroutineContext& context, const std::string& signal_name) {
+    handle_coroutine_exception(context,
+        std::runtime_error("'" + signal_name + "' was called after the publisher already signalled being in a terminal state"));
+}
 
 /**
  * Enforce rule 1.1: it is invalid for a publisher to provide more values than requested.
  */
-private fun moreThanOneValueProvidedException(context: CoroutineContext, mode: Mode) =
-    handleCoroutineException(context,
-        IllegalStateException("Only a single value was requested in '$mode', but the publisher provided more"))
+void more_than_one_value_provided_exception(const CoroutineContext& context, Mode mode) {
+    std::string mode_str;
+    switch (mode) {
+        case Mode::kFirst: mode_str = "awaitFirst"; break;
+        case Mode::kFirstOrDefault: mode_str = "awaitFirstOrDefault"; break;
+        case Mode::kLast: mode_str = "awaitLast"; break;
+        case Mode::kSingle: mode_str = "awaitSingle"; break;
+        case Mode::kSingleOrDefault: mode_str = "awaitSingleOrDefault"; break;
+    }
+    handle_coroutine_exception(context,
+        std::runtime_error("Only a single value was requested in '" + mode_str + "', but the publisher provided more"));
+}
+
+} // namespace reactive
+} // namespace coroutines
+} // namespace kotlinx
+
+/*
+ * TODO List for semantic implementation:
+ *
+ * 1. Implement C++ coroutine support (co_await, co_return)
+ * 2. Implement CoroutineContext and Job management
+ * 3. Implement Subscription lifecycle management
+ * 4. Implement reactive streams Subscriber interface
+ * 5. Implement thread-safe subscription operations (@Synchronized equivalent)
+ * 6. Implement suspendCancellableCoroutine primitive
+ * 7. Implement context injection (injectCoroutineContext)
+ * 8. Implement exception handling (handleCoroutineException)
+ * 9. Implement cancellation support (CancellationException)
+ * 10. Add proper error handling for reactive streams rules
+ * 11. Implement continuation resume/resumeWithException
+ * 12. Add mutex/lock primitives for serial execution
+ * 13. Implement std::optional<T> for nullable types
+ * 14. Add NoSuchElementException type
+ * 15. Add IllegalArgumentException type
+ * 16. Test compliance with reactive streams specification
+ */

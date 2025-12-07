@@ -1,183 +1,198 @@
-package kotlinx.coroutines.testing
+// Transliterated from: test-utils/jvm/src/FieldWalker.kt
+// TODO: #include <unordered_map>
+// TODO: #include <unordered_set>
+// TODO: #include <vector>
+// TODO: #include <deque>
+// TODO: #include <string>
+// TODO: #include <typeinfo>
+// TODO: #include <test_framework.hpp>
 
-import java.lang.ref.*
-import java.lang.reflect.*
-import java.text.*
-import java.util.*
-import java.util.Collections.*
-import java.util.concurrent.*
-import java.util.concurrent.atomic.*
-import java.util.concurrent.locks.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace testing {
 
-object FieldWalker {
-    sealed class Ref {
-        object RootRef : Ref()
-        class FieldRef(val parent: Any, val name: String) : Ref()
-        class ArrayRef(val parent: Any, val index: Int) : Ref()
-    }
+class FieldWalker {
+public:
+    class Ref {
+    public:
+        virtual ~Ref() = default;
+    };
 
-    private val fieldsCache = HashMap<Class<*>, List<Field>>()
+    class RootRef : public Ref {};
 
-    init {
+    class FieldRef : public Ref {
+    public:
+        void* parent;
+        std::string name;
+
+        FieldRef(void* parent, const std::string& name) : parent(parent), name(name) {}
+    };
+
+    class ArrayRef : public Ref {
+    public:
+        void* parent;
+        int index;
+
+        ArrayRef(void* parent, int index) : parent(parent), index(index) {}
+    };
+
+private:
+    // TODO: Implement proper type reflection system
+    std::unordered_map<std::type_info*, std::vector<void*>> fields_cache;
+
+    FieldWalker() {
         // excluded/terminal classes (don't walk them)
-        fieldsCache += listOf(
-            Any::class, String::class, Thread::class, Throwable::class, StackTraceElement::class,
-            WeakReference::class, ReferenceQueue::class, AbstractMap::class, Enum::class,
-            ReentrantLock::class, ReentrantReadWriteLock::class, SimpleDateFormat::class, ThreadPoolExecutor::class,
-            CountDownLatch::class,
-        )
-            .map { it.java }
-            .associateWith { emptyList() }
+        // TODO: Initialize with excluded classes
+        // fields_cache[typeid(Object)] = {};
+        // fields_cache[typeid(std::string)] = {};
+        // fields_cache[typeid(std::thread)] = {};
+        // fields_cache[typeid(std::exception)] = {};
+        // etc.
     }
 
-    /*
-     * Reflectively starts to walk through object graph and returns identity set of all reachable objects.
-     * Use [walkRefs] if you need a path from root for debugging.
-     */
-    public fun walk(root: Any?): Set<Any> = walkRefs(root, false).keys
+public:
+    static FieldWalker& instance() {
+        static FieldWalker instance;
+        return instance;
+    }
 
-    public fun assertReachableCount(expected: Int, root: Any?, rootStatics: Boolean = false, predicate: (Any) -> Boolean) {
-        val visited = walkRefs(root, rootStatics)
-        val actual = visited.keys.filter(predicate)
-        if (actual.size != expected) {
-            val textDump = actual.joinToString("") { "\n\t" + showPath(it, visited) }
-            assertEquals(
-                expected, actual.size,
-                "Unexpected number objects. Expected $expected, found ${actual.size}$textDump"
-            )
+    // Reflectively starts to walk through object graph and returns identity set of all reachable objects.
+    // Use walk_refs if you need a path from root for debugging.
+    std::unordered_set<void*> walk(void* root) {
+        auto visited = walk_refs(root, false);
+        std::unordered_set<void*> result;
+        for (const auto& [key, value] : visited) {
+            result.insert(key);
+        }
+        return result;
+    }
+
+    void assert_reachable_count(
+        int expected,
+        void* root,
+        bool root_statics = false,
+        std::function<bool(void*)> predicate = nullptr
+    ) {
+        auto visited = walk_refs(root, root_statics);
+        std::vector<void*> actual;
+
+        for (const auto& [key, value] : visited) {
+            if (predicate == nullptr || predicate(key)) {
+                actual.push_back(key);
+            }
+        }
+
+        if (actual.size() != expected) {
+            std::string text_dump;
+            for (void* obj : actual) {
+                text_dump += "\n\t" + show_path(obj, visited);
+            }
+
+            throw std::runtime_error(
+                "Unexpected number objects. Expected " + std::to_string(expected) +
+                ", found " + std::to_string(actual.size()) + text_dump
+            );
         }
     }
 
-    /*
-     * Reflectively starts to walk through object graph and map to all the reached object to their path
-     * in from root. Use [showPath] do display a path if needed.
-     */
-    private fun walkRefs(root: Any?, rootStatics: Boolean): IdentityHashMap<Any, Ref> {
-        val visited = IdentityHashMap<Any, Ref>()
-        if (root == null) return visited
-        visited[root] = Ref.RootRef
-        val stack = ArrayDeque<Any>()
-        stack.addLast(root)
-        var statics = rootStatics
-        while (stack.isNotEmpty()) {
-            val element = stack.removeLast()
+private:
+    // Reflectively starts to walk through object graph and map to all the reached object to their path
+    // in from root. Use show_path do display a path if needed.
+    std::unordered_map<void*, Ref*> walk_refs(void* root, bool root_statics) {
+        std::unordered_map<void*, Ref*> visited;
+        if (root == nullptr) return visited;
+
+        visited[root] = new RootRef();
+        std::deque<void*> stack;
+        stack.push_back(root);
+        bool statics = root_statics;
+
+        while (!stack.empty()) {
+            void* element = stack.back();
+            stack.pop_back();
+
             try {
-                visit(element, visited, stack, statics)
-                statics = false // only scan root static when asked
-            } catch (e: Exception) {
-                error("Failed to visit element ${showPath(element, visited)}: $e")
+                visit(element, visited, stack, statics);
+                statics = false; // only scan root static when asked
+            } catch (const std::exception& e) {
+                throw std::runtime_error(
+                    "Failed to visit element " + show_path(element, visited) + ": " + e.what()
+                );
             }
         }
-        return visited
+
+        return visited;
     }
 
-    private fun showPath(element: Any, visited: Map<Any, Ref>): String {
-        val path = ArrayList<String>()
-        var cur = element
+    std::string show_path(void* element, const std::unordered_map<void*, Ref*>& visited) {
+        std::vector<std::string> path;
+        void* cur = element;
+
         while (true) {
-            when (val ref = visited.getValue(cur)) {
-                Ref.RootRef -> break
-                is Ref.FieldRef -> {
-                    cur = ref.parent
-                    path += "|${ref.parent.javaClass.simpleName}::${ref.name}"
-                }
-                is Ref.ArrayRef -> {
-                    cur = ref.parent
-                    path += "[${ref.index}]"
-                }
-                else -> {
-                    // Nothing, kludge for IDE
-                }
+            auto it = visited.find(cur);
+            if (it == visited.end()) break;
+
+            Ref* ref = it->second;
+
+            if (dynamic_cast<RootRef*>(ref)) {
+                break;
+            } else if (FieldRef* field_ref = dynamic_cast<FieldRef*>(ref)) {
+                cur = field_ref->parent;
+                // TODO: Get class name from type info
+                path.push_back("|ClassName::" + field_ref->name);
+            } else if (ArrayRef* array_ref = dynamic_cast<ArrayRef*>(ref)) {
+                cur = array_ref->parent;
+                path.push_back("[" + std::to_string(array_ref->index) + "]");
             }
         }
-        path.reverse()
-        return path.joinToString("")
+
+        std::reverse(path.begin(), path.end());
+        std::string result;
+        for (const auto& p : path) {
+            result += p;
+        }
+        return result;
     }
 
-    private fun visit(element: Any, visited: IdentityHashMap<Any, Ref>, stack: ArrayDeque<Any>, statics: Boolean) {
-        val type = element.javaClass
-        when {
-            // Special code for arrays
-            type.isArray && !type.componentType.isPrimitive -> {
-                @Suppress("UNCHECKED_CAST")
-                val array = element as Array<Any?>
-                array.forEachIndexed { index, value ->
-                    push(value, visited, stack) { Ref.ArrayRef(element, index) }
-                }
-            }
-            // Special code for platform types that cannot be reflectively accessed on modern JDKs
-            type.name.startsWith("java.") && element is Collection<*> -> {
-                element.forEachIndexed { index, value ->
-                    push(value, visited, stack) { Ref.ArrayRef(element, index) }
-                }
-            }
-            type.name.startsWith("java.") && element is Map<*, *> -> {
-                push(element.keys, visited, stack) { Ref.FieldRef(element, "keys") }
-                push(element.values, visited, stack) { Ref.FieldRef(element, "values") }
-            }
-            element is AtomicReference<*> -> {
-                push(element.get(), visited, stack) { Ref.FieldRef(element, "value") }
-            }
-            element is AtomicReferenceArray<*> -> {
-                for (index in 0 until element.length()) {
-                    push(element[index], visited, stack) { Ref.ArrayRef(element, index) }
-                }
-            }
-            element is AtomicLongFieldUpdater<*> -> {
-                /* filter it out here to suppress its subclasses too */
-            }
-            element is ExecutorService && type.name == "java.util.concurrent.Executors\$DelegatedExecutorService" -> {
-                /* can't access anything in the executor */
-            }
-            // All the other classes are reflectively scanned
-            else -> fields(type, statics).forEach { field ->
-                push(field.get(element), visited, stack) { Ref.FieldRef(element, field.name) }
-                // special case to scan Throwable cause (cannot get it reflectively)
-                if (element is Throwable) {
-                    push(element.cause, visited, stack) { Ref.FieldRef(element, "cause") }
-                }
-            }
+    void visit(
+        void* element,
+        std::unordered_map<void*, Ref*>& visited,
+        std::deque<void*>& stack,
+        bool statics
+    ) {
+        // TODO: Implement reflection-based field walking
+        // This is highly platform-specific and would require custom RTTI or reflection system
+
+        // Special code for arrays
+        // Special code for platform types (collections, maps, etc.)
+        // All other classes are reflectively scanned
+    }
+
+    template<typename F>
+    void push(void* value, std::unordered_map<void*, Ref*>& visited, std::deque<void*>& stack, F ref_factory) {
+        if (value != nullptr && visited.find(value) == visited.end()) {
+            visited[value] = ref_factory();
+            stack.push_back(value);
         }
     }
 
-    private inline fun push(value: Any?, visited: IdentityHashMap<Any, Ref>, stack: ArrayDeque<Any>, ref: () -> Ref) {
-        if (value != null && !visited.containsKey(value)) {
-            visited[value] = ref()
-            stack.addLast(value)
-        }
-    }
+    // TODO: Implement fields() method to get fields from a type
+};
 
-    private fun fields(type0: Class<*>, rootStatics: Boolean): List<Field> {
-        fieldsCache[type0]?.let { return it }
-        val result = ArrayList<Field>()
-        var type = type0
-        var statics = rootStatics
-        while (true) {
-            val fields = type.declaredFields.filter {
-                !it.type.isPrimitive
-                    && (statics || !Modifier.isStatic(it.modifiers))
-                    && !(it.type.isArray && it.type.componentType.isPrimitive)
-                    && it.name != "previousOut" // System.out from TestBase that we store in a field to restore later
-            }
-            check(fields.isEmpty() || !type.name.startsWith("java.")) {
-                """
-                    Trying to walk through JDK's '$type' will get into illegal reflective access on JDK 9+.
-                    Either modify your test to avoid usage of this class or update FieldWalker code to retrieve 
-                    the captured state of this class without going through reflection (see how collections are handled).  
-                """.trimIndent()
-            }
-            fields.forEach { it.isAccessible = true } // make them all accessible
-            result.addAll(fields)
-            type = type.superclass
-            statics = false
-            val superFields = fieldsCache[type] // will stop at Any anyway
-            if (superFields != null) {
-                result.addAll(superFields)
-                break
-            }
-        }
-        fieldsCache[type0] = result
-        return result
-    }
-}
+} // namespace testing
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement comprehensive type reflection system for C++
+// 2. Implement field enumeration for arbitrary classes
+// 3. Implement proper handling of arrays and collections
+// 4. Implement handling of standard library types (string, thread, exception, etc.)
+// 5. Implement handling of atomic types
+// 6. Implement exclusion of primitive types
+// 7. Implement proper memory management for Ref objects
+// 8. Handle circular references properly
+// 9. Implement special cases for platform-specific types
+// 10. Add proper includes for all dependencies
+// 11. Consider using existing reflection libraries (e.g., rttr, meta, etc.)
+// 12. Document limitations compared to JVM reflection

@@ -1,13 +1,20 @@
-package kotlinx.coroutines.jdk9
+// Transliterated from: reactive/kotlinx-coroutines-jdk9/test/PublisherBackpressureTest.cpp
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import org.junit.*
-import java.util.concurrent.Flow as JFlow
+// TODO: #include equivalent for kotlinx.coroutines.testing.*
+// TODO: #include equivalent for kotlinx.coroutines.*
+// TODO: #include equivalent for org.junit.*
+// TODO: #include equivalent for java.util.concurrent.Flow as JFlow
 
-class PublisherBackpressureTest : TestBase() {
-    @Test
-    fun testCancelWhileBPSuspended() = runBlocking {
+namespace kotlinx {
+namespace coroutines {
+namespace jdk9 {
+
+class PublisherBackpressureTest : public TestBase {
+public:
+    // @Test
+    void test_cancel_while_bp_suspended() /* = runBlocking */ {
+        // TODO: implement coroutine suspension
+        /*
         expect(1)
         val observable = flowPublish(currentDispatcher()) {
             expect(5)
@@ -54,5 +61,27 @@ class PublisherBackpressureTest : TestBase() {
         expect(11)
         yield() // shall perform finally in coroutine
         finish(13)
+        */
     }
-}
+};
+
+} // namespace jdk9
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement runBlocking coroutine builder
+// 2. Implement currentDispatcher() function
+// 3. Implement flowPublish builder
+// 4. Implement send() suspending function with backpressure
+// 5. Implement JFlow.Subscription interface
+// 6. Implement subscribe() method
+// 7. Implement object expression for anonymous Subscriber
+// 8. Implement nullable pointer handling (JFlow.Subscription?)
+// 9. Implement !! null assertion operator
+// 10. Implement request() method for backpressure control
+// 11. Implement when expression for string matching
+// 12. Implement error() function
+// 13. Implement yield() suspending function
+// 14. Implement cancel() method
+// 15. Handle suspended send() with backpressure semantics

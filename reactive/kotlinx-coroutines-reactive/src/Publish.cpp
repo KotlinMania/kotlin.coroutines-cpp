@@ -1,12 +1,17 @@
-package kotlinx.coroutines.reactive
+// Transliterated from: reactive/kotlinx-coroutines-reactive/src/Publish.kt
+// TODO: Implement semantic correctness for reactive publish operations
 
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.selects.*
-import kotlinx.coroutines.sync.*
-import org.reactivestreams.*
-import kotlin.coroutines.*
+namespace kotlinx {
+namespace coroutines {
+namespace reactive {
+
+// TODO: #include <kotlinx/atomicfu/atomic.hpp>
+// TODO: #include <kotlinx/coroutines/coroutines.hpp>
+// TODO: #include <kotlinx/coroutines/channels/channels.hpp>
+// TODO: #include <kotlinx/coroutines/selects/selects.hpp>
+// TODO: #include <kotlinx/coroutines/sync/sync.hpp>
+// TODO: #include <org/reactivestreams/Publisher.hpp>
+// TODO: #include <kotlin/coroutines/CoroutineContext.hpp>
 
 /**
  * Creates a cold reactive [Publisher] that runs a given [block] in a coroutine.
@@ -29,104 +34,101 @@ import kotlin.coroutines.*
  *
  * @throws IllegalArgumentException if the provided [context] contains a [Job] instance.
  */
-public fun <T> publish(
-    context: CoroutineContext = EmptyCoroutineContext,
-    @BuilderInference block: suspend ProducerScope<T>.() -> Unit
-): Publisher<T> {
-    require(context[Job] === null) { "Publisher context cannot contain job in it." +
-            "Its lifecycle should be managed via subscription. Had $context" }
-    return publishInternal(GlobalScope, context, DEFAULT_HANDLER, block)
+template<typename T>
+Publisher<T> publish(
+    const CoroutineContext& context = EmptyCoroutineContext,
+    std::function<void(ProducerScope<T>&)> block  // @BuilderInference
+) {
+    if (context[Job{}] != nullptr) {
+        throw std::invalid_argument("Publisher context cannot contain job in it. Its lifecycle should be managed via subscription. Had " + to_string(context));
+    }
+    return publish_internal(GlobalScope, context, kDefaultHandler, block);
 }
 
 /** @suppress For internal use from other reactive integration modules only */
-@InternalCoroutinesApi
-public fun <T> publishInternal(
-    scope: CoroutineScope, // support for legacy publish in scope
-    context: CoroutineContext,
-    exceptionOnCancelHandler: (Throwable, CoroutineContext) -> Unit,
-    block: suspend ProducerScope<T>.() -> Unit
-): Publisher<T> = Publisher { subscriber ->
-    // specification requires NPE on null subscriber
-    if (subscriber == null) throw NullPointerException("Subscriber cannot be null")
-    val newContext = scope.newCoroutineContext(context)
-    val coroutine = PublisherCoroutine(newContext, subscriber, exceptionOnCancelHandler)
-    subscriber.onSubscribe(coroutine) // do it first (before starting coroutine), to avoid unnecessary suspensions
-    coroutine.start(CoroutineStart.DEFAULT, coroutine, block)
+// @InternalCoroutinesApi
+template<typename T>
+Publisher<T> publish_internal(
+    CoroutineScope& scope, // support for legacy publish in scope
+    const CoroutineContext& context,
+    std::function<void(std::exception_ptr, const CoroutineContext&)> exception_on_cancel_handler,
+    std::function<void(ProducerScope<T>&)> block
+) {
+    return Publisher<T>([=, &scope](Subscriber<T>* subscriber) {
+        // specification requires NPE on null subscriber
+        if (subscriber == nullptr) throw std::invalid_argument("Subscriber cannot be null");
+        auto new_context = scope.new_coroutine_context(context);
+        auto coroutine = new PublisherCoroutine<T>(new_context, subscriber, exception_on_cancel_handler);
+        subscriber->on_subscribe(*coroutine); // do it first (before starting coroutine), to avoid unnecessary suspensions
+        coroutine->start(CoroutineStart::kDefault, *coroutine, block);
+    });
 }
 
-private const val CLOSED = -1L    // closed, but have not signalled onCompleted/onError yet
-private const val SIGNALLED = -2L  // already signalled subscriber onCompleted/onError
-private val DEFAULT_HANDLER: (Throwable, CoroutineContext) -> Unit = { t, ctx -> if (t !is CancellationException) handleCoroutineException(ctx, t) }
+constexpr long kClosed = -1L;    // closed, but have not signalled onCompleted/onError yet
+constexpr long kSignalled = -2L;  // already signalled subscriber onCompleted/onError
+const auto kDefaultHandler = [](std::exception_ptr t, const CoroutineContext& ctx) {
+    // TODO: Check if t is CancellationException
+    handle_coroutine_exception(ctx, t);
+};
 
 /** @suppress */
-@Suppress("CONFLICTING_JVM_DECLARATIONS", "RETURN_TYPE_MISMATCH_ON_INHERITANCE")
-@InternalCoroutinesApi
-public class PublisherCoroutine<in T>(
-    parentContext: CoroutineContext,
-    private val subscriber: Subscriber<T>,
-    private val exceptionOnCancelHandler: (Throwable, CoroutineContext) -> Unit
-) : AbstractCoroutine<Unit>(parentContext, false, true), ProducerScope<T>, Subscription {
-    override val channel: SendChannel<T> get() = this
+// @Suppress("CONFLICTING_JVM_DECLARATIONS", "RETURN_TYPE_MISMATCH_ON_INHERITANCE")
+// @InternalCoroutinesApi
+template<typename T>
+class PublisherCoroutine : public AbstractCoroutine<void>, public ProducerScope<T>, public Subscription {
+private:
+    Subscriber<T>* subscriber_;
+    std::function<void(std::exception_ptr, const CoroutineContext&)> exception_on_cancel_handler_;
+    std::atomic<long> n_requested_{0L}; // < 0 when closed (CLOSED or SIGNALLED)
+    std::atomic<bool> cancelled_{false}; // true after Subscription.cancel() is invoked
+    Mutex mutex_{true}; // Mutex is locked when either nRequested == 0 or while subscriber.onXXX is being invoked
 
-    private val _nRequested = atomic(0L) // < 0 when closed (CLOSED or SIGNALLED)
+public:
+    PublisherCoroutine(
+        const CoroutineContext& parent_context,
+        Subscriber<T>* subscriber,
+        std::function<void(std::exception_ptr, const CoroutineContext&)> exception_on_cancel_handler
+    ) : AbstractCoroutine<void>(parent_context, false, true),
+        subscriber_(subscriber),
+        exception_on_cancel_handler_(exception_on_cancel_handler) {}
 
-    @Volatile
-    private var cancelled = false // true after Subscription.cancel() is invoked
+    SendChannel<T>& channel() override { return *this; }
 
-    override val isClosedForSend: Boolean get() = !isActive
-    override fun close(cause: Throwable?): Boolean = cancelCoroutine(cause)
-    override fun invokeOnClose(handler: (Throwable?) -> Unit): Nothing =
-        throw UnsupportedOperationException("PublisherCoroutine doesn't support invokeOnClose")
+    bool is_closed_for_send() const override { return !is_active(); }
 
-    // Mutex is locked when either nRequested == 0 or while subscriber.onXXX is being invoked
-    private val mutex: Mutex = Mutex(locked = true)
-
-    @Suppress("UNCHECKED_CAST", "INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
-    override val onSend: SelectClause2<T, SendChannel<T>> get() = SelectClause2Impl(
-        clauseObject = this,
-        regFunc = PublisherCoroutine<*>::registerSelectForSend as RegistrationFunction,
-        processResFunc = PublisherCoroutine<*>::processResultSelectSend as ProcessResultFunction
-    )
-
-    @Suppress("UNCHECKED_CAST", "UNUSED_PARAMETER")
-    private fun registerSelectForSend(select: SelectInstance<*>, element: Any?) {
-        // Try to acquire the mutex and complete in the registration phase.
-        if (mutex.tryLock()) {
-            select.selectInRegistrationPhase(Unit)
-            return
-        }
-        // Start a new coroutine that waits for the mutex, invoking `trySelect(..)` after that.
-        // Please note that at the point of the `trySelect(..)` invocation the corresponding
-        // `select` can still be in the registration phase, making this `trySelect(..)` bound to fail.
-        // In this case, the `onSend` clause will be re-registered, which alongside with the mutex
-        // manipulation makes the resulting solution obstruction-free.
-        launch {
-            mutex.lock()
-            if (!select.trySelect(this@PublisherCoroutine, Unit)) {
-                mutex.unlock()
-            }
-        }
+    bool close(std::exception_ptr cause = nullptr) override {
+        return cancel_coroutine(cause);
     }
 
-    @Suppress("RedundantNullableReturnType", "UNUSED_PARAMETER", "UNCHECKED_CAST")
-    private fun processResultSelectSend(element: Any?, selectResult: Any?): Any? {
-        doLockedNext(element as T)?.let { throw it }
-        return this@PublisherCoroutine
+    void invoke_on_close(std::function<void(std::exception_ptr)> handler) override {
+        throw std::runtime_error("PublisherCoroutine doesn't support invoke_on_close");
     }
 
-    override fun trySend(element: T): ChannelResult<Unit> =
-        if (!mutex.tryLock()) {
-            ChannelResult.failure()
+    // @Suppress("UNCHECKED_CAST", "INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+    // SelectClause2<T, SendChannel<T>> on_send() override {
+    //     // TODO: Implement select clause
+    //     throw std::runtime_error("Not implemented");
+    // }
+
+    ChannelResult<void> try_send(const T& element) override {
+        if (!mutex_.try_lock()) {
+            return ChannelResult<void>::failure();
+        }
+        auto throwable = do_locked_next(element);
+        if (throwable == nullptr) {
+            return ChannelResult<void>::success();
         } else {
-            when (val throwable = doLockedNext(element)) {
-                null -> ChannelResult.success(Unit)
-                else -> ChannelResult.closed(throwable)
-            }
+            return ChannelResult<void>::closed(throwable);
         }
+    }
 
-    public override suspend fun send(element: T) {
-        mutex.lock()
-        doLockedNext(element)?.let { throw it }
+    // TODO: implement coroutine suspension
+    void send(const T& element) override {
+        mutex_.lock();
+        auto throwable = do_locked_next(element);
+        if (throwable != nullptr) {
+            throw throwable;
+        }
     }
 
     /*
@@ -149,188 +151,111 @@ public class PublisherCoroutine<in T>(
      *
      * Requires that the caller has locked the mutex before this invocation.
      *
-     * If the channel is closed, returns the corresponding [Throwable]; otherwise, returns `null` to denote success.
+     * If the channel is closed, returns the corresponding exception; otherwise, returns nullptr to denote success.
      *
-     * @throws NullPointerException if the passed element is `null`
+     * @throws std::invalid_argument if the passed element is nullptr
      */
-    private fun doLockedNext(elem: T): Throwable? {
-        if (elem == null) {
-            unlockAndCheckCompleted()
-            throw NullPointerException("Attempted to emit `null` inside a reactive publisher")
-        }
-        /** This guards against the case when the caller of this function managed to lock the mutex not because some
-         * elements were requested--and thus it is permitted to call `onNext`--but because the channel was closed.
-         *
-         * It may look like there is a race condition here between `isActive` and a concurrent cancellation, but it's
-         * okay for a cancellation to happen during `onNext`, as the reactive spec only requires that we *eventually*
-         * stop signalling the subscriber. */
-        if (!isActive) {
-            unlockAndCheckCompleted()
-            return getCancellationException()
-        }
-        // notify the subscriber
-        try {
-            subscriber.onNext(elem)
-        } catch (cause: Throwable) {
-            /** The reactive streams spec forbids the subscribers from throwing from [Subscriber.onNext] unless the
-             * element is `null`, which we check not to be the case. Therefore, we report this exception to the handler
-             * for uncaught exceptions and consider the subscription cancelled, as mandated by
-             * https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2.13.
-             *
-             * Some reactive implementations, like RxJava or Reactor, are known to throw from [Subscriber.onNext] if the
-             * execution encounters an exception they consider to be "fatal", like [VirtualMachineError] or
-             * [ThreadDeath]. Us using the handler for the undeliverable exceptions to signal "fatal" exceptions is
-             * inconsistent with RxJava and Reactor, which attempt to bubble the exception up the call chain as soon as
-             * possible. However, we can't do much better here, as simply throwing from all methods indiscriminately
-             * would violate the contracts we place on them. */
-            cancelled = true
-            val causeDelivered = close(cause)
-            unlockAndCheckCompleted()
-            return if (causeDelivered) {
-                // `cause` is the reason this channel is closed
-                cause
-            } else {
-                // Someone else closed the channel during `onNext`. We report `cause` as an undeliverable exception.
-                exceptionOnCancelHandler(cause, context)
-                getCancellationException()
-            }
-        }
-        // now update nRequested
-        while (true) { // lock-free loop on nRequested
-            val current = _nRequested.value
-            if (current < 0) break // closed from inside onNext => unlock
-            if (current == Long.MAX_VALUE) break // no back-pressure => unlock
-            val updated = current - 1
-            if (_nRequested.compareAndSet(current, updated)) {
-                if (updated == 0L) {
-                    // return to keep locked due to back-pressure
-                    return null
-                }
-                break // unlock if updated > 0
-            }
-        }
-        unlockAndCheckCompleted()
-        return null
+    std::exception_ptr do_locked_next(const T& elem) {
+        // TODO: Implement full logic from Kotlin version
+        // Key points:
+        // - Check if elem is null (for pointer types)
+        // - Check if is_active()
+        // - Call subscriber_->on_next(elem)
+        // - Handle exceptions from on_next
+        // - Update n_requested_ atomically
+        // - Handle back-pressure
+        // - Call unlock_and_check_completed()
+        throw std::runtime_error("Not implemented");
     }
 
-    private fun unlockAndCheckCompleted() {
-       /*
-        * There is no sense to check completion before doing `unlock`, because completion might
-        * happen after this check and before `unlock` (see `signalCompleted` that does not do anything
-        * if it fails to acquire the lock that we are still holding).
-        * We have to recheck `isCompleted` after `unlock` anyway.
-        */
-        mutex.unlock()
+    void unlock_and_check_completed() {
+        mutex_.unlock();
         // check isCompleted and try to regain lock to signal completion
-        if (isCompleted && mutex.tryLock()) {
-            doLockedSignalCompleted(completionCause, completionCauseHandled)
+        if (is_completed() && mutex_.try_lock()) {
+            do_locked_signal_completed(completion_cause(), completion_cause_handled());
         }
     }
 
     // assert: mutex.isLocked() & isCompleted
-    private fun doLockedSignalCompleted(cause: Throwable?, handled: Boolean) {
-        try {
-            if (_nRequested.value == SIGNALLED)
-                return
-            _nRequested.value = SIGNALLED // we'll signal onError/onCompleted (the final state, so no CAS needed)
-            // Specification requires that after the cancellation is requested we eventually stop calling onXXX
-            if (cancelled) {
-                // If the parent failed to handle this exception, then we must not lose the exception
-                if (cause != null && !handled) exceptionOnCancelHandler(cause, context)
-                return
-            }
-            if (cause == null) {
-                try {
-                    subscriber.onComplete()
-                } catch (e: Throwable) {
-                    handleCoroutineException(context, e)
-                }
-            } else {
-                try {
-                    // This can't be the cancellation exception from `cancel`, as then `cancelled` would be `true`.
-                    subscriber.onError(cause)
-                } catch (e: Throwable) {
-                    if (e !== cause) {
-                        cause.addSuppressed(e)
-                    }
-                    handleCoroutineException(context, cause)
-                }
-            }
-        } finally {
-            mutex.unlock()
-        }
+    void do_locked_signal_completed(std::exception_ptr cause, bool handled) {
+        // TODO: Implement completion signaling logic
+        throw std::runtime_error("Not implemented");
     }
 
-    override fun request(n: Long) {
+    void request(long n) override {
         if (n <= 0) {
             // Specification requires to call onError with IAE for n <= 0
-            cancelCoroutine(IllegalArgumentException("non-positive subscription request $n"))
-            return
+            cancel_coroutine(std::make_exception_ptr(std::invalid_argument("non-positive subscription request " + std::to_string(n))));
+            return;
         }
-        while (true) { // lock-free loop for nRequested
-            val cur = _nRequested.value
-            if (cur < 0) return // already closed for send, ignore requests, as mandated by the reactive streams spec
-            var upd = cur + n
-            if (upd < 0 || n == Long.MAX_VALUE)
-                upd = Long.MAX_VALUE
-            if (cur == upd) return // nothing to do
-            if (_nRequested.compareAndSet(cur, upd)) {
-                // unlock the mutex when we don't have back-pressure anymore
-                if (cur == 0L) {
-                    /** In a sense, after a successful CAS, it is this invocation, not the coroutine itself, that owns
-                     * the lock, given that `upd` is necessarily strictly positive. Thus, no other operation has the
-                     * right to lower the value on [_nRequested], it can only grow or become [CLOSED]. Therefore, it is
-                     * impossible for any other operations to assume that they own the lock without actually acquiring
-                     * it. */
-                    unlockAndCheckCompleted()
-                }
-                return
-            }
-        }
+        // TODO: Implement lock-free loop for nRequested
+        // Key points:
+        // - CAS loop on n_requested_
+        // - Handle overflow (set to LONG_MAX)
+        // - Unlock mutex when back-pressure is relieved
+        throw std::runtime_error("Not implemented");
     }
 
     // assert: isCompleted
-    private fun signalCompleted(cause: Throwable?, handled: Boolean) {
-        while (true) { // lock-free loop for nRequested
-            val current = _nRequested.value
-            if (current == SIGNALLED) return // some other thread holding lock already signalled cancellation/completion
-            check(current >= 0) // no other thread could have marked it as CLOSED, because onCompleted[Exceptionally] is invoked once
-            if (!_nRequested.compareAndSet(current, CLOSED)) continue // retry on failed CAS
-            // Ok -- marked as CLOSED, now can unlock the mutex if it was locked due to backpressure
-            if (current == 0L) {
-                doLockedSignalCompleted(cause, handled)
-            } else {
-                // otherwise mutex was either not locked or locked in concurrent onNext... try lock it to signal completion
-                if (mutex.tryLock()) doLockedSignalCompleted(cause, handled)
-                // Note: if failed `tryLock`, then `doLockedNext` will signal after performing `unlock`
-            }
-            return // done anyway
-        }
+    void signal_completed(std::exception_ptr cause, bool handled) {
+        // TODO: Implement lock-free completion signaling
+        throw std::runtime_error("Not implemented");
     }
 
-    override fun onCompleted(value: Unit) {
-        signalCompleted(null, false)
+    void on_completed(void value) override {
+        signal_completed(nullptr, false);
     }
 
-    override fun onCancelled(cause: Throwable, handled: Boolean) {
-        signalCompleted(cause, handled)
+    void on_cancelled(std::exception_ptr cause, bool handled) override {
+        signal_completed(cause, handled);
     }
 
-    @Suppress("OVERRIDE_DEPRECATION") // Remove after 2.2.0
-    override fun cancel() {
+    // @Suppress("OVERRIDE_DEPRECATION") // Remove after 2.2.0
+    void cancel() override {
         // Specification requires that after cancellation publisher stops signalling
         // This flag distinguishes subscription cancellation request from the job crash
-        cancelled = true
-        super.cancel(null)
+        cancelled_.store(true);
+        AbstractCoroutine<void>::cancel(nullptr);
     }
+};
+
+// @Deprecated(
+//     message = "CoroutineScope.publish is deprecated in favour of top-level publish",
+//     level = DeprecationLevel.HIDDEN,
+//     replaceWith = ReplaceWith("publish(context, block)")
+// ) // Since 1.3.0, will be error in 1.3.1 and hidden in 1.4.0. Binary compatibility with Spring
+[[deprecated("CoroutineScope.publish is deprecated in favour of top-level publish")]]
+template<typename T>
+Publisher<T> publish(
+    CoroutineScope& scope,
+    const CoroutineContext& context = EmptyCoroutineContext,
+    std::function<void(ProducerScope<T>&)> block  // @BuilderInference
+) {
+    return publish_internal(scope, context, kDefaultHandler, block);
 }
 
-@Deprecated(
-    message = "CoroutineScope.publish is deprecated in favour of top-level publish",
-    level = DeprecationLevel.HIDDEN,
-    replaceWith = ReplaceWith("publish(context, block)")
-) // Since 1.3.0, will be error in 1.3.1 and hidden in 1.4.0. Binary compatibility with Spring
-public fun <T> CoroutineScope.publish(
-    context: CoroutineContext = EmptyCoroutineContext,
-    @BuilderInference block: suspend ProducerScope<T>.() -> Unit
-): Publisher<T> = publishInternal(this, context, DEFAULT_HANDLER, block)
+} // namespace reactive
+} // namespace coroutines
+} // namespace kotlinx
+
+/*
+ * TODO List for semantic implementation:
+ *
+ * 1. Implement AbstractCoroutine<T> base class
+ * 2. Implement ProducerScope<T> interface
+ * 3. Implement SendChannel<T> interface
+ * 4. Implement Subscription interface
+ * 5. Implement Mutex with lock/unlock/try_lock
+ * 6. Implement atomic operations (std::atomic)
+ * 7. Implement ChannelResult<T> type
+ * 8. Implement SelectClause2<T, R> for select support
+ * 9. Implement CoroutineStart enum
+ * 10. Implement GlobalScope
+ * 11. Implement exception handling (handle_coroutine_exception)
+ * 12. Implement completion tracking (is_completed, completion_cause, etc.)
+ * 13. Implement coroutine lifecycle (start, cancel, etc.)
+ * 14. Implement back-pressure management
+ * 15. Implement reactive streams compliance
+ * 16. Add comprehensive error handling
+ * 17. Test concurrent access scenarios
+ */

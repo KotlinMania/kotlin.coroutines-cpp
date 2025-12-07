@@ -1,13 +1,14 @@
-package kotlinx.coroutines.reactor
+// Transliterated from: reactive/kotlinx-coroutines-reactor/src/Flux.cpp
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.reactive.*
-import org.reactivestreams.*
-import reactor.core.*
-import reactor.core.publisher.*
-import reactor.util.context.*
-import kotlin.coroutines.*
+// TODO: #include <kotlinx/coroutines/coroutines.hpp>
+// TODO: #include <kotlinx/coroutines/channels.hpp>
+// TODO: #include <kotlinx/coroutines/reactive.hpp>
+// TODO: #include <org/reactivestreams/publisher.hpp>
+// TODO: #include <reactor/core/publisher.hpp>
+// TODO: #include <reactor/util/context.hpp>
+// TODO: #include <kotlin/coroutines/continuation.hpp>
+
+namespace kotlinx { namespace coroutines { namespace reactor {
 
 /**
  * Creates a cold reactive [Flux] that runs the given [block] in a coroutine.
@@ -25,70 +26,115 @@ import kotlin.coroutines.*
  *
  * @throws IllegalArgumentException if the provided [context] contains a [Job] instance.
  */
-public fun <T> flux(
-    context: CoroutineContext = EmptyCoroutineContext,
-    @BuilderInference block: suspend ProducerScope<T>.() -> Unit
-): Flux<T> {
-    require(context[Job] === null) { "Flux context cannot contain job in it." +
-        "Its lifecycle should be managed via Disposable handle. Had $context" }
-    return Flux.from(reactorPublish(GlobalScope, context, block))
-}
-
-private fun <T> reactorPublish(
-    scope: CoroutineScope,
-    context: CoroutineContext = EmptyCoroutineContext,
-    @BuilderInference block: suspend ProducerScope<T>.() -> Unit
-): Publisher<T> = Publisher onSubscribe@{ subscriber: Subscriber<in T>? ->
-    if (subscriber !is CoreSubscriber) {
-        subscriber.reject(IllegalArgumentException("Subscriber is not an instance of CoreSubscriber, context can not be extracted."))
-        return@onSubscribe
+template<typename T>
+// @BuilderInference
+// TODO: implement coroutine suspension
+Flux<T> flux(
+    CoroutineContext context = EmptyCoroutineContext,
+    std::function<void(ProducerScope<T>&)> block
+) {
+    if (context[Job{}] != nullptr) {
+        throw std::invalid_argument("Flux context cannot contain job in it. "
+            "Its lifecycle should be managed via Disposable handle. Had " + context.to_string());
     }
-    val currentContext = subscriber.currentContext()
-    val reactorContext = context.extendReactorContext(currentContext)
-    val newContext = scope.newCoroutineContext(context + reactorContext)
-    val coroutine = PublisherCoroutine(newContext, subscriber, REACTOR_HANDLER)
-    subscriber.onSubscribe(coroutine) // do it first (before starting coroutine), to avoid unnecessary suspensions
-    coroutine.start(CoroutineStart.DEFAULT, coroutine, block)
+    return Flux<T>::from(reactor_publish(GlobalScope, context, block));
 }
 
-private val REACTOR_HANDLER: (Throwable, CoroutineContext) -> Unit = { cause, ctx ->
-    if (cause !is CancellationException) {
+template<typename T>
+// @BuilderInference
+// TODO: implement coroutine suspension
+Publisher<T> reactor_publish(
+    CoroutineScope* scope,
+    CoroutineContext context = EmptyCoroutineContext,
+    std::function<void(ProducerScope<T>&)> block
+) {
+    return Publisher<T>([scope, context, block](Subscriber<T>* subscriber) {
+        CoreSubscriber<T>* core_subscriber = dynamic_cast<CoreSubscriber<T>*>(subscriber);
+        if (core_subscriber == nullptr) {
+            subscriber->reject(std::invalid_argument("Subscriber is not an instance of CoreSubscriber, context can not be extracted."));
+            return;
+        }
+        Context current_context = core_subscriber->current_context();
+        ReactorContext reactor_context = context.extend_reactor_context(current_context);
+        CoroutineContext new_context = scope->new_coroutine_context(context + reactor_context);
+        PublisherCoroutine<T>* coroutine = new PublisherCoroutine<T>(new_context, core_subscriber, kReactorHandler);
+        core_subscriber->on_subscribe(coroutine); // do it first (before starting coroutine), to avoid unnecessary suspensions
+        coroutine->start(CoroutineStart::kDefault, coroutine, block);
+    });
+}
+
+const auto kReactorHandler = [](Throwable* cause, CoroutineContext ctx) -> void {
+    CancellationException* cancellation = dynamic_cast<CancellationException*>(cause);
+    if (cancellation == nullptr) {
         try {
-            Operators.onOperatorError(cause, ctx[ReactorContext]?.context ?: Context.empty())
-        } catch (e: Throwable) {
-            cause.addSuppressed(e)
-            handleCoroutineException(ctx, cause)
+            ReactorContext* reactor_ctx = ctx[ReactorContext{}];
+            Context empty_context = Context::empty();
+            Operators::on_operator_error(cause, reactor_ctx != nullptr ? reactor_ctx->context : empty_context);
+        } catch (std::exception& e) {
+            cause->add_suppressed(e);
+            handle_coroutine_exception(ctx, cause);
         }
     }
-}
+};
 
 /** The proper way to reject the subscriber, according to
  * [the reactive spec](https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9)
  */
-private fun <T> Subscriber<T>?.reject(t: Throwable) {
-    if (this == null)
-        throw NullPointerException("The subscriber can not be null")
-    onSubscribe(object: Subscription {
-        override fun request(n: Long) {
+template<typename T>
+void reject(Subscriber<T>* subscriber, Throwable* t) {
+    if (subscriber == nullptr) {
+        throw std::runtime_error("The subscriber can not be null");
+    }
+    subscriber->on_subscribe(new class : public Subscription {
+        void request(int64_t n) override {
             // intentionally left blank
         }
-        override fun cancel() {
+        void cancel() override {
             // intentionally left blank
         }
-    })
-    onError(t)
+    });
+    subscriber->on_error(t);
 }
 
 /**
  * @suppress
  */
-@Deprecated(
-    message = "CoroutineScope.flux is deprecated in favour of top-level flux",
-    level = DeprecationLevel.HIDDEN,
-    replaceWith = ReplaceWith("flux(context, block)")
-) // Since 1.3.0, will be error in 1.3.1 and hidden in 1.4.0. Binary compatibility with Spring
-public fun <T> CoroutineScope.flux(
-    context: CoroutineContext = EmptyCoroutineContext,
-    @BuilderInference block: suspend ProducerScope<T>.() -> Unit
-): Flux<T> =
-    Flux.from(reactorPublish(this, context, block))
+// @Deprecated
+//     message = "CoroutineScope.flux is deprecated in favour of top-level flux",
+//     level = DeprecationLevel.HIDDEN,
+//     replaceWith = ReplaceWith("flux(context, block)")
+// Since 1.3.0, will be error in 1.3.1 and hidden in 1.4.0. Binary compatibility with Spring
+template<typename T>
+// @BuilderInference
+// TODO: implement coroutine suspension
+Flux<T> flux(
+    CoroutineScope* scope,
+    CoroutineContext context = EmptyCoroutineContext,
+    std::function<void(ProducerScope<T>&)> block
+) {
+    return Flux<T>::from(reactor_publish(scope, context, block));
+}
+
+} } } // namespace kotlinx::coroutines::reactor
+
+// TODO: Semantic implementation tasks:
+// 1. Implement Flux<T> type and from() static method
+// 2. Implement Publisher<T> type and subscription mechanism
+// 3. Implement Subscriber<T> and CoreSubscriber<T> interfaces
+// 4. Implement ProducerScope<T> and send() method
+// 5. Implement CoroutineScope and GlobalScope
+// 6. Implement CoroutineContext with operator[] and operator+
+// 7. Implement Job context element
+// 8. Implement CoroutineStart enum with kDefault
+// 9. Implement PublisherCoroutine class
+// 10. Implement Context type from Reactor
+// 11. Implement ReactorContext wrapper
+// 12. Implement extend_reactor_context() method
+// 13. Implement new_coroutine_context() method
+// 14. Implement Throwable and CancellationException types
+// 15. Implement Operators::on_operator_error()
+// 16. Implement handle_coroutine_exception()
+// 17. Implement Subscription interface
+// 18. Convert dynamic casting to appropriate C++ patterns
+// 19. Implement lambda to function pointer conversions
+// 20. Handle BuilderInference annotation effect

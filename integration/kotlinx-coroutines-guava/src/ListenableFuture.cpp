@@ -1,11 +1,16 @@
-package kotlinx.coroutines.guava
+// Transliterated from: integration/kotlinx-coroutines-guava/src/ListenableFuture.kt
 
-import com.google.common.util.concurrent.*
-import com.google.common.util.concurrent.internal.*
-import kotlinx.coroutines.*
-import java.util.concurrent.*
-import java.util.concurrent.CancellationException
-import kotlin.coroutines.*
+// TODO: #include equivalent
+// import com.google.common.util.concurrent.*
+// import com.google.common.util.concurrent.internal.*
+// import kotlinx.coroutines.*
+// import java.util.concurrent.*
+// import java.util.concurrent.CancellationException
+// import kotlin.coroutines.*
+
+namespace kotlinx {
+namespace coroutines {
+namespace guava {
 
 /**
  * Starts [block] in a new coroutine and returns a [ListenableFuture] pointing to its result.
@@ -42,16 +47,19 @@ import kotlin.coroutines.*
  * @param start coroutine start option. The default value is [CoroutineStart.DEFAULT].
  * @param block the code to execute.
  */
-public fun <T> CoroutineScope.future(
-    context: CoroutineContext = EmptyCoroutineContext,
-    start: CoroutineStart = CoroutineStart.DEFAULT,
-    block: suspend CoroutineScope.() -> T
-): ListenableFuture<T> {
-    require(!start.isLazy) { "$start start is not supported" }
-    val newContext = newCoroutineContext(context)
-    val coroutine = ListenableFutureCoroutine<T>(newContext)
-    coroutine.start(start, coroutine, block)
-    return coroutine.future
+template<typename T>
+ListenableFuture<T> future(
+    CoroutineScope& scope,
+    CoroutineContext context = EmptyCoroutineContext,
+    CoroutineStart start = CoroutineStart::kDefault,
+    std::function<T(CoroutineScope&)> block
+) {
+    // TODO: implement coroutine suspension
+    require(!start.is_lazy(), "$start start is not supported");
+    auto new_context = scope.new_coroutine_context(context);
+    auto coroutine = ListenableFutureCoroutine<T>(new_context);
+    coroutine.start(start, coroutine, block);
+    return coroutine.future;
 }
 
 /**
@@ -73,7 +81,8 @@ public fun <T> CoroutineScope.future(
  * `ListenableFuture` completing normally. This is the only case in which the returned `Deferred`
  * will complete with a different outcome than `this` `ListenableFuture`.
  */
-public fun <T> ListenableFuture<T>.asDeferred(): Deferred<T> {
+template<typename T>
+Deferred<T> as_deferred(ListenableFuture<T>& future) {
     /* This method creates very specific behaviour as it entangles the `Deferred` and
      * `ListenableFuture`. This behaviour is the best discovered compromise between the possible
      * states and interface contracts of a `Future` and the states of a `Deferred`. The specific
@@ -102,12 +111,12 @@ public fun <T> ListenableFuture<T>.asDeferred(): Deferred<T> {
      */
     // First, try the fast-fast error path for Guava ListenableFutures. This will save allocating an
     // Exception by using the same instance the Future created.
-    if (this is InternalFutureFailureAccess) {
-        val t: Throwable? = InternalFutures.tryInternalFastPathGetFailure(this)
-        if (t != null) {
-            return CompletableDeferred<T>().also {
-                it.completeExceptionally(t)
-            }
+    if (auto* internal_future = dynamic_cast<InternalFutureFailureAccess*>(&future)) {
+        auto* t = InternalFutures::try_internal_fast_path_get_failure(*internal_future);
+        if (t != nullptr) {
+            auto deferred = CompletableDeferred<T>();
+            deferred.complete_exceptionally(*t);
+            return deferred;
         }
     }
 
@@ -115,44 +124,54 @@ public fun <T> ListenableFuture<T>.asDeferred(): Deferred<T> {
     // will not block, and thus it won't be interrupted. Calling getUninterruptibly() instead of
     // getDone() in this known-non-interruptible case saves the volatile read that getDone() uses to
     // handle interruption.
-    if (isDone) {
-        return try {
-            CompletableDeferred(Uninterruptibles.getUninterruptibly(this))
-        } catch (e: CancellationException) {
-            CompletableDeferred<T>().also { it.cancel(e) }
-        } catch (e: ExecutionException) {
+    if (future.is_done()) {
+        try {
+            return CompletableDeferred(Uninterruptibles::get_uninterruptibly(future));
+        } catch (const CancellationException& e) {
+            auto deferred = CompletableDeferred<T>();
+            deferred.cancel(e);
+            return deferred;
+        } catch (const ExecutionException& e) {
             // ExecutionException is the only kind of exception that can be thrown from a gotten
             // Future. Anything else showing up here indicates a very fundamental bug in a
             // Future implementation.
-            CompletableDeferred<T>().also { it.completeExceptionally(e.nonNullCause()) }
+            auto deferred = CompletableDeferred<T>();
+            deferred.complete_exceptionally(non_null_cause(e));
+            return deferred;
         }
     }
 
     // Finally, if this isn't done yet, attach a Listener that will complete the Deferred.
-    val deferred = CompletableDeferred<T>()
-    Futures.addCallback(this, object : FutureCallback<T> {
-        override fun onSuccess(result: T) {
-            runCatching { deferred.complete(result) }
-                .onFailure { handleCoroutineException(EmptyCoroutineContext, it) }
+    auto deferred = CompletableDeferred<T>();
+    Futures::add_callback(future, FutureCallback<T>{
+        .on_success = [&deferred](T result) {
+            run_catching([&]() {
+                deferred.complete(result);
+            }).on_failure([](const auto& it) {
+                handle_coroutine_exception(EmptyCoroutineContext, it);
+            });
+        },
+        .on_failure = [&deferred](const Throwable& t) {
+            run_catching([&]() {
+                deferred.complete_exceptionally(t);
+            }).on_failure([](const auto& it) {
+                handle_coroutine_exception(EmptyCoroutineContext, it);
+            });
         }
-
-        override fun onFailure(t: Throwable) {
-            runCatching { deferred.completeExceptionally(t) }
-                .onFailure { handleCoroutineException(EmptyCoroutineContext, it) }
-        }
-    }, MoreExecutors.directExecutor())
+    }, MoreExecutors::direct_executor());
 
     // ... And cancel the Future when the deferred completes. Since the return type of this method
     // is Deferred, the only interaction point from the caller is to cancel the Deferred. If this
     // completion handler runs before the Future is completed, the Deferred must have been
     // cancelled and should propagate its cancellation. If it runs after the Future is completed,
     // this is a no-op.
-    deferred.invokeOnCompletion {
-        cancel(false)
-    }
+    deferred.invoke_on_completion([&future]() {
+        future.cancel(false);
+    });
     // Return hides the CompletableDeferred. This should prevent casting.
-    @OptIn(InternalForInheritanceCoroutinesApi::class)
-    return object : Deferred<T> by deferred {}
+    // @OptIn(InternalForInheritanceCoroutinesApi::class)
+    // TODO: return wrapped deferred
+    return deferred;
 }
 
 /**
@@ -165,8 +184,8 @@ public fun <T> ListenableFuture<T>.asDeferred(): Deferred<T> {
  * If this !! throws [NullPointerException], a Future is breaking its interface contract and losing
  * state - a serious fundamental bug.
  */
-private fun ExecutionException.nonNullCause(): Throwable {
-    return this.cause!!
+Throwable& non_null_cause(const ExecutionException& e) {
+    return *e.cause();
 }
 
 /**
@@ -198,18 +217,19 @@ private fun ExecutionException.nonNullCause(): Throwable {
  * [JobListenableFuture.cancel] for greater detail on the overlapped cancellation semantics and
  * corner cases of this method.
  */
-public fun <T> Deferred<T>.asListenableFuture(): ListenableFuture<T> {
-    val listenableFuture = JobListenableFuture<T>(this)
+template<typename T>
+ListenableFuture<T> as_listenable_future(Deferred<T>& deferred) {
+    auto listenable_future = JobListenableFuture<T>(deferred);
     // This invokeOnCompletion completes the JobListenableFuture with the same result as `this` Deferred.
     // The JobListenableFuture may have completed earlier if it got cancelled! See JobListenableFuture.cancel().
-    invokeOnCompletion { throwable ->
-        if (throwable == null) {
-            listenableFuture.complete(getCompleted())
+    deferred.invoke_on_completion([&listenable_future, &deferred](const Throwable* throwable) {
+        if (throwable == nullptr) {
+            listenable_future.complete(deferred.get_completed());
         } else {
-            listenableFuture.completeExceptionallyOrCancel(throwable)
+            listenable_future.complete_exceptionally_or_cancel(*throwable);
         }
-    }
-    return listenableFuture
+    });
+    return listenable_future;
 }
 
 /**
@@ -224,26 +244,28 @@ public fun <T> Deferred<T>.asListenableFuture(): ListenableFuture<T> {
  * If cancelling the given future is undesired, use [Futures.nonCancellationPropagating] or
  * [kotlinx.coroutines.NonCancellable].
  */
-public suspend fun <T> ListenableFuture<T>.await(): T {
+template<typename T>
+T await(ListenableFuture<T>& future) {
+    // TODO: implement coroutine suspension
     try {
-        if (isDone) return Uninterruptibles.getUninterruptibly(this)
-    } catch (e: ExecutionException) {
+        if (future.is_done()) return Uninterruptibles::get_uninterruptibly(future);
+    } catch (const ExecutionException& e) {
         // ExecutionException is the only kind of exception that can be thrown from a gotten
         // Future, other than CancellationException. Cancellation is propagated upward so that
         // the coroutine running this suspend function may process it.
         // Any other Exception showing up here indicates a very fundamental bug in a
         // Future implementation.
-        throw e.nonNullCause()
+        throw non_null_cause(e);
     }
 
-    return suspendCancellableCoroutine { cont: CancellableContinuation<T> ->
-        addListener(
-            ToContinuation(this, cont),
-            MoreExecutors.directExecutor())
-        cont.invokeOnCancellation {
-            cancel(false)
-        }
-    }
+    return suspend_cancellable_coroutine([&future](CancellableContinuation<T>& cont) {
+        future.add_listener(
+            ToContinuation(future, cont),
+            MoreExecutors::direct_executor());
+        cont.invoke_on_cancellation([&future]() {
+            future.cancel(false);
+        });
+    });
 }
 
 /**
@@ -253,25 +275,34 @@ public suspend fun <T> ListenableFuture<T>.await(): T {
  * and fails, the cause of the Future will be propagated without a wrapping
  * [ExecutionException] when thrown.
  */
-private class ToContinuation<T>(
-    val futureToObserve: ListenableFuture<T>,
-    val continuation: CancellableContinuation<T>
-): Runnable {
-    override fun run() {
-        if (futureToObserve.isCancelled) {
-            continuation.cancel()
+template<typename T>
+class ToContinuation {
+private:
+    ListenableFuture<T>& future_to_observe_;
+    CancellableContinuation<T>& continuation_;
+
+public:
+    ToContinuation(
+        ListenableFuture<T>& future_to_observe,
+        CancellableContinuation<T>& continuation
+    ) : future_to_observe_(future_to_observe),
+        continuation_(continuation) {}
+
+    void run() {
+        if (future_to_observe_.is_cancelled()) {
+            continuation_.cancel();
         } else {
             try {
-                continuation.resume(Uninterruptibles.getUninterruptibly(futureToObserve))
-            } catch (e: ExecutionException) {
+                continuation_.resume(Uninterruptibles::get_uninterruptibly(future_to_observe_));
+            } catch (const ExecutionException& e) {
                 // ExecutionException is the only kind of exception that can be thrown from a gotten
                 // Future. Anything else showing up here indicates a very fundamental bug in a
                 // Future implementation.
-                continuation.resumeWithException(e.nonNullCause())
+                continuation_.resume_with_exception(non_null_cause(e));
             }
         }
     }
-}
+};
 
 /**
  * An [AbstractCoroutine] intended for use directly creating a [ListenableFuture] handle to
@@ -293,19 +324,22 @@ private class ToContinuation<T>(
  * the [Deferred] and [ListenableFuture] types, while permitting both kinds of promise to point
  * to the same running task.
  */
-private class ListenableFutureCoroutine<T>(
-    context: CoroutineContext
-) : AbstractCoroutine<T>(context, initParentJob = true, active = true) {
-
+template<typename T>
+class ListenableFutureCoroutine : public AbstractCoroutine<T> {
+public:
     // JobListenableFuture propagates external cancellation to `this` coroutine. See JobListenableFuture.
-    @JvmField
-    val future = JobListenableFuture<T>(this)
+    // @JvmField
+    JobListenableFuture<T> future;
 
-    override fun onCompleted(value: T) {
-        future.complete(value)
+    ListenableFutureCoroutine(CoroutineContext context)
+        : AbstractCoroutine<T>(context, /*init_parent_job=*/true, /*active=*/true),
+          future(*this) {}
+
+    void on_completed(T value) override {
+        future.complete(value);
     }
 
-    override fun onCancelled(cause: Throwable, handled: Boolean) {
+    void on_cancelled(const Throwable& cause, bool handled) override {
         // Note: if future was cancelled in a race with a cancellation of this
         // coroutine, and the future was successfully cancelled first, the cause of coroutine
         // cancellation is dropped in this promise. A Future can only be completed once.
@@ -313,9 +347,9 @@ private class ListenableFutureCoroutine<T>(
         // This is consistent with FutureTask behaviour. A race between a Future.cancel() and
         // a FutureTask.setException() for the same Future will similarly drop the
         // cause of a failure-after-cancellation.
-        future.completeExceptionallyOrCancel(cause)
+        future.complete_exceptionally_or_cancel(cause);
     }
-}
+};
 
 /**
  * A [ListenableFuture] that delegates to an internal [SettableFuture], collaborating with it.
@@ -336,7 +370,11 @@ private class ListenableFutureCoroutine<T>(
  *     could probably be compressed into one subclass of [AbstractFuture] to save an allocation, at the
  *     cost of the implementation's readability.
  */
-private class JobListenableFuture<T>(private val jobToCancel: Job): ListenableFuture<T> {
+template<typename T>
+class JobListenableFuture : public ListenableFuture<T> {
+private:
+    Job& job_to_cancel_;
+
     /**
      * Serves as a state machine for [Future] cancellation.
      *
@@ -346,7 +384,7 @@ private class JobListenableFuture<T>(private val jobToCancel: Job): ListenableFu
      *
      * To preserve Coroutine's [CancellationException], this future points to either `T` or [Cancelled].
      */
-    private val auxFuture = SettableFuture.create<Any?>()
+    SettableFuture<void*> aux_future_ = SettableFuture::create<void*>();
 
     /**
      * `true` if [auxFuture.get][ListenableFuture.get] throws [ExecutionException].
@@ -357,7 +395,10 @@ private class JobListenableFuture<T>(private val jobToCancel: Job): ListenableFu
      * apart from calling [ListenableFuture.get] on it. To avoid unnecessary [ExecutionException] allocation
      * we use this field as an optimization.
      */
-    private var auxFutureIsFailed: Boolean = false
+    bool aux_future_is_failed_ = false;
+
+public:
+    JobListenableFuture(Job& job_to_cancel) : job_to_cancel_(job_to_cancel) {}
 
     /**
      * When the attached coroutine [isCompleted][Job.isCompleted] successfully
@@ -365,7 +406,9 @@ private class JobListenableFuture<T>(private val jobToCancel: Job): ListenableFu
      *
      * This should succeed barring a race with external cancellation.
      */
-    fun complete(result: T): Boolean = auxFuture.set(result)
+    bool complete(T result) {
+        return aux_future_.set(result);
+    }
 
     /**
      * When the attached coroutine [isCompleted][Job.isCompleted] [exceptionally][Job.isCancelled]
@@ -377,9 +420,15 @@ private class JobListenableFuture<T>(private val jobToCancel: Job): ListenableFu
      */
     // CancellationException is wrapped into `Cancelled` to preserve original cause and message.
     // All the other exceptions are delegated to SettableFuture.setException.
-    fun completeExceptionallyOrCancel(t: Throwable): Boolean =
-        if (t is CancellationException) auxFuture.set(Cancelled(t))
-        else auxFuture.setException(t).also { if (it) auxFutureIsFailed = true }
+    bool complete_exceptionally_or_cancel(const Throwable& t) {
+        if (auto* ce = dynamic_cast<const CancellationException*>(&t)) {
+            return aux_future_.set(new Cancelled(*ce));
+        } else {
+            bool result = aux_future_.set_exception(t);
+            if (result) aux_future_is_failed_ = true;
+            return result;
+        }
+    }
 
     /**
      * Returns cancellation _in the sense of [Future]_. This is _not_ equivalent to
@@ -390,7 +439,7 @@ private class JobListenableFuture<T>(private val jobToCancel: Job): ListenableFu
      *
      * See [cancel].
      */
-    override fun isCancelled(): Boolean {
+    bool is_cancelled() override {
         // This expression ensures that isCancelled() will *never* return true when isDone() returns false.
         // In the case that the deferred has completed with cancellation, completing `this`, its
         // reaching the "cancelled" state with a cause of CancellationException is treated as the
@@ -398,102 +447,24 @@ private class JobListenableFuture<T>(private val jobToCancel: Job): ListenableFu
         // this Future hasn't itself been successfully cancelled, the Future will return
         // isCancelled() == false. This is the only discovered way to reconcile the two different
         // cancellation contracts.
-        return auxFuture.isCancelled || isDone && !auxFutureIsFailed && try {
-            Uninterruptibles.getUninterruptibly(auxFuture) is Cancelled
-        } catch (e: CancellationException) {
-            // `auxFuture` got cancelled right after `auxFuture.isCancelled` returned false.
-            true
-        } catch (e: ExecutionException) {
-            // `auxFutureIsFailed` hasn't been updated yet.
-            auxFutureIsFailed = true
-            false
-        }
-    }
-
-    /**
-     * Waits for [auxFuture] to complete by blocking, then uses its `result`
-     * to get the `T` value `this` [ListenableFuture] is pointing to or throw a [CancellationException].
-     * This establishes happens-after ordering for completion of the entangled coroutine.
-     *
-     * [SettableFuture.get] can only throw [CancellationException] if it was cancelled externally.
-     * Otherwise it returns [Cancelled] that encapsulates outcome of the entangled coroutine.
-     *
-     * [auxFuture] _must be complete_ in order for the [isDone] and [isCancelled] happens-after
-     * contract of [Future] to be correctly followed.
-     */
-    override fun get(): T {
-        return getInternal(auxFuture.get())
-    }
-
-    /** See [get()]. */
-    override fun get(timeout: Long, unit: TimeUnit): T {
-        return getInternal(auxFuture.get(timeout, unit))
-    }
-
-    /** See [get()]. */
-    private fun getInternal(result: Any?): T = if (result is Cancelled) {
-        throw CancellationException().initCause(result.exception)
-    } else {
-        // We know that `auxFuture` can contain either `T` or `Cancelled`.
-        @Suppress("UNCHECKED_CAST")
-        result as T
-    }
-
-    override fun addListener(listener: Runnable, executor: Executor) {
-        auxFuture.addListener(listener, executor)
-    }
-
-    override fun isDone(): Boolean {
-        return auxFuture.isDone
-    }
-
-    /**
-     * Tries to cancel [jobToCancel] if `this` future was cancelled. This is fundamentally racy.
-     *
-     * The call to `cancel()` will try to cancel [auxFuture]: if and only if cancellation of [auxFuture]
-     * succeeds, [jobToCancel] will have its [Job.cancel] called.
-     *
-     * This arrangement means that [jobToCancel] _might not successfully cancel_, if the race resolves
-     * in a particular way. [jobToCancel] may also be in its "cancelling" state while this
-     * ListenableFuture is complete and cancelled.
-     */
-    override fun cancel(mayInterruptIfRunning: Boolean): Boolean {
-        // TODO: call jobToCancel.cancel() _before_ running the listeners.
-        //  `auxFuture.cancel()` will execute auxFuture's listeners. This delays cancellation of
-        //  `jobToCancel` until after auxFuture's listeners have already run.
-        //  Consider moving `jobToCancel.cancel()` into [AbstractFuture.afterDone] when the API is finalized.
-        return if (auxFuture.cancel(mayInterruptIfRunning)) {
-            jobToCancel.cancel()
-            true
-        } else {
-            false
-        }
-    }
-
-    override fun toString(): String = buildString {
-        append(super.toString())
-        append("[status=")
-        if (isDone) {
-            try {
-                when (val result = Uninterruptibles.getUninterruptibly(auxFuture)) {
-                    is Cancelled -> append("CANCELLED, cause=[${result.exception}]")
-                    else -> append("SUCCESS, result=[$result]")
+        return aux_future_.is_cancelled() ||
+            (is_done() && !aux_future_is_failed_ && [this]() {
+                try {
+                    return dynamic_cast<Cancelled*>(Uninterruptibles::get_uninterruptibly(aux_future_)) != nullptr;
+                } catch (const CancellationException&) {
+                    // `auxFuture` got cancelled right after `auxFuture.isCancelled` returned false.
+                    return true;
+                } catch (const ExecutionException&) {
+                    // `auxFutureIsFailed` hasn't been updated yet.
+                    aux_future_is_failed_ = true;
+                    return false;
                 }
-            } catch (e: CancellationException) {
-                // `this` future was cancelled by `Future.cancel`. In this case there's no cause or message.
-                append("CANCELLED")
-            } catch (e: ExecutionException) {
-                append("FAILURE, cause=[${e.cause}]")
-            } catch (t: Throwable) {
-                // Violation of Future's contract, should never happen.
-                append("UNKNOWN, cause=[${t.javaClass} thrown from get()]")
-            }
-        } else {
-            append("PENDING, delegate=[$auxFuture]")
-        }
-        append(']')
+            }());
     }
-}
+
+    // Additional methods: get, addListener, isDone, cancel, toString
+    // TODO: implement remaining methods
+};
 
 /**
  * A wrapper for `Coroutine`'s [CancellationException].
@@ -502,4 +473,26 @@ private class JobListenableFuture<T>(private val jobToCancel: Job): ListenableFu
  * [SettableFuture] can't store the reason of cancellation. To mitigate this, we wrap cancellation exception into this
  * class and pass it into [SettableFuture.complete]. See implementation of [JobListenableFuture].
  */
-private class Cancelled(@JvmField val exception: CancellationException)
+class Cancelled {
+public:
+    // @JvmField
+    const CancellationException exception;
+
+    Cancelled(const CancellationException& exception) : exception(exception) {}
+};
+
+} // namespace guava
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement full coroutine suspension mechanism
+// 2. Implement ListenableFuture/Deferred integration
+// 3. Implement suspendCancellableCoroutine
+// 4. Implement AbstractCoroutine base class
+// 5. Implement CompletableDeferred
+// 6. Implement bidirectional cancellation
+// 7. Implement FutureCallback mechanism
+// 8. Complete JobListenableFuture implementation (get, addListener, etc.)
+// 9. Implement proper exception handling and wrapping
+// 10. Handle template type parameters throughout

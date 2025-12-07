@@ -1,34 +1,58 @@
-package kotlinx.coroutines.reactor
+// Transliterated from: reactive/kotlinx-coroutines-reactor/test/FluxCompletionStressTest.cpp
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.reactive.*
-import org.junit.*
-import java.util.*
-import kotlin.coroutines.*
+// TODO: #include <kotlinx/coroutines/testing.hpp>
+// TODO: #include <kotlinx/coroutines/coroutines.hpp>
+// TODO: #include <kotlinx/coroutines/reactive.hpp>
+// TODO: #include <org/junit/junit.hpp>
+// TODO: #include <java/util/random.hpp>
+// TODO: #include <kotlin/coroutines/coroutine_context.hpp>
 
-class FluxCompletionStressTest : TestBase() {
-    private val N_REPEATS = 10_000 * stressTestMultiplier
+namespace kotlinx { namespace coroutines { namespace reactor {
 
-    private fun CoroutineScope.range(context: CoroutineContext, start: Int, count: Int) = flux(context) {
-        for (x in start until start + count) send(x)
+class FluxCompletionStressTest : public TestBase {
+private:
+    static const int kNRepeats = 10000 * stress_test_multiplier;
+
+    // TODO: implement coroutine suspension
+    Flux<int> range(CoroutineScope* scope, CoroutineContext context, int start, int count) {
+        return flux(context, [start, count](ProducerScope<int>& producer) {
+            for (int x = start; x < start + count; ++x) {
+                producer.send(x);
+            }
+        });
     }
 
-    @Test
-    fun testCompletion() {
-        val rnd = Random()
-        repeat(N_REPEATS) {
-            val count = rnd.nextInt(5)
-            runBlocking {
-                withTimeout(5000) {
-                    var received = 0
-                    range(Dispatchers.Default, 1, count).collect { x ->
-                        received++
-                        if (x != received) error("$x != $received")
+public:
+    // @Test
+    void test_completion() {
+        Random rnd;
+        for (int i = 0; i < kNRepeats; ++i) {
+            int count = rnd.next_int(5);
+            run_blocking([]() {
+                with_timeout(5000, []() {
+                    int received = 0;
+                    range(this, Dispatchers::Default, 1, count)->collect([&received](int x) {
+                        received++;
+                        if (x != received) {
+                            throw std::runtime_error(std::to_string(x) + " != " + std::to_string(received));
+                        }
+                    });
+                    if (received != count) {
+                        throw std::runtime_error(std::to_string(received) + " != " + std::to_string(count));
                     }
-                    if (received != count) error("$received != $count")
-                }
-            }
+                });
+            });
         }
     }
-}
+};
+
+} } } // namespace kotlinx::coroutines::reactor
+
+// TODO: Semantic implementation tasks:
+// 1. Implement stress_test_multiplier constant
+// 2. Implement Random class
+// 3. Implement next_int() method
+// 4. Implement with_timeout() function
+// 5. Implement ProducerScope<T> and send()
+// 6. Implement const static member initialization
+// 7. Handle range member function vs flux builder

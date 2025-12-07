@@ -1,16 +1,22 @@
-package kotlinx.coroutines.jdk9
+// Transliterated from: reactive/kotlinx-coroutines-jdk9/test/FlowAsPublisherTest.cpp
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import org.junit.Test
-import java.util.concurrent.Flow as JFlow
-import kotlin.test.*
+// TODO: #include equivalent for kotlinx.coroutines.testing.*
+// TODO: #include equivalent for kotlinx.coroutines.*
+// TODO: #include equivalent for kotlinx.coroutines.flow.*
+// TODO: #include equivalent for org.junit.Test
+// TODO: #include equivalent for java.util.concurrent.Flow as JFlow
+// TODO: #include equivalent for kotlin.test.*
 
-class FlowAsPublisherTest : TestBase() {
+namespace kotlinx {
+namespace coroutines {
+namespace jdk9 {
 
-    @Test
-    fun testErrorOnCancellationIsReported() {
+class FlowAsPublisherTest : public TestBase {
+public:
+    // @Test
+    void test_error_on_cancellation_is_reported() {
+        // TODO: implement coroutine suspension
+        /*
         expect(1)
         flow {
             try {
@@ -42,10 +48,13 @@ class FlowAsPublisherTest : TestBase() {
             }
         })
         finish(5)
+        */
     }
 
-    @Test
-    fun testCancellationIsNotReported() {
+    // @Test
+    void test_cancellation_is_not_reported() {
+        // TODO: implement coroutine suspension
+        /*
         expect(1)
         flow {
             emit(2)
@@ -71,10 +80,13 @@ class FlowAsPublisherTest : TestBase() {
             }
         })
         finish(3)
+        */
     }
 
-    @Test
-    fun testFlowWithTimeout() = runTest {
+    // @Test
+    void test_flow_with_timeout() /* = runTest */ {
+        // TODO: implement coroutine suspension
+        /*
         val publisher = flow<Int> {
             expect(2)
             withTimeout(1) { delay(Long.MAX_VALUE) }
@@ -86,5 +98,26 @@ class FlowAsPublisherTest : TestBase() {
             expect(3)
         }
         finish(4)
+        */
     }
-}
+};
+
+} // namespace jdk9
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement flow builder function
+// 2. Implement emit() suspending function
+// 3. Implement asPublisher() extension
+// 4. Implement JFlow.Subscriber interface with onSubscribe, onNext, onComplete, onError
+// 5. Implement JFlow.Subscription interface
+// 6. Implement TestException class
+// 7. Implement assertIs<T>() template function
+// 8. Implement expectUnreached() test helper
+// 9. Implement lateinit equivalent (possibly std::optional or pointer)
+// 10. Implement withTimeout() suspending function
+// 11. Implement delay() suspending function
+// 12. Implement awaitFirstOrNull() suspending function
+// 13. Implement object expressions for anonymous subscriber classes
+// 14. Handle nullable types (Int? -> std::optional<int> or int*)

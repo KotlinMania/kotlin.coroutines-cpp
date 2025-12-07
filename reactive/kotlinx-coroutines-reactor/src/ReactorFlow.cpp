@@ -1,13 +1,14 @@
-package kotlinx.coroutines.reactor
+// Transliterated from: reactive/kotlinx-coroutines-reactor/src/ReactorFlow.cpp
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.reactive.FlowSubscription
-import org.reactivestreams.*
-import reactor.core.CoreSubscriber
-import reactor.core.publisher.Flux
-import kotlin.coroutines.*
+// TODO: #include <kotlinx/coroutines/coroutines.hpp>
+// TODO: #include <kotlinx/coroutines/flow.hpp>
+// TODO: #include <kotlinx/coroutines/reactive.hpp>
+// TODO: #include <org/reactivestreams/publisher.hpp>
+// TODO: #include <reactor/core/core_subscriber.hpp>
+// TODO: #include <reactor/core/publisher.hpp>
+// TODO: #include <kotlin/coroutines/continuation.hpp>
+
+namespace kotlinx { namespace coroutines { namespace reactor {
 
 /**
  * Converts the given flow to a cold flux.
@@ -20,17 +21,43 @@ import kotlin.coroutines.*
  * inject additional context into the caller thread. By default, the [Unconfined][Dispatchers.Unconfined] dispatcher
  * is used, so calls are performed from an arbitrary thread.
  */
-@JvmOverloads // binary compatibility
-public fun <T: Any> Flow<T>.asFlux(context: CoroutineContext = EmptyCoroutineContext): Flux<T> =
-    FlowAsFlux(this, Dispatchers.Unconfined + context)
-
-private class FlowAsFlux<T : Any>(
-    private val flow: Flow<T>,
-    private val context: CoroutineContext
-) : Flux<T>() {
-    override fun subscribe(subscriber: CoreSubscriber<in T>) {
-        val hasContext = !subscriber.currentContext().isEmpty
-        val source = if (hasContext) flow.flowOn(subscriber.currentContext().asCoroutineContext()) else flow
-        subscriber.onSubscribe(FlowSubscription(source, subscriber, context))
-    }
+// @JvmOverloads // binary compatibility
+template<typename T>
+Flux<T> as_flux(Flow<T>* flow, CoroutineContext context = EmptyCoroutineContext) {
+    return FlowAsFlux<T>(flow, Dispatchers::Unconfined + context);
 }
+
+template<typename T>
+class FlowAsFlux : public Flux<T> {
+private:
+    Flow<T>* flow;
+    CoroutineContext context;
+
+public:
+    FlowAsFlux(Flow<T>* flow_param, CoroutineContext context_param)
+        : flow(flow_param), context(context_param) {
+    }
+
+    void subscribe(CoreSubscriber<T>* subscriber) override {
+        bool has_context = !subscriber->current_context().is_empty();
+        Flow<T>* source = has_context
+            ? flow->flow_on(subscriber->current_context().as_coroutine_context())
+            : flow;
+        subscriber->on_subscribe(new FlowSubscription<T>(source, subscriber, context));
+    }
+};
+
+} } } // namespace kotlinx::coroutines::reactor
+
+// TODO: Semantic implementation tasks:
+// 1. Implement Flow<T> type
+// 2. Implement Flux<T> base class
+// 3. Implement CoreSubscriber<T> interface
+// 4. Implement FlowSubscription<T> class
+// 5. Implement flow_on() method for Flow
+// 6. Implement Dispatchers::Unconfined
+// 7. Implement operator+ for CoroutineContext
+// 8. Implement EmptyCoroutineContext
+// 9. Implement is_empty() for Context
+// 10. Implement as_coroutine_context() for Context
+// 11. Handle JvmOverloads annotation effect

@@ -1,251 +1,247 @@
-package kotlinx.coroutines.testing
+// Transliterated from: test-utils/jvm/src/TestBase.kt
+// TODO: #include <kotlinx/coroutines/scheduling/scheduling.hpp>
+// TODO: #include <iostream>
+// TODO: #include <vector>
+// TODO: #include <thread>
+// TODO: #include <atomic>
+// TODO: #include <mutex>
+// TODO: #include <test_framework.hpp>
 
-import kotlinx.coroutines.scheduling.*
-import java.io.*
-import java.util.*
-import kotlin.coroutines.*
-import kotlinx.coroutines.*
-import java.util.concurrent.atomic.AtomicReference
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace testing {
 
-actual val VERBOSE = try {
-    System.getProperty("test.verbose")?.toBoolean() ?: false
-} catch (e: SecurityException) {
-    false
+const bool kVerbose = []() {
+    try {
+        // TODO: Implement System.getProperty equivalent
+        // const char* prop = std::getenv("test.verbose");
+        // return prop != nullptr && std::string(prop) == "true";
+        return false;
+    } catch (...) {
+        return false;
+    }
+}();
+
+// Is `true` when running in a nightly stress test mode.
+const bool kIsStressTest = []() {
+    // TODO: Implement System.getProperty equivalent
+    // const char* prop = std::getenv("stressTest");
+    // return prop != nullptr && std::string(prop) == "true";
+    return false;
+}();
+
+const int kStressTestMultiplierSqrt = kIsStressTest ? 5 : 1;
+
+constexpr long kShutdownTimeout = 1000L; // 1s at most to wait per thread
+
+// Multiply various constants in stress tests by this factor, so that they run longer during nightly stress test.
+const int kStressTestMultiplier = kStressTestMultiplierSqrt * kStressTestMultiplierSqrt;
+
+// @Suppress("ACTUAL_WITHOUT_EXPECT")
+using TestResult = void; // Unit type
+
+void last_resort_report_exception(Throwable* error) {
+    std::string cause_msg = ""; // TODO: error->cause() ? ": " + error->cause()->what() : "";
+    std::cerr << error->what() << cause_msg << std::endl;
+    // TODO: error->cause()->printStackTrace(std::cerr);
+    std::cerr << "--- Detected at ---" << std::endl;
+    // TODO: Throwable().printStackTrace(std::cerr);
 }
 
-/**
- * Is `true` when running in a nightly stress test mode.
- */
-actual val isStressTest = System.getProperty("stressTest")?.toBoolean() ?: false
-
-actual val stressTestMultiplierSqrt = if (isStressTest) 5 else 1
-
-private const val SHUTDOWN_TIMEOUT = 1_000L // 1s at most to wait per thread
-
-/**
- * Multiply various constants in stress tests by this factor, so that they run longer during nightly stress test.
- */
-actual val stressTestMultiplier = stressTestMultiplierSqrt * stressTestMultiplierSqrt
-
-
-@Suppress("ACTUAL_WITHOUT_EXPECT")
-actual typealias TestResult = Unit
-
-internal actual fun lastResortReportException(error: Throwable) {
-    System.err.println("${error.message}${error.cause?.let { ": $it" } ?: ""}")
-    error.cause?.printStackTrace(System.err)
-    System.err.println("--- Detected at ---")
-    Throwable().printStackTrace(System.err)
-}
-
-/**
- * Base class for tests, so that tests for predictable scheduling of actions in multiple coroutines sharing a single
- * thread can be written. Use it like this:
- *
- * ```
- * class MyTest : TestBase() {
- *     @Test
- *     fun testSomething() = runBlocking { // run in the context of the main thread
- *         expect(1) // initiate action counter
- *         launch { // use the context of the main thread
- *             expect(3) // the body of this coroutine in going to be executed in the 3rd step
- *         }
- *         expect(2) // launch just scheduled coroutine for execution later, so this line is executed second
- *         yield() // yield main thread to the launched job
- *         finish(4) // fourth step is the last one. `finish` must be invoked or test fails
- *     }
- * }
- * ```
- */
-actual open class TestBase(
-    private var disableOutCheck: Boolean,
-    private val errorCatching: ErrorCatching.Impl = ErrorCatching.Impl()
-): OrderedExecutionTestBase(), ErrorCatching by errorCatching {
-
-    actual constructor(): this(false)
+// Base class for tests, so that tests for predictable scheduling of actions in multiple coroutines sharing a single
+// thread can be written. Use it like this:
+//
+// ```
+// class MyTest : TestBase() {
+//     @Test
+//     fun testSomething() = runBlocking { // run in the context of the main thread
+//         expect(1) // initiate action counter
+//         launch { // use the context of the main thread
+//             expect(3) // the body of this coroutine in going to be executed in the 3rd step
+//         }
+//         expect(2) // launch just scheduled coroutine for execution later, so this line is executed second
+//         yield() // yield main thread to the launched job
+//         finish(4) // fourth step is the last one. `finish` must be invoked or test fails
+//     }
+// }
+// ```
+class TestBase : public OrderedExecutionTestBase, public ErrorCatching {
+private:
+    bool disable_out_check;
+    ErrorCatching::Impl error_catching_impl;
 
     // Shutdown sequence
-    private lateinit var threadsBefore: Set<Thread>
-    private val uncaughtExceptions = Collections.synchronizedList(ArrayList<Throwable>())
-    private var originalUncaughtExceptionHandler: Thread.UncaughtExceptionHandler? = null
+    std::unordered_set<std::thread::id> threads_before;
+    std::vector<Throwable*> uncaught_exceptions;
+    std::mutex uncaught_mutex;
+    // TODO: Thread::UncaughtExceptionHandler* original_uncaught_exception_handler = nullptr;
 
-    actual fun println(message: Any?) {
-        PrintlnStrategy.actualSystemOut.println(message)
+public:
+    TestBase() : TestBase(false) {}
+
+    TestBase(bool disable_out_check)
+        : disable_out_check(disable_out_check)
+        , error_catching_impl() {}
+
+    TestBase(bool disable_out_check, ErrorCatching::Impl error_catching)
+        : disable_out_check(disable_out_check)
+        , error_catching_impl(error_catching) {}
+
+    void println(const std::string& message) {
+        // TODO: PrintlnStrategy::actual_system_out.println(message);
+        std::cout << message << std::endl;
     }
 
-    @BeforeTest
-    fun before() {
-        initPoolsBeforeTest()
-        threadsBefore = currentThreads()
-        originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler { t, e ->
-            println("Exception in thread $t: $e") // The same message as in default handler
-            e.printStackTrace()
-            uncaughtExceptions.add(e)
-        }
-        PrintlnStrategy.configure(disableOutCheck)
+    // @BeforeTest
+    void before() {
+        init_pools_before_test();
+        threads_before = current_threads();
+        // TODO: original_uncaught_exception_handler = Thread::get_default_uncaught_exception_handler();
+        // TODO: Thread::set_default_uncaught_exception_handler([&](std::thread& t, Throwable* e) {
+        //     println("Exception in thread " + /* t.name() */ "" + ": " + e->what());
+        //     e->printStackTrace();
+        //     std::lock_guard<std::mutex> lock(uncaught_mutex);
+        //     uncaught_exceptions.push_back(e);
+        // });
+        // TODO: PrintlnStrategy::configure(disable_out_check);
     }
 
-    @AfterTest
-    fun onCompletion() {
+    // @AfterTest
+    void on_completion() {
         // onCompletion should not throw exceptions before it finishes all cleanup, so that other tests always
         // start in a clear, restored state, so we postpone throwing the observed errors.
-        fun cleanupStep(block: () -> Unit) {
+        auto cleanup_step = [&](std::function<void()> block) {
             try {
-                block()
-            } catch (e: Throwable) {
-                reportError(e)
+                block();
+            } catch (Throwable* e) {
+                report_error(e);
             }
-        }
-        cleanupStep { checkFinishCall() }
+        };
+
+        cleanup_step([&]() { check_finish_call(); });
         // Reset the output stream first
-        cleanupStep { PrintlnStrategy.reset() }
+        cleanup_step([&]() { /* PrintlnStrategy::reset(); */ });
         // Shutdown all thread pools
-        cleanupStep { shutdownPoolsAfterTest() }
+        cleanup_step([&]() { shutdown_pools_after_test(); });
         // Check that are now leftover threads
-        cleanupStep { checkTestThreads(threadsBefore) }
+        cleanup_step([&]() { check_test_threads(threads_before); });
         // Restore original uncaught exception handler after the main shutdown sequence
-        Thread.setDefaultUncaughtExceptionHandler(originalUncaughtExceptionHandler)
-        if (uncaughtExceptions.isNotEmpty()) {
-            reportError(IllegalStateException("Expected no uncaught exceptions, but got $uncaughtExceptions"))
+        // TODO: Thread::set_default_uncaught_exception_handler(original_uncaught_exception_handler);
+
+        if (!uncaught_exceptions.empty()) {
+            report_error(new std::runtime_error("Expected no uncaught exceptions, but got " +
+                                                 std::to_string(uncaught_exceptions.size())));
         }
+
         // The very last action -- throw all the detected errors
-        errorCatching.close()
+        error_catching_impl.close();
     }
 
-    actual fun runTest(
-        expected: ((Throwable) -> Boolean)?,
-        unhandled: List<(Throwable) -> Boolean>,
-        block: suspend CoroutineScope.() -> Unit
-    ): TestResult {
-        var exCount = 0
-        var ex: Throwable? = null
+    TestResult run_test(
+        std::function<bool(Throwable*)> expected = nullptr,
+        std::vector<std::function<bool(Throwable*)>> unhandled = {},
+        std::function<void(CoroutineScope&)> block = nullptr // TODO: implement coroutine suspension
+    ) {
+        int ex_count = 0;
+        Throwable* ex = nullptr;
+
         try {
-            runBlocking(block = block, context = CoroutineExceptionHandler { _, e ->
-                if (e is CancellationException) return@CoroutineExceptionHandler // are ignored
-                exCount++
-                when {
-                    exCount > unhandled.size ->
-                        error("Too many unhandled exceptions $exCount, expected ${unhandled.size}, got: $e", e)
-                    !unhandled[exCount - 1](e) ->
-                        error("Unhandled exception was unexpected: $e", e)
+            // TODO: Implement runBlocking
+            // run_blocking(
+            //     CoroutineExceptionHandler([&](CoroutineContext& ctx, Throwable* e) {
+            //         if (dynamic_cast<CancellationException*>(e)) return; // are ignored
+            //         ex_count++;
+            //         if (ex_count > unhandled.size()) {
+            //             error(error_catching_impl, "Too many unhandled exceptions " + std::to_string(ex_count) +
+            //                   ", expected " + std::to_string(unhandled.size()) + ", got: " + e->what(), e);
+            //         }
+            //         if (!unhandled[ex_count - 1](e)) {
+            //             error(error_catching_impl, "Unhandled exception was unexpected: " + std::string(e->what()), e);
+            //         }
+            //     }),
+            //     block
+            // );
+        } catch (Throwable* e) {
+            ex = e;
+            if (expected != nullptr) {
+                if (!expected(e)) {
+                    error(error_catching_impl, "Unexpected exception: " + std::string(e->what()), e);
                 }
-            })
-        } catch (e: Throwable) {
-            ex = e
-            if (expected != null) {
-                if (!expected(e))
-                    error("Unexpected exception: $e", e)
             } else {
-                throw e
-            }
-        } finally {
-            if (ex == null && expected != null) error("Exception was expected but none produced")
-        }
-        if (exCount < unhandled.size)
-            error("Too few unhandled exceptions $exCount, expected ${unhandled.size}")
-    }
-
-    protected suspend fun currentDispatcher() = coroutineContext[ContinuationInterceptor]!!
-}
-
-private object PrintlnStrategy {
-    /**
-     * Installs a custom [PrintStream] instead of [System.out] to capture all the output and throw an exception if
-     * any was detected.
-     *
-     * Removes the previously set println handler and throws the exceptions detected by it.
-     * If [disableOutCheck] is set, this is the only effect.
-     */
-    fun configure(disableOutCheck: Boolean) {
-        val systemOut = System.out
-        if (systemOut is TestOutputStream) {
-            try {
-                systemOut.remove()
-            } catch (e: AssertionError) {
-                throw AssertionError("The previous TestOutputStream contained ", e)
-            }
-        }
-        if (!disableOutCheck) {
-            // Invariant: at most one indirection level in `TestOutputStream`.
-            System.setOut(TestOutputStream(actualSystemOut))
-        }
-    }
-
-    /**
-     * Removes the custom [PrintStream] and throws an exception if any output was detected.
-     */
-    fun reset() {
-        (System.out as? TestOutputStream)?.remove()
-    }
-
-    /**
-     * The [PrintStream] representing the actual stdout, ignoring the replacement [TestOutputStream].
-     */
-    val actualSystemOut: PrintStream get() = when (val out = System.out) {
-        is TestOutputStream -> out.previousOut
-        else -> out
-    }
-
-    private class TestOutputStream(
-        /*
-         * System.out that we redefine in order to catch any debugging/diagnostics
-         * 'println' from main source set.
-         * NB: We do rely on the name 'previousOut' in the FieldWalker in order to skip its
-         * processing
-         */
-        val previousOut: PrintStream,
-        private val myOutputStream: MyOutputStream = MyOutputStream(),
-    ) : PrintStream(myOutputStream) {
-
-        fun remove() {
-            System.setOut(previousOut)
-            if (myOutputStream.firstPrintStacktace.get() != null) {
-                throw AssertionError(
-                    "Detected a println. The captured output is: <<<${myOutputStream.capturedOutput}>>>",
-                    myOutputStream.firstPrintStacktace.get()
-                )
+                throw e;
             }
         }
 
-        private class MyOutputStream(): OutputStream() {
-            val capturedOutput = ByteArrayOutputStream()
-
-            val firstPrintStacktace = AtomicReference<Throwable?>(null)
-
-            override fun write(b: Int) {
-                if (firstPrintStacktace.get() == null) {
-                    firstPrintStacktace.compareAndSet(null, IllegalStateException())
-                }
-                capturedOutput.write(b)
-            }
+        if (ex == nullptr && expected != nullptr) {
+            throw std::runtime_error("Exception was expected but none produced");
         }
-
+        if (ex_count < unhandled.size()) {
+            error(error_catching_impl, "Too few unhandled exceptions " + std::to_string(ex_count) +
+                  ", expected " + std::to_string(unhandled.size()));
+        }
     }
+
+    bool has_error() override {
+        return error_catching_impl.has_error();
+    }
+
+    void report_error(Throwable* error) override {
+        error_catching_impl.report_error(error);
+    }
+
+protected:
+    CoroutineContext* current_dispatcher() { // TODO: implement coroutine suspension
+        // TODO: return coroutine_context()[ContinuationInterceptor::kKey];
+        return nullptr;
+    }
+};
+
+// TODO: Implement PrintlnStrategy class (lines 153-225 in original)
+// TODO: Implement init_pools_before_test function
+// TODO: Implement shutdown_pools_after_test function
+
+void init_pools_before_test() {
+    // @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+    // TODO: DefaultScheduler::use_private_scheduler();
 }
 
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-fun initPoolsBeforeTest() {
-    DefaultScheduler.usePrivateScheduler()
+void shutdown_pools_after_test() {
+    // @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+    // TODO: DefaultScheduler::shutdown(kShutdownTimeout);
+    // TODO: DefaultExecutor::shutdown_for_tests(kShutdownTimeout);
+    // TODO: DefaultScheduler::restore();
 }
 
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-fun shutdownPoolsAfterTest() {
-    DefaultScheduler.shutdown(SHUTDOWN_TIMEOUT)
-    DefaultExecutor.shutdownForTests(SHUTDOWN_TIMEOUT)
-    DefaultScheduler.restore()
-}
+const bool kIsNative = false;
+const bool kIsBoundByJsTestTimeout = false;
 
-actual val isNative = false
+// We ignore tests that test **real** non-virtualized tests with time on Windows, because
+// our CI Windows is virtualized itself (oh, the irony) and its clock resolution is dozens of ms,
+// which makes such tests flaky.
+const bool kIsJavaAndWindows = []() {
+    // TODO: return std::getenv("os.name") contains "Windows";
+    return false;
+}();
 
-actual val isBoundByJsTestTimeout = false
+const bool kUsesSharedEventLoop = false;
 
-/*
- * We ignore tests that test **real** non-virtualized tests with time on Windows, because
- * our CI Windows is virtualized itself (oh, the irony) and its clock resolution is dozens of ms,
- * which makes such tests flaky.
- */
-actual val isJavaAndWindows: Boolean = System.getProperty("os.name")!!.contains("Windows")
+} // namespace testing
+} // namespace coroutines
+} // namespace kotlinx
 
-actual val usesSharedEventLoop: Boolean = false
+// TODO: Semantic implementation tasks:
+// 1. Implement suspend function mechanics (coroutine suspension)
+// 2. Implement System.getProperty / std::getenv properly
+// 3. Implement Throwable with cause() and printStackTrace()
+// 4. Implement runBlocking function
+// 5. Implement CoroutineExceptionHandler
+// 6. Implement CancellationException detection
+// 7. Implement current_threads() function
+// 8. Implement check_test_threads() function
+// 9. Implement Thread::UncaughtExceptionHandler equivalent
+// 10. Implement PrintlnStrategy for output capture
+// 11. Implement init_pools_before_test and shutdown_pools_after_test
+// 12. Implement DefaultScheduler and DefaultExecutor
+// 13. Implement ContinuationInterceptor
+// 14. Add proper includes for all dependencies
+// 15. Handle memory management for exception objects

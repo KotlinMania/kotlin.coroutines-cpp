@@ -1,10 +1,15 @@
-package kotlinx.coroutines.rx3
+// Transliterated from: reactive/kotlinx-coroutines-rx3/src/RxFlowable.cpp
 
-import io.reactivex.rxjava3.core.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.reactive.*
-import kotlin.coroutines.*
+namespace kotlinx {
+namespace coroutines {
+namespace rx3 {
+
+// TODO: #include equivalent
+// import io.reactivex.rxjava3.core.*
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.channels.*
+// import kotlinx.coroutines.reactive.*
+// import kotlin.coroutines.*
 
 /**
  * Creates cold [flowable][Flowable] that will run a given [block] in a coroutine.
@@ -24,13 +29,48 @@ import kotlin.coroutines.*
  *
  * **Note: This is an experimental api.** Behaviour of publishers that work as children in a parent scope with respect
  */
-public fun <T: Any> rxFlowable(
-    context: CoroutineContext = EmptyCoroutineContext,
-    @BuilderInference block: suspend ProducerScope<T>.() -> Unit
-): Flowable<T> {
-    require(context[Job] === null) { "Flowable context cannot contain job in it." +
-            "Its lifecycle should be managed via Disposable handle. Had $context" }
-    return Flowable.fromPublisher(publishInternal(GlobalScope, context, RX_HANDLER, block))
+// @BuilderInference
+template<typename T, typename Block>
+Flowable<T>* rx_flowable(
+    const CoroutineContext& context = kEmptyCoroutineContext,
+    Block&& block
+) {
+    // fun <T: Any> rxFlowable(
+    //     context: CoroutineContext = EmptyCoroutineContext,
+    //     @BuilderInference block: suspend ProducerScope<T>.() -> Unit
+    // ): Flowable<T> {
+    //     require(context[Job] === null) { "Flowable context cannot contain job in it." +
+    //             "Its lifecycle should be managed via Disposable handle. Had $context" }
+    //     return Flowable.fromPublisher(publishInternal(GlobalScope, context, RX_HANDLER, block))
+    // }
+
+    // TODO: Validate context doesn't contain Job
+    // TODO: Call publish_internal with RX_HANDLER
+    // TODO: Wrap in Flowable.fromPublisher
+    return nullptr;
 }
 
-private val RX_HANDLER: (Throwable, CoroutineContext) -> Unit = ::handleUndeliverableException
+// Handler function type: (Throwable, CoroutineContext) -> Unit
+using RxHandler = void (*)(const std::exception&, const CoroutineContext&);
+
+const RxHandler kRxHandler = &handle_undeliverable_exception;
+// private val RX_HANDLER: (Throwable, CoroutineContext) -> Unit = ::handleUndeliverableException
+
+} // namespace rx3
+} // namespace coroutines
+} // namespace kotlinx
+
+/*
+ * TODO: Semantic Implementation Tasks
+ *
+ * 1. Implement Flowable<T> type from RxJava3
+ * 2. Implement ProducerScope<T> interface
+ * 3. Implement publish_internal function from reactive module
+ * 4. Implement Flowable.fromPublisher
+ * 5. Implement context validation (no Job allowed)
+ * 6. Implement GlobalScope reference
+ * 7. Implement @BuilderInference annotation handling
+ * 8. Implement backpressure handling
+ * 9. Add proper exception handling
+ * 10. Add unit tests
+ */

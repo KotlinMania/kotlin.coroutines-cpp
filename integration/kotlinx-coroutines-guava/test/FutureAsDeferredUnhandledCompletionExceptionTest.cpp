@@ -1,43 +1,78 @@
-package kotlinx.coroutines.guava
+// Transliterated from: integration/kotlinx-coroutines-guava/test/FutureAsDeferredUnhandledCompletionExceptionTest.kt
 
-import kotlinx.coroutines.testing.*
-import com.google.common.util.concurrent.*
-import kotlinx.coroutines.*
-import org.junit.*
-import org.junit.Test
-import kotlin.test.*
+// TODO: #include equivalent
+// import kotlinx.coroutines.testing.*
+// import com.google.common.util.concurrent.*
+// import kotlinx.coroutines.*
+// import org.junit.*
+// import org.junit.Test
+// import kotlin.test.*
 
-class FutureAsDeferredUnhandledCompletionExceptionTest : TestBase() {
+namespace kotlinx {
+namespace coroutines {
+namespace guava {
 
+class FutureAsDeferredUnhandledCompletionExceptionTest : public TestBase {
+private:
     // This is a separate test in order to avoid interference with uncaught exception handlers in other tests
-    private val exceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
-    private lateinit var caughtException: Throwable
+    Thread::UncaughtExceptionHandler* exception_handler_;
+    Throwable* caught_exception_;
 
-    @Before
-    fun setUp() {
-        Thread.setDefaultUncaughtExceptionHandler { _, e -> caughtException = e }
+public:
+    // @Before
+    void set_up() {
+        exception_handler_ = Thread::get_default_uncaught_exception_handler();
+        Thread::set_default_uncaught_exception_handler([this](Thread*, Throwable& e) {
+            caught_exception_ = &e;
+        });
     }
 
-    @After
-    fun tearDown() {
-        Thread.setDefaultUncaughtExceptionHandler(exceptionHandler)
+    // @After
+    void tear_down() {
+        Thread::set_default_uncaught_exception_handler(exception_handler_);
     }
 
-    @Test
-    fun testLostExceptionOnSuccess() = runTest {
-        val future = SettableFuture.create<Int>()
-        val deferred = future.asDeferred()
-        deferred.invokeOnCompletion { throw TestException() }
-        future.set(1)
-        assertTrue { caughtException is CompletionHandlerException && caughtException.cause is TestException }
+    // @Test
+    void test_lost_exception_on_success() {
+        // TODO: implement coroutine suspension
+        run_test([]() {
+            auto future = SettableFuture::create<int>();
+            auto deferred = future.as_deferred();
+            deferred.invoke_on_completion([]() {
+                throw TestException();
+            });
+            future.set(1);
+            assert_true(dynamic_cast<CompletionHandlerException*>(caught_exception_) != nullptr &&
+                       dynamic_cast<TestException*>(caught_exception_->cause()) != nullptr);
+        });
     }
 
-    @Test
-    fun testLostExceptionOnFailure() = runTest {
-        val future = SettableFuture.create<Int>()
-        val deferred = future.asDeferred()
-        deferred.invokeOnCompletion { throw TestException() }
-        future.setException(TestException2())
-        assertTrue { caughtException is CompletionHandlerException && caughtException.cause is TestException }
+    // @Test
+    void test_lost_exception_on_failure() {
+        // TODO: implement coroutine suspension
+        run_test([]() {
+            auto future = SettableFuture::create<int>();
+            auto deferred = future.as_deferred();
+            deferred.invoke_on_completion([]() {
+                throw TestException();
+            });
+            future.set_exception(TestException2());
+            assert_true(dynamic_cast<CompletionHandlerException*>(caught_exception_) != nullptr &&
+                       dynamic_cast<TestException*>(caught_exception_->cause()) != nullptr);
+        });
     }
-}
+};
+
+} // namespace guava
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement TestBase base class
+// 2. Implement runTest coroutine test wrapper
+// 3. Implement SettableFuture
+// 4. Implement asDeferred conversion
+// 5. Implement invokeOnCompletion
+// 6. Implement Thread::setDefaultUncaughtExceptionHandler
+// 7. Handle Before/After test lifecycle
+// 8. Implement CompletionHandlerException

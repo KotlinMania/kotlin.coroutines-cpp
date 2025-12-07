@@ -1,14 +1,19 @@
-package kotlinx.coroutines.rx3
+// Transliterated from: reactive/kotlinx-coroutines-rx3/src/RxConvert.cpp
 
-import io.reactivex.rxjava3.core.*
-import io.reactivex.rxjava3.disposables.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.reactive.*
-import org.reactivestreams.*
-import java.util.concurrent.atomic.*
-import kotlin.coroutines.*
+namespace kotlinx {
+namespace coroutines {
+namespace rx3 {
+
+// TODO: #include equivalent
+// import io.reactivex.rxjava3.core.*
+// import io.reactivex.rxjava3.disposables.*
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.channels.*
+// import kotlinx.coroutines.flow.*
+// import kotlinx.coroutines.reactive.*
+// import org.reactivestreams.*
+// import java.util.concurrent.atomic.*
+// import kotlin.coroutines.*
 
 /**
  * Converts this job to the hot reactive completable that signals
@@ -22,8 +27,12 @@ import kotlin.coroutines.*
  *
  * @param context -- the coroutine context from which the resulting completable is going to be signalled
  */
-public fun Job.asCompletable(context: CoroutineContext): Completable = rxCompletable(context) {
-    this@asCompletable.join()
+Completable* as_completable(Job* job, const CoroutineContext& context) {
+    // fun Job.asCompletable(context: CoroutineContext): Completable = rxCompletable(context) {
+    //     this@asCompletable.join()
+    // }
+    // TODO: Implement
+    return nullptr;
 }
 
 /**
@@ -38,8 +47,13 @@ public fun Job.asCompletable(context: CoroutineContext): Completable = rxComplet
  *
  * @param context -- the coroutine context from which the resulting maybe is going to be signalled
  */
-public fun <T> Deferred<T?>.asMaybe(context: CoroutineContext): Maybe<T & Any> = rxMaybe(context) {
-    this@asMaybe.await()
+template<typename T>
+Maybe<T>* as_maybe(Deferred<T*>* deferred, const CoroutineContext& context) {
+    // fun <T> Deferred<T?>.asMaybe(context: CoroutineContext): Maybe<T & Any> = rxMaybe(context) {
+    //     this@asMaybe.await()
+    // }
+    // TODO: Implement
+    return nullptr;
 }
 
 /**
@@ -54,8 +68,13 @@ public fun <T> Deferred<T?>.asMaybe(context: CoroutineContext): Maybe<T & Any> =
  *
  * @param context -- the coroutine context from which the resulting single is going to be signalled
  */
-public fun <T : Any> Deferred<T>.asSingle(context: CoroutineContext): Single<T> = rxSingle(context) {
-    this@asSingle.await()
+template<typename T>
+Single<T>* as_single(Deferred<T>* deferred, const CoroutineContext& context) {
+    // fun <T : Any> Deferred<T>.asSingle(context: CoroutineContext): Single<T> = rxSingle(context) {
+    //     this@asSingle.await()
+    // }
+    // TODO: Implement
+    return nullptr;
 }
 
 /**
@@ -68,27 +87,11 @@ public fun <T : Any> Deferred<T>.asSingle(context: CoroutineContext): Single<T> 
  * resulting flow to specify a user-defined value and to control what happens when data is produced faster
  * than consumed, i.e. to control the back-pressure behavior. Check [callbackFlow] for more details.
  */
-public fun <T: Any> ObservableSource<T>.asFlow(): Flow<T> = callbackFlow {
-    val disposableRef = AtomicReference<Disposable>()
-    val observer = object : Observer<T> {
-        override fun onComplete() { close() }
-        override fun onSubscribe(d: Disposable) { if (!disposableRef.compareAndSet(null, d)) d.dispose() }
-        override fun onNext(t: T) {
-            /*
-             * Channel was closed by the downstream, so the exception (if any)
-             * also was handled by the same downstream
-             */
-            try {
-                trySendBlocking(t)
-            } catch (e: InterruptedException) {
-                // RxJava interrupts the source
-            }
-        }
-        override fun onError(e: Throwable) { close(e) }
-    }
-
-    subscribe(observer)
-    awaitClose { disposableRef.getAndSet(Disposable.disposed())?.dispose() }
+template<typename T>
+Flow<T>* as_flow(ObservableSource<T>& source) {
+    // fun <T: Any> ObservableSource<T>.asFlow(): Flow<T> = callbackFlow { ... }
+    // TODO: Implement callbackFlow with Observer
+    return nullptr;
 }
 
 /**
@@ -100,27 +103,11 @@ public fun <T: Any> ObservableSource<T>.asFlow(): Flow<T> = callbackFlow {
  * inject additional context into the caller thread. By default, the [Unconfined][Dispatchers.Unconfined] dispatcher
  * is used, so calls are performed from an arbitrary thread.
  */
-public fun <T: Any> Flow<T>.asObservable(context: CoroutineContext = EmptyCoroutineContext) : Observable<T> = Observable.create { emitter ->
-    /*
-     * ATOMIC is used here to provide stable behaviour of subscribe+dispose pair even if
-     * asObservable is already invoked from unconfined
-     */
-    val job = GlobalScope.launch(Dispatchers.Unconfined + context, start = CoroutineStart.ATOMIC) {
-        try {
-            collect { value -> emitter.onNext(value) }
-            emitter.onComplete()
-        } catch (e: Throwable) {
-            // 'create' provides safe emitter, so we can unconditionally call on* here if exception occurs in `onComplete`
-            if (e !is CancellationException) {
-                if (!emitter.tryOnError(e)) {
-                    handleUndeliverableException(e, coroutineContext)
-                }
-            } else {
-                emitter.onComplete()
-            }
-        }
-    }
-    emitter.setCancellable(RxCancellable(job))
+template<typename T>
+Observable<T>* as_observable(Flow<T>& flow, const CoroutineContext& context = kEmptyCoroutineContext) {
+    // fun <T: Any> Flow<T>.asObservable(context: CoroutineContext = EmptyCoroutineContext) : Observable<T> = Observable.create { ... }
+    // TODO: Implement Observable.create with flow collection
+    return nullptr;
 }
 
 /**
@@ -132,20 +119,49 @@ public fun <T: Any> Flow<T>.asObservable(context: CoroutineContext = EmptyCorout
  * inject additional context into the caller thread. By default, the [Unconfined][Dispatchers.Unconfined] dispatcher
  * is used, so calls are performed from an arbitrary thread.
  */
-public fun <T: Any> Flow<T>.asFlowable(context: CoroutineContext = EmptyCoroutineContext): Flowable<T> =
-    Flowable.fromPublisher(asPublisher(context))
+template<typename T>
+Flowable<T>* as_flowable(Flow<T>& flow, const CoroutineContext& context = kEmptyCoroutineContext) {
+    // fun <T: Any> Flow<T>.asFlowable(context: CoroutineContext = EmptyCoroutineContext): Flowable<T> =
+    //     Flowable.fromPublisher(asPublisher(context))
+    // TODO: Implement via asPublisher
+    return nullptr;
+}
 
-/** @suppress */
-@Suppress("UNUSED") // KT-42513
-@JvmOverloads // binary compatibility
-@JvmName("from")
-@Deprecated(level = DeprecationLevel.HIDDEN, message = "") // Since 1.4, was experimental prior to that
-public fun <T: Any> Flow<T>._asFlowable(context: CoroutineContext = EmptyCoroutineContext): Flowable<T> =
-    asFlowable(context)
+// @Suppress("UNUSED") // KT-42513
+// @JvmOverloads // binary compatibility
+// @JvmName("from")
+// @Deprecated(level = DeprecationLevel.HIDDEN, message = "") // Since 1.4, was experimental prior to that
+template<typename T>
+[[deprecated("Hidden API")]]
+Flowable<T>* _as_flowable(Flow<T>& flow, const CoroutineContext& context = kEmptyCoroutineContext) {
+    return as_flowable(flow, context);
+}
 
-/** @suppress */
-@Suppress("UNUSED") // KT-42513
-@JvmOverloads // binary compatibility
-@JvmName("from")
-@Deprecated(level = DeprecationLevel.HIDDEN, message = "") // Since 1.4, was experimental prior to that
-public fun <T: Any> Flow<T>._asObservable(context: CoroutineContext = EmptyCoroutineContext) : Observable<T> = asObservable(context)
+// @Suppress("UNUSED") // KT-42513
+// @JvmOverloads // binary compatibility
+// @JvmName("from")
+// @Deprecated(level = DeprecationLevel.HIDDEN, message = "") // Since 1.4, was experimental prior to that
+template<typename T>
+[[deprecated("Hidden API")]]
+Observable<T>* _as_observable(Flow<T>& flow, const CoroutineContext& context = kEmptyCoroutineContext) {
+    return as_observable(flow, context);
+}
+
+} // namespace rx3
+} // namespace coroutines
+} // namespace kotlinx
+
+/*
+ * TODO: Semantic Implementation Tasks
+ *
+ * 1. Implement Job, Deferred<T> types
+ * 2. Implement asPublisher for Flow conversion
+ * 3. Implement callbackFlow builder
+ * 4. Implement Observable.create and Flowable.fromPublisher
+ * 5. Implement AtomicReference for disposable management
+ * 6. Implement GlobalScope.launch with ATOMIC start
+ * 7. Implement RxCancellable integration
+ * 8. Handle exceptions with tryOnError
+ * 9. Implement thread-safe emission
+ * 10. Add unit tests
+ */

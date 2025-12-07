@@ -1,40 +1,56 @@
-package kotlinx.coroutines.reactor
+// Transliterated from: reactive/kotlinx-coroutines-reactor/test/Check.cpp
 
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
+// TODO: #include <reactor/core/publisher/flux.hpp>
+// TODO: #include <reactor/core/publisher/mono.hpp>
 
-fun <T> checkMonoValue(
-        mono: Mono<T>,
-        checker: (T) -> Unit
+namespace kotlinx { namespace coroutines { namespace reactor {
+
+template<typename T>
+void check_mono_value(
+        Mono<T>* mono,
+        std::function<void(T)> checker
 ) {
-    val monoValue = mono.block()
-    checker(monoValue)
+    T mono_value = mono->block();
+    checker(mono_value);
 }
 
-fun checkErroneous(
-        mono: Mono<*>,
-        checker: (Throwable) -> Unit
+void check_erroneous(
+        Mono<void>* mono,
+        std::function<void(Throwable*)> checker
 ) {
     try {
-        mono.block()
-        error("Should have failed")
-    } catch (e: Throwable) {
-        checker(e)
+        mono->block();
+        throw std::runtime_error("Should have failed");
+    } catch (Throwable* e) {
+        checker(e);
     }
 }
 
-fun <T> checkSingleValue(
-        flux: Flux<T>,
-        checker: (T) -> Unit
+template<typename T>
+void check_single_value(
+        Flux<T>* flux,
+        std::function<void(T)> checker
 ) {
-    val singleValue = flux.toIterable().single()
-    checker(singleValue)
+    T single_value = flux->to_iterable().single();
+    checker(single_value);
 }
 
-fun checkErroneous(
-        flux: Flux<*>,
-        checker: (Throwable) -> Unit
+void check_erroneous(
+        Flux<void>* flux,
+        std::function<void(Throwable*)> checker
 ) {
-    val singleNotification = flux.materialize().toIterable().single()
-    checker(singleNotification.throwable)
+    auto single_notification = flux->materialize().to_iterable().single();
+    checker(single_notification.get_throwable());
 }
+
+} } } // namespace kotlinx::coroutines::reactor
+
+// TODO: Semantic implementation tasks:
+// 1. Implement Mono<T>::block() method
+// 2. Implement Flux<T>::to_iterable() method
+// 3. Implement Flux<T>::materialize() method
+// 4. Implement single() on iterable
+// 5. Implement Throwable exception type
+// 6. Implement get_throwable() method
+// 7. Implement std::function wrappers
+// 8. Handle void template specialization

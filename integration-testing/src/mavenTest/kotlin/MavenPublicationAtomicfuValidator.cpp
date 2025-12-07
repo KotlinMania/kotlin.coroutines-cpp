@@ -1,73 +1,106 @@
-package kotlinx.coroutines.validator
+// Transliterated from: integration-testing/src/mavenTest/kotlin/MavenPublicationAtomicfuValidator.kt
 
-import org.junit.Test
-import org.objectweb.asm.*
-import org.objectweb.asm.ClassReader.*
-import org.objectweb.asm.ClassWriter.*
-import org.objectweb.asm.Opcodes.*
-import java.util.jar.*
-import kotlin.test.*
+// TODO: #include equivalent
+// import org.junit.Test
+// import org.objectweb.asm.*
+// import org.objectweb.asm.ClassReader.*
+// import org.objectweb.asm.ClassWriter.*
+// import org.objectweb.asm.Opcodes.*
+// import java.util.jar.*
+// import kotlin.test.*
+
+namespace kotlinx {
+namespace coroutines {
+namespace validator {
 
 class MavenPublicationAtomicfuValidator {
-    private val ATOMIC_FU_REF = "Lkotlinx/atomicfu/".toByteArray()
-    private val KOTLIN_METADATA_DESC = "Lkotlin/Metadata;"
+private:
+    const std::vector<uint8_t> kAtomicFuRef = {'L', 'k', 'o', 't', 'l', 'i', 'n', 'x', '/', 'a', 't', 'o', 'm', 'i', 'c', 'f', 'u', '/'};
+    const std::string kKotlinMetadataDesc = "Lkotlin/Metadata;";
 
-    @Test
-    fun testNoAtomicfuInClasspath() {
-        val result = runCatching { Class.forName("kotlinx.atomicfu.AtomicInt") }
-        assertTrue(result.exceptionOrNull() is ClassNotFoundException)
+public:
+    // @Test
+    void test_no_atomicfu_in_classpath() {
+        auto result = run_catching([]() {
+            return Class::for_name("kotlinx.atomicfu.AtomicInt");
+        });
+        assert_true(result.exception_or_null() instanceof ClassNotFoundException);
     }
 
-    @Test
-    fun testNoAtomicfuInMppJar() {
-        val clazz = Class.forName("kotlinx.coroutines.Job")
-        JarFile(clazz.protectionDomain.codeSource.location.file).checkForAtomicFu()
+    // @Test
+    void test_no_atomicfu_in_mpp_jar() {
+        auto clazz = Class::for_name("kotlinx.coroutines.Job");
+        JarFile(clazz.get_protection_domain().get_code_source().get_location().get_file()).check_for_atomic_fu();
     }
 
-    @Test
-    fun testNoAtomicfuInAndroidJar() {
-        val clazz = Class.forName("kotlinx.coroutines.android.HandlerDispatcher")
-        JarFile(clazz.protectionDomain.codeSource.location.file).checkForAtomicFu()
+    // @Test
+    void test_no_atomicfu_in_android_jar() {
+        auto clazz = Class::for_name("kotlinx.coroutines.android.HandlerDispatcher");
+        JarFile(clazz.get_protection_domain().get_code_source().get_location().get_file()).check_for_atomic_fu();
     }
 
-    private fun JarFile.checkForAtomicFu() {
-        val foundClasses = mutableListOf<String>()
-        for (e in entries()) {
-            if (!e.name.endsWith(".class")) continue
-            val bytes = getInputStream(e).use { it.readBytes() }
+private:
+    void check_for_atomic_fu(JarFile& jar_file) {
+        std::vector<std::string> found_classes;
+        for (const auto& e : jar_file.entries()) {
+            if (!e.get_name().ends_with(".class")) continue;
+            auto bytes = jar_file.get_input_stream(e).use([](auto& stream) {
+                return stream.read_bytes();
+            });
             // The atomicfu compiler plugin does not remove atomic properties from metadata,
             // so for now we check that there are no ATOMIC_FU_REF left in the class bytecode excluding metadata.
             // This may be reverted after the fix in the compiler plugin transformer (for Kotlin 1.8.0).
-            val outBytes = bytes.eraseMetadata()
-            if (outBytes.checkBytes()) {
-                foundClasses += e.name // report error at the end with all class names
+            auto out_bytes = erase_metadata(bytes);
+            if (check_bytes(out_bytes)) {
+                found_classes.push_back(e.get_name()); // report error at the end with all class names
             }
         }
-        if (foundClasses.isNotEmpty()) {
-            error("Found references to atomicfu in jar file $name in the following class files: ${
-                foundClasses.joinToString("") { "\n\t\t" + it }
-            }")
+        if (!found_classes.empty()) {
+            std::string error_msg = "Found references to atomicfu in jar file " + jar_file.get_name() +
+                " in the following class files:";
+            for (const auto& cls : found_classes) {
+                error_msg += "\n\t\t" + cls;
+            }
+            throw std::runtime_error(error_msg);
         }
-        close()
+        jar_file.close();
     }
 
-    private fun ByteArray.checkBytes(): Boolean {
-        loop@for (i in 0 until this.size - ATOMIC_FU_REF.size) {
-            for (j in 0 until ATOMIC_FU_REF.size) {
-                if (this[i + j] != ATOMIC_FU_REF[j]) continue@loop
+    bool check_bytes(const std::vector<uint8_t>& bytes) {
+        for (size_t i = 0; i < bytes.size() - kAtomicFuRef.size(); ++i) {
+            bool match = true;
+            for (size_t j = 0; j < kAtomicFuRef.size(); ++j) {
+                if (bytes[i + j] != kAtomicFuRef[j]) {
+                    match = false;
+                    break;
+                }
             }
-            return true
+            if (match) return true;
         }
-        return false
+        return false;
     }
 
-    private fun ByteArray.eraseMetadata(): ByteArray {
-        val cw = ClassWriter(COMPUTE_MAXS or COMPUTE_FRAMES)
-        ClassReader(this).accept(object : ClassVisitor(ASM9, cw) {
-            override fun visitAnnotation(descriptor: String?, visible: Boolean): AnnotationVisitor? {
-                return if (descriptor == KOTLIN_METADATA_DESC) null else super.visitAnnotation(descriptor, visible)
-            }
-        }, SKIP_FRAMES)
-        return cw.toByteArray()
+    std::vector<uint8_t> erase_metadata(const std::vector<uint8_t>& bytes) {
+        ClassWriter cw(kComputeMaxs | kComputeFrames);
+        ClassReader(bytes).accept(
+            // TODO: Create custom ClassVisitor
+            // object : ClassVisitor(ASM9, cw)
+            kSkipFrames
+        );
+        return cw.to_byte_array();
     }
-}
+};
+
+} // namespace validator
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement JAR file reading
+// 2. Implement ASM ClassReader/ClassWriter integration
+// 3. Implement bytecode scanning
+// 4. Implement metadata erasure via ClassVisitor
+// 5. Implement runCatching exception handling
+// 6. Implement Class::forName reflection
+// 7. Set up proper test framework
+// 8. Handle label-based loop control (loop@)

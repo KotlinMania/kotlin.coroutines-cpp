@@ -1,11 +1,15 @@
-package kotlinx.coroutines.jdk9
+// Transliterated from: reactive/kotlinx-coroutines-jdk9/src/Publish.cpp
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.reactive.*
-import java.util.concurrent.*
-import kotlin.coroutines.*
-import org.reactivestreams.FlowAdapters
+// TODO: #include equivalent for kotlinx.coroutines.*
+// TODO: #include equivalent for kotlinx.coroutines.channels.*
+// TODO: #include equivalent for kotlinx.coroutines.reactive.*
+// TODO: #include equivalent for java.util.concurrent.*
+// TODO: #include equivalent for kotlin.coroutines.*
+// TODO: #include equivalent for org.reactivestreams.FlowAdapters
+
+namespace kotlinx {
+namespace coroutines {
+namespace jdk9 {
 
 /**
  * Creates a cold reactive [Flow.Publisher] that runs a given [block] in a coroutine.
@@ -28,7 +32,29 @@ import org.reactivestreams.FlowAdapters
  *
  * @throws IllegalArgumentException if the provided [context] contains a [Job] instance.
  */
-public fun <T> flowPublish(
-    context: CoroutineContext = EmptyCoroutineContext,
-    @BuilderInference block: suspend ProducerScope<T>.() -> Unit
-): Flow.Publisher<T> = FlowAdapters.toFlowPublisher(publish(context, block))
+// @BuilderInference
+template<typename T>
+/* Flow.Publisher<T> */ auto flow_publish(
+    CoroutineContext context /* = EmptyCoroutineContext */,
+    std::function<void(ProducerScope<T>&)> block
+) /* -> Flow.Publisher<T> */ {
+    // TODO: implement coroutine suspension
+    // return FlowAdapters.toFlowPublisher(publish(context, block))
+}
+
+} // namespace jdk9
+} // namespace coroutines
+} // namespace kotlinx
+
+// TODO: Semantic implementation tasks:
+// 1. Implement CoroutineContext and EmptyCoroutineContext
+// 2. Implement ProducerScope<T> with send() method
+// 3. Implement publish() function from kotlinx.coroutines.reactive
+// 4. Implement FlowAdapters.toFlowPublisher adapter
+// 5. Implement Flow.Publisher and Flow.Subscriber interfaces
+// 6. Handle IllegalArgumentException when context contains Job
+// 7. Implement proper back-pressure handling
+// 8. Implement cancellation propagation from subscription to coroutine
+// 9. Implement default dispatcher (Dispatchers.Default)
+// 10. Implement ContinuationInterceptor detection
+// 11. Add builder inference equivalent for template deduction

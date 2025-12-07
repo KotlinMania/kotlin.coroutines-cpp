@@ -1,14 +1,19 @@
-package kotlinx.coroutines.rx3
+// Transliterated from: reactive/kotlinx-coroutines-rx3/src/RxObservable.cpp
 
-import io.reactivex.rxjava3.core.*
-import io.reactivex.rxjava3.exceptions.*
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.selects.*
-import kotlinx.coroutines.sync.*
-import kotlin.coroutines.*
-import kotlinx.coroutines.internal.*
+namespace kotlinx {
+namespace coroutines {
+namespace rx3 {
+
+// TODO: #include equivalent
+// import io.reactivex.rxjava3.core.*
+// import io.reactivex.rxjava3.exceptions.*
+// import kotlinx.atomicfu.*
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.channels.*
+// import kotlinx.coroutines.selects.*
+// import kotlinx.coroutines.sync.*
+// import kotlin.coroutines.*
+// import kotlinx.coroutines.internal.*
 
 /**
  * Creates cold [observable][Observable] that will run a given [block] in a coroutine.
@@ -26,181 +31,129 @@ import kotlinx.coroutines.internal.*
  * If the context does not have any dispatcher nor any other [ContinuationInterceptor], then [Dispatchers.Default] is used.
  * Method throws [IllegalArgumentException] if provided [context] contains a [Job] instance.
  */
-public fun <T : Any> rxObservable(
-    context: CoroutineContext = EmptyCoroutineContext,
-    @BuilderInference block: suspend ProducerScope<T>.() -> Unit
-): Observable<T> {
-    require(context[Job] === null) { "Observable context cannot contain job in it." +
-            "Its lifecycle should be managed via Disposable handle. Had $context" }
-    return rxObservableInternal(GlobalScope, context, block)
+template<typename T, typename Block>
+Observable<T>* rx_observable(
+    const CoroutineContext& context = kEmptyCoroutineContext,
+    Block&& block
+) {
+    // fun <T : Any> rxObservable(
+    //     context: CoroutineContext = EmptyCoroutineContext,
+    //     @BuilderInference block: suspend ProducerScope<T>.() -> Unit
+    // ): Observable<T> {
+    //     require(context[Job] === null) { "Observable context cannot contain job in it." +
+    //             "Its lifecycle should be managed via Disposable handle. Had $context" }
+    //     return rxObservableInternal(GlobalScope, context, block)
+    // }
+    // TODO: Validate context and call rx_observable_internal
+    return nullptr;
 }
 
-private fun <T : Any> rxObservableInternal(
-    scope: CoroutineScope, // support for legacy rxObservable in scope
-    context: CoroutineContext,
-    block: suspend ProducerScope<T>.() -> Unit
-): Observable<T> = Observable.create { subscriber ->
-    val newContext = scope.newCoroutineContext(context)
-    val coroutine = RxObservableCoroutine(newContext, subscriber)
-    subscriber.setCancellable(RxCancellable(coroutine)) // do it first (before starting coroutine), to await unnecessary suspensions
-    coroutine.start(CoroutineStart.DEFAULT, coroutine, block)
+template<typename T, typename Block>
+Observable<T>* rx_observable_internal(
+    CoroutineScope* scope,
+    const CoroutineContext& context,
+    Block&& block
+) {
+    // TODO: Implement Observable.create with RxObservableCoroutine
+    return nullptr;
 }
 
-private const val OPEN = 0        // open channel, still working
-private const val CLOSED = -1     // closed, but have not signalled onCompleted/onError yet
-private const val SIGNALLED = -2  // already signalled subscriber onCompleted/onError
+constexpr int kOpen = 0;       // OPEN = 0
+constexpr int kClosed = -1;    // CLOSED = -1
+constexpr int kSignalled = -2; // SIGNALLED = -2
 
-private class RxObservableCoroutine<T : Any>(
-    parentContext: CoroutineContext,
-    private val subscriber: ObservableEmitter<T>
-) : AbstractCoroutine<Unit>(parentContext, false, true), ProducerScope<T> {
-    override val channel: SendChannel<T> get() = this
+template<typename T>
+class RxObservableCoroutine : public AbstractCoroutine<void>, public ProducerScope<T> {
+private:
+    ObservableEmitter<T>* subscriber_;
+    std::atomic<int> signal_;
+    Mutex* mutex_;
 
-    private val _signal = atomic(OPEN)
+public:
+    RxObservableCoroutine(
+        const CoroutineContext& parent_context,
+        ObservableEmitter<T>* subscriber
+    ) : AbstractCoroutine<void>(parent_context, false, true),
+        subscriber_(subscriber),
+        signal_(kOpen),
+        mutex_(new Mutex()) {}
 
-    override val isClosedForSend: Boolean get() = !isActive
-    override fun close(cause: Throwable?): Boolean = cancelCoroutine(cause)
-    override fun invokeOnClose(handler: (Throwable?) -> Unit) =
-        throw UnsupportedOperationException("RxObservableCoroutine doesn't support invokeOnClose")
+    // ProducerScope interface
+    SendChannel<T>* get_channel() override { return this; }
 
-    // Mutex is locked when either nRequested == 0 or while subscriber.onXXX is being invoked
-    private val mutex: Mutex = Mutex()
-
-    @Suppress("UNCHECKED_CAST", "INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
-    override val onSend: SelectClause2<T, SendChannel<T>> get() = SelectClause2Impl(
-        clauseObject = this,
-        regFunc = RxObservableCoroutine<*>::registerSelectForSend as RegistrationFunction,
-        processResFunc = RxObservableCoroutine<*>::processResultSelectSend as ProcessResultFunction
-    )
-
-    @Suppress("UNUSED_PARAMETER")
-    private fun registerSelectForSend(select: SelectInstance<*>, element: Any?) {
-        // Try to acquire the mutex and complete in the registration phase.
-        if (mutex.tryLock()) {
-            select.selectInRegistrationPhase(Unit)
-            return
-        }
-        // Start a new coroutine that waits for the mutex, invoking `trySelect(..)` after that.
-        // Please note that at the point of the `trySelect(..)` invocation the corresponding
-        // `select` can still be in the registration phase, making this `trySelect(..)` bound to fail.
-        // In this case, the `onSend` clause will be re-registered, which alongside with the mutex
-        // manipulation makes the resulting solution obstruction-free.
-        launch {
-            mutex.lock()
-            if (!select.trySelect(this@RxObservableCoroutine, Unit)) {
-                mutex.unlock()
-            }
-        }
+    bool is_closed_for_send() const override {
+        return !is_active();
     }
 
-    @Suppress("RedundantNullableReturnType", "UNUSED_PARAMETER", "UNCHECKED_CAST")
-    private fun processResultSelectSend(element: Any?, selectResult: Any?): Any? {
-        doLockedNext(element as T)?.let { throw it }
-        return this@RxObservableCoroutine
+    bool close(const std::exception* cause) override {
+        return cancel_coroutine(cause);
     }
 
-    override fun trySend(element: T): ChannelResult<Unit> =
-        if (!mutex.tryLock()) {
-            ChannelResult.failure()
-        } else {
-            when (val throwable = doLockedNext(element)) {
-                null -> ChannelResult.success(Unit)
-                else -> ChannelResult.closed(throwable)
-            }
-        }
-
-    override suspend fun send(element: T) {
-        mutex.lock()
-        doLockedNext(element)?.let { throw it }
+    void invoke_on_close(std::function<void(const std::exception*)> handler) override {
+        throw std::runtime_error("RxObservableCoroutine doesn't support invokeOnClose");
     }
 
-    // assert: mutex.isLocked()
-    private fun doLockedNext(elem: T): Throwable? {
-        // check if already closed for send
-        if (!isActive) {
-            doLockedSignalCompleted(completionCause, completionCauseHandled)
-            return getCancellationException()
-        }
-        // notify subscriber
-        try {
-            subscriber.onNext(elem)
-        } catch (e: Throwable) {
-            val cause = UndeliverableException(e)
-            val causeDelivered = close(cause)
-            unlockAndCheckCompleted()
-            return if (causeDelivered) {
-                // `cause` is the reason this channel is closed
-                cause
-            } else {
-                // Someone else closed the channel during `onNext`. We report `cause` as an undeliverable exception.
-                handleUndeliverableException(cause, context)
-                getCancellationException()
-            }
-        }
-        /*
-         * There is no sense to check for `isActive` before doing `unlock`, because cancellation/completion might
-         * happen after this check and before `unlock` (see signalCompleted that does not do anything
-         * if it fails to acquire the lock that we are still holding).
-         * We have to recheck `isCompleted` after `unlock` anyway.
-         */
-        unlockAndCheckCompleted()
-        return null
+    // SendChannel operations
+    ChannelResult<void> try_send(const T& element) {
+        // TODO: Implement mutex-based try_send
+        return ChannelResult<void>::failure();
     }
 
-    private fun unlockAndCheckCompleted() {
-        mutex.unlock()
-        // recheck isActive
-        if (!isActive && mutex.tryLock())
-            doLockedSignalCompleted(completionCause, completionCauseHandled)
+    void send(const T& element) {
+        // TODO: Implement coroutine suspension
+        // suspend override fun send(element: T) {
+        //     mutex.lock()
+        //     doLockedNext(element)?.let { throw it }
+        // }
     }
 
-    // assert: mutex.isLocked()
-    private fun doLockedSignalCompleted(cause: Throwable?, handled: Boolean) {
-        // cancellation failures
-        try {
-            if (_signal.value == SIGNALLED)
-                return
-            _signal.value = SIGNALLED // we'll signal onError/onCompleted (that the final state -- no CAS needed)
-            @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
-            val unwrappedCause = cause?.let { unwrap(it) }
-            if (unwrappedCause == null) {
-                try {
-                    subscriber.onComplete()
-                } catch (e: Exception) {
-                    handleUndeliverableException(e, context)
-                }
-            } else if (unwrappedCause is UndeliverableException && !handled) {
-                /** Such exceptions are not reported to `onError`, as, according to the reactive specifications,
-                 * exceptions thrown from the Subscriber methods must be treated as if the Subscriber was already
-                 * cancelled. */
-                handleUndeliverableException(cause, context)
-            } else if (unwrappedCause !== getCancellationException() || !subscriber.isDisposed) {
-                try {
-                    /** If the subscriber is already in a terminal state, the error will be signalled to
-                     * `RxJavaPlugins.onError`. */
-                    subscriber.onError(cause)
-                } catch (e: Exception) {
-                    cause.addSuppressed(e)
-                    handleUndeliverableException(cause, context)
-                }
-            }
-        } finally {
-            mutex.unlock()
-        }
+    // TODO: Implement SelectClause2 for onSend
+    // TODO: Implement register_select_for_send
+    // TODO: Implement process_result_select_send
+
+private:
+    std::exception* do_locked_next(const T& elem) {
+        // TODO: Implement locked emission logic
+        return nullptr;
     }
 
-    private fun signalCompleted(cause: Throwable?, handled: Boolean) {
-        if (!_signal.compareAndSet(OPEN, CLOSED)) return // abort, other thread invoked doLockedSignalCompleted
-        if (mutex.tryLock()) // if we can acquire the lock
-            doLockedSignalCompleted(cause, handled)
+    void unlock_and_check_completed() {
+        // TODO: Implement unlock with completion check
     }
 
-    override fun onCompleted(value: Unit) {
-        signalCompleted(null, false)
+    void do_locked_signal_completed(const std::exception* cause, bool handled) {
+        // TODO: Implement completion signaling
     }
 
-    override fun onCancelled(cause: Throwable, handled: Boolean) {
-        signalCompleted(cause, handled)
+    void signal_completed(const std::exception* cause, bool handled) {
+        // TODO: Implement atomic signal with mutex
     }
-}
 
+public:
+    void on_completed(void /* value */) override {
+        signal_completed(nullptr, false);
+    }
+
+    void on_cancelled(const std::exception& cause, bool handled) override {
+        signal_completed(&cause, handled);
+    }
+};
+
+} // namespace rx3
+} // namespace coroutines
+} // namespace kotlinx
+
+/*
+ * TODO: Semantic Implementation Tasks
+ *
+ * 1. Implement Observable<T>.create from RxJava3
+ * 2. Implement ProducerScope<T> and SendChannel<T> interfaces
+ * 3. Implement Mutex for thread-safe emission
+ * 4. Implement SelectClause2 for select support
+ * 5. Implement ChannelResult<T> type
+ * 6. Implement atomic signal state management
+ * 7. Implement UndeliverableException handling
+ * 8. Implement completion and cancellation logic
+ * 9. Implement suspend send() operation
+ * 10. Add unit tests
+ */
