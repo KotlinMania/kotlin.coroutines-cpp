@@ -135,11 +135,17 @@ protected:
     virtual void parent_cancelled(std::shared_ptr<Job> parent);
     virtual bool child_completed(std::shared_ptr<Job> child, void* child_state);
     
+    // JobImpl-specific properties
+    virtual bool on_cancel_complete() const { return false; }
+
+    // Completion methods
+    bool make_completing(void* proposed_update);
+
     // Utility methods
     virtual std::string name_string() const;
     virtual std::string to_string() const;
     virtual std::string cancellation_exception_message() const;
-    virtual bool handles_exception() const;
+    virtual bool handles_exception() const { return true; }
     
     // State predicates
     bool is_active_state(void* state) const;

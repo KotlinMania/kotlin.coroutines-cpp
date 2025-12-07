@@ -7,6 +7,7 @@
  */
 
 #include "JobImpl.hpp"
+#include "../../../include/kotlinx/coroutines/CoroutineContext.hpp"
 #include <stdexcept>
 
 namespace kotlinx {
@@ -18,46 +19,37 @@ JobImpl::JobImpl(bool active) : JobSupport(active) {
 }
 
 JobImpl::JobImpl(struct Job* parent) : JobSupport(true) {
-    if (parent) {
-        // Initialize parent-child relationship
-        auto parent_job = std::shared_ptr<struct Job>(parent, [](struct Job*){}); // Non-owning shared_ptr
-        auto child_handle = parent_job->attach_child(shared_from_this());
-        _parent_handle.store(child_handle.get(), std::memory_order_release);
-    }
+    // Call initParentJob as in the Kotlin version
+    init_parent_job(parent ? std::shared_ptr<struct Job>(parent, [](struct Job*){}) : nullptr);
 }
 
 JobImpl::~JobImpl() = default;
 
-bool JobImpl::complete() {
-    // Simplified implementation for completable jobs
-    // In the full implementation, this would call JobSupport's makeCompleting
-    // For now, just return true to indicate the job can be completed
-    return !is_completed();
+// JobSupport provides the key() implementation
+
+// JobImpl-specific implementation
+bool JobImpl::handles_exception() const {
+    // Check if parent handles exceptions (similar to Kotlin implementation)
+    // For now, return true (default behavior)
+    // TODO: Implement the full parent chain checking logic
+    return true;
 }
 
 bool JobImpl::complete_exceptionally(Throwable* exception) {
-    // Convert Throwable to exception_ptr
+    // For now, create a simple exception wrapper
+    // In the full implementation, this would create CompletedExceptionally
     std::exception_ptr ep;
     if (exception) {
-        // For now, create a runtime_error. In a full implementation,
-        // this would properly convert the Throwable
         try {
             throw std::runtime_error("Job completed exceptionally");
         } catch (...) {
             ep = std::current_exception();
         }
-    } else {
-        // Create a generic cancellation exception
-        try {
-            throw std::runtime_error("Job cancelled");
-        } catch (...) {
-            ep = std::current_exception();
-        }
     }
 
-    // Cancel the job with the exception
-    cancel(ep);
-    return true;
+    // Call makeCompleting with CompletedExceptionally
+    // For now, we'll just pass the exception pointer
+    return make_completing(&ep);
 }
 
 // Factory functions
