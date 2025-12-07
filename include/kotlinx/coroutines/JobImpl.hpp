@@ -19,7 +19,7 @@ namespace coroutines {
  *         makeCompleting(CompletedExceptionally(exception))
  * }
  */
-class JobImpl : public JobSupport {
+class JobImpl : public JobSupport, public virtual CompletableJob {
 public:
     /**
      * Creates a new JobImpl with the specified active state.
@@ -34,7 +34,11 @@ public:
     virtual ~JobImpl();
 
     // CoroutineContext::Element interface implementation
-    CoroutineContext::Key* key() const override;
+    CoroutineContext::Key* key() const;
+
+    // JobImpl-specific overrides
+    bool on_cancel_complete() const { return true; }
+    bool handles_exception() const;
 
     // CompletableJob interface implementation
     bool complete();

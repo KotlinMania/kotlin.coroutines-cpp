@@ -6,7 +6,7 @@
  * in the companion header file: `include/kotlinx/coroutines/JobImpl.hpp`.
  */
 
-#include "JobImpl.hpp"
+#include "../../../include/kotlinx/coroutines/JobImpl.hpp"
 #include "../../../include/kotlinx/coroutines/CoroutineContext.hpp"
 #include <stdexcept>
 
@@ -27,6 +27,7 @@ JobImpl::~JobImpl() = default;
 
 // CoroutineContext::Element interface implementation
 CoroutineContext::Key* JobImpl::key() const {
+    // Explicitly return the Job key
     return Job::key;
 }
 
