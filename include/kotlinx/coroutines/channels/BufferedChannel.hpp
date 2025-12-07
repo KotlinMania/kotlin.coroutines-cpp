@@ -1,229 +1,259 @@
 #pragma once
-#include "kotlinx/coroutines/channels/Channel.hpp"
+#include "Channel.hpp"
 #include <atomic>
 #include <memory>
 #include <vector>
 #include <deque>
 #include <condition_variable>
 #include <mutex>
+#include <cstdint>
+#include <functional>
 
 namespace kotlinx {
 namespace coroutines {
 namespace channels {
 
-template <typename E>
-struct ChannelSegment {
-    long long id;
-    ChannelSegment<E>* prev;
-    ChannelSegment<E>* next;
-    // Data storage (implied, likely an array of std::optional<E> or similar)
-    // std::vector<E> data; 
-    
-    // Pointers/State for the segment algorithms
-    
-    ChannelSegment(long long id, ChannelSegment<E>* prev) : id(id), prev(prev), next(nullptr) {}
-    virtual ~ChannelSegment() = default;
-    
-    // Stub methods for logic used in BufferedChannel
-    void cleanPrev() { 
-        if (prev) { delete prev; prev = nullptr; } // rudimentary cleanup
-    }
-    void onSlotCleaned() {}
+// Forward declarations
+template <typename E> class BufferedChannel;
+
+/**
+ * Number of cells in each segment.
+ * This mirrors the Kotlin implementation's segment size.
+ */
+constexpr int SEGMENT_SIZE = 32;
+
+/**
+ * Special buffer end values for different channel types.
+ * These constants match the Kotlin implementation.
+ */
+constexpr long long BUFFER_END_RENDEZVOUS = -1L;
+constexpr long long BUFFER_END_UNLIMITED = -2L;
+
+/**
+ * Cell states for the lock-free channel implementation.
+ * Each cell in a segment can be in one of these states.
+ */
+enum class CellState : std::uintptr_t {
+    EMPTY = 0,
+    BUFFERED = 1,
+    WAITER_SENDER = 2,
+    WAITER_RECEIVER = 3,
+    CHANNEL_CLOSED = 4,
+    INTERRUPTED_SEND = 5,
+    INTERRUPTED_RECEIVE = 6,
+    IN_BUFFER = 7,
+    NULL_SEGMENT = 8
 };
 
 /**
- * The buffered channel implementation, which also serves as a rendezvous channel when the capacity is zero.
- * The high-level structure bases on a conceptually infinite array for storing elements and waiting requests,
- * separate counters of [send] and [receive] invocations that were ever performed, and an additional counter
- * that indicates the end of the logical buffer by counting the number of array cells it ever contained.
- *
- * The key idea is that both [send] and [receive] start by incrementing their counters, assigning the array cell
- * referenced by the counter. In case of rendezvous channels, the operation either suspends and stores its continuation
- * in the cell or makes a rendezvous with the opposite request.
- *
- * Please see the ["Fast and Scalable Channels in Kotlin Coroutines"](https://arxiv.org/abs/2211.04986)
- * paper by Nikita Koval, Roman Elizarov, and Dan Alistarh for the detailed algorithm description.
+ * Base class for waiters (suspended coroutines) in the channel.
+ * This represents a continuation that is waiting in a channel cell.
+ */
+class Waiter {
+public:
+    virtual ~Waiter() = default;
+    virtual void resume() = 0;
+    virtual void resume_with_exception(std::exception_ptr exception) = 0;
+    virtual void on_cancellation() = 0;
+};
+
+/**
+ * A segment in the channel's lock-free linked list structure.
+ * Each segment contains a fixed number of cells that can store
+ * either buffered elements or waiting coroutines.
+ */
+template <typename E>
+class ChannelSegment {
+public:
+    const long long id;
+    std::atomic<ChannelSegment<E>*> prev;
+    std::atomic<ChannelSegment<E>*> next;
+    BufferedChannel<E>* channel;
+    
+    // Two registers per slot: state + element/waiter
+    std::atomic<std::uintptr_t> states[SEGMENT_SIZE];
+    std::atomic<void*> data[SEGMENT_SIZE];
+    
+    ChannelSegment(long long id, ChannelSegment<E>* prev, BufferedChannel<E>* channel);
+    virtual ~ChannelSegment() = default;
+    
+    /**
+     * Gets the state of the cell at the specified index.
+     * Uses acquire memory ordering for proper synchronization.
+     */
+    CellState get_state(int index) const {
+        return static_cast<CellState>(states[index].load(std::memory_order_acquire));
+    }
+    
+    /**
+     * Attempts to update the state of the cell at the specified index.
+     * Uses compare-and-swap with acquire-release semantics.
+     */
+    bool cas_state(int index, CellState expected, CellState desired) {
+        std::uintptr_t expected_val = static_cast<std::uintptr_t>(expected);
+        std::uintptr_t desired_val = static_cast<std::uintptr_t>(desired);
+        return states[index].compare_exchange_strong(
+            expected_val,
+            desired_val,
+            std::memory_order_acq_rel,
+            std::memory_order_acquire
+        );
+    }
+    
+    /**
+     * Gets the data (element or waiter) stored in the cell.
+     */
+    void* get_data(int index) const {
+        return data[index].load(std::memory_order_acquire);
+    }
+    
+    /**
+     * Sets the data in the cell with release semantics.
+     */
+    void set_data(int index, void* value) {
+        data[index].store(value, std::memory_order_release);
+    }
+    
+    /**
+     * Attempts to update both state and data atomically.
+     * This is a critical operation for maintaining consistency.
+     */
+    bool cas_state_and_data(int index, CellState expected_state, void* expected_data,
+                           CellState desired_state, void* desired_data);
+    
+    /**
+     * Cleans up the previous segment to prevent memory leaks.
+     */
+    void clean_prev();
+    
+    /**
+     * Called when a slot in this segment is cleaned up.
+     */
+    virtual void on_slot_cleaned() {}
+    
+    /**
+     * Checks if this segment has been removed from the linked list.
+     */
+    bool is_removed() const {
+        return get_state(SEGMENT_SIZE - 1) == CellState::NULL_SEGMENT;
+    }
+    
+    /**
+     * Marks this segment as removed.
+     */
+    void mark_removed() {
+        states[SEGMENT_SIZE - 1].store(static_cast<std::uintptr_t>(CellState::NULL_SEGMENT), 
+                                      std::memory_order_release);
+    }
+    
+    /**
+     * Closes this segment for further modifications.
+     */
+    ChannelSegment<E>* close();
+};
+
+/**
+ * The buffered channel implementation, which also serves as a rendezvous channel when capacity is zero.
+ * 
+ * This implementation follows the "Fast and Scalable Channels in Kotlin Coroutines" algorithm
+ * (https://arxiv.org/abs/2211.04986) by Nikita Koval, Roman Elizarov, and Dan Alistarh.
+ * 
+ * The high-level structure is based on a conceptually infinite array for storing elements 
+ * and waiting requests, with separate counters for send and receive operations that have 
+ * ever been performed. An additional counter indicates the end of the logical buffer.
+ * 
+ * The key insight is that both send() and receive() start by incrementing their counters,
+ * which assigns them a unique cell to process. For rendezvous channels (capacity = 0),
+ * the operation either suspends (storing its continuation in the cell) or makes a 
+ * rendezvous with the opposite request. Each cell can be processed by exactly one 
+ * send() and one receive(). For buffered channels, send() operations can add elements 
+ * without suspension if the logical buffer contains the cell.
  */
 template <typename E>
 class BufferedChannel : public Channel<E> {
 public:
-    int capacity;
-
-    BufferedChannel(int capacity) : capacity(capacity) {
-        // init logic
-    }
-
-    virtual ~BufferedChannel() = default;
-
-protected:
-    // State
-    std::deque<E> buffer;
-    mutable std::mutex mtx;
-    std::condition_variable not_empty;
-    std::condition_variable not_full;
-    bool closed = false;
-    std::exception_ptr close_cause = nullptr;
-    std::vector<std::function<void(std::exception_ptr)>> close_handlers;
-
-public:
-    // SendChannel overrides
-    bool is_closed_for_send() const override {
-        std::lock_guard<std::mutex> lock(mtx);
-        return closed;
-    }
-
-    void send(E element) override {
-        std::unique_lock<std::mutex> lock(mtx);
-        if (closed) {
-             throw std::runtime_error("Channel is closed for send");
-        }
-        // Suspension logic (blocking for now)
-        if (capacity != Channel<E>::UNLIMITED) {
-            not_full.wait(lock, [this]() { 
-                return (buffer.size() < (size_t)capacity) || closed; 
-            });
-        }
-        if (closed) {
-             throw std::runtime_error("Channel is closed for send");
-        }
-        buffer.push_back(element);
-        not_empty.notify_one();
-    }
-
-    ChannelResult<void> try_send(E element) override {
-        std::lock_guard<std::mutex> lock(mtx);
-        if (closed) return ChannelResult<void>::closed_result(close_cause);
-        if (capacity != Channel<E>::UNLIMITED && buffer.size() >= (size_t)capacity) {
-            return ChannelResult<void>::failure();
-        }
-        buffer.push_back(element);
-        not_empty.notify_one();
-        return ChannelResult<void>::success(nullptr);
-    }
-
-    bool close(std::exception_ptr cause = nullptr) override {
-        std::lock_guard<std::mutex> lock(mtx);
-        if (closed) return false;
-        closed = true;
-        close_cause = cause;
-        not_empty.notify_all();
-        not_full.notify_all();
-        
-        // Invoke handlers
-        for (auto& handler : close_handlers) {
-            // handlers should be safe, or we wrap in try-catch
-            try { handler(cause); } catch(...) {}
-        }
-        close_handlers.clear();
-        return true;
-    }
-
-    void invoke_on_close(std::function<void(std::exception_ptr)> handler) override {
-        std::lock_guard<std::mutex> lock(mtx);
-        if (closed) {
-            // Already closed, invoke immediately
-            try { handler(close_cause); } catch(...) {}
-        } else {
-            close_handlers.push_back(handler);
-        }
-    }
-
-    // ReceiveChannel overrides
-    bool is_closed_for_receive() const override {
-        std::lock_guard<std::mutex> lock(mtx);
-        return closed && buffer.empty();
-    }
-
-    bool is_empty() const override {
-        std::lock_guard<std::mutex> lock(mtx);
-        return buffer.empty();
-    }
-
-    E receive() override {
-        std::unique_lock<std::mutex> lock(mtx);
-        not_empty.wait(lock, [this]() { 
-            return !buffer.empty() || closed; 
-        });
-        
-        if (buffer.empty() && closed) {
-             // throw ClosedReceiveChannelException
-             throw std::runtime_error("Channel is closed for receive");
-        }
-        
-        E val = buffer.front();
-        buffer.pop_front();
-        not_full.notify_one();
-        return val;
-    }
-
-    ChannelResult<E> receive_catching() override {
-         std::unique_lock<std::mutex> lock(mtx);
-         not_empty.wait(lock, [this]() { 
-            return !buffer.empty() || closed; 
-        });
-        
-        if (buffer.empty() && closed) {
-             return ChannelResult<E>::closed_result(close_cause);
-        }
-        
-        E val = buffer.front();
-        buffer.pop_front(); // ERROR: Val copy?
-        // E needs to be copyable or movable.
-        not_full.notify_one();
-        // Here we need to return a pointer or wrapper. ChannelResult holds a pointer?
-        // ChannelResult definition in Channel.hpp expects T*. 
-        // This is tricky for value types.
-        // We might need to change ChannelResult design or allocate.
-        // For now, let's assume we can new it, or change ChannelResult.
-        return ChannelResult<E>::success(new E(val)); // Memory leak risk?
-    }
-
-    ChannelResult<E> try_receive() override {
-        std::lock_guard<std::mutex> lock(mtx);
-        if (buffer.empty()) {
-            if (closed) return ChannelResult<E>::closed_result(close_cause);
-            return ChannelResult<E>::failure();
-        }
-        E val = buffer.front();
-        buffer.pop_front();
-        not_full.notify_one();
-        return ChannelResult<E>::success(new E(val));
-    }
-
-    std::shared_ptr<ChannelIterator<E>> iterator() override {
-        // Implement iterator
-        return std::make_shared<BufferedChannelIterator>(this);
-    }
-
-    void cancel(std::exception_ptr cause = nullptr) override {
-        close(cause);
-    }
+    /**
+     * Creates a new BufferedChannel with the specified capacity.
+     * @param capacity Channel capacity; use Channel::RENDEZVOUS for rendezvous channel
+     *                 and Channel::UNLIMITED for unlimited capacity.
+     * @param onUndeliveredElement Optional handler for elements that cannot be delivered
+     */
+    BufferedChannel(int capacity, std::function<void(const E&, std::exception_ptr)> onUndeliveredElement = nullptr);
     
+    virtual ~BufferedChannel();
+    
+    // SendChannel interface implementation
+    bool is_closed_for_send() const override;
+    void send(E element) override;
+    ChannelResult<void> try_send(E element) override;
+    bool close(std::exception_ptr cause = nullptr) override;
+    void invoke_on_close(std::function<void(std::exception_ptr)> handler) override;
+    
+    // ReceiveChannel interface implementation  
+    bool is_closed_for_receive() const override;
+    bool is_empty() const override;
+    E receive() override;
+    ChannelResult<E> receive_catching() override;
+    ChannelResult<E> try_receive() override;
+    std::shared_ptr<ChannelIterator<E>> iterator() override;
+    void cancel(std::exception_ptr cause = nullptr) override;
+
 private:
-    class BufferedChannelIterator : public ChannelIterator<E> {
-        BufferedChannel<E>* channel;
-        E nextVal;
-        bool hasNextVal = false;
-    public:
-        BufferedChannelIterator(BufferedChannel<E>* c) : channel(c) {}
-        
-        bool has_next() override {
-             auto result = channel->receive_catching();
-             if (result.is_success()) {
-                 nextVal = *result.get_or_null();
-                 delete result.get_or_null(); // Cleanup if we allocated
-                 hasNextVal = true;
-                 return true;
-             }
-             return false;
-        }
-        
-        E next() override {
-            if (!hasNextVal) throw std::runtime_error("No next element");
-            hasNextVal = false;
-            return nextVal;
-        }
-    };
+    // Core atomic counters - these are the heart of the lock-free algorithm
+    std::atomic<long long> sendersAndCloseStatus;  // Combined counter + close flag
+    std::atomic<long long> receivers;              // Receiver counter
+    std::atomic<long long> bufferEnd;              // Buffer end counter
+    std::atomic<long long> completedExpandBuffersAndPauseFlag;  // Expansion synchronization
+    
+    // Segment references for the lock-free linked list
+    std::atomic<ChannelSegment<E>*> sendSegment;
+    std::atomic<ChannelSegment<E>*> receiveSegment;
+    std::atomic<ChannelSegment<E>*> bufferEndSegment;
+    
+    // Channel configuration
+    int capacity_;
+    std::function<void(const E&, std::exception_ptr)> onUndeliveredElement_;
+    
+    // Close state management
+    std::atomic<bool> closed_;
+    std::exception_ptr closeCause_;  // Not atomic, protected by mutex
+    std::vector<std::function<void(std::exception_ptr)>> closeHandlers_;
+    mutable std::mutex closeMutex_;
+    
+    // Helper methods for counter manipulation
+    static long long initialBufferEnd(int capacity);
+    static long long extractSendersCounter(long long sendersAndCloseStatus);
+    static bool extractClosedStatus(long long sendersAndCloseStatus);
+    static long long packSendersAndCloseStatus(long long senders, bool closed);
+    
+    // Core send/receive algorithms (these will be implemented in the .cpp file)
+    void sendImpl(const E& element);
+    void sendImplSuspend(ChannelSegment<E>* segment, int index, const E& element, long long s, void* waiter);
+    E receiveImpl();
+    E receiveImplSuspend(ChannelSegment<E>* segment, int index, long long r);
+    
+    // Segment management
+    ChannelSegment<E>* findSegmentSend(long long id, ChannelSegment<E>* startFrom);
+    ChannelSegment<E>* findSegmentReceive(long long id, ChannelSegment<E>* startFrom);
+    ChannelSegment<E>* createSegment(long long id, ChannelSegment<E>* prev);
+    
+    // Cell state management
+    void updateCellSend(ChannelSegment<E>* segment, int index, const E& element, long long s, void* waiter, bool closed);
+    void updateCellReceive(ChannelSegment<E>* segment, int index, long long r, void* waiter);
+    
+    // Buffer management
+    bool shouldSendSuspend(long long sendersAndCloseStatus) const;
+    bool bufferOrRendezvousSend(long long senders) const;
+    bool isRendezvousOrUnlimited() const;
+    
+    // Close and cleanup operations
+    void completeClose(long long sendersCur);
+    ChannelSegment<E>* closeLinkedList();
+    void removeUnprocessedElements(ChannelSegment<E>* lastSegment, long long sendersCounter);
+    void cancelSuspendedReceiveRequests(ChannelSegment<E>* lastSegment, long long sendersCounter);
+    
+    // Iterator implementation
+    class BufferedChannelIterator;
 };
 
 } // namespace channels
