@@ -1,9 +1,10 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/MainCoroutineDispatcher.kt
 //
 // TODO:
 // - Abstract class inheritance from CoroutineDispatcher
-// - toString override needs proper C++ stream operator
+// - tostd::string override needs proper C++ stream operator
 // - limitedParallelism needs implementation
 // - InternalCoroutinesApi annotation handling
 
@@ -20,7 +21,7 @@ class CoroutineDispatcher;
  *
  * Platform may or may not provide instance of `MainDispatcher`, see documentation to [Dispatchers.Main]
  */
-class MainCoroutineDispatcher : public CoroutineDispatcher {
+class MainCoroutineDispatcher : CoroutineDispatcher {
 public:
     /**
      * Returns dispatcher that executes coroutines immediately when it is already in the right context
@@ -32,7 +33,7 @@ public:
      *
      * Example of usage:
      * ```
-     * suspend fun updateUiElement(val text: String) {
+std::string text) {;
      *     /*
      *      * If it is known that updateUiElement can be invoked both from the Main thread and from other threads,
      *      * `immediate` dispatcher is used as a performance optimization to avoid unnecessary dispatch.
@@ -64,7 +65,7 @@ public:
     CoroutineDispatcher& limited_parallelism(int parallelism, const std::string* name) override;
 
     /**
-     * Internal method for more specific [toString] implementations. It returns non-null
+     * Internal method for more specific [tostd::string] implementations. It returns non-nullptr
      * string if this dispatcher is set in the platform as the main one.
      * @suppress
      */

@@ -1,3 +1,5 @@
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/internal/Concurrent.kt
 //
@@ -9,34 +11,34 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // TODO: Remove imports, fully qualify or add includes:
 // import kotlinx.atomicfu.*
 // import kotlinx.cinterop.*
 // import kotlinx.atomicfu.locks.withLock as withLock2
 
-// TODO: internal actual typealias
+// TODO: actual typealias
 using ReentrantLock = kotlinx::atomicfu::locks::SynchronizedObject;
 
-// TODO: internal actual inline function
+// TODO: actual inline function
 template<typename T>
 inline T with_lock(ReentrantLock& lock, std::function<T()> action) {
     // TODO: lock.withLock2(action)
     return action();
 }
 
-// TODO: internal actual function
+// TODO: actual function
 template<typename E>
 std::unordered_set<E> identity_set(int expected_size) {
     return std::unordered_set<E>();
 }
 
-// TODO: internal actual typealias
+// TODO: actual typealias
 // TODO: kotlin.concurrent.Volatile - use std::atomic or volatile
 using BenignDataRace = /* kotlin::concurrent::Volatile */ int; // placeholder
 
-// TODO: internal actual class
+// TODO: actual class
 template<typename V>
 class WorkaroundAtomicReference {
 private:

@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Exceptions.common.kt
 //
@@ -17,10 +18,10 @@ class Job; // Forward declaration
 /**
  * This exception gets thrown if an exception is caught while processing [CompletionHandler] invocation for [Job].
  *
- * @suppress **This an internal API and should not be used from general code.**
+ * @suppress **This an API and should not be used from general code.**
  */
 // @InternalCoroutinesApi
-class CompletionHandlerException : public std::runtime_error {
+class CompletionHandlerException : std::runtime_error {
 private:
     std::exception_ptr cause_;
 
@@ -32,7 +33,7 @@ public:
 };
 
 // TODO: expect open class - needs platform-specific base implementation
-class CancellationException : public std::runtime_error {
+class CancellationException : std::runtime_error {
 public:
     explicit CancellationException(const std::string& message)
         : std::runtime_error(message) {}
@@ -43,8 +44,8 @@ public:
 // TODO: expect function - factory function for CancellationException with cause
 CancellationException* make_cancellation_exception(const std::string& message, std::exception_ptr cause);
 
-// TODO: expect internal class - needs platform-specific implementation
-class JobCancellationException : public CancellationException {
+// TODO: expect class - needs platform-specific implementation
+class JobCancellationException : CancellationException {
 private:
     std::exception_ptr cause_;
     Job* job_;
@@ -57,7 +58,7 @@ public:
     std::exception_ptr get_cause() const { return cause_; }
 };
 
-class CoroutinesInternalError : public std::runtime_error {
+class CoroutinesInternalError : std::runtime_error {
 private:
     std::exception_ptr cause_;
 
@@ -69,7 +70,7 @@ public:
 };
 
 // For use in tests
-// TODO: expect val - needs platform-specific implementation
+// TODO: expect auto - needs platform-specific implementation
 extern const bool RECOVER_STACK_TRACES;
 
 } // namespace coroutines

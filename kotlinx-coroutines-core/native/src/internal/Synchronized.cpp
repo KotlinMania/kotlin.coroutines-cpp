@@ -1,3 +1,5 @@
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/internal/Synchronized.kt
 //
@@ -8,7 +10,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // TODO: Remove imports, fully qualify or add includes:
 // import kotlinx.cinterop.*
@@ -16,17 +18,17 @@ namespace internal {
 // import kotlinx.atomicfu.locks.withLock as withLock2
 
 /**
- * @suppress **This an internal API and should not be used from general code.**
+ * @suppress **This an API and should not be used from general code.**
  */
 // TODO: @InternalCoroutinesApi
-// TODO: public actual typealias
+// TODO: actual typealias
 using SynchronizedObject = kotlinx::atomicfu::locks::SynchronizedObject;
 
 /**
- * @suppress **This an internal API and should not be used from general code.**
+ * @suppress **This an API and should not be used from general code.**
  */
 // TODO: @InternalCoroutinesApi
-// TODO: public actual inline function
+// TODO: actual inline function
 template<typename T>
 inline T synchronized_impl(SynchronizedObject& lock, std::function<T()> block) {
     // TODO: lock.withLock2(block)

@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Original Kotlin package: kotlinx.coroutines.debug.junit5
 // Line-by-line C++ transliteration from Kotlin
 //
@@ -7,7 +8,7 @@
 // TODO: Optional - Java Optional, use std::optional
 // TODO: Method, Constructor - Java reflection types, use C++ RTTI or type_info
 // TODO: @JvmField, @JvmOverloads - Kotlin JVM annotations
-// TODO: internal class/constructor - visibility modifiers
+// TODO: class/constructor - visibility modifiers
 // TODO: companion object - static factory methods
 // TODO: synchronized - Java synchronization, use std::lock_guard
 
@@ -22,8 +23,8 @@ namespace coroutines {
 namespace debug {
 namespace junit5 {
 
-// TODO: internal class
-class CoroutinesTimeoutException : public std::exception {
+// TODO: class
+class CoroutinesTimeoutException : std::exception {
 public:
     CoroutinesTimeoutException(long timeout_ms)
         : timeout_ms_(timeout_ms)
@@ -67,10 +68,10 @@ private:
 // class HangingTest {
 //     @JvmField
 //     @RegisterExtension
-//     val timeout = CoroutinesTimeoutExtension.seconds(5)
+//     auto timeout = CoroutinesTimeoutExtension.seconds(5)
 //
 //     @Test
-//     fun testThatHangs() = runBlocking {
+//     auto test_that_hangs() = runBlocking {
 //          ...
 //          delay(Long.MAX_VALUE) // somewhere deep in the stack
 //          ...
@@ -80,11 +81,11 @@ private:
 //
 // @see CoroutinesTimeout
 
-// NB: the constructor is not private so that JUnit is able to call it via reflection.
-// TODO: internal class CoroutinesTimeoutExtension : InvocationInterceptor
+// NB: the constructor is not so that JUnit is able to call it via reflection.
+// TODO: class CoroutinesTimeoutExtension : InvocationInterceptor
 class CoroutinesTimeoutExtension /* TODO: : InvocationInterceptor */ {
 public:
-    // TODO: internal constructor
+    // TODO: constructor
     CoroutinesTimeoutExtension(
         bool enable_coroutine_creation_stack_traces = false,
         std::optional<long> timeout_ms = std::nullopt,
@@ -179,7 +180,7 @@ public:
     //   anew and store an uninstaller.
 private:
     void initialize(/* TODO: ExtensionContext extension_context */) {
-        // TODO: val store: ExtensionContext.Store = extension_context.getStore(
+        // TODO: ExtensionContext.Store store = extension_context.getStore(
         //     ExtensionContext.Namespace.create(CoroutinesTimeoutExtension::class, extension_context.uniqueId))
 
         // It seems that the JUnit5 documentation does not specify the relationship between the extension instances and
@@ -188,7 +189,7 @@ private:
         // just in case this risk exists, we synchronize here.
 
         // TODO: synchronized(store) {
-        //     if (store["debugProbes"] == null) {
+        //     if (store["debugProbes"] == nullptr) {
         //         if (!try_pass_debug_probes_ownership()) {
         //             // This means that the DebugProbes.install call from the constructor of this extensions has
         //             // already been matched with a corresponding cleanup procedure for JUnit5, but then JUnit5 cleaned
@@ -252,7 +253,7 @@ public:
         // TODO: intercept_lifecycle_method(invocation, invocation_context, extension_context);
     }
 
-    // TODO: override fun <T : Any?> interceptTestFactoryMethod
+    // TODO: override fun <T : Any*> interceptTestFactoryMethod
     template<typename T>
     T intercept_test_factory_method(
         /* TODO: parameters */
@@ -275,7 +276,7 @@ private:
         // TODO: return AnnotationSupport.findAnnotation(this, CoroutinesTimeout::class.java).let {
         //     when {
         //         it.isPresent -> it
-        //         enclosingClass != null -> enclosingClass.coroutines_timeout_annotation()
+        //         enclosingClass != nullptr -> enclosingClass.coroutines_timeout_annotation()
         //         else -> Optional.empty()
         //     }
         // }

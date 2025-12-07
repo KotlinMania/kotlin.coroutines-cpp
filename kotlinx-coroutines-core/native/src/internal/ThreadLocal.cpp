@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/internal/ThreadLocal.kt
 //
@@ -8,12 +9,12 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // TODO: Remove imports, fully qualify or add includes:
 // import kotlin.native.concurrent.ThreadLocal
 
-// TODO: internal actual class
+// TODO: actual class
 template<typename T>
 class CommonThreadLocal {
 private:
@@ -32,13 +33,13 @@ public:
     }
 };
 
-// TODO: internal actual function
+// TODO: actual function
 template<typename T>
 CommonThreadLocal<T>* common_thread_local(void* name) {
     return new CommonThreadLocal<T>(name);
 }
 
-// TODO: @ThreadLocal private object implementing MutableMap
+// TODO: @ThreadLocal class implementing MutableMap
 class Storage {
 private:
     std::unordered_map<void*, void*> storage;

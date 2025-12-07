@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/Synchronized.common.kt
 //
@@ -10,10 +11,10 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 /**
- * @suppress **This an internal API and should not be used from general code.**
+ * @suppress **This an API and should not be used from general code.**
  */
 // TODO: @InternalCoroutinesApi annotation
 // TODO: expect open class - needs platform-specific implementation (e.g., std::mutex)
@@ -24,7 +25,7 @@ public:
 };
 
 /**
- * @suppress **This an internal API and should not be used from general code.**
+ * @suppress **This an API and should not be used from general code.**
  */
 // TODO: @InternalCoroutinesApi annotation
 // TODO: expect inline function - needs platform-specific implementation
@@ -35,7 +36,7 @@ inline T synchronized_impl(SynchronizedObject* lock, Block block) {
 }
 
 /**
- * @suppress **This an internal API and should not be used from general code.**
+ * @suppress **This an API and should not be used from general code.**
  */
 // TODO: @OptIn(ExperimentalContracts::class)
 // TODO: @InternalCoroutinesApi annotation

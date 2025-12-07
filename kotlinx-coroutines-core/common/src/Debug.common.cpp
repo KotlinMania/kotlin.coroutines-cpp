@@ -1,3 +1,6 @@
+#include <string>
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Debug.common.kt
 //
@@ -23,10 +26,10 @@ extern void assert(std::function<bool()> value);
  *
  * Example of usage:
  * ```
- * class BadResponseCodeException(val responseCode: Int) : Exception(), CopyableThrowable<BadResponseCodeException> {
+Int responseCode) : Exception(), CopyableThrowable<BadResponseCodeException> {;
  *
- *     override fun createCopy(): BadResponseCodeException {
- *         val result = BadResponseCodeException(responseCode)
+ *     virtual auto create_copy(): BadResponseCodeException {
+ *         auto result = BadResponseCodeException(responseCode)
  *         result.initCause(this)
  *         return result
  *     }
@@ -45,7 +48,7 @@ public:
      *
      * For better debuggability, it is recommended to use original exception as [cause][Throwable.cause] of the resulting one.
      * Stacktrace of copied exception will be overwritten by stacktrace recovery machinery by [Throwable.setStackTrace] call.
-     * An exception can opt-out of copying by returning `null` from this function.
+     * An exception can opt-out of copying by returning `nullptr` from this function.
      * Suppressed exceptions of the original exception should not be copied in order to avoid circular exceptions.
      *
      * This function is allowed to create a copy with a modified [message][Throwable.message], but it should be noted

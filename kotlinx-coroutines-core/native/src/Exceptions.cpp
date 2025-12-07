@@ -1,3 +1,5 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/Exceptions.kt
 //
@@ -29,8 +31,8 @@ CancellationException* make_cancellation_exception(std::string* message, std::ex
  * without cause, or with a cause or exception that is not [CancellationException]
  * (see [Job.getCancellationException]).
  */
-// TODO: internal actual class
-class JobCancellationException : public CancellationException {
+// TODO: actual class
+class JobCancellationException : CancellationException {
 public:
     Job* job;
 
@@ -60,8 +62,7 @@ public:
 };
 
 // For use in tests
-// TODO: internal actual val
-const bool kRecoverStackTraces = false;
+// TODO: actual auto const bool kRecoverStackTraces = false;
 
 } // namespace coroutines
 } // namespace kotlinx

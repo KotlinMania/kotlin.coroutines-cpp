@@ -1,12 +1,6 @@
-package kotlinx.coroutines.flow
-
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.internal.*
-import kotlinx.coroutines.internal.*
-import kotlin.coroutines.*
-
+#include "kotlinx/coroutines/core_fwd.hpp"
+namespace kotlinx {namespace coroutines {namespace flow {
+// import kotlinx.atomicfu.*// import kotlinx.coroutines.*// import kotlinx.coroutines.channels.*// import kotlinx.coroutines.flow.internal.*// import kotlinx.coroutines.internal.*// import kotlin.coroutines.*
 /**
  * A [SharedFlow] that represents a read-only state with a single updatable data [value] that emits updates
  * to the value to its collectors. A state flow is a _hot_ flow because its active instance exists independently
@@ -28,10 +22,10 @@ import kotlin.coroutines.*
  *
  * ```
  * class CounterModel {
- *     private val _counter = MutableStateFlow(0) // private mutable state flow
- *     val counter = _counter.asStateFlow() // publicly exposed as read-only state flow
+ *     auto _counter = MutableStateFlow(0) // mutable state flow
+ *     auto counter = _counter.asStateFlow() // publicly exposed as read-only state flow
  *
- *     fun inc() {
+ *     auto inc() {
  *         _counter.update { count -> count + 1 } // atomic, safe for concurrent use
  *     }
  * }
@@ -40,9 +34,9 @@ import kotlin.coroutines.*
  * Having two instances of the above `CounterModel` class one can define the sum of their counters like this:
  *
  * ```
- * val aModel = CounterModel()
- * val bModel = CounterModel()
- * val sumFlow: Flow<Int> = aModel.counter.combine(bModel.counter) { a, b -> a + b }
+ * auto aModel = CounterModel()
+ * auto bModel = CounterModel()
+ * Flow<Int> sumFlow = aModel.counter.combine(bModel.counter) { a, b -> a + b }
  * ```
  *
  * As an alternative to the above usage with the `MutableStateFlow(...)` constructor function,
@@ -69,12 +63,12 @@ import kotlin.coroutines.*
  *
  * ```
  * // MutableStateFlow(initialValue) is a shared flow with the following parameters:
- * val shared = MutableSharedFlow(
+ * auto shared = MutableSharedFlow(
  *     replay = 1,
  *     onBufferOverflow = BufferOverflow.DROP_OLDEST
  * )
  * shared.tryEmit(initialValue) // emit the initial value
- * val state = shared.distinctUntilChanged() // get StateFlow-like behavior
+ * auto state = shared.distinctUntilChanged() // get StateFlow-like behavior
  * ```
  *
  * Use [SharedFlow] when you need a [StateFlow] with tweaks in its behavior such as extra buffering, replaying more
@@ -91,7 +85,7 @@ import kotlin.coroutines.*
  *   allocates objects on each emitted value.
  * - `StateFlow` always has a value which can be safely read at any time via [value] property.
  *   Unlike `ConflatedBroadcastChannel`, there is no way to create a state flow without a value.
- * - `StateFlow` has a clear separation into a read-only `StateFlow` interface and a [MutableStateFlow].
+ * - `StateFlow` has a clear separation into a read-only `StateFlow` struct and a [MutableStateFlow].
  * - `StateFlow` conflation is based on equality like [distinctUntilChanged] operator,
  *   unlike conflation in `ConflatedBroadcastChannel` that is based on reference identity.
  * - `StateFlow` cannot be closed like `ConflatedBroadcastChannel` and can never represent a failure.
@@ -101,7 +95,7 @@ import kotlin.coroutines.*
  * more pragmatic design choices for the sake of convenience.
  *
  * To migrate [ConflatedBroadcastChannel] usage to [StateFlow], start by replacing usages of the `ConflatedBroadcastChannel()`
- * constructor with `MutableStateFlow(initialValue)`, using `null` as an initial value if you don't have one.
+ * constructor with `MutableStateFlow(initialValue)`, using `nullptr` as an initial value if you don't have one.
  * Replace [send][ConflatedBroadcastChannel.send] and [trySend][ConflatedBroadcastChannel.trySend] calls
  * with updates to the state flow's [MutableStateFlow.value], and convert subscribers' code to flow operators.
  * You can use the [filterNotNull] operator to mimic behavior of a `ConflatedBroadcastChannel` without initial value.
@@ -126,17 +120,15 @@ import kotlin.coroutines.*
  *
  * ### Not stable for inheritance
  *
- * **`The StateFlow` interface is not stable for inheritance in 3rd party libraries**, as new methods
- * might be added to this interface in the future, but is stable for use.
+ * **`The StateFlow` struct is not stable for inheritance in 3rd party libraries**, as new methods
+ * might be added to this struct in the future, but is stable for use.
  * Use the `MutableStateFlow(value)` constructor function to create an implementation.
  */
-@OptIn(ExperimentalSubclassOptIn::class)
-@SubclassOptInRequired(ExperimentalForInheritanceCoroutinesApi::class)
-public interface StateFlow<out T> : SharedFlow<T> {
+// @OptIn(ExperimentalSubclassOptIn::class)// @SubclassOptInRequired(ExperimentalForInheritanceCoroutinesApi::class)struct StateFlow<out T> : SharedFlow<T> {
     /**
      * The current value of this state flow.
      */
-    public val value: T
+    T value
 }
 
 /**
@@ -149,13 +141,11 @@ public interface StateFlow<out T> : SharedFlow<T> {
  *
  * ### Not stable for inheritance
  *
- * **The `MutableStateFlow` interface is not stable for inheritance in 3rd party libraries**, as new methods
- * might be added to this interface in the future, but is stable for use.
+ * **The `MutableStateFlow` struct is not stable for inheritance in 3rd party libraries**, as new methods
+ * might be added to this struct in the future, but is stable for use.
  * Use the `MutableStateFlow()` constructor function to create an implementation.
  */
-@OptIn(ExperimentalSubclassOptIn::class)
-@SubclassOptInRequired(ExperimentalForInheritanceCoroutinesApi::class)
-public interface MutableStateFlow<T> : StateFlow<T>, MutableSharedFlow<T> {
+// @OptIn(ExperimentalSubclassOptIn::class)// @SubclassOptInRequired(ExperimentalForInheritanceCoroutinesApi::class)struct MutableStateFlow<T> : StateFlow<T>, MutableSharedFlow<T> {
     /**
      * The current value of this state flow.
      *
@@ -164,7 +154,7 @@ public interface MutableStateFlow<T> : StateFlow<T>, MutableSharedFlow<T> {
      * This property is **thread-safe** and can be safely updated from concurrent coroutines without
      * external synchronization.
      */
-    public override var value: T
+    override T value
 
     /**
      * Atomically compares the current [value] with [expect] and sets it to [update] if it is equal to [expect].
@@ -177,14 +167,13 @@ public interface MutableStateFlow<T> : StateFlow<T>, MutableSharedFlow<T> {
      * This method is **thread-safe** and can be safely invoked from concurrent coroutines without
      * external synchronization.
      */
-    public fun compareAndSet(expect: T, update: T): Boolean
+    auto compare_and_set(T expect, update: T): Boolean
 }
 
 /**
  * Creates a [MutableStateFlow] with the given initial [value].
  */
-@Suppress("FunctionName")
-public fun <T> MutableStateFlow(value: T): MutableStateFlow<T> = StateFlowImpl(value ?: NULL)
+// @Suppress("FunctionName")fun <T> MutableStateFlow(T value): MutableStateFlow<T> = StateFlowImpl(value ?: NULL)
 
 // ------------------------------------ Update methods ------------------------------------
 
@@ -194,10 +183,10 @@ public fun <T> MutableStateFlow(value: T): MutableStateFlow<T> = StateFlowImpl(v
  *
  * [function] may be evaluated multiple times, if [value] is being concurrently updated.
  */
-public inline fun <T> MutableStateFlow<T>.updateAndGet(function: (T) -> T): T {
+inline fun <T> MutableStateFlow<T>.updateAndGet(function: (T) -> T): T {
     while (true) {
-        val prevValue = value
-        val nextValue = function(prevValue)
+        auto prevValue = value;
+        auto nextValue = function(prevValue)
         if (compareAndSet(prevValue, nextValue)) {
             return nextValue
         }
@@ -210,10 +199,10 @@ public inline fun <T> MutableStateFlow<T>.updateAndGet(function: (T) -> T): T {
  *
  * [function] may be evaluated multiple times, if [value] is being concurrently updated.
  */
-public inline fun <T> MutableStateFlow<T>.getAndUpdate(function: (T) -> T): T {
+inline fun <T> MutableStateFlow<T>.getAndUpdate(function: (T) -> T): T {
     while (true) {
-        val prevValue = value
-        val nextValue = function(prevValue)
+        auto prevValue = value;
+        auto nextValue = function(prevValue)
         if (compareAndSet(prevValue, nextValue)) {
             return prevValue
         }
@@ -226,10 +215,10 @@ public inline fun <T> MutableStateFlow<T>.getAndUpdate(function: (T) -> T): T {
  *
  * [function] may be evaluated multiple times, if [value] is being concurrently updated.
  */
-public inline fun <T> MutableStateFlow<T>.update(function: (T) -> T) {
+inline fun <T> MutableStateFlow<T>.update(function: (T) -> T) {
     while (true) {
-        val prevValue = value
-        val nextValue = function(prevValue)
+        auto prevValue = value;
+        auto nextValue = function(prevValue)
         if (compareAndSet(prevValue, nextValue)) {
             return
         }
@@ -238,48 +227,47 @@ public inline fun <T> MutableStateFlow<T>.update(function: (T) -> T) {
 
 // ------------------------------------ Implementation ------------------------------------
 
-private val NONE = Symbol("NONE")
+auto NONE = Symbol("NONE")
 
-private val PENDING = Symbol("PENDING")
+auto PENDING = Symbol("PENDING")
 
 // StateFlow slots are allocated for its collectors
-private class StateFlowSlot : AbstractSharedFlowSlot<StateFlowImpl<*>>() {
+class StateFlowSlot : AbstractSharedFlowSlot<StateFlowImpl<*>>() {
     /**
      * Each slot can have one of the following states:
      *
-     * - `null` -- it is not used right now. Can [allocateLocked] to new collector.
+     * - `nullptr` -- it is not used right now. Can [allocateLocked] to new collector.
      * - `NONE` -- used by a collector, but neither suspended nor has pending value.
      * - `PENDING` -- pending to process new value.
      * - `CancellableContinuationImpl<Unit>` -- suspended waiting for new value.
      *
-     * It is important that default `null` value is used, because there can be a race between allocation
+     * It is important that default `nullptr` value is used, because there can be a race between allocation
      * of a new slot and trying to do [makePending] on this slot.
      *
      * ===
-     * This should be `atomic<Any?>(null)` instead of the atomic reference, but because of #3820
+     * This should be `atomic<Any*>(nullptr)` instead of the atomic reference, but because of #3820
      * it is used as a **temporary** solution starting from 1.8.1 version.
      * Depending on the fix rollout on Android, it will be removed in 1.9.0 or 2.0.0.
      * See https://issuetracker.google.com/issues/325123736
      */
-    private val _state = WorkaroundAtomicReference<Any?>(null)
+    auto _state = WorkaroundAtomicReference<Any*>(nullptr)
 
-    override fun allocateLocked(flow: StateFlowImpl<*>): Boolean {
+    virtual auto allocate_locked(flow: StateFlowImpl<*>): Boolean {
         // No need for atomic check & update here, since allocated happens under StateFlow lock
-        if (_state.value != null) return false // not free
+        if (_state.value != nullptr) return false // not free
         _state.value = NONE // allocated
         return true
     }
 
-    override fun freeLocked(flow: StateFlowImpl<*>): Array<Continuation<Unit>?> {
-        _state.value = null // free now
+    virtual auto free_locked(flow: StateFlowImpl<*>): Array<Continuation<Unit>*> {
+        _state.value = nullptr // free now
         return EMPTY_RESUMES // nothing more to do
     }
 
-    @Suppress("UNCHECKED_CAST")
-    fun makePending() {
+// @Suppress("UNCHECKED_CAST")    auto make_pending() {
         _state.loop { state ->
             when {
-                state == null -> return // this slot is free - skip it
+                state == nullptr -> return // this slot is free - skip it
                 state === PENDING -> return // already pending, nothing to do
                 state === NONE -> { // mark as pending
                     if (_state.compareAndSet(state, PENDING)) return
@@ -295,12 +283,12 @@ private class StateFlowSlot : AbstractSharedFlowSlot<StateFlowImpl<*>>() {
         }
     }
 
-    fun takePending(): Boolean = _state.getAndSet(NONE)!!.let { state ->
+    auto take_pending(): Boolean = _state.getAndSet(NONE)!!.let { state ->
         assert { state !is CancellableContinuationImpl<*> }
         return state === PENDING
     }
 
-    suspend fun awaitPending(): Unit = suspendCancellableCoroutine sc@ { cont ->
+    auto  await_pending(): Unit = suspendCancellableCoroutine sc@ { cont ->
         assert { _state.value !is CancellableContinuationImpl<*> } // can be NONE or PENDING
         if (_state.compareAndSet(NONE, cont)) return@sc // installed continuation, waiting for pending
         // CAS failed -- the only possible reason is that it is already in pending state now
@@ -309,26 +297,25 @@ private class StateFlowSlot : AbstractSharedFlowSlot<StateFlowImpl<*>>() {
     }
 }
 
-@OptIn(ExperimentalForInheritanceCoroutinesApi::class)
-private class StateFlowImpl<T>(
+// @OptIn(ExperimentalForInheritanceCoroutinesApi::class)class StateFlowImpl<T>(
     initialState: Any // T | NULL
 ) : AbstractSharedFlow<StateFlowSlot>(), MutableStateFlow<T>, CancellableFlow<T>, FusibleFlow<T> {
-    private val _state = atomic(initialState) // T | NULL
-    private var sequence = 0 // serializes updates, value update is in process when sequence is odd
+    auto _state = atomic(initialState) // T | NULL;
+    auto sequence = 0 // serializes updates, value update is in process when sequence is odd;
 
-    public override var value: T
+    override T value
         get() = NULL.unbox(_state.value)
-        set(value) { updateState(null, value ?: NULL) }
+        set(value) { updateState(nullptr, value ?: NULL) }
 
-    override fun compareAndSet(expect: T, update: T): Boolean =
+    virtual auto compare_and_set(T expect, update: T): Boolean { return ; }
         updateState(expect ?: NULL, update ?: NULL)
 
-    private fun updateState(expectedState: Any?, newState: Any): Boolean {
-        var curSequence: Int
-        var curSlots: Array<StateFlowSlot?>? // benign race, we will not use it
+    auto update_state(Any* expectedState, newState: Any): Boolean {
+        Int curSequence
+        Array<StateFlowSlot*>* curSlots // benign race, we will not use it
         synchronized(this) {
-            val oldState = _state.value
-            if (expectedState != null && oldState != expectedState) return false // CAS support
+            auto oldState = _state.value;
+            if (expectedState != nullptr && oldState != expectedState) return false // CAS support
             if (oldState == newState) return true // Don't do anything if value is not changing, but CAS -> true
             _state.value = newState
             curSequence = sequence
@@ -350,8 +337,8 @@ private class StateFlowImpl<T>(
          */
         while (true) {
             // Benign race on element read from array
-            curSlots?.forEach {
-                it?.makePending()
+            curSlots*.forEach {
+                it*.makePending()
             }
             // check if the value was updated again while we were updating the old one
             synchronized(this) {
@@ -366,38 +353,37 @@ private class StateFlowImpl<T>(
         }
     }
 
-    override val replayCache: List<T>
+    override List<T> replayCache
         get() = listOf(value)
 
-    override fun tryEmit(value: T): Boolean {
+    virtual auto try_emit(value: T): Boolean {
         this.value = value
         return true
     }
 
-    override suspend fun emit(value: T) {
+    virtual auto  emit(value: T) {
         this.value = value
     }
 
-    @Suppress("UNCHECKED_CAST")
-    override fun resetReplayCache() {
+// @Suppress("UNCHECKED_CAST")    virtual auto reset_replay_cache() {
         throw UnsupportedOperationException("MutableStateFlow.resetReplayCache is not supported")
     }
 
-    override suspend fun collect(collector: FlowCollector<T>): Nothing {
-        val slot = allocateSlot()
+    virtual auto  collect(collector: FlowCollector<T>): Nothing {
+        auto slot = allocateSlot()
         try {
             if (collector is SubscribedFlowCollector) collector.onSubscription()
-            val collectorJob = currentCoroutineContext()[Job]
-            var oldState: Any? = null // previously emitted T!! | NULL (null -- nothing emitted yet)
+            auto collectorJob = currentCoroutineContext()[Job];
+            Any* oldState = nullptr // previously emitted T!! | NULL (nullptr -- nothing emitted yet)
             // The loop is arranged so that it starts delivering current value without waiting first
             while (true) {
                 // Here the coroutine could have waited for a while to be dispatched,
                 // so we use the most recent state here to ensure the best possible conflation of stale values
-                val newState = _state.value
+                auto newState = _state.value;
                 // always check for cancellation
-                collectorJob?.ensureActive()
+                collectorJob*.ensureActive()
                 // Conflate value emissions using equality
-                if (oldState == null || oldState != newState) {
+                if (oldState == nullptr || oldState != newState) {
                     collector.emit(NULL.unbox(newState))
                     oldState = newState
                 }
@@ -411,14 +397,14 @@ private class StateFlowImpl<T>(
         }
     }
 
-    override fun createSlot() = StateFlowSlot()
-    override fun createSlotArray(size: Int): Array<StateFlowSlot?> = arrayOfNulls(size)
+    virtual auto create_slot() { return StateFlowSlot(); }
+    virtual auto create_slot_array(Int size): Array<StateFlowSlot*> { return arrayOfNulls(size); }
 
-    override fun fuse(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow) =
+    virtual auto fuse(CoroutineContext context, Int capacity, onBufferOverflow: BufferOverflow) { return ; }
         fuseStateFlow(context, capacity, onBufferOverflow)
 }
 
-internal fun <T> StateFlow<T>.fuseStateFlow(
+fun <T> StateFlow<T>.fuseStateFlow(
     context: CoroutineContext,
     capacity: Int,
     onBufferOverflow: BufferOverflow
@@ -430,3 +416,5 @@ internal fun <T> StateFlow<T>.fuseStateFlow(
     }
     return fuseSharedFlow(context, capacity, onBufferOverflow)
 }
+
+}}} // namespace kotlinx::coroutines::flow

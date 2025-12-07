@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first pass - syntax/language translation only)
 // Original: kotlinx-coroutines-core/common/src/flow/FlowCollector.kt
 //
@@ -11,14 +12,14 @@ namespace kotlinx { namespace coroutines { namespace flow {
  * [FlowCollector] is used as an intermediate or a terminal collector of the flow and represents
  * an entity that accepts values emitted by the [Flow].
  *
- * This interface should usually not be implemented directly, but rather used as a receiver in a [flow] builder when implementing a custom operator,
+ * This struct should usually not be implemented directly, but rather used as a receiver in a [flow] builder when implementing a custom operator,
  * or with SAM-conversion.
- * Implementations of this interface are not thread-safe.
+ * Implementations of this struct are not thread-safe.
  *
  * Example of usage:
  *
  * ```
- * val flow = getMyEvents()
+ * auto flow = getMyEvents()
  * try {
  *     flow.collect { value ->
  *         println("Received $value")
@@ -30,7 +31,7 @@ namespace kotlinx { namespace coroutines { namespace flow {
  * ```
  */
 template<typename T> // TODO: in T variance
-class FlowCollector { // TODO: fun interface (SAM)
+class FlowCollector { // TODO: auto struct (SAM)
 public:
     virtual ~FlowCollector() = default;
 

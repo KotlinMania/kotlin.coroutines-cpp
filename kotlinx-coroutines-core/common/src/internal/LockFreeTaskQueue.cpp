@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/LockFreeTaskQueue.kt
 //
@@ -16,7 +17,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declarations
 template<typename E> class LockFreeTaskQueueCore;
@@ -34,7 +35,7 @@ using Core = LockFreeTaskQueueCore<E>;
  * In particular, the following execution is permitted for this queue, but is not permitted for a linearizable queue:
  *
  * ```
- * Thread 1: addLast(1) = true, removeFirstOrNull() = null
+ * Thread 1: addLast(1) = true, removeFirstOrNull() = nullptr
  * Thread 2: addLast(2) = 2 // this operation is concurrent with both operations in the first thread
  * ```
  *
@@ -219,7 +220,7 @@ public:
         return nullptr;
     }
 
-    // REMOVE_FROZEN | null (EMPTY) | E (SUCCESS)
+    // REMOVE_FROZEN | nullptr (EMPTY) | E (SUCCESS)
     void* remove_first_or_null() {
         while (true) {
             long state = _state.load();
@@ -232,7 +233,7 @@ public:
 
             void* element = array_[head & mask_].load();
             if (element == nullptr) {
-                // If queue is Single-Consumer, then element == null only when add has not finished yet
+                // If queue is Single-Consumer, then element == nullptr only when add has not finished yet
                 if (single_consumer_) return nullptr; // consider it not added yet
                 // retry (spin) until consumer adds it
                 continue;
@@ -242,13 +243,13 @@ public:
             auto* placeholder = dynamic_cast<Placeholder*>(element);
             if (placeholder) return nullptr; // consider it not added yet
 
-            // we cannot put null into array here, because copying thread could replace it with Placeholder and that is a disaster
+            // we cannot put nullptr into array here, because copying thread could replace it with Placeholder and that is a disaster
             int new_head = (head + 1) & kMaxCapacityMask;
             long new_state = update_head(state, new_head);
             if (_state.compare_exchange_weak(state, new_state)) {
                 // Array could have been copied by another thread and it is perfectly fine, since only elements
                 // between head and tail were copied and there are no extra steps we should take here
-                array_[head & mask_].store(nullptr); // now can safely put null (state was updated)
+                array_[head & mask_].store(nullptr); // now can safely put nullptr (state was updated)
                 return element; // successfully removed in fast-path
             }
 
@@ -277,7 +278,7 @@ public:
 
             long new_state = update_head(state, new_head);
             if (_state.compare_exchange_weak(state, new_state)) {
-                array_[head & mask_].store(nullptr); // now can safely put null (state was updated)
+                array_[head & mask_].store(nullptr); // now can safely put nullptr (state was updated)
                 return nullptr;
             }
         }
@@ -331,7 +332,7 @@ public:
         int index = head;
         while ((index & mask_) != (tail & mask_)) {
             void* element = array_[index & mask_].load();
-            // TODO: if (element != null && element !is Placeholder)
+            // TODO: if (element != nullptr && element !is Placeholder)
             if (element != nullptr && dynamic_cast<Placeholder*>(element) == nullptr) {
                 res.push_back(transform(static_cast<E*>(element)));
             }
@@ -344,7 +345,7 @@ public:
     bool is_closed() { return (_state.load() & kClosedMask) != 0L; }
 
     // Instance of this class is placed into array when we have to copy array, but addLast is in progress --
-    // it had already reserved a slot in the array (with null) and have not yet put its value there.
+    // it had already reserved a slot in the array (with nullptr) and have not yet put its value there.
     // Placeholder keeps the actual index (not masked) to distinguish placeholders on different wraparounds of array
     // Internal because of inlining
     class Placeholder {

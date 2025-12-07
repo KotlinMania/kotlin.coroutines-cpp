@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Original Kotlin package: kotlinx.coroutines.debug.junit5
 // Line-by-line C++ transliteration from Kotlin
 //
@@ -48,7 +49,7 @@ namespace junit5 {
 //     // does not time out, as the annotation on the method overrides the class-level one
 //     @CoroutinesTimeout(1000)
 //     @Test
-//     fun classTimeoutIsOverridden() {
+//     auto class_timeout_is_overridden() {
 //         runBlocking {
 //             delay(150)
 //         }
@@ -56,7 +57,7 @@ namespace junit5 {
 //
 //     // times out in 100 ms, timeout value is taken from the class-level annotation
 //     @Test
-//     fun classTimeoutIsUsed() {
+//     auto class_timeout_is_used() {
 //         runBlocking {
 //             delay(150)
 //         }

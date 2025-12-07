@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, syntax-only)
 // Original: kotlinx-coroutines-core/common/src/flow/terminal/Reduce.kt
 //
@@ -81,7 +82,7 @@ T single(Flow<T> flow) {
 
 /**
  * The terminal operator that awaits for one and only one value to be emitted.
- * Returns the single value or `null`, if the flow was empty or emitted more than one value.
+ * Returns the single value or `nullptr`, if the flow was empty or emitted more than one value.
  */
 template<typename T>
 T* single_or_null(Flow<T> flow) {
@@ -141,7 +142,7 @@ T first(Flow<T> flow, Predicate predicate) {
 
 /**
  * The terminal operator that returns the first element emitted by the flow and then cancels flow's collection.
- * Returns `null` if the flow was empty.
+ * Returns `nullptr` if the flow was empty.
  */
 template<typename T>
 T* first_or_null(Flow<T> flow) {
@@ -155,7 +156,7 @@ T* first_or_null(Flow<T> flow) {
 
 /**
  * The terminal operator that returns the first element emitted by the flow matching the given [predicate] and then cancels flow's collection.
- * Returns `null` if the flow did not contain an element matching the [predicate].
+ * Returns `nullptr` if the flow did not contain an element matching the [predicate].
  */
 template<typename T, typename Predicate>
 T* first_or_null(Flow<T> flow, Predicate predicate) {
@@ -189,7 +190,7 @@ T last(Flow<T> flow) {
 }
 
 /**
- * The terminal operator that returns the last element emitted by the flow or `null` if the flow was empty.
+ * The terminal operator that returns the last element emitted by the flow or `nullptr` if the flow was empty.
  */
 template<typename T>
 T* last_or_null(Flow<T> flow) {

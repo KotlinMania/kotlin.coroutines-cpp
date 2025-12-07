@@ -1,9 +1,12 @@
+#include <string>
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/CoroutineContext.kt
 //
 // TODO: actual/expect keyword not directly translatable
-// TODO: object keyword - translate to singleton or namespace with static members
-// TODO: Continuation interface from Kotlin coroutines
+// TODO: class keyword - translate to singleton or namespace with static members
+// TODO: Continuation struct from Kotlin coroutines
 // TODO: suspend function semantics
 
 namespace kotlinx {
@@ -13,8 +16,8 @@ namespace coroutines {
 // import kotlinx.coroutines.internal.*
 // import kotlin.coroutines.*
 
-// TODO: internal actual object -> singleton pattern
-class DefaultExecutor : public CoroutineDispatcher, public Delay {
+// TODO: actual class -> singleton pattern
+class DefaultExecutor : CoroutineDispatcher, Delay {
 private:
     WorkerDispatcher delegate;
 
@@ -47,7 +50,7 @@ public:
 // TODO: expect function - platform-specific declaration
 CoroutineDispatcher* create_default_dispatcher();
 
-// TODO: @PublishedApi internal actual
+// TODO: @PublishedApi actual
 Delay& kDefaultDelay = DefaultExecutor::instance();
 
 CoroutineContext CoroutineScope::new_coroutine_context(CoroutineContext context) {
@@ -74,7 +77,7 @@ inline T with_continuation_context(Continuation<void>& continuation, void* count
 }
 
 std::string to_debug_string(Continuation<void>& continuation) {
-    // TODO: toString equivalent
+    // TODO: tostd::string equivalent
     return "";
 }
 
@@ -82,9 +85,9 @@ std::string* coroutine_name(CoroutineContext& context) {
     return nullptr; // not supported on native
 }
 
-// TODO: internal actual class
+// TODO: actual class
 template<typename T>
-class UndispatchedCoroutine : public ScopeCoroutine<T> {
+class UndispatchedCoroutine : ScopeCoroutine<T> {
 private:
     Continuation<T>& u_cont;
 

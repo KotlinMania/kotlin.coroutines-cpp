@@ -1,3 +1,5 @@
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/selects/SelectUnbiased.kt
 //
@@ -54,7 +56,7 @@ R select_unbiased(BuilderFunc&& builder) {
  */
 // @PublishedApi
 template<typename R>
-class UnbiasedSelectImplementation : public SelectImplementation<R> {
+class UnbiasedSelectImplementation : SelectImplementation<R> {
 private:
     std::vector<typename SelectImplementation<R>::ClauseData> clauses_to_register;
 

@@ -1,3 +1,5 @@
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/Builders.kt
 //
@@ -26,9 +28,9 @@ namespace coroutines {
  * Calling [runBlocking] from a suspend function is redundant.
  * For example, the following code is incorrect:
  * ```
- * suspend fun loadConfiguration() {
+ * auto load_configuration() {
  *     // DO NOT DO THIS:
- *     val data = runBlocking { // <- redundant and blocks the thread, do not do that
+ *     auto data = runBlocking { // <- redundant and blocks the thread, do not do that
  *         fetchConfigurationData() // suspending function
  *     }
  * ```
@@ -36,7 +38,7 @@ namespace coroutines {
  * Here, instead of releasing the thread on which `loadConfiguration` runs if `fetchConfigurationData` suspends, it will
  * block, potentially leading to thread starvation issues.
  *
- * The default [CoroutineDispatcher] for this builder is an internal implementation of event loop that processes continuations
+ * The default [CoroutineDispatcher] for this builder is an implementation of event loop that processes continuations
  * in this blocked thread until the completion of this coroutine.
  * See [CoroutineDispatcher] for the other implementations that are provided by `kotlinx.coroutines`.
  *
@@ -62,7 +64,7 @@ T run_blocking(CoroutineContext context, /* TODO: suspend function type */ auto 
     CoroutineContext new_context;
 
     if (context_interceptor == nullptr) {
-        // create or use private event loop if no dispatcher is specified
+        // create or use event loop if no dispatcher is specified
         event_loop = ThreadLocalEventLoop::event_loop;
         new_context = GlobalScope::new_coroutine_context(context + event_loop);
     } else {
@@ -136,7 +138,7 @@ namespace /* ThreadLocal */ {
 }
 
 template<typename T>
-class BlockingCoroutine : public AbstractCoroutine<T> {
+class BlockingCoroutine : AbstractCoroutine<T> {
 private:
     EventLoop* event_loop;
     // TODO: Worker equivalent

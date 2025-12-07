@@ -1,12 +1,14 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestScope
 // Original package: kotlinx.coroutines.test
 //
 // TODO: Import statements removed; fully qualify types or add appropriate includes
 // TODO: suspend functions translated as normal functions; coroutine semantics NOT implemented
-// TODO: Kotlin sealed interface translated to abstract class
+// TODO: Kotlin sealed struct translated to abstract class
 // TODO: Kotlin extension properties/functions translated to free functions or methods
 // TODO: Annotations (@ExperimentalCoroutinesApi, @PublishedApi) preserved as comments
-// TODO: Kotlin internal visibility needs C++ equivalent (namespace-level or conditional compilation)
+// TODO: Kotlin visibility needs C++ equivalent (namespace-level or conditional compilation)
 
 #include <memory>
 #include <vector>
@@ -56,8 +58,8 @@ namespace test {
  *   paused by default, like [StandardTestDispatcher].
  * - No access to the list of unhandled exceptions.
  */
-// TODO: sealed interface in Kotlin; use abstract class in C++
-class TestScope : public CoroutineScope {
+// TODO: sealed struct in Kotlin; use abstract class in C++
+class TestScope : CoroutineScope {
 public:
     /**
      * The delay-skipping scheduler used by the test dispatchers running the code in this scope.
@@ -84,10 +86,10 @@ public:
      * cancelled:
      * ```
      * @Test
-     * fun testExampleBackgroundJob() = runTest {
-     *     val channel = Channel<Int>()
+     * auto test_example_background_job() = runTest {
+     *     auto channel = Channel<Int>()
      *     backgroundScope.launch {
-     *         var i = 0
+     *         auto i = 0
      *         while (true) {
      *             channel.send(i++)
      *         }
@@ -254,7 +256,7 @@ CoroutineContext with_delay_skipping(const CoroutineContext& context) {
     return context + dispatcher + &dispatcher->scheduler();
 }
 
-class TestScopeImpl : public AbstractCoroutine<void>, public TestScope {
+class TestScopeImpl : AbstractCoroutine<void>, TestScope {
 private:
     bool entered_;
     bool finished_;
@@ -404,7 +406,7 @@ TestScopeImpl& as_specific_implementation(TestScope& scope) {
     throw std::logic_error("TestScope must be a TestScopeImpl");
 }
 
-class UncaughtExceptionsBeforeTest : public std::logic_error {
+class UncaughtExceptionsBeforeTest : std::logic_error {
 public:
     UncaughtExceptionsBeforeTest()
         : std::logic_error(
@@ -421,7 +423,7 @@ public:
  * Thrown when a test has completed and there are tasks that are not completed or cancelled.
  */
 // @ExperimentalCoroutinesApi
-class UncompletedCoroutinesError : public std::runtime_error {
+class UncompletedCoroutinesError : std::runtime_error {
 public:
     explicit UncompletedCoroutinesError(const std::string& message)
         : std::runtime_error(message) {}

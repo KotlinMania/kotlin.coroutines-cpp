@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Original Kotlin package: kotlinx.coroutines.debug
 // Line-by-line C++ transliteration from Kotlin
 //

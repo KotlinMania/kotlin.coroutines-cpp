@@ -1,3 +1,5 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestCoroutineScheduler
 // Original package: kotlinx.coroutines.test
 //
@@ -44,10 +46,10 @@ namespace test {
  * virtual time as needed (via [advanceUntilIdle]), or run the tasks that are scheduled to run as soon as possible but
  * haven't yet been dispatched (via [runCurrent]).
  */
-class TestCoroutineScheduler : public AbstractCoroutineContextElement, public CoroutineContext::Element {
+class TestCoroutineScheduler : AbstractCoroutineContextElement, CoroutineContext::Element {
 public:
     /** @suppress */
-    class Key : public CoroutineContext::Key<TestCoroutineScheduler> {};
+    class Key : CoroutineContext::Key<TestCoroutineScheduler> {};
     static Key kKey;
 
 private:
@@ -285,7 +287,7 @@ public:
      * Returns the [TimeSource] representation of the virtual time of this scheduler.
      */
     TimeSource::WithComparableMarks* time_source() {
-        // TODO: Kotlin object expression needs C++ lambda or custom class
+        // TODO: Kotlin class expression needs C++ lambda or custom class
         return new TimeSourceImpl([this]() { return current_time_; });
     }
 };
@@ -301,7 +303,7 @@ void invalid_scheduler_state() {
 
 /** [ThreadSafeHeap] node representing a scheduled task, ordered by the planned execution time. */
 template<typename T>
-class TestDispatchEvent : public Comparable<TestDispatchEvent<T>>, public ThreadSafeHeapNode {
+class TestDispatchEvent : Comparable<TestDispatchEvent<T>>, ThreadSafeHeapNode {
 public:
     // @JvmField
     TestDispatcher* dispatcher;
@@ -364,10 +366,10 @@ void check_scheduler_in_context(const TestCoroutineScheduler& scheduler, const C
  * A coroutine context key denoting that the work is to be executed in the background.
  * @see [TestScope.backgroundScope]
  */
-// TODO: object singleton pattern
-class BackgroundWork : public CoroutineContext::Key<BackgroundWork>, public CoroutineContext::Element {
+// TODO: class singleton pattern
+class BackgroundWork : CoroutineContext::Key<BackgroundWork>, CoroutineContext::Element {
 public:
-    class Key : public CoroutineContext::Key<BackgroundWork> {};
+    class Key : CoroutineContext::Key<BackgroundWork> {};
     static Key kKey;
     static BackgroundWork instance;
 

@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Original Kotlin package: kotlinx.coroutines.debug
 // Line-by-line C++ transliteration from Kotlin
 //
@@ -5,11 +6,11 @@
 // TODO: @ExperimentalCoroutinesApi - Kotlin annotation, translate to comment or attribute
 // TODO: CoroutineContext - Kotlin coroutine type, needs C++ equivalent
 // TODO: Job - Kotlin coroutine Job type, needs C++ equivalent
-// TODO: CoroutineStackFrame - Kotlin internal type, needs C++ equivalent
+// TODO: CoroutineStackFrame - Kotlin type, needs C++ equivalent
 // TODO: suspend function - coroutine semantics not implemented
 // TODO: tailrec - Kotlin tail recursion optimization, use manual loop or comment
 // TODO: sequence builder - Kotlin sequence generation, needs C++ equivalent (generator/coroutine)
-// TODO: DebugCoroutineInfo - internal delegate type, needs definition
+// TODO: DebugCoroutineInfo - delegate type, needs definition
 
 #include <vector>
 #include <string>
@@ -18,7 +19,7 @@
 // Forward declarations - TODO: implement these types
 // namespace kotlin { namespace coroutines { class CoroutineContext; class CoroutineStackFrame; }}
 // namespace kotlinx { namespace coroutines { class Job; }}
-// namespace kotlinx { namespace coroutines { namespace debug { namespace internal { class DebugCoroutineInfo; }}}}
+// namespace kotlinx { namespace coroutines { namespace debug { namespace { class DebugCoroutineInfo; }}}}
 
 namespace kotlinx {
 namespace coroutines {
@@ -30,7 +31,7 @@ class CoroutineContext;
 class CoroutineStackFrame;
 class StackTraceElement;
 
-namespace internal {
+namespace {
 class DebugCoroutineInfo;
 }
 
@@ -48,7 +49,7 @@ enum class State {
 // TODO: @ExperimentalCoroutinesApi annotation
 class CoroutineInfo {
 public:
-    // TODO: internal constructor - make private with friend classes
+    // TODO: constructor - make with friend classes
     CoroutineInfo(internal::DebugCoroutineInfo* delegate)
         : context_(delegate->context)
         , state_(state_value_of(delegate->state))
@@ -63,7 +64,7 @@ public:
     // Last observed state of the coroutine
     State state() const { return state_; }
 
-    // Job associated with a current coroutine or null.
+    // Job associated with a current coroutine or nullptr.
     // May be later used in DebugProbes.printJob.
     Job* job() const {
         // TODO: context[Job] - Kotlin coroutine context element lookup

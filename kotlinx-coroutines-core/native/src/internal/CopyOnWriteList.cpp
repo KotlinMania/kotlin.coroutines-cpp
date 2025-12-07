@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/internal/CopyOnWriteList.kt
 //
@@ -8,13 +9,13 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // TODO: Remove imports, fully qualify or add includes:
 // import kotlinx.atomicfu.*
 
 // TODO: @Suppress("UNCHECKED_CAST")
-// TODO: internal class extending AbstractMutableList<E>
+// TODO: class extending AbstractMutableList<E>
 template<typename E>
 class CopyOnWriteList {
 private:
@@ -109,7 +110,7 @@ public:
     }
 
 private:
-    // TODO: private class IteratorImpl
+    // TODO: class IteratorImpl
 
     int range_check(int index) {
         int sz = size();

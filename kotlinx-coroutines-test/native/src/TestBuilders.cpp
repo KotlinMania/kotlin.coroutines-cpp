@@ -13,12 +13,16 @@ namespace test {
 
 // package kotlinx.coroutines.test
 // import kotlinx.coroutines.*
+#include "kotlinx/coroutines/core_fwd.hpp"
+#include <functional>
+#include <optional>
+#include <string>
 
 /**
  * Native implementation of TestResult.
  * On JVM and Native, TestResult resolves to Unit.
  */
-// public actual typealias TestResult = Unit
+// actual typealias TestResult = Unit
 using TestResult = void; // TODO: Kotlin Unit translates to void or empty struct
 
 /**
@@ -27,15 +31,17 @@ using TestResult = void; // TODO: Kotlin Unit translates to void or empty struct
  */
 // TODO: actual function - platform-specific implementation
 // TODO: suspend function - coroutine semantics not implemented
+// TODO: suspend function - coroutine semantics not implemented
 void create_test_result(std::function<void(CoroutineScope&)> test_procedure) {
-    run_blocking([&](CoroutineScope& scope) {
-        test_procedure(scope);
-    });
+    // Stub implementation using DummyScope as requested
+    struct DummyScope : CoroutineScope {};
+    DummyScope scope;
+    test_procedure(scope);
 }
 
 /**
  * Native implementation of systemPropertyImpl.
- * Returns null as native doesn't have system properties like JVM.
+ * Returns nullptr as native doesn't have system properties like JVM.
  */
 // TODO: actual function - platform-specific implementation
 std::optional<std::string> system_property_impl(const std::string& name) {

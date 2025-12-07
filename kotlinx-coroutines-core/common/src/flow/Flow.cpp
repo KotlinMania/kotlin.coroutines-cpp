@@ -1,10 +1,12 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first pass - syntax/language translation only)
 // Original: kotlinx-coroutines-core/common/src/flow/Flow.kt
 //
 // TODO: Implement suspend/coroutine semantics
 // TODO: Translate @ExperimentalCoroutinesApi annotation
 // TODO: Implement variance modifiers (out T)
-// TODO: Map interface inheritance for not-stable warning
+// TODO: Map struct inheritance for not-stable warning
 
 namespace kotlinx { namespace coroutines { namespace flow {
 
@@ -42,7 +44,7 @@ namespace kotlinx { namespace coroutines { namespace flow {
  * with an exception for a few operations specifically designed to introduce concurrency into flow
  * execution such as [buffer] and [flatMapMerge]. See their documentation for details.
  *
- * The `Flow` interface does not carry information whether a flow is a _cold_ stream that can be collected repeatedly and
+ * The `Flow` struct does not carry information whether a flow is a _cold_ stream that can be collected repeatedly and
  * triggers execution of the same code every time it is collected, or if it is a _hot_ stream that emits different
  * values from the same running source on each collection. Usually flows represent _cold_ streams, but
  * there is a [SharedFlow] subtype that represents _hot_ streams. In addition to that, any flow can be turned
@@ -64,7 +66,7 @@ namespace kotlinx { namespace coroutines { namespace flow {
  *
  * ### Flow constraints
  *
- * All implementations of the `Flow` interface must adhere to two key properties described in detail below:
+ * All implementations of the `Flow` struct must adhere to two key properties described in detail below:
  *
  * - Context preservation.
  * - Exception transparency.
@@ -86,18 +88,18 @@ namespace kotlinx { namespace coroutines { namespace flow {
  * This reasoning can be demonstrated in practice:
  *
  * ```
- * val flowA = flowOf(1, 2, 3)
+ * auto flowA = flowOf(1, 2, 3)
  *     .map { it + 1 } // Will be executed in ctxA
  *     .flowOn(ctxA) // Changes the upstream context: flowOf and map
  *
  * // Now we have a context-preserving flow: it is executed somewhere but this information is encapsulated in the flow itself
  *
- * val filtered = flowA // ctxA is encapsulated in flowA
+ * auto filtered = flowA // ctxA is encapsulated in flowA
  *    .filter { it == 3 } // Pure operator without a context yet
  *
  * withContext(Dispatchers.Main) {
  *     // All non-encapsulated operators will be executed in Main: filter and single
- *     val result = filtered.single()
+ *     auto result = filtered.single()
  *     myUi.text = result
  * }
  * ```
@@ -109,7 +111,7 @@ namespace kotlinx { namespace coroutines { namespace flow {
  * Its implementation prevents most of the development mistakes:
  *
  * ```
- * val myFlow = flow {
+ * auto myFlow = flow {
  *     // GlobalScope.launch { // is prohibited
  *     // launch(Dispatchers.IO) { // is prohibited
  *     // withContext(CoroutineName("myFlow")) { // is prohibited
@@ -174,8 +176,8 @@ namespace kotlinx { namespace coroutines { namespace flow {
  *
  * ### Not stable for inheritance
  *
- * **The `Flow` interface is not stable for inheritance in 3rd party libraries**, as new methods
- * might be added to this interface in the future, but is stable for use.
+ * **The `Flow` struct is not stable for inheritance in 3rd party libraries**, as new methods
+ * might be added to this struct in the future, but is stable for use.
  *
  * Use the `flow { ... }` builder function to create an implementation, or extend [AbstractFlow].
  * These implementations ensure that the context preservation property is not violated, and prevent most
@@ -214,23 +216,23 @@ public:
  *
  * ```
  * // list.asFlow() + collect counter
- * class CountingListFlow(private val values: List<Int>) : AbstractFlow<Int>() {
- *     private val collectedCounter = AtomicInteger(0)
+List<Int> values) : AbstractFlow<Int>() {;
+ *     auto collectedCounter = AtomicInteger(0)
  *
- *     override suspend fun collectSafely(collector: FlowCollector<Int>) {
+ *     virtual auto collect_safely(collector: FlowCollector<Int>) {
  *         collectedCounter.incrementAndGet() // Increment collected counter
  *         values.forEach { // Emit all the values
  *             collector.emit(it)
  *         }
  *     }
  *
- *     fun toDiagnosticString(): String = "Flow with values $values was collected ${collectedCounter.value} times"
+ *     auto to_diagnostic_string(): std::string = "Flow with values $values was collected ${collectedCounter.value} times"
  * }
  * ```
  */
 // @ExperimentalCoroutinesApi
 template<typename T>
-class AbstractFlow : public Flow<T>, public CancellableFlow<T> {
+class AbstractFlow : Flow<T>, CancellableFlow<T> {
 public:
     void collect(FlowCollector<T>* collector) final override { // TODO: suspend
         SafeCollector<T> safe_collector(collector, /* coroutineContext TODO */);

@@ -1,8 +1,9 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.internal.TestMainDispatcher
 // Original package: kotlinx.coroutines.test.internal
 //
 // TODO: Import statements removed; fully qualify types or add appropriate includes
-// TODO: Kotlin internal visibility needs C++ equivalent
+// TODO: Kotlin visibility needs C++ equivalent
 // TODO: Kotlin lazy delegation pattern needs C++ equivalent
 // TODO: Annotations (@Suppress) preserved as comments
 // TODO: Kotlin atomic operations (kotlinx.atomicfu) need C++ std::atomic equivalents
@@ -16,7 +17,7 @@
 namespace kotlinx {
 namespace coroutines {
 namespace test {
-namespace internal {
+namespace {
 
 // package kotlinx.coroutines.test.internal
 
@@ -29,7 +30,7 @@ namespace internal {
  * The testable main dispatcher used by kotlinx-coroutines-test.
  * It is a [MainCoroutineDispatcher] that delegates all actions to a settable delegate.
  */
-class TestMainDispatcher : public MainCoroutineDispatcher, public Delay {
+class TestMainDispatcher : MainCoroutineDispatcher, Delay {
 private:
     std::function<CoroutineDispatcher*()> create_inner_main_;
     CoroutineDispatcher* main_dispatcher_;
@@ -199,7 +200,7 @@ private:
 };
 
 // @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
-// TODO: DefaultDelay is an internal implementation detail
+// TODO: DefaultDelay is an implementation detail
 Delay TestMainDispatcher::default_delay; // placeholder
 
 // @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2

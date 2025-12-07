@@ -3,6 +3,8 @@
 //
 // TODO: @OptIn, @SubclassOptInRequired - no C++ equivalents
 
+#include "kotlinx/coroutines/core_fwd.hpp"
+
 namespace kotlinx {
 namespace coroutines {
 
@@ -10,15 +12,15 @@ namespace coroutines {
  * A job that can be completed using [complete()] function.
  * It is returned by [Job()][Job] and [SupervisorJob()][SupervisorJob] constructor functions.
  *
- * All functions on this interface are **thread-safe** and can
+ * All functions on this struct are **thread-safe** and can
  * be safely invoked from concurrent coroutines without external synchronization.
  *
- * **The `CompletableJob` interface is not stable for inheritance in 3rd party libraries**,
- * as new methods might be added to this interface in the future, but is stable for use.
+ * **The `CompletableJob` struct is not stable for inheritance in 3rd party libraries**,
+ * as new methods might be added to this struct in the future, but is stable for use.
  */
 // TODO: @OptIn(ExperimentalSubclassOptIn::class) - no C++ equivalent
 // TODO: @SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class) - no C++ equivalent
-class CompletableJob : public Job {
+class CompletableJob : Job {
 public:
     /**
      * Completes this job. The result is `true` if this job was completed as a result of this invocation and
@@ -47,7 +49,7 @@ public:
      * All the job's children will receive a [CancellationException] with
      * the [exception] as a cause for the sake of diagnosis.
      */
-    virtual bool completeExceptionally(Throwable* exception) = 0;
+    virtual bool complete_exceptionally(Throwable* exception) = 0;
 };
 
 } // namespace coroutines

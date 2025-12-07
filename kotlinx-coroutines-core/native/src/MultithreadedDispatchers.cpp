@@ -1,3 +1,5 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/MultithreadedDispatchers.kt
 //
@@ -29,8 +31,8 @@ CloseableCoroutineDispatcher* new_fixed_thread_pool_context(int n_threads, std::
     return new MultiWorkerDispatcher(name, n_threads);
 }
 
-// TODO: internal class
-class WorkerDispatcher : public CloseableCoroutineDispatcher, public Delay {
+// TODO: class
+class WorkerDispatcher : CloseableCoroutineDispatcher, Delay {
 private:
     void* worker; // TODO: Worker type
 
@@ -59,10 +61,10 @@ private:
         // Workers don't have an API to cancel sent "executeAfter" block, but we are trying
         // to control the damage and reduce reachable objects by nulling out `block`
         // that may retain a lot of references, and leaving only an empty shell after a timely disposal
-        // This is a class and not an object with `block` in a closure because that would defeat the purpose.
-        class DisposableBlock : public DisposableHandle {
+        // This is a class and not an class with `block` in a closure because that would defeat the purpose.
+        class DisposableBlock : DisposableHandle {
         private:
-            // TODO: AtomicReference<Runnable?>
+            // TODO: AtomicReference<Runnable*>
             std::atomic<Runnable*> disposable_holder;
 
         public:
@@ -86,7 +88,7 @@ private:
 
         // TODO: Worker.runAfterDelay implementation with TimeSource
         auto disposable_block = new DisposableBlock(block);
-        // TODO: val targetMoment = TimeSource.Monotonic.markNow() + timeMillis.milliseconds
+        // TODO: auto targetMoment = TimeSource.Monotonic.markNow() + timeMillis.milliseconds
         // TODO: worker.runAfterDelay(disposableBlock, targetMoment)
         return disposable_block;
     }
@@ -97,8 +99,8 @@ public:
     }
 };
 
-// TODO: private class
-class MultiWorkerDispatcher : public CloseableCoroutineDispatcher {
+// TODO: class
+class MultiWorkerDispatcher : CloseableCoroutineDispatcher {
 private:
     std::string name;
     int workers_count;
@@ -163,7 +165,7 @@ public:
     void dispatch(CoroutineContext context, Runnable block) override {
         auto state = tasks_and_workers_counter.fetch_add(2);
         if (is_closed(state)) {
-            throw std::runtime_error("Dispatcher " + name + " was closed, attempted to schedule: " + /* block.toString() */ "");
+            throw std::runtime_error("Dispatcher " + name + " was closed, attempted to schedule: " + /* block.tostd::string() */ "");
         }
 
         if (has_workers(state)) {
@@ -187,7 +189,7 @@ public:
 
     void close() override {
         tasks_and_workers_counter.fetch_or(1L);
-        auto workers = worker_pool->close(); // no new workers will be created
+        auto workers = worker_pool->close(); // no new workers will be created;
 
         while (true) {
             // check if there are workers that await tasks in their personal channels, we need to wake them up
@@ -207,7 +209,7 @@ public:
          * Here we cannot avoid waiting on `.result`, otherwise it will lead
          * to a native memory leak, including a pthread handle.
          */
-        // TODO: val requests = workers.map { it.requestTermination() }
+        // TODO: auto requests = workers.map { it.requestTermination() }
         // TODO: requests.map { it.result }
     }
 

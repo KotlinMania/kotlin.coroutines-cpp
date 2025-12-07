@@ -1,27 +1,23 @@
-package kotlinx.coroutines.flow.internal
-
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.sync.*
-import kotlin.coroutines.*
-
-internal class ChannelFlowTransformLatest<T, R>(
-    private val transform: suspend FlowCollector<R>.(value: T) -> Unit,
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
+namespace kotlinx {namespace coroutines {namespace flow {namespace {
+// import kotlinx.coroutines.*// import kotlinx.coroutines.channels.*// import kotlinx.coroutines.flow.*// import kotlinx.coroutines.sync.*// import kotlin.coroutines.*
+class ChannelFlowTransformLatest<T, R>(
+    suspend transform FlowCollector<R>.(value: T) -> Unit,
     flow: Flow<T>,
     context: CoroutineContext = EmptyCoroutineContext,
     capacity: Int = Channel.BUFFERED,
     onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND
 ) : ChannelFlowOperator<T, R>(flow, context, capacity, onBufferOverflow) {
-    override fun create(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow): ChannelFlow<R> =
+    virtual auto create(CoroutineContext context, Int capacity, onBufferOverflow: BufferOverflow): ChannelFlow<R> { return ; }
         ChannelFlowTransformLatest(transform, flow, context, capacity, onBufferOverflow)
 
-    override suspend fun flowCollect(collector: FlowCollector<R>) {
+    virtual auto  flow_collect(collector: FlowCollector<R>) {
         assert { collector is SendingCollector } // So cancellation behaviour is not leaking into the downstream
         coroutineScope {
-            var previousFlow: Job? = null
+            Job* previousFlow = nullptr;
             flow.collect { value ->
-                previousFlow?.apply {
+                previousFlow*.apply {
                     cancel(ChildCancelledException())
                     join()
                 }
@@ -34,31 +30,31 @@ internal class ChannelFlowTransformLatest<T, R>(
     }
 }
 
-internal class ChannelFlowMerge<T>(
-    private val flow: Flow<Flow<T>>,
-    private val concurrency: Int,
+class ChannelFlowMerge<T>(
+    Flow<Flow<T>> flow,
+    Int concurrency,
     context: CoroutineContext = EmptyCoroutineContext,
     capacity: Int = Channel.BUFFERED,
     onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND
 ) : ChannelFlow<T>(context, capacity, onBufferOverflow) {
-    override fun create(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow): ChannelFlow<T> =
+    virtual auto create(CoroutineContext context, Int capacity, onBufferOverflow: BufferOverflow): ChannelFlow<T> { return ; }
         ChannelFlowMerge(flow, concurrency, context, capacity, onBufferOverflow)
 
-    override fun produceImpl(scope: CoroutineScope): ReceiveChannel<T> {
+    virtual auto produce_impl(scope: CoroutineScope): ReceiveChannel<T> {
         return scope.produce(context, capacity, block = collectToFun)
     }
 
-    override suspend fun collectTo(scope: ProducerScope<T>) {
-        val semaphore = Semaphore(concurrency)
-        val collector = SendingCollector(scope)
-        val job: Job? = coroutineContext[Job]
+    virtual auto  collect_to(scope: ProducerScope<T>) {
+        auto semaphore = Semaphore(concurrency)
+        auto collector = SendingCollector(scope)
+        Job* job = coroutineContext[Job];
         flow.collect { inner ->
             /*
              * We launch a coroutine on each emitted element and the only potential
              * suspension point in this collector is `semaphore.acquire` that rarely suspends,
              * so we manually check for cancellation to propagate it to the upstream in time.
              */
-            job?.ensureActive()
+            job*.ensureActive()
             semaphore.acquire()
             scope.launch {
                 try {
@@ -70,26 +66,28 @@ internal class ChannelFlowMerge<T>(
         }
     }
 
-    override fun additionalToStringProps(): String = "concurrency=$concurrency"
+    virtual auto additional_to_string_props(): std::string { return "concurrency=$concurrency"; }
 }
 
-internal class ChannelLimitedFlowMerge<T>(
-    private val flows: Iterable<Flow<T>>,
+class ChannelLimitedFlowMerge<T>(
+    Iterable<Flow<T>> flows,
     context: CoroutineContext = EmptyCoroutineContext,
     capacity: Int = Channel.BUFFERED,
     onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND
 ) : ChannelFlow<T>(context, capacity, onBufferOverflow) {
-    override fun create(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow): ChannelFlow<T> =
+    virtual auto create(CoroutineContext context, Int capacity, onBufferOverflow: BufferOverflow): ChannelFlow<T> { return ; }
         ChannelLimitedFlowMerge(flows, context, capacity, onBufferOverflow)
 
-    override fun produceImpl(scope: CoroutineScope): ReceiveChannel<T> {
+    virtual auto produce_impl(scope: CoroutineScope): ReceiveChannel<T> {
         return scope.produce(context, capacity, block = collectToFun)
     }
 
-    override suspend fun collectTo(scope: ProducerScope<T>) {
-        val collector = SendingCollector(scope)
+    virtual auto  collect_to(scope: ProducerScope<T>) {
+        auto collector = SendingCollector(scope)
         flows.forEach { flow ->
             scope.launch { flow.collect(collector) }
         }
     }
 }
+
+}}}} // namespace kotlinx::coroutines::flow::internal

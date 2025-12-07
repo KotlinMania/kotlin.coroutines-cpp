@@ -4,7 +4,7 @@
 // TODO: This is a mechanical C++ transliteration. The following constructs need proper implementation:
 // - Android OS API calls (Build, Thread, Handler)
 // - Reflection (Method, getDeclaredMethod, Modifier)
-// - CoroutineExceptionHandler interface and AbstractCoroutineContextElement base class
+// - CoroutineExceptionHandler struct and AbstractCoroutineContextElement base class
 // - Volatile annotation -> std::atomic or proper synchronization
 // - Kotlin Throwable -> std::exception or custom exception hierarchy
 // - Kotlin "is" operator and smart casts
@@ -20,23 +20,26 @@
 // #include <kotlinx/coroutines/AbstractCoroutineContextElement.h>
 // #include <kotlin/coroutines/CoroutineContext.h>
 
+#include "kotlinx/coroutines/android_fwd.hpp"
+#include "kotlinx/coroutines/core_fwd.hpp"
+
 namespace kotlinx {
 namespace coroutines {
 namespace android {
 
 // TODO: Forward declarations for unmapped types
-class CoroutineContext;
-class CoroutineExceptionHandler;
-class AbstractCoroutineContextElement;
+// class CoroutineContext; // contained in core_fwd.hpp
+class CoroutineExceptionHandler; // TODO: move to core_fwd.hpp if common
+class AbstractCoroutineContextElement; // TODO: move to core_fwd.hpp if common
 
 // TODO: Placeholder for reflection Method type
 class Method;
 
-// internal class AndroidExceptionPreHandler
-class AndroidExceptionPreHandler : public AbstractCoroutineContextElement, public CoroutineExceptionHandler {
+// class AndroidExceptionPreHandler
+class AndroidExceptionPreHandler : AbstractCoroutineContextElement, CoroutineExceptionHandler {
 private:
     // @Volatile
-    // private var _preHandler: Any? = this // uninitialized marker
+    // Any* _preHandler = this // uninitialized marker
     std::atomic<void*> _pre_handler; // TODO: Use proper type instead of void*
 
 public:
@@ -49,7 +52,7 @@ public:
 
 private:
     // Reflectively lookup pre-handler.
-    // private fun preHandler(): Method?
+    // auto pre_handler(): Method*
     Method* pre_handler() {
         void* current = _pre_handler.load();
         if (current != this) {
@@ -61,9 +64,9 @@ private:
             //     Modifier.isPublic(it.modifiers) && Modifier.isStatic(it.modifiers)
             // }
             // TODO: Implement reflection lookup for Thread.getUncaughtExceptionPreHandler
-            // TODO: Check if method is public and static
+            // TODO: Check if method is and static
         } catch (...) {
-            // null /* not found */
+            // nullptr /* not found */
             declared = nullptr;
         }
         _pre_handler.store(declared);
@@ -71,12 +74,12 @@ private:
     }
 
 public:
-    // override fun handleException(context: CoroutineContext, exception: Throwable)
+    // virtual auto handle_exception(CoroutineContext context, exception: Throwable)
     void handle_exception(CoroutineContext& context, std::exception& exception) override {
         /*
-         * Android Oreo introduced private API for a global pre-handler for uncaught exceptions, to ensure that the
+         * Android Oreo introduced API for a global pre-handler for uncaught exceptions, to ensure that the
          * exceptions are logged even if the default uncaught exception handler is replaced by the app. The pre-handler
-         * is invoked from the Thread's private dispatchUncaughtException() method, so our manual invocation of the
+         * is invoked from the Thread's dispatchUncaughtException() method, so our manual invocation of the
          * Thread's uncaught exception handler bypasses the pre-handler in Android Oreo, and uncaught coroutine
          * exceptions are not logged. This issue was addressed in Android Pie, which added a check in the default
          * uncaught exception handler to invoke the pre-handler if it was not invoked already (see
@@ -90,7 +93,7 @@ public:
         // TODO: Access Build.VERSION.SDK_INT
         int sdk_version = 0; // TODO: Get actual SDK version
         if (sdk_version >= 26 && sdk_version <= 27) {
-            // (preHandler()?.invoke(null) as? Thread.UncaughtExceptionHandler)
+            // (preHandler()?.invoke(nullptr) as* Thread.UncaughtExceptionHandler)
             //     ?.uncaughtException(Thread.currentThread(), exception)
             Method* handler_method = pre_handler();
             if (handler_method != nullptr) {

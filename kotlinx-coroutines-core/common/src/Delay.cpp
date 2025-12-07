@@ -1,3 +1,5 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Delay.kt
 //
@@ -26,17 +28,17 @@ template<typename T> class CancellableContinuation;
  * This dispatcher _feature_ is implemented by [CoroutineDispatcher] implementations that natively support
  * scheduled execution of tasks.
  *
- * Implementation of this interface affects operation of
+ * Implementation of this struct affects operation of
  * [delay][kotlinx.coroutines.delay] and [withTimeout] functions.
  *
- * @suppress **This an internal API and should not be used from general code.**
+ * @suppress **This an API and should not be used from general code.**
  */
 // @InternalCoroutinesApi
 class Delay {
 public:
     /** @suppress **/
     // @Deprecated(
-    //     message = "Deprecated without replacement as an internal method never intended for public use",
+    //     message = "Deprecated without replacement as an method never intended for use",
     //     level = DeprecationLevel.ERROR
     // ) // Error since 1.6.0
     // TODO: suspend function - coroutine semantics not implemented
@@ -73,12 +75,12 @@ public:
 };
 
 /**
- * Enhanced [Delay] interface that provides additional diagnostics for [withTimeout].
+ * Enhanced [Delay] struct that provides additional diagnostics for [withTimeout].
  * Is going to be removed once there is proper JVM-default support.
  * Then we'll be able put this function into [Delay] without breaking binary compatibility.
  */
 // @InternalCoroutinesApi
-class DelayWithTimeoutDiagnostics : public Delay {
+class DelayWithTimeoutDiagnostics : Delay {
 public:
     /**
      * Returns a string that explains that the timeout has occurred, and explains what can be done about it.
@@ -95,8 +97,8 @@ public:
  * Usage example in callback adapting code:
  *
  * ```kotlin
- * fun currentTemperature(): Flow<Temperature> = callbackFlow {
- *     val callback = SensorCallback { degreesCelsius: Double ->
+ * auto current_temperature(): Flow<Temperature> = callbackFlow {
+ *     auto callback = SensorCallback { degreesCelsius: Double ->
  *         trySend(Temperature.celsius(degreesCelsius))
  *     }
  *     try {
@@ -111,7 +113,7 @@ public:
  * Usage example in (non declarative) UI code:
  *
  * ```kotlin
- * suspend fun showStuffUntilCancelled(content: Stuff): Nothing {
+ * auto show_stuff_until_cancelled(content: Stuff): Nothing {
  *     someSubView.text = content.title
  *     anotherSubView.text = content.description
  *     someView.visibleInScope {
@@ -162,14 +164,14 @@ void delay(std::chrono::nanoseconds duration);
 
 /** Returns [Delay] implementation of the given context */
 // TODO: Extension property - needs implementation
-// internal val CoroutineContext.delay: Delay get() = get(ContinuationInterceptor) as? Delay ?: DefaultDelay
+// auto CoroutineContext.delay: Delay get() { return get(ContinuationInterceptor) as* Delay ?: DefaultDelay; }
 
 /**
  * Convert this duration to its millisecond value. Durations which have a nanosecond component less than
  * a single millisecond will be rounded up to the next largest millisecond.
  */
 // TODO: Extension function on Duration
-// internal fun Duration.toDelayMillis(): Long = when (isPositive()) {
+// auto Duration__dot__toDelayMillis(): Long = when (isPositive()) {
 //     true -> plus(999_999L.nanoseconds).inWholeMilliseconds
 //     false -> 0L
 // }

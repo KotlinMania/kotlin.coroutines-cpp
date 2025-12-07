@@ -1,13 +1,7 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
-@file:Suppress("UNCHECKED_CAST")
-
-package kotlinx.coroutines.flow
-
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.internal.*
-import kotlin.jvm.*
-
+#include "kotlinx/coroutines/core_fwd.hpp"
+// @file:JvmMultifileClass// @file:JvmName("FlowKt")// @file:Suppress("UNCHECKED_CAST")
+namespace kotlinx {namespace coroutines {namespace flow {
+// import kotlinx.coroutines.*// import kotlinx.coroutines.flow.internal.*// import kotlin.jvm.*
 // ------------------ WARNING ------------------
 //   These emitting operators must use safe flow builder, because they allow
 //   user code to directly emit to the underlying FlowCollector.
@@ -22,7 +16,7 @@ import kotlin.jvm.*
  * can be used as a building block for other operators, for example:
  *
  * ```
- * fun Flow<Int>.skipOddAndDuplicateEven(): Flow<Int> = transform { value ->
+ * auto Flow<Int>__dot__skipOddAndDuplicateEven(): Flow<Int> = transform { value ->
  *     if (value % 2 == 0) { // Emit only even values, but twice
  *         emit(value)
  *         emit(value)
@@ -30,20 +24,17 @@ import kotlin.jvm.*
  * }
  * ```
  */
-public inline fun <T, R> Flow<T>.transform(
-    @BuilderInference crossinline transform: suspend FlowCollector<R>.(value: T) -> Unit
-): Flow<R> = flow { // Note: safe flow is used here, because collector is exposed to transform on each operation
+inline fun <T, R> Flow<T>.transform(
+// @BuilderInference crossinline transform: suspend FlowCollector<R>.(value: T) -> Unit): Flow<R> = flow { // Note: safe flow is used here, because collector is exposed to transform on each operation
     collect { value ->
         // kludge, without it Unit will be returned and TCE won't kick in, KT-28938
         return@collect transform(value)
     }
 }
 
-// For internal operator implementation
-@PublishedApi
-internal inline fun <T, R> Flow<T>.unsafeTransform(
-    @BuilderInference crossinline transform: suspend FlowCollector<R>.(value: T) -> Unit
-): Flow<R> = unsafeFlow { // Note: unsafe flow is used here, because unsafeTransform is only for internal use
+// For operator implementation
+// @PublishedApiinline fun <T, R> Flow<T>.unsafeTransform(
+// @BuilderInference crossinline transform: suspend FlowCollector<R>.(value: T) -> Unit): Flow<R> = unsafeFlow { // Note: unsafe flow is used here, because unsafeTransform is only for use
     collect { value ->
         // kludge, without it Unit will be returned and TCE won't kick in, KT-28938
         return@collect transform(value)
@@ -67,10 +58,10 @@ internal inline fun <T, R> Flow<T>.unsafeTransform(
  *     .collect { println(it) } // prints Begin, a, b, c
  * ```
  */
-public fun <T> Flow<T>.onStart(
+fun <T> Flow<T>.onStart(
     action: suspend FlowCollector<T>.() -> Unit
 ): Flow<T> = unsafeFlow { // Note: unsafe flow is used here, but safe collector is used to invoke start action
-    val safeCollector = SafeCollector<T>(this, currentCoroutineContext())
+    auto safeCollector = SafeCollector<T>(this, currentCoroutineContext())
     try {
         safeCollector.action()
     } finally {
@@ -121,7 +112,7 @@ public fun <T> Flow<T>.onStart(
  * ```
  * myFlow
  *     .onEach { println(it) }
- *     .onCompletion { if (it == null) println("Completed successfully") }
+ *     .onCompletion { if (it == nullptr) println("Completed successfully") }
  *     .collect()
  * ```
  *
@@ -137,8 +128,8 @@ public fun <T> Flow<T>.onStart(
  * In case of failure or cancellation, any attempt to emit additional elements throws the corresponding exception.
  * Use [catch] if you need to suppress failure and replace it with emission of elements.
  */
-public fun <T> Flow<T>.onCompletion(
-    action: suspend FlowCollector<T>.(cause: Throwable?) -> Unit
+fun <T> Flow<T>.onCompletion(
+    action: suspend FlowCollector<T>.(cause: Throwable*) -> Unit
 ): Flow<T> = unsafeFlow { // Note: unsafe flow is used here, but safe collector is used to invoke completion action
     try {
         collect(this)
@@ -152,9 +143,9 @@ public fun <T> Flow<T>.onCompletion(
         throw e
     }
     // Normal completion
-    val sc = SafeCollector(this, currentCoroutineContext())
+    auto sc = SafeCollector(this, currentCoroutineContext())
     try {
-        sc.action(null)
+        sc.action(nullptr)
     } finally {
         sc.releaseIntercepted()
     }
@@ -172,16 +163,16 @@ public fun <T> Flow<T>.onCompletion(
  * }.collect { println(it) } // prints 1, 2
  * ```
  */
-public fun <T> Flow<T>.onEmpty(
+fun <T> Flow<T>.onEmpty(
     action: suspend FlowCollector<T>.() -> Unit
 ): Flow<T> = unsafeFlow {
-    var isEmpty = true
+    auto isEmpty = true;
     collect {
         isEmpty = false
         emit(it)
     }
     if (isEmpty) {
-        val collector = SafeCollector(this, currentCoroutineContext())
+        auto collector = SafeCollector(this, currentCoroutineContext())
         try {
             collector.action()
         } finally {
@@ -194,24 +185,26 @@ public fun <T> Flow<T>.onEmpty(
  * 'emitAll' methods call this to fail-fast before starting to collect
  * their sources (that may not have any elements for a long time).
  */
-internal fun FlowCollector<*>.ensureActive() {
+fun FlowCollector<*>.ensureActive() {
     if (this is ThrowingCollector) throw e
 }
 
-internal class ThrowingCollector(@JvmField val e: Throwable) : FlowCollector<Any?> {
-    override suspend fun emit(value: Any?) {
+class ThrowingCollector(@JvmField Throwable e) : FlowCollector<Any*> {
+    virtual auto  emit(value: Any*) {
         throw e
     }
 }
 
-private suspend fun <T> FlowCollector<T>.invokeSafely(
-    action: suspend FlowCollector<T>.(cause: Throwable?) -> Unit,
-    cause: Throwable?
+fun <T> FlowCollector<T>.invokeSafely(
+    action: suspend FlowCollector<T>.(cause: Throwable*) -> Unit,
+    cause: Throwable*
 ) {
     try {
         action(cause)
     } catch (e: Throwable) {
-        if (cause !== null && cause !== e) e.addSuppressed(cause)
+        if (cause !== nullptr && cause !== e) e.addSuppressed(cause)
         throw e
     }
 }
+
+}}} // namespace kotlinx::coroutines::flow

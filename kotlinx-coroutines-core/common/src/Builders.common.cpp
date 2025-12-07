@@ -7,6 +7,10 @@
 // TODO: suspend functions and coroutine builders not directly supported
 // TODO: Contracts API not available in C++
 
+#include "kotlinx/coroutines/core_fwd.hpp"
+#include <functional>
+#include <atomic>
+
 namespace kotlinx {
 namespace coroutines {
 
@@ -55,7 +59,7 @@ Job* launch(
     CoroutineStart start = CoroutineStart::DEFAULT,
     std::function<void(CoroutineScope*)> block
 ) {
-    auto new_context = scope->newCoroutineContext(context);
+    auto new_context = scope->new_coroutine_context(context);
     StandaloneCoroutine* coroutine;
     if (start.isLazy) {
         coroutine = new LazyStandaloneCoroutine(new_context, block);
@@ -97,7 +101,7 @@ Deferred<T>* async(
     CoroutineStart start = CoroutineStart::DEFAULT,
     std::function<T(CoroutineScope*)> block
 ) {
-    auto new_context = scope->newCoroutineContext(context);
+    auto new_context = scope->new_coroutine_context(context);
     DeferredCoroutine<T>* coroutine;
     if (start.isLazy) {
         coroutine = new LazyDeferredCoroutine<T>(new_context, block);
@@ -110,9 +114,9 @@ Deferred<T>* async(
 
 // TODO: @OptIn(InternalForInheritanceCoroutinesApi::class) - no C++ equivalent
 // TODO: @Suppress("UNCHECKED_CAST") - no C++ equivalent
-// TODO: private open class - access control
+// TODO: open class - access control
 template<typename T>
-class DeferredCoroutine : public AbstractCoroutine<T>, public Deferred<T> {
+class DeferredCoroutine : AbstractCoroutine<T>, Deferred<T> {
 private:
     CoroutineContext parent_context;
     bool active_flag;
@@ -123,27 +127,27 @@ public:
           parent_context(parentContext),
           active_flag(active) {}
 
-    T getCompleted() override {
+    T get_completed() override {
         // TODO: getCompletedInternal() as T - cast
-        return static_cast<T>(this->getCompletedInternal());
+        return static_cast<T>(this->get_completed_internal());
     }
 
     // TODO: suspend fun
     T await() override {
         // TODO: awaitInternal() as T - cast
-        return static_cast<T>(this->awaitInternal());
+        return static_cast<T>(this->await_internal());
     }
 
-    // TODO: val onAwait property
-    SelectClause1<T>* get_onAwait() override {
+    // TODO: auto onAwait property
+    SelectClause1<T>* get_on_await() override {
         // TODO: onAwaitInternal as SelectClause1<T> - cast
-        return static_cast<SelectClause1<T>*>(this->onAwaitInternal);
+        return static_cast<SelectClause1<T>*>(this->on_await_internal);
     }
 };
 
-// TODO: private class
+// TODO: class
 template<typename T>
-class LazyDeferredCoroutine : public DeferredCoroutine<T> {
+class LazyDeferredCoroutine : DeferredCoroutine<T> {
 private:
     std::function<T(CoroutineScope*)> block;
     // TODO: Continuation<T> continuation
@@ -161,7 +165,7 @@ public:
         // continuation = block.createCoroutineUnintercepted(this, this);
     }
 
-    void onStart() override {
+    void on_start() override {
         // TODO: continuation.startCoroutineCancellable(this)
         // continuation->startCoroutineCancellable(this);
     }
@@ -196,7 +200,7 @@ public:
 // TODO: suspend fun
 // TODO: contract { callsInPlace(...) } - no C++ equivalent
 template<typename T>
-T withContext(
+T with_context(
     CoroutineContext context,
     std::function<T(CoroutineScope*)> block
 ) {
@@ -217,13 +221,13 @@ T withContext(
 // TODO: Extension on CoroutineDispatcher
 template<typename T>
 T invoke(CoroutineDispatcher* dispatcher, std::function<T(CoroutineScope*)> block) {
-    return withContext<T>(dispatcher, block);
+    return with_context<T>(dispatcher, block);
 }
 
 // --------------- implementation ---------------
 
-// TODO: private open class
-class StandaloneCoroutine : public AbstractCoroutine<void> {
+// TODO: open class
+class StandaloneCoroutine : AbstractCoroutine<void> {
 private:
     CoroutineContext parent_context;
     bool active_flag;
@@ -234,14 +238,14 @@ public:
           parent_context(parentContext),
           active_flag(active) {}
 
-    bool handleJobException(Throwable* exception) override {
-        handleCoroutineException(this->context, exception);
+    bool handle_job_exception(Throwable* exception) override {
+        handle_coroutine_exception(this->context, exception);
         return true;
     }
 };
 
-// TODO: private class
-class LazyStandaloneCoroutine : public StandaloneCoroutine {
+// TODO: class
+class LazyStandaloneCoroutine : StandaloneCoroutine {
 private:
     std::function<void(CoroutineScope*)> block;
     void* continuation;
@@ -258,27 +262,27 @@ public:
         // continuation = block.createCoroutineUnintercepted(this, this);
     }
 
-    void onStart() override {
+    void on_start() override {
         // TODO: continuation.startCoroutineCancellable(this)
         // continuation->startCoroutineCancellable(this);
     }
 };
 
 // Used by withContext when context changes, but dispatcher stays the same
-// TODO: internal expect class - platform-specific, use virtual/abstract
+// TODO: expect class - platform-specific, use virtual/abstract
 template<typename T>
 class UndispatchedCoroutine; // Forward declaration
 // TODO: Expect declaration - platform-specific implementation needed
 
-// TODO: private const val - constexpr
+// TODO: const auto - constexpr
 constexpr int UNDECIDED = 0;
 constexpr int SUSPENDED = 1;
 constexpr int RESUMED = 2;
 
 // Used by withContext when context dispatcher changes
-// TODO: internal class
+// TODO: class
 template<typename T>
-class DispatchedCoroutine : public ScopeCoroutine<T> {
+class DispatchedCoroutine : ScopeCoroutine<T> {
 private:
     CoroutineContext context_val;
     Continuation<T>* u_cont;
@@ -292,7 +296,7 @@ public:
           _decision(UNDECIDED) {}
 
 private:
-    bool trySuspend() {
+    bool try_suspend() {
         while (true) {
             int decision = _decision.load();
             if (decision == UNDECIDED) {
@@ -309,7 +313,7 @@ private:
         }
     }
 
-    bool tryResume() {
+    bool try_resume() {
         while (true) {
             int decision = _decision.load();
             if (decision == UNDECIDED) {
@@ -327,22 +331,22 @@ private:
     }
 
 public:
-    void afterCompletion(void* state) override {
+    void after_completion(void* state) override {
         // Call afterResume from afterCompletion and not vice-versa, because stack-size is more
         // important for afterResume implementation
-        afterResume(state);
+        after_resume(state);
     }
 
-    void afterResume(void* state) override {
-        if (tryResume()) return; // completed before getResult invocation -- bail out
+    void after_resume(void* state) override {
+        if (try_resume()) return; // completed before getResult invocation -- bail out
         // Resume in a cancellable way because we have to switch back to the original dispatcher
         // TODO: uCont.intercepted().resumeCancellableWith(recoverResult(state, uCont))
         // u_cont->intercepted()->resumeCancellableWith(recoverResult(state, u_cont));
     }
 
-    // TODO: internal fun
-    void* getResult() {
-        if (trySuspend()) {
+    // TODO: fun
+    void* get_result() {
+        if (try_suspend()) {
             // TODO: return COROUTINE_SUSPENDED
             return COROUTINE_SUSPENDED;
         }

@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Original Kotlin package: kotlinx.coroutines.debug
 // Line-by-line C++ transliteration from Kotlin
 //
@@ -50,7 +51,7 @@ T run_with_timeout_dumping_coroutines(
     bool test_started = false;
 
     // TODO: FutureTask -> std::packaged_task or std::promise/future
-    auto test_result = std::async(std::launch::async, [&]() -> T {
+    auto test_result = std::async(:launch::async std, [&]() -> T {
         {
             std::lock_guard<std::mutex> lock(mutex);
             test_started = true;
@@ -122,7 +123,7 @@ inline void cancel_if_necessary(bool cancel_on_timeout) {
     if (cancel_on_timeout) {
         auto coroutines_info = DebugProbes::dump_coroutines_info();
         for (auto& info : coroutines_info) {
-            // TODO: it.job?.cancel()
+            // TODO: it.job*.cancel()
             // Job* job = info.job();
             // if (job != nullptr) {
             //     job->cancel();

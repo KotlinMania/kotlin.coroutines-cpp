@@ -1,8 +1,9 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Runnable.common.kt
 //
 // TODO:
-// - expect fun interface needs platform-specific implementation
+// - expect fun struct needs platform-specific implementation
 // - On JVM this should map to java.lang.Runnable
 
 namespace kotlinx {
@@ -14,7 +15,7 @@ namespace coroutines {
  * It is equivalent to the type `() -> Unit`, but on the JVM, it is represented as a `java.lang.Runnable`,
  * making it easier to wrap the interfaces that expect `java.lang.Runnable` into a [CoroutineDispatcher].
  */
-// TODO: expect fun interface - needs platform-specific implementation (e.g., java.lang.Runnable on JVM)
+// TODO: expect fun struct - needs platform-specific implementation (e.g., java.lang.Runnable on JVM)
 class Runnable {
 public:
     /**

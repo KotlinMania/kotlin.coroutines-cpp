@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, syntax-only)
 // Original: kotlinx-coroutines-core/common/src/flow/terminal/Logic.kt
 //
@@ -28,11 +29,11 @@ namespace flow {
  * Example:
  *
  * ```
- * val myFlow = flow {
+ * auto myFlow = flow {
  *   repeat(10) {
  *     emit(it)
  *   }
- *   throw RuntimeException("You still didn't find the required number? I gave you ten!")
+ *   throw RuntimeException("You still didn't find the required number* I gave you ten!")
  * }
  * println(myFlow.any { it > 5 }) // true
  * println(flowOf(1, 2, 3).any { it > 5 }) // false
@@ -66,11 +67,11 @@ bool any(Flow<T> flow, Predicate predicate) {
  * Example:
  *
  * ```
- * val myFlow = flow {
+ * auto myFlow = flow {
  *   repeat(10) {
  *     emit(it)
  *   }
- *   throw RuntimeException("You still didn't find the required number? I gave you ten!")
+ *   throw RuntimeException("You still didn't find the required number* I gave you ten!")
  * }
  * println(myFlow.all { it <= 5 }) // false
  * println(flowOf(1, 2, 3).all { it <= 5 }) // true
@@ -103,11 +104,11 @@ bool all(Flow<T> flow, Predicate predicate) {
  *
  * Example:
  * ```
- * val myFlow = flow {
+ * auto myFlow = flow {
  *   repeat(10) {
  *     emit(it)
  *   }
- *   throw RuntimeException("You still didn't find the required number? I gave you ten!")
+ *   throw RuntimeException("You still didn't find the required number* I gave you ten!")
  * }
  * println(myFlow.none { it > 5 }) // false
  * println(flowOf(1, 2, 3).none { it > 5 }) // true

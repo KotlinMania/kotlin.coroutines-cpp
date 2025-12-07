@@ -5,13 +5,15 @@
 // TODO: Result<T> needs custom implementation
 // TODO: fold method on Result needs implementation
 
+#include "kotlinx/coroutines/core_fwd.hpp"
+
 namespace kotlinx {
 namespace coroutines {
 
 // TODO: import kotlinx.coroutines.selects.* - use includes
 
 /**
- * A [Deferred] that can be completed via public functions [complete] or [cancel][Job.cancel].
+ * A [Deferred] that can be completed via functions [complete] or [cancel][Job.cancel].
  *
  * Note that the [complete] function returns `false` when this deferred value is already complete or completing,
  * while [cancel][Job.cancel] returns `true` as long as the deferred is still _cancelling_ and the corresponding
@@ -19,7 +21,7 @@ namespace coroutines {
  *
  * An instance of completable deferred can be created by `CompletableDeferred()` function in _active_ state.
  *
- * All functions on this interface are **thread-safe** and can
+ * All functions on this struct are **thread-safe** and can
  * be safely invoked from concurrent coroutines without external synchronization.
  */
 // TODO: @OptIn(ExperimentalSubclassOptIn::class) - no C++ equivalent
@@ -49,7 +51,7 @@ public:
      * However, that if this deferred has children, then it transitions into _cancelling_ state and becomes _cancelled_
      * once all its children are [complete][isCompleted]. See [Job] for details.
      */
-    virtual bool completeExceptionally(Throwable* exception) = 0;
+    virtual bool complete_exceptionally(Throwable* exception) = 0;
 };
 
 /**
@@ -63,13 +65,13 @@ public:
  */
 // TODO: Extension function
 template<typename T>
-bool completeWith(CompletableDeferred<T>* deferred, Result<T> result) {
+bool complete_with(CompletableDeferred<T>* deferred, Result<T> result) {
     // TODO: result.fold({ complete(it) }, { completeExceptionally(it) })
     // Placeholder implementation
     if (result.isSuccess()) {
         return deferred->complete(result.getValue());
     } else {
-        return deferred->completeExceptionally(result.getException());
+        return deferred->complete_exceptionally(result.getException());
     }
 }
 
@@ -79,7 +81,7 @@ bool completeWith(CompletableDeferred<T>* deferred, Result<T> result) {
  */
 // TODO: @Suppress("FunctionName") - naming convention, no C++ equivalent
 template<typename T>
-CompletableDeferred<T>* CompletableDeferred(Job* parent = nullptr) {
+CompletableDeferred<T>* create_completable_deferred(Job* parent = nullptr) {
     return new CompletableDeferredImpl<T>(parent);
 }
 
@@ -88,7 +90,7 @@ CompletableDeferred<T>* CompletableDeferred(Job* parent = nullptr) {
  */
 // TODO: @Suppress("FunctionName") - no C++ equivalent
 template<typename T>
-CompletableDeferred<T>* CompletableDeferred(T value) {
+CompletableDeferred<T>* create_completable_deferred(T value) {
     auto* deferred = new CompletableDeferredImpl<T>(nullptr);
     deferred->complete(value);
     return deferred;
@@ -99,7 +101,7 @@ CompletableDeferred<T>* CompletableDeferred(T value) {
  */
 // TODO: @OptIn(InternalForInheritanceCoroutinesApi::class) - no C++ equivalent
 // TODO: @Suppress("UNCHECKED_CAST") - no C++ equivalent
-// TODO: private class - access control
+// TODO: class - access control
 template<typename T>
 class CompletableDeferredImpl : public JobSupport, public CompletableDeferred<T> {
 private:
@@ -108,36 +110,36 @@ private:
 public:
     CompletableDeferredImpl(Job* parent)
         : JobSupport(true), parent_job(parent) {
-        initParentJob(parent);
+        init_parent_job(parent);
     }
 
-    bool get_onCancelComplete() override {
+    bool get_on_cancel_complete() override {
         return true;
     }
 
-    T getCompleted() override {
+    T get_completed() override {
         // TODO: getCompletedInternal() as T - cast
-        return static_cast<T>(this->getCompletedInternal());
+        return static_cast<T>(this->get_completed_internal());
     }
 
     // TODO: suspend fun
     T await() override {
         // TODO: awaitInternal() as T - cast
-        return static_cast<T>(this->awaitInternal());
+        return static_cast<T>(this->await_internal());
     }
 
-    // TODO: val onAwait property
-    SelectClause1<T>* get_onAwait() override {
+    // TODO: auto onAwait property
+    SelectClause1<T>* get_on_await() override {
         // TODO: onAwaitInternal as SelectClause1<T> - cast
-        return static_cast<SelectClause1<T>*>(this->onAwaitInternal);
+        return static_cast<SelectClause1<T>*>(this->on_await_internal);
     }
 
     bool complete(T value) override {
-        return this->makeCompleting(value);
+        return this->make_completing(value);
     }
 
-    bool completeExceptionally(Throwable* exception) override {
-        return this->makeCompleting(new CompletedExceptionally(exception));
+    bool complete_exceptionally(Throwable* exception) override {
+        return this->make_completing(new CompletedExceptionally(exception));
     }
 };
 

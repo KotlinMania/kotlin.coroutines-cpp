@@ -1,9 +1,15 @@
+#include <string>
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/Await.kt
 //
 // TODO: suspend functions not directly supported - need custom coroutine implementation
 // TODO: varargs needs C++ variadic templates or std::initializer_list
 // TODO: atomicfu library needs C++ atomic equivalent (std::atomic)
+
+#include "kotlinx/coroutines/core_fwd.hpp"
+#include <vector>
+#include <initializer_list>
+#include <atomic>
 
 namespace kotlinx {
 namespace coroutines {
@@ -27,7 +33,7 @@ namespace coroutines {
 // TODO: suspend fun - not directly supported, mark as requiring coroutine support
 // TODO: vararg deferreds - use template variadic or std::initializer_list
 template<typename T>
-std::vector<T> awaitAll(std::initializer_list<Deferred<T>*> deferreds) {
+std::vector<T> await_all(std::initializer_list<Deferred<T>*> deferreds) {
     if (deferreds.size() == 0) {
         return std::vector<T>();
     } else {
@@ -52,7 +58,7 @@ std::vector<T> awaitAll(std::initializer_list<Deferred<T>*> deferreds) {
 // TODO: Extension function - free function or method
 // TODO: Collection<Deferred<T>>.awaitAll() - extension on Collection
 template<typename T>
-std::vector<T> awaitAll(const std::vector<Deferred<T>*>& collection) {
+std::vector<T> await_all(const std::vector<Deferred<T>*>& collection) {
     if (collection.empty()) {
         return std::vector<T>();
     } else {
@@ -72,7 +78,7 @@ std::vector<T> awaitAll(const std::vector<Deferred<T>*>& collection) {
  */
 // TODO: suspend fun - coroutine support needed
 // TODO: vararg jobs - use variadic template
-void joinAll(std::initializer_list<Job*> jobs) {
+void join_all(std::initializer_list<Job*> jobs) {
     for (auto* job : jobs) {
         job->join();
     }
@@ -88,13 +94,13 @@ void joinAll(std::initializer_list<Job*> jobs) {
  * while suspended, [CancellationException] will be thrown. See [suspendCancellableCoroutine] for low-level details.
  */
 // TODO: Extension on Collection - free function
-void joinAll(const std::vector<Job*>& collection) {
+void join_all(const std::vector<Job*>& collection) {
     for (auto* job : collection) {
         job->join();
     }
 }
 
-// TODO: private class - make private nested class or anonymous namespace
+// TODO: class - make nested class or anonymous namespace
 template<typename T>
 class AwaitAll {
 private:
@@ -139,21 +145,21 @@ public:
 
 private:
     // TODO: inner class - nested class with access to outer
-    class DisposeHandlersOnCancel : public CancelHandler {
+    class DisposeHandlersOnCancel : CancelHandler {
     private:
         std::vector<AwaitAllNode*> nodes;
 
     public:
         DisposeHandlersOnCancel(const std::vector<AwaitAllNode*>& nodes_param) : nodes(nodes_param) {}
 
-        void disposeAll() {
+        void dispose_all() {
             for (auto* node : nodes) {
                 node->handle->dispose();
             }
         }
 
         void invoke(Throwable* cause) override {
-            disposeAll();
+            dispose_all();
         }
 
         std::string toString() const override {
@@ -162,7 +168,7 @@ private:
     };
 
     // TODO: inner class - nested class
-    class AwaitAllNode : public JobNode {
+    class AwaitAllNode : JobNode {
     private:
         CancellableContinuation<std::vector<T>>* continuation;
 
@@ -183,7 +189,7 @@ private:
             _disposer.store(value);
         }
 
-        bool get_onCancelling() const override {
+        bool get_on_cancelling() const override {
             return false;
         }
 
@@ -196,7 +202,7 @@ private:
                     // and if disposer was already set (all handlers where already installed, then dispose them all)
                     auto* disposer_val = get_disposer();
                     if (disposer_val != nullptr) {
-                        disposer_val->disposeAll();
+                        disposer_val->dispose_all();
                     }
                 }
             } else if (not_completed_count.fetch_sub(1) - 1 == 0) {

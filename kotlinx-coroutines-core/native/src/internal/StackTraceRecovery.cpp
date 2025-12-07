@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/internal/StackTraceRecovery.kt
 //
@@ -9,36 +10,36 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // TODO: Remove imports, fully qualify or add includes:
 // import kotlin.coroutines.*
 
-// TODO: internal actual function
+// TODO: actual function
 template<typename E>
 E* recover_stack_trace(E* exception, Continuation<void>* continuation) {
     return exception;
 }
 
-// TODO: internal actual function (overload)
+// TODO: actual function (overload)
 template<typename E>
 E* recover_stack_trace(E* exception) {
     return exception;
 }
 
-// TODO: @PublishedApi internal actual function
+// TODO: @PublishedApi actual function
 template<typename E>
 E* unwrap(E* exception) {
     return exception;
 }
 
-// TODO: internal actual suspend inline function
+// TODO: actual suspend inline function
 inline void recover_and_throw(std::exception* exception) {
     throw *exception;
 }
 
 // TODO: @Suppress("UNUSED")
-// TODO: internal actual interface
+// TODO: actual interface
 class CoroutineStackFrame {
 public:
     CoroutineStackFrame* caller_frame;
@@ -48,10 +49,10 @@ public:
     virtual ~CoroutineStackFrame() = default;
 };
 
-// TODO: internal actual typealias
+// TODO: actual typealias
 using StackTraceElement = void*;
 
-// TODO: internal actual function - extension on Throwable
+// TODO: actual function - extension on Throwable
 void init_cause(std::exception& throwable, std::exception* cause) {
     // Empty implementation
 }

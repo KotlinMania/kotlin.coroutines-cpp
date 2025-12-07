@@ -1,3 +1,5 @@
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Supervisor.kt
 //
@@ -19,7 +21,7 @@ class CoroutineContext;
 template<typename T> class Continuation;
 
 /**
- * Creates a _supervisor_ job object in an active state.
+ * Creates a _supervisor_ job class in an active state.
  * Children of a supervisor job can fail independently of each other.
  *
  * A failure or cancellation of a child does not cause the supervisor job to fail and does not affect its other children,
@@ -59,10 +61,10 @@ Job* SupervisorJob0(Job* parent = nullptr);
 template<typename R>
 R supervisor_scope(std::function<R(CoroutineScope&)> block);
 
-// Private implementation classes would go here with internal linkage
-// namespace { // anonymous namespace for internal classes
-//     class SupervisorJobImpl : public JobImpl { ... }
-//     template<typename T> class SupervisorCoroutine : public ScopeCoroutine<T> { ... }
+// Private implementation classes would go here with linkage
+// namespace { // anonymous namespace for classes
+//     class SupervisorJobImpl : JobImpl { ... }
+//     template<typename T> class SupervisorCoroutine : ScopeCoroutine<T> { ... }
 // }
 
 } // namespace coroutines

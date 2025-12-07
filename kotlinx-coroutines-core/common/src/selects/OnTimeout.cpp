@@ -1,3 +1,6 @@
+#include <optional>
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt
 //
@@ -6,7 +9,7 @@
 // - Kotlin coroutines infrastructure (SelectBuilder, SelectInstance, etc.)
 // - Extension functions (converted to free functions)
 // - Smart casts and type inference
-// - Nullable types (T? -> T* or std::optional<T>)
+// - Nullable types (T* -> T* or std::optional<T>)
 // - Lambda types and closures
 // - Kotlin Duration type
 // - @ExperimentalCoroutinesApi, @Suppress annotations (kept as comments)
@@ -71,7 +74,7 @@ public:
 private:
     // @Suppress("UNUSED_PARAMETER")
     void register_func(SelectInstance<void*>* select, void* ignored_param) {
-        // Should this clause complete immediately?
+        // Should this clause complete immediately*
         if (time_millis <= 0) {
             select->select_in_registration_phase(/* Unit */ nullptr);
             return;

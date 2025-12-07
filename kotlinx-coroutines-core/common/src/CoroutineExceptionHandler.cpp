@@ -1,8 +1,6 @@
-package kotlinx.coroutines
-
-import kotlinx.coroutines.internal.*
-import kotlin.coroutines.*
-
+#include "kotlinx/coroutines/core_fwd.hpp"
+namespace kotlinx {namespace coroutines {
+// import kotlinx.coroutines.internal.*// import kotlin.coroutines.*
 /**
  * Helper function for coroutine builder implementations to handle uncaught and unexpected exceptions in coroutines,
  * that could not be otherwise handled in a normal way through structured concurrency, saving them to a future, and
@@ -12,11 +10,10 @@ import kotlin.coroutines.*
  * or is absent, all instances of [CoroutineExceptionHandler] found via [ServiceLoader] and
  * [Thread.uncaughtExceptionHandler] are invoked.
  *
- * @suppress **This is internal API and it is subject to change.**
+ * @suppress **This is API and it is subject to change.**
  */
-@InternalCoroutinesApi
-public fun handleCoroutineException(context: CoroutineContext, exception: Throwable) {
-    val reportException = if (exception is DispatchException) exception.cause else exception
+// @InternalCoroutinesApiauto handle_coroutine_exception(CoroutineContext context, exception: Throwable) {
+    auto reportException = if (exception is DispatchException) exception.cause else exception;
     // Invoke an exception handler from the context if present
     try {
         context[CoroutineExceptionHandler]?.let {
@@ -31,7 +28,7 @@ public fun handleCoroutineException(context: CoroutineContext, exception: Throwa
     handleUncaughtCoroutineException(context, reportException)
 }
 
-internal fun handlerException(originalException: Throwable, thrownException: Throwable): Throwable {
+auto handler_exception(Throwable originalException, thrownException: Throwable): Throwable {
     if (originalException === thrownException) return originalException
     return RuntimeException("Exception while trying to handle coroutine exception", thrownException).apply {
         addSuppressed(originalException)
@@ -42,10 +39,9 @@ internal fun handlerException(originalException: Throwable, thrownException: Thr
  * Creates a [CoroutineExceptionHandler] instance.
  * @param handler a function which handles exception thrown by a coroutine
  */
-@Suppress("FunctionName")
-public inline fun CoroutineExceptionHandler(crossinline handler: (CoroutineContext, Throwable) -> Unit): CoroutineExceptionHandler =
-    object : AbstractCoroutineContextElement(CoroutineExceptionHandler), CoroutineExceptionHandler {
-        override fun handleException(context: CoroutineContext, exception: Throwable) =
+// @Suppress("FunctionName")inline auto coroutine_exception_handler(crossinline handler: (CoroutineContext, Throwable) -> Unit): CoroutineExceptionHandler { return ; }
+    class : AbstractCoroutineContextElement(CoroutineExceptionHandler), CoroutineExceptionHandler {
+        virtual auto handle_exception(CoroutineContext context, exception: Throwable) { return ; }
             handler.invoke(context, exception)
     }
 
@@ -94,15 +90,17 @@ public inline fun CoroutineExceptionHandler(crossinline handler: (CoroutineConte
  *
  * [CoroutineExceptionHandler] can be invoked from an arbitrary thread.
  */
-public interface CoroutineExceptionHandler : CoroutineContext.Element {
+struct CoroutineExceptionHandler : CoroutineContext.Element {
     /**
      * Key for [CoroutineExceptionHandler] instance in the coroutine context.
      */
-    public companion object Key : CoroutineContext.Key<CoroutineExceptionHandler>
+    companion object Key : CoroutineContext.Key<CoroutineExceptionHandler>
 
     /**
      * Handles uncaught [exception] in the given [context]. It is invoked
      * if coroutine has an uncaught exception.
      */
-    public fun handleException(context: CoroutineContext, exception: Throwable)
+    auto handle_exception(CoroutineContext context, exception: Throwable)
 }
+
+}} // namespace kotlinx::coroutines

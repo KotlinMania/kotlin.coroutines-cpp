@@ -1,3 +1,5 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/concurrent/src/internal/LockFreeLinkedList.kt
 //
@@ -5,12 +7,12 @@
 // TODO: Map @InternalCoroutinesApi annotation to comment
 // TODO: Map @Suppress("LeakingThis") to comment
 // TODO: Map @JvmField annotation to comment (JVM-specific)
-// TODO: Map @PublishedApi internal to appropriate C++ visibility
+// TODO: Map @PublishedApi to appropriate C++ visibility
 // TODO: Implement tailrec optimization manually (tail call optimization)
 // TODO: Implement 'actual' keyword semantics (expect/actual pattern for multiplatform)
 // TODO: Implement inline functions
 // TODO: Implement Kotlin's 'is' type checking (use dynamic_cast or type traits)
-// TODO: Implement Kotlin's 'as' and 'as?' casting
+// TODO: Implement Kotlin's 'as' and 'as*' casting
 // TODO: Implement lambda with receiver syntax for loop
 // TODO: Implement lazy property initialization (lazySet)
 // TODO: Implement assert { } blocks
@@ -20,7 +22,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declaration
 class LockFreeLinkedListNode;
@@ -31,7 +33,7 @@ using Node = LockFreeLinkedListNode;
 /**
  * Doubly-linked concurrent list node with remove support.
  * Based on paper
- * ["Lock-Free and Practical Doubly Linked List-Based Deques Using Single-Word Compare-and-Swap"](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.140.4693&rep=rep1&type=pdf)
+ * ["Lock-Free and Practical Doubly Linked List-Based Deques Using Single-Word Compare-and-Swap"](https://citeseerx.ist.psu.edu/viewdoc/download*doi=10.1.1.140.4693&rep=rep1&type=pdf)
  * by Sundell and Tsigas with considerable changes.
  *
  * The core idea of the algorithm is to maintain a doubly-linked list with an ever-present sentinel node (it is
@@ -205,7 +207,7 @@ public:
         return remove_or_next() == nullptr;
     }
 
-    // returns null if removed successfully or next node if this node is already removed
+    // returns nullptr if removed successfully or next node if this node is already removed
     // @PublishedApi
     Node* remove_or_next() {
         while (true) { // lock-free loop on next
@@ -278,7 +280,7 @@ private:
      * Returns the corrected value of the previous node while also correcting the `prev` pointer
      * (so that `this.prev.next === this`) and helps complete node removals to the left ot this node.
      *
-     * It returns `null` in two special cases:
+     * It returns `nullptr` in two special cases:
      *
      * - When this node is removed. In this case there is no need to waste time on corrections, because
      *   remover of this node will ultimately call [correctPrev] on the next node and that will fix all
@@ -361,7 +363,7 @@ public:
  *
  * @suppress **This is unstable API and it is subject to change.**
  */
-class LockFreeLinkedListHead : public LockFreeLinkedListNode {
+class LockFreeLinkedListHead : LockFreeLinkedListNode {
 public:
     /**
      * Iterates over all elements in this list of a specified type.
@@ -389,7 +391,7 @@ public:
     }
 };
 
-class ListClosed : public LockFreeLinkedListNode {
+class ListClosed : LockFreeLinkedListNode {
 public:
     // @JvmField
     int forbidden_elements_bitmask;

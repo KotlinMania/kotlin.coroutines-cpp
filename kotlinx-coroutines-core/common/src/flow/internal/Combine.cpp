@@ -1,26 +1,20 @@
-@file:Suppress("UNCHECKED_CAST") // KT-32203
+#include "kotlinx/coroutines/core_fwd.hpp"
+// @file:Suppress("UNCHECKED_CAST") // KT-32203
+namespace kotlinx {namespace coroutines {namespace flow {namespace {
+// import kotlinx.coroutines.*// import kotlinx.coroutines.channels.*// import kotlinx.coroutines.flow.*// import kotlinx.coroutines.internal.*typealias Update = IndexedValue<Any*>
 
-package kotlinx.coroutines.flow.internal
-
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.internal.*
-private typealias Update = IndexedValue<Any?>
-
-@PublishedApi
-internal suspend fun <R, T> FlowCollector<R>.combineInternal(
+// @PublishedApifun <R, T> FlowCollector<R>.combineInternal(
     flows: Array<out Flow<T>>,
-    arrayFactory: () -> Array<T?>?, // Array factory is required to workaround array typing on JVM
+    arrayFactory: () -> Array<T*>*, // Array factory is required to workaround array typing on JVM
     transform: suspend FlowCollector<R>.(Array<T>) -> Unit
 ): Unit = flowScope { // flow scope so any cancellation within the source flow will cancel the whole scope
-    val size = flows.size
+    auto size = flows.size;
     if (size == 0) return@flowScope // bail-out for empty input
-    val latestValues = arrayOfNulls<Any?>(size)
+    auto latestValues = arrayOfNulls<Any*>(size)
     latestValues.fill(UNINITIALIZED) // Smaller bytecode & faster than Array(size) { UNINITIALIZED }
-    val resultChannel = Channel<Update>(size)
-    val nonClosed = LocalAtomicInt(size)
-    var remainingAbsentValues = size
+    auto resultChannel = Channel<Update>(size)
+    auto nonClosed = LocalAtomicInt(size)
+    auto remainingAbsentValues = size;
     for (i in 0 until size) {
         // Coroutine per flow that keeps track of its value and sends result to downstream
         launch {
@@ -42,17 +36,17 @@ internal suspend fun <R, T> FlowCollector<R>.combineInternal(
      * Batch-receive optimization: read updates in batches, but bail-out
      * as soon as we encountered two values from the same source
      */
-    val lastReceivedEpoch = ByteArray(size)
-    var currentEpoch: Byte = 0
+    auto lastReceivedEpoch = ByteArray(size)
+    Byte currentEpoch = 0;
     while (true) {
         ++currentEpoch
         // Start batch
         // The very first receive in epoch should be suspending
-        var element = resultChannel.receiveCatching().getOrNull() ?: break // Channel is closed, nothing to do here
+        auto element = resultChannel.receiveCatching().getOrNull() ?: break // Channel is closed, nothing to do here;
         while (true) {
-            val index = element.index
+            auto index = element.index;
             // Update values
-            val previous = latestValues[index]
+            auto previous = latestValues[index];
             latestValues[index] = element.value
             if (previous === UNINITIALIZED) --remainingAbsentValues
             // Check epoch
@@ -65,24 +59,24 @@ internal suspend fun <R, T> FlowCollector<R>.combineInternal(
         // Process batch result if there is enough data
         if (remainingAbsentValues == 0) {
             /*
-             * If arrayFactory returns null, then we can avoid array copy because
+             * If arrayFactory returns nullptr, then we can avoid array copy because
              * it's our own safe transformer that immediately deconstructs the array
              */
-            val results = arrayFactory()
-            if (results == null) {
+            auto results = arrayFactory()
+            if (results == nullptr) {
                 transform(latestValues as Array<T>)
             } else {
-                (latestValues as Array<T?>).copyInto(results)
+                (latestValues as Array<T*>).copyInto(results)
                 transform(results as Array<T>)
             }
         }
     }
 }
 
-internal fun <T1, T2, R> zipImpl(flow: Flow<T1>, flow2: Flow<T2>, transform: suspend (T1, T2) -> R): Flow<R> =
+fun <T1, T2, R> zipImpl(Flow<T1> flow, Flow<T2> flow2, transform: (T1, T2) -> R): Flow<R> =
     unsafeFlow {
         coroutineScope {
-            val second = produce<Any> {
+            auto second = produce<Any> {
                 flow2.collect { value ->
                     return@collect channel.send(value ?: NULL)
                 }
@@ -92,14 +86,14 @@ internal fun <T1, T2, R> zipImpl(flow: Flow<T1>, flow2: Flow<T2>, transform: sus
              * This approach only works with rendezvous channel and is required to enforce correctness
              * in the following scenario:
              * ```
-             * val f1 = flow { emit(1); delay(Long.MAX_VALUE) }
-             * val f2 = flowOf(1)
+             * auto f1 = flow { emit(1); delay(Long.MAX_VALUE) }
+             * auto f2 = flowOf(1)
              * f1.zip(f2) { ... }
              * ```
              *
              * Invariant: this clause is invoked only when all elements from the channel were processed (=> rendezvous restriction).
              */
-            val collectJob = Job()
+            auto collectJob = Job()
             (second as SendChannel<*>).invokeOnClose {
                 // Optimization to avoid AFE allocation when the other flow is done
                 if (collectJob.isActive) collectJob.cancel(AbortFlowException(collectJob))
@@ -118,12 +112,12 @@ internal fun <T1, T2, R> zipImpl(flow: Flow<T1>, flow2: Flow<T2>, transform: sus
                  * with coroutines scope via a channel, but it's way too expensive, so
                  * we are using this trick instead.
                  */
-                val scopeContext = coroutineContext
-                val cnt = threadContextElements(scopeContext)
+                auto scopeContext = coroutineContext;
+                auto cnt = threadContextElements(scopeContext)
                 withContextUndispatched(coroutineContext + collectJob, Unit) {
                     flow.collect { value ->
                         withContextUndispatched(scopeContext, Unit, cnt) {
-                            val otherValue = second.receiveCatching().getOrElse {
+                            auto otherValue = second.receiveCatching().getOrElse {
                                 throw it ?: AbortFlowException(collectJob)
                             }
                             emit(transform(value, NULL.unbox(otherValue)))
@@ -137,3 +131,5 @@ internal fun <T1, T2, R> zipImpl(flow: Flow<T1>, flow2: Flow<T2>, transform: sus
             }
         }
     }
+
+}}}} // namespace kotlinx::coroutines::flow::internal

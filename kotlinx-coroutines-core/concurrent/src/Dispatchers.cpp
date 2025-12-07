@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/concurrent/src/Dispatchers.kt
 //
@@ -28,9 +29,9 @@ namespace coroutines {
  * In the following example
  * ```
  * // 100 threads for MySQL connection
- * val myMysqlDbDispatcher = Dispatchers.IO.limitedParallelism(100)
+ * auto myMysqlDbDispatcher = Dispatchers.IO.limitedParallelism(100)
  * // 60 threads for MongoDB connection
- * val myMongoDbDispatcher = Dispatchers.IO.limitedParallelism(60)
+ * auto myMongoDbDispatcher = Dispatchers.IO.limitedParallelism(60)
  * ```
  * the system may have up to `64 + 100 + 60` threads dedicated to blocking tasks during peak loads,
  * but during its steady state there is only a small number of threads shared
@@ -39,15 +40,15 @@ namespace coroutines {
  * It is recommended to replace manually created thread-backed executors with `Dispatchers.IO.limitedParallelism` instead:
  * ```
  * // Requires manual closing, allocates resources for all threads
- * val databasePoolDispatcher = newFixedThreadPoolContext(128)
+ * auto databasePoolDispatcher = newFixedThreadPoolContext(128)
  *
  * // Provides the same number of threads as a resource but shares and caches them internally
- * val databasePoolDispatcher = Dispatchers.IO.limitedParallelism(128)
+ * auto databasePoolDispatcher = Dispatchers.IO.limitedParallelism(128)
  * ```
  */
 // @Suppress("EXTENSION_SHADOWED_BY_MEMBER")
 // TODO: 'expect val' means platform-specific implementation required
-// TODO: This is an extension property on Dispatchers object - implement as namespace member or static method
+// TODO: This is an extension property on Dispatchers class - implement as namespace member or static method
 // CoroutineDispatcher* io; // declared in Dispatchers namespace/class
 
 } // namespace coroutines

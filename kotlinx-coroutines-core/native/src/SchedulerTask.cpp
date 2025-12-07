@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/SchedulerTask.kt
 //
@@ -6,8 +7,8 @@
 namespace kotlinx {
 namespace coroutines {
 
-// TODO: internal actual abstract class
-class SchedulerTask : public Runnable {
+// TODO: actual abstract class
+class SchedulerTask : Runnable {
 public:
     virtual ~SchedulerTask() = default;
 };

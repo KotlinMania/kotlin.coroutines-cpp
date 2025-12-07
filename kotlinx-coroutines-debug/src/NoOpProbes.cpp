@@ -1,10 +1,11 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Original Kotlin package: kotlinx.coroutines.debug
 // Line-by-line C++ transliteration from Kotlin
 //
 // TODO: @file:Suppress - Kotlin compiler directives
 // TODO: @JvmName - Kotlin JVM annotation for specifying JVM method names
 // TODO: Continuation<*> - Kotlin continuation type with star projection
-// TODO: internal visibility - translate to anonymous namespace or comment
+// TODO: visibility - translate to anonymous namespace or comment
 // TODO: Unit return type - translate to void
 
 // Forward declarations
@@ -22,7 +23,7 @@ namespace debug {
 // Empty class used to replace installed agent in the end of debug session
 
 // TODO: @JvmName("probeCoroutineResumed")
-// TODO: internal -> anonymous namespace or comment
+// TODO: -> anonymous namespace or comment
 inline void probe_coroutine_resumed_no_op(kotlin::coroutines::Continuation<void>* frame) {
     // Unit in Kotlin -> void in C++, do nothing
 }

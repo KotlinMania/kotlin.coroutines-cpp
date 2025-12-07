@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/flow/internal/FlowExceptions.kt
 //
@@ -7,14 +8,14 @@
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
-namespace internal {
+namespace {
 
 // TODO: Remove imports, fully qualify or add includes:
 // import kotlinx.coroutines.*
 // import kotlinx.coroutines.flow.*
 
-// TODO: internal actual class
-class AbortFlowException : public CancellationException {
+// TODO: actual class
+class AbortFlowException : CancellationException {
 public:
     void* owner;
 
@@ -25,8 +26,8 @@ public:
     }
 };
 
-// TODO: internal actual class
-class ChildCancelledException : public CancellationException {
+// TODO: actual class
+class ChildCancelledException : CancellationException {
 public:
     ChildCancelledException()
         : CancellationException("Child of the scoped flow was cancelled")

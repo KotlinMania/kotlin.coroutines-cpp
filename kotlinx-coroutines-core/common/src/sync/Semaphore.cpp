@@ -1,9 +1,13 @@
+#include <string>
+#include <optional>
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/sync/Semaphore.kt
 //
 // TODO: This is a mechanical syntax transliteration. The following Kotlin constructs need proper C++ implementation:
 // - suspend functions (marked but not implemented as C++20 coroutines)
-// - interface (converted to abstract class)
+// - struct (converted to abstract class)
 // - Kotlin atomicfu (atomic<T> needs C++ std::atomic)
 // - AtomicRef, AtomicArray types
 // - Default parameters (need overloads or std::optional)
@@ -218,7 +222,7 @@ public:
         // TODO: suspend function semantics not implemented
         // Decrement the number of available permits.
         int p = dec_permits();
-        // Is the permit acquired?
+        // Is the permit acquired*
         if (p > 0) return; // permit acquired
         // Try to suspend otherwise.
         acquire_slow_path();
@@ -254,7 +258,7 @@ private:
         while (true) {
             // Decrement the number of available permits at first.
             int p = dec_permits();
-            // Is the permit acquired?
+            // Is the permit acquired*
             if (p > 0) {
                 on_acquired_func(waiter);
                 return;
@@ -302,14 +306,14 @@ public:
             // Increment the number of available permits.
             int p = available_permits_.fetch_add(1);
             // Is this `release` call correct and does not
-            // exceed the maximal number of permits?
+            // exceed the maximal number of permits*
             if (p >= permits) {
                 // Revert the number of available permits
                 // back to the correct one and fail with error.
                 coerce_available_permits_at_maximum();
                 throw std::runtime_error("The number of released permits cannot be greater than permits");
             }
-            // Is there a waiter that should be resumed?
+            // Is there a waiter that should be resumed*
             if (p >= 0) return;
             // Try to resume the first waiter, and
             // restart the operation if either this
@@ -353,7 +357,7 @@ private:
     }
 };
 
-class SemaphoreImpl : public SemaphoreAndMutexImpl, public Semaphore {
+class SemaphoreImpl : SemaphoreAndMutexImpl, Semaphore {
 public:
     SemaphoreImpl(int permits, int acquired_permits)
         : SemaphoreAndMutexImpl(permits, acquired_permits) {}
@@ -379,7 +383,7 @@ SemaphoreSegment* create_segment(long id, SemaphoreSegment* prev) {
     return new SemaphoreSegment(id, prev, 0);
 }
 
-class SemaphoreSegment : public Segment<SemaphoreSegment> {
+class SemaphoreSegment : Segment<SemaphoreSegment> {
 public:
     std::vector<std::atomic<void*>> acquirers;
 
@@ -422,7 +426,7 @@ public:
         on_slot_cleaned();
     }
 
-    // TODO: toString override
+    // TODO: tostd::string override
 };
 
 // Configuration constants

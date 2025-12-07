@@ -1,8 +1,6 @@
-package kotlinx.coroutines
-
-import kotlinx.coroutines.intrinsics.*
-import kotlin.coroutines.*
-
+#include "kotlinx/coroutines/core_fwd.hpp"
+namespace kotlinx {namespace coroutines {
+// import kotlinx.coroutines.intrinsics.*// import kotlin.coroutines.*
 /**
  * Defines start options for coroutines builders.
  *
@@ -20,7 +18,7 @@ import kotlin.coroutines.*
  *   executing in any case.
  * - [UNDISPATCHED] immediately executes the coroutine until its first suspension point _in the current thread_.
  */
-public enum class CoroutineStart {
+enum class CoroutineStart {
     /**
      * Immediately schedules the coroutine for execution according to its context. This is usually the default option.
      *
@@ -110,7 +108,7 @@ public enum class CoroutineStart {
      * runBlocking {
      *     println("1. About to start a new coroutine.")
      *     // Create a job to execute on `Dispatchers.Default` later.
-     *     val job = launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
+     *     auto job = launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
      *         println("3. Only now does the coroutine start.")
      *     }
      *     delay(10.milliseconds) // try to give the coroutine some time to run
@@ -124,7 +122,7 @@ public enum class CoroutineStart {
      * runBlocking {
      *     println("1. About to lazily start a new coroutine.")
      *     // Create a job to execute on `Dispatchers.Unconfined` later.
-     *     val lazyJob = launch(Dispatchers.Unconfined, start = CoroutineStart.LAZY) {
+     *     auto lazyJob = launch(Dispatchers.Unconfined, start = CoroutineStart.LAZY) {
      *         println("3. The coroutine starts on the thread that called `join`.")
      *     }
      *     // We start the job on another thread for illustrative purposes
@@ -144,8 +142,8 @@ public enum class CoroutineStart {
      * it may be a better choice to use [lazy] instead:
      *
      * ```
-     * // instead of `val page = scope.async(start = CoroutineStart.LAZY) { getPage() }`, do
-     * val page by lazy { scope.async { getPage() } }
+     * // instead of `auto page = scope.async(start = CoroutineStart.LAZY) { getPage() }`, do
+     * auto page by lazy { scope.async { getPage() } }
      * ```
      *
      * This way, the child coroutine is not created at all unless it is needed.
@@ -156,7 +154,7 @@ public enum class CoroutineStart {
      * it is more idiomatic to create the coroutine in the exact place where it is started:
      *
      * ```
-     * // instead of `val job = scope.launch(start = CoroutineStart.LAZY) { }; job.start()`, do
+     * // instead of `auto job = scope.launch(start = CoroutineStart.LAZY) { }; job.start()`, do
      * scope.launch { }
      * ```
      */
@@ -178,11 +176,11 @@ public enum class CoroutineStart {
      *
      * Example:
      * ```
-     * val mutex = Mutex()
+     * auto mutex = Mutex()
      *
      * mutex.lock() // lock the mutex outside the coroutine
      * // ... // initial portion of the work, protected by the mutex
-     * val job = launch(start = CoroutineStart.ATOMIC) {
+     * auto job = launch(start = CoroutineStart.ATOMIC) {
      *     // the work must continue in a coroutine, but still under the mutex
      *     println("Coroutine running!")
      *     try {
@@ -237,8 +235,7 @@ public enum class CoroutineStart {
      * and cannot be used after the [Job] cancellation. For instance, in Android development, updating a UI element
      * is not allowed if the coroutine's scope, which is tied to the element's lifecycle, has been cancelled.
      */
-    @DelicateCoroutinesApi
-    ATOMIC,
+// @DelicateCoroutinesApi    ATOMIC,
 
     /**
      * Immediately executes the coroutine until its first suspension point _in the current thread_.
@@ -254,7 +251,7 @@ public enum class CoroutineStart {
      *
      * Example:
      * ```
-     * var tasks = 0
+     * auto tasks = 0
      * repeat(3) {
      *     launch(start = CoroutineStart.UNDISPATCHED) {
      *         tasks++
@@ -282,7 +279,7 @@ public enum class CoroutineStart {
      *
      * ```
      * // Constant usage of stack space
-     * fun CoroutineScope.factorialWithUnconfined(n: Int): Deferred<Int> =
+     * auto CoroutineScope__dot__factorialWithUnconfined(n: Int): Deferred<Int> { return ; }
      *     async(Dispatchers.Unconfined) {
      *         if (n > 0) {
      *             n * factorialWithUnconfined(n - 1).await()
@@ -292,7 +289,7 @@ public enum class CoroutineStart {
      *     }
      *
      * // Linearly increasing usage of stack space
-     * fun CoroutineScope.factorialWithUndispatched(n: Int): Deferred<Int> =
+     * auto CoroutineScope__dot__factorialWithUndispatched(n: Int): Deferred<Int> { return ; }
      *     async(start = CoroutineStart.UNDISPATCHED) {
      *         if (n > 0) {
      *             n * factorialWithUndispatched(n - 1).await()
@@ -350,10 +347,9 @@ public enum class CoroutineStart {
      * - [UNDISPATCHED] uses [startCoroutineUndispatched].
      * - [LAZY] does nothing.
      *
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
-    @InternalCoroutinesApi
-    public operator fun <R, T> invoke(block: suspend R.() -> T, receiver: R, completion: Continuation<T>): Unit =
+// @InternalCoroutinesApi    operator fun <R, T> invoke(block: R.() -> T, R receiver, completion: Continuation<T>): Unit =
         when (this) {
             DEFAULT -> block.startCoroutineCancellable(receiver, completion)
             ATOMIC -> block.startCoroutine(receiver, completion)
@@ -364,8 +360,9 @@ public enum class CoroutineStart {
     /**
      * Returns `true` when [LAZY].
      *
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
-    @InternalCoroutinesApi
-    public val isLazy: Boolean get() = this === LAZY
+// @InternalCoroutinesApi    Boolean isLazy get() { return this === LAZY; }
 }
+
+}} // namespace kotlinx::coroutines

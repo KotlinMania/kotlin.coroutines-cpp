@@ -1,8 +1,6 @@
-package kotlinx.coroutines.flow.internal
-
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-
+#include "kotlinx/coroutines/core_fwd.hpp"
+namespace kotlinx {namespace coroutines {namespace flow {namespace {
+// import kotlinx.coroutines.*// import kotlinx.coroutines.flow.*
 /**
  * This exception is thrown when an operator needs no more elements from the flow.
  * The operator should never allow this exception to be thrown past its own boundary.
@@ -10,24 +8,24 @@ import kotlinx.coroutines.flow.*
  * (see usages of [checkOwnership]).
  * Therefore, the [owner] parameter must be unique for every invocation of every operator.
  */
-internal expect class AbortFlowException(owner: Any) : CancellationException {
-    val owner: Any
+expect class AbortFlowException(owner: Any) : CancellationException {
+    Any owner
 }
 
-internal fun AbortFlowException.checkOwnership(owner: Any) {
+auto AbortFlowException__dot__checkOwnership(owner: Any) {
     if (this.owner !== owner) throw this
 }
 
 /**
  * Exception used to cancel child of [scopedFlow] without cancelling the whole scope.
  */
-internal expect class ChildCancelledException() : CancellationException
+expect class ChildCancelledException() : CancellationException
 
-@Suppress("NOTHING_TO_INLINE")
-@PublishedApi
-internal inline fun checkIndexOverflow(index: Int): Int {
+// @Suppress("NOTHING_TO_INLINE")// @PublishedApiinline auto check_index_overflow(index: Int): Int {
     if (index < 0) {
         throw ArithmeticException("Index overflow has happened")
     }
     return index
 }
+
+}}}} // namespace kotlinx::coroutines::flow::internal

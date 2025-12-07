@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/EventLoop.kt
 //
@@ -14,8 +15,8 @@ namespace coroutines {
 // import kotlin.native.concurrent.*
 // import kotlin.time.*
 
-// TODO: internal actual abstract class
-class EventLoopImplPlatform : public EventLoop {
+// TODO: actual abstract class
+class EventLoopImplPlatform : EventLoop {
 private:
     // TODO: Worker.current equivalent
     void* current; // = Worker.current
@@ -32,27 +33,27 @@ protected:
     }
 };
 
-// TODO: internal class
-class EventLoopImpl : public EventLoopImplBase {
+// TODO: class
+class EventLoopImpl : EventLoopImplBase {
 public:
     DisposableHandle invoke_on_timeout(long time_millis, Runnable block, CoroutineContext context) override {
         return kDefaultDelay.invoke_on_timeout(time_millis, block, context);
     }
 };
 
-// TODO: internal actual function
+// TODO: actual function
 EventLoop* create_event_loop() {
     return new EventLoopImpl();
 }
 
-// TODO: private val with TimeSource.Monotonic
-// private val startingPoint = TimeSource.Monotonic.markNow()
+// TODO: auto with TimeSource.Monotonic
+// auto startingPoint = TimeSource.Monotonic.markNow()
 namespace {
     // TODO: TimeSource equivalent
     long starting_point = 0;
 }
 
-// TODO: internal actual function
+// TODO: actual function
 long nano_time() {
     // TODO: (TimeSource.Monotonic.markNow() - startingPoint).inWholeNanoseconds
     return 0;

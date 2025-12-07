@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/internal/LocalAtomics.kt
 //
@@ -6,12 +7,12 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // TODO: Remove imports, fully qualify or add includes:
 // import kotlinx.atomicfu.*
 
-// TODO: internal actual class
+// TODO: actual class
 class LocalAtomicInt {
 private:
     std::atomic<int> i_ref;

@@ -1,10 +1,12 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first pass - syntax/language translation only)
 // Original: kotlinx-coroutines-core/common/src/flow/Channels.kt
 //
 // TODO: Implement suspend/coroutine semantics
 // TODO: Translate JVM annotations
 // TODO: Implement atomicfu atomic operations
-// TODO: Handle nullability (T?)
+// TODO: Handle nullability (T*)
 // TODO: Implement Channel operations
 // TODO: Map Kotlin's Unit type
 
@@ -42,7 +44,7 @@ void emit_all_impl(FlowCollector<T>* collector, ReceiveChannel<T>* channel, bool
     collector->ensure_active();
     Throwable* cause = nullptr;
     try {
-        for (auto element : *channel) { // TODO: channel iteration
+        for (*channel element) { // TODO: channel iteration
             collector->emit(element);
         }
     } catch (Throwable& e) {
@@ -111,7 +113,7 @@ Flow<T>* consume_as_flow(ReceiveChannel<T>* channel) { // TODO: extension functi
  * the context might play a role, because it is used by the producing coroutine.
  */
 template<typename T>
-class ChannelAsFlow : public ChannelFlow<T> {
+class ChannelAsFlow : ChannelFlow<T> {
 private:
     ReceiveChannel<T>* channel;
     bool consume;
@@ -169,7 +171,7 @@ public:
     }
 
     std::string additional_to_string_props() override {
-        return "channel=" + /* TODO: channel.toString() */;
+        return "channel=" + /* TODO: channel.tostd::string() */;
     }
 };
 

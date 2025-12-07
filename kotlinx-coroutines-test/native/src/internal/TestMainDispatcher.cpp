@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.internal.TestMainDispatcher (Native)
 // Original package: kotlinx.coroutines.test.internal
 // Platform: Native
@@ -5,12 +6,12 @@
 // TODO: Import statements removed; fully qualify types or add appropriate includes
 // TODO: actual/expect mechanism - this is the native-specific implementation
 // TODO: Annotations (@Suppress) preserved as comments
-// TODO: Kotlin internal visibility needs C++ equivalent
+// TODO: Kotlin visibility needs C++ equivalent
 
 namespace kotlinx {
 namespace coroutines {
 namespace test {
-namespace internal {
+namespace {
 
 // package kotlinx.coroutines.test.internal
 // import kotlinx.coroutines.*

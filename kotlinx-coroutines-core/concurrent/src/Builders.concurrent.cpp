@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/concurrent/src/Builders.concurrent.kt
 //
@@ -18,9 +19,9 @@ namespace coroutines {
  * Calling [runBlocking] from a suspend function is redundant.
  * For example, the following code is incorrect:
  * ```
- * suspend fun loadConfiguration() {
+ * auto load_configuration() {
  *     // DO NOT DO THIS:
- *     val data = runBlocking { // <- redundant and blocks the thread, do not do that
+ *     auto data = runBlocking { // <- redundant and blocks the thread, do not do that
  *         fetchConfigurationData() // suspending function
  *     }
  * }

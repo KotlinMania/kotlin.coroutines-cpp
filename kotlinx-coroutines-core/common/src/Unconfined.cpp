@@ -1,8 +1,9 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Unconfined.kt
 //
 // TODO:
-// - object declaration needs singleton pattern
+// - class declaration needs singleton pattern
 // - CoroutineContext.Key infrastructure
 // - YieldContext integration with coroutine context
 // - @JvmField annotation (affects JVM bytecode generation only)
@@ -21,7 +22,7 @@ class AbstractCoroutineContextElement;
 /**
  * A coroutine dispatcher that is not confined to any specific thread.
  */
-// internal object
+// object
 class Unconfined /* : CoroutineDispatcher() */ {
 private:
     Unconfined() = default; // Private constructor for singleton

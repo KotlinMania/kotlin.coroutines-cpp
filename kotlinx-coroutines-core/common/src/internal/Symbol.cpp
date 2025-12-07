@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/Symbol.kt
 //
@@ -9,7 +10,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 /**
  * A symbol class that is used to define unique constants that are self-explanatory in debugger.

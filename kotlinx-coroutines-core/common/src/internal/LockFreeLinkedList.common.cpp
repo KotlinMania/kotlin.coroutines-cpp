@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/LockFreeLinkedList.common.kt
 //
@@ -10,7 +11,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 /**
  * This is unstable API and it is subject to change.
@@ -38,7 +39,7 @@ public:
  * This is unstable API and it is subject to change.
  */
 // TODO: expect open class - needs platform-specific implementation
-class LockFreeLinkedListHead : public LockFreeLinkedListNode {
+class LockFreeLinkedListHead : LockFreeLinkedListNode {
 public:
     LockFreeLinkedListHead() : LockFreeLinkedListNode() {}
 

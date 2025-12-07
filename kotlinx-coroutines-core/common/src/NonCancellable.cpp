@@ -1,10 +1,11 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/NonCancellable.kt
 //
 // TODO:
-// - object declaration needs singleton pattern
+// - class declaration needs singleton pattern
 // - Deprecated annotation handling
-// - Multiple interface inheritance (AbstractCoroutineContextElement, Job)
+// - Multiple struct inheritance (AbstractCoroutineContextElement, Job)
 // - Sequence<Job> needs iteration infrastructure
 // - SelectClause0 needs select infrastructure
 
@@ -35,14 +36,14 @@ template<typename T> class Sequence;
  * }
  * ```
  *
- * **WARNING**: This object is not designed to be used with [launch], [async], and other coroutine builders.
+ * **WARNING**: This class is not designed to be used with [launch], [async], and other coroutine builders.
  * if you write `launch(NonCancellable) { ... }` then not only the newly launched job will not be cancelled
  * when the parent is cancelled, the whole parent-child relation between parent and child is severed.
  * The parent will not wait for the child's completion, nor will be cancelled when the child crashed.
  */
 // @OptIn(InternalForInheritanceCoroutinesApi::class)
 // @Suppress("DeprecatedCallableAddReplaceWith")
-// TODO: object declaration - needs singleton implementation
+// TODO: class declaration - needs singleton implementation
 class NonCancellable /* : AbstractCoroutineContextElement(Job), Job */ {
 private:
     static constexpr const char* kMessage =
@@ -54,43 +55,43 @@ public:
     static NonCancellable& instance();
 
     /**
-     * Always returns `null`.
-     * @suppress **This an internal API and should not be used from general code.**
+     * Always returns `nullptr`.
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     Job* get_parent() const { return nullptr; }
 
     /**
      * Always returns `true`.
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     bool is_active() const { return true; }
 
     /**
      * Always returns `false`.
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     bool is_completed() const { return false; }
 
     /**
      * Always returns `false`.
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     bool is_cancelled() const { return false; }
 
     /**
      * Always returns `false`.
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     bool start() { return false; }
 
     /**
      * Always throws [UnsupportedOperationException].
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     // TODO: suspend function - coroutine semantics not implemented
@@ -100,7 +101,7 @@ public:
 
     /**
      * Always throws [UnsupportedOperationException].
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     SelectClause0& get_on_join() {
@@ -109,7 +110,7 @@ public:
 
     /**
      * Always throws [IllegalStateException].
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     CancellationException* get_cancellation_exception() {
@@ -117,21 +118,21 @@ public:
     }
 
     /**
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     DisposableHandle* invoke_on_completion(CompletionHandler* handler);
 
     /**
      * Always returns no-op handle.
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     DisposableHandle* invoke_on_completion(bool on_cancelling, bool invoke_immediately, CompletionHandler* handler);
 
     /**
      * Does nothing.
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     void cancel(CancellationException* cause) {}
@@ -145,14 +146,14 @@ public:
 
     /**
      * Always returns [emptySequence].
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     Sequence<Job*>& get_children();
 
     /**
      * Always returns [NonDisposableHandle] and does not do anything.
-     * @suppress **This an internal API and should not be used from general code.**
+     * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
     ChildHandle* attach_child(ChildJob* child);

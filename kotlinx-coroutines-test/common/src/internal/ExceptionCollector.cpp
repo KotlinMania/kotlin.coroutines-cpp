@@ -1,9 +1,10 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.internal.ExceptionCollector
 // Original package: kotlinx.coroutines.test.internal
 //
 // TODO: Import statements removed; fully qualify types or add appropriate includes
-// TODO: Kotlin object singleton pattern translated to namespace/class with static members
-// TODO: Kotlin internal visibility needs C++ equivalent
+// TODO: Kotlin class singleton pattern translated to namespace/class with static members
+// TODO: Kotlin visibility needs C++ equivalent
 // TODO: Annotations (@Suppress) preserved as comments
 
 #include <functional>
@@ -15,7 +16,7 @@
 namespace kotlinx {
 namespace coroutines {
 namespace test {
-namespace internal {
+namespace {
 
 // package kotlinx.coroutines.test.internal
 
@@ -32,11 +33,11 @@ namespace internal {
  * other callbacks will eventually be registered, and so collects the exceptions.
  * Once a new callback is registered, the collected exceptions are used with it.
  *
- * The callbacks in this object are the last resort before relying on platform-dependent
+ * The callbacks in this class are the last resort before relying on platform-dependent
  * ways to report uncaught exceptions from coroutines.
  */
-// TODO: object singleton pattern; translate to class with static members or namespace
-class ExceptionCollector : public AbstractCoroutineContextElement, public CoroutineExceptionHandler {
+// TODO: class singleton pattern; translate to class with static members or namespace
+class ExceptionCollector : AbstractCoroutineContextElement, CoroutineExceptionHandler {
 private:
     static std::mutex lock_;
     static bool enabled_;
@@ -139,9 +140,9 @@ std::map<void*, std::function<void(std::exception_ptr)>> ExceptionCollector::cal
 ExceptionCollector ExceptionCollector::instance;
 
 /**
- * A workaround for being unable to treat an object as a `ServiceLoader` service.
+ * A workaround for being unable to treat an class as a `ServiceLoader` service.
  */
-class ExceptionCollectorAsService : public CoroutineExceptionHandler {
+class ExceptionCollectorAsService : CoroutineExceptionHandler {
 public:
     void handle_exception(const CoroutineContext& context, std::exception_ptr exception) override {
         ExceptionCollector::instance.handle_exception(context, exception);

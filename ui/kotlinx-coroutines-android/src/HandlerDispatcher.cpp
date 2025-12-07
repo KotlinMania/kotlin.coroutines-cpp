@@ -1,17 +1,18 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin: kotlinx.coroutines.android.HandlerDispatcher
 // Original package: kotlinx.coroutines.android
 //
 // TODO: This is a mechanical C++ transliteration. The following constructs need proper implementation:
 // - Android OS API calls (Handler, Looper, Build, Choreographer)
 // - AndroidX annotations (@VisibleForTesting, @JvmName, @JvmOverloads, @JvmField)
-// - Kotlin sealed classes -> abstract base class with private constructor
-// - Kotlin object declarations -> singletons (namespace with static members or Meyer's singleton)
+// - Kotlin sealed classes -> abstract base class with constructor
+// - Kotlin class declarations -> singletons (namespace with static members or Meyer's singleton)
 // - Kotlin extension functions (Handler.asCoroutineDispatcher, Looper.asHandler, Dispatchers.JavaFx extension)
 // - Kotlin suspend functions (awaitFrame, awaitFrameSlowPath) -> TODO: coroutine semantics not implemented
 // - MainCoroutineDispatcher, Delay, CoroutineDispatcher interfaces
 // - Reflection for Handler.createAsync and constructor lookup
 // - Kotlin data types: Runnable, CancellableContinuation, DisposableHandle, CoroutineContext
-// - Kotlin nullable types (T?) -> pointers or std::optional
+// - Kotlin nullable types (T*) -> pointers or std::optional
 // - Kotlin companion object and top-level functions
 // - Kotlin @Deprecated with DeprecationLevel.HIDDEN
 // - Kotlin lambda with receiver syntax
@@ -60,8 +61,8 @@ using Runnable = std::function<void()>;
  *
  * This class provides type-safety and a point for future extensions.
  */
-// public sealed class HandlerDispatcher
-class HandlerDispatcher : public MainCoroutineDispatcher, public Delay {
+// sealed class HandlerDispatcher
+class HandlerDispatcher : MainCoroutineDispatcher, Delay {
 public:
     /**
      * Returns dispatcher that executes coroutines immediately when it is already in the right context
@@ -73,7 +74,7 @@ public:
      *
      * Example of usage:
      * ```
-     * suspend fun updateUiElement(val text: String) {
+     * auto  update_ui_element(std::string text) {
      *     /*
      *      * If it is known that updateUiElement can be invoked both from the Main thread and from other threads,
      *      * `immediate` dispatcher is used as a performance optimization to avoid unnecessary dispatch.
@@ -89,7 +90,7 @@ public:
      * }
      * ```
      */
-    // public abstract override val immediate: HandlerDispatcher
+    // abstract override HandlerDispatcher immediate
     virtual HandlerDispatcher& get_immediate() = 0;
 
 protected:
@@ -97,12 +98,12 @@ protected:
     HandlerDispatcher() = default;
 };
 
-// internal class AndroidDispatcherFactory
-class AndroidDispatcherFactory : public MainDispatcherFactory {
+// class AndroidDispatcherFactory
+class AndroidDispatcherFactory : MainDispatcherFactory {
 public:
-    // override fun createDispatcher(allFactories: List<MainDispatcherFactory>)
+    // virtual auto create_dispatcher(allFactories: List<MainDispatcherFactory>)
     MainCoroutineDispatcher* create_dispatcher(const std::vector<MainDispatcherFactory*>& all_factories) override {
-        // val mainLooper = Looper.getMainLooper() ?: throw IllegalStateException("The main looper is not available")
+        // auto mainLooper = Looper.getMainLooper() ?: throw IllegalStateException("The main looper is not available")
         Looper* main_looper = nullptr; // TODO: Looper::get_main_looper()
         if (main_looper == nullptr) {
             throw std::runtime_error("The main looper is not available");
@@ -112,12 +113,12 @@ public:
         return new HandlerContext(handler);
     }
 
-    // override fun hintOnError(): String
+    // virtual auto hint_on_error(): std::string
     std::string hint_on_error() override {
         return "For tests Dispatchers.setMain from kotlinx-coroutines-test module can be used";
     }
 
-    // override val loadPriority: Int
+    // override Int loadPriority
     int get_load_priority() override {
         return std::numeric_limits<int>::max() / 2;
     }
@@ -140,15 +141,15 @@ private:
  */
 // @JvmName("from") // this is for a nice Java API, see issue #255
 // @JvmOverloads
-// public fun Handler.asCoroutineDispatcher(name: String? = null): HandlerDispatcher
+// auto Handler__dot__asCoroutineDispatcher(std::string* name = nullptr): HandlerDispatcher
 // TODO: Extension function -> free function taking Handler as first parameter
 HandlerDispatcher* as_coroutine_dispatcher(Handler& handler, const std::optional<std::string>& name = std::nullopt);
 
-// private const val MAX_DELAY = Long.MAX_VALUE / 2
+// const auto MAX_DELAY = Long.MAX_VALUE / 2
 constexpr int64_t kMaxDelay = std::numeric_limits<int64_t>::max() / 2; // cannot delay for too long on Android
 
 // @VisibleForTesting
-// internal fun Looper.asHandler(async: Boolean): Handler
+// auto Looper__dot__asHandler(async: Boolean): Handler
 // TODO: Extension function -> free function
 Handler* as_handler(Looper& looper, bool async) {
     // Async support was added in API 16.
@@ -161,13 +162,13 @@ Handler* as_handler(Looper& looper, bool async) {
 
     if (sdk_version >= 28) {
         // TODO compile against API 28 so this can be invoked without reflection.
-        // val factoryMethod = Handler::class.java.getDeclaredMethod("createAsync", Looper::class.java)
-        // return factoryMethod.invoke(null, this) as Handler
+        // auto factoryMethod = Handler::class.java.getDeclaredMethod("createAsync", Looper::class.java)
+        // return factoryMethod.invoke(nullptr, this) as Handler
         // TODO: Reflection - Handler::createAsync(Looper)
         return nullptr;
     }
 
-    // val constructor: Constructor<Handler>
+    // Constructor<Handler> constructor
     // TODO: Reflection - Handler constructor lookup
     try {
         // constructor = Handler::class.java.getDeclaredConstructor(Looper::class.java,
@@ -178,27 +179,27 @@ Handler* as_handler(Looper& looper, bool async) {
         // return Handler(this)
         return nullptr; // TODO: new Handler(looper)
     }
-    // return constructor.newInstance(this, null, true)
+    // return constructor.newInstance(this, nullptr, true)
     return nullptr; // TODO: Invoke constructor with (looper, nullptr, true)
 }
 
 // @JvmField
 // @Deprecated("Use Dispatchers.Main instead", level = DeprecationLevel.HIDDEN)
-// internal val Main: HandlerDispatcher?
+// HandlerDispatcher* Main
 // TODO: This is a top-level property; consider namespace-level static or singleton
 // runCatching { HandlerContext(Looper.getMainLooper().asHandler(async = true)) }.getOrNull()
 
 /**
  * Implements [CoroutineDispatcher] on top of an arbitrary Android [Handler].
  */
-// internal class HandlerContext
-class HandlerContext : public HandlerDispatcher, public Delay {
+// class HandlerContext
+class HandlerContext : HandlerDispatcher, Delay {
 private:
     Handler* handler;
     std::optional<std::string> name;
     bool invoke_immediately;
 
-    // private constructor
+    // constructor
     HandlerContext(Handler* handler_, const std::optional<std::string>& name_, bool invoke_immediately_)
         : handler(handler_), name(name_), invoke_immediately(invoke_immediately_)
     {
@@ -217,7 +218,7 @@ public:
     {
     }
 
-    // override val immediate: HandlerContext
+    // override HandlerContext immediate
     HandlerContext& get_immediate() override {
         if (invoke_immediately) {
             return *this;
@@ -227,14 +228,14 @@ public:
         }
     }
 
-    // override fun isDispatchNeeded(context: CoroutineContext): Boolean
+    // virtual auto is_dispatch_needed(context: CoroutineContext): Boolean
     bool is_dispatch_needed(CoroutineContext& context) override {
         // return !invokeImmediately || Looper.myLooper() != handler.looper
         // TODO: Looper::my_looper() != handler->get_looper()
         return !invoke_immediately; // TODO: Add looper check
     }
 
-    // override fun dispatch(context: CoroutineContext, block: Runnable)
+    // virtual auto dispatch(CoroutineContext context, block: Runnable)
     void dispatch(CoroutineContext& context, Runnable block) override {
         // if (!handler.post(block))
         bool posted = false; // TODO: handler->post(block)
@@ -243,9 +244,9 @@ public:
         }
     }
 
-    // override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>)
+    // virtual auto schedule_resume_after_delay(Long timeMillis, continuation: CancellableContinuation<Unit>)
     void schedule_resume_after_delay(int64_t time_millis, CancellableContinuation<void>& continuation) override {
-        // val block = Runnable {
+        // auto block = Runnable {
         //     with(continuation) { resumeUndispatched(Unit) }
         // }
         Runnable block = [&continuation]() {
@@ -263,7 +264,7 @@ public:
         }
     }
 
-    // override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle
+    // virtual auto invoke_on_timeout(Long timeMillis, Runnable block, context: CoroutineContext): DisposableHandle
     DisposableHandle* invoke_on_timeout(int64_t time_millis, Runnable block, CoroutineContext& context) override {
         int64_t coerced_delay = std::min(time_millis, kMaxDelay);
         // if (handler.postDelayed(block, timeMillis.coerceAtMost(MAX_DELAY)))
@@ -278,19 +279,19 @@ public:
     }
 
 private:
-    // private fun cancelOnRejection(context: CoroutineContext, block: Runnable)
+    // auto cancel_on_rejection(CoroutineContext context, block: Runnable)
     void cancel_on_rejection(CoroutineContext& context, Runnable block) {
-        // context.cancel(CancellationException("The task was rejected, the handler underlying the dispatcher '${toString()}' was closed"))
+        // context.cancel(CancellationException("The task was rejected, the handler underlying the dispatcher '${tostd::string()}' was closed"))
         // TODO: context.cancel() with message
         // Dispatchers.IO.dispatch(context, block)
         // TODO: Dispatchers::IO.dispatch(context, block)
     }
 
 public:
-    // override fun toString(): String
+    // virtual auto to_string(): std::string
     std::string to_string() override {
-        // return toStringInternalImpl() ?: run {
-        //     val str = name ?: handler.toString()
+        // return tostd::stringInternalImpl() ?: run {
+        //     auto str = name ?: handler.tostd::string()
         //     if (invokeImmediately) "$str.immediate" else str
         // }
         // TODO: to_string_internal_impl()
@@ -302,14 +303,14 @@ public:
         }
     }
 
-    // override fun equals(other: Any?): Boolean
+    // virtual auto equals(other: Any*): Boolean
     bool operator==(const HandlerContext& other) const {
         // return other is HandlerContext && other.handler === handler && other.invokeImmediately == invokeImmediately
         return other.handler == handler && other.invoke_immediately == invoke_immediately;
     }
 
     // inlining `Boolean.hashCode()` for Android compatibility, as requested by Animal Sniffer
-    // override fun hashCode(): Int
+    // virtual auto hash_code(): Int
     size_t hash_code() const {
         // return System.identityHashCode(handler) xor if (invokeImmediately) 1231 else 1237
         // TODO: Use std::hash or identity hash
@@ -319,17 +320,17 @@ public:
 };
 
 // @Volatile
-// private var choreographer: Choreographer? = null
+// Choreographer* choreographer = nullptr
 std::atomic<Choreographer*> choreographer{nullptr};
 
 /**
  * Awaits the next animation frame and returns frame time in nanoseconds.
  */
-// public suspend fun awaitFrame(): Long
+// auto  await_frame(): Long
 // TODO: suspend function -> coroutine semantics not implemented
 int64_t await_frame() {
     // fast path when choreographer is already known
-    // val choreographer = choreographer
+    // auto choreographer = choreographer
     Choreographer* choreo = choreographer.load();
     if (choreo != nullptr) {
         // return suspendCancellableCoroutine { cont ->
@@ -342,7 +343,7 @@ int64_t await_frame() {
     }
 }
 
-// private suspend fun awaitFrameSlowPath(): Long
+// auto  await_frame_slow_path(): Long
 // TODO: suspend function -> coroutine semantics not implemented
 int64_t await_frame_slow_path() {
     // suspendCancellableCoroutine { cont ->
@@ -358,10 +359,10 @@ int64_t await_frame_slow_path() {
     return 0;
 }
 
-// private fun updateChoreographerAndPostFrameCallback(cont: CancellableContinuation<Long>)
+// auto update_choreographer_and_post_frame_callback(cont: CancellableContinuation<Long>)
 template<typename T>
 void update_choreographer_and_post_frame_callback(CancellableContinuation<T>& cont) {
-    // val choreographer = choreographer ?: Choreographer.getInstance()!!.also { choreographer = it }
+    // auto choreographer = choreographer ?: Choreographer.getInstance()!!.also { choreographer = it }
     Choreographer* choreo = choreographer.load();
     if (choreo == nullptr) {
         // TODO: choreo = Choreographer::get_instance()
@@ -370,7 +371,7 @@ void update_choreographer_and_post_frame_callback(CancellableContinuation<T>& co
     post_frame_callback(choreo, cont);
 }
 
-// private fun postFrameCallback(choreographer: Choreographer, cont: CancellableContinuation<Long>)
+// auto post_frame_callback(Choreographer choreographer, cont: CancellableContinuation<Long>)
 template<typename T>
 void post_frame_callback(Choreographer* choreo, CancellableContinuation<T>& cont) {
     // choreographer.postFrameCallback { nanos ->

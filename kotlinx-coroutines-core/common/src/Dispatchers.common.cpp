@@ -1,10 +1,11 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Dispatchers.common.kt
 //
 // TODO:
-// - expect object needs platform-specific implementations
-// - object declaration needs singleton pattern
-// - val properties need getter implementations
+// - expect class needs platform-specific implementations
+// - class declaration needs singleton pattern
+// - auto properties need getter implementations
 
 namespace kotlinx {
 namespace coroutines {
@@ -15,7 +16,7 @@ class MainCoroutineDispatcher;
 /**
  * Groups various implementations of [CoroutineDispatcher].
  */
-// TODO: expect object - needs platform-specific singleton implementation
+// TODO: expect class - needs platform-specific singleton implementation
 class Dispatchers {
 public:
     /**
@@ -57,7 +58,7 @@ public:
      * stack overflows.
      *
      * ### Event loop
-     * Event loop semantics is a purely internal concept and has no guarantees on the order of execution
+     * Event loop semantics is a purely concept and has no guarantees on the order of execution
      * except that all queued coroutines will be executed on the current thread in the lexical scope of the outermost
      * unconfined coroutine.
      *

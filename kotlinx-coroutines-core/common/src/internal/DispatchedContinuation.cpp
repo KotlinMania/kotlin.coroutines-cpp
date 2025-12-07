@@ -1,9 +1,11 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/DispatchedContinuation.kt
 //
 // TODO: This is a mechanical transliteration - semantics not fully implemented
 // TODO: atomicfu needs C++ atomic equivalent
-// TODO: Continuation<T> interface needs C++ implementation
+// TODO: Continuation<T> struct needs C++ implementation
 // TODO: CoroutineDispatcher, CoroutineContext, CoroutineStackFrame need C++ equivalents
 // TODO: Symbol class and constants need proper implementation
 // TODO: @JvmField annotation - JVM-specific, remove or comment
@@ -15,7 +17,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declarations
 class Symbol;
@@ -33,7 +35,7 @@ extern Symbol* UNDEFINED;
 extern Symbol* REUSABLE_CLAIMED;
 
 template<typename T>
-class DispatchedContinuation : public DispatchedTask<T>, public CoroutineStackFrame {
+class DispatchedContinuation : DispatchedTask<T>, CoroutineStackFrame {
 public:
     CoroutineDispatcher* dispatcher;
     Continuation<T>* continuation;
@@ -62,12 +64,12 @@ public:
     /**
      * Possible states of reusability:
      *
-     * 1) `null`. Cancellable continuation wasn't yet attempted to be reused or
+     * 1) `nullptr`. Cancellable continuation wasn't yet attempted to be reused or
      *     was used and then invalidated (e.g. because of the cancellation).
      * 2) [CancellableContinuation]. Continuation to be/that is being reused.
      * 3) [REUSABLE_CLAIMED]. CC is currently being reused and its owner executes `suspend` block:
      *    ```
-     *    // state == null | CC
+     *    // state == nullptr | CC
      *    suspendCancellableCoroutineReusable { cont ->
      *        // state == REUSABLE_CLAIMED
      *        block(cont)
@@ -98,7 +100,7 @@ public:
         /*
         Invariant: caller.resumeMode.isReusableMode
          * Reusability control:
-         * `null` -> no reusability at all, `false`
+         * `nullptr` -> no reusability at all, `false`
          * anything else -> reusable.
          */
         return _reusable_cancellable_continuation.load() != nullptr;
@@ -135,14 +137,14 @@ public:
     CancellableContinuationImpl<T>* claim_reusable_cancellable_continuation() {
         /*
          * Transitions:
-         * 1) `null` -> claimed, caller will instantiate CC instance
+         * 1) `nullptr` -> claimed, caller will instantiate CC instance
          * 2) `CC` -> claimed, caller will reuse CC instance
          */
         while (true) {
             void* state = _reusable_cancellable_continuation.load();
             if (state == nullptr) {
                 /*
-                 * null -> CC was not yet published -> we do not compete with cancel
+                 * nullptr -> CC was not yet published -> we do not compete with cancel
                  * -> can use plain store instead of CAS
                  */
                 _reusable_cancellable_continuation.store(REUSABLE_CLAIMED);
@@ -166,7 +168,7 @@ public:
 
     /**
      * Checks whether there were any attempts to cancel reusable CC while it was in [REUSABLE_CLAIMED] state
-     * and returns cancellation cause if so, `null` otherwise.
+     * and returns cancellation cause if so, `nullptr` otherwise.
      * If continuation was cancelled, it becomes non-reusable.
      *
      * ```
@@ -233,7 +235,7 @@ public:
     }
 
     void resume_with(void* result) override {
-        // TODO: val state = result.toState()
+        // TODO: auto state = result.toState()
         void* state = result; // placeholder
         // TODO: if (dispatcher.safeIsDispatchNeeded(context))
         bool needs_dispatch = true; // placeholder
@@ -252,7 +254,7 @@ public:
     // We inline it to save an entry on the stack in cases where it shows (unconfined dispatcher)
     // It is used only in Continuation<T>.resumeCancellableWith
     void resume_cancellable_with(void* result) {
-        // TODO: val state = result.toState()
+        // TODO: auto state = result.toState()
         void* state = result; // placeholder
         // TODO: if (dispatcher.safeIsDispatchNeeded(context))
         bool needs_dispatch = true; // placeholder
@@ -269,10 +271,10 @@ public:
     }
 
     bool resume_cancelled(void* state) {
-        // TODO: val job = context[Job]
+        // TODO: auto job = context[Job]
         Job* job = nullptr; // placeholder
         if (job != nullptr /* && !job.isActive */) {
-            // TODO: val cause = job.getCancellationException()
+            // TODO: auto cause = job.getCancellationException()
             // cancel_completed_result(state, cause)
             // resume_with_exception(cause)
             return true;
@@ -293,7 +295,7 @@ public:
         // TODO: dispatcher.dispatchYield(context, this)
     }
 
-    // TODO: toString implementation
+    // TODO: tostd::string implementation
 };
 
 // TODO: Extension functions need implementation as free functions

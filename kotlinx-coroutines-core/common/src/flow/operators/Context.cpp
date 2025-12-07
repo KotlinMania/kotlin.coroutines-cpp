@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, syntax-only)
 // Original: kotlinx-coroutines-core/common/src/flow/operators/Context.kt
 //
@@ -106,9 +107,9 @@ namespace flow {
  * coroutine builder to produce a channel and [consumeEach][ReceiveChannel.consumeEach] extension to consume it:
  *
  * ```
- * fun <T> Flow<T>.buffer(capacity: Int = DEFAULT): Flow<T> = flow {
+ * fun <T> Flow<T>.buffer(Int capacity = DEFAULT): Flow<T> = flow {
  *     coroutineScope { // limit the scope of concurrent producer coroutine
- *         val channel = produce(capacity = capacity) {
+ *         auto channel = produce(capacity = capacity) {
  *             collect { send(it) } // send all to channel
  *         }
  *         // emit all received values
@@ -176,7 +177,7 @@ Flow<T> buffer(Flow<T> flow, int capacity = BUFFERED) {
  * For example, consider the flow that emits integers from 1 to 30 with 100 ms delay between them:
  *
  * ```
- * val flow = flow {
+ * auto flow = flow {
  *     for (i in 1..30) {
  *         delay(100)
  *         emit(i)
@@ -188,7 +189,7 @@ Flow<T> buffer(Flow<T> flow, int capacity = BUFFERED) {
  * integers 1, 10, 20, 30:
  *
  * ```
- * val result = flow.conflate().onEach { delay(1000) }.toList()
+ * auto result = flow.conflate().onEach { delay(1000) }.toList()
  * assertEquals(listOf(1, 10, 20, 30), result)
  * ```
  *
@@ -224,7 +225,7 @@ Flow<T> conflate(Flow<T> flow) {
  *
  * ```
  * withContext(Dispatchers.Main) {
- *     val singleValue = intFlow // will be executed on IO if context wasn't specified before
+ *     auto singleValue = intFlow // will be executed on IO if context wasn't specified before
  *         .map { ... } // Will be executed in IO
  *         .flowOn(Dispatchers.IO)
  *         .filter { ... } // Will be executed in Default
@@ -302,7 +303,7 @@ Flow<T> cancellable(Flow<T> flow) {
  * Internal marker for flows that are [cancellable].
  */
 template<typename T>
-class CancellableFlow : public Flow<T> {
+class CancellableFlow : Flow<T> {
     // Marker interface
 };
 
@@ -310,7 +311,7 @@ class CancellableFlow : public Flow<T> {
  * Named implementation class for a flow that is defined by the [cancellable] function.
  */
 template<typename T>
-class CancellableFlowImpl : public CancellableFlow<T> {
+class CancellableFlowImpl : CancellableFlow<T> {
 private:
     Flow<T> flow;
 
@@ -327,7 +328,7 @@ public:
 };
 
 void check_flow_context(CoroutineContext context) {
-    // require(context[Job] == null)
+    // require(context[Job] == nullptr)
     if (context[Job] != nullptr) {
         throw std::invalid_argument("Flow context cannot contain job in it. Had " + to_string(context));
     }

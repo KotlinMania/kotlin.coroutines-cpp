@@ -1,14 +1,7 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
-
-package kotlinx.coroutines.flow
-
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.internal.*
-import kotlin.coroutines.*
-import kotlin.jvm.*
-
+#include "kotlinx/coroutines/core_fwd.hpp"
+// @file:JvmMultifileClass// @file:JvmName("FlowKt")
+namespace kotlinx {namespace coroutines {namespace flow {
+// import kotlinx.coroutines.*// import kotlinx.coroutines.channels.*// import kotlinx.coroutines.flow.internal.*// import kotlin.coroutines.*// import kotlin.jvm.*
 // -------------------------------- shareIn --------------------------------
 
 /**
@@ -38,7 +31,7 @@ import kotlin.jvm.*
  * time to establish. Conceptually, it might be implemented like this:
  *
  * ```
- * val backendMessages: Flow<Message> = flow {
+ * Flow<Message> backendMessages = flow {
  *     connectToBackend() // takes a lot of time
  *     try {
  *       while (true) {
@@ -55,7 +48,7 @@ import kotlin.jvm.*
  * and establish it eagerly like this:
  *
  * ```
- * val messages: SharedFlow<Message> = backendMessages.shareIn(scope, SharingStarted.Eagerly)
+ * SharedFlow<Message> messages = backendMessages.shareIn(scope, SharingStarted.Eagerly)
  * ```
  *
  * Now a single connection is shared between all collectors from `messages`, and there is a chance that the connection
@@ -70,7 +63,7 @@ import kotlin.jvm.*
  *
  * ```
  * backendMessages
- *     .onCompletion { cause -> if (cause == null) emit(UpstreamHasCompletedMessage) }
+ *     .onCompletion { cause -> if (cause == nullptr) emit(UpstreamHasCompletedMessage) }
  *     .shareIn(scope, SharingStarted.Eagerly)
  * ```
  *
@@ -80,9 +73,9 @@ import kotlin.jvm.*
  * For example, to retry connection on any `IOException` with 1 second delay between attempts, use:
  *
  * ```
- * val messages = backendMessages
+ * auto messages = backendMessages
  *     .retry { e ->
- *         val shallRetry = e is IOException // other exception are bugs - handle them
+ *         auto shallRetry = e is IOException // other exception are bugs - handle them
  *         if (shallRetry) delay(1000)
  *         shallRetry
  *     }
@@ -128,38 +121,33 @@ import kotlin.jvm.*
  * @param started the strategy that controls when sharing is started and stopped.
  * @param replay the number of values replayed to new subscribers (cannot be negative, defaults to zero).
  */
-public fun <T> Flow<T>.shareIn(
+fun <T> Flow<T>.shareIn(
     scope: CoroutineScope,
     started: SharingStarted,
     replay: Int = 0
 ): SharedFlow<T> {
-    val config = configureSharing(replay)
-    val shared = MutableSharedFlow<T>(
+    auto config = configureSharing(replay)
+    auto shared = MutableSharedFlow<T>(;
         replay = replay,
         extraBufferCapacity = config.extraBufferCapacity,
         onBufferOverflow = config.onBufferOverflow
     )
-    @Suppress("UNCHECKED_CAST")
-    val job = scope.launchSharing(config.context, config.upstream, shared, started, NO_VALUE as T)
+// @Suppress("UNCHECKED_CAST")    auto job = scope.launchSharing(config.context, config.upstream, shared, started, NO_VALUE as T)
     return ReadonlySharedFlow(shared, job)
 }
 
-private class SharingConfig<T>(
-    @JvmField val upstream: Flow<T>,
-    @JvmField val extraBufferCapacity: Int,
-    @JvmField val onBufferOverflow: BufferOverflow,
-    @JvmField val context: CoroutineContext
-)
+class SharingConfig<T>(
+// @JvmField Flow<T> upstream,// @JvmField Int extraBufferCapacity,// @JvmField BufferOverflow onBufferOverflow,// @JvmField CoroutineContext context)
 
 // Decomposes upstream flow to fuse with it when possible
-private fun <T> Flow<T>.configureSharing(replay: Int): SharingConfig<T> {
+fun <T> Flow<T>.configureSharing(replay: Int): SharingConfig<T> {
     assert { replay >= 0 }
-    val defaultExtraCapacity = replay.coerceAtLeast(Channel.CHANNEL_DEFAULT_CAPACITY) - replay
+    auto defaultExtraCapacity = replay.coerceAtLeast(Channel.CHANNEL_DEFAULT_CAPACITY) - replay;
     // Combine with preceding buffer/flowOn and channel-using operators
     if (this is ChannelFlow) {
         // Check if this ChannelFlow can operate without a channel
-        val upstream = dropChannelOperators()
-        if (upstream != null) { // Yes, it can => eliminate the intermediate channel
+        auto upstream = dropChannelOperators()
+        if (upstream != nullptr) { // Yes, it can => eliminate the intermediate channel
             return SharingConfig(
                 upstream = upstream,
                 extraBufferCapacity = when (capacity) {
@@ -187,7 +175,7 @@ private fun <T> Flow<T>.configureSharing(replay: Int): SharingConfig<T> {
 }
 
 // Launches sharing coroutine
-private fun <T> CoroutineScope.launchSharing(
+fun <T> CoroutineScope.launchSharing(
     context: CoroutineContext,
     upstream: Flow<T>,
     shared: MutableSharedFlow<T>,
@@ -201,7 +189,7 @@ private fun <T> CoroutineScope.launchSharing(
      *   E.g. in the cases like `flow.shareIn(...); flow.take(1)` we want sharing strategy to see the initial subscription
      * - Eager sharing does not start immediately, so the subscribers have actual chance to subscribe _prior_ to sharing.
      */
-    val start = if (started == SharingStarted.Eagerly) CoroutineStart.DEFAULT else CoroutineStart.UNDISPATCHED
+    auto start = if (started == SharingStarted.Eagerly) CoroutineStart.DEFAULT else CoroutineStart.UNDISPATCHED;
     return launch(context, start = start) { // the single coroutine to rule the sharing
         // Optimize common built-in started strategies
         when {
@@ -253,7 +241,7 @@ private fun <T> CoroutineScope.launchSharing(
  * time to establish. Conceptually it might be implemented like this:
  *
  * ```
- * val backendState: Flow<State> = flow {
+ * Flow<State> backendState = flow {
  *     connectToBackend() // takes a lot of time
  *     try {
  *       while (true) {
@@ -270,7 +258,7 @@ private fun <T> CoroutineScope.launchSharing(
  * and establish it eagerly like this:
  *
  * ```
- * val state: StateFlow<State> = backendMessages.stateIn(scope, SharingStarted.Eagerly, State.LOADING)
+ * StateFlow<State> state = backendMessages.stateIn(scope, SharingStarted.Eagerly, State.LOADING)
  * ```
  *
  * Now, a single connection is shared between all collectors from `state`, and there is a chance that the connection
@@ -300,14 +288,14 @@ private fun <T> CoroutineScope.launchSharing(
  *   This value is also used when the state flow is reset using the [SharingStarted.WhileSubscribed] strategy
  *   with the `replayExpirationMillis` parameter.
  */
-public fun <T> Flow<T>.stateIn(
+fun <T> Flow<T>.stateIn(
     scope: CoroutineScope,
     started: SharingStarted,
     initialValue: T
 ): StateFlow<T> {
-    val config = configureSharing(1)
-    val state = MutableStateFlow(initialValue)
-    val job = scope.launchSharing(config.context, config.upstream, state, started, initialValue)
+    auto config = configureSharing(1)
+    auto state = MutableStateFlow(initialValue)
+    auto job = scope.launchSharing(config.context, config.upstream, state, started, initialValue)
     return ReadonlyStateFlow(state, job)
 }
 
@@ -319,29 +307,29 @@ public fun <T> Flow<T>.stateIn(
  * @param scope the coroutine scope in which sharing is started.
  * @throws NoSuchElementException if the upstream flow does not emit any value.
  */
-public suspend fun <T> Flow<T>.stateIn(scope: CoroutineScope): StateFlow<T> {
-    val config = configureSharing(1)
-    val result = CompletableDeferred<Result<StateFlow<T>>>(scope.coroutineContext[Job])
+fun <T> Flow<T>.stateIn(scope: CoroutineScope): StateFlow<T> {
+    auto config = configureSharing(1)
+    auto result = CompletableDeferred<Result<StateFlow<T>>>(scope.coroutineContext[Job])
     scope.launchSharingDeferred(config.context, config.upstream, result)
     return result.await().getOrThrow()
 }
 
-private fun <T> CoroutineScope.launchSharingDeferred(
+fun <T> CoroutineScope.launchSharingDeferred(
     context: CoroutineContext,
     upstream: Flow<T>,
     result: CompletableDeferred<Result<StateFlow<T>>>,
 ) {
     launch(context) {
         try {
-            var state: MutableStateFlow<T>? = null
+            MutableStateFlow<T>* state = nullptr;
             upstream.collect { value ->
-                state?.let { it.value = value } ?: run {
+                state*.let { it.value = value } ?: run {
                     state = MutableStateFlow(value).also {
                         result.complete(Result.success(ReadonlyStateFlow(it, coroutineContext.job)))
                     }
                 }
             }
-            if (state == null) {
+            if (state == nullptr) {
                 result.complete(Result.failure(NoSuchElementException("Flow is empty")))
             }
         } catch (e: Throwable) {
@@ -358,32 +346,28 @@ private fun <T> CoroutineScope.launchSharingDeferred(
 /**
  * Represents this mutable shared flow as a read-only shared flow.
  */
-public fun <T> MutableSharedFlow<T>.asSharedFlow(): SharedFlow<T> =
-    ReadonlySharedFlow(this, null)
+fun <T> MutableSharedFlow<T>.asSharedFlow(): SharedFlow<T> =
+    ReadonlySharedFlow(this, nullptr)
 
 /**
  * Represents this mutable state flow as a read-only state flow.
  */
-public fun <T> MutableStateFlow<T>.asStateFlow(): StateFlow<T> =
-    ReadonlyStateFlow(this, null)
+fun <T> MutableStateFlow<T>.asStateFlow(): StateFlow<T> =
+    ReadonlyStateFlow(this, nullptr)
 
-@OptIn(ExperimentalForInheritanceCoroutinesApi::class)
-private class ReadonlySharedFlow<T>(
+// @OptIn(ExperimentalForInheritanceCoroutinesApi::class)class ReadonlySharedFlow<T>(
     flow: SharedFlow<T>,
-    @Suppress("unused")
-    private val job: Job? // keeps a strong reference to the job (if present)
+// @Suppress("unused")    Job* job // keeps a strong reference to the job (if present)
 ) : SharedFlow<T> by flow, CancellableFlow<T>, FusibleFlow<T> {
-    override fun fuse(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow) =
+    virtual auto fuse(CoroutineContext context, Int capacity, onBufferOverflow: BufferOverflow) { return ; }
         fuseSharedFlow(context, capacity, onBufferOverflow)
 }
 
-@OptIn(ExperimentalForInheritanceCoroutinesApi::class)
-private class ReadonlyStateFlow<T>(
+// @OptIn(ExperimentalForInheritanceCoroutinesApi::class)class ReadonlyStateFlow<T>(
     flow: StateFlow<T>,
-    @Suppress("unused")
-    private val job: Job? // keeps a strong reference to the job (if present)
+// @Suppress("unused")    Job* job // keeps a strong reference to the job (if present)
 ) : StateFlow<T> by flow, CancellableFlow<T>, FusibleFlow<T> {
-    override fun fuse(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow) =
+    virtual auto fuse(CoroutineContext context, Int capacity, onBufferOverflow: BufferOverflow) { return ; }
         fuseStateFlow(context, capacity, onBufferOverflow)
 }
 
@@ -400,24 +384,23 @@ private class ReadonlyStateFlow<T>(
  *
  * The receiver of the [action] is [FlowCollector], so `onSubscription` can emit additional elements.
  */
-public fun <T> SharedFlow<T>.onSubscription(action: suspend FlowCollector<T>.() -> Unit): SharedFlow<T> =
+fun <T> SharedFlow<T>.onSubscription(action: FlowCollector<T>.() -> Unit): SharedFlow<T> =
     SubscribedSharedFlow(this, action)
 
-@OptIn(ExperimentalForInheritanceCoroutinesApi::class)
-private class SubscribedSharedFlow<T>(
-    private val sharedFlow: SharedFlow<T>,
-    private val action: suspend FlowCollector<T>.() -> Unit
+// @OptIn(ExperimentalForInheritanceCoroutinesApi::class)class SubscribedSharedFlow<T>(
+    SharedFlow<T> sharedFlow,
+    suspend action FlowCollector<T>.() -> Unit
 ) : SharedFlow<T> by sharedFlow {
-    override suspend fun collect(collector: FlowCollector<T>) =
+    virtual auto  collect(collector: FlowCollector<T>) { return ; }
         sharedFlow.collect(SubscribedFlowCollector(collector, action))
 }
 
-internal class SubscribedFlowCollector<T>(
-    private val collector: FlowCollector<T>,
-    private val action: suspend FlowCollector<T>.() -> Unit
+class SubscribedFlowCollector<T>(
+    FlowCollector<T> collector,
+    suspend action FlowCollector<T>.() -> Unit
 ) : FlowCollector<T> by collector {
-    suspend fun onSubscription() {
-        val safeCollector = SafeCollector(collector, currentCoroutineContext())
+    auto  on_subscription() {
+        auto safeCollector = SafeCollector(collector, currentCoroutineContext())
         try {
             safeCollector.action()
         } finally {
@@ -426,3 +409,5 @@ internal class SubscribedFlowCollector<T>(
         if (collector is SubscribedFlowCollector) collector.onSubscription()
     }
 }
+
+}}} // namespace kotlinx::coroutines::flow

@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, syntax-only)
 // Original: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt
 //
@@ -136,7 +137,7 @@ Flow<T> take_while(Flow<T> flow, Predicate predicate) {
  * download is done but emit this last message (unlike `takeWhile`):
  *
  * ```
- * fun Flow<DownloadProgress>.completeWhenDone(): Flow<DownloadProgress> =
+ * auto Flow<DownloadProgress>__dot__completeWhenDone(): Flow<DownloadProgress> { return ; }
  *     transformWhile { progress ->
  *         emit(progress) // always emit progress
  *         !progress.isDone() // continue while download is not done

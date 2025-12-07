@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/InlineList.kt
 //
@@ -13,7 +14,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 /*
  * Inline class that represents a mutable list, but does not allocate an underlying storage
@@ -39,7 +40,7 @@ public:
         // TODO: assert { element !is List<*> } // Lists are prohibited
 
         if (std::holds_alternative<std::monostate>(holder_)) {
-            // null -> InlineList(element)
+            // nullptr -> InlineList(element)
             InlineList<E> result;
             result.holder_ = element;
             return result;

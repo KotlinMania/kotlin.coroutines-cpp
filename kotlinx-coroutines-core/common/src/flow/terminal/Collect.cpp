@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, syntax-only)
 // Original: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt
 //
@@ -51,7 +52,7 @@ void collect(Flow<T> flow) {
  * ```
  * flow
  *     .onEach { value -> updateUi(value) }
- *     .onCompletion { cause -> updateUi(if (cause == null) "Done" else "Failed") }
+ *     .onCompletion { cause -> updateUi(if (cause == nullptr) "Done" else "Failed") }
  *     .catch { cause -> LOG.error("Exception: $cause") }
  *     .launchIn(uiScope)
  * ```

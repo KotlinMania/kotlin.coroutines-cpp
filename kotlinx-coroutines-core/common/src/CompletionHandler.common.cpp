@@ -3,6 +3,9 @@
 //
 // TODO: typealias maps to using declaration in C++
 
+#include "kotlinx/coroutines/core_fwd.hpp"
+#include <functional>
+
 namespace kotlinx {
 namespace coroutines {
 
@@ -10,7 +13,7 @@ namespace coroutines {
  * Handler for [Job.invokeOnCompletion] and [CancellableContinuation.invokeOnCancellation].
  *
  * The meaning of `cause` that is passed to the handler is:
- * - It is `null` if the job has completed normally or the continuation was cancelled without a `cause`.
+ * - It is `nullptr` if the job has completed normally or the continuation was cancelled without a `cause`.
  * - It is an instance of [CancellationException] if the job or the continuation was cancelled _normally_.
  *   **It should not be treated as an error**. In particular, it should not be reported to error logs.
  * - Otherwise, the job or the continuation had _failed_.
@@ -25,12 +28,12 @@ namespace coroutines {
  * This handler can be invoked concurrently with the surrounding code.
  * There is no guarantee on the execution context in which the function is invoked.
  *
- * **Note**: This type is a part of internal machinery that supports parent-child hierarchies
+ * **Note**: This type is a part of machinery that supports parent-child hierarchies
  * and allows for implementation of suspending functions that wait on the Job's state.
  * This type should not be used in general application code.
  */
 // TODO: deprecate. This doesn't seem better than a simple function type.
-// TODO: typealias CompletionHandler = (cause: Throwable?) -> Unit
+// TODO: typealias CompletionHandler = (cause: Throwable*) -> Unit
 using CompletionHandler = std::function<void(Throwable*)>;
 
 } // namespace coroutines

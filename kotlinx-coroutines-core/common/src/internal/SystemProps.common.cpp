@@ -1,10 +1,11 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/SystemProps.common.kt
 //
 // TODO: This is a mechanical transliteration - semantics not fully implemented
 // TODO: @JvmName, @JvmMultifileClass annotations - JVM-specific
 // TODO: expect function needs platform-specific implementation
-// TODO: String? (nullable) needs std::optional<std::string> or char*
+// TODO: std::string* (nullable) needs std::optional<std::string> or char*
 
 #include <string>
 #include <optional>
@@ -13,7 +14,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 /**
  * Gets the system property indicated by the specified [property name][propertyName],
@@ -90,7 +91,7 @@ inline std::string system_prop(const std::string& property_name, const std::stri
 
 /**
  * Gets the system property indicated by the specified [property name][propertyName],
- * or returns `null` if there is no property with that key.
+ * or returns `nullptr` if there is no property with that key.
  *
  * **Note: this function should be used in JVM tests only, other platforms use the default value.**
  */

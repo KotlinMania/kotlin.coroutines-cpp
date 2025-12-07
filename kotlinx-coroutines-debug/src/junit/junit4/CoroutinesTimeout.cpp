@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Original Kotlin package: kotlinx.coroutines.debug.junit4
 // Line-by-line C++ transliteration from Kotlin
 //
@@ -36,10 +37,10 @@ class CoroutinesTimeoutStatement;
 // ```
 // class HangingTest {
 //     @get:Rule
-//     val timeout = CoroutinesTimeout.seconds(5)
+//     auto timeout = CoroutinesTimeout.seconds(5)
 //
 //     @Test
-//     fun testThatHangs() = runBlocking {
+//     auto test_that_hangs() = runBlocking {
 //          ...
 //          delay(Long.MAX_VALUE) // somewhere deep in the stack
 //          ...
@@ -101,8 +102,8 @@ public:
     }
 
     // @suppress suppress from Dokka
-    // TODO: override fun apply(base: Statement, description: Description): Statement
-    // TODO: JUnit4 TestRule interface - no C++ equivalent
+    // TODO: virtual auto apply(Statement base, description: Description): Statement
+    // TODO: JUnit4 TestRule struct - no C++ equivalent
     // Statement apply(Statement base, Description description) {
     //     return CoroutinesTimeoutStatement(base, description, test_timeout_ms_, cancel_on_timeout_);
     // }

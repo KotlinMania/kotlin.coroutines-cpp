@@ -1,30 +1,20 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
-@file:Suppress("unused")
-
-package kotlinx.coroutines.flow
-
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.internal.*
-import kotlinx.coroutines.internal.*
-import kotlin.jvm.*
-import kotlinx.coroutines.flow.internal.unsafeFlow as flow
-
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
+// @file:JvmMultifileClass// @file:JvmName("FlowKt")// @file:Suppress("unused")
+namespace kotlinx {namespace coroutines {namespace flow {
+// import kotlinx.coroutines.*// import kotlinx.coroutines.channels.*// import kotlinx.coroutines.flow.internal.*// import kotlinx.coroutines.internal.*// import kotlin.jvm.*// import kotlinx.coroutines.flow.internal.unsafeFlow as flow
 /**
  * Name of the property that defines the value of [DEFAULT_CONCURRENCY].
  * This is a preview API and can be changed in a backwards-incompatible manner within a single release.
  */
-@FlowPreview
-public const val DEFAULT_CONCURRENCY_PROPERTY_NAME: String = "kotlinx.coroutines.flow.defaultConcurrency"
+// @FlowPreviewconst std::string DEFAULT_CONCURRENCY_PROPERTY_NAME = "kotlinx.coroutines.flow.defaultConcurrency"
 
 /**
  * Default concurrency limit that is used by [flattenMerge] and [flatMapMerge] operators.
  * It is 16 by default and can be changed on JVM using [DEFAULT_CONCURRENCY_PROPERTY_NAME] property.
  * This is a preview API and can be changed in a backwards-incompatible manner within a single release.
  */
-@FlowPreview
-public val DEFAULT_CONCURRENCY: Int = systemProp(
+// @FlowPreviewauto DEFAULT_CONCURRENCY: Int = systemProp(
     DEFAULT_CONCURRENCY_PROPERTY_NAME,
     16, 1, Int.MAX_VALUE
 )
@@ -38,8 +28,7 @@ public val DEFAULT_CONCURRENCY: Int = systemProp(
  * Note that even though this operator looks very familiar, we discourage its usage in a regular application-specific flows.
  * Most likely, suspending operation in [map] operator will be sufficient and linear transformations are much easier to reason about.
  */
-@ExperimentalCoroutinesApi
-public fun <T, R> Flow<T>.flatMapConcat(transform: suspend (value: T) -> Flow<R>): Flow<R> =
+// @ExperimentalCoroutinesApifun <T, R> Flow<T>.flatMapConcat(transform: (T value) -> Flow<R>): Flow<R> =
     map(transform).flattenConcat()
 
 /**
@@ -62,8 +51,7 @@ public fun <T, R> Flow<T>.flatMapConcat(transform: suspend (value: T) -> Flow<R>
  * @param concurrency controls the number of in-flight flows, at most [concurrency] flows are collected
  * at the same time. By default, it is equal to [DEFAULT_CONCURRENCY].
  */
-@ExperimentalCoroutinesApi
-public fun <T, R> Flow<T>.flatMapMerge(
+// @ExperimentalCoroutinesApifun <T, R> Flow<T>.flatMapMerge(
     concurrency: Int = DEFAULT_CONCURRENCY,
     transform: suspend (value: T) -> Flow<R>
 ): Flow<R> =
@@ -74,8 +62,7 @@ public fun <T, R> Flow<T>.flatMapMerge(
  *
  * Inner flows are collected by this operator *sequentially*.
  */
-@ExperimentalCoroutinesApi
-public fun <T> Flow<Flow<T>>.flattenConcat(): Flow<T> = flow {
+// @ExperimentalCoroutinesApifun <T> Flow<Flow<T>>.flattenConcat(): Flow<T> = flow {
     collect { value -> emitAll(value) }
 }
 
@@ -88,7 +75,7 @@ public fun <T> Flow<Flow<T>>.flattenConcat(): Flow<T> = flow {
  * Applications of [flowOn], [buffer], and [produceIn] _after_ this operator are fused with
  * its concurrent merging so that only one properly configured channel is used for execution of merging logic.
  */
-public fun <T> Iterable<Flow<T>>.merge(): Flow<T> {
+fun <T> Iterable<Flow<T>>.merge(): Flow<T> {
     /*
      * This is a fuseable implementation of the following operator:
      * channelFlow {
@@ -111,7 +98,7 @@ public fun <T> Iterable<Flow<T>>.merge(): Flow<T> {
  * Applications of [flowOn], [buffer], and [produceIn] _after_ this operator are fused with
  * its concurrent merging so that only one properly configured channel is used for execution of merging logic.
  */
-public fun <T> merge(vararg flows: Flow<T>): Flow<T> = flows.asIterable().merge()
+fun <T> merge(vararg Flow<T> flows): Flow<T> = flows.asIterable().merge()
 
 /**
  * Flattens the given flow of flows into a single flow with a [concurrency] limit on the number of
@@ -131,8 +118,7 @@ public fun <T> merge(vararg flows: Flow<T>): Flow<T> = flows.asIterable().merge(
  * @param concurrency controls the number of in-flight flows, at most [concurrency] flows are collected
  * at the same time. By default, it is equal to [DEFAULT_CONCURRENCY].
  */
-@ExperimentalCoroutinesApi
-public fun <T> Flow<Flow<T>>.flattenMerge(concurrency: Int = DEFAULT_CONCURRENCY): Flow<T> {
+// @ExperimentalCoroutinesApifun <T> Flow<Flow<T>>.flattenMerge(Int concurrency = DEFAULT_CONCURRENCY): Flow<T> {
     require(concurrency > 0) { "Expected positive concurrency level, but had $concurrency" }
     return if (concurrency == 1) flattenConcat() else ChannelFlowMerge(this, concurrency)
 }
@@ -158,8 +144,7 @@ public fun <T> Flow<Flow<T>>.flattenMerge(concurrency: Int = DEFAULT_CONCURRENCY
  * This operator is [buffered][buffer] by default
  * and size of its output buffer can be changed by applying subsequent [buffer] operator.
  */
-@ExperimentalCoroutinesApi
-public fun <T, R> Flow<T>.transformLatest(@BuilderInference transform: suspend FlowCollector<R>.(value: T) -> Unit): Flow<R> =
+// @ExperimentalCoroutinesApifun <T, R> Flow<T>.transformLatest(@BuilderInference transform: FlowCollector<R>.(T value) -> Unit): Flow<R> =
     ChannelFlowTransformLatest(transform, this)
 
 /**
@@ -184,8 +169,7 @@ public fun <T, R> Flow<T>.transformLatest(@BuilderInference transform: suspend F
  *
  * This operator is [buffered][buffer] by default and size of its output buffer can be changed by applying subsequent [buffer] operator.
  */
-@ExperimentalCoroutinesApi
-public inline fun <T, R> Flow<T>.flatMapLatest(@BuilderInference crossinline transform: suspend (value: T) -> Flow<R>): Flow<R> =
+// @ExperimentalCoroutinesApiinline fun <T, R> Flow<T>.flatMapLatest(@BuilderInference crossinline transform: (T value) -> Flow<R>): Flow<R> =
     transformLatest { emitAll(transform(it)) }
 
 /**
@@ -208,6 +192,7 @@ public inline fun <T, R> Flow<T>.flatMapLatest(@BuilderInference crossinline tra
  *
  * This operator is [buffered][buffer] by default and size of its output buffer can be changed by applying subsequent [buffer] operator.
  */
-@ExperimentalCoroutinesApi
-public fun <T, R> Flow<T>.mapLatest(@BuilderInference transform: suspend (value: T) -> R): Flow<R> =
+// @ExperimentalCoroutinesApifun <T, R> Flow<T>.mapLatest(@BuilderInference transform: (T value) -> R): Flow<R> =
     transformLatest { emit(transform(it)) }
+
+}}} // namespace kotlinx::coroutines::flow

@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/ThreadSafeHeap.kt
 //
@@ -7,7 +8,7 @@
 // TODO: @PublishedApi annotation - JVM-specific
 // TODO: inline functions with lambda parameters need proper implementation
 // TODO: Synchronized operations need platform-specific implementation
-// TODO: Comparable interface needs C++ operator< overload
+// TODO: Comparable struct needs C++ operator< overload
 // TODO: tailrec functions need iterative or proper recursive implementation
 
 #include <atomic>
@@ -17,13 +18,13 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declaration
 template<typename T> class ThreadSafeHeap;
 
 /**
- * @suppress **This an internal API and should not be used from general code.**
+ * @suppress **This an API and should not be used from general code.**
  */
 // TODO: @InternalCoroutinesApi annotation
 class ThreadSafeHeapNode {
@@ -37,12 +38,12 @@ public:
 
 /**
  * Synchronized binary heap.
- * @suppress **This an internal API and should not be used from general code.**
+ * @suppress **This an API and should not be used from general code.**
  */
 // TODO: @InternalCoroutinesApi annotation
 // TODO: where T: ThreadSafeHeapNode, T: Comparable<T> - needs C++ constraints
 template<typename T>
-class ThreadSafeHeap : public SynchronizedObject {
+class ThreadSafeHeap : SynchronizedObject {
 private:
     std::vector<T*> a_;
     std::atomic<int> _size;

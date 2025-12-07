@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/InternalAnnotations.common.kt
 //
@@ -9,7 +10,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Ignore JRE requirements for animal-sniffer, compileOnly dependency
 // TODO: @Target annotation - multiple targets

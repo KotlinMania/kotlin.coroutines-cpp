@@ -1,13 +1,14 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Original Kotlin package: kotlinx.coroutines.debug
 // Line-by-line C++ transliteration from Kotlin
 //
 // TODO: @file:Suppress - Kotlin compiler directives
 // TODO: @ExperimentalCoroutinesApi - Kotlin annotation
-// TODO: object - Kotlin singleton, translate to namespace with static members or singleton class
+// TODO: class - Kotlin singleton, translate to namespace with static members or singleton class
 // TODO: inline function - C++ inline keyword
 // TODO: PrintStream - Java I/O, translate to std::ostream
 // TODO: Job, CoroutineScope, CoroutineContext - Kotlin coroutine types
-// TODO: DebugProbesImpl - internal implementation class
+// TODO: DebugProbesImpl - implementation class
 // TODO: Property getters/setters with @Suppress("INVISIBLE_SETTER")
 
 #include <vector>
@@ -23,7 +24,7 @@ class CoroutineScope;
 class CoroutineContext;
 namespace debug {
 class CoroutineInfo;
-namespace internal {
+namespace {
 class DebugProbesImpl;
 }
 }
@@ -59,7 +60,7 @@ namespace debug {
 //
 // ### Internal machinery and classloading.
 //
-// Under the hood, debug probes replace internal `kotlin.coroutines.jvm.internal.DebugProbesKt` class that has the following
+// Under the hood, debug probes replace `kotlin.coroutines.jvm.internal.DebugProbesKt` class that has the following
 // empty static methods:
 //
 // - `probeCoroutineResumed` that is invoked on every Continuation.resume.
@@ -71,7 +72,7 @@ namespace debug {
 // The new class is located in the `kotlinx-coroutines-core` module, meaning that all target application classes that use
 // coroutines and `suspend` functions have to be loaded by the classloader in which `kotlinx-coroutines-core` classes are available.
 // TODO: @ExperimentalCoroutinesApi
-// TODO: object -> namespace with static functions or singleton pattern
+// TODO: class -> namespace with static functions or singleton pattern
 namespace DebugProbes {
 
     // Whether coroutine creation stack traces should be sanitized.

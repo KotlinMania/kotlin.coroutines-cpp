@@ -1,3 +1,4 @@
+#include <optional>
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/selects/Select.kt
 //
@@ -5,7 +6,7 @@
 // - suspend functions (marked but not implemented as C++20 coroutines)
 // - inline functions with crossinline parameters
 // - Kotlin contracts (contract { ... })
-// - sealed interface (converted to abstract class with pure virtual methods)
+// - sealed struct (converted to abstract class with pure virtual methods)
 // - operator overloading (invoke converted to regular methods)
 // - typealias (converted to using declarations)
 // - inner class (need explicit parent reference)
@@ -15,8 +16,8 @@
 // - Default parameters (need overloads or std::optional)
 // - Extension functions (converted to free functions or methods)
 // - when expressions (converted to if-else chains or switch)
-// - Nullable types (T? -> T* or std::optional<T>)
-// - object (singleton pattern)
+// - Nullable types (T* -> T* or std::optional<T>)
+// - class (singleton pattern)
 // - data class properties
 // - Property delegation
 // - Lambda types and closures
@@ -25,6 +26,9 @@
 // - @Deprecated annotations
 // - @OptIn, @InternalCoroutinesApi, @ExperimentalCoroutinesApi, @PublishedApi annotations (kept as comments)
 // - @BenignDataRace annotation (data race annotation)
+
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -52,7 +56,7 @@ namespace selects {
  * This select function is _biased_ to the first clause. When multiple clauses can be selected at the same time,
  * the first one of them gets priority. Use [selectUnbiased] for an unbiased (randomized) selection among
  * the clauses.
-
+ *
  * There is no `default` clause for select expression. Instead, each selectable suspending function has the
  * corresponding non-suspending version that can be used with a regular `when` expression to select one
  * of the alternatives or to perform the default (`else`) action if none of them can be immediately selected.
@@ -104,7 +108,7 @@ R select(BuilderFunc&& builder) {
  * implicitly and there shouldn't be any signatures mentioning this type,
  * whether explicitly (e.g. function signature) or implicitly (e.g. inferred `val` type).
  */
-// sealed interface -> abstract class
+// sealed struct -> abstract class
 template<typename R>
 class SelectBuilder {
 public:
@@ -129,7 +133,7 @@ public:
 
     /**
      * Registers clause in this [select] expression with additional nullable parameter of type [P]
-     * with the `null` value for this parameter that selects value of type [Q].
+     * with the `nullptr` value for this parameter that selects value of type [Q].
      */
     template<typename P, typename Q>
     void invoke(SelectClause2<P*, Q>& clause, std::function<R(Q)> block) {
@@ -159,22 +163,22 @@ public:
 
 /**
  * Each [select] clause is specified with:
- * 1) the [object of this clause][clauseObject],
+ * 1) the [class of this clause][clauseObject],
  *    such as the channel instance for [SendChannel.onSend];
  * 2) the function that specifies how this clause
- *    should be registered in the object above;
- * 3) the function that modifies the internal result
+ *    should be registered in the class above;
+ * 3) the function that modifies the result
  *    (passed via [SelectInstance.trySelect] or
  *    [SelectInstance.selectInRegistrationPhase])
  *    to the argument of the user-specified block.
- * 4) the function that specifies how the internal result provided via
+ * 4) the function that specifies how the result provided via
  *    [SelectInstance.trySelect] or [SelectInstance.selectInRegistrationPhase]
  *    should be processed in case of this `select` cancellation while dispatching.
  *
  * @suppress **This is unstable API, and it is subject to change.**
  */
 // @InternalCoroutinesApi
-// sealed interface -> abstract class
+// sealed struct -> abstract class
 class SelectClause {
 public:
     virtual ~SelectClause() = default;
@@ -207,9 +211,10 @@ using RegistrationFunction = std::function<void(void* /* clauseObject */, Select
 // @InternalCoroutinesApi
 // typealias -> using
 using ProcessResultFunction = std::function<void*(void* /* clauseObject */, void* /* param */, void* /* clauseResult */)>;
+ProcessResultFunction kDummyProcessResultFunction = [](void*, void*, void*) -> void* { return nullptr; };
 
 /**
- * This function specifies how the internal result, provided via [SelectInstance.trySelect]
+ * This function specifies how the result, provided via [SelectInstance.trySelect]
  * or [SelectInstance.selectInRegistrationPhase], should be processed in case of this `select`
  * cancellation while dispatching. Unfortunately, we cannot pass this function only in [SelectInstance.trySelect],
  * as [SelectInstance.selectInRegistrationPhase] can be called when the coroutine is already cancelled.
@@ -218,24 +223,26 @@ using ProcessResultFunction = std::function<void*(void* /* clauseObject */, void
  */
 // @InternalCoroutinesApi
 // typealias -> using
+using OnCancellationHandler = std::function<void(std::exception_ptr /*throwable*/, void* /*value*/, CoroutineContext /*context*/)>;
+
 using OnCancellationConstructor = std::function<
-    std::function<void(std::exception_ptr /* Throwable */, void* /* value */, CoroutineContext /* context */)>(
-        SelectInstance<void*>* /* select */,
-        void* /* param */,
-        void* /* internalResult */
+    OnCancellationHandler(
+        SelectInstance<void*>* /*select*/,
+        void* /*param*/,
+        void* /*internalResult*/
     )
 >;
 
 /**
  * Clause for [select] expression without additional parameters that does not select any value.
  */
-// sealed interface -> abstract class
-class SelectClause0 : public SelectClause {
+// sealed struct -> abstract class
+class SelectClause0 : SelectClause {
 public:
     virtual ~SelectClause0() = default;
 };
 
-class SelectClause0Impl : public SelectClause0 {
+class SelectClause0Impl : SelectClause0 {
 private:
     void* clause_object_;
     RegistrationFunction reg_func_;
@@ -256,20 +263,18 @@ public:
     OnCancellationConstructor* get_on_cancellation_constructor() const override { return on_cancellation_constructor_; }
 };
 
-ProcessResultFunction kDummyProcessResultFunction = [](void*, void*, void*) -> void* { return nullptr; };
-
 /**
  * Clause for [select] expression without additional parameters that selects value of type [Q].
  */
-// sealed interface -> abstract class
+// sealed struct -> abstract class
 template<typename Q>
-class SelectClause1 : public SelectClause {
+class SelectClause1 : SelectClause {
 public:
     virtual ~SelectClause1() = default;
 };
 
 template<typename Q>
-class SelectClause1Impl : public SelectClause1<Q> {
+class SelectClause1Impl : SelectClause1<Q> {
 private:
     void* clause_object_;
     RegistrationFunction reg_func_;
@@ -296,15 +301,15 @@ public:
 /**
  * Clause for [select] expression with additional parameter of type [P] that selects value of type [Q].
  */
-// sealed interface -> abstract class
+// sealed struct -> abstract class
 template<typename P, typename Q>
-class SelectClause2 : public SelectClause {
+class SelectClause2 : SelectClause {
 public:
     virtual ~SelectClause2() = default;
 };
 
 template<typename P, typename Q>
-class SelectClause2Impl : public SelectClause2<P, Q> {
+class SelectClause2Impl : SelectClause2<P, Q> {
 private:
     void* clause_object_;
     RegistrationFunction reg_func_;
@@ -334,7 +339,7 @@ public:
  * @suppress **This is unstable API, and it is subject to change.**
  */
 // @InternalCoroutinesApi
-// sealed interface -> abstract class
+// sealed struct -> abstract class
 template<typename R>
 class SelectInstance {
 public:
@@ -364,7 +369,7 @@ public:
     virtual void dispose_on_completion(DisposableHandle* disposable_handle) = 0;
 
     /**
-     * When a clause becomes selected during registration, the corresponding internal result
+     * When a clause becomes selected during registration, the corresponding result
      * (which is further passed to the clause's [ProcessResultFunction]) should be provided
      * via this function. After that, other clause registrations are ignored and [trySelect] fails.
      */
@@ -372,14 +377,14 @@ public:
 };
 
 template<typename R>
-class SelectInstanceInternal : public SelectInstance<R>, public Waiter {
+class SelectInstanceInternal : SelectInstance<R>, Waiter {
 public:
     virtual ~SelectInstanceInternal() = default;
 };
 
 // @PublishedApi
 template<typename R>
-class SelectImplementation : public CancelHandler, public SelectBuilder<R>, public SelectInstanceInternal<R> {
+class SelectImplementation : CancelHandler, SelectBuilder<R>, SelectInstanceInternal<R> {
 public:
     /**
      * Essentially, the `select` operation is split into three phases: REGISTRATION, WAITING, and COMPLETION.
@@ -409,8 +414,8 @@ private:
      * otherwise, returns `false`.
      */
     bool in_registration_phase() const {
-        void* val = state.load();
-        return val == kStateReg || /* TODO: check if List<*> */ false;
+        void* auto = state.load();
+        return auto == kStateReg || /* TODO: check if List<*> */ false;
     }
 
     /**
@@ -432,7 +437,7 @@ private:
     /**
      * List of clauses waiting on this `select` instance.
      *
-     * This property is the subject to benign data race: concurrent cancellation might null-out this property
+     * This property is the subject to benign data race: concurrent cancellation might nullptr-out this property
      * while [trySelect] operation reads it and iterates over its content.
      * A logical race is resolved by the consensus on [state] property.
      */
@@ -560,10 +565,10 @@ public:
      * the [clause object][ClauseData.clauseObject]
      * according to the provided [registration function][ClauseData.regFunc].
      * On success, this `select` instance is stored as a waiter
-     * in the clause object -- the algorithm also stores
+     * in the clause class -- the algorithm also stores
      * the provided via [disposeOnCompletion] completion action
      * and adds the clause to the list of registered one.
-     * In case of registration failure, the internal result
+     * In case of registration failure, the result
      * (not processed by [ProcessResultFunction] yet) must be
      * provided via [selectInRegistrationPhase] -- the algorithm
      * updates the state to this clause reference.
@@ -572,7 +577,7 @@ public:
     void register_clause(ClauseData& clause_data, bool reregister = false) {
         // TODO: assert implementation
         // assert { state.value !== STATE_CANCELLED }
-        // Is there already selected clause?
+        // Is there already selected clause*
         // TODO: type check for ClauseData
         if (/* state.value is ClauseData */ false) return;
         // For new clauses, check that there does not exist
@@ -601,11 +606,11 @@ private:
      * Checks that there does not exist another clause with the same object.
      */
     void check_clause_object(void* clause_object) {
-        // Read the list of clauses, it is guaranteed that it is non-null.
+        // Read the list of clauses, it is guaranteed that it is non-nullptr.
         auto* clauses_list = clauses;
         // Check that there does not exist another clause with the same object.
         for (auto& c : *clauses_list) {
-            if (c.clause_object == clause_object) {
+            if (c.clause_class == clause_object) {
                 // TODO: proper error handling
                 throw std::runtime_error("Cannot use select clauses on the same object");
             }
@@ -619,7 +624,7 @@ public:
 
     /**
      * An optimized version for the code below that does not allocate
-     * a cancellation handler object and efficiently stores the specified
+     * a cancellation handler class and efficiently stores the specified
      * [segment] and [index].
      */
     void invoke_on_cancellation(Segment<void*>* segment, int index) {
@@ -681,7 +686,7 @@ private:
     /**
      * Finds the clause with the corresponding [clause object][SelectClause.clauseObject].
      * If the reference to the list of clauses is already cleared due to completion/cancellation,
-     * this function returns `null`
+     * this function returns `nullptr`
      */
     ClauseData* find_clause(void* clause_object) {
         // TODO: find clause in list
@@ -693,7 +698,7 @@ private:
     // ==============
 
     /**
-     * Completes this `select` operation after the internal result is provided
+     * Completes this `select` operation after the result is provided
      * via [SelectInstance.trySelect] or [SelectInstance.selectInRegistrationPhase].
      */
     R complete() {
@@ -723,7 +728,7 @@ public:
     class ClauseData {
     public:
         // @JvmField
-        void* clause_object; // the object of this `select` clause: Channel, Mutex, Job, ...
+        void* clause_object; // the class of this `select` clause: Channel, Mutex, Job, ...
         RegistrationFunction reg_func;
         ProcessResultFunction process_res_func;
         void* param; // the user-specified param
@@ -762,7 +767,7 @@ public:
         }
 
         /**
-         * Processes the internal result provided via either
+         * Processes the result provided via either
          * [SelectInstance.selectInRegistrationPhase] or
          * [SelectInstance.trySelect] and returns an argument
          * for the user-specified [block].
@@ -821,7 +826,7 @@ TrySelectDetailedResult to_try_select_detailed_result(int try_select_internal_re
         case kTrySelectCancelled: return TrySelectDetailedResult::kCancelled;
         case kTrySelectAlreadySelected: return TrySelectDetailedResult::kAlreadySelected;
         default:
-            throw std::runtime_error("Unexpected internal result");
+            throw std::runtime_error("Unexpected result");
     }
 }
 

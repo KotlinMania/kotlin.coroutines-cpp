@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/LimitedDispatcher.kt
 //
@@ -6,7 +7,7 @@
 // TODO: CoroutineDispatcher, CoroutineContext, Delay need C++ equivalents
 // TODO: LockFreeTaskQueue needs implementation
 // TODO: SynchronizedObject and synchronized() need platform-specific implementation
-// TODO: Runnable interface needs C++ equivalent
+// TODO: Runnable struct needs C++ equivalent
 // TODO: @InternalCoroutinesApi annotation - translate to comment
 
 #include <atomic>
@@ -14,7 +15,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declarations
 class CoroutineDispatcher;
@@ -40,7 +41,7 @@ class SynchronizedObject;
  * Such behavior is crucial to be compatible with any underlying dispatcher implementation without
  * direct cooperation.
  */
-class LimitedDispatcher : public CoroutineDispatcher /* , public Delay */ {
+class LimitedDispatcher : CoroutineDispatcher /* , Delay */ {
 private:
     CoroutineDispatcher* dispatcher_;
     int parallelism_;
@@ -52,7 +53,7 @@ private:
 
     LockFreeTaskQueue<Runnable*>* queue_;
 
-    // A separate object that we can synchronize on for K/N
+    // A separate class that we can synchronize on for K/N
     SynchronizedObject* worker_allocation_lock_;
 
 public:
@@ -156,7 +157,7 @@ public:
      * actual tasks are done, nothing prevents the user from closing the dispatcher and making it incorrect to
      * perform any more dispatches.
      */
-    class Worker : public Runnable {
+    class Worker : Runnable {
     private:
         LimitedDispatcher* outer_;
         Runnable* current_task_;

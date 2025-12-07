@@ -1,3 +1,5 @@
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, syntax-only)
 // Original: kotlinx-coroutines-core/common/src/flow/operators/Distinct.kt
 //
@@ -89,7 +91,7 @@ Flow<T> distinct_until_changed_by(
 }
 
 template<typename T>
-class DistinctFlowImpl : public Flow<T> {
+class DistinctFlowImpl : Flow<T> {
 private:
     Flow<T> upstream;
 

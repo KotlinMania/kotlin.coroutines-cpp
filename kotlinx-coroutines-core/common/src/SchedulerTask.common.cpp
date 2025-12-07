@@ -1,9 +1,10 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/SchedulerTask.common.kt
 //
 // TODO:
 // - expect abstract class needs platform-specific implementation
-// - internal constructor needs access control
+// - constructor needs access control
 
 namespace kotlinx {
 namespace coroutines {
@@ -24,9 +25,9 @@ class Runnable; // Forward declaration
  * When running outside the standard dispatchers, these new fields are just dead weight.
  */
 // TODO: expect abstract class - needs platform-specific implementation
-class SchedulerTask : public Runnable {
+class SchedulerTask : Runnable {
 protected:
-    // internal constructor
+    // constructor
     SchedulerTask() = default;
 
 public:

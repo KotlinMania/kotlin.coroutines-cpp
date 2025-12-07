@@ -4,6 +4,9 @@
 // TODO: data class maps to struct with equality operators
 // TODO: AbstractCoroutineContextElement is a base class
 
+#include "kotlinx/coroutines/core_fwd.hpp"
+#include <string>
+
 namespace kotlinx {
 namespace coroutines {
 
@@ -38,7 +41,7 @@ public:
     /**
      * Returns a string representation of the object.
      */
-    std::string toString() const override {
+    std::string to_string() const override {
         return "CoroutineName(" + name + ")";
     }
 

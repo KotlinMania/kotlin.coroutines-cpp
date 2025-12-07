@@ -1,16 +1,17 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/NamedDispatcher.kt
 //
 // TODO: This is a mechanical transliteration - semantics not fully implemented
 // TODO: CoroutineDispatcher, CoroutineContext, Delay need C++ equivalents
 // TODO: @InternalCoroutinesApi annotation - translate to comment
-// TODO: Runnable interface needs C++ equivalent
+// TODO: Runnable struct needs C++ equivalent
 
 #include <string>
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declarations
 class CoroutineDispatcher;
@@ -20,9 +21,9 @@ class DefaultDelay;
 class Runnable;
 
 /**
- * Wrapping dispatcher that has a nice user-supplied `toString()` representation
+ * Wrapping dispatcher that has a nice user-supplied `tostd::string()` representation
  */
-class NamedDispatcher : public CoroutineDispatcher /* , public Delay */ {
+class NamedDispatcher : CoroutineDispatcher /* , Delay */ {
 private:
     CoroutineDispatcher* dispatcher_;
     std::string name_;

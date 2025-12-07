@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Original Kotlin package: kotlinx.coroutines.debug
 // Line-by-line C++ transliteration from Kotlin
 //
@@ -20,7 +21,7 @@ namespace debug {
 // @suppress
 class CoroutinesBlockHoundIntegration /* TODO: : BlockHoundIntegration */ {
 public:
-    // TODO: override fun applyTo(builder: BlockHound.Builder)
+    // TODO: virtual auto apply_to(builder: BlockHound.Builder)
     void apply_to(/* TODO: BlockHound.Builder& builder */) {
         // TODO: All these methods are BlockHound.Builder extensions
         // allow_blocking_calls_in_primitive_implementations();
@@ -64,7 +65,7 @@ private:
     // Allow blocking calls inside kotlinx.coroutines.debug.internal.DebugProbesImpl.
     void allow_blocking_calls_in_debug_probes(/* TODO: BlockHound.Builder& */) {
         std::vector<std::string> methods = {
-            "install", "uninstall", "hierarchyToString", "dumpCoroutinesInfo", "dumpDebuggerInfo",
+            "install", "uninstall", "hierarchyTostd::string", "dumpCoroutinesInfo", "dumpDebuggerInfo",
             "dumpCoroutinesSynchronized", "updateRunningState", "updateState"
         };
         for (const auto& method : methods) {

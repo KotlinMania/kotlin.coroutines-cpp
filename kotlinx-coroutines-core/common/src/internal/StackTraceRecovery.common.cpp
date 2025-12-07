@@ -1,10 +1,11 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.kt
 //
 // TODO: This is a mechanical transliteration - semantics not fully implemented
 // TODO: expect functions need platform-specific implementations
 // TODO: Continuation, Throwable, StackTraceElement need C++ equivalents
-// TODO: CoroutineStackFrame interface needs implementation
+// TODO: CoroutineStackFrame struct needs implementation
 // TODO: @PublishedApi annotation - JVM-specific
 // TODO: suspend inline functions not directly translatable
 
@@ -12,7 +13,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declarations
 template<typename T> class Continuation;
@@ -78,7 +79,7 @@ class StackTraceElement {
     // Platform-specific implementation
 };
 
-// TODO: expect interface - needs platform-specific implementation
+// TODO: expect struct - needs platform-specific implementation
 class CoroutineStackFrame {
 public:
     virtual ~CoroutineStackFrame() = default;

@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestDispatcher
 // Original package: kotlinx.coroutines.test
 //
@@ -5,7 +6,7 @@
 // TODO: suspend functions translated as normal functions; coroutine semantics NOT implemented
 // TODO: Annotations (@Suppress, @Deprecated) preserved as comments
 // TODO: Kotlin abstract class needs C++ virtual methods
-// TODO: DelayWithTimeoutDiagnostics is an internal interface, needs special handling
+// TODO: DelayWithTimeoutDiagnostics is an interface, needs special handling
 
 #include <functional>
 #include <string>
@@ -23,7 +24,7 @@ namespace test {
 // import kotlin.time.*
 
 /**
- * A test dispatcher that can interface with a [TestCoroutineScheduler].
+ * A test dispatcher that can struct with a [TestCoroutineScheduler].
  *
  * The available implementations are:
  * - [StandardTestDispatcher] is a dispatcher that places new tasks into a queue.
@@ -31,9 +32,9 @@ namespace test {
  *   the virtual time.
  */
 // @Suppress("INVISIBLE_REFERENCE")
-class TestDispatcher : public CoroutineDispatcher, public Delay, public DelayWithTimeoutDiagnostics {
+class TestDispatcher : CoroutineDispatcher, Delay, DelayWithTimeoutDiagnostics {
 protected:
-    // TODO: internal constructor - make protected or document
+    // TODO: constructor - make protected or document
     TestDispatcher() {}
 
 public:
@@ -81,7 +82,7 @@ public:
  * This class exists to allow cleanup code to avoid throwing for cancelled continuations scheduled
  * in the future.
  */
-class CancellableContinuationRunnable : public Runnable {
+class CancellableContinuationRunnable : Runnable {
 public:
     // @JvmField
     CancellableContinuation<void>* continuation;

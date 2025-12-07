@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestCoroutineDispatchers
 // Original package: kotlinx.coroutines.test
 //
@@ -36,10 +37,10 @@ namespace test {
  *
  * ```
  * @Test
- * fun testEagerlyEnteringChildCoroutines() = runTest(UnconfinedTestDispatcher()) {
- *     var entered = false
- *     val deferred = CompletableDeferred<Unit>()
- *     var completed = false
+ * auto test_eagerly_entering_child_coroutines() = runTest(UnconfinedTestDispatcher()) {
+ *     auto entered = false
+ *     auto deferred = CompletableDeferred<Unit>()
+ *     auto completed = false
  *     launch {
  *         entered = true
  *         deferred.await()
@@ -59,10 +60,10 @@ namespace test {
  *
  * ```
  * @Test
- * fun testUnconfinedDispatcher() = runTest {
- *     val values = mutableListOf<Int>()
- *     val stateFlow = MutableStateFlow(0)
- *     val job = launch(UnconfinedTestDispatcher(testScheduler)) {
+ * auto test_unconfined_dispatcher() = runTest {
+ *     auto values = mutableListOf<Int>()
+ *     auto stateFlow = MutableStateFlow(0)
+ *     auto job = launch(UnconfinedTestDispatcher(testScheduler)) {
  *         stateFlow.collect {
  *             values.add(it)
  *         }
@@ -106,7 +107,7 @@ TestDispatcher* unconfined_test_dispatcher(
     return new UnconfinedTestDispatcherImpl(actual_scheduler, name);
 }
 
-class UnconfinedTestDispatcherImpl : public TestDispatcher {
+class UnconfinedTestDispatcherImpl : TestDispatcher {
 private:
     TestCoroutineScheduler* scheduler_;
     std::optional<std::string> name_;
@@ -186,7 +187,7 @@ TestDispatcher* standard_test_dispatcher(
     return new StandardTestDispatcherImpl(actual_scheduler, name);
 }
 
-class StandardTestDispatcherImpl : public TestDispatcher {
+class StandardTestDispatcherImpl : TestDispatcher {
 private:
     TestCoroutineScheduler* scheduler_;
     std::optional<std::string> name_;

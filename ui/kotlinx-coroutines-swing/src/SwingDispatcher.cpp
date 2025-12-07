@@ -1,9 +1,10 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin: kotlinx.coroutines.swing.SwingDispatcher
 // Original package: kotlinx.coroutines.swing
 //
 // TODO: This is a mechanical C++ transliteration. The following constructs need proper implementation:
 // - Swing/AWT API calls (SwingUtilities, Timer, ActionListener, ActionEvent)
-// - Kotlin object declarations -> singletons (namespace with static members or Meyer's singleton)
+// - Kotlin class declarations -> singletons (namespace with static members or Meyer's singleton)
 // - Kotlin sealed classes -> abstract base class with protected constructor
 // - Kotlin extension property (Dispatchers.Swing) -> free function or namespace accessor
 // - MainCoroutineDispatcher, Delay, CoroutineDispatcher interfaces
@@ -59,7 +60,7 @@ class ImmediateSwingDispatcher;
  * Dispatches execution onto Swing event dispatching thread and provides native [delay] support.
  */
 // @Suppress("unused")
-// public val Dispatchers.Swing : SwingDispatcher
+// auto Dispatchers.Swing : SwingDispatcher
 //     get() = kotlinx.coroutines.swing.Swing
 // TODO: Extension property -> free function or accessor
 // SwingDispatcher& get_swing();
@@ -69,20 +70,20 @@ class ImmediateSwingDispatcher;
  *
  * This class provides type-safety and a point for future extensions.
  */
-// public sealed class SwingDispatcher
-class SwingDispatcher : public MainCoroutineDispatcher, public Delay {
+// sealed class SwingDispatcher
+class SwingDispatcher : MainCoroutineDispatcher, Delay {
 public:
     /** @suppress */
-    // override fun dispatch(context: CoroutineContext, block: Runnable): Unit
+    // virtual auto dispatch(CoroutineContext context, block: Runnable): Unit
     void dispatch(CoroutineContext& context, Runnable block) override {
         // SwingUtilities.invokeLater(block)
         // TODO: SwingUtilities::invoke_later(block)
     }
 
     /** @suppress */
-    // override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>)
+    // virtual auto schedule_resume_after_delay(Long timeMillis, continuation: CancellableContinuation<Unit>)
     void schedule_resume_after_delay(int64_t time_millis, CancellableContinuation<void>& continuation) override {
-        // val timer = schedule(timeMillis) {
+        // auto timer = schedule(timeMillis) {
         //     with(continuation) { resumeUndispatched(Unit) }
         // }
         Timer* timer = schedule(time_millis, [&continuation]() {
@@ -93,9 +94,9 @@ public:
     }
 
     /** @suppress */
-    // override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle
+    // virtual auto invoke_on_timeout(Long timeMillis, Runnable block, context: CoroutineContext): DisposableHandle
     DisposableHandle* invoke_on_timeout(int64_t time_millis, Runnable block, CoroutineContext& context) override {
-        // val timer = schedule(timeMillis) {
+        // auto timer = schedule(timeMillis) {
         //     block.run()
         // }
         Timer* timer = schedule(time_millis, [block]() {
@@ -107,7 +108,7 @@ public:
     }
 
 private:
-    // private fun schedule(timeMillis: Long, action: ActionListener): Timer
+    // auto schedule(Long timeMillis, action: ActionListener): Timer
     Timer* schedule(int64_t time_millis, std::function<void()> action) {
         // Timer(timeMillis.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), action).apply {
         //     isRepeats = false
@@ -126,15 +127,15 @@ protected:
     SwingDispatcher() = default;
 };
 
-// internal class SwingDispatcherFactory
-class SwingDispatcherFactory : public MainDispatcherFactory {
+// class SwingDispatcherFactory
+class SwingDispatcherFactory : MainDispatcherFactory {
 public:
-    // override val loadPriority: Int
+    // override Int loadPriority
     int get_load_priority() override {
         return 0;
     }
 
-    // override fun createDispatcher(allFactories: List<MainDispatcherFactory>): MainCoroutineDispatcher
+    // virtual auto create_dispatcher(allFactories: List<MainDispatcherFactory>): MainCoroutineDispatcher
     MainCoroutineDispatcher* create_dispatcher(const std::vector<MainDispatcherFactory*>& all_factories) override {
         // return Swing
         return &get_swing_singleton();
@@ -144,24 +145,24 @@ private:
     SwingDispatcher& get_swing_singleton(); // TODO: Forward declaration
 };
 
-// private object ImmediateSwingDispatcher
-class ImmediateSwingDispatcher : public SwingDispatcher {
+// class ImmediateSwingDispatcher
+class ImmediateSwingDispatcher : SwingDispatcher {
 public:
-    // override val immediate: MainCoroutineDispatcher
+    // override MainCoroutineDispatcher immediate
     MainCoroutineDispatcher& get_immediate() override {
         return *this;
     }
 
-    // override fun isDispatchNeeded(context: CoroutineContext): Boolean
+    // virtual auto is_dispatch_needed(context: CoroutineContext): Boolean
     bool is_dispatch_needed(CoroutineContext& context) override {
         // return !SwingUtilities.isEventDispatchThread()
         // TODO: !SwingUtilities::is_event_dispatch_thread()
         return true;
     }
 
-    // override fun toString()
+    // virtual auto to_string()
     std::string to_string() override {
-        // return toStringInternalImpl() ?: "Swing.immediate"
+        // return tostd::stringInternalImpl() ?: "Swing.immediate"
         // TODO: to_string_internal_impl()
         return "Swing.immediate";
     }
@@ -179,8 +180,8 @@ private:
 /**
  * Dispatches execution onto Swing event dispatching thread and provides native [delay] support.
  */
-// internal object Swing
-class SwingSingleton : public SwingDispatcher {
+// class Swing
+class SwingSingleton : SwingDispatcher {
 public:
     /* A workaround so that the dispatcher's initialization crashes with an exception if running in a headless
     environment. This is needed so that this broken dispatcher is not used as the source of delays. */
@@ -195,14 +196,14 @@ public:
         // TODO: Start timer
     }
 
-    // override val immediate: MainCoroutineDispatcher
+    // override MainCoroutineDispatcher immediate
     MainCoroutineDispatcher& get_immediate() override {
         return ImmediateSwingDispatcher::get_instance();
     }
 
-    // override fun toString()
+    // virtual auto to_string()
     std::string to_string() override {
-        // return toStringInternalImpl() ?: "Swing"
+        // return tostd::stringInternalImpl() ?: "Swing"
         // TODO: to_string_internal_impl()
         return "Swing";
     }

@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt
 //
@@ -8,16 +9,16 @@
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
-namespace internal {
+namespace {
 
 // TODO: Remove imports, fully qualify or add includes:
 // import kotlinx.coroutines.*
 // import kotlinx.coroutines.flow.*
 // import kotlin.coroutines.*
 
-// TODO: internal actual class
+// TODO: actual class
 template<typename T>
-class SafeCollector : public FlowCollector<T> {
+class SafeCollector : FlowCollector<T> {
 public:
     FlowCollector<T>* collector;
     CoroutineContext collect_context;
@@ -40,7 +41,7 @@ public:
     }
 
     // TODO: actual override suspend function
-    void emit(T value) /* suspend */ override {
+    void emit(T value)  override {
         auto current_context = current_coroutine_context();
         current_context.ensure_active();
 

@@ -1,3 +1,6 @@
+#include <string>
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/Debug.kt
 //
@@ -12,8 +15,7 @@ namespace coroutines {
 // import kotlin.math.*
 // import kotlin.native.*
 
-// TODO: internal actual val
-const bool kDebug = false;
+// TODO: actual auto const bool kDebug = false;
 
 // TODO: Extension property - implement as template or free function
 template<typename T>
@@ -32,7 +34,7 @@ std::string class_simple_name(const T& obj) {
     return "Unknown";
 }
 
-// TODO: internal actual inline - empty in release builds
+// TODO: actual inline - empty in release builds
 inline void assert(std::function<bool()> value) {
     // Empty implementation
 }

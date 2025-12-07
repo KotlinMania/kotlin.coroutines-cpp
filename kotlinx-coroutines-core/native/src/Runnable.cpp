@@ -1,7 +1,9 @@
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/Runnable.kt
 //
-// TODO: actual fun interface - SAM conversion in Kotlin
+// TODO: actual fun struct - SAM conversion in Kotlin
 // TODO: @Deprecated annotation with custom parameters
 // TODO: inline function with crossinline
 
@@ -13,7 +15,7 @@ namespace coroutines {
  *
  * Equivalent to the type `() -> Unit`.
  */
-// TODO: actual fun interface - use std::function or function pointer
+// TODO: actual fun struct - use std::function or function pointer
 class Runnable {
 public:
     /**
@@ -30,7 +32,7 @@ public:
 // TODO: inline function with crossinline
 template<typename F>
 Runnable* make_runnable(F block) {
-    class RunnableImpl : public Runnable {
+    class RunnableImpl : Runnable {
     private:
         F block;
     public:

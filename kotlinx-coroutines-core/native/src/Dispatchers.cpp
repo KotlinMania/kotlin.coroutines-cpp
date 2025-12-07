@@ -1,8 +1,10 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/Dispatchers.kt
 //
 // TODO: actual keyword - platform-specific implementation marker
-// TODO: object keyword - singleton pattern
+// TODO: class keyword - singleton pattern
 // TODO: expect function declarations
 // TODO: Extension property for Dispatchers.IO
 // TODO: @PublishedApi annotation
@@ -19,7 +21,7 @@ class DefaultIoScheduler;
 CoroutineDispatcher* create_default_dispatcher();
 MainCoroutineDispatcher* create_main_dispatcher(CoroutineDispatcher* default_dispatcher);
 
-// TODO: public actual object -> singleton
+// TODO: actual class -> singleton
 class Dispatchers {
 private:
     CoroutineDispatcher* main_dispatcher;
@@ -60,8 +62,8 @@ public:
 CoroutineDispatcher* Dispatchers::kDefault = create_default_dispatcher();
 CoroutineDispatcher* Dispatchers::kIo = /* DefaultIoScheduler */nullptr;
 
-// TODO: internal object -> singleton or namespace
-class DefaultIoScheduler : public CoroutineDispatcher {
+// TODO: class -> singleton or namespace
+class DefaultIoScheduler : CoroutineDispatcher {
 private:
     // 2048 is an arbitrary KMP-friendly constant
     CoroutineDispatcher* unlimited_pool;

@@ -1,9 +1,10 @@
-package kotlinx.coroutines.flow.internal
-
-import kotlinx.coroutines.flow.*
-
-internal object NopCollector : FlowCollector<Any?> {
-    override suspend fun emit(value: Any?) {
+#include "kotlinx/coroutines/core_fwd.hpp"
+namespace kotlinx {namespace coroutines {namespace flow {namespace {
+// import kotlinx.coroutines.flow.*
+class NopCollector : FlowCollector<Any*> {
+    virtual auto  emit(value: Any*) {
         // does nothing
     }
 }
+
+}}}} // namespace kotlinx::coroutines::flow::internal

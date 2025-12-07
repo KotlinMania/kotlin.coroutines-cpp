@@ -1,3 +1,5 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Timeout.cpp
 //
@@ -72,8 +74,8 @@ T with_timeout(std::chrono::nanoseconds timeout, std::function<T(CoroutineScope&
 
 /**
  * Runs a given suspending block of code inside a coroutine with a specified [timeout][timeMillis] and returns
- * `null` if this timeout was exceeded.
- * If the given [timeMillis] is non-positive, `null` is returned immediately.
+ * `nullptr` if this timeout was exceeded.
+ * If the given [timeMillis] is non-positive, `nullptr` is returned immediately.
  *
  * The code that is executing inside the [block] is cancelled on timeout and the active or next invocation of
  * cancellable suspending function inside the block throws a [TimeoutCancellationException].
@@ -98,8 +100,8 @@ T* with_timeout_or_null(long time_millis, std::function<T(CoroutineScope&)> bloc
 
 /**
  * Runs a given suspending block of code inside a coroutine with the specified [timeout] and returns
- * `null` if this timeout was exceeded.
- * If the given [timeout] is non-positive, `null` is returned immediately.
+ * `nullptr` if this timeout was exceeded.
+ * If the given [timeout] is non-positive, `nullptr` is returned immediately.
  *
  * The code that is executing inside the [block] is cancelled on timeout and the active or next invocation of
  * cancellable suspending function inside the block throws a [TimeoutCancellationException].
@@ -123,7 +125,7 @@ T* with_timeout_or_null(std::chrono::nanoseconds timeout, std::function<T(Corout
 /**
  * This exception is thrown by [withTimeout] to indicate timeout.
  */
-class TimeoutCancellationException : public CancellationException {
+class TimeoutCancellationException : CancellationException {
 private:
     // @JvmField @Transient
     Job* coroutine_;

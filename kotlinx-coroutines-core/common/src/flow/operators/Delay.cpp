@@ -1,3 +1,5 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, syntax-only)
 // Original: kotlinx-coroutines-core/common/src/flow/operators/Delay.kt
 //
@@ -30,13 +32,10 @@ namespace flow {
 <!--- PREFIX .*-duration-.*
 ----- INCLUDE .*-duration-.*
 ----- INCLUDE .*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlin::time.Duration.Companion.milliseconds
-
-fun main() = runBlocking {
+// import kotlinx.coroutines.*// import kotlinx.coroutines.flow.*// import kotlin::time.Duration.Companion.milliseconds
+auto main() = runBlocking {
 ----- SUFFIX .*
-.toList().joinToString().let { println(it) } }
+.toList().joinTostd::string().let { println(it) } }
 -->
 */
 
@@ -236,7 +235,7 @@ Flow<T> debounce_internal(Flow<T> flow, Fn timeout_millis_selector) {
         // Now consume the values
         void* last_value = nullptr;
         while (last_value != DONE) {
-            long timeout_millis = 0L; // will be always computed when lastValue != null
+            long timeout_millis = 0L; // will be always computed when lastValue != nullptr
             // Compute timeout for this value
             if (last_value != nullptr) {
                 timeout_millis = timeout_millis_selector(NULL.unbox(last_value));
@@ -249,8 +248,8 @@ Flow<T> debounce_internal(Flow<T> flow, Fn timeout_millis_selector) {
                     last_value = nullptr; // Consume the value
                 }
             }
-            // assert invariant: lastValue != null implies timeoutMillis > 0
-            // assert { lastValue == null || timeoutMillis > 0 }
+            // assert invariant: lastValue != nullptr implies timeoutMillis > 0
+            // assert { lastValue == nullptr || timeoutMillis > 0 }
             // wait for the next value with timeout
             // TODO: implement select
             select<void>([&]() {
@@ -308,7 +307,7 @@ Flow<T> sample(Flow<T> flow, long period_millis) {
         throw std::invalid_argument("Sample period should be positive");
     }
     return scoped_flow(flow, [period_millis](auto downstream) {
-        auto values = produce(Channel::CONFLATED, [&flow]() {
+        auto values = produce(:CONFLATED Channel, [&flow]() {
             flow.collect([](T value) { send(value ? value : NULL); });
         });
         void* last_value = nullptr;
@@ -325,7 +324,7 @@ Flow<T> sample(Flow<T> flow, long period_millis) {
                         });
                 });
 
-                // todo: shall be start sampling only when an element arrives or sample aways as here?
+                // todo: shall be start sampling only when an element arrives or sample aways as here*
                 ticker.on_receive([&]() {
                     auto value = last_value;
                     if (!value) return;
@@ -434,7 +433,7 @@ Flow<T> timeout_internal(Flow<T> flow, Duration timeout) {
         if (timeout <= Duration::ZERO) {
             throw TimeoutCancellationException("Timed out immediately");
         }
-        auto values = buffer(flow, Channel::RENDEZVOUS).produce_in(/* this */);
+        auto values = buffer(flow, :RENDEZVOUS Channel).produce_in(/* this */);
         while_select([&]() {
             values.on_receive_catching([&](auto value) {
                 value.on_success([&](auto it) {

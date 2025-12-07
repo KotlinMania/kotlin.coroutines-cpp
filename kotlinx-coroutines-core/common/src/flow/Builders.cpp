@@ -1,3 +1,6 @@
+#include <string>
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first pass - syntax/language translation only)
 // Original: kotlinx-coroutines-core/common/src/flow/Builders.kt
 //
@@ -9,7 +12,7 @@
 // TODO: Implement Kotlin iterator/iterable protocols in C++
 // TODO: Implement vararg functionality
 // TODO: Map Kotlin's Unit type
-// TODO: Implement object singleton pattern for EmptyFlow
+// TODO: Implement class singleton pattern for EmptyFlow
 
 // @file:JvmMultifileClass
 // @file:JvmName("FlowKt")
@@ -31,9 +34,9 @@ namespace kotlinx { namespace coroutines { namespace flow {
  * Example of usage:
  *
  * ```
- * fun fibonacci(): Flow<BigInteger> = flow {
- *     var x = BigInteger.ZERO
- *     var y = BigInteger.ONE
+ * auto fibonacci(): Flow<BigInteger> = flow {
+ *     auto x = BigInteger.ZERO
+ *     auto y = BigInteger.ONE
  *     while (true) {
  *         emit(x)
  *         x = y.also {
@@ -97,8 +100,8 @@ Flow<T>* as_flow(std::function<T()> func) {
  * Example of usage:
  *
  * ```
- * suspend fun remoteCall(): R = ...
- * fun remoteCallFlow(): Flow<R> = ::remoteCall.asFlow()
+ * auto remote_call(): R { return ...; }
+ * auto remote_call_flow(): Flow<R> { return ::remoteCall.asFlow(); }
  * ```
  */
 template<typename T>
@@ -126,8 +129,8 @@ Flow<T>* as_flow(Iterable<T>* iterable) { // TODO: define Iterable
 template<typename T>
 Flow<T>* as_flow(Iterator<T>* iterator) { // TODO: define Iterator
     return flow<T>([iterator](FlowCollector<T>* collector) { // TODO: suspend
-        for (auto value : *iterator) { // TODO: proper iterator protocol
-            collector->emit(value);
+        while (iterator->hasNext()) { // TODO: proper iterator protocol
+            collector->emit(iterator->next());
         }
     });
 }
@@ -181,17 +184,17 @@ Flow<T>* flow_of(T value) {
  */
 template<typename T>
 Flow<T>* empty_flow() {
-    return &kEmptyFlow; // TODO: object singleton
+    return &kEmptyFlow; // TODO: class singleton
 }
 
-// private object EmptyFlow : Flow<Nothing>
+// class EmptyFlow : Flow<Nothing>
 class EmptyFlowImpl : public Flow<void> { // TODO: Nothing type
     void collect(FlowCollector<void>* collector) override { // TODO: suspend
         // Unit - do nothing
     }
 };
 
-static EmptyFlowImpl kEmptyFlow; // TODO: object singleton pattern
+static EmptyFlowImpl kEmptyFlow; // TODO: class singleton pattern
 
 /**
  * Creates a _cold_ flow that produces values from the given array.
@@ -238,7 +241,7 @@ Flow<long>* as_flow(long* array, size_t size) { // LongArray
  */
 Flow<int>* as_flow(IntRange range) { // TODO: define IntRange
     return flow<int>([range](FlowCollector<int>* collector) { // TODO: suspend
-        for (auto value : range) { // TODO: range iteration
+        for (int value = range.start; value <= range.end; value += range.step) { // TODO: range iteration
             collector->emit(value);
         }
     });
@@ -249,7 +252,7 @@ Flow<int>* as_flow(IntRange range) { // TODO: define IntRange
  */
 Flow<long>* as_flow(LongRange range) { // TODO: define LongRange
     return flow<long>([range](FlowCollector<long>* collector) { // TODO: suspend
-        for (auto value : range) { // TODO: range iteration
+        for (long value = range.start; value <= range.end; value += range.step) { // TODO: range iteration
             collector->emit(value);
         }
     });
@@ -336,9 +339,9 @@ Flow<T>* channel_flow(std::function<void(ProducerScope<T>*)> block) { // TODO: s
  * For single-shot callbacks use [suspendCancellableCoroutine].
  *
  * ```
- * fun flowFrom(api: CallbackBasedApi): Flow<T> = callbackFlow {
- *     val callback = object : Callback { // Implementation of some callback interface
- *         override fun onNextValue(value: T) {
+ * auto flow_from(api: CallbackBasedApi): Flow<T> = callbackFlow {
+ *     auto callback = class : Callback { // Implementation of some callback interface
+ *         virtual auto on_next_value(value: T) {
  *             // To avoid blocking you can configure channel capacity using
  *             // either buffer(Channel.CONFLATED) or buffer(Channel.UNLIMITED) to avoid overfill
  *             trySendBlocking(value)
@@ -346,10 +349,10 @@ Flow<T>* channel_flow(std::function<void(ProducerScope<T>*)> block) { // TODO: s
  *                     // Downstream has been cancelled or failed, can log here
  *                 }
  *         }
- *         override fun onApiError(cause: Throwable) {
+ *         virtual auto on_api_error(cause: Throwable) {
  *             cancel(CancellationException("API Error", cause))
  *         }
- *         override fun onCompleted() = channel.close()
+ *         virtual auto on_completed() { return channel.close(); }
  *     }
  *     api.register(callback)
  *     /*
@@ -393,7 +396,7 @@ public:
     }
 
     std::string to_string() override {
-        return "block[" + /* TODO: block.toString() */ "] -> " + ChannelFlow<T>::to_string();
+        return "block[" + /* TODO: block.tostd::string() */ "] -> " + ChannelFlow<T>::to_string();
     }
 };
 

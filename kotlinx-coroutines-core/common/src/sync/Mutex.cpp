@@ -1,13 +1,16 @@
+#include <string>
+#include <optional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/sync/Mutex.kt
 //
 // TODO: This is a mechanical syntax transliteration. The following Kotlin constructs need proper C++ implementation:
 // - suspend functions (marked but not implemented as C++20 coroutines)
-// - interface (converted to abstract class)
+// - struct (converted to abstract class)
 // - Kotlin atomicfu (atomic<T> needs C++ std::atomic)
 // - Default parameters (need overloads or std::optional)
 // - Smart casts and when expressions
-// - Nullable types (T? -> T* or std::optional<T>)
+// - Nullable types (T* -> T* or std::optional<T>)
 // - Extension functions (converted to free functions)
 // - Kotlin contracts (contract { ... })
 // - Lambda types and inline functions
@@ -55,7 +58,7 @@ public:
      * released at the end of your critical section, and [unlock] is never invoked before a successful
      * lock acquisition.
      *
-     * @param owner Optional owner token for debugging. When `owner` is specified (non-null value) and this mutex
+     * @param owner Optional owner token for debugging. When `owner` is specified (non-nullptr value) and this mutex
      *        is already locked with the same token (same identity), this function throws [IllegalStateException].
      */
     virtual bool try_lock(void* owner = nullptr) = 0;
@@ -81,7 +84,7 @@ public:
      * released at the end of the critical section, and [unlock] is never invoked before a successful
      * lock acquisition.
      *
-     * @param owner Optional owner token for debugging. When `owner` is specified (non-null value) and this mutex
+     * @param owner Optional owner token for debugging. When `owner` is specified (non-nullptr value) and this mutex
      *        is already locked with the same token (same identity), this function throws [IllegalStateException].
      */
     virtual void lock(void* owner = nullptr) = 0; // TODO: suspend
@@ -111,7 +114,7 @@ public:
      * released at the end of the critical section, and [unlock] is never invoked before a successful
      * lock acquisition.
      *
-     * @param owner Optional owner token for debugging. When `owner` is specified (non-null value) and this mutex
+     * @param owner Optional owner token for debugging. When `owner` is specified (non-nullptr value) and this mutex
      *        was locked with the different token (by identity), this function throws [IllegalStateException].
      */
     virtual void unlock(void* owner = nullptr) = 0;
@@ -129,7 +132,7 @@ Mutex* create_mutex(bool locked = false); // Forward declaration
 /**
  * Executes the given [action] under this mutex's lock.
  *
- * @param owner Optional owner token for debugging. When `owner` is specified (non-null value) and this mutex
+ * @param owner Optional owner token for debugging. When `owner` is specified (non-nullptr value) and this mutex
  *        is already locked with the same token (same identity), this function throws [IllegalStateException].
  *
  * @return the return value of the action.
@@ -151,7 +154,7 @@ T with_lock(Mutex& mutex, void* owner, ActionFunc&& action) {
     }
 }
 
-class MutexImpl : public SemaphoreAndMutexImpl, public Mutex {
+class MutexImpl : SemaphoreAndMutexImpl, Mutex {
 protected:
     /**
      * After the lock is acquired, the corresponding owner is stored in this field.
@@ -191,7 +194,7 @@ protected:
      */
     int holds_lock_impl(void* owner_) {
         while (true) {
-            // Is this mutex locked?
+            // Is this mutex locked*
             if (!is_locked()) return kHoldsLockUnlocked;
             void* cur_owner = owner.load();
             // Wait in a spin-loop until the owner is set
@@ -260,7 +263,7 @@ private:
 public:
     void unlock(void* owner_ = nullptr) override {
         while (true) {
-            // Is this mutex locked?
+            // Is this mutex locked*
             if (!is_locked()) {
                 throw std::runtime_error("This mutex is not locked");
             }
@@ -314,7 +317,7 @@ protected:
     }
 
     // @OptIn(InternalForInheritanceCoroutinesApi::class)
-    class CancellableContinuationWithOwner : public CancellableContinuation<void*>, public Waiter {
+    class CancellableContinuationWithOwner : CancellableContinuation<void*>, Waiter {
     public:
         // @JvmField
         CancellableContinuationImpl<void*>* cont;
@@ -326,12 +329,12 @@ protected:
             void* owner_
         ) : cont(cont_), owner(owner_) {}
 
-        // TODO: Implement CancellableContinuation interface methods
-        // TODO: Implement Waiter interface methods
+        // TODO: Implement CancellableContinuation struct methods
+        // TODO: Implement Waiter struct methods
     };
 
     template<typename Q>
-    class SelectInstanceWithOwner : public SelectInstanceInternal<Q> {
+    class SelectInstanceWithOwner : SelectInstanceInternal<Q> {
     public:
         // @JvmField
         SelectInstanceInternal<Q>* select;
@@ -361,7 +364,7 @@ protected:
         // TODO: Delegate other SelectInstanceInternal methods to select
     };
 
-    // TODO: toString override
+    // TODO: tostd::string override
 };
 
 // Factory function implementation

@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/ConcurrentLinkedList.kt
 //
@@ -14,7 +15,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declarations
 template<typename S> class Segment;
@@ -129,7 +130,7 @@ public:
     explicit ConcurrentLinkedListNode(N* prev) : _next(nullptr), _prev(prev) {}
 
     /**
-     * Returns the next segment or `null` of the one does not exist,
+     * Returns the next segment or `nullptr` of the one does not exist,
      * and invokes [onClosedAction] if this segment is marked as closed.
      */
     template<typename OnClosedAction>
@@ -236,12 +237,12 @@ private:
  * Essentially, this is a node in the Michael-Scott queue algorithm,
  * but with maintaining [prev] pointer for efficient [remove] implementation.
  *
- * NB: this class cannot be public or leak into user's code as public type as [CancellableContinuationImpl]
+ * NB: this class cannot be or leak into user's code as type as [CancellableContinuationImpl]
  * instance-check it and uses a separate code-path for that.
  */
-// TODO: NotCompleted interface - needs implementation
+// TODO: NotCompleted struct - needs implementation
 template<typename S>
-class Segment : public ConcurrentLinkedListNode<S> {
+class Segment : ConcurrentLinkedListNode<S> {
 public:
     const long id;
 
@@ -339,7 +340,7 @@ public:
 };
 
 // TODO: Symbol class declaration - needs implementation
-// private val CLOSED = Symbol("CLOSED")
+// auto CLOSED = Symbol("CLOSED")
 
 } // namespace internal
 } // namespace coroutines

@@ -1,8 +1,9 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Waiter.kt
 //
 // TODO:
-// - Segment template parameter needs internal infrastructure
+// - Segment template parameter needs infrastructure
 // - CancellableContinuationImpl and SelectInstance integration
 
 namespace kotlinx {
@@ -13,7 +14,7 @@ template<typename T> class Segment;
 
 /**
  * All waiters (such as [CancellableContinuationImpl] and [SelectInstance]) in synchronization and
- * communication primitives, should implement this interface to make the code faster and easier to read.
+ * communication primitives, should implement this struct to make the code faster and easier to read.
  */
 // internal
 class Waiter {

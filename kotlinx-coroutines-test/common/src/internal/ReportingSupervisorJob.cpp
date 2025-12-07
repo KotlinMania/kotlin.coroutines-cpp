@@ -1,8 +1,9 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.internal.ReportingSupervisorJob
 // Original package: kotlinx.coroutines.test.internal
 //
 // TODO: Import statements removed; fully qualify types or add appropriate includes
-// TODO: Kotlin internal visibility needs C++ equivalent
+// TODO: Kotlin visibility needs C++ equivalent
 // TODO: Annotations (@Suppress) preserved as comments
 // TODO: Kotlin try-catch-let pattern needs C++ adaptation
 
@@ -12,7 +13,7 @@
 namespace kotlinx {
 namespace coroutines {
 namespace test {
-namespace internal {
+namespace {
 
 // package kotlinx.coroutines.test.internal
 
@@ -22,7 +23,7 @@ namespace internal {
  * A variant of [SupervisorJob] that additionally notifies about child failures via a callback.
  */
 // @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-class ReportingSupervisorJob : public JobImpl {
+class ReportingSupervisorJob : JobImpl {
 private:
     std::function<void(std::exception_ptr)> on_child_cancellation_;
 

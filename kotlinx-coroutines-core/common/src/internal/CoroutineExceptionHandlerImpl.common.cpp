@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/CoroutineExceptionHandlerImpl.common.kt
 //
@@ -12,7 +13,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declarations
 class CoroutineExceptionHandler;
@@ -23,7 +24,7 @@ class DiagnosticCoroutineContextException;
  * The list of globally installed [CoroutineExceptionHandler] instances that will be notified of any exceptions that
  * were not processed in any other manner.
  */
-// TODO: expect val - needs platform-specific implementation
+// TODO: expect auto - needs platform-specific implementation
 extern std::vector<CoroutineExceptionHandler*> platform_exception_handlers;
 
 /**
@@ -48,7 +49,7 @@ void propagate_exception_final_resort(std::exception* exception);
  */
 void handle_uncaught_coroutine_exception(CoroutineContext* context, std::exception* exception) {
     // use additional extension handlers
-    for (auto handler : platform_exception_handlers) {
+    for (platform_exception_handlers handler) {
         try {
             // TODO: handler.handleException needs proper implementation
             // handler->handle_exception(context, exception);
@@ -78,7 +79,7 @@ void handle_uncaught_coroutine_exception(CoroutineContext* context, std::excepti
  * be able to poke the context of the failing coroutine in the debugger.
  */
 // TODO: expect class - needs platform-specific implementation
-class DiagnosticCoroutineContextException : public std::runtime_error {
+class DiagnosticCoroutineContextException : std::runtime_error {
 public:
     explicit DiagnosticCoroutineContextException(CoroutineContext* context)
         : std::runtime_error("DiagnosticCoroutineContextException") {}
@@ -92,8 +93,8 @@ public:
  * For now, we will take solace in knowledge that such exceptions are exceedingly rare, even rarer than globally
  * uncaught exceptions in general.
  */
-// TODO: object in Kotlin becomes singleton in C++
-class ExceptionSuccessfullyProcessed : public std::exception {
+// TODO: class in Kotlin becomes singleton in C++
+class ExceptionSuccessfullyProcessed : std::exception {
 private:
     ExceptionSuccessfullyProcessed() = default;
 public:

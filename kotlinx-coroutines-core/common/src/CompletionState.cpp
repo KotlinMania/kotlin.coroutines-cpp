@@ -5,6 +5,10 @@
 // TODO: getOrElse extension needs implementation
 // TODO: recoverStackTrace needs implementation
 
+#include "kotlinx/coroutines/core_fwd.hpp"
+#include <atomic>
+#include <string>
+
 namespace kotlinx {
 namespace coroutines {
 
@@ -13,9 +17,9 @@ namespace coroutines {
 // TODO: import kotlin.coroutines.* - use custom types
 // TODO: import kotlin.jvm.* - JVM-specific, ignore
 
-// TODO: internal fun - internal visibility
+// TODO: fun - visibility
 template<typename T>
-void* toState(Result<T> result) {
+void* to_state(Result<T> result) {
     // TODO: getOrElse { CompletedExceptionally(it) }
     if (result.isSuccess()) {
         return result.getValue();
@@ -24,23 +28,23 @@ void* toState(Result<T> result) {
     }
 }
 
-// TODO: internal fun - internal visibility
+// TODO: fun - visibility
 template<typename T>
-void* toState(Result<T> result, CancellableContinuation<void>* caller) {
+void* to_state(Result<T> result, CancellableContinuation<void>* caller) {
     // TODO: getOrElse { CompletedExceptionally(recoverStackTrace(it, caller)) }
     if (result.isSuccess()) {
         return result.getValue();
     } else {
-        return new CompletedExceptionally(recoverStackTrace(result.getException(), caller));
+        return new CompletedExceptionally(recover_stack_trace(result.getException(), caller));
     }
 }
 
 // TODO: @Suppress("RESULT_CLASS_IN_RETURN_TYPE", "UNCHECKED_CAST") - no C++ equivalent
-// TODO: internal fun - internal visibility
+// TODO: fun - visibility
 template<typename T>
-Result<T> recoverResult(void* state, Continuation<T>* u_cont) {
+Result<T> recover_result(void* state, Continuation<T>* u_cont) {
     if (auto* completed_exceptionally = dynamic_cast<CompletedExceptionally*>(state)) {
-        return Result<T>::failure(recoverStackTrace(completed_exceptionally->cause, u_cont));
+        return Result<T>::failure(recover_stack_trace(completed_exceptionally->cause, u_cont));
     } else {
         // TODO: state as T - cast
         return Result<T>::success(static_cast<T>(state));
@@ -48,12 +52,12 @@ Result<T> recoverResult(void* state, Continuation<T>* u_cont) {
 }
 
 /**
- * Class for an internal state of a job that was cancelled (completed exceptionally).
+ * Class for an state of a job that was cancelled (completed exceptionally).
  *
  * @param cause the exceptional completion cause. It's either original exceptional cause
  *        or artificial [CancellationException] if no cause was provided
  */
-// TODO: internal open class
+// TODO: open class
 class CompletedExceptionally {
 private:
     std::atomic<bool> _handled;
@@ -69,14 +73,14 @@ public:
         return _handled.load();
     }
 
-    bool makeHandled() {
+    bool make_handled() {
         bool expected = false;
         return _handled.compare_exchange_strong(expected, true);
     }
 
-    std::string toString() const {
+    std::string to_string() const {
         // TODO: classSimpleName - type name extraction
-        return "CompletedExceptionally[" + std::string(/* cause->toString() */) + "]";
+        return "CompletedExceptionally[" + std::string(/* cause->tostd::string() */) + "]";
     }
 };
 
@@ -84,11 +88,11 @@ public:
  * A specific subclass of [CompletedExceptionally] for cancelled [AbstractContinuation].
  *
  * @param continuation the continuation that was cancelled.
- * @param cause the exceptional completion cause. If `cause` is null, then a [CancellationException]
+ * @param cause the exceptional completion cause. If `cause` is nullptr, then a [CancellationException]
  *        if created on first access to [exception] property.
  */
-// TODO: internal class
-class CancelledContinuation : public CompletedExceptionally {
+// TODO: class
+class CancelledContinuation : CompletedExceptionally {
 private:
     std::atomic<bool> _resumed;
 
@@ -98,12 +102,12 @@ public:
         Throwable* cause,
         bool handled
     ) : CompletedExceptionally(
-            cause != nullptr ? cause : new CancellationException("Continuation " + /* continuation->toString() */ std::string() + " was cancelled normally"),
+            cause != nullptr ? cause : new CancellationException("Continuation " + /* continuation->tostd::string() */ std::string() + " was cancelled normally"),
             handled
         ),
         _resumed(false) {}
 
-    bool makeResumed() {
+    bool make_resumed() {
         bool expected = false;
         return _resumed.compare_exchange_strong(expected, true);
     }

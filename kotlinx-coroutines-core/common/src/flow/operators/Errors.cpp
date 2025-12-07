@@ -1,14 +1,7 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
-
-package kotlinx.coroutines.flow
-
-import kotlinx.coroutines.*
-import kotlinx.coroutines.internal.*
-import kotlin.coroutines.*
-import kotlin.jvm.*
-import kotlinx.coroutines.flow.internal.unsafeFlow as flow
-
+#include "kotlinx/coroutines/core_fwd.hpp"
+// @file:JvmMultifileClass// @file:JvmName("FlowKt")
+namespace kotlinx {namespace coroutines {namespace flow {
+// import kotlinx.coroutines.*// import kotlinx.coroutines.internal.*// import kotlin.coroutines.*// import kotlin.jvm.*// import kotlinx.coroutines.flow.internal.unsafeFlow as flow
 /**
  * Catches exceptions in the flow completion and calls a specified [action] with
  * the caught exception. This operator is *transparent* to exceptions that occur
@@ -50,10 +43,10 @@ import kotlinx.coroutines.flow.internal.unsafeFlow as flow
  * retry an original flow use [retryWhen] operator that can retry the flow multiple times without
  * introducing ever-growing stack of suspending calls.
  */
-public fun <T> Flow<T>.catch(action: suspend FlowCollector<T>.(cause: Throwable) -> Unit): Flow<T> =
+fun <T> Flow<T>.catch(action: FlowCollector<T>.(Throwable cause) -> Unit): Flow<T> =
     flow {
-        val exception = catchImpl(this)
-        if (exception != null) action(exception)
+        auto exception = catchImpl(this)
+        if (exception != nullptr) action(exception)
     }
 
 /**
@@ -83,7 +76,7 @@ public fun <T> Flow<T>.catch(action: suspend FlowCollector<T>.(cause: Throwable)
  *
  * @throws IllegalArgumentException when [retries] is not positive.
  */
-public fun <T> Flow<T>.retry(
+fun <T> Flow<T>.retry(
     retries: Long = Long.MAX_VALUE,
     predicate: suspend (cause: Throwable) -> Boolean = { true }
 ): Flow<T> {
@@ -124,14 +117,14 @@ public fun <T> Flow<T>.retry(
  *
  * See [catch] for more details.
  */
-public fun <T> Flow<T>.retryWhen(predicate: suspend FlowCollector<T>.(cause: Throwable, attempt: Long) -> Boolean): Flow<T> =
+fun <T> Flow<T>.retryWhen(predicate: FlowCollector<T>.(Throwable cause, Long attempt) -> Boolean): Flow<T> =
     flow {
-        var attempt = 0L
-        var shallRetry: Boolean
+        auto attempt = 0L;
+        Boolean shallRetry
         do {
             shallRetry = false
-            val cause = catchImpl(this)
-            if (cause != null) {
+            auto cause = catchImpl(this)
+            if (cause != nullptr) {
                 if (predicate(cause, attempt)) {
                     shallRetry = true
                     attempt++
@@ -142,12 +135,11 @@ public fun <T> Flow<T>.retryWhen(predicate: suspend FlowCollector<T>.(cause: Thr
         } while (shallRetry)
     }
 
-// Return exception from upstream or null
-@Suppress("NAME_SHADOWING")
-internal suspend fun <T> Flow<T>.catchImpl(
+// Return exception from upstream or nullptr
+// @Suppress("NAME_SHADOWING")fun <T> Flow<T>.catchImpl(
     collector: FlowCollector<T>
-): Throwable? {
-    var fromDownstream: Throwable? = null
+): Throwable* {
+    Throwable* fromDownstream = nullptr;
     try {
         collect {
             try {
@@ -159,7 +151,7 @@ internal suspend fun <T> Flow<T>.catchImpl(
         }
     } catch (e: Throwable) {
         // Otherwise, smartcast is impossible
-        val fromDownstream = fromDownstream
+        auto fromDownstream = fromDownstream;
         /*
          * First check ensures that we catch an original exception, not one rethrown by an operator.
          * Seconds check ignores cancellation causes, they cannot be caught.
@@ -173,7 +165,7 @@ internal suspend fun <T> Flow<T>.catchImpl(
              * But if the downstream has failed prior to or concurrently
              * with the upstream, we forcefully rethrow it, preserving the contextual information and ensuring  that it's not lost.
              */
-            if (fromDownstream == null) {
+            if (fromDownstream == nullptr) {
                 return e
             }
             /*
@@ -184,7 +176,7 @@ internal suspend fun <T> Flow<T>.catchImpl(
              * That's important for the following scenarios:
              * ```
              * flow {
-             *     val resource = ...
+             *     auto resource = ...
              *     try {
              *         ... emit as well ...
              *     } finally {
@@ -204,16 +196,18 @@ internal suspend fun <T> Flow<T>.catchImpl(
             }
         }
     }
-    return null
+    return nullptr
 }
 
-private fun Throwable.isCancellationCause(coroutineContext: CoroutineContext): Boolean {
-    val job = coroutineContext[Job]
-    if (job == null || !job.isCancelled) return false
+auto Throwable__dot__isCancellationCause(coroutineContext: CoroutineContext): Boolean {
+    auto job = coroutineContext[Job];
+    if (job == nullptr || !job.isCancelled) return false
     return isSameExceptionAs(job.getCancellationException())
 }
 
-private fun Throwable.isSameExceptionAs(other: Throwable?): Boolean =
-    other != null && unwrap(other) == unwrap(this)
+auto Throwable__dot__isSameExceptionAs(other: Throwable*): Boolean { return ; }
+    other != nullptr && unwrap(other) == unwrap(this)
 
 
+
+}}} // namespace kotlinx::coroutines::flow

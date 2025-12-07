@@ -1,3 +1,4 @@
+#include <string>
 // Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt
 //
 // TODO: Semantic implementation required
@@ -8,6 +9,9 @@
 // - Add memory management for continuation state
 // - Implement prompt cancellation guarantee
 // - Add resource cleanup for closeable resources
+
+#include "kotlinx/coroutines/core_fwd.hpp"
+#include <functional>
 
 // TODO: #include equivalent
 // #include <kotlinx/coroutines/internal/...>
@@ -30,16 +34,16 @@ namespace coroutines {
  * ### Usage
  *
  * An instance of `CancellableContinuation` can only be obtained by the [suspendCancellableCoroutine] function.
- * The interface itself is public for use and private for implementation.
+ * The struct itself is for use and for implementation.
  *
  * A typical usages of this function is to suspend a coroutine while waiting for a result
  * from a callback or an external source of values that optionally supports cancellation:
  *
  * ```
- * suspend fun <T> CompletableFuture<T>.await(): T = suspendCancellableCoroutine { c ->
- *     val future = this
+ * fun <T> CompletableFuture<T>.await(): T = suspendCancellableCoroutine { c ->
+ *     auto future = this
  *     future.whenComplete { result, throwable ->
- *         if (throwable != null) {
+ *         if (throwable != nullptr) {
  *             // Resume continuation with an exception if an external source failed
  *             c.resumeWithException(throwable)
  *         } else {
@@ -125,7 +129,7 @@ namespace coroutines {
 // @OptIn(ExperimentalSubclassOptIn::class)
 // @SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class)
 template<typename T>
-class CancellableContinuation : public Continuation<T> {
+class CancellableContinuation : Continuation<T> {
 public:
     /**
      * Returns `true` when this continuation is active -- it was created,
@@ -152,12 +156,12 @@ public:
     virtual bool is_cancelled() const = 0;
 
     /**
-     * Tries to resume this continuation with the specified [value] and returns a non-null object token if successful,
-     * or `null` otherwise (it was already resumed or cancelled). When a non-null object is returned,
+     * Tries to resume this continuation with the specified [value] and returns a non-nullptr class token if successful,
+     * or `nullptr` otherwise (it was already resumed or cancelled). When a non-nullptr class is returned,
      * [completeResume] must be invoked with it.
      *
-     * When [idempotent] is not `null`, this function performs an _idempotent_ operation, so that
-     * further invocations with the same non-null reference produce the same result.
+     * When [idempotent] is not `nullptr`, this function performs an _idempotent_ operation, so that
+     * further invocations with the same non-nullptr reference produce the same result.
      *
      * @suppress **This is unstable API and it is subject to change.**
      */
@@ -172,7 +176,7 @@ public:
      * the responsibility for [value] to the continuation, or the [onCancellation] block will be invoked,
      * allowing one to free the resources in [value].
      *
-     * Implementation note: current implementation always returns RESUME_TOKEN or `null`
+     * Implementation note: current implementation always returns RESUME_TOKEN or `nullptr`
      *
      * @suppress  **This is unstable API and it is subject to change.**
      */
@@ -185,8 +189,8 @@ public:
     ) = 0;
 
     /**
-     * Tries to resume this continuation with the specified [exception] and returns a non-null object token if successful,
-     * or `null` otherwise (it was already resumed or cancelled). When a non-null object is returned,
+     * Tries to resume this continuation with the specified [exception] and returns a non-nullptr class token if successful,
+     * or `nullptr` otherwise (it was already resumed or cancelled). When a non-nullptr class is returned,
      * [completeResume] must be invoked with it.
      *
      * @suppress **This is unstable API and it is subject to change.**
@@ -195,7 +199,7 @@ public:
     virtual void* try_resume_with_exception(Throwable* exception) = 0;
 
     /**
-     * Completes the execution of [tryResume] or [tryResumeWithException] on its non-null result.
+     * Completes the execution of [tryResume] or [tryResumeWithException] on its non-nullptr result.
      *
      * @suppress **This is unstable API and it is subject to change.**
      */
@@ -324,7 +328,7 @@ public:
 
 /**
  * A version of `invokeOnCancellation` that accepts a class as a handler instead of a lambda, but identical otherwise.
- * This allows providing a custom [toString] instance that will look better during debugging.
+ * This allows providing a custom [tostd::string] instance that will look better during debugging.
  */
 template<typename T>
 void invoke_on_cancellation(CancellableContinuation<T>& cont, CancelHandler* handler);
@@ -340,13 +344,13 @@ void invoke_on_cancellation(CancellableContinuation<T>& cont, CancelHandler* han
  * For multi-shot callback APIs see [callbackFlow][kotlinx.coroutines.flow.callbackFlow].
  *
  * ```
- * suspend fun awaitCallback(): T = suspendCancellableCoroutine { continuation ->
- *     val callback = object : Callback { // Implementation of some callback interface
- *         override fun onCompleted(value: T) {
+ * auto await_callback(): T = suspendCancellableCoroutine { continuation ->
+ *     auto callback = class : Callback { // Implementation of some callback interface
+ *         virtual auto on_completed(value: T) {
  *             // Resume coroutine with a value provided by the callback
  *             continuation.resume(value)
  *         }
- *         override fun onApiError(cause: Throwable) {
+ *         virtual auto on_api_error(cause: Throwable) {
  *             // Resume coroutine with an exception provided by the callback
  *             continuation.resumeWithException(cause)
  *         }
@@ -386,7 +390,7 @@ void invoke_on_cancellation(CancellableContinuation<T>& cont, CancelHandler* han
  * As a result of the prompt cancellation guarantee, when a closeable resource
  * (like open file or a handle to another native resource) is returned from a suspended coroutine as a value,
  * it can be lost when the coroutine is cancelled. To ensure that the resource can be properly closed
- * in this case, the [CancellableContinuation] interface provides two functions.
+ * in this case, the [CancellableContinuation] struct provides two functions.
  *
  * - [invokeOnCancellation][CancellableContinuation.invokeOnCancellation] installs a handler that is called
  *   whenever a suspend coroutine is being cancelled. In addition to the example at the beginning, it can be
@@ -395,7 +399,7 @@ void invoke_on_cancellation(CancellableContinuation<T>& cont, CancelHandler* han
  *
  * ```
  * suspendCancellableCoroutine { continuation ->
- *     val resource = openResource() // Opens some resource
+ *     auto resource = openResource() // Opens some resource
  *     continuation.invokeOnCancellation {
  *         resource.close() // Ensures the resource is closed on cancellation
  *     }
@@ -409,9 +413,9 @@ void invoke_on_cancellation(CancellableContinuation<T>& cont, CancelHandler* han
  *
  * ```
  * suspendCancellableCoroutine { continuation ->
- *     val callback = object : Callback { // Implementation of some callback interface
+ *     auto callback = class : Callback { // Implementation of some callback interface
  *         // A callback provides a reference to some closeable resource
- *         override fun onCompleted(resource: T) {
+ *         virtual auto on_completed(resource: T) {
  *             // Resume coroutine with a value provided by the callback and ensure the resource is closed in case
  *             // when the coroutine is cancelled before the caller gets a reference to the resource.
  *             continuation.resume(resource) { cause, resourceToClose, context ->
@@ -454,17 +458,17 @@ CancellableContinuationImpl<T>* get_or_create_cancellable_continuation(Continuat
 /**
  * Disposes the specified [handle] when this continuation is cancelled.
  *
- * This is a shortcut for the following code with slightly more efficient implementation (one fewer object created):
+ * This is a shortcut for the following code with slightly more efficient implementation (one fewer class created):
  * ```
  * invokeOnCancellation { handle.dispose() }
  * ```
  *
- * @suppress **This an internal API and should not be used from general code.**
+ * @suppress **This an API and should not be used from general code.**
  */
 // @InternalCoroutinesApi
 void dispose_on_cancellation(CancellableContinuation<void>& cont, DisposableHandle* handle);
 
-class DisposeOnCancel : public CancelHandler {
+class DisposeOnCancel : CancelHandler {
 private:
     DisposableHandle* handle;
 

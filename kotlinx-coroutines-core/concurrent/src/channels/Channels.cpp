@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/concurrent/src/channels/Channels.kt
 //
@@ -32,7 +33,7 @@ namespace channels {
  * // From callback API
  * channel.trySendBlocking(element)
  *     .onSuccess { /* request next element or debug log */ }
- *     .onFailure { t: Throwable? -> /* throw or log */ }
+ *     .onFailure { t: Throwable* -> /* throw or log */ }
  * ```
  *
  * For this operation it is guaranteed that [failure][ChannelResult.failed] always contains an exception in it.

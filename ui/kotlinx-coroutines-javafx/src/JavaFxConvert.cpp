@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin: kotlinx.coroutines.javafx.JavaFxConvert
 // Original package: kotlinx.coroutines.javafx
 //
@@ -52,12 +53,12 @@ class Dispatchers;
  * [conflate] has no effect, as this flow is already conflated; one can use [buffer] to change that instead.
  */
 // @ExperimentalCoroutinesApi // Since 1.3.x
-// public fun <T> ObservableValue<T>.asFlow(): Flow<T>
+// fun <T> ObservableValue<T>.asFlow(): Flow<T>
 // TODO: Extension function -> free function taking ObservableValue as first parameter
 template<typename T>
 Flow<T>* as_flow(ObservableValue<T>& observable_value) {
     // callbackFlow<T> {
-    //     val listener = ChangeListener<T> { _, _, newValue ->
+    //     auto listener = ChangeListener<T> { _, _, newValue ->
     //         /*
     //          * Do not propagate the exception to the ObservableValue, it
     //          * already should've been handled by the downstream

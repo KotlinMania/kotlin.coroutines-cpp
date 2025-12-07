@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt
 //
@@ -68,7 +69,7 @@ inline bool is_reusable_mode(int mode) {
 }
 
 template<typename T>
-class DispatchedTask : public SchedulerTask {
+class DispatchedTask : SchedulerTask {
 public:
     int resume_mode;
 
@@ -100,7 +101,7 @@ public:
      *   its stack-trace has to be recovered, so it overrides this method for that purpose.
      */
     virtual std::exception* get_exceptional_result(void* state) {
-        // TODO: (state as? CompletedExceptionally)?.cause
+        // TODO: (state as* CompletedExceptionally)?.cause
         return nullptr; // placeholder
     }
 
@@ -111,21 +112,21 @@ public:
             auto* dispatched = dynamic_cast<DispatchedContinuation<T>*>(delegate);
             Continuation<T>* continuation = dispatched->continuation;
             // TODO: with_continuation_context(continuation, dispatched->count_or_element) {
-            //     val context = continuation.context
-            //     val state = take_state() // NOTE: Must take state in any case, even if cancelled
-            //     val exception = get_exceptional_result(state)
+            //     auto context = continuation.context
+            //     auto state = take_state() // NOTE: Must take state in any case, even if cancelled
+            //     auto exception = get_exceptional_result(state)
             //     /*
             //      * Check whether continuation was originally resumed with an exception.
             //      * If so, it dominates cancellation, otherwise the original exception
             //      * will be silently lost.
             //      */
-            //     val job = if (exception == null && resume_mode.is_cancellable_mode) context[Job] else null
-            //     if (job != null && !job.isActive) {
-            //         val cause = job.getCancellationException()
+            //     auto job = if (exception == nullptr && resume_mode.is_cancellable_mode) context[Job] else nullptr
+            //     if (job != nullptr && !job.isActive) {
+            //         auto cause = job.getCancellationException()
             //         cancel_completed_result(state, cause)
             //         continuation.resumeWithStackTrace(cause)
             //     } else {
-            //         if (exception != null) {
+            //         if (exception != nullptr) {
             //             continuation.resumeWithException(exception)
             //         } else {
             //             continuation.resume(get_successful_result(state))
@@ -144,7 +145,7 @@ public:
      * There are two kinds of fatal exceptions:
      *
      * 1) Exceptions from kotlinx.coroutines code. Such exceptions indicate that either
-     *    the library or the compiler has a bug that breaks internal invariants.
+     *    the library or the compiler has a bug that breaks invariants.
      *    They usually have specific workarounds, but require careful study of the cause and should
      *    be reported to the maintainers and fixed on the library's side anyway.
      *
@@ -158,7 +159,7 @@ public:
      * a failed coroutine, but such exceptions should be reported anyway.
      */
     void handle_fatal_exception(const std::exception& exception) {
-        // TODO: val reason = CoroutinesInternalError("Fatal exception in coroutines machinery for $this. " +
+        // TODO: auto reason = CoroutinesInternalError("Fatal exception in coroutines machinery for $this. " +
         //         "Please read KDoc to 'handleFatalException' method and report this incident to maintainers", exception)
         // TODO: handle_coroutine_exception(this->get_delegate()->context, reason)
     }
@@ -171,8 +172,8 @@ void dispatch(DispatchedTask<T>* task, int mode) {
     bool undispatched = (mode == MODE_UNDISPATCHED);
     if (!undispatched /* && delegate is DispatchedContinuation && mode.is_cancellable_mode == resume_mode.is_cancellable_mode */) {
         // dispatch directly using this instance's Runnable implementation
-        // TODO: val dispatcher = delegate.dispatcher
-        // TODO: val context = delegate.context
+        // TODO: auto dispatcher = delegate.dispatcher
+        // TODO: auto context = delegate.context
         // TODO: if (dispatcher.safeIsDispatchNeeded(context)) {
         //     dispatcher.safeDispatch(context, this)
         // } else {
@@ -190,7 +191,7 @@ void resume(DispatchedTask<T>* task, Continuation<T>* delegate, bool undispatche
     // This resume is never cancellable. The result is always delivered to delegate continuation.
     void* state = task->take_state();
     std::exception* exception = task->get_exceptional_result(state);
-    // TODO: val result = if (exception != null) Result.failure(exception) else Result.success(get_successful_result<T>(state))
+    // TODO: auto result = if (exception != nullptr) Result.failure(exception) else Result.success(get_successful_result<T>(state))
     // TODO: when {
     //     undispatched -> (delegate as DispatchedContinuation).resume_undispatched_with(result)
     //     else -> delegate.resumeWith(result)
@@ -203,7 +204,7 @@ void resume(DispatchedTask<T>* task, Continuation<T>* delegate, bool undispatche
 // - resume_with_stack_trace
 // - DispatchException class
 
-class DispatchException : public std::exception {
+class DispatchException : std::exception {
 public:
     std::exception* cause;
     CoroutineDispatcher* dispatcher;

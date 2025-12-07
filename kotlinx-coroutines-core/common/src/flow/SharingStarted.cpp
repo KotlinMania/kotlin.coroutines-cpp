@@ -1,14 +1,12 @@
-package kotlinx.coroutines.flow
-
-import kotlinx.coroutines.*
-import kotlinx.coroutines.internal.IgnoreJreRequirement
-import kotlin.time.*
-
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
+namespace kotlinx {namespace coroutines {namespace flow {
+// import kotlinx.coroutines.*// import kotlinx.coroutines.internal.IgnoreJreRequirement// import kotlin.time.*
 /**
  * A command emitted by [SharingStarted] implementations to control the sharing coroutine in
  * the [shareIn] and [stateIn] operators.
  */
-public enum class SharingCommand {
+enum class SharingCommand {
     /**
      * Starts sharing, launching collection of the upstream flow.
      *
@@ -34,7 +32,7 @@ public enum class SharingCommand {
 /**
  * A strategy for starting and stopping the sharing coroutine in [shareIn] and [stateIn] operators.
  *
- * This functional interface provides a set of built-in strategies: [Eagerly], [Lazily], [WhileSubscribed], and
+ * This functional struct provides a set of built-in strategies: [Eagerly], [Lazily], [WhileSubscribed], and
  * supports custom strategies by implementing this interface's [command] function.
  *
  * For example, it is possible to define a custom strategy that starts the upstream only when the number
@@ -68,17 +66,17 @@ public enum class SharingCommand {
  * The completion of the `command` flow normally has no effect (the upstream flow keeps running if it was running).
  * The failure of the `command` flow cancels the sharing coroutine and the upstream flow.
  */
-public fun interface SharingStarted {
-    public companion object {
+fun struct SharingStarted {
+    companion object {
         /**
          * Sharing is started immediately and never stops.
          */
-        public val Eagerly: SharingStarted = StartedEagerly()
+        SharingStarted Eagerly = StartedEagerly()
 
         /**
          * Sharing is started when the first subscriber appears and never stops.
          */
-        public val Lazily: SharingStarted = StartedLazily()
+        SharingStarted Lazily = StartedLazily()
 
         /**
          * Sharing is started when the first subscriber appears, immediately stops when the last
@@ -97,8 +95,7 @@ public fun interface SharingStarted {
          * This function throws [IllegalArgumentException] when either [stopTimeoutMillis] or [replayExpirationMillis]
          * are negative.
          */
-        @Suppress("FunctionName")
-        public fun WhileSubscribed(
+// @Suppress("FunctionName")        auto while_subscribed(
             stopTimeoutMillis: Long = 0,
             replayExpirationMillis: Long = Long.MAX_VALUE
         ): SharingStarted =
@@ -110,7 +107,7 @@ public fun interface SharingStarted {
      * flow of [commands][SharingCommand] that control the sharing coroutine. See the [SharingStarted] interface
      * documentation for details.
      */
-    public fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand>
+    auto command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand>
 }
 
 /**
@@ -130,8 +127,7 @@ public fun interface SharingStarted {
  * This function throws [IllegalArgumentException] when either [stopTimeout] or [replayExpiration]
  * are negative.
  */
-@Suppress("FunctionName")
-public fun SharingStarted.Companion.WhileSubscribed(
+// @Suppress("FunctionName")fun SharingStarted.Companion.WhileSubscribed(
     stopTimeout: Duration = Duration.ZERO,
     replayExpiration: Duration = Duration.INFINITE
 ): SharingStarted =
@@ -139,15 +135,15 @@ public fun SharingStarted.Companion.WhileSubscribed(
 
 // -------------------------------- implementation --------------------------------
 
-private class StartedEagerly : SharingStarted {
-    override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> =
+class StartedEagerly : SharingStarted {
+    virtual auto command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> { return ; }
         flowOf(SharingCommand.START)
-    override fun toString(): String = "SharingStarted.Eagerly"
+    virtual auto to_string(): std::string { return "SharingStarted.Eagerly"; }
 }
 
-private class StartedLazily : SharingStarted {
-    override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = flow {
-        var started = false
+class StartedLazily : SharingStarted {
+    virtual auto command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = flow {
+        auto started = false;
         subscriptionCount.collect { count ->
             if (count > 0 && !started) {
                 started = true
@@ -156,19 +152,19 @@ private class StartedLazily : SharingStarted {
         }
     }
 
-    override fun toString(): String = "SharingStarted.Lazily"
+    virtual auto to_string(): std::string { return "SharingStarted.Lazily"; }
 }
 
-private class StartedWhileSubscribed(
-    private val stopTimeout: Long,
-    private val replayExpiration: Long
+class StartedWhileSubscribed(
+    Long stopTimeout,
+    Long replayExpiration
 ) : SharingStarted {
     init {
         require(stopTimeout >= 0) { "stopTimeout($stopTimeout ms) cannot be negative" }
         require(replayExpiration >= 0) { "replayExpiration($replayExpiration ms) cannot be negative" }
     }
 
-    override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = subscriptionCount
+    virtual auto command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> { return subscriptionCount; }
         .transformLatest { count ->
             if (count > 0) {
                 emit(SharingCommand.START)
@@ -184,21 +180,21 @@ private class StartedWhileSubscribed(
         .dropWhile { it != SharingCommand.START } // don't emit any STOP/RESET_BUFFER to start with, only START
         .distinctUntilChanged() // just in case somebody forgets it, don't leak our multiple sending of START
 
-    @OptIn(ExperimentalStdlibApi::class)
-    override fun toString(): String {
-        val params = buildList(2) {
+// @OptIn(:class ExperimentalStdlibApi)    virtual auto to_string(): std::string {
+        auto params = buildList(2) {
             if (stopTimeout > 0) add("stopTimeout=${stopTimeout}ms")
             if (replayExpiration < Long.MAX_VALUE) add("replayExpiration=${replayExpiration}ms")
         }
-        return "SharingStarted.WhileSubscribed(${params.joinToString()})"
+        return "SharingStarted.WhileSubscribed(${params.joinTostd::string()})"
     }
 
-    // equals & hashcode to facilitate testing, not documented in public contract
-    override fun equals(other: Any?): Boolean =
+    // equals & hashcode to facilitate testing, not documented in contract
+    virtual auto equals(other: Any*): Boolean { return ; }
         other is StartedWhileSubscribed &&
             stopTimeout == other.stopTimeout &&
             replayExpiration == other.replayExpiration
 
-    @IgnoreJreRequirement // desugared hashcode implementation
-    override fun hashCode(): Int = stopTimeout.hashCode() * 31 + replayExpiration.hashCode()
+// @IgnoreJreRequirement // desugared hashcode implementation    virtual auto hash_code(): Int { return stopTimeout.hashCode() * 31 + replayExpiration.hashCode(); }
 }
+
+}}} // namespace kotlinx::coroutines::flow

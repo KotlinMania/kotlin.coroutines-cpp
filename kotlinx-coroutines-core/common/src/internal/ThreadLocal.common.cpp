@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/ThreadLocal.common.kt
 //
@@ -8,7 +9,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declaration
 class Symbol;
@@ -23,7 +24,7 @@ public:
 };
 
 /**
- * Create a thread-local storage for an object of type [T].
+ * Create a thread-local storage for an class of type [T].
  *
  * If two different thread-local objects share the same [name], they will not necessarily share the same value,
  * but they may.

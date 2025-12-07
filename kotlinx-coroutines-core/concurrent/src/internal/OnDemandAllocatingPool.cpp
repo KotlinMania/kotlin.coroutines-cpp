@@ -1,3 +1,6 @@
+#include <string>
+#include <functional>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt
 //
@@ -8,11 +11,11 @@
 // TODO: Implement List<T> return type - use std::vector<T>
 // TODO: Implement lambda with receiver syntax
 // TODO: Implement Kotlin's bitwise operations (shl, and, or, inv)
-// TODO: Handle const val - use constexpr or #define
+// TODO: Handle const auto - use constexpr or #define
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // KT-25023
 // TODO: inline function with Nothing return type
@@ -144,9 +147,9 @@ public:
             if (i > 0) elements_str += ", ";
             T* elem = elements_[i].load(std::memory_order_acquire);
             if (elem != nullptr) {
-                elements_str += std::to_string(*elem); // TODO: proper toString implementation
+                elements_str += std::to_string(*elem); // TODO: proper tostd::string implementation
             } else {
-                elements_str += "null";
+                elements_str += "nullptr";
             }
         }
         elements_str += "]";

@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Deferred.kt
 //
@@ -39,13 +40,13 @@ template<typename T> class SelectClause1;
  * [coroutineContext](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.coroutines/coroutine-context.html)
  * of [async][CoroutineScope.async] builder represents the coroutine itself.
  *
- * All functions on this interface and on all interfaces derived from it are **thread-safe** and can
+ * All functions on this struct and on all interfaces derived from it are **thread-safe** and can
  * be safely invoked from concurrent coroutines without external synchronization.
  */
 // @OptIn(ExperimentalSubclassOptIn::class)
 // @SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class)
 template<typename T>
-class Deferred : public virtual Job {
+class Deferred : virtual Job {
 public:
     /**
      * Awaits for completion of this value without blocking the thread and returns the resulting value or throws
@@ -106,7 +107,7 @@ public:
 
     /**
      * Returns *completion exception* result if this deferred was [cancelled][isCancelled] and has [completed][isCompleted],
-     * `null` if it had completed normally, or throws [IllegalStateException] if this deferred value has not
+     * `nullptr` if it had completed normally, or throws [IllegalStateException] if this deferred value has not
      * [completed][isCompleted] yet.
      *
      * This function is designed to be used from [invokeOnCompletion] handlers, when there is an absolute certainty that

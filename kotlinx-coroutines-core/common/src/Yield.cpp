@@ -1,3 +1,5 @@
+#include <string>
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Yield.kt
 //
@@ -27,10 +29,10 @@ class CoroutineDispatcher;
  * Calling [yield] has this effect:
  *
  * ```
- * fun updateProgressBar(value: Int, marker: String) {
+ * auto update_progress_bar(Int value, marker: std::string) {
  *     print(marker)
  * }
- * val singleThreadedDispatcher = Dispatchers.Default.limitedParallelism(1)
+ * auto singleThreadedDispatcher = Dispatchers.Default.limitedParallelism(1)
  * withContext(singleThreadedDispatcher) {
  *     launch {
  *         repeat(5) {
@@ -74,27 +76,27 @@ class CoroutineDispatcher;
  * ### Case 1: using `yield` to ensure a specific interleaving of actions
  *
  * ```
- * val singleThreadedDispatcher = Dispatchers.Default.limitedParallelism(1)
+ * auto singleThreadedDispatcher = Dispatchers.Default.limitedParallelism(1)
  * withContext(singleThreadedDispatcher) {
- *     var value: Int? = null
- *     val job = launch { // a new coroutine on the same dispatcher
+Int value* = nullptr;
+ *     auto job = launch { // a new coroutine on the same dispatcher
  *         // yield() // uncomment to see the crash
  *         value = 42
  *         println("2. Value provided")
  *     }
- *     check(value == null)
+ *     check(value == nullptr)
  *     println("No value yet!")
  *     println("1. Awaiting the value...")
  *     // ANTIPATTERN! DO NOT WRITE SUCH CODE!
  *     yield() // allow the other coroutine to run
  *     // job.join() // would work more reliably in this scenario!
- *     check(value != null)
+ *     check(value != nullptr)
  *     println("3. Obtained $value")
  * }
  * ```
  *
  * Here, [yield] allows `singleThreadedDispatcher` to execute the task that ultimately provides the `value`.
- * Without the [yield], the `value != null` check would be executed directly after `Awaiting the value` is printed.
+ * Without the [yield], the `value != nullptr` check would be executed directly after `Awaiting the value` is printed.
  * However, if the value-producing coroutine is modified to suspend before providing the value, this will
  * no longer work; explicitly waiting for the coroutine to finish via [Job.join] instead is robust against such changes.
  *
@@ -103,15 +105,15 @@ class CoroutineDispatcher;
  * ### Case 2: using `yield` in a loop to wait for something to happen
  *
  * ```
- * val singleThreadedDispatcher = Dispatchers.Default.limitedParallelism(1)
+ * auto singleThreadedDispatcher = Dispatchers.Default.limitedParallelism(1)
  * withContext(singleThreadedDispatcher) {
- *     var value: Int? = null
- *     val job = launch { // a new coroutine on the same dispatcher
+Int value* = nullptr;
+ *     auto job = launch { // a new coroutine on the same dispatcher
  *         delay(1.seconds)
  *         value = 42
  *     }
  *     // ANTIPATTERN! DO NOT WRITE SUCH CODE!
- *     while (value == null) {
+ *     while (value == nullptr) {
  *         yield() // allow the other coroutines to run
  *     }
  *     println("Obtained $value")
@@ -121,19 +123,19 @@ class CoroutineDispatcher;
  * This example will lead to correct results no matter how much the value-producing coroutine suspends,
  * but it is still flawed.
  * For the one second that it takes for the other coroutine to obtain the value,
- * `value == null` would be constantly re-checked, leading to unjustified resource consumption.
+ * `value == nullptr` would be constantly re-checked, leading to unjustified resource consumption.
  *
  * In this specific case, [CompletableDeferred] can be used instead:
  *
  * ```
- * val singleThreadedDispatcher = Dispatchers.Default.limitedParallelism(1)
+ * auto singleThreadedDispatcher = Dispatchers.Default.limitedParallelism(1)
  * withContext(singleThreadedDispatcher) {
- *     val deferred = CompletableDeferred<Int>()
- *     val job = launch { // a new coroutine on the same dispatcher
+ *     auto deferred = CompletableDeferred<Int>()
+ *     auto job = launch { // a new coroutine on the same dispatcher
  *         delay(1.seconds)
  *         deferred.complete(42)
  *     }
- *     val value = deferred.await()
+ *     auto value = deferred.await()
  *     println("Obtained $value")
  * }
  * ```

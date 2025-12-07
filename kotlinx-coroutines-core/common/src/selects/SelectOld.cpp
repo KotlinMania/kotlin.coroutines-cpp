@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/selects/SelectOld.kt
 //
@@ -29,7 +30,7 @@ namespace selects {
 
 // @PublishedApi
 template<typename R>
-class SelectBuilderImpl : public SelectImplementation<R> {
+class SelectBuilderImpl : SelectImplementation<R> {
 private:
     CancellableContinuationImpl<R> cont;
 
@@ -80,7 +81,7 @@ public:
 
 // @PublishedApi
 template<typename R>
-class UnbiasedSelectBuilderImpl : public UnbiasedSelectImplementation<R> {
+class UnbiasedSelectBuilderImpl : UnbiasedSelectImplementation<R> {
 private:
     CancellableContinuationImpl<R> cont;
 
@@ -123,7 +124,7 @@ public:
  * Internal note:
  * We do test it manually by changing the implementation of **new** select with the following:
  * ```
- * public suspend inline fun <R> select(crossinline builder: SelectBuilder<R>.() -> Unit): R {
+ * inline fun <R> select(crossinline builder: SelectBuilder<R>.() -> Unit): R {
  *     contract {
  *         callsInPlace(builder, InvocationKind.EXACTLY_ONCE)
  *     }

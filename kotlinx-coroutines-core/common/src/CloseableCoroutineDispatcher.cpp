@@ -2,7 +2,9 @@
 // Original: kotlinx-coroutines-core/common/src/CloseableCoroutineDispatcher.kt
 //
 // TODO: expect/actual mechanism not available in C++ - use virtual/abstract or platform-specific includes
-// TODO: AutoCloseable interface maps to C++ RAII or explicit close() method
+// TODO: AutoCloseable struct maps to C++ RAII or explicit close() method
+
+#include "kotlinx/coroutines/core_fwd.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -15,12 +17,12 @@ namespace coroutines {
  * by `kotlin.native.Worker`.
  *
  * **The `CloseableCoroutineDispatcher` class is not stable for inheritance in 3rd party libraries**, as new methods
- * might be added to this interface in the future, but is stable for use.
+ * might be added to this struct in the future, but is stable for use.
  */
 // TODO: @ExperimentalCoroutinesApi - no C++ equivalent
 // TODO: expect abstract class - platform-specific, use pure virtual
 // TODO: AutoCloseable - C++ RAII or explicit close method
-class CloseableCoroutineDispatcher : public CoroutineDispatcher {
+class CloseableCoroutineDispatcher : CoroutineDispatcher {
 public:
     // Default constructor
     CloseableCoroutineDispatcher() {}

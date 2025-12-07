@@ -1,3 +1,4 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/OnUndeliveredElement.kt
 //
@@ -12,7 +13,7 @@
 
 namespace kotlinx {
 namespace coroutines {
-namespace internal {
+namespace {
 
 // Forward declarations
 class CoroutineContext;
@@ -59,7 +60,7 @@ void call_undelivered_element(
  * Internal exception that is thrown when [OnUndeliveredElement] handler in
  * a [kotlinx.coroutines.channels.Channel] throws an exception.
  */
-class UndeliveredElementException : public std::runtime_error {
+class UndeliveredElementException : std::runtime_error {
 public:
     const std::exception* cause;
 

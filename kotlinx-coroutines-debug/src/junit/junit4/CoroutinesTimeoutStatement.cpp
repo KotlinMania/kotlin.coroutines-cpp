@@ -1,10 +1,11 @@
+#include "kotlinx/coroutines/core_fwd.hpp"
 // Original Kotlin package: kotlinx.coroutines.debug.junit4
 // Line-by-line C++ transliteration from Kotlin
 //
 // TODO: JUnit4 Statement, Description - Java testing framework types
 // TODO: TestTimedOutException - JUnit4 exception type
 // TODO: TimeUnit - Java time unit, use C++ chrono
-// TODO: internal visibility - translate to anonymous namespace or private
+// TODO: visibility - translate to anonymous namespace or private
 // TODO: runWithTimeoutDumpingCoroutines - implement from CoroutinesTimeoutImpl
 
 #include <chrono>
@@ -22,7 +23,7 @@ namespace debug {
 
 namespace junit4 {
 
-// TODO: internal class
+// TODO: class
 class CoroutinesTimeoutStatement /* TODO: : Statement */ {
 public:
     CoroutinesTimeoutStatement(
@@ -38,7 +39,7 @@ public:
     {
     }
 
-    // TODO: override fun evaluate()
+    // TODO: virtual auto evaluate()
     void evaluate() {
         try {
             // TODO: run_with_timeout_dumping_coroutines(
