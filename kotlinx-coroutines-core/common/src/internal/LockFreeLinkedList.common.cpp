@@ -1,61 +1,59 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/LockFreeLinkedList.common.kt
-//
-// TODO: This is a mechanical transliteration - semantics not fully implemented
-// TODO: expect open class needs platform-specific implementation
-// TODO: inline functions need proper C++ implementation
-// TODO: Lambda parameters need std::function or templates
+/**
+ * @file LockFreeLinkedList.common.cpp
+ * @brief Implementation of LockFreeLinkedList.
+ *
+ * NOTE: The detailed API documentation, KDocs, and class definitions are located
+ * in the companion header file: `include/kotlinx/coroutines/internal/LockFreeLinkedList.hpp`.
+ */
 
-#include <functional>
+#include "kotlinx/coroutines/internal/LockFreeLinkedList.hpp"
 
 namespace kotlinx {
 namespace coroutines {
-namespace {
+namespace internal {
 
-/**
- * This is unstable API and it is subject to change.
- */
-// TODO: expect open class - needs platform-specific implementation
-class LockFreeLinkedListNode {
-public:
-    LockFreeLinkedListNode() {}
+bool LockFreeLinkedListNode::is_removed() const {
+    return false; // Stub
+}
 
-    bool is_removed() const;
-    LockFreeLinkedListNode* next_node() const;
-    LockFreeLinkedListNode* prev_node() const;
-    bool add_last(LockFreeLinkedListNode* node, int permissions_bitmask);
-    bool add_one_if_empty(LockFreeLinkedListNode* node);
-    virtual bool remove();
+LockFreeLinkedListNode* LockFreeLinkedListNode::next_node() const {
+    return next;
+}
 
-    /**
-     * Closes the list for anything that requests the permission [forbiddenElementsBit].
-     * Only a single permission can be forbidden at a time, but this isn't checked.
-     */
-    void close(int forbidden_elements_bit);
-};
+LockFreeLinkedListNode* LockFreeLinkedListNode::prev_node() const {
+    return prev;
+}
 
-/**
- * This is unstable API and it is subject to change.
- */
-// TODO: expect open class - needs platform-specific implementation
-class LockFreeLinkedListHead : LockFreeLinkedListNode {
-public:
-    LockFreeLinkedListHead() : LockFreeLinkedListNode() {}
-
-    template<typename Block>
-    void for_each(Block block) {
-        // TODO: inline implementation
-        LockFreeLinkedListNode* current = next_node();
-        while (current != this) {
-            block(current);
-            current = current->next_node();
-        }
+bool LockFreeLinkedListNode::add_last(LockFreeLinkedListNode* node) {
+    // Stub simple linking
+    if (this->next == nullptr) {
+        this->next = node;
+        node->prev = this;
+        return true;
     }
+    return false;
+}
 
-    // final override
-    bool remove() = delete; // Cannot be removed (Nothing in Kotlin)
-};
+bool LockFreeLinkedListNode::add_one_if_empty(LockFreeLinkedListNode* node) {
+    if (this->next == nullptr) {
+        add_last(node);
+        return true;
+    }
+    return false;
+}
+
+bool LockFreeLinkedListNode::remove() {
+    // Stub unlinking
+    return true;
+}
+
+void LockFreeLinkedListNode::close(int forbidden_elements_bit) {
+    // Stub
+}
+
+bool LockFreeLinkedListHead::is_empty() const {
+    return next == this || next == nullptr;
+}
 
 } // namespace internal
 } // namespace coroutines

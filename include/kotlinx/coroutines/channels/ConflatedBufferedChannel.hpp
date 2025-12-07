@@ -1,5 +1,6 @@
 #pragma once
-#include "kotlinx/coroutines/channels/BufferedChannel.hpp"
+#include "BufferedChannel.hpp"
+#include "BufferOverflow.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -14,39 +15,40 @@ namespace channels {
 template <typename E>
 class ConflatedBufferedChannel : public BufferedChannel<E> {
 public:
-    enum class BufferOverflow {
-        SUSPEND,
-        DROP_OLDEST,
-        DROP_LATEST
-    };
-
     BufferOverflow onBufferOverflow;
 
-    ConflatedBufferedChannel(int capacity, BufferOverflow onBufferOverflow = BufferOverflow::DROP_OLDEST) 
-        : BufferedChannel<E>(capacity), onBufferOverflow(onBufferOverflow) {
+    ConflatedBufferedChannel(int capacity, BufferOverflow onBufferOverflow = BufferOverflow::DROP_OLDEST,
+                             OnUndeliveredElement<E> onUndeliveredElement = nullptr)
+        : BufferedChannel<E>(capacity, onUndeliveredElement), onBufferOverflow(onBufferOverflow) {
         if (onBufferOverflow == BufferOverflow::SUSPEND) {
             throw std::invalid_argument("ConflatedBufferedChannel does not support SUSPEND strategy");
         }
     }
 
     void send(E element) override {
-        // Never suspends
-        try_send(element);
+        // Never suspends - implement via try_send
+        auto result = try_send(element);
+        if (result.is_closed()) {
+            if (result.exception_or_null()) {
+                std::rethrow_exception(result.exception_or_null());
+            }
+            throw ClosedSendChannelException("Channel was closed");
+        }
     }
 
     ChannelResult<void> try_send(E element) override {
-        std::lock_guard<std::mutex> lock(BufferedChannel<E>::mtx);
-        if (BufferedChannel<E>::closed) {
-             return ChannelResult<void>::closed_result(BufferedChannel<E>::close_cause);
+        std::lock_guard<std::mutex> lock(this->mtx);
+        if (this->closed_) {
+              return ChannelResult<void>::closed(this->closeCause_);
         }
 
-        auto& buffer = BufferedChannel<E>::buffer;
-        int cap = BufferedChannel<E>::capacity;
+        auto& buffer = this->buffer;
+        int cap = this->capacity_;
 
-        if (cap != Channel<E>::UNLIMITED && buffer.size() >= (size_t)cap) {
+        if (cap != Channel<E>::UNLIMITED && static_cast<int>(buffer.size()) >= cap) {
             if (onBufferOverflow == BufferOverflow::DROP_LATEST) {
                 // Drop this element
-                return ChannelResult<void>::success(nullptr);
+                return ChannelResult<void>::success();
             }
             if (onBufferOverflow == BufferOverflow::DROP_OLDEST) {
                 // Drop oldest
@@ -55,10 +57,10 @@ public:
                 }
             }
         }
-        
-        buffer.push_back(element);
-        BufferedChannel<E>::not_empty.notify_one();
-        return ChannelResult<void>::success(nullptr);
+
+        buffer.push_back(std::move(element));
+        this->not_empty.notify_one();
+        return ChannelResult<void>::success();
     }
 };
 

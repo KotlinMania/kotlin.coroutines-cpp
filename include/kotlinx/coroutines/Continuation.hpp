@@ -1,7 +1,7 @@
 #pragma once
-#include "kotlinx/coroutines/core_fwd.hpp"
-#include "kotlinx/coroutines/CoroutineContext.hpp"
-#include "kotlinx/coroutines/Result.hpp"
+#include "core_fwd.hpp"
+#include "CoroutineContext.hpp"
+#include "Result.hpp"
 
 namespace kotlinx {
 namespace coroutines {

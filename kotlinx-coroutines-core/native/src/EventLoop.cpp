@@ -1,63 +1,17 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/native/src/EventLoop.kt
-//
-// TODO: @file:OptIn annotation
-// TODO: actual keyword - platform-specific implementation
-// TODO: Worker API from Kotlin/Native
-// TODO: TimeSource API from Kotlin
+/**
+ * @file EventLoop.cpp
+ * @brief Native/Platform Implementation of EventLoop.
+ *
+ * NOTE: The detailed API documentation, KDocs, and class definitions are located
+ * in the companion header file: `include/kotlinx/coroutines/EventLoop.hpp`.
+ */
+
+#include "kotlinx/coroutines/EventLoop.hpp"
 
 namespace kotlinx {
 namespace coroutines {
 
-// TODO: Remove imports, fully qualify or add includes:
-// import kotlin.coroutines.*
-// import kotlin.native.concurrent.*
-// import kotlin.time.*
-
-// TODO: actual abstract class
-class EventLoopImplPlatform : EventLoop {
-private:
-    // TODO: Worker.current equivalent
-    void* current; // = Worker.current
-
-protected:
-    void unpark() {
-        // TODO: current.executeAfter equivalent
-        // current.executeAfter(0L, {}) // send an empty task to unpark the waiting event loop
-    }
-
-    void reschedule(long now, EventLoopImplBase::DelayedTask* delayed_task) {
-        auto delay_time_millis = delay_nanos_to_millis(delayed_task->nano_time - now);
-        DefaultExecutor::instance().invoke_on_timeout(delay_time_millis, *delayed_task, EmptyCoroutineContext);
-    }
-};
-
-// TODO: class
-class EventLoopImpl : EventLoopImplBase {
-public:
-    DisposableHandle invoke_on_timeout(long time_millis, Runnable block, CoroutineContext context) override {
-        return kDefaultDelay.invoke_on_timeout(time_millis, block, context);
-    }
-};
-
-// TODO: actual function
-EventLoop* create_event_loop() {
-    return new EventLoopImpl();
-}
-
-// TODO: auto with TimeSource.Monotonic
-// auto startingPoint = TimeSource.Monotonic.markNow()
-namespace {
-    // TODO: TimeSource equivalent
-    long starting_point = 0;
-}
-
-// TODO: actual function
-long nano_time() {
-    // TODO: (TimeSource.Monotonic.markNow() - startingPoint).inWholeNanoseconds
-    return 0;
-}
+// Platform specific implementations
 
 } // namespace coroutines
 } // namespace kotlinx

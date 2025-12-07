@@ -1,4 +1,4 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
+#include "../core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/channels/BufferOverflow.kt
 //
@@ -26,7 +26,7 @@ enum class BufferOverflow {
      * consumers not being able to process the incoming values in time.
      * SUSPEND is a good choice when all elements must eventually be processed.
      */
-    kSuspend,
+    SUSPEND,
 
     /**
      * Drop **the oldest** value in the buffer on overflow, add the new value to the buffer, do not suspend.
@@ -34,7 +34,7 @@ enum class BufferOverflow {
      * Use this in scenarios when only the last few values are important and skipping the processing of severely
      * outdated ones is desirable.
      */
-    kDropOldest,
+    DROP_OLDEST,
 
     /**
      * Leave the buffer unchanged on overflow, dropping the value that we were going to add, do not suspend.
@@ -42,7 +42,7 @@ enum class BufferOverflow {
      * This option can be used in rare advanced scenarios where all elements that are expected to enter the buffer are
      * equal, so it is not important which of them get thrown away.
      */
-    kDropLatest
+    DROP_LATEST
 };
 
 } // namespace channels

@@ -6,7 +6,7 @@
  * in the companion header file: `include/kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp`.
  */
 
-#include "kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
+#include "../../../../include/kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
 
 namespace kotlinx {
 namespace coroutines {

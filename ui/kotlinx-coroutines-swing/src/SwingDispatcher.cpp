@@ -1,4 +1,3 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin: kotlinx.coroutines.swing.SwingDispatcher
 // Original package: kotlinx.coroutines.swing
 //
@@ -20,6 +19,8 @@
 #include <memory>
 #include <functional>
 #include <limits>
+#include <vector>
+#include <cstdint>
 
 // TODO: Remove placeholder imports; map to actual Swing/coroutine headers
 // #include <java/awt/event/ActionListener.h>
@@ -36,21 +37,78 @@ namespace coroutines {
 namespace swing {
 
 // TODO: Forward declarations for unmapped types
-class MainCoroutineDispatcher;
-class MainDispatcherFactory;
-class Delay;
-class CoroutineContext;
-class DisposableHandle;
-class SwingUtilities;
-class Timer;
-class ActionListener;
-class ActionEvent;
 
-template<typename T>
-class CancellableContinuation;
-
-// TODO: Placeholder for Runnable
+// Placeholder for Runnable
 using Runnable = std::function<void()>;
+
+// Template definitions must come before base classes that use them
+template<typename T>
+class CancellableContinuation {
+public:
+    virtual ~CancellableContinuation() = default;
+    virtual void resume_undispatched() = 0;
+    virtual void invoke_on_cancellation(std::function<void()> handler) = 0;
+};
+
+// Base class declarations with proper interface definitions
+class CoroutineContext {
+public:
+    virtual ~CoroutineContext() = default;
+};
+
+class DisposableHandle {
+public:
+    virtual ~DisposableHandle() = default;
+    virtual void dispose() = 0;
+};
+
+class MainCoroutineDispatcher {
+public:
+    virtual ~MainCoroutineDispatcher() = default;
+    virtual void dispatch(CoroutineContext& context, Runnable block) = 0;
+    virtual MainCoroutineDispatcher& get_immediate() = 0;
+    virtual bool is_dispatch_needed(CoroutineContext& context) = 0;
+    virtual std::string to_string() = 0;
+};
+
+class Delay {
+public:
+    virtual ~Delay() = default;
+    virtual void schedule_resume_after_delay(int64_t time_millis, CancellableContinuation<void>& continuation) = 0;
+    virtual DisposableHandle* invoke_on_timeout(int64_t time_millis, Runnable block, CoroutineContext& context) = 0;
+};
+
+class MainDispatcherFactory {
+public:
+    virtual ~MainDispatcherFactory() = default;
+    virtual int get_load_priority() = 0;
+    virtual MainCoroutineDispatcher* create_dispatcher(const std::vector<MainDispatcherFactory*>& all_factories) = 0;
+};
+
+class SwingUtilities {
+public:
+    static void invoke_later(Runnable block);
+    static bool is_event_dispatch_thread();
+};
+
+class Timer {
+public:
+    Timer(int delay, std::function<void()> action);
+    void set_repeats(bool repeats);
+    void start();
+    void stop();
+};
+
+class ActionListener {
+public:
+    virtual ~ActionListener() = default;
+    virtual void action_performed() = 0;
+};
+
+class ActionEvent {
+public:
+    virtual ~ActionEvent() = default;
+};
 
 // Forward declarations
 class SwingDispatcher;
@@ -71,7 +129,7 @@ class ImmediateSwingDispatcher;
  * This class provides type-safety and a point for future extensions.
  */
 // sealed class SwingDispatcher
-class SwingDispatcher : MainCoroutineDispatcher, Delay {
+class SwingDispatcher : public MainCoroutineDispatcher, public Delay {
 public:
     /** @suppress */
     // virtual auto dispatch(CoroutineContext context, block: Runnable): Unit
@@ -128,7 +186,7 @@ protected:
 };
 
 // class SwingDispatcherFactory
-class SwingDispatcherFactory : MainDispatcherFactory {
+class SwingDispatcherFactory : public MainDispatcherFactory {
 public:
     // override Int loadPriority
     int get_load_priority() override {
@@ -146,7 +204,7 @@ private:
 };
 
 // class ImmediateSwingDispatcher
-class ImmediateSwingDispatcher : SwingDispatcher {
+class ImmediateSwingDispatcher : public SwingDispatcher {
 public:
     // override MainCoroutineDispatcher immediate
     MainCoroutineDispatcher& get_immediate() override {
@@ -167,6 +225,16 @@ public:
         return "Swing.immediate";
     }
 
+    // Implement missing pure virtual methods from Delay interface
+    void schedule_resume_after_delay(int64_t time_millis, CancellableContinuation<void>& continuation) override {
+        // TODO: Implement schedule_resume_after_delay for ImmediateSwingDispatcher
+    }
+
+    DisposableHandle* invoke_on_timeout(int64_t time_millis, Runnable block, CoroutineContext& context) override {
+        // TODO: Implement invoke_on_timeout for ImmediateSwingDispatcher
+        return nullptr;
+    }
+
     // Singleton accessor
     static ImmediateSwingDispatcher& get_instance() {
         static ImmediateSwingDispatcher instance;
@@ -181,7 +249,7 @@ private:
  * Dispatches execution onto Swing event dispatching thread and provides native [delay] support.
  */
 // class Swing
-class SwingSingleton : SwingDispatcher {
+class SwingSingleton : public SwingDispatcher {
 public:
     /* A workaround so that the dispatcher's initialization crashes with an exception if running in a headless
     environment. This is needed so that this broken dispatcher is not used as the source of delays. */
@@ -199,6 +267,13 @@ public:
     // override MainCoroutineDispatcher immediate
     MainCoroutineDispatcher& get_immediate() override {
         return ImmediateSwingDispatcher::get_instance();
+    }
+
+    // virtual auto is_dispatch_needed(context: CoroutineContext): Boolean
+    bool is_dispatch_needed(CoroutineContext& context) override {
+        // return !SwingUtilities.isEventDispatchThread()
+        // TODO: !SwingUtilities::is_event_dispatch_thread()
+        return true;
     }
 
     // virtual auto to_string()

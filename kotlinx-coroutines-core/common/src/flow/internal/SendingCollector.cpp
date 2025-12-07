@@ -1,14 +1,21 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
-namespace kotlinx {namespace coroutines {namespace flow {namespace {
-// import kotlinx.coroutines.*// import kotlinx.coroutines.channels.*// import kotlinx.coroutines.flow.*
 /**
- * Collection that sends to channel
- * @suppress **This an API and should not be used from general code.**
+ * @file SendingCollector.cpp
+ * @brief Implementation of SendingCollector.
+ *
+ * NOTE: The detailed API documentation, KDocs, and class definitions are located
+ * in the companion header file: `include/kotlinx/coroutines/flow/internal/SendingCollector.hpp`.
  */
-// @InternalCoroutinesApiclass SendingCollector<T>(
-    SendChannel<T> channel
-) : FlowCollector<T> {
-    virtual auto  emit(T value): Unit { return channel.send(value); }
-}
 
-}}}} // namespace kotlinx::coroutines::flow::internal
+#include "kotlinx/coroutines/flow/internal/SendingCollector.hpp"
+
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+namespace internal {
+
+// Template implementations are in the header.
+
+} // namespace internal
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

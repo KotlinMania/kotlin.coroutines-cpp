@@ -1,6 +1,6 @@
 #pragma once
-#include "kotlinx/coroutines/CoroutineContext.hpp"
-#include "kotlinx/coroutines/core_fwd.hpp"
+#include "CoroutineContext.hpp"
+#include "core_fwd.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -18,6 +18,9 @@ struct ContinuationInterceptor : public virtual CoroutineContext::Element {
     
     virtual CoroutineContext::Key* key() const override { return typeKey; }
 
+    template <typename T>
+    class Continuation;
+    
     template <typename T>
     std::shared_ptr<Continuation<T>> intercept_continuation(std::shared_ptr<Continuation<T>> continuation) {
         return continuation; // Default implementation? Or abstract? Usually abstract in impls.

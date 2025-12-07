@@ -29,7 +29,7 @@ class ContinuationBase; // generic continuation stub
 class CompletionHandler;
 class DisposableHandle; // Handler for cancellation/diposal
 template <typename T> class Result; // Kotlin Result wrapper
-class CancellationException : public std::exception {};
+class CancellationException;
 using Throwable = std::exception;
 
 // Select machinery (common across many files)

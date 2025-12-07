@@ -1,5 +1,6 @@
 #pragma once
-#include "kotlinx/coroutines/core_fwd.hpp"
+#include "../core_fwd.hpp"
+#include "BufferOverflow.hpp"
 #include <memory>
 #include <exception>
 #include <functional>
@@ -9,46 +10,176 @@ namespace coroutines {
 namespace channels {
 
 /**
+ * Handler for elements that were sent to a channel but were not delivered to the consumer.
+ * This can happen when elements are dropped due to buffer overflow or when operations are cancelled.
+ * The handler receives the undelivered element and optionally an exception that caused the failure.
+ */
+template <typename E>
+using OnUndeliveredElement = std::function<void(const E&, std::exception_ptr)>;
+
+/**
+ * Indicates an attempt to send to a channel that was closed for sending.
+ * This exception is thrown when trying to send to a closed channel without a cause.
+ */
+class ClosedSendChannelException : public std::runtime_error {
+public:
+    explicit ClosedSendChannelException(const std::string& message = "Channel was closed")
+        : std::runtime_error(message) {}
+};
+
+/**
+ * Indicates an attempt to receive from a channel that was closed for receiving.
+ * This exception is thrown when trying to receive from a closed channel without a cause.
+ */
+class ClosedReceiveChannelException : public std::runtime_error {
+public:
+    explicit ClosedReceiveChannelException(const std::string& message = "Channel was closed")
+        : std::runtime_error(message) {}
+};
+
+/**
  * A discriminated union representing a channel operation result.
  * It encapsulates the knowledge of whether the operation succeeded, failed with an option to retry,
  * or failed because the channel was closed.
+ *
+ * This matches the Kotlin ChannelResult<T> implementation with proper value semantics.
  */
 template <typename T>
-struct ChannelResult {
-    T* value; // nullable, nullptr if failed
-    bool failed;
-    bool closed;
-    std::exception_ptr exception;
+class ChannelResult {
+private:
+    // Internal storage using a union-like approach
+    enum class ResultType { SUCCESS, FAILURE, CLOSED };
+
+    ResultType type;
+    union {
+        T success_value;
+        std::exception_ptr closed_cause;
+    };
+
+public:
+    // Constructor for success
+    ChannelResult(T value) : type(ResultType::SUCCESS), success_value(std::move(value)) {}
+
+    // Constructor for failure
+    ChannelResult() : type(ResultType::FAILURE) {}
+
+    // Constructor for closed
+    ChannelResult(std::exception_ptr cause) : type(ResultType::CLOSED), closed_cause(cause) {}
+
+    // Copy constructor
+    ChannelResult(const ChannelResult& other) : type(other.type) {
+        switch (type) {
+            case ResultType::SUCCESS:
+                new (&success_value) T(other.success_value);
+                break;
+            case ResultType::FAILURE:
+                break;
+            case ResultType::CLOSED:
+                new (&closed_cause) std::exception_ptr(other.closed_cause);
+                break;
+        }
+    }
+
+    // Move constructor
+    ChannelResult(ChannelResult&& other) noexcept : type(other.type) {
+        switch (type) {
+            case ResultType::SUCCESS:
+                new (&success_value) T(std::move(other.success_value));
+                break;
+            case ResultType::FAILURE:
+                break;
+            case ResultType::CLOSED:
+                new (&closed_cause) std::exception_ptr(std::move(other.closed_cause));
+                break;
+        }
+    }
+
+    // Destructor
+    ~ChannelResult() {
+        switch (type) {
+            case ResultType::SUCCESS:
+                success_value.~T();
+                break;
+            case ResultType::CLOSED:
+                closed_cause.~exception_ptr();
+                break;
+            case ResultType::FAILURE:
+                break;
+        }
+    }
 
     /**
      * Returns `true` if the operation was successful.
      */
-    bool is_success() const { return !failed && !closed; }
+    bool is_success() const { return type == ResultType::SUCCESS; }
 
     /**
      * Returns `true` if the operation failed (either closed or empty/full).
      */
-    bool is_failure() const { return failed; }
+    bool is_failure() const { return type == ResultType::FAILURE || type == ResultType::CLOSED; }
 
     /**
      * Returns `true` if the operation failed because the channel was closed.
      */
-    bool is_closed() const { return closed; }
-    
+    bool is_closed() const { return type == ResultType::CLOSED; }
+
     /**
      * Returns the value if successful, or `nullptr` otherwise.
      */
-    T* get_or_null() const { return value; }
+    T* get_or_null() const {
+        return is_success() ? const_cast<T*>(&success_value) : nullptr;
+    }
 
     /**
-     * Returns the exception if the channel was closed with a cause, or `nullptr` otherwise.
+     * Returns the encapsulated value if the operation succeeded, or throws an exception if it failed.
      */
-    std::exception_ptr exception_or_null() const { return exception; }
+    T get_or_throw() const {
+        if (is_success()) {
+            return success_value;
+        }
+        if (is_closed()) {
+            if (closed_cause) {
+                std::rethrow_exception(closed_cause);
+            }
+            throw std::runtime_error("Trying to call 'getOrThrow' on a channel closed without a cause");
+        }
+        throw std::runtime_error("Trying to call 'getOrThrow' on a failed result of a non-closed channel");
+    }
 
-    // Helpers
-    static ChannelResult<T> success(T* v) { return {v, false, false, nullptr}; }
-    static ChannelResult<T> failure() { return {nullptr, true, false, nullptr}; }
-    static ChannelResult<T> closed_result(std::exception_ptr e) { return {nullptr, true, true, e}; }
+    /**
+     * Returns the exception with which the channel was closed, or `nullptr` if the channel was not closed or was closed without a cause.
+     */
+    std::exception_ptr exception_or_null() const {
+        return is_closed() ? closed_cause : nullptr;
+    }
+
+    // Factory methods
+    static ChannelResult<T> success(T value) { return ChannelResult<T>(std::move(value)); }
+    static ChannelResult<T> failure() { return ChannelResult<T>(); }
+    static ChannelResult<T> closed(std::exception_ptr cause = nullptr) { return ChannelResult<T>(cause); }
+};
+
+// Void specialization
+template <>
+class ChannelResult<void> {
+private:
+    enum class ResultType { SUCCESS, FAILURE, CLOSED };
+    ResultType type;
+    std::exception_ptr closed_cause;
+
+public:
+    ChannelResult() : type(ResultType::SUCCESS) {}
+    ChannelResult(ResultType t) : type(t) {}
+    ChannelResult(std::exception_ptr cause) : type(ResultType::CLOSED), closed_cause(cause) {}
+
+    bool is_success() const { return type == ResultType::SUCCESS; }
+    bool is_failure() const { return type == ResultType::FAILURE || type == ResultType::CLOSED; }
+    bool is_closed() const { return type == ResultType::CLOSED; }
+    std::exception_ptr exception_or_null() const { return is_closed() ? closed_cause : nullptr; }
+
+    static ChannelResult<void> success() { return ChannelResult<void>(ResultType::SUCCESS); }
+    static ChannelResult<void> failure() { return ChannelResult<void>(ResultType::FAILURE); }
+    static ChannelResult<void> closed(std::exception_ptr cause = nullptr) { return ChannelResult<void>(cause); }
 };
 
 template <typename E>
@@ -159,7 +290,31 @@ struct Channel : public SendChannel<E>, public ReceiveChannel<E> {
     static constexpr int CONFLATED = -1;
     static constexpr int BUFFERED = -2;
     static constexpr int OPTIONAL_CHANNEL = -3;
+
+    /**
+     * Name of the JVM system property for the default channel capacity (64 by default).
+     */
+    static constexpr const char* DEFAULT_BUFFER_PROPERTY_NAME = "kotlinx.coroutines.channels.defaultBuffer";
+
+    /**
+     * Gets the default buffer capacity, either from system property or default value.
+     */
+    static int getDefaultBufferCapacity() {
+        // TODO: Implement system property lookup
+        // For now, return the default value
+        return 64;
+    }
 };
+
+/**
+ * Creates a channel with the specified capacity, buffer overflow strategy, and onUndeliveredElement handler.
+ */
+template <typename E>
+std::shared_ptr<Channel<E>> createChannel(
+    int capacity = Channel<E>::RENDEZVOUS,
+    BufferOverflow onBufferOverflow = BufferOverflow::SUSPEND,
+    OnUndeliveredElement<E> onUndeliveredElement = nullptr
+);
 
 } // namespace channels
 } // namespace coroutines

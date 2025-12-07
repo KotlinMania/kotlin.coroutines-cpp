@@ -1,6 +1,5 @@
 #pragma once
 #include <exception>
-#include <any>
 
 namespace kotlinx {
 namespace coroutines {
@@ -16,7 +15,7 @@ struct Result {
     bool is_success() const { return !exception; }
     bool is_failure() const { return exception != nullptr; }
 
-    std::any to_state() const {
+    void* to_state() const {
         if (exception) {
             // encapsulate exception?
             return exception; // Simplified

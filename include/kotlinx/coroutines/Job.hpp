@@ -4,8 +4,8 @@
 #include <vector>
 #include <exception>
 #include <functional>
-#include "kotlinx/coroutines/core_fwd.hpp"
-#include "kotlinx/coroutines/context_impl.hpp"
+#include "core_fwd.hpp"
+#include "context_impl.hpp"
 
 namespace kotlinx {
 namespace coroutines {

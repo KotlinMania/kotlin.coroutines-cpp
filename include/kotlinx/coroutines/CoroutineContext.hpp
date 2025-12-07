@@ -2,7 +2,7 @@
 #include <memory>
 #include <functional>
 #include <string>
-#include "kotlinx/coroutines/core_fwd.hpp"
+#include "core_fwd.hpp"
 
 namespace kotlinx {
 namespace coroutines {

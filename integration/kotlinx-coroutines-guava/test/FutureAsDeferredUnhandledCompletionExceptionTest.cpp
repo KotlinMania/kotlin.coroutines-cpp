@@ -1,6 +1,6 @@
 // Transliterated from: integration/kotlinx-coroutines-guava/test/FutureAsDeferredUnhandledCompletionExceptionTest.kt
 
-// TODO: #include equivalent
+// TODO: actually import kotlinx::coroutines::testing::
 // import kotlinx.coroutines.testing.*
 // import com.google.common.util.concurrent.*
 // import kotlinx.coroutines.*

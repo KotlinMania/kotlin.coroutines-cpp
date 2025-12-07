@@ -1,109 +1,38 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/CoroutineExceptionHandlerImpl.common.kt
-//
-// TODO: This is a mechanical transliteration - semantics not fully implemented
-// TODO: expect declarations need platform-specific implementations
-// TODO: CoroutineContext, CoroutineExceptionHandler, Throwable need C++ equivalents
-// TODO: Exception handling mechanisms need proper C++ design
-// TODO: Collection type needs std::vector or similar
+/**
+ * @file CoroutineExceptionHandlerImpl.common.cpp
+ * @brief Implementation of CoroutineExceptionHandler infrastructure.
+ *
+ * NOTE: The detailed API documentation, KDocs, and class definitions are located
+ * in the companion header file: `include/kotlinx/coroutines/CoroutineExceptionHandler.hpp`.
+ */
 
-#include <vector>
-#include <stdexcept>
+#include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
+#include <iostream>
 
 namespace kotlinx {
 namespace coroutines {
-namespace {
 
-// Forward declarations
-class CoroutineExceptionHandler;
-class CoroutineContext;
-class DiagnosticCoroutineContextException;
-
-/**
- * The list of globally installed [CoroutineExceptionHandler] instances that will be notified of any exceptions that
- * were not processed in any other manner.
- */
-// TODO: expect auto - needs platform-specific implementation
-extern std::vector<CoroutineExceptionHandler*> platform_exception_handlers;
-
-/**
- * Ensures that the given [callback] is present in the [platformExceptionHandlers] list.
- */
-// TODO: expect function - needs platform-specific implementation
-void ensure_platform_exception_handler_loaded(CoroutineExceptionHandler* callback);
-
-/**
- * The platform-dependent global exception handler, used so that the exception is logged at least *somewhere*.
- */
-// TODO: expect function - needs platform-specific implementation
-void propagate_exception_final_resort(std::exception* exception);
-
-/**
- * Deal with exceptions that happened in coroutines and weren't programmatically dealt with.
- *
- * First, it notifies every [CoroutineExceptionHandler] in the [platformExceptionHandlers] list.
- * If one of them throws [ExceptionSuccessfullyProcessed], it means that that handler believes that the exception was
- * dealt with sufficiently well and doesn't need any further processing.
- * Otherwise, the platform-dependent global exception handler is also invoked.
- */
-void handle_uncaught_coroutine_exception(CoroutineContext* context, std::exception* exception) {
-    // use additional extension handlers
-    for (platform_exception_handlers handler) {
-        try {
-            // TODO: handler.handleException needs proper implementation
-            // handler->handle_exception(context, exception);
-        } catch (const ExceptionSuccessfullyProcessed&) {
-            return;
-        } catch (const std::exception& t) {
-            // TODO: handlerException function needs implementation
-            // propagate_exception_final_resort(handler_exception(exception, t));
-        }
-    }
-
+void handle_coroutine_exception(CoroutineContext& context, std::exception_ptr exception) {
+    // Basic implementation: print to stderr if no handler found or as a fallback
     try {
-        // TODO: exception.addSuppressed equivalent in C++
-        // exception->add_suppressed(new DiagnosticCoroutineContextException(context));
-    } catch (const std::exception& e) {
-        // addSuppressed is never user-defined and cannot normally throw with the only exception being OOM
-        // we do ignore that just in case to definitely deliver the exception
+         // TODO: Look up CoroutineExceptionHandler in context and invoke it
+         // auto* handler = context[CoroutineExceptionHandler::Key];
+         // if (handler) { handler->handle_exception(context, exception); return; }
+    } catch (...) {
+        // Ignore errors during exception handling
     }
-    propagate_exception_final_resort(exception);
+
+    // Fallback: print to stderr
+    try {
+        if (exception) {
+            std::rethrow_exception(exception);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Uncaught coroutine exception: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "Uncaught coroutine exception (unknown type)" << std::endl;
+    }
 }
 
-/**
- * Private exception that is added to suppressed exceptions of the original exception
- * when it is reported to the last-ditch current thread 'uncaughtExceptionHandler'.
- *
- * The purpose of this exception is to add an otherwise inaccessible diagnostic information and to
- * be able to poke the context of the failing coroutine in the debugger.
- */
-// TODO: expect class - needs platform-specific implementation
-class DiagnosticCoroutineContextException : std::runtime_error {
-public:
-    explicit DiagnosticCoroutineContextException(CoroutineContext* context)
-        : std::runtime_error("DiagnosticCoroutineContextException") {}
-};
-
-/**
- * A dummy exception that signifies that the exception was successfully processed by the handler and no further
- * action is required.
- *
- * Would be nicer if [CoroutineExceptionHandler] could return a boolean, but that would be a breaking change.
- * For now, we will take solace in knowledge that such exceptions are exceedingly rare, even rarer than globally
- * uncaught exceptions in general.
- */
-// TODO: class in Kotlin becomes singleton in C++
-class ExceptionSuccessfullyProcessed : std::exception {
-private:
-    ExceptionSuccessfullyProcessed() = default;
-public:
-    static ExceptionSuccessfullyProcessed& instance() {
-        static ExceptionSuccessfullyProcessed inst;
-        return inst;
-    }
-};
-
-} // namespace internal
 } // namespace coroutines
 } // namespace kotlinx
