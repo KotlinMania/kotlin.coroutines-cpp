@@ -1,14 +1,29 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
+// Transliterated from Kotlin to C++ (first-pass, syntax-only)
+// Original: kotlinx-coroutines-core/common/src/flow/operators/Delay.kt
+//
+// TODO: Implement coroutine semantics (suspend functions, delay, select)
+// TODO: Map Kotlin Flow types to C++ equivalents
+// TODO: Implement Duration type and conversion utilities
+// TODO: Implement Channel types and producer/consumer patterns
+// TODO: Map selects and onReceiveCatching
+// TODO: Implement TimeoutCancellationException
+// TODO: Implement scopedFlow helper
 
-package kotlinx.coroutines.flow
+#pragma once
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.internal.*
-import kotlinx.coroutines.selects.*
-import kotlin.jvm.*
-import kotlin.time.*
+// @file:JvmMultifileClass
+// @file:JvmName("FlowKt")
+
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlinx.coroutines.flow.internal.*
+// TODO: import kotlinx.coroutines.selects.*
+// TODO: import kotlin.jvm.*
+// TODO: import kotlin.time.*
 
 /* Scaffolding for Knit code examples
 <!--- TEST_NAME FlowDelayTest -->
@@ -17,7 +32,7 @@ import kotlin.time.*
 ----- INCLUDE .*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin::time.Duration.Companion.milliseconds
 
 fun main() = runBlocking {
 ----- SUFFIX .*
@@ -57,11 +72,15 @@ fun main() = runBlocking {
  * Note that the resulting flow does not emit anything as long as the original flow emits
  * items faster than every [timeoutMillis] milliseconds.
  */
-@FlowPreview
-public fun <T> Flow<T>.debounce(timeoutMillis: Long): Flow<T> {
-    require(timeoutMillis >= 0L) { "Debounce timeout should not be negative" }
-    if (timeoutMillis == 0L) return this
-    return debounceInternal { timeoutMillis }
+// @FlowPreview
+template<typename T>
+Flow<T> debounce(Flow<T> flow, long timeout_millis) {
+    // require(timeoutMillis >= 0L)
+    if (!(timeout_millis >= 0L)) {
+        throw std::invalid_argument("Debounce timeout should not be negative");
+    }
+    if (timeout_millis == 0L) return flow;
+    return debounce_internal(flow, [timeout_millis](T) { return timeout_millis; });
 }
 
 /**
@@ -106,10 +125,12 @@ public fun <T> Flow<T>.debounce(timeoutMillis: Long): Flow<T> {
  *
  * @param timeoutMillis [T] is the emitted value and the return value is timeout in milliseconds.
  */
-@FlowPreview
-@OverloadResolutionByLambdaReturnType
-public fun <T> Flow<T>.debounce(timeoutMillis: (T) -> Long): Flow<T> =
-    debounceInternal(timeoutMillis)
+// @FlowPreview
+// @OverloadResolutionByLambdaReturnType
+template<typename T, typename Fn>
+Flow<T> debounce(Flow<T> flow, Fn timeout_millis) {
+    return debounce_internal(flow, timeout_millis);
+}
 
 /**
  * Returns a flow that mirrors the original flow, but filters out values
@@ -143,9 +164,11 @@ public fun <T> Flow<T>.debounce(timeoutMillis: (T) -> Long): Flow<T> =
  * Note that the resulting flow does not emit anything as long as the original flow emits
  * items faster than every [timeout] milliseconds.
  */
-@FlowPreview
-public fun <T> Flow<T>.debounce(timeout: Duration): Flow<T> =
-    debounce(timeout.toDelayMillis())
+// @FlowPreview
+template<typename T>
+Flow<T> debounce(Flow<T> flow, Duration timeout) {
+    return debounce(flow, to_delay_millis(timeout));
+}
 
 /**
  * Returns a flow that mirrors the original flow, but filters out values
@@ -189,57 +212,69 @@ public fun <T> Flow<T>.debounce(timeout: Duration): Flow<T> =
  *
  * @param timeout [T] is the emitted value and the return value is timeout in [Duration].
  */
-@FlowPreview
-@JvmName("debounceDuration")
-@OverloadResolutionByLambdaReturnType
-public fun <T> Flow<T>.debounce(timeout: (T) -> Duration): Flow<T> =
-    debounceInternal { emittedItem ->
-        timeout(emittedItem).toDelayMillis()
-    }
+// @FlowPreview
+// @JvmName("debounceDuration")
+// @OverloadResolutionByLambdaReturnType
+template<typename T, typename Fn>
+Flow<T> debounce_duration(Flow<T> flow, Fn timeout) {
+    return debounce_internal(flow, [timeout](T emitted_item) {
+        return to_delay_millis(timeout(emitted_item));
+    });
+}
 
-private fun <T> Flow<T>.debounceInternal(timeoutMillisSelector: (T) -> Long): Flow<T> =
-    scopedFlow { downstream ->
+template<typename T, typename Fn>
+Flow<T> debounce_internal(Flow<T> flow, Fn timeout_millis_selector) {
+    // TODO: implement scopedFlow
+    return scoped_flow(flow, [timeout_millis_selector](auto downstream) {
         // Produce the values using the default (rendezvous) channel
-        val values = produce {
-            collect { value -> send(value ?: NULL) }
-        }
+        // TODO: implement produce
+        auto values = produce([&flow]() {
+            flow.collect([](T value) {
+                send(value ? value : NULL);
+            });
+        });
         // Now consume the values
-        var lastValue: Any? = null
-        while (lastValue !== DONE) {
-            var timeoutMillis = 0L // will be always computed when lastValue != null
+        void* last_value = nullptr;
+        while (last_value != DONE) {
+            long timeout_millis = 0L; // will be always computed when lastValue != null
             // Compute timeout for this value
-            if (lastValue != null) {
-                timeoutMillis = timeoutMillisSelector(NULL.unbox(lastValue))
-                require(timeoutMillis >= 0L) { "Debounce timeout should not be negative" }
-                if (timeoutMillis == 0L) {
-                    downstream.emit(NULL.unbox(lastValue))
-                    lastValue = null // Consume the value
+            if (last_value != nullptr) {
+                timeout_millis = timeout_millis_selector(NULL.unbox(last_value));
+                // require(timeoutMillis >= 0L)
+                if (!(timeout_millis >= 0L)) {
+                    throw std::invalid_argument("Debounce timeout should not be negative");
+                }
+                if (timeout_millis == 0L) {
+                    downstream.emit(NULL.unbox(last_value));
+                    last_value = nullptr; // Consume the value
                 }
             }
             // assert invariant: lastValue != null implies timeoutMillis > 0
-            assert { lastValue == null || timeoutMillis > 0 }
+            // assert { lastValue == null || timeoutMillis > 0 }
             // wait for the next value with timeout
-            select<Unit> {
+            // TODO: implement select
+            select<void>([&]() {
                 // Set timeout when lastValue exists and is not consumed yet
-                if (lastValue != null) {
-                    onTimeout(timeoutMillis) {
-                        downstream.emit(NULL.unbox(lastValue))
-                        lastValue = null // Consume the value
-                    }
+                if (last_value != nullptr) {
+                    on_timeout(timeout_millis, [&]() {
+                        downstream.emit(NULL.unbox(last_value));
+                        last_value = nullptr; // Consume the value
+                    });
                 }
-                values.onReceiveCatching { value ->
+                values.on_receive_catching([&](auto value) {
                     value
-                        .onSuccess { lastValue = it }
-                        .onFailure {
-                            it?.let { throw it }
+                        .on_success([&](auto it) { last_value = it; })
+                        .on_failure([&](auto it) {
+                            if (it) throw it;
                             // If closed normally, emit the latest value
-                            if (lastValue != null) downstream.emit(NULL.unbox(lastValue))
-                            lastValue = DONE
-                        }
-                }
-            }
+                            if (last_value != nullptr) downstream.emit(NULL.unbox(last_value));
+                            last_value = DONE;
+                        });
+                });
+            });
         }
-    }
+    });
+}
 
 /**
  * Returns a flow that emits only the latest value emitted by the original flow during the given sampling [period][periodMillis].
@@ -265,51 +300,56 @@ private fun <T> Flow<T>.debounceInternal(timeoutMillisSelector: (T) -> Long): Fl
  *
  * Note that the latest element is not emitted if it does not fit into the sampling window.
  */
-@FlowPreview
-public fun <T> Flow<T>.sample(periodMillis: Long): Flow<T> {
-    require(periodMillis > 0) { "Sample period should be positive" }
-    return scopedFlow { downstream ->
-        val values = produce(capacity = Channel.CONFLATED) {
-            collect { value -> send(value ?: NULL) }
-        }
-        var lastValue: Any? = null
-        val ticker = fixedPeriodTicker(periodMillis)
-        while (lastValue !== DONE) {
-            select<Unit> {
-                values.onReceiveCatching { result ->
+// @FlowPreview
+template<typename T>
+Flow<T> sample(Flow<T> flow, long period_millis) {
+    // require(periodMillis > 0)
+    if (!(period_millis > 0)) {
+        throw std::invalid_argument("Sample period should be positive");
+    }
+    return scoped_flow(flow, [period_millis](auto downstream) {
+        auto values = produce(Channel::CONFLATED, [&flow]() {
+            flow.collect([](T value) { send(value ? value : NULL); });
+        });
+        void* last_value = nullptr;
+        auto ticker = fixed_period_ticker(period_millis);
+        while (last_value != DONE) {
+            select<void>([&]() {
+                values.on_receive_catching([&](auto result) {
                     result
-                        .onSuccess { lastValue = it }
-                        .onFailure {
-                            it?.let { throw it }
-                            ticker.cancel(ChildCancelledException())
-                            lastValue = DONE
-                        }
-                }
+                        .on_success([&](auto it) { last_value = it; })
+                        .on_failure([&](auto it) {
+                            if (it) throw it;
+                            ticker.cancel(ChildCancelledException());
+                            last_value = DONE;
+                        });
+                });
 
                 // todo: shall be start sampling only when an element arrives or sample aways as here?
-                ticker.onReceive {
-                    val value = lastValue ?: return@onReceive
-                    lastValue = null // Consume the value
-                    downstream.emit(NULL.unbox(value))
-                }
-            }
+                ticker.on_receive([&]() {
+                    auto value = last_value;
+                    if (!value) return;
+                    last_value = nullptr; // Consume the value
+                    downstream.emit(NULL.unbox(value));
+                });
+            });
         }
-    }
+    });
 }
 
 /*
  * TODO this design (and design of the corresponding operator) depends on #540
  */
-internal fun CoroutineScope.fixedPeriodTicker(
-    delayMillis: Long,
-): ReceiveChannel<Unit> {
-    return produce(capacity = 0) {
-        delay(delayMillis)
+// TODO: implement
+template<typename Scope>
+ReceiveChannel<void> fixed_period_ticker(Scope scope, long delay_millis) {
+    return produce(scope, 0, [delay_millis]() {
+        delay(delay_millis);
         while (true) {
-            channel.send(Unit)
-            delay(delayMillis)
+            channel.send({});
+            delay(delay_millis);
         }
-    }
+    });
 }
 
 /**
@@ -336,8 +376,11 @@ internal fun CoroutineScope.fixedPeriodTicker(
  *
  * Note that the latest element is not emitted if it does not fit into the sampling window.
  */
-@FlowPreview
-public fun <T> Flow<T>.sample(period: Duration): Flow<T> = sample(period.toDelayMillis())
+// @FlowPreview
+template<typename T>
+Flow<T> sample(Flow<T> flow, Duration period) {
+    return sample(flow, to_delay_millis(period));
+}
 
 /**
  * Returns a flow that will emit a [TimeoutCancellationException] if the upstream doesn't emit an item within the given time.
@@ -379,28 +422,36 @@ public fun <T> Flow<T>.sample(period: Duration): Flow<T> = sample(period.toDelay
  *
  * @param timeout Timeout duration. If non-positive, the flow is timed out immediately
  */
-@FlowPreview
-public fun <T> Flow<T>.timeout(
-    timeout: Duration
-): Flow<T> = timeoutInternal(timeout)
-
-private fun <T> Flow<T>.timeoutInternal(
-    timeout: Duration
-): Flow<T> = scopedFlow { downStream ->
-    if (timeout <= Duration.ZERO) throw TimeoutCancellationException("Timed out immediately")
-    val values = buffer(Channel.RENDEZVOUS).produceIn(this)
-    whileSelect {
-        values.onReceiveCatching { value ->
-            value.onSuccess {
-                downStream.emit(it)
-            }.onClosed {
-                it?.let { throw it }
-                return@onReceiveCatching false
-            }
-            return@onReceiveCatching true
-        }
-        onTimeout(timeout) {
-            throw TimeoutCancellationException("Timed out waiting for $timeout")
-        }
-    }
+// @FlowPreview
+template<typename T>
+Flow<T> timeout(Flow<T> flow, Duration timeout) {
+    return timeout_internal(flow, timeout);
 }
+
+template<typename T>
+Flow<T> timeout_internal(Flow<T> flow, Duration timeout) {
+    return scoped_flow(flow, [timeout](auto down_stream) {
+        if (timeout <= Duration::ZERO) {
+            throw TimeoutCancellationException("Timed out immediately");
+        }
+        auto values = buffer(flow, Channel::RENDEZVOUS).produce_in(/* this */);
+        while_select([&]() {
+            values.on_receive_catching([&](auto value) {
+                value.on_success([&](auto it) {
+                    down_stream.emit(it);
+                }).on_closed([&](auto it) {
+                    if (it) throw it;
+                    return false;
+                });
+                return true;
+            });
+            on_timeout(timeout, [&]() {
+                throw TimeoutCancellationException("Timed out waiting for " + to_string(timeout));
+            });
+        });
+    });
+}
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

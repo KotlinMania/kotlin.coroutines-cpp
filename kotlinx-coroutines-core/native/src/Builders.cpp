@@ -1,12 +1,21 @@
-@file:OptIn(ExperimentalContracts::class, ObsoleteWorkersApi::class)
-@file:Suppress("LEAKED_IN_PLACE_LAMBDA", "WRONG_INVOCATION_KIND")
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/Builders.kt
+//
+// TODO: File-level annotations not translated: @file:OptIn, @file:Suppress
+// TODO: Contracts API not available in C++
+// TODO: Coroutine suspend/resume semantics not implemented
+// TODO: Worker API from Kotlin/Native needs equivalent implementation
+// TODO: ThreadLocal annotation needs equivalent mechanism
+// TODO: ObsoleteWorkersApi handling
 
-package kotlinx.coroutines
+namespace kotlinx {
+namespace coroutines {
 
-import kotlinx.cinterop.*
-import kotlin.contracts.*
-import kotlin.coroutines.*
-import kotlin.native.concurrent.*
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlinx.cinterop.*
+// import kotlin.contracts.*
+// import kotlin.coroutines.*
+// import kotlin.native.concurrent.*
 
 /**
  * Runs a new coroutine and **blocks** the current thread _interruptibly_ until its completion.
@@ -44,104 +53,149 @@ import kotlin.native.concurrent.*
  * @param context the context of the coroutine. The default value is an event loop on the current thread.
  * @param block the coroutine code.
  */
-public actual fun <T> runBlocking(context: CoroutineContext, block: suspend CoroutineScope.() -> T): T {
-    contract {
-        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
-    }
-    val contextInterceptor = context[ContinuationInterceptor]
-    val eventLoop: EventLoop?
-    val newContext: CoroutineContext
-    if (contextInterceptor == null) {
+template<typename T>
+T run_blocking(CoroutineContext context, /* TODO: suspend function type */ auto block) {
+    // TODO: contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+
+    auto context_interceptor = context[ContinuationInterceptor];
+    EventLoop* event_loop;
+    CoroutineContext new_context;
+
+    if (context_interceptor == nullptr) {
         // create or use private event loop if no dispatcher is specified
-        eventLoop = ThreadLocalEventLoop.eventLoop
-        newContext = GlobalScope.newCoroutineContext(context + eventLoop)
+        event_loop = ThreadLocalEventLoop::event_loop;
+        new_context = GlobalScope::new_coroutine_context(context + event_loop);
     } else {
         // See if context's interceptor is an event loop that we shall use (to support TestContext)
         // or take an existing thread-local event loop if present to avoid blocking it (but don't create one)
-        eventLoop = (contextInterceptor as? EventLoop)?.takeIf { it.shouldBeProcessedFromContext() }
-            ?: ThreadLocalEventLoop.currentOrNull()
-        newContext = GlobalScope.newCoroutineContext(context)
+        event_loop = dynamic_cast<EventLoop*>(context_interceptor);
+        if (event_loop != nullptr && event_loop->should_be_processed_from_context()) {
+            // use it
+        } else {
+            event_loop = ThreadLocalEventLoop::current_or_null();
+        }
+        new_context = GlobalScope::new_coroutine_context(context);
     }
-    val coroutine = BlockingCoroutine<T>(newContext, eventLoop)
-    var completed = false
-    ThreadLocalKeepAlive.addCheck { !completed }
+
+    auto coroutine = BlockingCoroutine<T>(new_context, event_loop);
+    bool completed = false;
+    ThreadLocalKeepAlive::add_check([&completed]() { return !completed; });
+
     try {
-        coroutine.start(CoroutineStart.DEFAULT, coroutine, block)
-        return coroutine.joinBlocking()
-    } finally {
-        completed = true
+        coroutine.start(CoroutineStart::kDefault, coroutine, block);
+        return coroutine.join_blocking();
+    } catch (...) {
+        completed = true;
+        throw;
     }
 }
 
-@ThreadLocal
-private object ThreadLocalKeepAlive {
-    /** If any of these checks passes, this means this [Worker] is still used. */
-    private var checks = mutableListOf<() -> Boolean>()
+// TODO: @ThreadLocal annotation equivalent needed
+namespace /* ThreadLocal */ {
+    class ThreadLocalKeepAlive {
+    private:
+        /** If any of these checks passes, this means this [Worker] is still used. */
+        static std::vector<std::function<bool()>> checks;
 
-    /** Whether the worker currently tries to keep itself alive. */
-    private var keepAliveLoopActive = false
+        /** Whether the worker currently tries to keep itself alive. */
+        static bool keep_alive_loop_active;
 
-    /** Adds another stopgap that must be passed before the [Worker] can be terminated. */
-    fun addCheck(terminationForbidden: () -> Boolean) {
-        checks.add(terminationForbidden)
-        if (!keepAliveLoopActive) keepAlive()
-    }
+        /** Adds another stopgap that must be passed before the [Worker] can be terminated. */
+        static void add_check(std::function<bool()> termination_forbidden) {
+            checks.push_back(termination_forbidden);
+            if (!keep_alive_loop_active) keep_alive();
+        }
 
-    /**
-     * Send a ping to the worker to prevent it from terminating while this coroutine is running,
-     * ensuring that continuations don't get dropped and forgotten.
-     */
-    private fun keepAlive() {
-        // only keep the checks that still forbid the termination
-        checks = checks.filter { it() }.toMutableList()
-        // if there are no checks left, we no longer keep the worker alive, it can be terminated
-        keepAliveLoopActive = checks.isNotEmpty()
-        if (keepAliveLoopActive) {
-            Worker.current.executeAfter(afterMicroseconds = 100_000) {
-                keepAlive()
+        /**
+         * Send a ping to the worker to prevent it from terminating while this coroutine is running,
+         * ensuring that continuations don't get dropped and forgotten.
+         */
+        static void keep_alive() {
+            // only keep the checks that still forbid the termination
+            std::vector<std::function<bool()>> filtered_checks;
+            for (auto& check : checks) {
+                if (check()) {
+                    filtered_checks.push_back(check);
+                }
+            }
+            checks = std::move(filtered_checks);
+
+            // if there are no checks left, we no longer keep the worker alive, it can be terminated
+            keep_alive_loop_active = !checks.empty();
+
+            if (keep_alive_loop_active) {
+                // TODO: Worker.current.executeAfter equivalent
+                // Worker.current.executeAfter(afterMicroseconds = 100_000) {
+                //     keepAlive()
+                // }
             }
         }
-    }
+
+        friend T run_blocking<T>(CoroutineContext, auto);
+    };
 }
 
-private class BlockingCoroutine<T>(
-    parentContext: CoroutineContext,
-    private val eventLoop: EventLoop?
-) : AbstractCoroutine<T>(parentContext, true, true) {
-    private val joinWorker = Worker.current
+template<typename T>
+class BlockingCoroutine : public AbstractCoroutine<T> {
+private:
+    EventLoop* event_loop;
+    // TODO: Worker equivalent
+    void* join_worker; // = Worker.current
 
-    override val isScopedCoroutine: Boolean get() = true
-
-    override fun afterCompletion(state: Any?) {
-        // wake up blocked thread
-        if (joinWorker != Worker.current) {
-            // Unpark waiting worker
-            joinWorker.executeAfter(0L, {}) // send an empty task to unpark the waiting event loop
-        }
+public:
+    BlockingCoroutine(CoroutineContext parent_context, EventLoop* event_loop)
+        : AbstractCoroutine<T>(parent_context, true, true)
+        , event_loop(event_loop)
+        , join_worker(nullptr) // TODO: Worker.current
+    {
     }
 
-    @Suppress("UNCHECKED_CAST")
-    fun joinBlocking(): T {
+    bool is_scoped_coroutine() const override { return true; }
+
+    void after_completion(void* state) override {
+        // wake up blocked thread
+        // TODO: Worker comparison
+        // if (joinWorker != Worker.current) {
+        //     // Unpark waiting worker
+        //     joinWorker.executeAfter(0L, {}) // send an empty task to unpark the waiting event loop
+        // }
+    }
+
+    T join_blocking() {
         try {
-            eventLoop?.incrementUseCount()
+            if (event_loop != nullptr) {
+                event_loop->increment_use_count();
+            }
+
             while (true) {
-                var parkNanos: Long
+                long park_nanos;
                 // Workaround for bug in BE optimizer that cannot eliminate boxing here
-                if (eventLoop != null) {
-                    parkNanos = eventLoop.processNextEvent()
+                if (event_loop != nullptr) {
+                    park_nanos = event_loop->process_next_event();
                 } else {
-                    parkNanos = Long.MAX_VALUE
+                    park_nanos = LONG_MAX;
                 }
                 // note: processNextEvent may lose unpark flag, so check if completed before parking
-                if (isCompleted) break
-                joinWorker.park(parkNanos / 1000L, true)
+                if (this->is_completed()) break;
+                // TODO: joinWorker.park equivalent
+                // joinWorker.park(parkNanos / 1000L, true)
             }
-        } finally { // paranoia
-            eventLoop?.decrementUseCount()
+        } catch (...) {
+            if (event_loop != nullptr) {
+                event_loop->decrement_use_count();
+            }
+            throw;
         }
+
         // now return result
-        val state = state.unboxState()
-        (state as? CompletedExceptionally)?.let { throw it.cause }
-        return state as T
+        auto state = this->state.unbox_state();
+        auto* completed_exceptionally = dynamic_cast<CompletedExceptionally*>(state);
+        if (completed_exceptionally != nullptr) {
+            throw completed_exceptionally->cause;
+        }
+        return static_cast<T>(state);
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

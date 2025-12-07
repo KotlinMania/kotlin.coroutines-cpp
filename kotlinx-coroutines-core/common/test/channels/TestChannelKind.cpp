@@ -1,56 +1,60 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/TestChannelKind.kt
+//
+// TODO: Translate enums to C++ enum class
+// TODO: Translate @Suppress annotations
+// TODO: Translate selects support
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.selects.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-enum class TestChannelKind(
-    val capacity: Int,
-    private val description: String,
-    val viaBroadcast: Boolean = false
-) {
-    RENDEZVOUS(0, "RendezvousChannel"),
-    BUFFERED_1(1, "BufferedChannel(1)"),
-    BUFFERED_2(2, "BufferedChannel(2)"),
-    BUFFERED_10(10, "BufferedChannel(10)"),
-    UNLIMITED(Channel.UNLIMITED, "UnlimitedChannel"),
-    CONFLATED(Channel.CONFLATED, "ConflatedChannel"),
-    BUFFERED_1_BROADCAST(1, "BufferedBroadcastChannel(1)", viaBroadcast = true),
-    BUFFERED_10_BROADCAST(10, "BufferedBroadcastChannel(10)", viaBroadcast = true),
-    CONFLATED_BROADCAST(Channel.CONFLATED, "ConflatedBroadcastChannel", viaBroadcast = true)
-    ;
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.selects.*
 
-    fun <T> create(onUndeliveredElement: ((T) -> Unit)? = null): Channel<T> = when {
-        viaBroadcast && onUndeliveredElement != null -> error("Broadcast channels to do not support onUndeliveredElement")
-        viaBroadcast -> @Suppress("DEPRECATION_ERROR") ChannelViaBroadcast(BroadcastChannel(capacity))
-        else -> Channel(capacity, onUndeliveredElement = onUndeliveredElement)
-    }
+enum class TestChannelKind {
+    kRendezvous,
+    kBuffered1,
+    kBuffered2,
+    kBuffered10,
+    kUnlimited,
+    kConflated,
+    kBuffered1Broadcast,
+    kBuffered10Broadcast,
+    kConflatedBroadcast
+};
 
-    val isConflated get() = capacity == Channel.CONFLATED
-    override fun toString(): String = description
-}
+// TODO: class TestChannelKindHelper {
+// public:
+//     static int capacity(TestChannelKind kind) {
+//         switch (kind) {
+//             case TestChannelKind::kRendezvous: return 0;
+//             case TestChannelKind::kBuffered1:
+//             case TestChannelKind::kBuffered1Broadcast: return 1;
+//             case TestChannelKind::kBuffered2: return 2;
+//             case TestChannelKind::kBuffered10:
+//             case TestChannelKind::kBuffered10Broadcast: return 10;
+//             case TestChannelKind::kUnlimited: return Channel::UNLIMITED;
+//             case TestChannelKind::kConflated:
+//             case TestChannelKind::kConflatedBroadcast: return Channel::CONFLATED;
+//         }
+//     }
+//
+//     static const char* description(TestChannelKind kind) { /* ... */ }
+//     static bool viaBroadcast(TestChannelKind kind) { /* ... */ }
+//     static bool isConflated(TestChannelKind kind) { /* ... */ }
+//
+//     template<typename T>
+//     static Channel<T>* create(TestChannelKind kind, std::function<void(T)> onUndeliveredElement = nullptr) {
+//         // TODO: Implementation
+//         return nullptr;
+//     }
+// };
 
-internal class ChannelViaBroadcast<E>(
-    @Suppress("DEPRECATION_ERROR")
-    private val broadcast: BroadcastChannel<E>
-): Channel<E>, SendChannel<E> by broadcast {
-    val sub = broadcast.openSubscription()
+// TODO: class ChannelViaBroadcast : public Channel {
+//     // Implementation for broadcast-based channels
+// };
 
-    override val isClosedForReceive: Boolean get() = sub.isClosedForReceive
-    override val isEmpty: Boolean get() = sub.isEmpty
-
-    override suspend fun receive(): E = sub.receive()
-    override suspend fun receiveCatching(): ChannelResult<E> = sub.receiveCatching()
-    override fun iterator(): ChannelIterator<E> = sub.iterator()
-    override fun tryReceive(): ChannelResult<E> = sub.tryReceive()
-
-    override fun cancel(cause: CancellationException?) = broadcast.cancel(cause)
-
-    // implementing hidden method anyway, so can cast to an internal class
-    @Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.2.0, binary compatibility with versions <= 1.1.x")
-    override fun cancel(cause: Throwable?): Boolean = error("unsupported")
-
-    override val onReceive: SelectClause1<E>
-        get() = sub.onReceive
-    override val onReceiveCatching: SelectClause1<ChannelResult<E>>
-        get() = sub.onReceiveCatching
-}
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

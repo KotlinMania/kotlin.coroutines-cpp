@@ -1,75 +1,99 @@
-package kotlinx.coroutines.test
+// Original file: kotlinx-coroutines-test/common/test/StandardTestDispatcherTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert @Test, @BeforeTest, @AfterTest annotations to appropriate test framework
+// TODO: Convert suspend functions and coroutine builders
+// TODO: Handle OrderedExecutionTestBase inheritance
+// TODO: Convert void() extension function pattern
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace test {
 
-class StandardTestDispatcherTest: OrderedExecutionTestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.flow.*
+// TODO: import kotlin.test.*
 
-    private val scope = TestScope(StandardTestDispatcher())
+class StandardTestDispatcherTest : public OrderedExecutionTestBase {
+private:
+    TestScope scope_{StandardTestDispatcher()};
 
-    @BeforeTest
-    fun init() {
-        scope.asSpecificImplementation().enter()
+public:
+    // TODO: @BeforeTest
+    void init() {
+        scope_.as_specific_implementation().enter();
     }
 
-    @AfterTest
-    fun cleanup() {
-        scope.runCurrent()
-        assertEquals(listOf(), scope.asSpecificImplementation().legacyLeave())
+    // TODO: @AfterTest
+    void cleanup() {
+        scope_.run_current();
+        auto exceptions = scope_.as_specific_implementation().legacy_leave();
+        assert(exceptions.empty());
     }
 
     /** Tests that the [StandardTestDispatcher] follows an execution order similar to `runBlocking`. */
-    @Test
-    fun testFlowsNotSkippingValues() = scope.launch {
+    // TODO: @Test
+    void test_flows_not_skipping_values() {
         // https://github.com/Kotlin/kotlinx.coroutines/issues/1626#issuecomment-554632852
-        val list = flowOf(1).onStart { emit(0) }
-            .combine(flowOf("A")) { int, str -> "$str$int" }
-            .toList()
-        assertEquals(list, listOf("A0", "A1"))
-    }.void()
-
-    /** Tests that each [launch] gets dispatched. */
-    @Test
-    fun testLaunchDispatched() = scope.launch {
-        expect(1)
-        launch {
-            expect(3)
-        }
-        finish(2)
-    }.void()
-
-    /** Tests that dispatching is done in a predictable order and [yield] puts this task at the end of the queue. */
-    @Test
-    fun testYield() = scope.launch {
-        expect(1)
-        scope.launch {
-            expect(3)
-            yield()
-            expect(6)
-        }
-        scope.launch {
-            expect(4)
-            yield()
-            finish(7)
-        }
-        expect(2)
-        yield()
-        expect(5)
-    }.void()
-
-    /** Tests that the [TestCoroutineScheduler] used for [Dispatchers.Main] gets used by default. */
-    @Test
-    fun testSchedulerReuse() {
-        val dispatcher1 = StandardTestDispatcher()
-        Dispatchers.setMain(dispatcher1)
-        try {
-            val dispatcher2 = StandardTestDispatcher()
-            assertSame(dispatcher1.scheduler, dispatcher2.scheduler)
-        } finally {
-            Dispatchers.resetMain()
-        }
+        scope_.launch([&]() {
+            auto list = flow_of(1)
+                .on_start([&]() { emit(0); })
+                .combine(flow_of("A"), [](int int_val, std::string str) {
+                    return str + std::to_string(int_val);
+                })
+                .to_list();
+            assert(list == std::vector<std::string>{"A0", "A1"});
+        }).void_result();
     }
 
-}
+    /** Tests that each [launch] gets dispatched. */
+    // TODO: @Test
+    void test_launch_dispatched() {
+        scope_.launch([&]() {
+            expect(1);
+            launch([&]() {
+                expect(3);
+            });
+            finish(2);
+        }).void_result();
+    }
+
+    /** Tests that dispatching is done in a predictable order and [yield] puts this task at the end of the queue. */
+    // TODO: @Test
+    void test_yield() {
+        scope_.launch([&]() {
+            expect(1);
+            scope_.launch([&]() {
+                expect(3);
+                yield();
+                expect(6);
+            });
+            scope_.launch([&]() {
+                expect(4);
+                yield();
+                finish(7);
+            });
+            expect(2);
+            yield();
+            expect(5);
+        }).void_result();
+    }
+
+    /** Tests that the [TestCoroutineScheduler] used for [Dispatchers.Main] gets used by default. */
+    // TODO: @Test
+    void test_scheduler_reuse() {
+        auto dispatcher1 = StandardTestDispatcher();
+        Dispatchers::set_main(dispatcher1);
+        try {
+            auto dispatcher2 = StandardTestDispatcher();
+            // TODO: assertSame
+            assert(dispatcher1.scheduler == dispatcher2.scheduler);
+        } finally {
+            Dispatchers::reset_main();
+        }
+    }
+};
+
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

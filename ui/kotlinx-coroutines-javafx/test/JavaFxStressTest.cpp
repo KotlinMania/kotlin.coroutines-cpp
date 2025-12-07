@@ -1,40 +1,56 @@
-package kotlinx.coroutines.javafx
+// Transliterated from Kotlin to C++
+// Original: ui/kotlinx-coroutines-javafx/test/JavaFxStressTest.kt
+// TODO: Resolve imports and dependencies
+// TODO: Implement JUnit test framework equivalents
+// TODO: Handle JavaFX SimpleIntegerProperty and Flow integration
+// TODO: Implement TestBase base class
+// TODO: Handle suspend functions and coroutines
+// TODO: Implement ExecutorRule
 
-import kotlinx.coroutines.testing.*
-import javafx.beans.property.SimpleIntegerProperty
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
-import org.junit.*
+namespace kotlinx {
+namespace coroutines {
+namespace javafx {
 
-class JavaFxStressTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import javafx.beans.property.SimpleIntegerProperty
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.flow.first
+// TODO: import org.junit.*
 
-    @Before
-    fun setup() {
-        ignoreLostThreads("JavaFX Application Thread", "Thread-", "QuantumRenderer-", "InvokeLaterDispatcher")
+class JavaFxStressTest : public TestBase {
+public:
+    void setup() {
+        ignore_lost_threads("JavaFX Application Thread", "Thread-", "QuantumRenderer-", "InvokeLaterDispatcher");
     }
 
-    @get:Rule
-    val pool = ExecutorRule(1)
+    // TODO: @get:Rule annotation
+    ExecutorRule pool{1};
 
-    @Test
-    fun testCancellationRace() = runTest {
-        if (!initPlatform()) {
-            println("Skipping JavaFxTest in headless environment")
-            return@runTest // ignore test in headless environments
+    // TODO: @Test annotation
+    // TODO: suspend function - runTest
+    void test_cancellation_race() {
+        // TODO: suspend function implementation
+        if (!init_platform()) {
+            std::cout << "Skipping JavaFxTest in headless environment" << std::endl;
+            return; // ignore test in headless environments
         }
 
-        val integerProperty = SimpleIntegerProperty(0)
-        val flow = integerProperty.asFlow()
-        var i = 1
-        val n = 1000 * stressTestMultiplier
-        repeat (n) {
-            launch(pool) {
-                flow.first()
-            }
-            withContext(Dispatchers.JavaFx) {
-                integerProperty.set(i)
-            }
-            i += 1
-        }
+        auto integer_property = SimpleIntegerProperty(0);
+        auto flow = integer_property.as_flow();
+        int i = 1;
+        int n = 1000 * stress_test_multiplier;
+        repeat(n, [&]() {
+            launch(pool, [&]() {
+                flow.first();
+            });
+            with_context(Dispatchers::JavaFx, [&]() {
+                integer_property.set(i);
+            });
+            i += 1;
+        });
     }
-}
+};
+
+} // namespace javafx
+} // namespace coroutines
+} // namespace kotlinx

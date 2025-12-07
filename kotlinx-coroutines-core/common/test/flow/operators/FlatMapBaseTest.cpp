@@ -1,88 +1,119 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/FlatMapBaseTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Map abstract class with pure virtual flatMap method
+// - Map NamedDispatchers to C++ equivalent
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-abstract class FlatMapBaseTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
 
-    abstract fun <T> Flow<T>.flatMap(mapper: suspend (T) -> Flow<T>): Flow<T>
+class FlatMapBaseTest : public TestBase {
+public:
 
-    @Test
-    fun testFlatMap() = runTest {
-        val n = 100
-        val sum = (1..100).asFlow()
-            .flatMap { value ->
+    virtual Flow<int> flat_map(Flow<int> flow_var, auto mapper) = 0;
+
+    // TODO: @Test
+    void testFlatMap() {
+        // TODO: runTest {
+        int n = 100;
+        int sum = as_flow(1, 100)
+            .flat_map([](int value) {
                 // 1 + (1 + 2) + (1 + 2 + 3) + ... (1 + .. + n)
-                flow {
-                    repeat(value) {
-                        emit(it + 1)
+                return flow([value](auto& emit) {
+                    for (int i = 0; i < value; ++i) {
+                        emit(i + 1);
                     }
-                }
-            }.sum()
+                });
+            }).sum();
 
-        assertEquals(n * (n + 1) * (n + 2) / 6, sum)
+        assertEquals(n * (n + 1) * (n + 2) / 6, sum);
+        // TODO: }
     }
 
-    @Test
-    fun testSingle() = runTest {
-        val flow = flow {
-            repeat(100) {
-                emit(it)
+    // TODO: @Test
+    void testSingle() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            for (int i = 0; i < 100; ++i) {
+                emit(i);
             }
-        }.flatMap { value ->
-            if (value == 99) flowOf(42)
-            else flowOf()
+        }).flat_map([](int value) {
+            if (value == 99) return flow_of(42);
+            else return flow_of<int>();
+        });
+
+        int value = flow_var.single();
+        assertEquals(42, value);
+        // TODO: }
+    }
+
+    // TODO: @Test
+    void testNulls() {
+        // TODO: runTest {
+        auto list = flow_of<std::optional<int>>(1, std::nullopt, 2).flat_map([](auto it) {
+            return flow_of<std::optional<int>>(1, std::nullopt, std::nullopt, 2);
+        }).to_list();
+
+        std::vector<std::optional<int>> expected;
+        for (int i = 0; i < 3; ++i) {
+            expected.push_back(1);
+            expected.push_back(std::nullopt);
+            expected.push_back(std::nullopt);
+            expected.push_back(2);
         }
-
-        val value = flow.single()
-        assertEquals(42, value)
+        assertEquals(expected, list);
+        // TODO: }
     }
 
-    @Test
-    fun testNulls() = runTest {
-        val list = flowOf(1, null, 2).flatMap {
-            flowOf(1, null, null, 2)
-        }.toList()
+    // TODO: @Test
+    void testContext() {
+        // TODO: runTest {
+        std::vector<std::string> captured;
+        auto flow_var = flow_of(1)
+            .flow_on(NamedDispatchers("irrelevant"))
+            .flat_map([&](auto it) {
+                captured.push_back(NamedDispatchers::name());
+                return flow([&](auto& emit) {
+                    captured.push_back(NamedDispatchers::name());
+                    emit(it);
+                });
+            });
 
-        assertEquals(List(3) { listOf(1, null, null, 2)}.flatten(), list)
+        flow_var.flow_on(NamedDispatchers("1")).sum();
+        flow_var.flow_on(NamedDispatchers("2")).sum();
+        assertEquals(std::vector<std::string>{"1", "1", "2", "2"}, captured);
+        // TODO: }
     }
 
-    @Test
-    fun testContext() = runTest {
-        val captured = ArrayList<String>()
-        val flow = flowOf(1)
-            .flowOn(NamedDispatchers("irrelevant"))
-            .flatMap {
-                captured += NamedDispatchers.name()
-                flow {
-                    captured += NamedDispatchers.name()
-                    emit(it)
-                }
-            }
+    // TODO: @Test
+    void testIsolatedContext() {
+        // TODO: runTest {
+        auto flow_var = flow_of(1)
+            .flow_on(NamedDispatchers("irrelevant"))
+            .flat_map([](auto it) {
+                return flow([it](auto& emit) {
+                    assertEquals("inner", NamedDispatchers::name());
+                    emit(it);
+                });
+            }).flow_on(NamedDispatchers("inner"))
+            .flat_map([](auto it) {
+                return flow([it](auto& emit) {
+                    assertEquals("outer", NamedDispatchers::name());
+                    emit(it);
+                });
+            }).flow_on(NamedDispatchers("outer"));
 
-        flow.flowOn(NamedDispatchers("1")).sum()
-        flow.flowOn(NamedDispatchers("2")).sum()
-        assertEquals(listOf("1", "1", "2", "2"), captured)
+        assertEquals(1, flow_var.single_or_null());
+        // TODO: }
     }
+};
 
-    @Test
-    fun testIsolatedContext() = runTest {
-        val flow = flowOf(1)
-            .flowOn(NamedDispatchers("irrelevant"))
-            .flatMap {
-                    flow {
-                        assertEquals("inner", NamedDispatchers.name())
-                        emit(it)
-                    }
-            }.flowOn(NamedDispatchers("inner"))
-            .flatMap {
-                flow {
-                    assertEquals("outer", NamedDispatchers.name())
-                    emit(it)
-                }
-            }.flowOn(NamedDispatchers("outer"))
-
-        assertEquals(1, flow.singleOrNull())
-    }
-}
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

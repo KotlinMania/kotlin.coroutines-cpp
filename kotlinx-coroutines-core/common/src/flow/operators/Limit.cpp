@@ -1,42 +1,67 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
+// Transliterated from Kotlin to C++ (first-pass, syntax-only)
+// Original: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt
+//
+// TODO: Implement coroutine semantics (suspend functions)
+// TODO: Map Kotlin Flow types to C++ equivalents
+// TODO: Implement AbortFlowException and ownership marker pattern
+// TODO: Implement collectWhile utility
+// TODO: Implement emitAbort pattern for early termination
+// TODO: Handle safe vs unsafe flow builders
 
-package kotlinx.coroutines.flow
+#pragma once
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.internal.*
-import kotlin.coroutines.*
-import kotlin.jvm.*
-import kotlinx.coroutines.flow.flow as safeFlow
-import kotlinx.coroutines.flow.internal.unsafeFlow as flow
+// @file:JvmMultifileClass
+// @file:JvmName("FlowKt")
+
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.flow.internal.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.jvm.*
+// TODO: import kotlinx.coroutines.flow.flow as safeFlow
+// TODO: import kotlinx.coroutines.flow.internal.unsafeFlow as flow
 
 /**
  * Returns a flow that ignores first [count] elements.
  * Throws [IllegalArgumentException] if [count] is negative.
  */
-public fun <T> Flow<T>.drop(count: Int): Flow<T> {
-    require(count >= 0) { "Drop count should be non-negative, but had $count" }
-    return flow {
-        var skipped = 0
-        collect { value ->
-            if (skipped >= count) emit(value) else ++skipped
-        }
+template<typename T>
+Flow<T> drop(Flow<T> flow, int count) {
+    // require(count >= 0)
+    if (!(count >= 0)) {
+        throw std::invalid_argument("Drop count should be non-negative, but had " + std::to_string(count));
     }
+    return unsafe_flow<T>([flow, count](FlowCollector<T> collector) {
+        int skipped = 0;
+        flow.collect([&](T value) {
+            if (skipped >= count) {
+                collector.emit(value);
+            } else {
+                ++skipped;
+            }
+        });
+    });
 }
 
 /**
  * Returns a flow containing all elements except first elements that satisfy the given predicate.
  */
-public fun <T> Flow<T>.dropWhile(predicate: suspend (T) -> Boolean): Flow<T> = flow {
-    var matched = false
-    collect { value ->
-        if (matched) {
-            emit(value)
-        } else if (!predicate(value)) {
-            matched = true
-            emit(value)
-        }
-    }
+template<typename T, typename Predicate>
+Flow<T> drop_while(Flow<T> flow, Predicate predicate) {
+    return unsafe_flow<T>([flow, predicate](FlowCollector<T> collector) {
+        bool matched = false;
+        flow.collect([&](T value) {
+            if (matched) {
+                collector.emit(value);
+            } else if (!predicate(value)) {
+                matched = true;
+                collector.emit(value);
+            }
+        });
+    });
 }
 
 /**
@@ -44,32 +69,38 @@ public fun <T> Flow<T>.dropWhile(predicate: suspend (T) -> Boolean): Flow<T> = f
  * When [count] elements are consumed, the original flow is cancelled.
  * Throws [IllegalArgumentException] if [count] is not positive.
  */
-public fun <T> Flow<T>.take(count: Int): Flow<T> {
-    require(count > 0) { "Requested element count $count should be positive" }
-    return flow {
-        val ownershipMarker = Any()
-        var consumed = 0
+template<typename T>
+Flow<T> take(Flow<T> flow, int count) {
+    // require(count > 0)
+    if (!(count > 0)) {
+        throw std::invalid_argument("Requested element count " + std::to_string(count) + " should be positive");
+    }
+    return unsafe_flow<T>([flow, count](FlowCollector<T> collector) {
+        void* ownership_marker = new int{}; // Any() equivalent
+        int consumed = 0;
         try {
-            collect { value ->
+            flow.collect([&](T value) {
                 // Note: this for take is not written via collectWhile on purpose.
                 // It checks condition first and then makes a tail-call to either emit or emitAbort.
                 // This way normal execution does not require a state machine, only a termination (emitAbort).
                 // See "TakeBenchmark" for comparision of different approaches.
                 if (++consumed < count) {
-                    return@collect emit(value)
+                    return collector.emit(value);
                 } else {
-                    return@collect emitAbort(value, ownershipMarker)
+                    return emit_abort(collector, value, ownership_marker);
                 }
-            }
-        } catch (e: AbortFlowException) {
-            e.checkOwnership(owner = ownershipMarker)
+            });
+        } catch (AbortFlowException& e) {
+            e.check_ownership(ownership_marker);
         }
-    }
+        delete (int*)ownership_marker;
+    });
 }
 
-private suspend fun <T> FlowCollector<T>.emitAbort(value: T, ownershipMarker: Any) {
-    emit(value)
-    throw AbortFlowException(ownershipMarker)
+template<typename T>
+void emit_abort(FlowCollector<T>& collector, T value, void* ownership_marker) {
+    collector.emit(value);
+    throw AbortFlowException(ownership_marker);
 }
 
 /**
@@ -78,16 +109,19 @@ private suspend fun <T> FlowCollector<T>.emitAbort(value: T, ownershipMarker: An
  * Note, that the resulting flow does not contain the element on which the [predicate] returned `false`.
  * See [transformWhile] for a more flexible operator.
  */
-public fun <T> Flow<T>.takeWhile(predicate: suspend (T) -> Boolean): Flow<T> = flow {
-    // This return is needed to work around a bug in JS BE: KT-39227
-    return@flow collectWhile { value ->
-        if (predicate(value)) {
-            emit(value)
-            true
-        } else {
-            false
-        }
-    }
+template<typename T, typename Predicate>
+Flow<T> take_while(Flow<T> flow, Predicate predicate) {
+    return unsafe_flow<T>([flow, predicate](FlowCollector<T> collector) {
+        // This return is needed to work around a bug in JS BE: KT-39227
+        return collect_while(flow, [&](T value) {
+            if (predicate(value)) {
+                collector.emit(value);
+                return true;
+            } else {
+                return false;
+            }
+        });
+    });
 }
 
 /**
@@ -109,32 +143,43 @@ public fun <T> Flow<T>.takeWhile(predicate: suspend (T) -> Boolean): Flow<T> = f
  *     }
  * ```
  */
-public fun <T, R> Flow<T>.transformWhile(
-    @BuilderInference transform: suspend FlowCollector<R>.(value: T) -> Boolean
-): Flow<R> =
-    safeFlow { // Note: safe flow is used here, because collector is exposed to transform on each operation
+template<typename T, typename R, typename Transform>
+Flow<R> transform_while(Flow<T> flow, Transform transform) {
+    return safe_flow<R>([flow, transform](FlowCollector<R> collector) {
         // This return is needed to work around a bug in JS BE: KT-39227
-        return@safeFlow collectWhile { value ->
-            transform(value)
-        }
-    }
+        return collect_while(flow, [&](T value) {
+            return transform(collector, value);
+        });
+    });
+}
 
 // Internal building block for non-tailcalling flow-truncating operators
-internal suspend inline fun <T> Flow<T>.collectWhile(crossinline predicate: suspend (value: T) -> Boolean) {
-    val collector = object : FlowCollector<T> {
-        override suspend fun emit(value: T) {
+template<typename T, typename Predicate>
+void collect_while(Flow<T> flow, Predicate predicate) {
+    struct PredicateCollector : FlowCollector<T> {
+        Predicate pred;
+
+        PredicateCollector(Predicate p) : pred(p) {}
+
+        void emit(T value) /* override */ {
             // Note: we are checking predicate first, then throw. If the predicate does suspend (calls emit, for example)
             // the resulting code is never tail-suspending and produces a state-machine
-            if (!predicate(value)) {
-                throw AbortFlowException(this)
+            if (!pred(value)) {
+                throw AbortFlowException(this);
             }
         }
-    }
+    };
+
+    PredicateCollector collector{predicate};
     try {
-        collect(collector)
-    } catch (e: AbortFlowException) {
-        e.checkOwnership(collector)
+        flow.collect(collector);
+    } catch (AbortFlowException& e) {
+        e.check_ownership(&collector);
         // The task might have been cancelled before AbortFlowException was thrown.
-        coroutineContext.ensureActive()
+        current_coroutine_context().ensure_active();
     }
 }
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

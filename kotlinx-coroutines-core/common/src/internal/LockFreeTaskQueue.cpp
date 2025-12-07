@@ -1,10 +1,30 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/internal/LockFreeTaskQueue.kt
+//
+// TODO: This is a mechanical transliteration - semantics not fully implemented
+// TODO: atomicfu library needs C++ atomic equivalent
+// TODO: @JvmField, @JvmInline annotations - JVM-specific
+// TODO: typealias needs using declaration
+// TODO: Lock-free algorithm correctness needs careful review
+// TODO: atomicArrayOfNulls needs custom implementation
+// TODO: Inline functions and lambdas need proper C++ implementation
+// TODO: Extension functions (withState, loop, update) need implementation
 
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlin.jvm.*
+#include <atomic>
+#include <vector>
+#include <functional>
 
-private typealias Core<E> = LockFreeTaskQueueCore<E>
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
+
+// Forward declarations
+template<typename E> class LockFreeTaskQueueCore;
+class Symbol;
+
+// typealias Core<E> = LockFreeTaskQueueCore<E>
+template<typename E>
+using Core = LockFreeTaskQueueCore<E>;
 
 /**
  * Lock-free Multiply-Producer xxx-Consumer Queue for task scheduling purposes.
@@ -23,120 +43,161 @@ private typealias Core<E> = LockFreeTaskQueueCore<E>
  * It is a very short window that could manifest itself rarely and only under specific load conditions,
  * but it still deprives this algorithm of its lock-freedom.
  */
-internal open class LockFreeTaskQueue<E : Any>(
-    singleConsumer: Boolean // true when there is only a single consumer (slightly faster & lock-free)
-) {
-    private val _cur = atomic(Core<E>(Core.INITIAL_CAPACITY, singleConsumer))
+template<typename E>
+class LockFreeTaskQueue {
+private:
+    std::atomic<Core<E>*> _cur;
+
+public:
+    explicit LockFreeTaskQueue(bool single_consumer)
+        : _cur(new Core<E>(Core<E>::kInitialCapacity, single_consumer)) {}
 
     // Note: it is not atomic w.r.t. remove operation (remove can transiently fail when isEmpty is false)
-    val isEmpty: Boolean get() = _cur.value.isEmpty
-    val size: Int get() = _cur.value.size
+    bool is_empty() const { return _cur.load()->is_empty(); }
+    int size() const { return _cur.load()->size(); }
 
-    fun close() {
-        _cur.loop { cur ->
-            if (cur.close()) return // closed this copy
-            _cur.compareAndSet(cur, cur.next()) // move to next
+    void close() {
+        while (true) {
+            Core<E>* cur = _cur.load();
+            if (cur->close()) return; // closed this copy
+            _cur.compare_exchange_weak(cur, cur->next()); // move to next
         }
     }
 
-    fun addLast(element: E): Boolean {
-        _cur.loop { cur ->
-            when (cur.addLast(element)) {
-                Core.ADD_SUCCESS -> return true
-                Core.ADD_CLOSED -> return false
-                Core.ADD_FROZEN -> _cur.compareAndSet(cur, cur.next()) // move to next
+    bool add_last(E* element) {
+        while (true) {
+            Core<E>* cur = _cur.load();
+            int result = cur->add_last(element);
+            if (result == Core<E>::kAddSuccess) return true;
+            if (result == Core<E>::kAddClosed) return false;
+            if (result == Core<E>::kAddFrozen) {
+                _cur.compare_exchange_weak(cur, cur->next()); // move to next
             }
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    fun removeFirstOrNull(): E? {
-        _cur.loop { cur ->
-            val result = cur.removeFirstOrNull()
-            if (result !== Core.REMOVE_FROZEN) return result as E?
-            _cur.compareAndSet(cur, cur.next())
+    // TODO: @Suppress("UNCHECKED_CAST")
+    E* remove_first_or_null() {
+        while (true) {
+            Core<E>* cur = _cur.load();
+            void* result = cur->remove_first_or_null();
+            if (result != Core<E>::kRemoveFrozen) return static_cast<E*>(result);
+            _cur.compare_exchange_weak(cur, cur->next());
         }
     }
 
     // Used for validation in tests only
-    fun <R> map(transform: (E) -> R): List<R> = _cur.value.map(transform)
+    template<typename R>
+    std::vector<R> map(std::function<R(E*)> transform) {
+        return _cur.load()->map(transform);
+    }
 
     // Used for validation in tests only
-    fun isClosed(): Boolean = _cur.value.isClosed()
-}
+    bool is_closed() { return _cur.load()->is_closed(); }
+};
 
 /**
  * Lock-free Multiply-Producer xxx-Consumer Queue core.
  * @see LockFreeTaskQueue
  */
-internal class LockFreeTaskQueueCore<E : Any>(
-    private val capacity: Int,
-    private val singleConsumer: Boolean // true when there is only a single consumer (slightly faster)
-) {
-    private val mask = capacity - 1
-    private val _next = atomic<Core<E>?>(null)
-    private val _state = atomic(0L)
-    private val array = atomicArrayOfNulls<Any?>(capacity)
+template<typename E>
+class LockFreeTaskQueueCore {
+private:
+    const int capacity_;
+    const bool single_consumer_;
+    const int mask_;
 
-    init {
-        check(mask <= MAX_CAPACITY_MASK)
-        check(capacity and mask == 0)
+    std::atomic<Core<E>*> _next;
+    std::atomic<long> _state;
+    std::vector<std::atomic<void*>> array_; // TODO: atomicArrayOfNulls equivalent
+
+public:
+    LockFreeTaskQueueCore(int capacity, bool single_consumer)
+        : capacity_(capacity),
+          single_consumer_(single_consumer),
+          mask_(capacity - 1),
+          _next(nullptr),
+          _state(0L),
+          array_(capacity) {
+        // TODO: check(mask <= MAX_CAPACITY_MASK)
+        // TODO: check(capacity and mask == 0)
     }
 
     // Note: it is not atomic w.r.t. remove operation (remove can transiently fail when isEmpty is false)
-    val isEmpty: Boolean get() = _state.value.withState { head, tail -> head == tail }
-    val size: Int get() = _state.value.withState { head, tail -> (tail - head) and MAX_CAPACITY_MASK }
+    bool is_empty() const {
+        long state = _state.load();
+        int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+        int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+        return head == tail;
+    }
 
-    fun close(): Boolean {
-        _state.update { state ->
-            if (state and CLOSED_MASK != 0L) return true // ok - already closed
-            if (state and FROZEN_MASK != 0L) return false // frozen -- try next
-            state or CLOSED_MASK // try set closed bit
+    int size() const {
+        long state = _state.load();
+        int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+        int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+        return (tail - head) & kMaxCapacityMask;
+    }
+
+    bool close() {
+        while (true) {
+            long state = _state.load();
+            if ((state & kClosedMask) != 0L) return true; // ok - already closed
+            if ((state & kFrozenMask) != 0L) return false; // frozen -- try next
+            long new_state = state | kClosedMask;
+            if (_state.compare_exchange_weak(state, new_state)) return true;
         }
-        return true
     }
 
     // ADD_CLOSED | ADD_FROZEN | ADD_SUCCESS
-    fun addLast(element: E): Int {
-        _state.loop { state ->
-            if (state and (FROZEN_MASK or CLOSED_MASK) != 0L) return state.addFailReason() // cannot add
-            state.withState { head, tail ->
-                val mask = this.mask // manually move instance field to local for performance
-                // If queue is Single-Consumer then there could be one element beyond head that we cannot overwrite,
-                // so we check for full queue with an extra margin of one element
-                if ((tail + 2) and mask == head and mask) return ADD_FROZEN // overfull, so do freeze & copy
-                // If queue is Multi-Consumer then the consumer could still have not cleared element
-                // despite the above check for one free slot.
-                if (!singleConsumer && array[tail and mask].value != null) {
-                    // There are two options in this situation
-                    // 1. Spin-wait until consumer clears the slot
-                    // 2. Freeze & resize to avoid spinning
-                    // We use heuristic here to avoid memory-overallocation
-                    // Freeze & reallocate when queue is small or more than half of the queue is used
-                    if (capacity < MIN_ADD_SPIN_CAPACITY || (tail - head) and MAX_CAPACITY_MASK > capacity shr 1) {
-                        return ADD_FROZEN
-                    }
-                    // otherwise spin
-                    return@loop
+    int add_last(E* element) {
+        while (true) {
+            long state = _state.load();
+            if ((state & (kFrozenMask | kClosedMask)) != 0L) {
+                return add_fail_reason(state); // cannot add
+            }
+
+            int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+            int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+            int mask = this->mask_; // manually move instance field to local for performance
+
+            // If queue is Single-Consumer then there could be one element beyond head that we cannot overwrite,
+            // so we check for full queue with an extra margin of one element
+            if (((tail + 2) & mask) == (head & mask)) return kAddFrozen; // overfull, so do freeze & copy
+
+            // If queue is Multi-Consumer then the consumer could still have not cleared element
+            // despite the above check for one free slot.
+            if (!single_consumer_ && array_[tail & mask].load() != nullptr) {
+                // There are two options in this situation
+                // 1. Spin-wait until consumer clears the slot
+                // 2. Freeze & resize to avoid spinning
+                // We use heuristic here to avoid memory-overallocation
+                // Freeze & reallocate when queue is small or more than half of the queue is used
+                if (capacity_ < kMinAddSpinCapacity || ((tail - head) & kMaxCapacityMask) > (capacity_ >> 1)) {
+                    return kAddFrozen;
                 }
-                val newTail = (tail + 1) and MAX_CAPACITY_MASK
-                if (_state.compareAndSet(state, state.updateTail(newTail))) {
-                    // successfully added
-                    array[tail and mask].value = element
-                    // could have been frozen & copied before this item was set -- correct it by filling placeholder
-                    var cur = this
-                    while(true) {
-                        if (cur._state.value and FROZEN_MASK == 0L) break // all fine -- not frozen yet
-                        cur = cur.next().fillPlaceholder(tail, element) ?: break
-                    }
-                    return ADD_SUCCESS // added successfully
+                // otherwise spin
+                continue;
+            }
+
+            int new_tail = (tail + 1) & kMaxCapacityMask;
+            long new_state = update_tail(state, new_tail);
+            if (_state.compare_exchange_weak(state, new_state)) {
+                // successfully added
+                array_[tail & mask].store(element);
+                // could have been frozen & copied before this item was set -- correct it by filling placeholder
+                Core<E>* cur = this;
+                while (true) {
+                    if ((cur->_state.load() & kFrozenMask) == 0L) break; // all fine -- not frozen yet
+                    cur = cur->next()->fill_placeholder(tail, element);
+                    if (cur == nullptr) break;
                 }
+                return kAddSuccess; // added successfully
             }
         }
     }
 
-    private fun fillPlaceholder(index: Int, element: E): Core<E>? {
-        val old = array[index and mask].value
+    Core<E>* fill_placeholder(int index, E* element) {
+        void* old = array_[index & mask_].load();
         /*
          * addLast actions:
          * 1) Commit tail slot
@@ -147,157 +208,186 @@ internal class LockFreeTaskQueueCore<E : Any>(
          * then another producer might have written its placeholder in our slot, so we should
          * perform *unique* check that current placeholder is our to avoid overwriting another producer placeholder
          */
-        if (old is Placeholder && old.index == index) {
-            array[index and mask].value = element
+        // TODO: if (old is Placeholder && old.index == index) - type checking needed
+        auto* placeholder = dynamic_cast<Placeholder*>(old);
+        if (placeholder && placeholder->index == index) {
+            array_[index & mask_].store(element);
             // we've corrected missing element, should check if that propagated to further copies, just in case
-            return this
+            return this;
         }
         // it is Ok, no need for further action
-        return null
+        return nullptr;
     }
 
     // REMOVE_FROZEN | null (EMPTY) | E (SUCCESS)
-    fun removeFirstOrNull(): Any? {
-        _state.loop { state ->
-            if (state and FROZEN_MASK != 0L) return REMOVE_FROZEN // frozen -- cannot modify
-            state.withState { head, tail ->
-                if ((tail and mask) == (head and mask)) return null // empty
-                val element = array[head and mask].value
-                if (element == null) {
-                    // If queue is Single-Consumer, then element == null only when add has not finished yet
-                    if (singleConsumer) return null // consider it not added yet
-                    // retry (spin) until consumer adds it
-                    return@loop
-                }
-                // element == Placeholder can only be when add has not finished yet
-                if (element is Placeholder) return null // consider it not added yet
-                // we cannot put null into array here, because copying thread could replace it with Placeholder and that is a disaster
-                val newHead = (head + 1) and MAX_CAPACITY_MASK
-                if (_state.compareAndSet(state, state.updateHead(newHead))) {
-                    // Array could have been copied by another thread and it is perfectly fine, since only elements
-                    // between head and tail were copied and there are no extra steps we should take here
-                    array[head and mask].value = null // now can safely put null (state was updated)
-                    return element // successfully removed in fast-path
-                }
-                // Multi-Consumer queue must retry this loop on CAS failure (another consumer might have removed element)
-                if (!singleConsumer) return@loop
-                // Single-consumer queue goes to slow-path for remove in case of interference
-                var cur = this
-                while (true) {
-                    @Suppress("UNUSED_VALUE")
-                    cur = cur.removeSlowPath(head, newHead) ?: return element
-                }
+    void* remove_first_or_null() {
+        while (true) {
+            long state = _state.load();
+            if ((state & kFrozenMask) != 0L) return kRemoveFrozen; // frozen -- cannot modify
+
+            int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+            int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+
+            if ((tail & mask_) == (head & mask_)) return nullptr; // empty
+
+            void* element = array_[head & mask_].load();
+            if (element == nullptr) {
+                // If queue is Single-Consumer, then element == null only when add has not finished yet
+                if (single_consumer_) return nullptr; // consider it not added yet
+                // retry (spin) until consumer adds it
+                continue;
+            }
+
+            // TODO: element is Placeholder - type checking needed
+            auto* placeholder = dynamic_cast<Placeholder*>(element);
+            if (placeholder) return nullptr; // consider it not added yet
+
+            // we cannot put null into array here, because copying thread could replace it with Placeholder and that is a disaster
+            int new_head = (head + 1) & kMaxCapacityMask;
+            long new_state = update_head(state, new_head);
+            if (_state.compare_exchange_weak(state, new_state)) {
+                // Array could have been copied by another thread and it is perfectly fine, since only elements
+                // between head and tail were copied and there are no extra steps we should take here
+                array_[head & mask_].store(nullptr); // now can safely put null (state was updated)
+                return element; // successfully removed in fast-path
+            }
+
+            // Multi-Consumer queue must retry this loop on CAS failure (another consumer might have removed element)
+            if (!single_consumer_) continue;
+
+            // Single-consumer queue goes to slow-path for remove in case of interference
+            Core<E>* cur = this;
+            while (true) {
+                cur = cur->remove_slow_path(head, new_head);
+                if (cur == nullptr) return element;
             }
         }
     }
 
-    private fun removeSlowPath(oldHead: Int, newHead: Int): Core<E>? {
-        _state.loop { state ->
-            state.withState { head, _ ->
-                assert { head == oldHead } // "This queue can have only one consumer"
-                if (state and FROZEN_MASK != 0L) {
-                    // state was already frozen, so removed element was copied to next
-                    return next() // continue to correct head in next
-                }
-                if (_state.compareAndSet(state, state.updateHead(newHead))) {
-                    array[head and mask].value = null // now can safely put null (state was updated)
-                    return null
-                }
+    Core<E>* remove_slow_path(int old_head, int new_head) {
+        while (true) {
+            long state = _state.load();
+            int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+            // TODO: assert { head == old_head } // "This queue can have only one consumer"
+
+            if ((state & kFrozenMask) != 0L) {
+                // state was already frozen, so removed element was copied to next
+                return next(); // continue to correct head in next
+            }
+
+            long new_state = update_head(state, new_head);
+            if (_state.compare_exchange_weak(state, new_state)) {
+                array_[head & mask_].store(nullptr); // now can safely put null (state was updated)
+                return nullptr;
             }
         }
     }
 
-    fun next(): LockFreeTaskQueueCore<E> = allocateOrGetNextCopy(markFrozen())
+    Core<E>* next() { return allocate_or_get_next_copy(mark_frozen()); }
 
-    private fun markFrozen(): Long =
-        _state.updateAndGet { state ->
-            if (state and FROZEN_MASK != 0L) return state // already marked
-            state or FROZEN_MASK
-        }
-
-    private fun allocateOrGetNextCopy(state: Long): Core<E> {
-        _next.loop { next ->
-            if (next != null) return next // already allocated & copied
-            _next.compareAndSet(null, allocateNextCopy(state))
+    long mark_frozen() {
+        while (true) {
+            long state = _state.load();
+            if ((state & kFrozenMask) != 0L) return state; // already marked
+            long new_state = state | kFrozenMask;
+            if (_state.compare_exchange_weak(state, new_state)) return new_state;
         }
     }
 
-    private fun allocateNextCopy(state: Long): Core<E> {
-        val next = LockFreeTaskQueueCore<E>(capacity * 2, singleConsumer)
-        state.withState { head, tail ->
-            var index = head
-            while (index and mask != tail and mask) {
-                // replace nulls with placeholders on copy
-                val value = array[index and mask].value ?: Placeholder(index)
-                next.array[index and next.mask].value = value
-                index++
-            }
-            next._state.value = state wo FROZEN_MASK
+    Core<E>* allocate_or_get_next_copy(long state) {
+        while (true) {
+            Core<E>* next = _next.load();
+            if (next != nullptr) return next; // already allocated & copied
+            Core<E>* new_next = allocate_next_copy(state);
+            _next.compare_exchange_weak(next, new_next);
         }
-        return next
+    }
+
+    Core<E>* allocate_next_copy(long state) {
+        Core<E>* next = new Core<E>(capacity_ * 2, single_consumer_);
+        int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+        int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+
+        int index = head;
+        while ((index & mask_) != (tail & mask_)) {
+            // replace nulls with placeholders on copy
+            void* value = array_[index & mask_].load();
+            if (value == nullptr) value = new Placeholder(index);
+            next->array_[index & next->mask_].store(value);
+            index++;
+        }
+        next->_state.store(state & ~kFrozenMask);
+        return next;
     }
 
     // Used for validation in tests only
-    fun <R> map(transform: (E) -> R): List<R> {
-        val res = ArrayList<R>(capacity)
-        _state.value.withState { head, tail ->
-            var index = head
-            while (index and mask != tail and mask) {
-                // replace nulls with placeholders on copy
-                val element = array[index and mask].value
-                @Suppress("UNCHECKED_CAST")
-                if (element != null && element !is Placeholder) res.add(transform(element as E))
-                index++
+    template<typename R>
+    std::vector<R> map(std::function<R(E*)> transform) {
+        std::vector<R> res;
+        long state = _state.load();
+        int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+        int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+
+        int index = head;
+        while ((index & mask_) != (tail & mask_)) {
+            void* element = array_[index & mask_].load();
+            // TODO: if (element != null && element !is Placeholder)
+            if (element != nullptr && dynamic_cast<Placeholder*>(element) == nullptr) {
+                res.push_back(transform(static_cast<E*>(element)));
             }
+            index++;
         }
-        return res
+        return res;
     }
 
     // Used for validation in tests only
-    fun isClosed(): Boolean = _state.value and CLOSED_MASK != 0L
-
+    bool is_closed() { return (_state.load() & kClosedMask) != 0L; }
 
     // Instance of this class is placed into array when we have to copy array, but addLast is in progress --
     // it had already reserved a slot in the array (with null) and have not yet put its value there.
     // Placeholder keeps the actual index (not masked) to distinguish placeholders on different wraparounds of array
     // Internal because of inlining
-    internal class Placeholder(@JvmField val index: Int)
+    class Placeholder {
+    public:
+        int index;
+        explicit Placeholder(int index) : index(index) {}
+    };
 
-    @Suppress("PrivatePropertyName", "MemberVisibilityCanBePrivate")
-    internal companion object {
-        const val INITIAL_CAPACITY = 8
+    // TODO: @Suppress("PrivatePropertyName", "MemberVisibilityCanBePrivate")
+    // Constants
+    static constexpr int kInitialCapacity = 8;
+    static constexpr int kCapacityBits = 30;
+    static constexpr int kMaxCapacityMask = (1 << kCapacityBits) - 1;
+    static constexpr int kHeadShift = 0;
+    static constexpr long kHeadMask = static_cast<long>(kMaxCapacityMask) << kHeadShift;
+    static constexpr int kTailShift = kHeadShift + kCapacityBits;
+    static constexpr long kTailMask = static_cast<long>(kMaxCapacityMask) << kTailShift;
+    static constexpr int kFrozenShift = kTailShift + kCapacityBits;
+    static constexpr long kFrozenMask = 1L << kFrozenShift;
+    static constexpr int kClosedShift = kFrozenShift + 1;
+    static constexpr long kClosedMask = 1L << kClosedShift;
+    static constexpr int kMinAddSpinCapacity = 1024;
 
-        const val CAPACITY_BITS = 30
-        const val MAX_CAPACITY_MASK = (1 shl CAPACITY_BITS) - 1
-        const val HEAD_SHIFT = 0
-        const val HEAD_MASK = MAX_CAPACITY_MASK.toLong() shl HEAD_SHIFT
-        const val TAIL_SHIFT = HEAD_SHIFT + CAPACITY_BITS
-        const val TAIL_MASK = MAX_CAPACITY_MASK.toLong() shl TAIL_SHIFT
+    static Symbol* kRemoveFrozen; // TODO: Symbol("REMOVE_FROZEN")
 
-        const val FROZEN_SHIFT = TAIL_SHIFT + CAPACITY_BITS
-        const val FROZEN_MASK = 1L shl FROZEN_SHIFT
-        const val CLOSED_SHIFT = FROZEN_SHIFT + 1
-        const val CLOSED_MASK = 1L shl CLOSED_SHIFT
+    static constexpr int kAddSuccess = 0;
+    static constexpr int kAddFrozen = 1;
+    static constexpr int kAddClosed = 2;
 
-        const val MIN_ADD_SPIN_CAPACITY = 1024
-
-        @JvmField val REMOVE_FROZEN = Symbol("REMOVE_FROZEN")
-
-        const val ADD_SUCCESS = 0
-        const val ADD_FROZEN = 1
-        const val ADD_CLOSED = 2
-
-        infix fun Long.wo(other: Long) = this and other.inv()
-        fun Long.updateHead(newHead: Int) = (this wo HEAD_MASK) or (newHead.toLong() shl HEAD_SHIFT)
-        fun Long.updateTail(newTail: Int) = (this wo TAIL_MASK) or (newTail.toLong() shl TAIL_SHIFT)
-
-        inline fun <T> Long.withState(block: (head: Int, tail: Int) -> T): T {
-            val head = ((this and HEAD_MASK) shr HEAD_SHIFT).toInt()
-            val tail = ((this and TAIL_MASK) shr TAIL_SHIFT).toInt()
-            return block(head, tail)
-        }
-
-        // FROZEN | CLOSED
-        fun Long.addFailReason(): Int = if (this and CLOSED_MASK != 0L) ADD_CLOSED else ADD_FROZEN
+private:
+    static long update_head(long state, int new_head) {
+        return (state & ~kHeadMask) | (static_cast<long>(new_head) << kHeadShift);
     }
-}
+
+    static long update_tail(long state, int new_tail) {
+        return (state & ~kTailMask) | (static_cast<long>(new_tail) << kTailShift);
+    }
+
+    static int add_fail_reason(long state) {
+        return ((state & kClosedMask) != 0L) ? kAddClosed : kAddFrozen;
+    }
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

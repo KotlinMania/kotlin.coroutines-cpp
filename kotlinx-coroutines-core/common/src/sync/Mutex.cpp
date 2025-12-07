@@ -1,12 +1,31 @@
-package kotlinx.coroutines.sync
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/sync/Mutex.kt
+//
+// TODO: This is a mechanical syntax transliteration. The following Kotlin constructs need proper C++ implementation:
+// - suspend functions (marked but not implemented as C++20 coroutines)
+// - interface (converted to abstract class)
+// - Kotlin atomicfu (atomic<T> needs C++ std::atomic)
+// - Default parameters (need overloads or std::optional)
+// - Smart casts and when expressions
+// - Nullable types (T? -> T* or std::optional<T>)
+// - Extension functions (converted to free functions)
+// - Kotlin contracts (contract { ... })
+// - Lambda types and inline functions
+// - @Suppress, @OptIn, @JvmField annotations (kept as comments)
+// - Symbol type (using sentinel pointers)
+// - check/require functions (converted to assertions/exceptions)
 
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.internal.*
-import kotlinx.coroutines.selects.*
-import kotlin.contracts.*
-import kotlin.coroutines.CoroutineContext
-import kotlin.jvm.*
+namespace kotlinx {
+namespace coroutines {
+namespace sync {
+
+// import kotlinx.atomicfu.*
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.internal.*
+// import kotlinx.coroutines.selects.*
+// import kotlin.contracts.*
+// import kotlin.coroutines.CoroutineContext
+// import kotlin.jvm.*
 
 /**
  * Mutual exclusion for coroutines.
@@ -20,11 +39,14 @@ import kotlin.jvm.*
  * An unlock operation on a [Mutex] happens-before every subsequent successful lock on that [Mutex].
  * Unsuccessful call to [tryLock] do not have any memory effects.
  */
-public interface Mutex {
+class Mutex {
+public:
+    virtual ~Mutex() = default;
+
     /**
      * Returns `true` if this mutex is locked.
      */
-    public val isLocked: Boolean
+    virtual bool is_locked() const = 0;
 
     /**
      * Tries to lock this mutex, returning `false` if this mutex is already locked.
@@ -36,7 +58,7 @@ public interface Mutex {
      * @param owner Optional owner token for debugging. When `owner` is specified (non-null value) and this mutex
      *        is already locked with the same token (same identity), this function throws [IllegalStateException].
      */
-    public fun tryLock(owner: Any? = null): Boolean
+    virtual bool try_lock(void* owner = nullptr) = 0;
 
     /**
      * Locks this mutex, suspending caller until the lock is acquired (in other words, while the lock is held elsewhere).
@@ -62,16 +84,16 @@ public interface Mutex {
      * @param owner Optional owner token for debugging. When `owner` is specified (non-null value) and this mutex
      *        is already locked with the same token (same identity), this function throws [IllegalStateException].
      */
-    public suspend fun lock(owner: Any? = null)
+    virtual void lock(void* owner = nullptr) = 0; // TODO: suspend
 
     /**
      * Clause for [select] expression of [lock] suspending function that selects when the mutex is locked.
      * Additional parameter for the clause in the `owner` (see [lock]) and when the clause is selected
      * the reference to this mutex is passed into the corresponding block.
      */
-    @Deprecated(level = DeprecationLevel.WARNING, message = "Mutex.onLock deprecated without replacement. " +
-        "For additional details please refer to #2794") // WARNING since 1.6.0
-    public val onLock: SelectClause2<Any?, Mutex>
+    // @Deprecated(level = DeprecationLevel.WARNING, message = "Mutex.onLock deprecated without replacement. " +
+    //     "For additional details please refer to #2794") // WARNING since 1.6.0
+    virtual SelectClause2<void*, Mutex*>& get_on_lock() = 0;
 
     /**
      * Checks whether this mutex is locked by the specified owner.
@@ -79,7 +101,7 @@ public interface Mutex {
      * @return `true` when this mutex is locked by the specified owner;
      * `false` if the mutex is not locked or locked by another owner.
      */
-    public fun holdsLock(owner: Any): Boolean
+    virtual bool holds_lock(void* owner) = 0;
 
     /**
      * Unlocks this mutex. Throws [IllegalStateException] if invoked on a mutex that is not locked or
@@ -92,8 +114,8 @@ public interface Mutex {
      * @param owner Optional owner token for debugging. When `owner` is specified (non-null value) and this mutex
      *        was locked with the different token (by identity), this function throws [IllegalStateException].
      */
-    public fun unlock(owner: Any? = null)
-}
+    virtual void unlock(void* owner = nullptr) = 0;
+};
 
 /**
  * Creates a [Mutex] instance.
@@ -101,9 +123,8 @@ public interface Mutex {
  *
  * @param locked initial state of the mutex.
  */
-@Suppress("FunctionName")
-public fun Mutex(locked: Boolean = false): Mutex =
-    MutexImpl(locked)
+// @Suppress("FunctionName")
+Mutex* create_mutex(bool locked = false); // Forward declaration
 
 /**
  * Executes the given [action] under this mutex's lock.
@@ -113,201 +134,255 @@ public fun Mutex(locked: Boolean = false): Mutex =
  *
  * @return the return value of the action.
  */
-@OptIn(ExperimentalContracts::class)
-public suspend inline fun <T> Mutex.withLock(owner: Any? = null, action: () -> T): T {
-    contract {
-        callsInPlace(action, InvocationKind.EXACTLY_ONCE)
-    }
-    lock(owner)
-    return try {
-        action()
-    } finally {
-        unlock(owner)
+// @OptIn(ExperimentalContracts::class)
+template<typename T, typename ActionFunc>
+T with_lock(Mutex& mutex, void* owner, ActionFunc&& action) {
+    // TODO: suspend function semantics not implemented
+    // TODO: Kotlin contract { callsInPlace(action, InvocationKind.EXACTLY_ONCE) } not applicable in C++
+    // contract {
+    //     callsInPlace(action, InvocationKind.EXACTLY_ONCE)
+    // }
+    mutex.lock(owner);
+    try {
+        return action();
+    } catch (...) {
+        mutex.unlock(owner);
+        throw;
     }
 }
 
-
-internal open class MutexImpl(locked: Boolean) : SemaphoreAndMutexImpl(1, if (locked) 1 else 0), Mutex {
+class MutexImpl : public SemaphoreAndMutexImpl, public Mutex {
+protected:
     /**
      * After the lock is acquired, the corresponding owner is stored in this field.
      * The [unlock] operation checks the owner and either re-sets it to [NO_OWNER],
      * if there is no waiting request, or to the owner of the suspended [lock] operation
      * to be resumed, otherwise.
      */
-    private val owner = atomic<Any?>(if (locked) null else NO_OWNER)
+    std::atomic<void*> owner;
 
-    private val onSelectCancellationUnlockConstructor: OnCancellationConstructor =
-        { _: SelectInstance<*>, owner: Any?, _: Any? ->
-            { _, _, _ -> unlock(owner) }
-        }
+    OnCancellationConstructor on_select_cancellation_unlock_constructor;
 
-    override val isLocked: Boolean get() =
-        availablePermits == 0
+public:
+    explicit MutexImpl(bool locked)
+        : SemaphoreAndMutexImpl(1, locked ? 1 : 0),
+          owner(locked ? nullptr : kNoOwner),
+          on_select_cancellation_unlock_constructor(
+              [](SelectInstance<void*>* /*select*/, void* owner_, void* /*internal_result*/) {
+                  return [owner_](std::exception_ptr, void*, CoroutineContext) {
+                      // TODO: unlock(owner_)
+                  };
+              }
+          ) {}
 
-    override fun holdsLock(owner: Any): Boolean = holdsLockImpl(owner) == HOLDS_LOCK_YES
+    bool is_locked() const override {
+        return available_permits == 0;
+    }
 
+    bool holds_lock(void* owner_) override {
+        return holds_lock_impl(owner_) == kHoldsLockYes;
+    }
+
+protected:
     /**
      * [HOLDS_LOCK_UNLOCKED] if the mutex is unlocked
      * [HOLDS_LOCK_YES] if the mutex is held with the specified [owner]
      * [HOLDS_LOCK_ANOTHER_OWNER] if the mutex is held with a different owner
      */
-    private fun holdsLockImpl(owner: Any?): Int {
+    int holds_lock_impl(void* owner_) {
         while (true) {
             // Is this mutex locked?
-            if (!isLocked) return HOLDS_LOCK_UNLOCKED
-            val curOwner = this.owner.value
+            if (!is_locked()) return kHoldsLockUnlocked;
+            void* cur_owner = owner.load();
             // Wait in a spin-loop until the owner is set
-            if (curOwner === NO_OWNER) continue // <-- ATTENTION, BLOCKING PART HERE
+            if (cur_owner == kNoOwner) continue; // <-- ATTENTION, BLOCKING PART HERE
             // Check the owner
-            return if (curOwner === owner) HOLDS_LOCK_YES else HOLDS_LOCK_ANOTHER_OWNER
+            return (cur_owner == owner_) ? kHoldsLockYes : kHoldsLockAnotherOwner;
         }
     }
 
-    override suspend fun lock(owner: Any?) {
-        if (tryLock(owner)) return
-        lockSuspend(owner)
+public:
+    void lock(void* owner_ = nullptr) override {
+        // TODO: suspend function semantics not implemented
+        if (try_lock(owner_)) return;
+        lock_suspend(owner_);
     }
 
-    private suspend fun lockSuspend(owner: Any?) = suspendCancellableCoroutineReusable<Unit> { cont ->
-        val contWithOwner = CancellableContinuationWithOwner(cont, owner)
-        acquire(contWithOwner)
+private:
+    void lock_suspend(void* owner_) {
+        // TODO: suspend function semantics not implemented
+        // TODO: suspendCancellableCoroutineReusable
+        // CancellableContinuationWithOwner cont_with_owner(cont, owner_);
+        // acquire(cont_with_owner);
     }
 
-    override fun tryLock(owner: Any?): Boolean = when (tryLockImpl(owner)) {
-        TRY_LOCK_SUCCESS -> true
-        TRY_LOCK_FAILED -> false
-        TRY_LOCK_ALREADY_LOCKED_BY_OWNER -> error("This mutex is already locked by the specified owner: $owner")
-        else -> error("unexpected")
+public:
+    bool try_lock(void* owner_ = nullptr) override {
+        int result = try_lock_impl(owner_);
+        switch (result) {
+            case kTryLockSuccess: return true;
+            case kTryLockFailed: return false;
+            case kTryLockAlreadyLockedByOwner:
+                throw std::runtime_error("This mutex is already locked by the specified owner");
+            default:
+                throw std::runtime_error("unexpected");
+        }
     }
 
-    private fun tryLockImpl(owner: Any?): Int {
+private:
+    int try_lock_impl(void* owner_) {
         while (true) {
-            if (tryAcquire()) {
-                assert { this.owner.value === NO_OWNER }
-                this.owner.value = owner
-                return TRY_LOCK_SUCCESS
+            if (try_acquire()) {
+                // TODO: assert { this->owner.load() == kNoOwner }
+                owner.store(owner_);
+                return kTryLockSuccess;
             } else {
                 // The semaphore permit acquisition has failed.
                 // However, we need to check that this mutex is not
                 // locked by our owner.
-                if (owner == null) return TRY_LOCK_FAILED
-                when (holdsLockImpl(owner)) {
+                if (owner_ == nullptr) return kTryLockFailed;
+                int holds = holds_lock_impl(owner_);
+                switch (holds) {
                     // This mutex is already locked by our owner.
-                    HOLDS_LOCK_YES -> return TRY_LOCK_ALREADY_LOCKED_BY_OWNER
+                    case kHoldsLockYes:
+                        return kTryLockAlreadyLockedByOwner;
                     // This mutex is locked by another owner, `trylock(..)` must return `false`.
-                    HOLDS_LOCK_ANOTHER_OWNER -> return TRY_LOCK_FAILED
+                    case kHoldsLockAnotherOwner:
+                        return kTryLockFailed;
                     // This mutex is no longer locked, restart the operation.
-                    HOLDS_LOCK_UNLOCKED -> continue
+                    case kHoldsLockUnlocked:
+                        continue;
                 }
             }
         }
     }
 
-    override fun unlock(owner: Any?) {
+public:
+    void unlock(void* owner_ = nullptr) override {
         while (true) {
             // Is this mutex locked?
-            check(isLocked) { "This mutex is not locked" }
+            if (!is_locked()) {
+                throw std::runtime_error("This mutex is not locked");
+            }
             // Read the owner, waiting until it is set in a spin-loop if required.
-            val curOwner = this.owner.value
-            if (curOwner === NO_OWNER) continue // <-- ATTENTION, BLOCKING PART HERE
+            void* cur_owner = owner.load();
+            if (cur_owner == kNoOwner) continue; // <-- ATTENTION, BLOCKING PART HERE
             // Check the owner.
-            check(curOwner === owner || owner == null) { "This mutex is locked by $curOwner, but $owner is expected" }
+            if (!(cur_owner == owner_ || owner_ == nullptr)) {
+                throw std::runtime_error("This mutex is locked by different owner");
+            }
             // Try to clean the owner first. We need to use CAS here to synchronize with concurrent `unlock(..)`-s.
-            if (!this.owner.compareAndSet(curOwner, NO_OWNER)) continue
+            void* expected = cur_owner;
+            if (!owner.compare_exchange_strong(expected, kNoOwner)) continue;
             // Release the semaphore permit at the end.
-            release()
-            return
+            release();
+            return;
         }
     }
 
-    @Suppress("UNCHECKED_CAST", "OverridingDeprecatedMember", "OVERRIDE_DEPRECATION")
-    override val onLock: SelectClause2<Any?, Mutex> get() = SelectClause2Impl(
-        clauseObject = this,
-        regFunc = MutexImpl::onLockRegFunction as RegistrationFunction,
-        processResFunc = MutexImpl::onLockProcessResult as ProcessResultFunction,
-        onCancellationConstructor = onSelectCancellationUnlockConstructor
-    )
+    // @Suppress("UNCHECKED_CAST", "OverridingDeprecatedMember", "OVERRIDE_DEPRECATION")
+    SelectClause2<void*, Mutex*>& get_on_lock() override {
+        // TODO: return SelectClause2Impl
+        static SelectClause2Impl<void*, Mutex*> clause(
+            this,
+            /* regFunc = */ [](void* clause_obj, SelectInstance<void*>* select, void* param) {
+                // TODO: cast and call on_lock_reg_function
+            },
+            /* processResFunc = */ [](void* clause_obj, void* param, void* result) -> void* {
+                // TODO: call on_lock_process_result
+                return nullptr;
+            },
+            &on_select_cancellation_unlock_constructor
+        );
+        return clause;
+    }
 
-    protected open fun onLockRegFunction(select: SelectInstance<*>, owner: Any?) {
-        if (owner != null && holdsLock(owner)) {
-            select.selectInRegistrationPhase(ON_LOCK_ALREADY_LOCKED_BY_OWNER)
+protected:
+    virtual void on_lock_reg_function(SelectInstance<void*>* select, void* owner_) {
+        if (owner_ != nullptr && holds_lock(owner_)) {
+            select->select_in_registration_phase(kOnLockAlreadyLockedByOwner);
         } else {
-            onAcquireRegFunction(SelectInstanceWithOwner(select as SelectInstanceInternal<*>, owner), owner)
+            // TODO: on_acquire_reg_function(SelectInstanceWithOwner(select, owner_), owner_);
         }
     }
 
-    protected open fun onLockProcessResult(owner: Any?, result: Any?): Any? {
-        if (result == ON_LOCK_ALREADY_LOCKED_BY_OWNER) {
-            error("This mutex is already locked by the specified owner: $owner")
+    virtual void* on_lock_process_result(void* owner_, void* result) {
+        if (result == kOnLockAlreadyLockedByOwner) {
+            throw std::runtime_error("This mutex is already locked by the specified owner");
         }
-        return this
+        return this;
     }
 
-    @OptIn(InternalForInheritanceCoroutinesApi::class)
-    private inner class CancellableContinuationWithOwner(
-        @JvmField
-        val cont: CancellableContinuationImpl<Unit>,
-        @JvmField
-        val owner: Any?
-    ) : CancellableContinuation<Unit> by cont, Waiter by cont {
-        override fun <R : Unit> tryResume(
-            value: R,
-            idempotent: Any?,
-            onCancellation: ((cause: Throwable, value: R, context: CoroutineContext) -> Unit)?
-        ): Any? {
-            assert { this@MutexImpl.owner.value === NO_OWNER }
-            val token = cont.tryResume(value, idempotent) { _, _, _ ->
-                assert { this@MutexImpl.owner.value.let { it === NO_OWNER || it === owner } }
-                this@MutexImpl.owner.value = owner
-                unlock(owner)
+    // @OptIn(InternalForInheritanceCoroutinesApi::class)
+    class CancellableContinuationWithOwner : public CancellableContinuation<void*>, public Waiter {
+    public:
+        // @JvmField
+        CancellableContinuationImpl<void*>* cont;
+        // @JvmField
+        void* owner;
+
+        CancellableContinuationWithOwner(
+            CancellableContinuationImpl<void*>* cont_,
+            void* owner_
+        ) : cont(cont_), owner(owner_) {}
+
+        // TODO: Implement CancellableContinuation interface methods
+        // TODO: Implement Waiter interface methods
+    };
+
+    template<typename Q>
+    class SelectInstanceWithOwner : public SelectInstanceInternal<Q> {
+    public:
+        // @JvmField
+        SelectInstanceInternal<Q>* select;
+        // @JvmField
+        void* owner;
+
+        SelectInstanceWithOwner(
+            SelectInstanceInternal<Q>* select_,
+            void* owner_
+        ) : select(select_), owner(owner_) {}
+
+        bool try_select(void* clause_object, void* result) override {
+            // TODO: assert { owner.load() == kNoOwner }
+            bool success = select->try_select(clause_object, result);
+            if (success) {
+                // TODO: set owner
             }
-            if (token != null) {
-                assert { this@MutexImpl.owner.value === NO_OWNER }
-                this@MutexImpl.owner.value = owner
-            }
-            return token
+            return success;
         }
 
-        override fun <R : Unit> resume(
-            value: R,
-            onCancellation: ((cause: Throwable, value: R, context: CoroutineContext) -> Unit)?
-        ) {
-            assert { this@MutexImpl.owner.value === NO_OWNER }
-            this@MutexImpl.owner.value = owner
-            cont.resume(value) { unlock(owner) }
-        }
-    }
-
-    private inner class SelectInstanceWithOwner<Q>(
-        @JvmField
-        val select: SelectInstanceInternal<Q>,
-        @JvmField
-        val owner: Any?
-    ) : SelectInstanceInternal<Q> by select {
-        override fun trySelect(clauseObject: Any, result: Any?): Boolean {
-            assert { this@MutexImpl.owner.value === NO_OWNER }
-            return select.trySelect(clauseObject, result).also { success ->
-                if (success) this@MutexImpl.owner.value = owner
-            }
+        void select_in_registration_phase(void* internal_result) override {
+            // TODO: assert { owner.load() == kNoOwner }
+            // TODO: set owner
+            select->select_in_registration_phase(internal_result);
         }
 
-        override fun selectInRegistrationPhase(internalResult: Any?) {
-            assert { this@MutexImpl.owner.value === NO_OWNER }
-            this@MutexImpl.owner.value = owner
-            select.selectInRegistrationPhase(internalResult)
-        }
-    }
+        // TODO: Delegate other SelectInstanceInternal methods to select
+    };
 
-    override fun toString() = "Mutex@${hexAddress}[isLocked=$isLocked,owner=${owner.value}]"
+    // TODO: toString override
+};
+
+// Factory function implementation
+Mutex* create_mutex(bool locked) {
+    return new MutexImpl(locked);
 }
 
-private val NO_OWNER = Symbol("NO_OWNER")
-private val ON_LOCK_ALREADY_LOCKED_BY_OWNER = Symbol("ALREADY_LOCKED_BY_OWNER")
+// Symbol-like markers
+void* kNoOwner = reinterpret_cast<void*>(0x100);
+void* kOnLockAlreadyLockedByOwner = reinterpret_cast<void*>(0x101);
 
-private const val TRY_LOCK_SUCCESS = 0
-private const val TRY_LOCK_FAILED = 1
-private const val TRY_LOCK_ALREADY_LOCKED_BY_OWNER = 2
+// try_lock results
+constexpr int kTryLockSuccess = 0;
+constexpr int kTryLockFailed = 1;
+constexpr int kTryLockAlreadyLockedByOwner = 2;
 
-private const val HOLDS_LOCK_UNLOCKED = 0
-private const val HOLDS_LOCK_YES = 1
-private const val HOLDS_LOCK_ANOTHER_OWNER = 2
+// holds_lock results
+constexpr int kHoldsLockUnlocked = 0;
+constexpr int kHoldsLockYes = 1;
+constexpr int kHoldsLockAnotherOwner = 2;
+
+} // namespace sync
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,143 +1,55 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/ChannelReceiveCatchingTest.kt
+//
+// TODO: Translate imports
+// TODO: Translate suspend functions to C++ coroutines
+// TODO: Translate test annotations to C++ test framework
+// TODO: Handle @ExperimentalUnsignedTypes
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-class ChannelReceiveCatchingTest : TestBase() {
-    @Test
-    fun testChannelOfThrowables() = runTest {
-        val channel = Channel<Throwable>()
-        launch {
-            channel.send(TestException1())
-            channel.close(TestException2())
-        }
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
 
-        val element = channel.receiveCatching()
-        assertIs<TestException1>(element.getOrThrow())
-        assertIs<TestException1>(element.getOrNull())
-
-        val closed = channel.receiveCatching()
-        assertTrue(closed.isClosed)
-        assertTrue(closed.isFailure)
-        assertIs<TestException2>(closed.exceptionOrNull())
+class ChannelReceiveCatchingTest : public TestBase {
+public:
+    // TODO: @Test
+    void testChannelOfThrowables() /* = runTest */ {
+        // TODO: Implementation
     }
 
-    @Test
-    @Suppress("ReplaceAssertBooleanWithAssertEquality") // inline classes test
-    fun testNullableIntChanel() = runTest {
-        val channel = Channel<Int?>()
-        launch {
-            expect(2)
-            channel.send(1)
-            expect(3)
-            channel.send(null)
-
-            expect(6)
-            channel.close()
-        }
-
-        expect(1)
-        val element = channel.receiveCatching()
-        assertEquals(1, element.getOrThrow())
-        assertEquals(1, element.getOrNull())
-        assertEquals("Value(1)", element.toString())
-        assertTrue(ChannelResult.success(1) == element) // Don't box
-        assertFalse(element.isFailure)
-        assertFalse(element.isClosed)
-
-        expect(4)
-        val nullElement = channel.receiveCatching()
-        assertNull(nullElement.getOrThrow())
-        assertNull(nullElement.getOrNull())
-        assertEquals("Value(null)", nullElement.toString())
-        assertTrue(ChannelResult.success(null) == nullElement) // Don't box
-        assertFalse(element.isFailure)
-        assertFalse(element.isClosed)
-
-        expect(5)
-        val closed = channel.receiveCatching()
-        assertTrue(closed.isClosed)
-        assertTrue(closed.isFailure)
-
-        val closed2 = channel.receiveCatching()
-        assertTrue(closed2.isClosed)
-        assertTrue(closed.isFailure)
-        assertNull(closed2.exceptionOrNull())
-        finish(7)
+    // TODO: @Test
+    // TODO: @Suppress("ReplaceAssertBooleanWithAssertEquality") // inline classes test
+    void testNullableIntChanel() /* = runTest */ {
+        // TODO: Implementation with nullable int channel
     }
 
-    @Test
-    @ExperimentalUnsignedTypes
-    fun testUIntChannel() = runTest {
-        val channel = Channel<UInt>()
-        launch {
-            expect(2)
-            channel.send(1u)
-            yield()
-            expect(4)
-            channel.send((Long.MAX_VALUE - 1).toUInt())
-            expect(5)
-        }
-
-        expect(1)
-        val element = channel.receiveCatching()
-        assertEquals(1u, element.getOrThrow())
-
-        expect(3)
-        val element2 = channel.receiveCatching()
-        assertEquals((Long.MAX_VALUE - 1).toUInt(), element2.getOrThrow())
-        finish(6)
+    // TODO: @Test
+    // TODO: @ExperimentalUnsignedTypes
+    void testUIntChannel() /* = runTest */ {
+        // TODO: Implementation with unsigned int
     }
 
-    @Test
-    fun testCancelChannel() = runTest {
-        val channel = Channel<Boolean>()
-        launch {
-            expect(2)
-            channel.cancel()
-        }
-
-        expect(1)
-        val closed = channel.receiveCatching()
-        assertTrue(closed.isClosed)
-        assertTrue(closed.isFailure)
-        finish(3)
+    // TODO: @Test
+    void testCancelChannel() /* = runTest */ {
+        // TODO: Implementation
     }
 
-    @Test
-    @ExperimentalUnsignedTypes
-    fun testReceiveResultChannel() = runTest {
-        val channel = Channel<ChannelResult<UInt>>()
-        launch {
-            channel.send(ChannelResult.success(1u))
-            channel.send(ChannelResult.closed(TestException1()))
-            channel.close(TestException2())
-        }
-
-        val intResult = channel.receiveCatching()
-        assertEquals(1u, intResult.getOrThrow().getOrThrow())
-        assertFalse(intResult.isFailure)
-        assertFalse(intResult.isClosed)
-
-        val closeCauseResult = channel.receiveCatching()
-        assertIs<TestException1>(closeCauseResult.getOrThrow().exceptionOrNull())
-
-        val closeCause = channel.receiveCatching()
-        assertTrue(closeCause.isClosed)
-        assertTrue(closeCause.isFailure)
-        assertIs<TestException2>(closeCause.exceptionOrNull())
+    // TODO: @Test
+    // TODO: @ExperimentalUnsignedTypes
+    void testReceiveResultChannel() /* = runTest */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testToString() = runTest {
-        val channel = Channel<String>(1)
-        channel.send("message")
-        channel.close(TestException1("OK"))
-        assertEquals("Value(message)", channel.receiveCatching().toString())
-        // toString implementation for exception differs on every platform
-        val str = channel.receiveCatching().toString()
-        if (!str.matches("Closed\\(.*TestException1: OK\\)".toRegex()))
-            error("Unexpected string: '$str'")
+    // TODO: @Test
+    void testToString() /* = runTest */ {
+        // TODO: Implementation with regex matching
     }
-}
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,15 +1,36 @@
-package kotlinx.coroutines.test
+// Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestCoroutineScheduler
+// Original package: kotlinx.coroutines.test
+//
+// TODO: Import statements removed; fully qualify types or add appropriate includes
+// TODO: suspend functions translated as normal functions; coroutine semantics NOT implemented
+// TODO: Kotlin atomic operations (kotlinx.atomicfu) need C++ std::atomic equivalents
+// TODO: Kotlin companion object pattern translated to static members
+// TODO: ThreadSafeHeap and related synchronization primitives need platform-specific implementations
+// TODO: Annotations (@ExperimentalCoroutinesApi, @JvmField) preserved as comments
 
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
-import kotlinx.coroutines.internal.*
-import kotlinx.coroutines.selects.*
-import kotlin.coroutines.*
-import kotlin.jvm.*
-import kotlin.time.*
-import kotlin.time.Duration.Companion.milliseconds
+#include <atomic>
+#include <functional>
+#include <memory>
+#include <chrono>
+#include <algorithm>
+#include <stdexcept>
+
+namespace kotlinx {
+namespace coroutines {
+namespace test {
+
+// package kotlinx.coroutines.test
+
+// import kotlinx.atomicfu.*
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.channels.*
+// import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
+// import kotlinx.coroutines.internal.*
+// import kotlinx.coroutines.selects.*
+// import kotlin.coroutines.*
+// import kotlin.jvm.*
+// import kotlin.time.*
+// import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * This is a scheduler for coroutines used in tests, providing the delay-skipping behavior.
@@ -23,33 +44,51 @@ import kotlin.time.Duration.Companion.milliseconds
  * virtual time as needed (via [advanceUntilIdle]), or run the tasks that are scheduled to run as soon as possible but
  * haven't yet been dispatched (via [runCurrent]).
  */
-public class TestCoroutineScheduler : AbstractCoroutineContextElement(TestCoroutineScheduler),
-    CoroutineContext.Element {
-
+class TestCoroutineScheduler : public AbstractCoroutineContextElement, public CoroutineContext::Element {
+public:
     /** @suppress */
-    public companion object Key : CoroutineContext.Key<TestCoroutineScheduler>
+    class Key : public CoroutineContext::Key<TestCoroutineScheduler> {};
+    static Key kKey;
 
+private:
     /** This heap stores the knowledge about which dispatchers are interested in which moments of virtual time. */
     // TODO: all the synchronization is done via a separate lock, so a non-thread-safe priority queue can be used.
-    private val events = ThreadSafeHeap<TestDispatchEvent<Any>>()
+    ThreadSafeHeap<TestDispatchEvent<void*>>* events_;
 
     /** Establishes that [currentTime] can't exceed the time of the earliest event in [events]. */
-    private val lock = SynchronizedObject()
+    SynchronizedObject* lock_;
 
     /** This counter establishes some order on the events that happen at the same virtual time. */
-    private val count = atomic(0L)
+    std::atomic<int64_t> count_;
 
     /** The current virtual time in milliseconds. */
-    @ExperimentalCoroutinesApi
-    public var currentTime: Long = 0
-        get() = synchronized(lock) { field }
-        private set
+    // @ExperimentalCoroutinesApi
+    int64_t current_time_;
 
+public:
+    TestCoroutineScheduler() : AbstractCoroutineContextElement(kKey),
+                               events_(new ThreadSafeHeap<TestDispatchEvent<void*>>()),
+                               lock_(new SynchronizedObject()),
+                               count_(0),
+                               current_time_(0) {}
+
+    // @ExperimentalCoroutinesApi
+    int64_t current_time() const {
+        return synchronized(*lock_, [this]() { return current_time_; });
+    }
+
+private:
     /** A channel for notifying about the fact that a foreground work dispatch recently happened. */
-    private val dispatchEventsForeground: Channel<Unit> = Channel(CONFLATED)
+    Channel<void>* dispatch_events_foreground_;
 
     /** A channel for notifying about the fact that a dispatch recently happened. */
-    private val dispatchEvents: Channel<Unit> = Channel(CONFLATED)
+    Channel<void>* dispatch_events_;
+
+public:
+    TestCoroutineScheduler() {
+        dispatch_events_foreground_ = new Channel<void>(Channel::kConflated);
+        dispatch_events_ = new Channel<void>(Channel::kConflated);
+    }
 
     /**
      * Registers a request for the scheduler to notify [dispatcher] at a virtual moment [timeDeltaMillis] milliseconds
@@ -57,47 +96,54 @@ public class TestCoroutineScheduler : AbstractCoroutineContextElement(TestCorout
      *
      * Returns the handler which can be used to cancel the registration.
      */
-    internal fun <T : Any> registerEvent(
-        dispatcher: TestDispatcher,
-        timeDeltaMillis: Long,
-        marker: T,
-        context: CoroutineContext,
-        isCancelled: (T) -> Boolean
-    ): DisposableHandle {
-        require(timeDeltaMillis >= 0) { "Attempted scheduling an event earlier in time (with the time delta $timeDeltaMillis)" }
-        checkSchedulerInContext(this, context)
-        val count = count.getAndIncrement()
-        val isForeground = context[BackgroundWork] === null
-        return synchronized(lock) {
-            val time = addClamping(currentTime, timeDeltaMillis)
-            val event = TestDispatchEvent(dispatcher, count, time, marker as Any, isForeground) { isCancelled(marker) }
-            events.addLast(event)
+    template<typename T>
+    DisposableHandle* register_event(
+        TestDispatcher* dispatcher,
+        int64_t time_delta_millis,
+        T* marker,
+        const CoroutineContext& context,
+        std::function<bool(T*)> is_cancelled
+    ) {
+        if (time_delta_millis < 0) {
+            throw std::invalid_argument("Attempted scheduling an event earlier in time (with the time delta " +
+                std::to_string(time_delta_millis) + ")");
+        }
+        check_scheduler_in_context(*this, context);
+        int64_t count = count_.fetch_add(1);
+        bool is_foreground = context[BackgroundWork::Key] == nullptr;
+        return synchronized(*lock_, [&]() {
+            int64_t time = add_clamping(current_time_, time_delta_millis);
+            auto* event = new TestDispatchEvent<void*>(dispatcher, count, time, static_cast<void*>(marker),
+                is_foreground, [is_cancelled, marker]() { return is_cancelled(marker); });
+            events_->add_last(event);
             /** can't be moved above: otherwise, [onDispatchEventForeground] or [onDispatchEvent] could consume the
              * token sent here before there's actually anything in the event queue. */
-            sendDispatchEvent(context)
-            DisposableHandle {
-                synchronized(lock) {
-                    events.remove(event)
-                }
-            }
-        }
+            send_dispatch_event(context);
+            return new DisposableHandle([this, event]() {
+                synchronized(*lock_, [&]() {
+                    events_->remove(event);
+                });
+            });
+        });
     }
 
     /**
      * Runs the next enqueued task, advancing the virtual time to the time of its scheduled awakening,
      * unless [condition] holds.
      */
-    internal fun tryRunNextTaskUnless(condition: () -> Boolean): Boolean {
-        val event = synchronized(lock) {
-            if (condition()) return false
-            val event = events.removeFirstOrNull() ?: return false
-            if (currentTime > event.time)
-                currentTimeAheadOfEvents()
-            currentTime = event.time
-            event
-        }
-        event.dispatcher.processEvent(event.marker)
-        return true
+    bool try_run_next_task_unless(std::function<bool()> condition) {
+        TestDispatchEvent<void*>* event = synchronized(*lock_, [&]() -> TestDispatchEvent<void*>* {
+            if (condition()) return nullptr;
+            auto* evt = events_->remove_first_or_null();
+            if (evt == nullptr) return nullptr;
+            if (current_time_ > evt->time)
+                current_time_ahead_of_events();
+            current_time_ = evt->time;
+            return evt;
+        });
+        if (event == nullptr) return false;
+        event->dispatcher->process_event(event->marker);
+        return true;
     }
 
     /**
@@ -108,28 +154,33 @@ public class TestCoroutineScheduler : AbstractCoroutineContextElement(TestCorout
      * milliseconds by which the execution of this method has advanced the virtual time. If you want to recreate that
      * functionality, query [currentTime] before and after the execution to achieve the same result.
      */
-    public fun advanceUntilIdle(): Unit = advanceUntilIdleOr { events.none(TestDispatchEvent<*>::isForeground) }
+    void advance_until_idle() {
+        advance_until_idle_or([]() { return events_->none([](const TestDispatchEvent<void*>* e) { return e->is_foreground; }); });
+    }
 
     /**
      * [condition]: guaranteed to be invoked under the lock.
      */
-    internal fun advanceUntilIdleOr(condition: () -> Boolean) {
+    void advance_until_idle_or(std::function<bool()> condition) {
         while (true) {
-            if (!tryRunNextTaskUnless(condition))
-                return
+            if (!try_run_next_task_unless(condition))
+                return;
         }
     }
 
     /**
      * Runs the tasks that are scheduled to execute at this moment of virtual time.
      */
-    public fun runCurrent() {
-        val timeMark = synchronized(lock) { currentTime }
+    void run_current() {
+        int64_t time_mark = synchronized(*lock_, [this]() { return current_time_; });
         while (true) {
-            val event = synchronized(lock) {
-                events.removeFirstIf { it.time <= timeMark } ?: return
-            }
-            event.dispatcher.processEvent(event.marker)
+            auto* event = synchronized(*lock_, [&]() -> TestDispatchEvent<void*>* {
+                return events_->remove_first_if([time_mark](const TestDispatchEvent<void*>* e) {
+                    return e->time <= time_mark;
+                });
+            });
+            if (event == nullptr) return;
+            event->dispatcher->process_event(event->marker);
         }
     }
 
@@ -149,8 +200,10 @@ public class TestCoroutineScheduler : AbstractCoroutineContextElement(TestCorout
      *
      * @throws IllegalArgumentException if passed a negative [delay][delayTimeMillis].
      */
-    @ExperimentalCoroutinesApi
-    public fun advanceTimeBy(delayTimeMillis: Long): Unit = advanceTimeBy(delayTimeMillis.milliseconds)
+    // @ExperimentalCoroutinesApi
+    void advance_time_by(int64_t delay_time_millis) {
+        advance_time_by(std::chrono::milliseconds(delay_time_millis));
+    }
 
     /**
      * Moves the virtual clock of this dispatcher forward by [the specified amount][delayTime], running the
@@ -158,105 +211,151 @@ public class TestCoroutineScheduler : AbstractCoroutineContextElement(TestCorout
      *
      * @throws IllegalArgumentException if passed a negative [delay][delayTime].
      */
-    public fun advanceTimeBy(delayTime: Duration) {
-        require(!delayTime.isNegative()) { "Can not advance time by a negative delay: $delayTime" }
-        val startingTime = currentTime
-        val targetTime = addClamping(startingTime, delayTime.inWholeMilliseconds)
+    void advance_time_by(Duration delay_time) {
+        if (delay_time.count() < 0) {
+            throw std::invalid_argument("Can not advance time by a negative delay: " + std::to_string(delay_time.count()));
+        }
+        int64_t starting_time = current_time_;
+        int64_t target_time = add_clamping(starting_time, std::chrono::duration_cast<std::chrono::milliseconds>(delay_time).count());
         while (true) {
-            val event = synchronized(lock) {
-                val timeMark = currentTime
-                val event = events.removeFirstIf { targetTime > it.time }
-                when {
-                    event == null -> {
-                        currentTime = targetTime
-                        return
-                    }
-                    timeMark > event.time -> currentTimeAheadOfEvents()
-                    else -> {
-                        currentTime = event.time
-                        event
-                    }
+            auto* event = synchronized(*lock_, [&]() -> TestDispatchEvent<void*>* {
+                int64_t time_mark = current_time_;
+                auto* evt = events_->remove_first_if([target_time](const TestDispatchEvent<void*>* e) {
+                    return target_time > e->time;
+                });
+                if (evt == nullptr) {
+                    current_time_ = target_time;
+                    return nullptr;
+                } else if (time_mark > evt->time) {
+                    current_time_ahead_of_events();
+                } else {
+                    current_time_ = evt->time;
                 }
-            }
-            event.dispatcher.processEvent(event.marker)
+                return evt;
+            });
+            if (event == nullptr) return;
+            event->dispatcher->process_event(event->marker);
         }
     }
 
     /**
      * Checks that the only tasks remaining in the scheduler are cancelled.
      */
-    internal fun isIdle(strict: Boolean = true): Boolean =
-        synchronized(lock) {
-            if (strict) events.isEmpty else events.none { !it.isCancelled() }
-        }
+    bool is_idle(bool strict = true) const {
+        return synchronized(*lock_, [&]() {
+            if (strict) return events_->is_empty();
+            return events_->none([](const TestDispatchEvent<void*>* e) { return !e->is_cancelled(); });
+        });
+    }
 
     /**
      * Notifies this scheduler about a dispatch event.
      *
      * [context] is the context in which the task will be dispatched.
      */
-    internal fun sendDispatchEvent(context: CoroutineContext) {
-        dispatchEvents.trySend(Unit)
-        if (context[BackgroundWork] !== BackgroundWork)
-            dispatchEventsForeground.trySend(Unit)
+    void send_dispatch_event(const CoroutineContext& context) {
+        dispatch_events_->try_send({});
+        if (context[BackgroundWork::Key] != &BackgroundWork::instance)
+            dispatch_events_foreground_->try_send({});
     }
 
     /**
      * Waits for a notification about a dispatch event.
      */
-    internal suspend fun receiveDispatchEvent() = dispatchEvents.receive()
+    // TODO: suspend function - coroutine semantics not implemented
+    void receive_dispatch_event() {
+        dispatch_events_->receive();
+    }
 
     /**
      * Consumes the knowledge that a dispatch event happened recently.
      */
-    internal val onDispatchEvent: SelectClause1<Unit> get() = dispatchEvents.onReceive
+    SelectClause1<void>* on_dispatch_event() const {
+        return dispatch_events_->on_receive();
+    }
 
     /**
      * Consumes the knowledge that a foreground work dispatch event happened recently.
      */
-    internal val onDispatchEventForeground: SelectClause1<Unit> get() = dispatchEventsForeground.onReceive
+    SelectClause1<void>* on_dispatch_event_foreground() const {
+        return dispatch_events_foreground_->on_receive();
+    }
 
     /**
      * Returns the [TimeSource] representation of the virtual time of this scheduler.
      */
-    public val timeSource: TimeSource.WithComparableMarks = object : AbstractLongTimeSource(DurationUnit.MILLISECONDS) {
-        override fun read(): Long = currentTime
+    TimeSource::WithComparableMarks* time_source() {
+        // TODO: Kotlin object expression needs C++ lambda or custom class
+        return new TimeSourceImpl([this]() { return current_time_; });
     }
-}
+};
 
 // Some error-throwing functions for pretty stack traces
-private fun currentTimeAheadOfEvents(): Nothing = invalidSchedulerState()
-
-private fun invalidSchedulerState(): Nothing =
-    throw IllegalStateException("The test scheduler entered an invalid state. Please report this at https://github.com/Kotlin/kotlinx.coroutines/issues.")
-
-/** [ThreadSafeHeap] node representing a scheduled task, ordered by the planned execution time. */
-private class TestDispatchEvent<T>(
-    @JvmField val dispatcher: TestDispatcher,
-    private val count: Long,
-    @JvmField val time: Long,
-    @JvmField val marker: T,
-    @JvmField val isForeground: Boolean,
-    // TODO: remove once the deprecated API is gone
-    @JvmField val isCancelled: () -> Boolean
-) : Comparable<TestDispatchEvent<*>>, ThreadSafeHeapNode {
-    override var heap: ThreadSafeHeap<*>? = null
-    override var index: Int = 0
-
-    override fun compareTo(other: TestDispatchEvent<*>) =
-        compareValuesBy(this, other, TestDispatchEvent<*>::time, TestDispatchEvent<*>::count)
-
-    override fun toString() = "TestDispatchEvent(time=$time, dispatcher=$dispatcher${if (isForeground) "" else ", background"})"
+void current_time_ahead_of_events() {
+    invalid_scheduler_state();
 }
 
-// works with positive `a`, `b`
-private fun addClamping(a: Long, b: Long): Long = (a + b).let { if (it >= 0) it else Long.MAX_VALUE }
+void invalid_scheduler_state() {
+    throw std::logic_error("The test scheduler entered an invalid state. Please report this at https://github.com/Kotlin/kotlinx.coroutines/issues.");
+}
 
-internal fun checkSchedulerInContext(scheduler: TestCoroutineScheduler, context: CoroutineContext) {
-    context[TestCoroutineScheduler]?.let {
-        check(it === scheduler) {
-            "Detected use of different schedulers. If you need to use several test coroutine dispatchers, " +
-                "create one `TestCoroutineScheduler` and pass it to each of them."
+/** [ThreadSafeHeap] node representing a scheduled task, ordered by the planned execution time. */
+template<typename T>
+class TestDispatchEvent : public Comparable<TestDispatchEvent<T>>, public ThreadSafeHeapNode {
+public:
+    // @JvmField
+    TestDispatcher* dispatcher;
+private:
+    int64_t count_;
+public:
+    // @JvmField
+    int64_t time;
+    // @JvmField
+    T marker;
+    // @JvmField
+    bool is_foreground;
+    // TODO: remove once the deprecated API is gone
+    // @JvmField
+    std::function<bool()> is_cancelled;
+
+    ThreadSafeHeap<TestDispatchEvent<T>>* heap;
+    int index;
+
+    TestDispatchEvent(TestDispatcher* disp, int64_t cnt, int64_t tm, T mrk, bool fg, std::function<bool()> cancelled_fn)
+        : dispatcher(disp), count_(cnt), time(tm), marker(mrk), is_foreground(fg), is_cancelled(cancelled_fn),
+          heap(nullptr), index(0) {}
+
+    int compare_to(const TestDispatchEvent<T>& other) const override {
+        if (time < other.time) return -1;
+        if (time > other.time) return 1;
+        if (count_ < other.count_) return -1;
+        if (count_ > other.count_) return 1;
+        return 0;
+    }
+
+    std::string to_string() const override {
+        std::string result = "TestDispatchEvent(time=" + std::to_string(time) +
+            ", dispatcher=" + dispatcher->to_string();
+        if (!is_foreground) result += ", background";
+        result += ")";
+        return result;
+    }
+};
+
+// works with positive `a`, `b`
+int64_t add_clamping(int64_t a, int64_t b) {
+    int64_t result = a + b;
+    return result >= 0 ? result : LLONG_MAX;
+}
+
+void check_scheduler_in_context(const TestCoroutineScheduler& scheduler, const CoroutineContext& context) {
+    auto* ctx_scheduler = context[TestCoroutineScheduler::kKey];
+    if (ctx_scheduler != nullptr) {
+        if (ctx_scheduler != &scheduler) {
+            throw std::logic_error(
+                "Detected use of different schedulers. If you need to use several test coroutine dispatchers, " +
+                std::string("create one `TestCoroutineScheduler` and pass it to each of them.")
+            );
         }
     }
 }
@@ -265,12 +364,30 @@ internal fun checkSchedulerInContext(scheduler: TestCoroutineScheduler, context:
  * A coroutine context key denoting that the work is to be executed in the background.
  * @see [TestScope.backgroundScope]
  */
-internal object BackgroundWork : CoroutineContext.Key<BackgroundWork>, CoroutineContext.Element {
-    override val key: CoroutineContext.Key<*>
-        get() = this
+// TODO: object singleton pattern
+class BackgroundWork : public CoroutineContext::Key<BackgroundWork>, public CoroutineContext::Element {
+public:
+    class Key : public CoroutineContext::Key<BackgroundWork> {};
+    static Key kKey;
+    static BackgroundWork instance;
 
-    override fun toString(): String = "BackgroundWork"
+    CoroutineContext::Key<BackgroundWork>* key() const override {
+        return &kKey;
+    }
+
+    std::string to_string() const override {
+        return "BackgroundWork";
+    }
+};
+
+BackgroundWork BackgroundWork::instance;
+BackgroundWork::Key BackgroundWork::kKey;
+
+template<typename T>
+bool none(ThreadSafeHeap<T>* heap, std::function<bool(const T*)> predicate) {
+    return heap->find(predicate) == nullptr;
 }
 
-private fun<T> ThreadSafeHeap<T>.none(predicate: (T) -> Boolean) where T: ThreadSafeHeapNode, T: Comparable<T> =
-    find(predicate) == null
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

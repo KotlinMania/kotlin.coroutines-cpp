@@ -1,7 +1,19 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
+// Original: kotlinx-coroutines-core/common/src/Yield.kt
+//
+// TODO:
+// - suspend function - coroutine semantics not implemented
+// - suspendCoroutineUninterceptedOrReturn infrastructure
+// - DispatchedContinuation integration
+// - COROUTINE_SUSPENDED constant
+// - All coroutine context operations
 
-import kotlinx.coroutines.internal.*
-import kotlin.coroutines.intrinsics.*
+namespace kotlinx {
+namespace coroutines {
+
+class Job;
+class CoroutineContext;
+class CoroutineDispatcher;
 
 /**
  * Suspends this coroutine and immediately schedules it for further execution.
@@ -40,7 +52,7 @@ import kotlin.coroutines.intrinsics.*
  * With both `yield` calls, the coroutines share the single thread with each other after each stage of work.
  * This is useful when several coroutines running on the same thread (or thread pool) must regularly publish
  * their results for the program to stay responsive.
- * 
+ *
  * This suspending function is cancellable: if the [Job] of the current coroutine is cancelled while
  * [yield] is invoked or while waiting for dispatch, it immediately resumes with [CancellationException].
  * There is a **prompt cancellation guarantee**: even if this function is ready to return the result, but was cancelled
@@ -142,25 +154,8 @@ import kotlin.coroutines.intrinsics.*
  * For custom implementations of [CoroutineDispatcher], this function checks [CoroutineDispatcher.isDispatchNeeded] and
  * then invokes [CoroutineDispatcher.dispatch] regardless of the result; no way is provided to change this behavior.
  */
-public suspend fun yield(): Unit = suspendCoroutineUninterceptedOrReturn sc@ { uCont ->
-    val context = uCont.context
-    context.ensureActive()
-    val cont = uCont.intercepted() as? DispatchedContinuation<Unit> ?: return@sc Unit
-    if (cont.dispatcher.safeIsDispatchNeeded(context)) {
-        // this is a regular dispatcher -- do simple dispatchYield
-        cont.dispatchYield(context, Unit)
-    } else {
-        // This is either an "immediate" dispatcher or the Unconfined dispatcher
-        // This code detects the Unconfined dispatcher even if it was wrapped into another dispatcher
-        val yieldContext = YieldContext()
-        cont.dispatchYield(context + yieldContext, Unit)
-        // Special case for the unconfined dispatcher that can yield only in existing unconfined loop
-        if (yieldContext.dispatcherWasUnconfined) {
-            // Means that the Unconfined dispatcher got the call, but did not do anything.
-            // See also code of "Unconfined.dispatch" function.
-            return@sc if (cont.yieldUndispatched()) COROUTINE_SUSPENDED else Unit
-        }
-        // Otherwise, it was some other dispatcher that successfully dispatched the coroutine
-    }
-    COROUTINE_SUSPENDED
-}
+// TODO: suspend function - coroutine semantics not implemented
+void yield_coroutine(); // renamed from 'yield' to avoid C++ keyword conflict
+
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,123 +1,170 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/DistinctUntilChangedTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Map Flow operators to C++ equivalents
+// - Map distinctUntilChanged variants
+// - Handle private class Box
+// - Map member reference Box::i to C++ equivalent
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class DistinctUntilChangedTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
 
-    private class Box(val i: Int)
+class DistinctUntilChangedTest : public TestBase {
+private:
+    class Box {
+    public:
+        int i;
+        explicit Box(int i) : i(i) {}
+    };
 
-    @Test
-    fun testDistinctUntilChanged() = runTest {
-        val flow = flowOf(1, 1, 2, 2, 1).distinctUntilChanged()
-        assertEquals(4, flow.sum())
+public:
+    // TODO: @Test
+    void testDistinctUntilChanged() {
+        // TODO: runTest {
+        auto flow_var = flow_of(1, 1, 2, 2, 1).distinct_until_changed();
+        assertEquals(4, flow_var.sum());
+        // TODO: }
     }
 
-    @Test
-    fun testDistinctUntilChangedKeySelector() = runTest {
-        val flow = flow {
-            emit(Box(1))
-            emit(Box(1))
-            emit(Box(2))
-            emit(Box(1))
-        }
+    // TODO: @Test
+    void testDistinctUntilChangedKeySelector() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            emit(Box(1));
+            emit(Box(1));
+            emit(Box(2));
+            emit(Box(1));
+        });
 
-        val sum1 = flow.distinctUntilChanged().map { it.i }.sum()
-        val sum2 = flow.distinctUntilChangedBy(Box::i).map { it.i }.sum()
-        assertEquals(5, sum1)
-        assertEquals(4, sum2)
+        int sum1 = flow_var.distinct_until_changed().map([](auto it) { return it.i; }).sum();
+        int sum2 = flow_var.distinct_until_changed_by([](auto box) { return box.i; }).map([](auto it) { return it.i; }).sum();
+        assertEquals(5, sum1);
+        assertEquals(4, sum2);
+        // TODO: }
     }
 
-    @Test
-    fun testDistinctUntilChangedAreEquivalent() = runTest {
-        val flow = flow {
-            emit(Box(1))
-            emit(Box(1))
-            emit(Box(2))
-            emit(Box(1))
-        }
+    // TODO: @Test
+    void testDistinctUntilChangedAreEquivalent() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            emit(Box(1));
+            emit(Box(1));
+            emit(Box(2));
+            emit(Box(1));
+        });
 
-        val sum1 = flow.distinctUntilChanged().map { it.i }.sum()
-        val sum2 = flow.distinctUntilChanged { old, new -> old.i == new.i }.map { it.i }.sum()
-        assertEquals(5, sum1)
-        assertEquals(4, sum2)
+        int sum1 = flow_var.distinct_until_changed().map([](auto it) { return it.i; }).sum();
+        int sum2 = flow_var.distinct_until_changed([](auto old_val, auto new_val) { return old_val.i == new_val.i; }).map([](auto it) { return it.i; }).sum();
+        assertEquals(5, sum1);
+        assertEquals(4, sum2);
+        // TODO: }
     }
 
-    @Test
-    fun testDistinctUntilChangedAreEquivalentSingleValue() = runTest {
-        val flow = flowOf(1)
-        val values = flow.distinctUntilChanged { _, _ -> fail("Expected not to compare single value.") }.toList()
-        assertEquals(listOf(1), values)
+    // TODO: @Test
+    void testDistinctUntilChangedAreEquivalentSingleValue() {
+        // TODO: runTest {
+        auto flow_var = flow_of(1);
+        auto values = flow_var.distinct_until_changed([](auto, auto) { fail("Expected not to compare single value."); return false; }).to_list();
+        assertEquals(std::vector<int>{1}, values);
+        // TODO: }
     }
 
-    @Test
-    fun testThrowingKeySelector() = runTest {
-        val flow = flow {
-            coroutineScope {
-                launch(start = CoroutineStart.ATOMIC) {
-                    hang { expect(3) }
-                }
-                expect(2)
-                emit(1)
-            }
-        }.distinctUntilChangedBy { throw TestException() }
+    // TODO: @Test
+    void testThrowingKeySelector() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            coroutine_scope([&]() {
+                launch(CoroutineStart::kAtomic, [&]() {
+                    hang([&]() { expect(3); });
+                });
+                expect(2);
+                emit(1);
+            });
+        }).distinct_until_changed_by([](auto) { throw TestException(); return 0; });
 
-        expect(1)
-        assertFailsWith<TestException>(flow)
-        finish(4)
+        expect(1);
+        assertFailsWith<TestException>(flow_var);
+        finish(4);
+        // TODO: }
     }
 
-    @Test
-    fun testThrowingAreEquivalent() = runTest {
-        val flow = flow {
-            coroutineScope {
-                launch(start = CoroutineStart.ATOMIC) {
-                    hang { expect(3) }
-                }
-                expect(2)
-                emit(1)
-                emit(2)
-            }
-        }.distinctUntilChanged { _, _ -> throw TestException() }
+    // TODO: @Test
+    void testThrowingAreEquivalent() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            coroutine_scope([&]() {
+                launch(CoroutineStart::kAtomic, [&]() {
+                    hang([&]() { expect(3); });
+                });
+                expect(2);
+                emit(1);
+                emit(2);
+            });
+        }).distinct_until_changed([](auto, auto) { throw TestException(); return false; });
 
-        expect(1)
-        assertFailsWith<TestException>(flow)
-        finish(4)
+        expect(1);
+        assertFailsWith<TestException>(flow_var);
+        finish(4);
+        // TODO: }
     }
 
-    @Test
-    fun testDistinctUntilChangedNull() = runTest {
-        val flow = flowOf(null, 1, null, null).distinctUntilChanged()
-        assertEquals(listOf(null, 1, null), flow.toList())
+    // TODO: @Test
+    void testDistinctUntilChangedNull() {
+        // TODO: runTest {
+        auto flow_var = flow_of<std::optional<int>>(std::nullopt, 1, std::nullopt, std::nullopt).distinct_until_changed();
+        assertEquals(std::vector<std::optional<int>>{std::nullopt, 1, std::nullopt}, flow_var.to_list());
+        // TODO: }
     }
 
-    @Test
-    fun testRepeatedDistinctFusionDefault() = testRepeatedDistinctFusion {
-        distinctUntilChanged()
+    // TODO: @Test
+    void testRepeatedDistinctFusionDefault() {
+        test_repeated_distinct_fusion([](auto flow) {
+            return flow.distinct_until_changed();
+        });
     }
 
     // A separate variable is needed for K/N that does not optimize non-captured lambdas (yet)
-    private val areEquivalentTestFun: (old: Int, new: Int) -> Boolean = { old, new -> old == new }
+private:
+    std::function<bool(int, int)> are_equivalent_test_fun = [](int old_val, int new_val) { return old_val == new_val; };
 
-    @Test
-    fun testRepeatedDistinctFusionAreEquivalent() = testRepeatedDistinctFusion {
-        distinctUntilChanged(areEquivalentTestFun)
+public:
+    // TODO: @Test
+    void testRepeatedDistinctFusionAreEquivalent() {
+        test_repeated_distinct_fusion([&](auto flow) {
+            return flow.distinct_until_changed(are_equivalent_test_fun);
+        });
     }
 
     // A separate variable is needed for K/N that does not optimize non-captured lambdas (yet)
-    private val keySelectorTestFun: (Int) -> Int = { it % 2 }
+private:
+    std::function<int(int)> key_selector_test_fun = [](int it) { return it % 2; };
 
-    @Test
-    fun testRepeatedDistinctFusionByKey() = testRepeatedDistinctFusion {
-        distinctUntilChangedBy(keySelectorTestFun)
+public:
+    // TODO: @Test
+    void testRepeatedDistinctFusionByKey() {
+        test_repeated_distinct_fusion([&](auto flow) {
+            return flow.distinct_until_changed_by(key_selector_test_fun);
+        });
     }
 
-    private fun testRepeatedDistinctFusion(op: Flow<Int>.() -> Flow<Int>) = runTest {
-        val flow = (1..10).asFlow()
-        val d1 = flow.op()
-        assertNotSame(flow, d1)
-        val d2 = d1.op()
-        assertSame(d1, d2)
+private:
+    void test_repeated_distinct_fusion(auto op) {
+        // TODO: runTest {
+        auto flow_var = as_flow(1, 10);
+        auto d1 = op(flow_var);
+        assertNotSame(flow_var, d1);
+        auto d2 = op(d1);
+        assertSame(d1, d2);
+        // TODO: }
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,11 +1,23 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
+// Original: kotlinx-coroutines-core/common/src/Dispatchers.common.kt
+//
+// TODO:
+// - expect object needs platform-specific implementations
+// - object declaration needs singleton pattern
+// - val properties need getter implementations
 
-import kotlin.coroutines.*
+namespace kotlinx {
+namespace coroutines {
+
+class CoroutineDispatcher;
+class MainCoroutineDispatcher;
 
 /**
  * Groups various implementations of [CoroutineDispatcher].
  */
-public expect object Dispatchers {
+// TODO: expect object - needs platform-specific singleton implementation
+class Dispatchers {
+public:
     /**
      * The default [CoroutineDispatcher] that is used by all standard builders like
      * [launch][CoroutineScope.launch], [async][CoroutineScope.async], etc.
@@ -14,7 +26,7 @@ public expect object Dispatchers {
      * It is backed by a shared pool of threads on JVM and Native. By default, the maximum number of threads used
      * by this dispatcher is equal to the number of CPU cores, but is at least two.
      */
-    public val Default: CoroutineDispatcher
+    static CoroutineDispatcher& get_default();
 
     /**
      * A coroutine dispatcher that is confined to the Main thread operating with UI objects.
@@ -35,7 +47,7 @@ public expect object Dispatchers {
      *  - `kotlinx-coroutines-javafx` &mdash; for JavaFx Application thread dispatcher
      *  - `kotlinx-coroutines-swing` &mdash; for Swing EDT dispatcher
      */
-    public val Main: MainCoroutineDispatcher
+    static MainCoroutineDispatcher& get_main();
 
     /**
      * A coroutine dispatcher that is not confined to any specific thread.
@@ -69,5 +81,11 @@ public expect object Dispatchers {
      * [launch][CoroutineScope.launch] and [async][CoroutineScope.async] setting it to
      * the value of [CoroutineStart.UNDISPATCHED].
      */
-    public val Unconfined: CoroutineDispatcher
-}
+    static CoroutineDispatcher& get_unconfined();
+
+private:
+    Dispatchers() = delete; // Prevent instantiation
+};
+
+} // namespace coroutines
+} // namespace kotlinx

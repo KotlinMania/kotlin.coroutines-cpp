@@ -1,34 +1,52 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/CancellableTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Implement suspend functions as regular functions
+// - Map Flow operators to C++ equivalents
+// - Map currentCoroutineContext() to C++ equivalent
+// - Map assertNotSame, assertSame to C++ test assertions
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class CancellableTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testCancellable() = runTest {
-        var sum = 0
-        val flow = (0..1000).asFlow()
-            .onEach {
-                if (it != 0) currentCoroutineContext().cancel()
-                sum += it
-            }
+class CancellableTest : public TestBase {
+public:
 
-        flow.launchIn(this).join()
-        assertEquals(500500, sum)
-        
-        sum = 0
-        flow.cancellable().launchIn(this).join()
-        assertEquals(1, sum)
+    // TODO: @Test
+    void testCancellable() {
+        // TODO: runTest {
+        int sum = 0;
+        auto flow_var = as_flow(0, 1000)
+            .on_each([&](int it) {
+                if (it != 0) current_coroutine_context().cancel();
+                sum += it;
+            });
+
+        flow_var.launch_in(/* this */).join();
+        assertEquals(500500, sum);
+
+        sum = 0;
+        flow_var.cancellable().launch_in(/* this */).join();
+        assertEquals(1, sum);
+        // TODO: }
     }
 
-    @Test
-    fun testFastPath() {
-        val flow = listOf(1).asFlow()
-        assertNotSame(flow, flow.cancellable())
+    // TODO: @Test
+    void testFastPath() {
+        auto flow_var = as_flow(std::vector<int>{1});
+        assertNotSame(flow_var, flow_var.cancellable());
 
-        val cancellableFlow = flow { emit(42) }
-        assertSame(cancellableFlow, cancellableFlow.cancellable())
+        auto cancellable_flow = flow([](auto& emit) { emit(42); });
+        assertSame(cancellable_flow, cancellable_flow.cancellable());
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

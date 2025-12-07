@@ -1,129 +1,160 @@
-package kotlinx.coroutines.android
+// Original: ui/kotlinx-coroutines-android/test/HandlerDispatcherTest.kt
+// Transliterated from Kotlin to C++ - First pass syntax conversion
+// TODO: Implement Robolectric test runner integration
+// TODO: Map @RunWith, @LooperMode, @Config annotations
+// TODO: Convert MainDispatcherTestBase inheritance
+// TODO: Implement Android Looper and Handler API
+// TODO: Implement Robolectric Shadows and ShadowChoreographer
+// TODO: Convert suspend functions to C++ coroutine equivalents
+// TODO: Implement hang helper function
+// TODO: Implement awaitFrame API
 
-import kotlinx.coroutines.testing.*
-import android.os.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.testing.*
-import org.junit.Test
-import org.junit.runner.*
-import org.robolectric.*
-import org.robolectric.annotation.*
-import org.robolectric.shadows.*
-import java.util.concurrent.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace android {
 
-@RunWith(RobolectricTestRunner::class)
-@LooperMode(LooperMode.Mode.LEGACY)
-@Config(manifest = Config.NONE, sdk = [28])
-class HandlerDispatcherTest : MainDispatcherTestBase.WithRealTimeDelay() {
-    @Test
-    fun testDefaultDelayIsNotDelegatedToMain() = runTest {
-        val mainLooper = Shadows.shadowOf(Looper.getMainLooper())
-        mainLooper.pause()
-        assertFalse { mainLooper.scheduler.areAnyRunnable() }
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import android.os.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import org.junit.Test
+// TODO: import org.junit.runner.*
+// TODO: import org.robolectric.*
+// TODO: import org.robolectric.annotation.*
+// TODO: import org.robolectric.shadows.*
+// TODO: import java.util.concurrent.*
+// TODO: import kotlin.test.*
 
-        val job = launch(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
-            expect(1)
-            delay(Long.MAX_VALUE)
-            expectUnreached()
-        }
-        expect(2)
-        assertEquals(0, mainLooper.scheduler.size())
-        job.cancelAndJoin()
-        finish(3)
+// TODO: @RunWith(RobolectricTestRunner::class)
+// TODO: @LooperMode(LooperMode.Mode.LEGACY)
+// TODO: @Config(manifest = Config.NONE, sdk = [28])
+class HandlerDispatcherTest : public MainDispatcherTestBase::WithRealTimeDelay {
+public:
+    // TODO: @Test
+    void testDefaultDelayIsNotDelegatedToMain() {
+        runTest([this] {
+            auto main_looper = Shadows::shadowOf(Looper::getMainLooper());
+            main_looper.pause();
+            assertFalse(main_looper.scheduler().areAnyRunnable());
+
+            auto job = launch(Dispatchers.Default, CoroutineStart::UNDISPATCHED, [this] {
+                expect(1);
+                delay(LONG_MAX);
+                expectUnreached();
+            });
+            expect(2);
+            assertEquals(0, main_looper.scheduler().size());
+            job.cancelAndJoin();
+            finish(3);
+        });
     }
 
-    @Test
-    fun testWithTimeoutIsDelegatedToMain() = runTest {
-        val mainLooper = Shadows.shadowOf(Looper.getMainLooper())
-        mainLooper.pause()
-        assertFalse { mainLooper.scheduler.areAnyRunnable() }
-        val job = launch(Dispatchers.Main, start = CoroutineStart.UNDISPATCHED) {
-            withTimeout(1) {
-                expect(1)
-                hang { expect(3) }
-            }
-            expectUnreached()
-        }
-        expect(2)
-        assertEquals(1, mainLooper.scheduler.size())
-        // Schedule cancellation
-        mainLooper.runToEndOfTasks()
-        job.join()
-        finish(4)
+    // TODO: @Test
+    void testWithTimeoutIsDelegatedToMain() {
+        runTest([this] {
+            auto main_looper = Shadows::shadowOf(Looper::getMainLooper());
+            main_looper.pause();
+            assertFalse(main_looper.scheduler().areAnyRunnable());
+            auto job = launch(Dispatchers.Main, CoroutineStart::UNDISPATCHED, [this] {
+                withTimeout(1, [this] {
+                    expect(1);
+                    hang([this] { expect(3); });
+                });
+                expectUnreached();
+            });
+            expect(2);
+            assertEquals(1, main_looper.scheduler().size());
+            // Schedule cancellation
+            main_looper.runToEndOfTasks();
+            job.join();
+            finish(4);
+        });
     }
 
-    @Test
-    fun testDelayDelegatedToMain() = runTest {
-        val mainLooper = Shadows.shadowOf(Looper.getMainLooper())
-        mainLooper.pause()
-        val job = launch(Dispatchers.Main, start = CoroutineStart.UNDISPATCHED) {
-            expect(1)
-            delay(1)
-            expect(3)
-        }
-        expect(2)
-        assertEquals(1, mainLooper.scheduler.size())
-        // Schedule cancellation
-        mainLooper.runToEndOfTasks()
-        job.join()
-        finish(4)
+    // TODO: @Test
+    void testDelayDelegatedToMain() {
+        runTest([this] {
+            auto main_looper = Shadows::shadowOf(Looper::getMainLooper());
+            main_looper.pause();
+            auto job = launch(Dispatchers.Main, CoroutineStart::UNDISPATCHED, [this] {
+                expect(1);
+                delay(1);
+                expect(3);
+            });
+            expect(2);
+            assertEquals(1, main_looper.scheduler().size());
+            // Schedule cancellation
+            main_looper.runToEndOfTasks();
+            job.join();
+            finish(4);
+        });
     }
 
-    @Test
-    fun testAwaitFrame() = runTest {
-        doTestAwaitFrame()
+    // TODO: @Test
+    void testAwaitFrame() {
+        runTest([this] {
+            do_test_await_frame();
 
-        reset()
+            reset();
 
-        // Now the second test: we cannot test it separately because we're caching choreographer in HandlerDispatcher
-        doTestAwaitWithDetectedChoreographer()
+            // Now the second test: we cannot test it separately because we're caching choreographer in HandlerDispatcher
+            do_test_await_with_detected_choreographer();
+        });
     }
 
-    private fun CoroutineScope.doTestAwaitFrame() {
-        ShadowChoreographer.setPostFrameCallbackDelay(100)
-        val mainLooper = Shadows.shadowOf(Looper.getMainLooper())
-        mainLooper.pause()
-        launch(Dispatchers.Main, start = CoroutineStart.UNDISPATCHED) {
-            expect(1)
-            awaitFrame()
-            expect(3)
-        }
-        expect(2)
+private:
+    void do_test_await_frame() {
+        ShadowChoreographer::setPostFrameCallbackDelay(100);
+        auto main_looper = Shadows::shadowOf(Looper::getMainLooper());
+        main_looper.pause();
+        launch(Dispatchers.Main, CoroutineStart::UNDISPATCHED, [this] {
+            expect(1);
+            awaitFrame();
+            expect(3);
+        });
+        expect(2);
         // Run choreographer detection
-        mainLooper.runOneTask()
-        finish(4)
+        main_looper.runOneTask();
+        finish(4);
     }
 
-    private fun CoroutineScope.doTestAwaitWithDetectedChoreographer() {
-        ShadowChoreographer.setPostFrameCallbackDelay(100)
-        val mainLooper = Shadows.shadowOf(Looper.getMainLooper())
-        launch(Dispatchers.Main, start = CoroutineStart.UNDISPATCHED) {
-            expect(1)
-            awaitFrame()
-            expect(4)
-        }
+    void do_test_await_with_detected_choreographer() {
+        ShadowChoreographer::setPostFrameCallbackDelay(100);
+        auto main_looper = Shadows::shadowOf(Looper::getMainLooper());
+        launch(Dispatchers.Main, CoroutineStart::UNDISPATCHED, [this] {
+            expect(1);
+            awaitFrame();
+            expect(4);
+        });
         // Run choreographer detection
-        expect(2)
-        mainLooper.scheduler.advanceBy(50, TimeUnit.MILLISECONDS)
-        expect(3)
-        mainLooper.scheduler.advanceBy(51, TimeUnit.MILLISECONDS)
-        finish(5)
+        expect(2);
+        main_looper.scheduler().advanceBy(50, TimeUnit::MILLISECONDS);
+        expect(3);
+        main_looper.scheduler().advanceBy(51, TimeUnit::MILLISECONDS);
+        finish(5);
     }
 
-    override fun isMainThread(): Boolean = Looper.getMainLooper().thread === Thread.currentThread()
+public:
+    bool isMainThread() override {
+        return Looper::getMainLooper().thread() == std::this_thread::get_id();
+    }
 
-    override fun scheduleOnMainQueue(block: () -> Unit) {
-        Handler(Looper.getMainLooper()).post(block)
+    void scheduleOnMainQueue(std::function<void()> block) override {
+        Handler(Looper::getMainLooper()).post(block);
     }
 
     // by default, Robolectric only schedules tasks on the main thread but doesn't run them.
     // This function nudges it to run them, 10 milliseconds of virtual time at a time.
-    override suspend fun spinTest(testBody: Job) {
-        val mainLooper = Shadows.shadowOf(Looper.getMainLooper())
-        while (testBody.isActive) {
-            Thread.sleep(10, 0)
-            mainLooper.idleFor(10, TimeUnit.MILLISECONDS)
+    // TODO: Convert suspend function
+    void spinTest(Job& test_body) override {
+        auto main_looper = Shadows::shadowOf(Looper::getMainLooper());
+        while (test_body.isActive()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            main_looper.idleFor(10, TimeUnit::MILLISECONDS);
         }
     }
-}
+};
+
+} // namespace android
+} // namespace coroutines
+} // namespace kotlinx

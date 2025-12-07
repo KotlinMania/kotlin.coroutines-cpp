@@ -1,123 +1,169 @@
-@file:Suppress("DEPRECATION", "DEPRECATION_ERROR")
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/channels/Broadcast.kt
+//
+// TODO: Implement coroutine semantics (suspend functions, CoroutineScope, etc.)
+// TODO: Map Kotlin package structure to C++ namespaces
+// TODO: Handle Kotlin visibility modifiers (internal, public)
+// TODO: Implement Kotlin delegation (BroadcastChannel by _channel)
+// TODO: Map Kotlin annotations (@ObsoleteCoroutinesApi, @Deprecated, @BuilderInference)
+// TODO: Implement Kotlin lambda closures and capture
+// TODO: Map Kotlin exception handling
+// TODO: Implement Kotlin extension functions
 
-package kotlinx.coroutines.channels
+#include <memory>
+#include <functional>
+#include <exception>
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
-import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
-import kotlinx.coroutines.intrinsics.*
-import kotlin.coroutines.*
-import kotlin.coroutines.intrinsics.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
+
+// Forward declarations
+template<typename E> class ReceiveChannel;
+template<typename E> class BroadcastChannel;
+template<typename E> class ProducerScope;
+class CoroutineScope;
+class CoroutineContext;
+class CoroutineStart;
+class CoroutineExceptionHandler;
+class CancellationException;
+class Job;
+
+// TODO: Map Channel.Factory.CONFLATED, UNLIMITED constants
+// TODO: Implement CoroutineStart enum
+// TODO: Implement CompletionHandler type
 
 /**
  * @suppress obsolete since 1.5.0, WARNING since 1.7.0, ERROR since 1.9.0
  */
-@ObsoleteCoroutinesApi
-@Deprecated(level = DeprecationLevel.ERROR, message = "BroadcastChannel is deprecated in the favour of SharedFlow and is no longer supported")
-public fun <E> ReceiveChannel<E>.broadcast(
-    capacity: Int = 1,
-    start: CoroutineStart = CoroutineStart.LAZY
-): BroadcastChannel<E> {
-    val scope = GlobalScope + Dispatchers.Unconfined + CoroutineExceptionHandler { _, _ -> }
-    val channel = this
-    // We can run this coroutine in the context that ignores all exceptions, because of `onCompletion = consume()`
-    // which passes all exceptions upstream to the source ReceiveChannel
-    return scope.broadcast(capacity = capacity, start = start, onCompletion = { cancelConsumed(it) }) {
-        for (e in channel) {
-            send(e)
-        }
-    }
+// @ObsoleteCoroutinesApi
+// @Deprecated(level = DeprecationLevel.ERROR, message = "BroadcastChannel is deprecated in the favour of SharedFlow and is no longer supported")
+template<typename E>
+BroadcastChannel<E>* broadcast(
+    ReceiveChannel<E>* channel,
+    int capacity = 1,
+    CoroutineStart start = CoroutineStart::kLazy
+) {
+    // TODO: Implement GlobalScope + Dispatchers.Unconfined + CoroutineExceptionHandler
+    // TODO: Implement scope.broadcast with capacity, start, onCompletion parameters
+    // TODO: Implement suspend lambda: for (e in channel) { send(e); }
+    throw std::runtime_error("Not implemented: suspend broadcast");
 }
 
 /**
  * @suppress obsolete since 1.5.0, WARNING since 1.7.0, ERROR since 1.9.0
  */
-@ObsoleteCoroutinesApi
-@Deprecated(level = DeprecationLevel.ERROR, message = "BroadcastChannel is deprecated in the favour of SharedFlow and is no longer supported")
-public fun <E> CoroutineScope.broadcast(
-    context: CoroutineContext = EmptyCoroutineContext,
-    capacity: Int = 1,
-    start: CoroutineStart = CoroutineStart.LAZY,
-    onCompletion: CompletionHandler? = null,
-    @BuilderInference block: suspend ProducerScope<E>.() -> Unit
-): BroadcastChannel<E> {
-    val newContext = newCoroutineContext(context)
-    val channel = BroadcastChannel<E>(capacity)
-    val coroutine = if (start.isLazy)
-        LazyBroadcastCoroutine(newContext, channel, block) else
-        BroadcastCoroutine(newContext, channel, active = true)
-    if (onCompletion != null) coroutine.invokeOnCompletion(handler = onCompletion)
-    coroutine.start(start, coroutine, block)
-    return coroutine
+// @ObsoleteCoroutinesApi
+// @Deprecated(level = DeprecationLevel.ERROR, message = "BroadcastChannel is deprecated in the favour of SharedFlow and is no longer supported")
+template<typename E>
+BroadcastChannel<E>* broadcast(
+    CoroutineScope* scope,
+    CoroutineContext* context, // = EmptyCoroutineContext
+    int capacity = 1,
+    CoroutineStart start = CoroutineStart::kLazy,
+    std::function<void(std::exception_ptr)>* on_completion = nullptr,
+    std::function<void(ProducerScope<E>*)> block = nullptr // @BuilderInference
+) {
+    // TODO: Implement newCoroutineContext
+    // TODO: Implement BroadcastChannel construction
+    // TODO: Implement LazyBroadcastCoroutine or BroadcastCoroutine based on start.isLazy
+    // TODO: Implement coroutine.invokeOnCompletion
+    // TODO: Implement coroutine.start
+    throw std::runtime_error("Not implemented: CoroutineScope::broadcast");
 }
 
-private open class BroadcastCoroutine<E>(
-    parentContext: CoroutineContext,
-    protected val _channel: BroadcastChannel<E>,
-    active: Boolean
-) : AbstractCoroutine<Unit>(parentContext, initParentJob = false, active = active),
-    ProducerScope<E>, BroadcastChannel<E> by _channel {
+template<typename E>
+class BroadcastCoroutine : public AbstractCoroutine<void> {
+protected:
+    BroadcastChannel<E>* _channel;
 
-    init {
-        initParentJob(parentContext[Job])
+public:
+    BroadcastCoroutine(
+        CoroutineContext* parent_context,
+        BroadcastChannel<E>* channel,
+        bool active
+    ) : _channel(channel) {
+        // TODO: Call AbstractCoroutine constructor with parentContext, initParentJob = false, active
+        // TODO: initParentJob(parentContext[Job])
     }
 
-    override val isActive: Boolean get() = super.isActive
+    // TODO: Implement ProducerScope<E> interface
+    // TODO: Implement BroadcastChannel<E> delegation via _channel
 
-    override val channel: SendChannel<E>
-        get() = this
-
-    @Suppress("MULTIPLE_DEFAULTS_INHERITED_FROM_SUPERTYPES_DEPRECATION_WARNING") // do not remove the MULTIPLE_DEFAULTS suppression: required in K2
-    @Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.2.0, binary compatibility with versions <= 1.1.x")
-    final override fun cancel(cause: Throwable?): Boolean {
-        cancelInternal(cause ?: defaultCancellationException())
-        return true
+    bool is_active() const {
+        // TODO: return super.isActive
+        return false;
     }
 
-    @Suppress("MULTIPLE_DEFAULTS_INHERITED_FROM_SUPERTYPES_DEPRECATION_WARNING") // do not remove the MULTIPLE_DEFAULTS suppression: required in K2
-    final override fun cancel(cause: CancellationException?) {
-        cancelInternal(cause ?: defaultCancellationException())
+    SendChannel<E>* channel() {
+        return this;
     }
 
-    override fun cancelInternal(cause: Throwable) {
-        val exception = cause.toCancellationException()
-        _channel.cancel(exception) // cancel the channel
-        cancelCoroutine(exception) // cancel the job
+    // @Suppress("MULTIPLE_DEFAULTS_INHERITED_FROM_SUPERTYPES_DEPRECATION_WARNING")
+    // @Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.2.0, binary compatibility with versions <= 1.1.x")
+    bool cancel(std::exception_ptr cause = nullptr) {
+        // TODO: cancelInternal(cause ?: defaultCancellationException())
+        return true;
     }
 
-    override fun onCompleted(value: Unit) {
-        _channel.close()
+    // @Suppress("MULTIPLE_DEFAULTS_INHERITED_FROM_SUPERTYPES_DEPRECATION_WARNING")
+    void cancel(CancellationException* cause = nullptr) {
+        // TODO: cancelInternal(cause ?: defaultCancellationException())
     }
 
-    override fun onCancelled(cause: Throwable, handled: Boolean) {
-        val processed = _channel.close(cause)
-        if (!processed && !handled) handleCoroutineException(context, cause)
+    void cancel_internal(std::exception_ptr cause) override {
+        // TODO: val exception = cause.toCancellationException()
+        // TODO: _channel.cancel(exception)
+        // TODO: cancelCoroutine(exception)
+    }
+
+    void on_completed(void* value) override {
+        _channel->close();
+    }
+
+    void on_cancelled(std::exception_ptr cause, bool handled) override {
+        // TODO: val processed = _channel.close(cause)
+        // TODO: if (!processed && !handled) handleCoroutineException(context, cause)
     }
 
     // The BroadcastChannel could be also closed
-    override fun close(cause: Throwable?): Boolean {
-        val result = _channel.close(cause)
-        start() // start coroutine if it was not started yet
-        return result
+    bool close(std::exception_ptr cause = nullptr) {
+        // TODO: val result = _channel.close(cause)
+        // TODO: start() // start coroutine if it was not started yet
+        // TODO: return result
+        return false;
     }
-}
+};
 
-private class LazyBroadcastCoroutine<E>(
-    parentContext: CoroutineContext,
-    channel: BroadcastChannel<E>,
-    block: suspend ProducerScope<E>.() -> Unit
-) : BroadcastCoroutine<E>(parentContext, channel, active = false) {
-    private val continuation = block.createCoroutineUnintercepted(this, this)
+template<typename E>
+class LazyBroadcastCoroutine : public BroadcastCoroutine<E> {
+private:
+    // TODO: private val continuation = block.createCoroutineUnintercepted(this, this)
 
-    override fun openSubscription(): ReceiveChannel<E> {
-        // open subscription _first_
-        val subscription = _channel.openSubscription()
-        // then start coroutine
-        start()
-        return subscription
+public:
+    LazyBroadcastCoroutine(
+        CoroutineContext* parent_context,
+        BroadcastChannel<E>* channel,
+        std::function<void(ProducerScope<E>*)> block
+    ) : BroadcastCoroutine<E>(parent_context, channel, false) {
+        // TODO: Store block for createCoroutineUnintercepted
     }
 
-    override fun onStart() {
-        continuation.startCoroutineCancellable(this)
+    ReceiveChannel<E>* open_subscription() override {
+        // TODO: val subscription = _channel.openSubscription()
+        // TODO: start()
+        // TODO: return subscription
+        return nullptr;
     }
-}
+
+    void on_start() override {
+        // TODO: continuation.startCoroutineCancellable(this)
+    }
+};
+
+// TODO: Implement AbstractCoroutine base class
+// TODO: Implement SendChannel, ReceiveChannel, BroadcastChannel interfaces
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

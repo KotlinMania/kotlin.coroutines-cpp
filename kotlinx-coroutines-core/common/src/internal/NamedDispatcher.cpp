@@ -1,25 +1,54 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/internal/NamedDispatcher.kt
+//
+// TODO: This is a mechanical transliteration - semantics not fully implemented
+// TODO: CoroutineDispatcher, CoroutineContext, Delay need C++ equivalents
+// TODO: @InternalCoroutinesApi annotation - translate to comment
+// TODO: Runnable interface needs C++ equivalent
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.DefaultDelay
-import kotlin.coroutines.*
+#include <string>
+
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
+
+// Forward declarations
+class CoroutineDispatcher;
+class CoroutineContext;
+class Delay;
+class DefaultDelay;
+class Runnable;
 
 /**
  * Wrapping dispatcher that has a nice user-supplied `toString()` representation
  */
-internal class NamedDispatcher(
-    private val dispatcher: CoroutineDispatcher,
-    private val name: String
-) : CoroutineDispatcher(), Delay by (dispatcher as? Delay ?: DefaultDelay) {
+class NamedDispatcher : public CoroutineDispatcher /* , public Delay */ {
+private:
+    CoroutineDispatcher* dispatcher_;
+    std::string name_;
 
-    override fun isDispatchNeeded(context: CoroutineContext): Boolean = dispatcher.isDispatchNeeded(context)
+public:
+    NamedDispatcher(CoroutineDispatcher* dispatcher, const std::string& name)
+        : dispatcher_(dispatcher), name_(name) {}
 
-    override fun dispatch(context: CoroutineContext, block: Runnable) = dispatcher.dispatch(context, block)
-
-    @InternalCoroutinesApi
-    override fun dispatchYield(context: CoroutineContext, block: Runnable) = dispatcher.dispatchYield(context, block)
-
-    override fun toString(): String {
-        return name
+    bool is_dispatch_needed(CoroutineContext* context) override {
+        return dispatcher_->is_dispatch_needed(context);
     }
-}
+
+    void dispatch(CoroutineContext* context, Runnable* block) override {
+        dispatcher_->dispatch(context, block);
+    }
+
+    // TODO: @InternalCoroutinesApi annotation
+    void dispatch_yield(CoroutineContext* context, Runnable* block) override {
+        dispatcher_->dispatch_yield(context, block);
+    }
+
+    std::string to_string() override {
+        return name_;
+    }
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

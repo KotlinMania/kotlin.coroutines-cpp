@@ -1,47 +1,57 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/MapNotNullTest.kt
+// TODO: handle imports (kotlinx.coroutines.testing, kotlinx.coroutines, kotlinx.coroutines.channels, kotlin.test)
+// TODO: translate @Test annotations to appropriate C++ test framework
+// TODO: handle suspend functions and coroutines
+// TODO: translate runTest {} blocks
+// TODO: handle Flow types and operations
+// TODO: handle nullable types
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class MapNotNullTest : TestBase() {
-    @Test
-    fun testMap() = runTest {
-        val flow = flow {
-            emit(1)
-            emit(null)
-            emit(2)
-        }
+class MapNotNullTest : public TestBase {
+public:
+    // @Test
+    void test_map() /* TODO: = runTest */ {
+        auto flow = flow([]() /* TODO: suspend */ {
+            emit(1);
+            emit(nullptr); // TODO: nullable type
+            emit(2);
+        });
 
-        val result = flow.mapNotNull { it }.sum()
-        assertEquals(3, result)
+        auto result = flow.map_not_null([](auto it) { return it; }).sum();
+        assert_equals(3, result);
     }
 
-    @Test
-    fun testEmptyFlow() = runTest {
-        val sum = emptyFlow<Int>().mapNotNull { expectUnreached(); it }.sum()
-        assertEquals(0, sum)
+    // @Test
+    void test_empty_flow() /* TODO: = runTest */ {
+        auto sum = empty_flow<int>().map_not_null([](int it) { expect_unreached(); return it; }).sum();
+        assert_equals(0, sum);
     }
 
-    @Test
-    fun testErrorCancelsUpstream() = runTest {
-        var cancelled = false
-        val latch = Channel<Unit>()
-        val flow = flow {
-            coroutineScope {
-                launch {
-                    latch.send(Unit)
-                    hang { cancelled = true }
-                }
-                emit(1)
-            }
-        }.mapNotNull<Int, Int> {
-            latch.receive()
-            throw TestException()
-        }.catch { emit(42) }
+    // @Test
+    void test_error_cancels_upstream() /* TODO: = runTest */ {
+        bool cancelled = false;
+        Channel<Unit> latch;
+        auto flow = flow([&]() /* TODO: suspend */ {
+            coroutine_scope([&]() /* TODO: suspend */ {
+                launch([&]() /* TODO: suspend */ {
+                    latch.send(Unit{});
+                    hang([&]() { cancelled = true; });
+                });
+                emit(1);
+            });
+        }).map_not_null<int, int>([&](int) {
+            latch.receive();
+            throw TestException();
+        }).catch_error([](auto) { emit(42); });
 
-        assertEquals(42, flow.single())
-        assertTrue(cancelled)
+        assert_equals(42, flow.single());
+        assert_true(cancelled);
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,17 +1,24 @@
-@file:OptIn(ExperimentalContracts::class)
-@file:Suppress("LEAKED_IN_PLACE_LAMBDA", "WRONG_INVOCATION_KIND")
+// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
+// Original: kotlinx-coroutines-core/common/src/Timeout.cpp
+//
+// TODO:
+// - Contract annotations need C++ contracts or documentation
+// - Suspend functions and coroutine infrastructure
+// - Duration type (kotlin.time.Duration → std::chrono)
+// - suspendCoroutineUninterceptedOrReturn
+// - TimeoutCoroutine implementation
+// - @Transient annotation (JVM serialization-specific)
 
-package kotlinx.coroutines
+#include <chrono>
+#include <exception>
+#include <functional>
 
-import kotlinx.coroutines.internal.*
-import kotlinx.coroutines.intrinsics.*
-import kotlinx.coroutines.selects.*
-import kotlin.contracts.*
-import kotlin.coroutines.*
-import kotlin.coroutines.intrinsics.*
-import kotlin.jvm.*
-import kotlin.time.*
-import kotlin.time.Duration.Companion.milliseconds
+namespace kotlinx {
+namespace coroutines {
+
+class CoroutineScope;
+class CancellationException;
+class Job;
 
 /**
  * Runs a given suspending [block] of code inside a coroutine with a specified [timeout][timeMillis] and throws
@@ -35,15 +42,9 @@ import kotlin.time.Duration.Companion.milliseconds
  *
  * @param timeMillis timeout time in milliseconds.
  */
-public suspend fun <T> withTimeout(timeMillis: Long, block: suspend CoroutineScope.() -> T): T {
-    contract {
-        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
-    }
-    if (timeMillis <= 0L) throw TimeoutCancellationException("Timed out immediately")
-    return suspendCoroutineUninterceptedOrReturn { uCont ->
-        setupTimeout(TimeoutCoroutine(timeMillis, uCont), block)
-    }
-}
+// TODO: suspend function - coroutine semantics not implemented
+template<typename T>
+T with_timeout(long time_millis, std::function<T(CoroutineScope&)> block);
 
 /**
  * Runs a given suspending [block] of code inside a coroutine with the specified [timeout] and throws
@@ -65,12 +66,9 @@ public suspend fun <T> withTimeout(timeMillis: Long, block: suspend CoroutineSco
  *
  * > Implementation note: how the time is tracked exactly is an implementation detail of the context's [CoroutineDispatcher].
  */
-public suspend fun <T> withTimeout(timeout: Duration, block: suspend CoroutineScope.() -> T): T {
-    contract {
-        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
-    }
-    return withTimeout(timeout.toDelayMillis(), block)
-}
+// TODO: suspend function - coroutine semantics not implemented
+template<typename T>
+T with_timeout(std::chrono::nanoseconds timeout, std::function<T(CoroutineScope&)> block);
 
 /**
  * Runs a given suspending block of code inside a coroutine with a specified [timeout][timeMillis] and returns
@@ -94,24 +92,9 @@ public suspend fun <T> withTimeout(timeout: Duration, block: suspend CoroutineSc
  *
  * @param timeMillis timeout time in milliseconds.
  */
-public suspend fun <T> withTimeoutOrNull(timeMillis: Long, block: suspend CoroutineScope.() -> T): T? {
-    if (timeMillis <= 0L) return null
-
-    var coroutine: TimeoutCoroutine<T?, T?>? = null
-    try {
-        return suspendCoroutineUninterceptedOrReturn { uCont ->
-            val timeoutCoroutine = TimeoutCoroutine(timeMillis, uCont)
-            coroutine = timeoutCoroutine
-            setupTimeout<T?, T?>(timeoutCoroutine, block)
-        }
-    } catch (e: TimeoutCancellationException) {
-        // Return null if it's our exception, otherwise propagate it upstream (e.g. in case of nested withTimeouts)
-        if (e.coroutine === coroutine) {
-            return null
-        }
-        throw e
-    }
-}
+// TODO: suspend function - coroutine semantics not implemented
+template<typename T>
+T* with_timeout_or_null(long time_millis, std::function<T(CoroutineScope&)> block);
 
 /**
  * Runs a given suspending block of code inside a coroutine with the specified [timeout] and returns
@@ -133,58 +116,37 @@ public suspend fun <T> withTimeoutOrNull(timeMillis: Long, block: suspend Corout
  *
  * > Implementation note: how the time is tracked exactly is an implementation detail of the context's [CoroutineDispatcher].
  */
-public suspend fun <T> withTimeoutOrNull(timeout: Duration, block: suspend CoroutineScope.() -> T): T? =
-    withTimeoutOrNull(timeout.toDelayMillis(), block)
-
-private fun <U, T : U> setupTimeout(
-    coroutine: TimeoutCoroutine<U, T>,
-    block: suspend CoroutineScope.() -> T
-): Any? {
-    // schedule cancellation of this coroutine on time
-    val cont = coroutine.uCont
-    val context = cont.context
-    coroutine.disposeOnCompletion(context.delay.invokeOnTimeout(coroutine.time, coroutine, coroutine.context))
-    // restart the block using a new coroutine with a new job,
-    // however, start it undispatched, because we already are in the proper context
-    return coroutine.startUndispatchedOrReturnIgnoreTimeout(coroutine, block)
-}
-
-private class TimeoutCoroutine<U, in T : U>(
-    @JvmField val time: Long,
-    uCont: Continuation<U> // unintercepted continuation
-) : ScopeCoroutine<T>(uCont.context, uCont), Runnable {
-    override fun run() {
-        cancelCoroutine(TimeoutCancellationException(time, context.delay, this))
-    }
-
-    override fun nameString(): String =
-        "${super.nameString()}(timeMillis=$time)"
-}
+// TODO: suspend function - coroutine semantics not implemented
+template<typename T>
+T* with_timeout_or_null(std::chrono::nanoseconds timeout, std::function<T(CoroutineScope&)> block);
 
 /**
  * This exception is thrown by [withTimeout] to indicate timeout.
  */
-public class TimeoutCancellationException internal constructor(
-    message: String,
-    @JvmField @Transient internal val coroutine: Job?
-) : CancellationException(message), CopyableThrowable<TimeoutCancellationException> {
+class TimeoutCancellationException : public CancellationException {
+private:
+    // @JvmField @Transient
+    Job* coroutine_;
+
+public:
+    TimeoutCancellationException(const std::string& message, Job* coroutine)
+        : CancellationException(message), coroutine_(coroutine) {}
+
     /**
      * Creates a timeout exception with the given message.
      * This constructor is needed for exception stack-traces recovery.
      */
-    internal constructor(message: String) : this(message, null)
+    explicit TimeoutCancellationException(const std::string& message)
+        : TimeoutCancellationException(message, nullptr) {}
 
-    // message is never null in fact
-    override fun createCopy(): TimeoutCancellationException =
-        TimeoutCancellationException(message ?: "", coroutine).also { it.initCause(this) }
-}
+    // TODO: CopyableThrowable interface
+    TimeoutCancellationException* create_copy() const;
 
-internal fun TimeoutCancellationException(
-    time: Long,
-    delay: Delay,
-    coroutine: Job
-) : TimeoutCancellationException {
-    val message = (delay as? DelayWithTimeoutDiagnostics)?.timeoutMessage(time.milliseconds)
-        ?: "Timed out waiting for $time ms"
-    return TimeoutCancellationException(message, coroutine)
-}
+    Job* get_coroutine() const { return coroutine_; }
+};
+
+// TODO: Internal factory function for TimeoutCancellationException
+// TimeoutCancellationException* make_timeout_cancellation_exception(long time, Delay* delay, Job* coroutine);
+
+} // namespace coroutines
+} // namespace kotlinx

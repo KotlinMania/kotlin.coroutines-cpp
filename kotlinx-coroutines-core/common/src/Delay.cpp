@@ -1,9 +1,26 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
+// Original: kotlinx-coroutines-core/common/src/Delay.kt
+//
+// TODO:
+// - suspend functions need coroutine infrastructure
+// - kotlin.time.Duration needs C++ chrono or custom duration type
+// - CancellableContinuation template infrastructure
+// - CoroutineContext and CoroutineDispatcher integration
+// - Select infrastructure
+// - Extension properties (CoroutineContext.delay) need separate implementation
 
-import kotlinx.coroutines.selects.*
-import kotlin.coroutines.*
-import kotlin.time.*
-import kotlin.time.Duration.Companion.nanoseconds
+#include <functional>
+#include <chrono>
+
+namespace kotlinx {
+namespace coroutines {
+
+// Forward declarations
+class CoroutineContext;
+class CoroutineDispatcher;
+class DisposableHandle;
+class Runnable;
+template<typename T> class CancellableContinuation;
 
 /**
  * This dispatcher _feature_ is implemented by [CoroutineDispatcher] implementations that natively support
@@ -14,17 +31,18 @@ import kotlin.time.Duration.Companion.nanoseconds
  *
  * @suppress **This an internal API and should not be used from general code.**
  */
-@InternalCoroutinesApi
-public interface Delay {
-
+// @InternalCoroutinesApi
+class Delay {
+public:
     /** @suppress **/
-    @Deprecated(
-        message = "Deprecated without replacement as an internal method never intended for public use",
-        level = DeprecationLevel.ERROR
-    ) // Error since 1.6.0
-    public suspend fun delay(time: Long) {
-        if (time <= 0) return // don't delay
-        return suspendCancellableCoroutine { scheduleResumeAfterDelay(time, it) }
+    // @Deprecated(
+    //     message = "Deprecated without replacement as an internal method never intended for public use",
+    //     level = DeprecationLevel.ERROR
+    // ) // Error since 1.6.0
+    // TODO: suspend function - coroutine semantics not implemented
+    virtual void delay(long time) {
+        if (time <= 0) return; // don't delay
+        // return suspendCancellableCoroutine { scheduleResumeAfterDelay(time, it) }
     }
 
     /**
@@ -42,29 +60,31 @@ public interface Delay {
      * with(continuation) { resumeUndispatchedWith(Unit) }
      * ```
      */
-    public fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>)
+    virtual void schedule_resume_after_delay(long time_millis, CancellableContinuation<void>& continuation) = 0;
 
     /**
      * Schedules invocation of a specified [block] after a specified delay [timeMillis].
      * The resulting [DisposableHandle] can be used to [dispose][DisposableHandle.dispose] of this invocation
      * request if it is not needed anymore.
      */
-    public fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle =
-        DefaultDelay.invokeOnTimeout(timeMillis, block, context)
-}
+    virtual DisposableHandle* invoke_on_timeout(long time_millis, Runnable& block, CoroutineContext& context);
+
+    virtual ~Delay() = default;
+};
 
 /**
  * Enhanced [Delay] interface that provides additional diagnostics for [withTimeout].
  * Is going to be removed once there is proper JVM-default support.
  * Then we'll be able put this function into [Delay] without breaking binary compatibility.
  */
-@InternalCoroutinesApi
-internal interface DelayWithTimeoutDiagnostics : Delay {
+// @InternalCoroutinesApi
+class DelayWithTimeoutDiagnostics : public Delay {
+public:
     /**
      * Returns a string that explains that the timeout has occurred, and explains what can be done about it.
      */
-    fun timeoutMessage(timeout: Duration): String
-}
+    virtual std::string timeout_message(std::chrono::nanoseconds timeout) = 0;
+};
 
 /**
  * Suspends until cancellation, in which case it will throw a [CancellationException].
@@ -100,7 +120,8 @@ internal interface DelayWithTimeoutDiagnostics : Delay {
  * }
  * ```
  */
-public suspend fun awaitCancellation(): Nothing = suspendCancellableCoroutine {}
+// TODO: suspend function returning Nothing - coroutine semantics not implemented
+[[noreturn]] void await_cancellation(); // = suspendCancellableCoroutine {}
 
 /**
  * Delays coroutine for at least the given time without blocking a thread and resumes it after a specified time.
@@ -118,15 +139,8 @@ public suspend fun awaitCancellation(): Nothing = suspendCancellableCoroutine {}
  * Implementation note: how exactly time is tracked is an implementation detail of [CoroutineDispatcher] in the context.
  * @param timeMillis time in milliseconds.
  */
-public suspend fun delay(timeMillis: Long) {
-    if (timeMillis <= 0) return // don't delay
-    return suspendCancellableCoroutine sc@ { cont: CancellableContinuation<Unit> ->
-        // if timeMillis == Long.MAX_VALUE then just wait forever like awaitCancellation, don't schedule.
-        if (timeMillis < Long.MAX_VALUE) {
-            cont.context.delay.scheduleResumeAfterDelay(timeMillis, cont)
-        }
-    }
-}
+// TODO: suspend function - coroutine semantics not implemented
+void delay(long time_millis);
 
 /**
  * Delays coroutine for at least the given [duration] without blocking a thread and resumes it after the specified time.
@@ -143,16 +157,22 @@ public suspend fun delay(timeMillis: Long) {
  *
  * Implementation note: how exactly time is tracked is an implementation detail of [CoroutineDispatcher] in the context.
  */
-public suspend fun delay(duration: Duration): Unit = delay(duration.toDelayMillis())
+// TODO: suspend function - coroutine semantics not implemented
+void delay(std::chrono::nanoseconds duration);
 
 /** Returns [Delay] implementation of the given context */
-internal val CoroutineContext.delay: Delay get() = get(ContinuationInterceptor) as? Delay ?: DefaultDelay
+// TODO: Extension property - needs implementation
+// internal val CoroutineContext.delay: Delay get() = get(ContinuationInterceptor) as? Delay ?: DefaultDelay
 
 /**
  * Convert this duration to its millisecond value. Durations which have a nanosecond component less than
  * a single millisecond will be rounded up to the next largest millisecond.
  */
-internal fun Duration.toDelayMillis(): Long = when (isPositive()) {
-    true -> plus(999_999L.nanoseconds).inWholeMilliseconds
-    false -> 0L
-}
+// TODO: Extension function on Duration
+// internal fun Duration.toDelayMillis(): Long = when (isPositive()) {
+//     true -> plus(999_999L.nanoseconds).inWholeMilliseconds
+//     false -> 0L
+// }
+
+} // namespace coroutines
+} // namespace kotlinx

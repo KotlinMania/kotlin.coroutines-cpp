@@ -1,23 +1,61 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/internal/LockFreeLinkedList.common.kt
+//
+// TODO: This is a mechanical transliteration - semantics not fully implemented
+// TODO: expect open class needs platform-specific implementation
+// TODO: inline functions need proper C++ implementation
+// TODO: Lambda parameters need std::function or templates
 
-/** @suppress **This is unstable API and it is subject to change.** */
-public expect open class LockFreeLinkedListNode() {
-    public val isRemoved: Boolean
-    public val nextNode: LockFreeLinkedListNode
-    public val prevNode: LockFreeLinkedListNode
-    public fun addLast(node: LockFreeLinkedListNode, permissionsBitmask: Int): Boolean
-    public fun addOneIfEmpty(node: LockFreeLinkedListNode): Boolean
-    public open fun remove(): Boolean
+#include <functional>
+
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
+
+/**
+ * This is unstable API and it is subject to change.
+ */
+// TODO: expect open class - needs platform-specific implementation
+class LockFreeLinkedListNode {
+public:
+    LockFreeLinkedListNode() {}
+
+    bool is_removed() const;
+    LockFreeLinkedListNode* next_node() const;
+    LockFreeLinkedListNode* prev_node() const;
+    bool add_last(LockFreeLinkedListNode* node, int permissions_bitmask);
+    bool add_one_if_empty(LockFreeLinkedListNode* node);
+    virtual bool remove();
 
     /**
      * Closes the list for anything that requests the permission [forbiddenElementsBit].
      * Only a single permission can be forbidden at a time, but this isn't checked.
      */
-    public fun close(forbiddenElementsBit: Int)
-}
+    void close(int forbidden_elements_bit);
+};
 
-/** @suppress **This is unstable API and it is subject to change.** */
-public expect open class LockFreeLinkedListHead() : LockFreeLinkedListNode {
-    public inline fun forEach(block: (LockFreeLinkedListNode) -> Unit)
-    public final override fun remove(): Nothing
-}
+/**
+ * This is unstable API and it is subject to change.
+ */
+// TODO: expect open class - needs platform-specific implementation
+class LockFreeLinkedListHead : public LockFreeLinkedListNode {
+public:
+    LockFreeLinkedListHead() : LockFreeLinkedListNode() {}
+
+    template<typename Block>
+    void for_each(Block block) {
+        // TODO: inline implementation
+        LockFreeLinkedListNode* current = next_node();
+        while (current != this) {
+            block(current);
+            current = current->next_node();
+        }
+    }
+
+    // final override
+    bool remove() = delete; // Cannot be removed (Nothing in Kotlin)
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

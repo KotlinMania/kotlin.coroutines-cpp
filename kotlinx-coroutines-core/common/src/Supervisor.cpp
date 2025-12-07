@@ -1,19 +1,27 @@
-@file:OptIn(ExperimentalContracts::class)
-@file:Suppress("LEAKED_IN_PLACE_LAMBDA", "WRONG_INVOCATION_KIND")
+// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
+// Original: kotlinx-coroutines-core/common/src/Supervisor.kt
+//
+// TODO:
+// - Suspend functions and coroutine infrastructure
+// - Contract/InvocationKind needs compile-time contracts or documentation
+// - suspendCoroutineUninterceptedOrReturn needs coroutine support
+// - Private nested classes need proper encapsulation
 
-package kotlinx.coroutines
+#include <exception>
 
-import kotlinx.coroutines.internal.*
-import kotlinx.coroutines.intrinsics.*
-import kotlin.contracts.*
-import kotlin.coroutines.*
-import kotlin.coroutines.intrinsics.*
-import kotlin.jvm.*
+namespace kotlinx {
+namespace coroutines {
+
+class Job;
+class CompletableJob;
+class CoroutineScope;
+class CoroutineContext;
+template<typename T> class Continuation;
 
 /**
  * Creates a _supervisor_ job object in an active state.
  * Children of a supervisor job can fail independently of each other.
- * 
+ *
  * A failure or cancellation of a child does not cause the supervisor job to fail and does not affect its other children,
  * so a supervisor can implement a custom policy for handling failures of its children:
  *
@@ -23,14 +31,14 @@ import kotlin.jvm.*
  * If a [parent] job is specified, then this supervisor job becomes a child job of the [parent] and is cancelled when the
  * parent fails or is cancelled. All this supervisor's children are cancelled in this case, too.
  */
-@Suppress("FunctionName")
-public fun SupervisorJob(parent: Job? = null) : CompletableJob = SupervisorJobImpl(parent)
+// @Suppress("FunctionName")
+CompletableJob* SupervisorJob(Job* parent = nullptr);
 
 /** @suppress Binary compatibility only */
-@Suppress("FunctionName")
-@Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.2.0, binary compatibility with versions <= 1.1.x")
-@JvmName("SupervisorJob")
-public fun SupervisorJob0(parent: Job? = null) : Job = SupervisorJob(parent)
+// @Suppress("FunctionName")
+// @Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.2.0, binary compatibility with versions <= 1.1.x")
+// @JvmName("SupervisorJob")
+Job* SupervisorJob0(Job* parent = nullptr);
 
 /**
  * Creates a [CoroutineScope] with [SupervisorJob] and calls the specified suspend [block] with this scope.
@@ -47,23 +55,15 @@ public fun SupervisorJob0(parent: Job? = null) : Job = SupervisorJob(parent)
  * The method may throw a [CancellationException] if the current job was cancelled externally,
  * or rethrow an exception thrown by the given [block].
  */
-public suspend fun <R> supervisorScope(block: suspend CoroutineScope.() -> R): R {
-    contract {
-        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
-    }
-    return suspendCoroutineUninterceptedOrReturn { uCont ->
-        val coroutine = SupervisorCoroutine(uCont.context, uCont)
-        coroutine.startUndispatchedOrReturn(coroutine, block)
-    }
-}
+// TODO: suspend function - coroutine semantics not implemented
+template<typename R>
+R supervisor_scope(std::function<R(CoroutineScope&)> block);
 
-private class SupervisorJobImpl(parent: Job?) : JobImpl(parent) {
-    override fun childCancelled(cause: Throwable): Boolean = false
-}
+// Private implementation classes would go here with internal linkage
+// namespace { // anonymous namespace for internal classes
+//     class SupervisorJobImpl : public JobImpl { ... }
+//     template<typename T> class SupervisorCoroutine : public ScopeCoroutine<T> { ... }
+// }
 
-private class SupervisorCoroutine<in T>(
-    context: CoroutineContext,
-    uCont: Continuation<T>
-) : ScopeCoroutine<T>(context, uCont) {
-    override fun childCancelled(cause: Throwable): Boolean = false
-}
+} // namespace coroutines
+} // namespace kotlinx

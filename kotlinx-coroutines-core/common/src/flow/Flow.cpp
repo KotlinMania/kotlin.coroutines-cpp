@@ -1,8 +1,16 @@
-package kotlinx.coroutines.flow
+// Transliterated from Kotlin to C++ (first pass - syntax/language translation only)
+// Original: kotlinx-coroutines-core/common/src/flow/Flow.kt
+//
+// TODO: Implement suspend/coroutine semantics
+// TODO: Translate @ExperimentalCoroutinesApi annotation
+// TODO: Implement variance modifiers (out T)
+// TODO: Map interface inheritance for not-stable warning
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.internal.*
-import kotlin.coroutines.*
+namespace kotlinx { namespace coroutines { namespace flow {
+
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.flow.internal.*
+// import kotlin.coroutines.*
 
 /**
  * An asynchronous data stream that sequentially emits values and completes normally or with an exception.
@@ -173,7 +181,10 @@ import kotlin.coroutines.*
  * These implementations ensure that the context preservation property is not violated, and prevent most
  * of the developer mistakes related to concurrency, inconsistent flow dispatchers, and cancellation.
  */
-public interface Flow<out T> {
+template<typename T>
+class Flow { // TODO: out T variance
+public:
+    virtual ~Flow() = default;
 
     /**
      * Accepts the given [collector] and [emits][FlowCollector.emit] values into it.
@@ -191,14 +202,14 @@ public interface Flow<out T> {
      * All default flow implementations ensure context preservation and exception transparency properties on a best-effort basis
      * and throw [IllegalStateException] if a violation was detected.
      */
-    public suspend fun collect(collector: FlowCollector<T>)
-}
+    virtual void collect(FlowCollector<T>* collector) = 0; // TODO: suspend
+};
 
 /**
  * Base class for stateful implementations of `Flow`.
  * It tracks all the properties required for context preservation and throws an [IllegalStateException]
  * if any of the properties are violated.
- * 
+ *
  * Example of the implementation:
  *
  * ```
@@ -217,16 +228,19 @@ public interface Flow<out T> {
  * }
  * ```
  */
-@ExperimentalCoroutinesApi
-public abstract class AbstractFlow<T> : Flow<T>, CancellableFlow<T> {
-
-    public final override suspend fun collect(collector: FlowCollector<T>) {
-        val safeCollector = SafeCollector(collector, coroutineContext)
+// @ExperimentalCoroutinesApi
+template<typename T>
+class AbstractFlow : public Flow<T>, public CancellableFlow<T> {
+public:
+    void collect(FlowCollector<T>* collector) final override { // TODO: suspend
+        SafeCollector<T> safe_collector(collector, /* coroutineContext TODO */);
         try {
-            collectSafely(safeCollector)
-        } finally {
-            safeCollector.releaseIntercepted()
+            collect_safely(&safe_collector);
+        } catch (...) {
+            safe_collector.release_intercepted();
+            throw;
         }
+        safe_collector.release_intercepted();
     }
 
     /**
@@ -242,5 +256,7 @@ public abstract class AbstractFlow<T> : Flow<T>, CancellableFlow<T> {
      *
      * @throws IllegalStateException if any of the invariants are violated.
      */
-    public abstract suspend fun collectSafely(collector: FlowCollector<T>)
-}
+    virtual void collect_safely(FlowCollector<T>* collector) = 0; // TODO: suspend
+};
+
+}}} // namespace kotlinx::coroutines::flow

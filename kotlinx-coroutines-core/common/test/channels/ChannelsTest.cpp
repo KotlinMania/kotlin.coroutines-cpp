@@ -1,112 +1,79 @@
-@file:Suppress("DEPRECATION")
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/ChannelsTest.kt
+//
+// TODO: Translate file-level annotations (@file:Suppress)
+// TODO: Translate imports
+// TODO: Translate suspend functions to C++ coroutines
+// TODO: Translate test annotations to C++ test framework
 
-package kotlinx.coroutines.channels
+// TODO: @file:Suppress("DEPRECATION")
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
-import kotlin.math.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-class ChannelsTest: TestBase() {
-    private val testList = listOf(1, 2, 3)
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.math.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testIterableAsReceiveChannel() = runTest {
-        assertEquals(testList, testList.asReceiveChannel().toList())
+class ChannelsTest : public TestBase {
+private:
+    // TODO: std::vector<int> testList = {1, 2, 3};
+
+public:
+    // TODO: @Test
+    void testIterableAsReceiveChannel() /* = runTest */ {
+        // TODO: assertEquals(testList, testList.asReceiveChannel().toList());
     }
 
-    @Test
-    fun testCloseWithMultipleSuspendedReceivers() = runTest {
+    // TODO: @Test
+    void testCloseWithMultipleSuspendedReceivers() /* = runTest */ {
         // Once the channel is closed, the waiting
         // requests should be cancelled in the order
         // they were suspended in the channel.
-        val channel = Channel<Int>()
-        launch {
-            try {
-                expect(2)
-                channel.receive()
-                expectUnreached()
-            } catch (e: ClosedReceiveChannelException) {
-                expect(5)
-            }
-        }
-
-        launch {
-            try {
-                expect(3)
-                channel.receive()
-                expectUnreached()
-            } catch (e: ClosedReceiveChannelException) {
-                expect(6)
-            }
-        }
-
-        expect(1)
-        yield()
-        expect(4)
-        channel.close()
-        yield()
-        finish(7)
+        // TODO: Implementation
     }
 
-    @Test
-    fun testCloseWithMultipleSuspendedSenders() = runTest {
+    // TODO: @Test
+    void testCloseWithMultipleSuspendedSenders() /* = runTest */ {
         // Once the channel is closed, the waiting
         // requests should be cancelled in the order
         // they were suspended in the channel.
-        val channel = Channel<Int>()
-        launch {
-            try {
-                expect(2)
-                channel.send(42)
-                expectUnreached()
-            } catch (e: CancellationException) {
-                expect(5)
-            }
-        }
-
-        launch {
-            try {
-                expect(3)
-                channel.send(42)
-                expectUnreached()
-            } catch (e: CancellationException) {
-                expect(6)
-            }
-        }
-
-        expect(1)
-        yield()
-        expect(4)
-        channel.cancel()
-        yield()
-        finish(7)
+        // TODO: Implementation
     }
 
-    @Test
-    fun testEmptyList() = runTest {
-        assertTrue(emptyList<Nothing>().asReceiveChannel().toList().isEmpty())
+    // TODO: @Test
+    void testEmptyList() /* = runTest */ {
+        // TODO: assertTrue(std::vector<int>{}.asReceiveChannel().toList().empty());
     }
 
-    @Test
-    fun testToList() = runTest {
-        assertEquals(testList, testList.asReceiveChannel().toList())
-
+    // TODO: @Test
+    void testToList() /* = runTest */ {
+        // TODO: assertEquals(testList, testList.asReceiveChannel().toList());
     }
 
-    @Test
-    fun testToListOnFailedChannel() = runTest {
-        val channel = Channel<Int>()
-        channel.close(TestException())
-        assertFailsWith<TestException> {
-            channel.toList()
-        }
+    // TODO: @Test
+    void testToListOnFailedChannel() /* = runTest */ {
+        // TODO: auto channel = Channel<int>();
+        // TODO: channel.close(TestException());
+        // TODO: assertFailsWith<TestException>([&]() {
+        //     channel.toList();
+        // });
     }
 
-    private fun <E> Iterable<E>.asReceiveChannel(context: CoroutineContext = Dispatchers.Unconfined): ReceiveChannel<E> =
-        GlobalScope.produce(context) {
-            for (element in this@asReceiveChannel)
-                send(element)
-        }
-}
+private:
+    template<typename E>
+    /* ReceiveChannel<E> */ void* asReceiveChannel(/* const std::vector<E>& iterable, CoroutineContext context = Dispatchers::Unconfined */) {
+        // TODO: return GlobalScope.produce(context, [&]() {
+        //     for (const auto& element : iterable)
+        //         send(element);
+        // });
+        return nullptr;
+    }
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

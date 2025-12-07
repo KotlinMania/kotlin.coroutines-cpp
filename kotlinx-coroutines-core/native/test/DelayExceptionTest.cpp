@@ -1,20 +1,36 @@
-package kotlinx.coroutines
+// Original file: kotlinx-coroutines-core/native/test/DelayExceptionTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert @Test annotation to appropriate test framework
+// TODO: Convert suspend functions (runBlocking, launch, delay, yield)
+// TODO: Handle TestBase inheritance
 
-import kotlinx.coroutines.testing.*
-import kotlin.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class DelayExceptionTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testMaxDelay() = runBlocking {
-        expect(1)
-        val job = launch {
-            expect(2)
-            delay(Long.MAX_VALUE)
-        }
-        yield()
-        job.cancel()
-        finish(3)
+class DelayExceptionTest : public TestBase {
+public:
+    // TODO: @Test
+    void test_max_delay() {
+        // TODO: runBlocking is a suspend function
+        // runBlocking {
+        expect(1);
+        // TODO: launch is a coroutine builder
+        auto job = launch([this]() {
+            expect(2);
+            // TODO: delay is a suspend function
+            delay(LONG_MAX);
+        });
+        // TODO: yield is a suspend function
+        yield();
+        job.cancel();
+        finish(3);
+        // }
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

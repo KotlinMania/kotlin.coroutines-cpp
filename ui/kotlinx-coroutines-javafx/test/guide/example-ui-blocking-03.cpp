@@ -1,81 +1,104 @@
 // This file was automatically generated from coroutines-guide-ui.md by Knit tool. Do not edit.
-package kotlinx.coroutines.javafx.guide.exampleUiBlocking03
+// Transliterated from Kotlin to C++
+// Original: ui/kotlinx-coroutines-javafx/test/guide/example-ui-blocking-03.kt
+// TODO: Resolve imports and dependencies
+// TODO: Implement JavaFX Application framework
+// TODO: Handle suspend functions and coroutines
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.javafx.JavaFx as Main
-import javafx.application.Application
-import javafx.event.EventHandler
-import javafx.geometry.*
-import javafx.scene.*
-import javafx.scene.input.MouseEvent
-import javafx.scene.layout.StackPane
-import javafx.scene.paint.Color
-import javafx.scene.shape.Circle
-import javafx.scene.text.Text
-import javafx.stage.Stage
+namespace kotlinx {
+namespace coroutines {
+namespace javafx {
+namespace guide {
+namespace example_ui_blocking_03 {
 
-fun main(args: Array<String>) {
-    Application.launch(ExampleApp::class.java, *args)
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlinx.coroutines.javafx.JavaFx as Main
+// TODO: import javafx.application.Application
+// TODO: import javafx.event.EventHandler
+// TODO: import javafx.geometry.*
+// TODO: import javafx.scene.*
+// TODO: import javafx.scene.input.MouseEvent
+// TODO: import javafx.scene.layout.StackPane
+// TODO: import javafx.scene.paint.Color
+// TODO: import javafx.scene.shape.Circle
+// TODO: import javafx.scene.text.Text
+// TODO: import javafx.stage.Stage
+
+void main(const std::vector<std::string>& args) {
+    Application::launch<ExampleApp>(args);
 }
 
-class ExampleApp : Application() {
-    val hello = Text("Hello World!").apply {
-        fill = Color.valueOf("#C0C0C0")
+class ExampleApp : public Application {
+private:
+    Text hello_{"Hello World!"};
+    Circle fab_{20.0, Color::value_of("#FF4081")};
+    StackPane root_{};
+    Scene scene_{&root_, 240.0, 380.0};
+
+public:
+    ExampleApp() {
+        hello_.set_fill(Color::value_of("#C0C0C0"));
+
+        root_.children() += &hello_;
+        root_.children() += &fab_;
+        StackPane::set_alignment(&hello_, Pos::kCenter);
+        StackPane::set_alignment(&fab_, Pos::kBottomRight);
+        StackPane::set_margin(&fab_, Insets(15.0));
+
+        scene_.set_fill(Color::value_of("#303030"));
     }
 
-    val fab = Circle(20.0, Color.valueOf("#FF4081"))
-
-    val root = StackPane().apply {
-        children += hello
-        children += fab
-        StackPane.setAlignment(hello, Pos.CENTER)
-        StackPane.setAlignment(fab, Pos.BOTTOM_RIGHT)
-        StackPane.setMargin(fab, Insets(15.0))
+    void start(Stage* stage) override {
+        stage->set_title("Example");
+        stage->set_scene(&scene_);
+        stage->show();
+        setup(&hello_, &fab_);
     }
+};
 
-    val scene = Scene(root, 240.0, 380.0).apply {
-        fill = Color.valueOf("#303030")
-    }
-
-    override fun start(stage: Stage) {
-        stage.title = "Example"
-        stage.scene = scene
-        stage.show()
-        setup(hello, fab)
-    }
-}
-
-fun Node.onClick(action: suspend (MouseEvent) -> Unit) {
-    val eventActor = GlobalScope.actor<MouseEvent>(Dispatchers.Main, capacity = Channel.CONFLATED) {
-        for (event in channel) action(event) // pass event to action
-    }
-    onMouseClicked = EventHandler { event ->
-        eventActor.trySend(event)
-    }
-}
-
-fun setup(hello: Text, fab: Circle) {
-    var result = "none" // the last result
-    // counting animation 
-    GlobalScope.launch(Dispatchers.Main) {
-        var counter = 0
-        while (true) {
-            hello.text = "${++counter}: $result"
-            delay(100) // update the text every 100ms
+void on_click(Node* node, std::function<void(MouseEvent*)> action) {
+    auto event_actor = GlobalScope::actor<MouseEvent*>(Dispatchers::Main, Channel::kConflated, [action](auto channel) {
+        for (auto event : channel) {
+            action(event); // pass event to action
         }
-    }
+    });
+    node->set_on_mouse_clicked(EventHandler([event_actor](MouseEvent* event) {
+        event_actor.try_send(event);
+    }));
+}
+
+void setup(Text* hello, Circle* fab) {
+    std::string result = "none"; // the last result
+    // counting animation
+    GlobalScope::launch(Dispatchers::Main, [hello, &result]() {
+        int counter = 0;
+        while (true) {
+            hello->set_text(std::to_string(++counter) + ": " + result);
+            delay(100); // update the text every 100ms
+        }
+    });
     // compute next fibonacci number of each click
-    var x = 1
-    fab.onClick {
-        result = "fib($x) = ${fib(x)}"
-        x++
-    }
+    int x = 1;
+    on_click(fab, [&result, &x](auto event) {
+        result = "fib(" + std::to_string(x) + ") = " + std::to_string(fib(x));
+        x++;
+    });
 }
 
-suspend fun fib(x: Int): Int = withContext(Dispatchers.Default) {
-    fibBlocking(x)
+// TODO: suspend function
+int fib(int x) {
+    return with_context(Dispatchers::Default, [x]() {
+        return fib_blocking(x);
+    });
 }
 
-fun fibBlocking(x: Int): Int = 
-    if (x <= 1) x else fibBlocking(x - 1) + fibBlocking(x - 2)
+int fib_blocking(int x) {
+    return (x <= 1) ? x : fib_blocking(x - 1) + fib_blocking(x - 2);
+}
+
+} // namespace example_ui_blocking_03
+} // namespace guide
+} // namespace javafx
+} // namespace coroutines
+} // namespace kotlinx

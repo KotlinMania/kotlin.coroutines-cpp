@@ -1,11 +1,20 @@
-@file:Suppress("DEPRECATION_ERROR")
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt
+//
+// TODO: @file:Suppress - no C++ equivalent
+// TODO: Continuation, Job, CoroutineScope interfaces need to be defined
+// TODO: suspend functions are not directly supported in C++, need custom implementation
+// TODO: Generics with 'in' variance need C++ template equivalents
 
-package kotlinx.coroutines
+// TODO: package kotlinx.coroutines -> namespace
+namespace kotlinx {
+namespace coroutines {
 
-import kotlinx.coroutines.CoroutineStart.*
-import kotlinx.coroutines.intrinsics.*
-import kotlin.coroutines.*
-import kotlinx.coroutines.internal.ScopeCoroutine
+// TODO: import statements removed, use fully qualified names or includes
+// TODO: import kotlinx.coroutines.CoroutineStart.*
+// TODO: import kotlinx.coroutines.intrinsics.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlinx.coroutines.internal.ScopeCoroutine
 
 /**
  * Abstract base class for implementation of coroutines in coroutine builders.
@@ -31,15 +40,29 @@ import kotlinx.coroutines.internal.ScopeCoroutine
  *
  * @suppress **This an internal API and should not be used from general code.**
  */
-@OptIn(InternalForInheritanceCoroutinesApi::class)
-@InternalCoroutinesApi
-public abstract class AbstractCoroutine<in T>(
-    parentContext: CoroutineContext,
-    initParentJob: Boolean,
-    active: Boolean
-) : JobSupport(active), Job, Continuation<T>, CoroutineScope {
+// TODO: @OptIn(InternalForInheritanceCoroutinesApi::class) - no C++ equivalent
+// TODO: @InternalCoroutinesApi - no C++ equivalent
+// TODO: Template parameter 'in T' uses variance, map to template<typename T>
+template<typename T>
+class AbstractCoroutine : public JobSupport, public Job, public Continuation<T>, public CoroutineScope {
+    // TODO: Multiple inheritance - ensure proper virtual inheritance if needed
 
-    init {
+private:
+    CoroutineContext parent_context;
+    bool init_parent_job_flag;
+    bool active_flag;
+
+public:
+    // Constructor
+    AbstractCoroutine(
+        CoroutineContext parentContext,
+        bool initParentJob,
+        bool active
+    ) : JobSupport(active),
+        parent_context(parentContext),
+        init_parent_job_flag(initParentJob),
+        active_flag(active)
+    {
         /*
          * Setup parent-child relationship between the parent in the context and the current coroutine.
          * It may cause this coroutine to become _cancelling_ if the parent is already cancelled.
@@ -47,27 +70,39 @@ public abstract class AbstractCoroutine<in T>(
          * operates its state from within onCancelled or onCancelling
          * (with exceptions for rx integrations that can't have any parent)
          */
-        if (initParentJob) initParentJob(parentContext[Job])
+        if (initParentJob) {
+            // TODO: parentContext[Job] - need operator[] implementation for CoroutineContext
+            initParentJob(parentContext[Job]);
+        }
     }
 
     /**
      * The context of this coroutine that includes this coroutine as a [Job].
      */
-    @Suppress("LeakingThis")
-    public final override val context: CoroutineContext = parentContext + this
+    // TODO: @Suppress("LeakingThis") - no C++ equivalent
+    // TODO: final override - use 'final' keyword in C++
+    CoroutineContext context;
+    // TODO: Initialize in constructor: context = parentContext + this;
 
     /**
      * The context of this scope which is the same as the [context] of this coroutine.
      */
-    public override val coroutineContext: CoroutineContext get() = context
+    // TODO: override - use 'override' keyword
+    CoroutineContext coroutineContext() const override {
+        return context;
+    }
 
-    override val isActive: Boolean get() = super.isActive
+    // TODO: override val isActive - property with override
+    bool isActive() const override {
+        return JobSupport::isActive();
+    }
 
     /**
      * This function is invoked once when the job was completed normally with the specified [value],
      * right before all the waiters for the coroutine's completion are notified.
      */
-    protected open fun onCompleted(value: T) {}
+    // TODO: protected open fun - virtual function
+    virtual void onCompleted(T value) {}
 
     /**
      * This function is invoked once when the job was cancelled with the specified [cause],
@@ -80,25 +115,37 @@ public abstract class AbstractCoroutine<in T>(
      * @param cause The cancellation (failure) cause
      * @param handled `true` if the exception was handled by parent (always `true` when it is a [CancellationException])
      */
-    protected open fun onCancelled(cause: Throwable, handled: Boolean) {}
+    // TODO: protected open fun - virtual function
+    virtual void onCancelled(Throwable* cause, bool handled) {}
 
-    override fun cancellationExceptionMessage(): String = "$classSimpleName was cancelled"
-
-    @Suppress("UNCHECKED_CAST")
-    protected final override fun onCompletionInternal(state: Any?) {
-        if (state is CompletedExceptionally)
-            onCancelled(state.cause, state.handled)
-        else
-            onCompleted(state as T)
+    // TODO: override fun - override keyword
+    std::string cancellationExceptionMessage() override {
+        return classSimpleName + " was cancelled";
     }
 
+    // TODO: @Suppress("UNCHECKED_CAST") - no C++ equivalent
+    // TODO: protected final override - final override
+protected:
+    void onCompletionInternal(void* state) final override {
+        // TODO: state is CompletedExceptionally - dynamic_cast or type checking
+        if (auto* completed_exceptionally = dynamic_cast<CompletedExceptionally*>(state)) {
+            onCancelled(completed_exceptionally->cause, completed_exceptionally->handled);
+        } else {
+            // TODO: state as T - cast
+            onCompleted(static_cast<T>(state));
+        }
+    }
+
+public:
     /**
      * Completes execution of this with coroutine with the specified result.
      */
-    public final override fun resumeWith(result: Result<T>) {
-        val state = makeCompletingOnce(result.toState())
-        if (state === COMPLETING_WAITING_CHILDREN) return
-        afterResume(state)
+    // TODO: final override - final override
+    void resumeWith(Result<T> result) final override {
+        // TODO: result.toState() - need toState method
+        void* state = makeCompletingOnce(result.toState());
+        if (state == COMPLETING_WAITING_CHILDREN) return;
+        afterResume(state);
     }
 
     /**
@@ -110,27 +157,43 @@ public abstract class AbstractCoroutine<in T>(
      * - `afterCompletion` calls when the corresponding `Job` changed its state (i.e. got cancelled)
      * - [AbstractCoroutine.resumeWith] was invoked
      */
-    protected open fun afterResume(state: Any?): Unit = afterCompletion(state)
-
-    internal final override fun handleOnCompletionException(exception: Throwable) {
-        handleCoroutineException(context, exception)
+    // TODO: protected open fun - virtual function
+    virtual void afterResume(void* state) {
+        afterCompletion(state);
     }
 
-    internal override fun nameString(): String {
-        val coroutineName = context.coroutineName ?: return super.nameString()
-        return "\"$coroutineName\":${super.nameString()}"
+    // TODO: internal final override - need friend or internal visibility mechanism
+    void handleOnCompletionException(Throwable* exception) final override {
+        handleCoroutineException(context, exception);
+    }
+
+    // TODO: internal override - internal visibility
+    std::string nameString() override {
+        // TODO: context.coroutineName - need extension property
+        auto coroutine_name = context.coroutineName;
+        if (!coroutine_name) {
+            return JobSupport::nameString();
+        }
+        return "\"" + *coroutine_name + "\":" + JobSupport::nameString();
     }
 
     /**
      * Starts this coroutine with the given code [block] and [start] strategy.
      * This function shall be invoked at most once on this coroutine.
-     * 
+     *
      * - [DEFAULT] uses [startCoroutineCancellable].
      * - [ATOMIC] uses [startCoroutine].
      * - [UNDISPATCHED] uses [startCoroutineUndispatched].
      * - [LAZY] does nothing.
      */
-    public fun <R> start(start: CoroutineStart, receiver: R, block: suspend R.() -> T) {
-        start(block, receiver, this)
+    // TODO: Template with receiver R
+    // TODO: suspend block - need coroutine/continuation representation
+    template<typename R>
+    void start(CoroutineStart start, R receiver, std::function<T(R)> block) {
+        // TODO: start(block, receiver, this) - invoke operator on CoroutineStart
+        start(block, receiver, this);
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

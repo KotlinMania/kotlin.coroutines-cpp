@@ -1,11 +1,21 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
+// Transliterated from Kotlin to C++ (first-pass, syntax-only)
+// Original: kotlinx-coroutines-core/common/src/flow/terminal/Logic.kt
+//
+// TODO: Implement coroutine semantics (suspend functions)
+// TODO: Map Kotlin Flow types to C++ equivalents
+// TODO: Implement collectWhile utility
 
-package kotlinx.coroutines.flow
+#pragma once
 
-import kotlinx.coroutines.*
-import kotlin.jvm.*
+// @file:JvmMultifileClass
+// @file:JvmName("FlowKt")
 
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.jvm.*
 
 /**
  * A terminal operator that returns `true` and immediately cancels the flow
@@ -31,14 +41,15 @@ import kotlin.jvm.*
  * @see Iterable.any
  * @see Sequence.any
  */
-public suspend fun <T> Flow<T>.any(predicate: suspend (T) -> Boolean): Boolean {
-    var found = false
-    collectWhile {
-        val satisfies = predicate(it)
-        if (satisfies) found = true
-        !satisfies
-    }
-    return found
+template<typename T, typename Predicate>
+bool any(Flow<T> flow, Predicate predicate) {
+    bool found = false;
+    collect_while(flow, [&](T it) {
+        bool satisfies = predicate(it);
+        if (satisfies) found = true;
+        return !satisfies;
+    });
+    return found;
 }
 
 /**
@@ -68,14 +79,15 @@ public suspend fun <T> Flow<T>.any(predicate: suspend (T) -> Boolean): Boolean {
  * @see Iterable.all
  * @see Sequence.all
  */
-public suspend fun <T> Flow<T>.all(predicate: suspend (T) -> Boolean): Boolean {
-    var foundCounterExample = false
-    collectWhile {
-        val satisfies = predicate(it)
-        if (!satisfies) foundCounterExample = true
-        satisfies
-    }
-    return !foundCounterExample
+template<typename T, typename Predicate>
+bool all(Flow<T> flow, Predicate predicate) {
+    bool found_counter_example = false;
+    collect_while(flow, [&](T it) {
+        bool satisfies = predicate(it);
+        if (!satisfies) found_counter_example = true;
+        return satisfies;
+    });
+    return !found_counter_example;
 }
 
 /**
@@ -104,4 +116,11 @@ public suspend fun <T> Flow<T>.all(predicate: suspend (T) -> Boolean): Boolean {
  * @see Iterable.none
  * @see Sequence.none
  */
-public suspend fun <T> Flow<T>.none(predicate: suspend (T) -> Boolean): Boolean = !any(predicate)
+template<typename T, typename Predicate>
+bool none(Flow<T> flow, Predicate predicate) {
+    return !any(flow, predicate);
+}
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

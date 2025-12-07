@@ -1,10 +1,30 @@
-package kotlinx.coroutines.test
+// Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestScope
+// Original package: kotlinx.coroutines.test
+//
+// TODO: Import statements removed; fully qualify types or add appropriate includes
+// TODO: suspend functions translated as normal functions; coroutine semantics NOT implemented
+// TODO: Kotlin sealed interface translated to abstract class
+// TODO: Kotlin extension properties/functions translated to free functions or methods
+// TODO: Annotations (@ExperimentalCoroutinesApi, @PublishedApi) preserved as comments
+// TODO: Kotlin internal visibility needs C++ equivalent (namespace-level or conditional compilation)
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.internal.*
-import kotlinx.coroutines.test.internal.*
-import kotlin.coroutines.*
-import kotlin.time.*
+#include <memory>
+#include <vector>
+#include <functional>
+#include <mutex>
+#include <stdexcept>
+
+namespace kotlinx {
+namespace coroutines {
+namespace test {
+
+// package kotlinx.coroutines.test
+
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.internal.*
+// import kotlinx.coroutines.test.internal.*
+// import kotlin.coroutines.*
+// import kotlin.time.*
 
 /**
  * A coroutine scope that for launching test coroutines.
@@ -36,11 +56,13 @@ import kotlin.time.*
  *   paused by default, like [StandardTestDispatcher].
  * - No access to the list of unhandled exceptions.
  */
-public sealed interface TestScope : CoroutineScope {
+// TODO: sealed interface in Kotlin; use abstract class in C++
+class TestScope : public CoroutineScope {
+public:
     /**
      * The delay-skipping scheduler used by the test dispatchers running the code in this scope.
      */
-    public val testScheduler: TestCoroutineScheduler
+    virtual TestCoroutineScheduler& test_scheduler() = 0;
 
     /**
      * A scope for background work.
@@ -76,23 +98,30 @@ public sealed interface TestScope : CoroutineScope {
      * }
      * ```
      */
-    public val backgroundScope: CoroutineScope
-}
+    virtual CoroutineScope& background_scope() = 0;
+
+    virtual ~TestScope() = default;
+};
 
 /**
  * The current virtual time on [testScheduler][TestScope.testScheduler].
  * @see TestCoroutineScheduler.currentTime
  */
-@ExperimentalCoroutinesApi
-public val TestScope.currentTime: Long
-    get() = testScheduler.currentTime
+// @ExperimentalCoroutinesApi
+// TODO: Kotlin extension property; translate to free function
+int64_t current_time(const TestScope& scope) {
+    return scope.test_scheduler().current_time();
+}
 
 /**
  * Advances the [testScheduler][TestScope.testScheduler] to the point where there are no tasks remaining.
  * @see TestCoroutineScheduler.advanceUntilIdle
  */
-@ExperimentalCoroutinesApi
-public fun TestScope.advanceUntilIdle(): Unit = testScheduler.advanceUntilIdle()
+// @ExperimentalCoroutinesApi
+// TODO: Kotlin extension function; translate to free function
+void advance_until_idle(TestScope& scope) {
+    scope.test_scheduler().advance_until_idle();
+}
 
 /**
  * Run any tasks that are pending at the current virtual time, according to
@@ -100,8 +129,11 @@ public fun TestScope.advanceUntilIdle(): Unit = testScheduler.advanceUntilIdle()
  *
  * @see TestCoroutineScheduler.runCurrent
  */
-@ExperimentalCoroutinesApi
-public fun TestScope.runCurrent(): Unit = testScheduler.runCurrent()
+// @ExperimentalCoroutinesApi
+// TODO: Kotlin extension function; translate to free function
+void run_current(TestScope& scope) {
+    scope.test_scheduler().run_current();
+}
 
 /**
  * Moves the virtual clock of this dispatcher forward by [the specified amount][delayTimeMillis], running the
@@ -113,8 +145,11 @@ public fun TestScope.runCurrent(): Unit = testScheduler.runCurrent()
  * @throws IllegalStateException if passed a negative [delay][delayTimeMillis].
  * @see TestCoroutineScheduler.advanceTimeBy
  */
-@ExperimentalCoroutinesApi
-public fun TestScope.advanceTimeBy(delayTimeMillis: Long): Unit = testScheduler.advanceTimeBy(delayTimeMillis)
+// @ExperimentalCoroutinesApi
+// TODO: Kotlin extension function; translate to free function
+void advance_time_by(TestScope& scope, int64_t delay_time_millis) {
+    scope.test_scheduler().advance_time_by(delay_time_millis);
+}
 
 /**
  * Moves the virtual clock of this dispatcher forward by [the specified amount][delayTime], running the
@@ -123,15 +158,21 @@ public fun TestScope.advanceTimeBy(delayTimeMillis: Long): Unit = testScheduler.
  * @throws IllegalStateException if passed a negative [delay][delayTime].
  * @see TestCoroutineScheduler.advanceTimeBy
  */
-@ExperimentalCoroutinesApi
-public fun TestScope.advanceTimeBy(delayTime: Duration): Unit = testScheduler.advanceTimeBy(delayTime)
+// @ExperimentalCoroutinesApi
+// TODO: Kotlin extension function; translate to free function
+void advance_time_by(TestScope& scope, Duration delay_time) {
+    scope.test_scheduler().advance_time_by(delay_time);
+}
 
 /**
  * The [test scheduler][TestScope.testScheduler] as a [TimeSource].
  * @see TestCoroutineScheduler.timeSource
  */
-@ExperimentalCoroutinesApi
-public val TestScope.testTimeSource: TimeSource.WithComparableMarks get() = testScheduler.timeSource
+// @ExperimentalCoroutinesApi
+// TODO: Kotlin extension property; translate to free function
+TimeSource::WithComparableMarks* test_time_source(TestScope& scope) {
+    return scope.test_scheduler().time_source();
+}
 
 /**
  * Creates a [TestScope].
@@ -158,21 +199,29 @@ public val TestScope.testTimeSource: TimeSource.WithComparableMarks get() = test
  * @throws IllegalArgumentException if [context] has an [CoroutineExceptionHandler] that is not an
  * [UncaughtExceptionCaptor].
  */
-@Suppress("FunctionName")
-public fun TestScope(context: CoroutineContext = EmptyCoroutineContext): TestScope {
-    val ctxWithDispatcher = context.withDelaySkipping()
-    var scope: TestScopeImpl? = null
-    val exceptionHandler = when (ctxWithDispatcher[CoroutineExceptionHandler]) {
-        null -> CoroutineExceptionHandler { _, exception ->
-            scope!!.reportException(exception)
-        }
-        else -> throw IllegalArgumentException(
+// @Suppress("FunctionName")
+// TODO: Kotlin factory function; use constructor or static factory in C++
+TestScope* test_scope(CoroutineContext context = empty_coroutine_context()) {
+    CoroutineContext ctx_with_dispatcher = with_delay_skipping(context);
+    TestScopeImpl* scope_ptr = nullptr;
+    CoroutineExceptionHandler* exception_handler;
+
+    auto* existing_handler = ctx_with_dispatcher[CoroutineExceptionHandler::Key];
+    if (existing_handler == nullptr) {
+        exception_handler = new CoroutineExceptionHandler([&](const CoroutineContext& ctx, std::exception_ptr exception) {
+            scope_ptr->report_exception(exception);
+        });
+    } else {
+        throw std::invalid_argument(
             "A CoroutineExceptionHandler was passed to TestScope. " +
-                "Please pass it as an argument to a `launch` or `async` block on an already-created scope " +
-                "if uncaught exceptions require special treatment."
-        )
+            std::string("Please pass it as an argument to a `launch` or `async` block on an already-created scope ") +
+            "if uncaught exceptions require special treatment."
+        );
     }
-    return TestScopeImpl(ctxWithDispatcher + exceptionHandler).also { scope = it }
+
+    auto* scope = new TestScopeImpl(ctx_with_dispatcher + exception_handler);
+    scope_ptr = scope;
+    return scope;
 }
 
 /**
@@ -181,143 +230,202 @@ public fun TestScope(context: CoroutineContext = EmptyCoroutineContext): TestSco
  * @throws IllegalArgumentException if both a [TestCoroutineScheduler] and a [TestDispatcher] are passed.
  * @throws IllegalArgumentException if a [ContinuationInterceptor] is passed that is not a [TestDispatcher].
  */
-internal fun CoroutineContext.withDelaySkipping(): CoroutineContext {
-    val dispatcher: TestDispatcher = when (val dispatcher = get(ContinuationInterceptor)) {
-        is TestDispatcher -> {
-            val ctxScheduler = get(TestCoroutineScheduler)
-            if (ctxScheduler != null) {
-                require(dispatcher.scheduler === ctxScheduler) {
-                    "Both a TestCoroutineScheduler $ctxScheduler and TestDispatcher $dispatcher linked to " +
-                        "another scheduler were passed."
-                }
+CoroutineContext with_delay_skipping(const CoroutineContext& context) {
+    auto* interceptor = context[ContinuationInterceptor::Key];
+    TestDispatcher* dispatcher;
+
+    if (auto* test_disp = dynamic_cast<TestDispatcher*>(interceptor)) {
+        auto* ctx_scheduler = context[TestCoroutineScheduler::kKey];
+        if (ctx_scheduler != nullptr) {
+            if (&test_disp->scheduler() != ctx_scheduler) {
+                throw std::invalid_argument(
+                    "Both a TestCoroutineScheduler and TestDispatcher linked to " +
+                    std::string("another scheduler were passed.")
+                );
             }
-            dispatcher
         }
-        null -> StandardTestDispatcher(get(TestCoroutineScheduler))
-        else -> throw IllegalArgumentException("Dispatcher must implement TestDispatcher: $dispatcher")
+        dispatcher = test_disp;
+    } else if (interceptor == nullptr) {
+        dispatcher = standard_test_dispatcher(context[TestCoroutineScheduler::kKey], nullptr);
+    } else {
+        throw std::invalid_argument("Dispatcher must implement TestDispatcher");
     }
-    return this + dispatcher + dispatcher.scheduler
+
+    return context + dispatcher + &dispatcher->scheduler();
 }
 
-internal class TestScopeImpl(context: CoroutineContext) :
-    AbstractCoroutine<Unit>(context, initParentJob = true, active = true), TestScope {
+class TestScopeImpl : public AbstractCoroutine<void>, public TestScope {
+private:
+    bool entered_;
+    bool finished_;
+    std::vector<std::exception_ptr> uncaught_exceptions_;
+    std::mutex lock_;
+    CoroutineScope* background_scope_;
 
-    override val testScheduler get() = context[TestCoroutineScheduler]!!
+public:
+    TestScopeImpl(const CoroutineContext& context)
+        : AbstractCoroutine<void>(context, true, true),
+          entered_(false),
+          finished_(false) {
 
-    private var entered = false
-    private var finished = false
-    private val uncaughtExceptions = mutableListOf<Throwable>()
-    private val lock = SynchronizedObject()
+        background_scope_ = new CoroutineScope(
+            coroutine_context() + BackgroundWork::instance +
+            reporting_supervisor_job([this](std::exception_ptr ex) {
+                // TODO: Kotlin CancellationException check needs C++ equivalent
+                // if (it !is CancellationException) reportException(it)
+                report_exception(ex);
+            })
+        );
+    }
 
-    override val backgroundScope: CoroutineScope =
-        CoroutineScope(coroutineContext + BackgroundWork + ReportingSupervisorJob {
-            if (it !is CancellationException) reportException(it)
-        })
+    TestCoroutineScheduler& test_scheduler() override {
+        return *context_[TestCoroutineScheduler::kKey];
+    }
+
+    CoroutineScope& background_scope() override {
+        return *background_scope_;
+    }
 
     /** Called upon entry to [runTest]. Will throw if called more than once. */
-    fun enter() {
-        val exceptions = synchronized(lock) {
-            if (entered)
-                throw IllegalStateException("Only a single call to `runTest` can be performed during one test.")
-            entered = true
-            check(!finished)
-            /** the order is important: [reportException] is only guaranteed not to throw if [entered] is `true` but
-             * [finished] is `false`.
-             * However, we also want [uncaughtExceptions] to be queried after the callback is registered,
-             * because the exception collector will be able to report the exceptions that arrived before this test but
-             * after the previous one, and learning about such exceptions as soon is possible is nice. */
-            @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
-            run { ensurePlatformExceptionHandlerLoaded(ExceptionCollector) }
-            if (catchNonTestRelatedExceptions) {
-                ExceptionCollector.addOnExceptionCallback(lock, this::reportException)
-            }
-            uncaughtExceptions
+    void enter() {
+        std::lock_guard<std::mutex> guard(lock_);
+        if (entered_)
+            throw std::logic_error("Only a single call to `runTest` can be performed during one test.");
+        entered_ = true;
+        if (finished_)
+            throw std::logic_error("Unexpected state: finished before entering");
+
+        /** the order is important: [reportException] is only guaranteed not to throw if [entered] is `true` but
+         * [finished] is `false`.
+         * However, we also want [uncaughtExceptions] to be queried after the callback is registered,
+         * because the exception collector will be able to report the exceptions that arrived before this test but
+         * after the previous one, and learning about such exceptions as soon is possible is nice. */
+        // @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
+        ensure_platform_exception_handler_loaded(exception_collector);
+        if (catch_non_test_related_exceptions) {
+            exception_collector.add_on_exception_callback(&lock_, [this](std::exception_ptr ex) {
+                report_exception(ex);
+            });
         }
-        if (exceptions.isNotEmpty()) {
-            ExceptionCollector.removeOnExceptionCallback(lock)
-            throw UncaughtExceptionsBeforeTest().apply {
-                for (e in exceptions)
-                    addSuppressed(e)
+
+        if (!uncaught_exceptions_.empty()) {
+            exception_collector.remove_on_exception_callback(&lock_);
+            auto* err = new UncaughtExceptionsBeforeTest();
+            for (auto& e : uncaught_exceptions_) {
+                err->add_suppressed(e);
             }
+            throw *err;
         }
     }
 
     /** Called at the end of the test. May only be called once. Returns the list of caught unhandled exceptions. */
-    fun leave(): List<Throwable> = synchronized(lock) {
-        check(entered && !finished)
+    std::vector<std::exception_ptr> leave() {
+        std::lock_guard<std::mutex> guard(lock_);
+        if (!entered_ || finished_)
+            throw std::logic_error("Invalid state in leave()");
+
         /** After [finished] becomes `true`, it is no longer valid to have [reportException] as the callback. */
-        ExceptionCollector.removeOnExceptionCallback(lock)
-        finished = true
-        uncaughtExceptions
+        exception_collector.remove_on_exception_callback(&lock_);
+        finished_ = true;
+        return uncaught_exceptions_;
     }
 
     /** Called at the end of the test. May only be called once. */
-    fun legacyLeave(): List<Throwable> {
-        val exceptions = synchronized(lock) {
-            check(entered && !finished)
+    std::vector<std::exception_ptr> legacy_leave() {
+        std::vector<std::exception_ptr> exceptions;
+        {
+            std::lock_guard<std::mutex> guard(lock_);
+            if (!entered_ || finished_)
+                throw std::logic_error("Invalid state in legacy_leave()");
+
             /** After [finished] becomes `true`, it is no longer valid to have [reportException] as the callback. */
-            ExceptionCollector.removeOnExceptionCallback(lock)
-            finished = true
-            uncaughtExceptions
+            exception_collector.remove_on_exception_callback(&lock_);
+            finished_ = true;
+            exceptions = uncaught_exceptions_;
         }
-        val activeJobs = children.filter { it.isActive }.toList() // only non-empty if used with `runBlockingTest`
-        if (exceptions.isEmpty()) {
-            if (activeJobs.isNotEmpty())
+
+        auto active_jobs = children().filter([](Job* j) { return j->is_active(); }).to_list();
+        if (exceptions.empty()) {
+            if (!active_jobs.empty())
                 throw UncompletedCoroutinesError(
                     "Active jobs found during the tear-down. " +
-                        "Ensure that all coroutines are completed or cancelled by your test. " +
-                        "The active jobs: $activeJobs"
-                )
-            if (!testScheduler.isIdle())
+                    std::string("Ensure that all coroutines are completed or cancelled by your test. ") +
+                    "The active jobs: " /* + activeJobs */
+                );
+            if (!test_scheduler().is_idle())
                 throw UncompletedCoroutinesError(
                     "Unfinished coroutines found during the tear-down. " +
-                        "Ensure that all coroutines are completed or cancelled by your test."
-                )
+                    std::string("Ensure that all coroutines are completed or cancelled by your test.")
+                );
         }
-        return exceptions
+        return exceptions;
     }
 
     /** Stores an exception to report after [runTest], or rethrows it if not inside [runTest]. */
-    fun reportException(throwable: Throwable) {
-        synchronized(lock) {
-            if (finished) {
-                throw throwable
-            } else {
-                @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
-                for (existingThrowable in uncaughtExceptions) {
-                    // avoid reporting exceptions that already were reported.
-                    if (unwrap(throwable) == unwrap(existingThrowable))
-                        return
-                }
-                uncaughtExceptions.add(throwable)
-                if (!entered)
-                    throw UncaughtExceptionsBeforeTest().apply { addSuppressed(throwable) }
+    void report_exception(std::exception_ptr throwable) {
+        std::lock_guard<std::mutex> guard(lock_);
+        if (finished_) {
+            std::rethrow_exception(throwable);
+        } else {
+            // @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
+            for (auto& existing : uncaught_exceptions_) {
+                // avoid reporting exceptions that already were reported.
+                // TODO: Kotlin unwrap() function needs C++ equivalent
+                // if (unwrap(throwable) == unwrap(existingThrowable))
+                //     return;
+            }
+            uncaught_exceptions_.push_back(throwable);
+            if (!entered_) {
+                auto* err = new UncaughtExceptionsBeforeTest();
+                err->add_suppressed(throwable);
+                throw *err;
             }
         }
     }
 
     /** Throws an exception if the coroutine is not completing. */
-    fun tryGetCompletionCause(): Throwable? = completionCause
+    std::exception_ptr try_get_completion_cause() {
+        return completion_cause();
+    }
 
-    override fun toString(): String =
-        "TestScope[" + (if (finished) "test ended" else if (entered) "test started" else "test not started") + "]"
-}
+    std::string to_string() const override {
+        if (finished_) return "TestScope[test ended]";
+        if (entered_) return "TestScope[test started]";
+        return "TestScope[test not started]";
+    }
+};
 
 /** Use the knowledge that any [TestScope] that we receive is necessarily a [TestScopeImpl]. */
-internal fun TestScope.asSpecificImplementation(): TestScopeImpl = when (this) {
-    is TestScopeImpl -> this
+TestScopeImpl& as_specific_implementation(TestScope& scope) {
+    // TODO: Kotlin when expression with type checking; use dynamic_cast in C++
+    if (auto* impl = dynamic_cast<TestScopeImpl*>(&scope)) {
+        return *impl;
+    }
+    throw std::logic_error("TestScope must be a TestScopeImpl");
 }
 
-internal class UncaughtExceptionsBeforeTest : IllegalStateException(
-    "There were uncaught exceptions before the test started. Please avoid this," +
-        " as such exceptions are also reported in a platform-dependent manner so that they are not lost."
-)
+class UncaughtExceptionsBeforeTest : public std::logic_error {
+public:
+    UncaughtExceptionsBeforeTest()
+        : std::logic_error(
+            "There were uncaught exceptions before the test started. Please avoid this," +
+            std::string(" as such exceptions are also reported in a platform-dependent manner so that they are not lost.")
+        ) {}
+
+    void add_suppressed(std::exception_ptr ex) {
+        // TODO: Implement suppressed exception tracking
+    }
+};
 
 /**
  * Thrown when a test has completed and there are tasks that are not completed or cancelled.
  */
-@ExperimentalCoroutinesApi
-internal class UncompletedCoroutinesError(message: String) : AssertionError(message)
+// @ExperimentalCoroutinesApi
+class UncompletedCoroutinesError : public std::runtime_error {
+public:
+    explicit UncompletedCoroutinesError(const std::string& message)
+        : std::runtime_error(message) {}
+};
 
 /**
  * A flag that controls whether [TestScope] should attempt to catch arbitrary exceptions flying through the system.
@@ -325,5 +433,9 @@ internal class UncompletedCoroutinesError(message: String) : AssertionError(mess
  * By default, it is enabled, but some tests may want to disable it to test the behavior of the system when they have
  * their own exception handling procedures.
  */
-@PublishedApi
-internal var catchNonTestRelatedExceptions: Boolean = true
+// @PublishedApi
+bool catch_non_test_related_exceptions = true;
+
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

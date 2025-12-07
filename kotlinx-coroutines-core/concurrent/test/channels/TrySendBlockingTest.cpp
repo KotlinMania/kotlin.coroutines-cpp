@@ -1,50 +1,79 @@
-package kotlinx.coroutines.channels
+// Original: kotlinx-coroutines-core/concurrent/test/channels/TrySendBlockingTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert test annotations to C++ test framework
+// TODO: Implement suspend functions and coroutines
+// TODO: Handle TestBase inheritance
+// TODO: Implement Channel, GlobalScope, async
+// TODO: Implement trySendBlocking, consumeEach
+// TODO: Implement TestException, TestCancellationException
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-class TrySendBlockingTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testTrySendBlocking() = runBlocking<Unit> { // For old MM
-        val ch = Channel<Int>()
-        val sum = GlobalScope.async {
-            var sum = 0
-            ch.consumeEach { sum += it }
-            sum
-        }
-        repeat(10) {
-            assertTrue(ch.trySendBlocking(it).isSuccess)
-        }
-        ch.close()
-        assertEquals(45, runBlocking { sum.await() })
+class TrySendBlockingTest : public TestBase {
+public:
+    // @Test
+    // TODO: Convert test annotation
+    void test_try_send_blocking() {
+        runBlocking<void>([&]() {
+            // TODO: suspend function (For old MM)
+            auto ch = Channel<int>();
+            auto sum = GlobalScope::async([&]() {
+                // TODO: suspend function
+                int sum = 0;
+                ch.consume_each([&](int value) {
+                    sum += value;
+                });
+                return sum;
+            });
+            for (int i = 0; i < 10; ++i) {
+                assertTrue(ch.try_send_blocking(i).is_success());
+            }
+            ch.close();
+            assertEquals(45, runBlocking([&]() {
+                // TODO: suspend function
+                return sum.await();
+            }));
+        });
     }
 
-    @Test
-    fun testTrySendBlockingClosedChannel() {
-        run {
-            val channel = Channel<Unit>().also { it.close() }
-            channel.trySendBlocking(Unit)
-                .onSuccess { expectUnreached() }
-                .onFailure { assertIs<ClosedSendChannelException>(it) }
-                .also { assertTrue { it.isClosed } }
+    // @Test
+    // TODO: Convert test annotation
+    void test_try_send_blocking_closed_channel() {
+        {
+            auto channel = Channel<void>();
+            channel.close();
+            channel.try_send_blocking(Unit)
+                .on_success([&]() { expectUnreached(); })
+                .on_failure([&](auto* it) { assertIs<ClosedSendChannelException>(it); })
+                .also([&](auto& it) { assertTrue(it.is_closed()); });
         }
 
-        run {
-            val channel = Channel<Unit>().also { it.close(TestException()) }
-            channel.trySendBlocking(Unit)
-                .onSuccess { expectUnreached() }
-                .onFailure { assertIs<TestException>(it) }
-                .also { assertTrue { it.isClosed } }
+        {
+            auto channel = Channel<void>();
+            channel.close(TestException());
+            channel.try_send_blocking(Unit)
+                .on_success([&]() { expectUnreached(); })
+                .on_failure([&](auto* it) { assertIs<TestException>(it); })
+                .also([&](auto& it) { assertTrue(it.is_closed()); });
         }
 
-        run {
-            val channel = Channel<Unit>().also { it.cancel(TestCancellationException()) }
-            channel.trySendBlocking(Unit)
-                .onSuccess { expectUnreached() }
-                .onFailure { assertIs<TestCancellationException>(it) }
-                .also { assertTrue { it.isClosed } }
+        {
+            auto channel = Channel<void>();
+            channel.cancel(TestCancellationException());
+            channel.try_send_blocking(Unit)
+                .on_success([&]() { expectUnreached(); })
+                .on_failure([&](auto* it) { assertIs<TestCancellationException>(it); })
+                .also([&](auto& it) { assertTrue(it.is_closed()); });
         }
     }
-}
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

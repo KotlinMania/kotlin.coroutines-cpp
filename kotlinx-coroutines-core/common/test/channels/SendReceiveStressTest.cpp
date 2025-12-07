@@ -1,46 +1,61 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/SendReceiveStressTest.kt
+//
+// TODO: Translate imports
+// TODO: Translate suspend functions to C++ coroutines
+// TODO: Translate test annotations to C++ test framework
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-class SendReceiveStressTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
+
+class SendReceiveStressTest : public TestBase {
+public:
 
     // Emulate parametrized by hand :(
 
-    @Test
-    fun testBufferedChannel() = runTest {
-        testStress(Channel(2))
+    // TODO: @Test
+    void testBufferedChannel() /* = runTest */ {
+        // TODO: testStress(Channel(2));
     }
 
-    @Test
-    fun testUnlimitedChannel() = runTest {
-        testStress(Channel(Channel.UNLIMITED))
+    // TODO: @Test
+    void testUnlimitedChannel() /* = runTest */ {
+        // TODO: testStress(Channel(Channel::UNLIMITED));
     }
 
-    @Test
-    fun testRendezvousChannel() = runTest {
-        testStress(Channel(Channel.RENDEZVOUS))
+    // TODO: @Test
+    void testRendezvousChannel() /* = runTest */ {
+        // TODO: testStress(Channel(Channel::RENDEZVOUS));
     }
 
-    private suspend fun testStress(channel: Channel<Int>) = coroutineScope {
-        val n = 100 // Do not increase, otherwise node.js will fail with timeout :(
-        val sender = launch {
-            for (i in 1..n) {
-                channel.send(i)
-            }
-            expect(2)
-        }
-        val receiver = launch {
-            for (i in 1..n) {
-                val next = channel.receive()
-                check(next == i)
-            }
-            expect(3)
-        }
-        expect(1)
-        sender.join()
-        receiver.join()
-        finish(4)
+private:
+    /* suspend */ void testStress(/* Channel<int> channel */) /* = coroutineScope */ {
+        int n = 100; // Do not increase, otherwise node.js will fail with timeout :(
+        // TODO: auto sender = launch([&]() {
+        //     for (int i = 1; i <= n; i++) {
+        //         channel.send(i);
+        //     }
+        //     expect(2);
+        // });
+        // TODO: auto receiver = launch([&]() {
+        //     for (int i = 1; i <= n; i++) {
+        //         auto next = channel.receive();
+        //         check(next == i);
+        //     }
+        //     expect(3);
+        // });
+        expect(1);
+        // TODO: sender.join();
+        // TODO: receiver.join();
+        finish(4);
     }
-}
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

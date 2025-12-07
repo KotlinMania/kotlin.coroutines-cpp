@@ -1,222 +1,239 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/BasicOperationsTest.kt
+//
+// TODO: Translate imports
+// TODO: Translate suspend functions to C++ coroutines
+// TODO: Translate test annotations to C++ test framework
+// TODO: Handle Kotlin nullable types
+// TODO: Translate exception handling
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-class BasicOperationsTest : TestBase() {
-    @Test
-    fun testSimpleSendReceive() = runTest {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
+
+class BasicOperationsTest : public TestBase {
+public:
+    // TODO: @Test
+    void testSimpleSendReceive() /* = runTest */ {
         // Parametrized common test :(
-        TestChannelKind.values().forEach { kind -> testSendReceive(kind, 20) }
+        // TODO: TestChannelKind.values().forEach { kind -> testSendReceive(kind, 20) }
     }
 
-    @Test
-    fun testTrySendToFullChannel() = runTest {
-        TestChannelKind.values().forEach { kind -> testTrySendToFullChannel(kind) }
+    // TODO: @Test
+    void testTrySendToFullChannel() /* = runTest */ {
+        // TODO: TestChannelKind.values().forEach { kind -> testTrySendToFullChannel(kind) }
     }
 
-    @Test
-    fun testTrySendAfterClose() = runTest {
-        TestChannelKind.values().forEach { kind -> testTrySendAfterClose(kind) }
+    // TODO: @Test
+    void testTrySendAfterClose() /* = runTest */ {
+        // TODO: TestChannelKind.values().forEach { kind -> testTrySendAfterClose(kind) }
     }
 
-    @Test
-    fun testSendAfterClose() = runTest {
-        TestChannelKind.values().forEach { kind -> testSendAfterClose(kind) }
+    // TODO: @Test
+    void testSendAfterClose() /* = runTest */ {
+        // TODO: TestChannelKind.values().forEach { kind -> testSendAfterClose(kind) }
     }
 
-    @Test
-    fun testReceiveCatching() = runTest {
-        TestChannelKind.values().forEach { kind -> testReceiveCatching(kind) }
+    // TODO: @Test
+    void testReceiveCatching() /* = runTest */ {
+        // TODO: TestChannelKind.values().forEach { kind -> testReceiveCatching(kind) }
     }
 
-    @Test
-    fun testInvokeOnClose() = TestChannelKind.values().forEach { kind ->
-        reset()
-        val channel = kind.create<Int>()
-        channel.invokeOnClose {
-            if (it is AssertionError) {
-                expect(3)
-            }
-        }
-        expect(1)
-        channel.trySend(42)
-        expect(2)
-        channel.close(AssertionError())
-        finish(4)
+    // TODO: @Test
+    void testInvokeOnClose() /* = TestChannelKind.values().forEach */ {
+        reset();
+        // TODO: auto channel = kind.create<int>();
+        // TODO: channel.invokeOnClose([](auto it) {
+        //     if (/* it is AssertionError */) {
+        //         expect(3);
+        //     }
+        // });
+        expect(1);
+        // TODO: channel.trySend(42);
+        expect(2);
+        // TODO: channel.close(AssertionError());
+        finish(4);
     }
 
-    @Test
-    fun testInvokeOnClosed() = TestChannelKind.values().forEach { kind ->
-        reset()
-        expect(1)
-        val channel = kind.create<Int>()
-        channel.close()
-        channel.invokeOnClose { expect(2) }
-        assertFailsWith<IllegalStateException> { channel.invokeOnClose { expect(3) } }
-        finish(3)
+    // TODO: @Test
+    void testInvokeOnClosed() /* = TestChannelKind.values().forEach */ {
+        reset();
+        expect(1);
+        // TODO: auto channel = kind.create<int>();
+        // TODO: channel.close();
+        // TODO: channel.invokeOnClose([]() { expect(2); });
+        // TODO: assertFailsWith<IllegalStateException>([&]() { channel.invokeOnClose([]() { expect(3); }); });
+        finish(3);
     }
 
-    @Test
-    fun testMultipleInvokeOnClose() = TestChannelKind.values().forEach { kind ->
-        reset()
-        val channel = kind.create<Int>()
-        channel.invokeOnClose { expect(3) }
-        expect(1)
-        assertFailsWith<IllegalStateException> { channel.invokeOnClose { expect(4) } }
-        expect(2)
-        channel.close()
-        finish(4)
+    // TODO: @Test
+    void testMultipleInvokeOnClose() /* = TestChannelKind.values().forEach */ {
+        reset();
+        // TODO: auto channel = kind.create<int>();
+        // TODO: channel.invokeOnClose([]() { expect(3); });
+        expect(1);
+        // TODO: assertFailsWith<IllegalStateException>([&]() { channel.invokeOnClose([]() { expect(4); }); });
+        expect(2);
+        // TODO: channel.close();
+        finish(4);
     }
 
-    @Test
-    fun testIterator() = runTest {
-        TestChannelKind.values().forEach { kind ->
-            val channel = kind.create<Int>()
-            val iterator = channel.iterator()
-            assertFailsWith<IllegalStateException> { iterator.next() }
-            channel.close()
-            assertFailsWith<IllegalStateException> { iterator.next() }
-            assertFalse(iterator.hasNext())
-        }
+    // TODO: @Test
+    void testIterator() /* = runTest */ {
+        // TODO: TestChannelKind.values().forEach([](auto kind) {
+        //     auto channel = kind.create<int>();
+        //     auto iterator = channel.iterator();
+        //     assertFailsWith<IllegalStateException>([&]() { iterator.next(); });
+        //     channel.close();
+        //     assertFailsWith<IllegalStateException>([&]() { iterator.next(); });
+        //     assertFalse(iterator.hasNext());
+        // });
     }
 
-    @Test
-    fun testCancelledChannelInvokeOnClose() {
-        val ch = Channel<Int>()
-        ch.invokeOnClose { assertIs<CancellationException>(it) }
-        ch.cancel()
+    // TODO: @Test
+    void testCancelledChannelInvokeOnClose() {
+        // TODO: auto ch = Channel<int>();
+        // TODO: ch.invokeOnClose([](auto it) { assertIs<CancellationException>(it); });
+        // TODO: ch.cancel();
     }
 
-    @Test
-    fun testCancelledChannelWithCauseInvokeOnClose() {
-        val ch = Channel<Int>()
-        ch.invokeOnClose { assertIs<TimeoutCancellationException>(it) }
-        ch.cancel(TimeoutCancellationException(""))
+    // TODO: @Test
+    void testCancelledChannelWithCauseInvokeOnClose() {
+        // TODO: auto ch = Channel<int>();
+        // TODO: ch.invokeOnClose([](auto it) { assertIs<TimeoutCancellationException>(it); });
+        // TODO: ch.cancel(TimeoutCancellationException(""));
     }
 
-    @Test
-    fun testThrowingInvokeOnClose() = runTest {
-        val channel = Channel<Int>()
-        channel.invokeOnClose {
-            assertNull(it)
-            expect(3)
-            throw TestException()
-        }
+    // TODO: @Test
+    void testThrowingInvokeOnClose() /* = runTest */ {
+        // TODO: auto channel = Channel<int>();
+        // TODO: channel.invokeOnClose([](auto it) {
+        //     assertNull(it);
+        //     expect(3);
+        //     throw TestException();
+        // });
 
-        launch {
-            try {
-                expect(2)
-                channel.close()
-            } catch (e: TestException) {
-                expect(4)
-            }
-        }
-        expect(1)
-        yield()
-        assertTrue(channel.isClosedForReceive)
-        assertTrue(channel.isClosedForSend)
-        assertFalse(channel.close())
-        finish(5)
+        // TODO: launch([&]() {
+        //     try {
+        //         expect(2);
+        //         channel.close();
+        //     } catch (const TestException& e) {
+        //         expect(4);
+        //     }
+        // });
+        expect(1);
+        // TODO: yield();
+        // TODO: assertTrue(channel.isClosedForReceive);
+        // TODO: assertTrue(channel.isClosedForSend);
+        // TODO: assertFalse(channel.close());
+        finish(5);
     }
 
-    @Suppress("ReplaceAssertBooleanWithAssertEquality")
-    private suspend fun testReceiveCatching(kind: TestChannelKind) = coroutineScope {
-        reset()
-        val channel = kind.create<Int>()
-        launch {
-            expect(2)
-            channel.send(1)
-        }
+    // TODO: @Suppress("ReplaceAssertBooleanWithAssertEquality")
+private:
+    /* suspend */ void testReceiveCatching(/* kind: TestChannelKind */) /* = coroutineScope */ {
+        reset();
+        // TODO: auto channel = kind.create<int>();
+        // TODO: launch([&]() {
+        //     expect(2);
+        //     channel.send(1);
+        // });
 
-        expect(1)
-        val result = channel.receiveCatching()
-        assertEquals(1, result.getOrThrow())
-        assertEquals(1, result.getOrNull())
-        assertTrue(ChannelResult.success(1) == result)
+        expect(1);
+        // TODO: auto result = channel.receiveCatching();
+        // TODO: assertEquals(1, result.getOrThrow());
+        // TODO: assertEquals(1, result.getOrNull());
+        // TODO: assertTrue(ChannelResult.success(1) == result);
 
-        expect(3)
-        launch {
-            expect(4)
-            channel.close()
-        }
-        val closed = channel.receiveCatching()
-        expect(5)
-        assertNull(closed.getOrNull())
-        assertTrue(closed.isClosed)
-        assertNull(closed.exceptionOrNull())
-        assertTrue(ChannelResult.closed<Int>(closed.exceptionOrNull()) == closed)
-        finish(6)
+        expect(3);
+        // TODO: launch([&]() {
+        //     expect(4);
+        //     channel.close();
+        // });
+        // TODO: auto closed = channel.receiveCatching();
+        expect(5);
+        // TODO: assertNull(closed.getOrNull());
+        // TODO: assertTrue(closed.isClosed);
+        // TODO: assertNull(closed.exceptionOrNull());
+        // TODO: assertTrue(ChannelResult.closed<int>(closed.exceptionOrNull()) == closed);
+        finish(6);
     }
 
-    private suspend fun testTrySendAfterClose(kind: TestChannelKind) = coroutineScope {
-        val channel = kind.create<Int>()
-        val d = async { channel.send(42) }
-        yield()
-        channel.close()
+    /* suspend */ void testTrySendAfterClose(/* kind: TestChannelKind */) /* = coroutineScope */ {
+        // TODO: auto channel = kind.create<int>();
+        // TODO: auto d = async([&]() { channel.send(42); });
+        // TODO: yield();
+        // TODO: channel.close();
 
-        assertTrue(channel.isClosedForSend)
-        channel.trySend(2)
-            .onSuccess { expectUnreached() }
-            .onClosed {
-                assertTrue { it is ClosedSendChannelException }
-                if (!kind.isConflated) {
-                    assertEquals(42, channel.receive())
-                }
-            }
-        d.await()
+        // TODO: assertTrue(channel.isClosedForSend);
+        // TODO: channel.trySend(2)
+        //     .onSuccess([]() { expectUnreached(); })
+        //     .onClosed([&](auto it) {
+        //         assertTrue(/* it is ClosedSendChannelException */);
+        //         if (!kind.isConflated) {
+        //             assertEquals(42, channel.receive());
+        //         }
+        //     });
+        // TODO: d.await();
     }
 
-    private suspend fun testTrySendToFullChannel(kind: TestChannelKind) = coroutineScope {
-        if (kind.isConflated || kind.capacity == Int.MAX_VALUE) return@coroutineScope
-        val channel = kind.create<Int>()
+    /* suspend */ void testTrySendToFullChannel(/* kind: TestChannelKind */) /* = coroutineScope */ {
+        // TODO: if (kind.isConflated || kind.capacity == INT_MAX) return;
+        // TODO: auto channel = kind.create<int>();
         // Make it full
-        repeat(11) {
-            channel.trySend(42)
-        }
-        channel.trySend(1)
-            .onSuccess { expectUnreached() }
-            .onFailure { assertNull(it) }
-            .onClosed {
-                expectUnreached()
-            }
+        // TODO: repeat(11, [&](int) {
+        //     channel.trySend(42);
+        // });
+        // TODO: channel.trySend(1)
+        //     .onSuccess([]() { expectUnreached(); })
+        //     .onFailure([](auto it) { assertNull(it); })
+        //     .onClosed([]() {
+        //         expectUnreached();
+        //     });
     }
 
     /**
      * [ClosedSendChannelException] should not be eaten.
      * See [https://github.com/Kotlin/kotlinx.coroutines/issues/957]
      */
-    private suspend fun testSendAfterClose(kind: TestChannelKind) {
-        assertFailsWith<ClosedSendChannelException> {
-            coroutineScope {
-                val channel = kind.create<Int>()
-                channel.close()
-
-                launch {
-                    channel.send(1)
-                }
-            }
-        }
+    /* suspend */ void testSendAfterClose(/* kind: TestChannelKind */) {
+        // TODO: assertFailsWith<ClosedSendChannelException>([&]() {
+        //     coroutineScope([&]() {
+        //         auto channel = kind.create<int>();
+        //         channel.close();
+        //
+        //         launch([&]() {
+        //             channel.send(1);
+        //         });
+        //     });
+        // });
     }
 
-    private suspend fun testSendReceive(kind: TestChannelKind, iterations: Int) = coroutineScope {
-        val channel = kind.create<Int>()
-        launch {
-            repeat(iterations) { channel.send(it) }
-            channel.close()
-        }
-        var expected = 0
-        for (x in channel) {
-            if (!kind.isConflated) {
-                assertEquals(expected++, x)
-            } else {
-                assertTrue(x >= expected)
-                expected = x + 1
-            }
-        }
-        if (!kind.isConflated) {
-            assertEquals(iterations, expected)
-        }
+    /* suspend */ void testSendReceive(/* kind: TestChannelKind, */ int iterations) /* = coroutineScope */ {
+        // TODO: auto channel = kind.create<int>();
+        // TODO: launch([&]() {
+        //     repeat(iterations, [&](int it) { channel.send(it); });
+        //     channel.close();
+        // });
+        int expected = 0;
+        // TODO: for (auto x : channel) {
+        //     if (!kind.isConflated) {
+        //         assertEquals(expected++, x);
+        //     } else {
+        //         assertTrue(x >= expected);
+        //         expected = x + 1;
+        //     }
+        // }
+        // TODO: if (!kind.isConflated) {
+        //     assertEquals(iterations, expected);
+        // }
     }
-}
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

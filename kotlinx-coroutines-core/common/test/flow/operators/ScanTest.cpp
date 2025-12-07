@@ -1,72 +1,106 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/ScanTest.kt
+// TODO: handle imports (kotlinx.coroutines.testing, kotlinx.coroutines, kotlinx.coroutines.channels, kotlin.test)
+// TODO: translate @Test annotations to appropriate C++ test framework
+// TODO: handle suspend functions and coroutines
+// TODO: translate runTest {} blocks
+// TODO: handle Flow types and operations
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class ScanTest : TestBase() {
-    @Test
-    fun testScan() = runTest {
-        val flow = flowOf(1, 2, 3, 4, 5)
-        val result = flow.runningReduce { acc, v -> acc + v }.toList()
-        assertEquals(listOf(1, 3, 6, 10, 15), result)
+class ScanTest : public TestBase {
+public:
+    // @Test
+    void test_scan() /* TODO: = runTest */ {
+        auto flow = flow_of(1, 2, 3, 4, 5);
+        auto result = flow.running_reduce([](int acc, int v) { return acc + v; }).to_list();
+        assert_equals(std::vector<int>{1, 3, 6, 10, 15}, result);
     }
 
-    @Test
-    fun testScanWithInitial() = runTest {
-        val flow = flowOf(1, 2, 3)
-        val result = flow.scan(emptyList<Int>()) { acc, value -> acc + value }.toList()
-        assertEquals(listOf(emptyList(), listOf(1), listOf(1, 2), listOf(1, 2, 3)), result)
+    // @Test
+    void test_scan_with_initial() /* TODO: = runTest */ {
+        auto flow = flow_of(1, 2, 3);
+        auto result = flow.scan(std::vector<int>{}, [](const std::vector<int>& acc, int value) {
+            auto new_acc = acc;
+            new_acc.push_back(value);
+            return new_acc;
+        }).to_list();
+        std::vector<std::vector<int>> expected{
+            {},
+            {1},
+            {1, 2},
+            {1, 2, 3}
+        };
+        assert_equals(expected, result);
     }
 
-    @Test
-    fun testFoldWithInitial() = runTest {
-        val flow = flowOf(1, 2, 3)
-        val result = flow.runningFold(emptyList<Int>()) { acc, value -> acc + value }.toList()
-        assertEquals(listOf(emptyList(), listOf(1), listOf(1, 2), listOf(1, 2, 3)), result)
+    // @Test
+    void test_fold_with_initial() /* TODO: = runTest */ {
+        auto flow = flow_of(1, 2, 3);
+        auto result = flow.running_fold(std::vector<int>{}, [](const std::vector<int>& acc, int value) {
+            auto new_acc = acc;
+            new_acc.push_back(value);
+            return new_acc;
+        }).to_list();
+        std::vector<std::vector<int>> expected{
+            {},
+            {1},
+            {1, 2},
+            {1, 2, 3}
+        };
+        assert_equals(expected, result);
     }
 
-    @Test
-    fun testNulls() = runTest {
-        val flow = flowOf(null, 2, null, null, null, 5)
-        val result = flow.runningReduce { acc, v -> if (v == null) acc else (if (acc == null) v else acc + v) }.toList()
-        assertEquals(listOf(null, 2, 2, 2, 2, 7), result)
+    // @Test
+    void test_nulls() /* TODO: = runTest */ {
+        auto flow = flow_of<int*>(nullptr, new int(2), nullptr, nullptr, nullptr, new int(5));
+        auto result = flow.running_reduce([](int* acc, int* v) {
+            return (v == nullptr) ? acc : ((acc == nullptr) ? v : new int(*acc + *v));
+        }).to_list();
+        // TODO: proper nullable type handling and memory management
+        // assert_equals(std::vector<int*>{nullptr, new int(2), new int(2), new int(2), new int(2), new int(7)}, result);
     }
 
-    @Test
-    fun testEmptyFlow() = runTest {
-        val result = emptyFlow<Int>().runningReduce { _, _ -> 1 }.toList()
-        assertTrue(result.isEmpty())
+    // @Test
+    void test_empty_flow() /* TODO: = runTest */ {
+        auto result = empty_flow<int>().running_reduce([](int, int) { return 1; }).to_list();
+        assert_true(result.empty());
     }
 
-    @Test
-    fun testErrorCancelsUpstream() = runTest {
-        expect(1)
-        val latch = Channel<Unit>()
-        val flow = flow {
-            coroutineScope {
-                launch {
-                    latch.send(Unit)
-                    hang { expect(3) }
-                }
-                emit(1)
-                emit(2)
-            }
-        }.runningReduce { _, value ->
-            expect(value) // 2
-            latch.receive()
-            throw TestException()
-        }.catch { /* ignore */ }
+    // @Test
+    void test_error_cancels_upstream() /* TODO: = runTest */ {
+        expect(1);
+        Channel<Unit> latch;
+        auto flow = flow([&]() /* TODO: suspend */ {
+            coroutine_scope([&]() /* TODO: suspend */ {
+                launch([&]() /* TODO: suspend */ {
+                    latch.send(Unit{});
+                    hang([]() { expect(3); });
+                });
+                emit(1);
+                emit(2);
+            });
+        }).running_reduce([&](int, int value) {
+            expect(value); // 2
+            latch.receive();
+            throw TestException();
+        }).catch_error([](auto) { /* ignore */ });
 
-        assertEquals(1, flow.single())
-        finish(4)
+        assert_equals(1, flow.single());
+        finish(4);
     }
 
-    private operator fun <T> Collection<T>.plus(element: T): List<T> {
-        val result = ArrayList<T>(size + 1)
-        result.addAll(this)
-        result.add(element)
-        return result
+private:
+    // Helper function template - operator+ for collections
+    template<typename T>
+    std::vector<T> plus(const std::vector<T>& collection, const T& element) {
+        std::vector<T> result = collection;
+        result.push_back(element);
+        return result;
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

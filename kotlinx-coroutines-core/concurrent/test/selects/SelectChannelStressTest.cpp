@@ -1,67 +1,99 @@
-package kotlinx.coroutines.selects
+// Original: kotlinx-coroutines-core/concurrent/test/selects/SelectChannelStressTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert test annotations to C++ test framework
+// TODO: Implement suspend functions and coroutines
+// TODO: Handle TestBase inheritance
+// TODO: Implement Channel, select, SelectBuilder
+// TODO: Implement Channel.RENDEZVOUS constant
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace selects {
 
-class SelectChannelStressTest: TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlin.test.*
 
+class SelectChannelStressTest : public TestBase {
+private:
     // Running less iterations on native platforms because of some performance regression
-    private val iterations = (if (isNative) 1_000 else 1_000_000) * stressTestMultiplier
+    int iterations = (is_native ? 1'000 : 1'000'000) * stress_test_multiplier;
 
-    @Test
-    fun testSelectSendResourceCleanupBufferedChannel() = runTest {
-        val channel = Channel<Int>(1)
-        expect(1)
-        channel.send(-1) // fill the buffer, so all subsequent sends cannot proceed
-        repeat(iterations) { i ->
-            select {
-                channel.onSend(i) { expectUnreached() }
-                default { expect(i + 2) }
+public:
+    // @Test
+    // TODO: Convert test annotation
+    void test_select_send_resource_cleanup_buffered_channel() {
+        runTest([&]() {
+            // TODO: suspend function
+            auto channel = Channel<int>(1);
+            expect(1);
+            channel.send(-1); // fill the buffer, so all subsequent sends cannot proceed
+            for (int i = 0; i < iterations; ++i) {
+                select<void>([&](auto& builder) {
+                    builder.on_send(channel, i, [&]() { expectUnreached(); });
+                    builder.default_clause([&]() { expect(i + 2); });
+                });
             }
-        }
-        finish(iterations + 2)
+            finish(iterations + 2);
+        });
     }
 
-    @Test
-    fun testSelectReceiveResourceCleanupBufferedChannel() = runTest {
-        val channel = Channel<Int>(1)
-        expect(1)
-        repeat(iterations) { i ->
-            select {
-                channel.onReceive { expectUnreached() }
-                default { expect(i + 2) }
+    // @Test
+    // TODO: Convert test annotation
+    void test_select_receive_resource_cleanup_buffered_channel() {
+        runTest([&]() {
+            // TODO: suspend function
+            auto channel = Channel<int>(1);
+            expect(1);
+            for (int i = 0; i < iterations; ++i) {
+                select<void>([&](auto& builder) {
+                    builder.on_receive(channel, [&](int) { expectUnreached(); });
+                    builder.default_clause([&]() { expect(i + 2); });
+                });
             }
-        }
-        finish(iterations + 2)
+            finish(iterations + 2);
+        });
     }
 
-    @Test
-    fun testSelectSendResourceCleanupRendezvousChannel() = runTest {
-        val channel = Channel<Int>(Channel.RENDEZVOUS)
-        expect(1)
-        repeat(iterations) { i ->
-            select {
-                channel.onSend(i) { expectUnreached() }
-                default { expect(i + 2) }
+    // @Test
+    // TODO: Convert test annotation
+    void test_select_send_resource_cleanup_rendezvous_channel() {
+        runTest([&]() {
+            // TODO: suspend function
+            auto channel = Channel<int>(Channel::kRendezvous);
+            expect(1);
+            for (int i = 0; i < iterations; ++i) {
+                select<void>([&](auto& builder) {
+                    builder.on_send(channel, i, [&]() { expectUnreached(); });
+                    builder.default_clause([&]() { expect(i + 2); });
+                });
             }
-        }
-        finish(iterations + 2)
+            finish(iterations + 2);
+        });
     }
 
-    @Test
-    fun testSelectReceiveResourceRendezvousChannel() = runTest {
-        val channel = Channel<Int>(Channel.RENDEZVOUS)
-        expect(1)
-        repeat(iterations) { i ->
-            select {
-                channel.onReceive { expectUnreached() }
-                default { expect(i + 2) }
+    // @Test
+    // TODO: Convert test annotation
+    void test_select_receive_resource_rendezvous_channel() {
+        runTest([&]() {
+            // TODO: suspend function
+            auto channel = Channel<int>(Channel::kRendezvous);
+            expect(1);
+            for (int i = 0; i < iterations; ++i) {
+                select<void>([&](auto& builder) {
+                    builder.on_receive(channel, [&](int) { expectUnreached(); });
+                    builder.default_clause([&]() { expect(i + 2); });
+                });
             }
-        }
-        finish(iterations + 2)
+            finish(iterations + 2);
+        });
     }
 
-    internal fun <R> SelectBuilder<R>.default(block: suspend () -> R) = onTimeout(0, block)
-}
+    // internal fun <R> SelectBuilder<R>.default(block: suspend () -> R) = onTimeout(0, block)
+    // TODO: Implement as extension or helper method
+};
+
+} // namespace selects
+} // namespace coroutines
+} // namespace kotlinx

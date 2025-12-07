@@ -1,28 +1,40 @@
-@file:Suppress("PackageDirectoryMismatch")
-package example
+// Original file: kotlinx-coroutines-debug/test/RecoveryExample.kt
+// TODO: Convert @file:Suppress annotation
+// TODO: Convert imports to C++ includes
+// TODO: Implement object as singleton/namespace
+// TODO: Implement CoroutineScope delegation
+// TODO: Implement suspend functions
 
-import kotlinx.coroutines.*
+// @file:Suppress("PackageDirectoryMismatch")
+namespace example {
 
-object PublicApiImplementation : CoroutineScope by CoroutineScope(CoroutineName("Example")) {
+// object PublicApiImplementation : CoroutineScope by CoroutineScope(CoroutineName("Example"))
+namespace public_api_implementation {
+    // TODO: Implement CoroutineScope delegation
 
-    private fun doWork(): Int {
-        error("Internal invariant failed")
+    int do_work() {
+        // TODO: error("Internal invariant failed")
+        throw std::runtime_error("Internal invariant failed");
     }
 
-    private fun asynchronousWork(): Int {
-        return doWork() + 1
+    int asynchronous_work() {
+        return do_work() + 1;
     }
 
-    public suspend fun awaitAsynchronousWorkInMainThread() {
-        val task = async(Dispatchers.Default) {
-            asynchronousWork()
-        }
-
-        task.await()
+    // public suspend
+    void await_asynchronous_work_in_main_thread() {
+        // TODO: auto task = async(Dispatchers.Default) {
+        //     asynchronousWork()
+        // }
+        //
+        // task.await()
     }
-}
+} // namespace public_api_implementation
 
-suspend fun main() {
+// suspend
+void main_recovery() {
     // Try to switch debug mode on and off to see the difference
-    PublicApiImplementation.awaitAsynchronousWorkInMainThread()
+    // TODO: PublicApiImplementation.awaitAsynchronousWorkInMainThread()
 }
+
+} // namespace example

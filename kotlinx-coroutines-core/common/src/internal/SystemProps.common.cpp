@@ -1,9 +1,19 @@
-@file:JvmName("SystemPropsKt")
-@file:JvmMultifileClass
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/internal/SystemProps.common.kt
+//
+// TODO: This is a mechanical transliteration - semantics not fully implemented
+// TODO: @JvmName, @JvmMultifileClass annotations - JVM-specific
+// TODO: expect function needs platform-specific implementation
+// TODO: String? (nullable) needs std::optional<std::string> or char*
 
-package kotlinx.coroutines.internal
+#include <string>
+#include <optional>
+#include <stdexcept>
+#include <climits>
 
-import kotlin.jvm.*
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
 
 /**
  * Gets the system property indicated by the specified [property name][propertyName],
@@ -11,10 +21,12 @@ import kotlin.jvm.*
  *
  * **Note: this function should be used in JVM tests only, other platforms use the default value.**
  */
-internal fun systemProp(
-    propertyName: String,
-    defaultValue: Boolean
-): Boolean = systemProp(propertyName)?.toBoolean() ?: defaultValue
+inline bool system_prop(const std::string& property_name, bool default_value) {
+    std::optional<std::string> value = system_prop(property_name);
+    if (!value.has_value()) return default_value;
+    // TODO: to_boolean() conversion
+    return default_value;
+}
 
 /**
  * Gets the system property indicated by the specified [property name][propertyName],
@@ -23,12 +35,15 @@ internal fun systemProp(
  *
  * **Note: this function should be used in JVM tests only, other platforms use the default value.**
  */
-internal fun systemProp(
-    propertyName: String,
-    defaultValue: Int,
-    minValue: Int = 1,
-    maxValue: Int = Int.MAX_VALUE
-): Int = systemProp(propertyName, defaultValue.toLong(), minValue.toLong(), maxValue.toLong()).toInt()
+inline int system_prop(
+    const std::string& property_name,
+    int default_value,
+    int min_value = 1,
+    int max_value = INT_MAX
+) {
+    return static_cast<int>(system_prop(property_name, static_cast<long>(default_value),
+                                       static_cast<long>(min_value), static_cast<long>(max_value)));
+}
 
 /**
  * Gets the system property indicated by the specified [property name][propertyName],
@@ -37,19 +52,29 @@ internal fun systemProp(
  *
  * **Note: this function should be used in JVM tests only, other platforms use the default value.**
  */
-internal fun systemProp(
-    propertyName: String,
-    defaultValue: Long,
-    minValue: Long = 1,
-    maxValue: Long = Long.MAX_VALUE
-): Long {
-    val value = systemProp(propertyName) ?: return defaultValue
-    val parsed = value.toLongOrNull()
-        ?: error("System property '$propertyName' has unrecognized value '$value'")
-    if (parsed !in minValue..maxValue) {
-        error("System property '$propertyName' should be in range $minValue..$maxValue, but is '$parsed'")
+inline long system_prop(
+    const std::string& property_name,
+    long default_value,
+    long min_value = 1,
+    long max_value = LONG_MAX
+) {
+    std::optional<std::string> value = system_prop(property_name);
+    if (!value.has_value()) return default_value;
+
+    // TODO: to_long_or_null() conversion
+    long parsed = default_value; // placeholder
+    try {
+        parsed = std::stol(value.value());
+    } catch (...) {
+        throw std::runtime_error("System property '" + property_name + "' has unrecognized value '" + value.value() + "'");
     }
-    return parsed
+
+    if (parsed < min_value || parsed > max_value) {
+        throw std::runtime_error("System property '" + property_name + "' should be in range " +
+                               std::to_string(min_value) + ".." + std::to_string(max_value) +
+                               ", but is '" + std::to_string(parsed) + "'");
+    }
+    return parsed;
 }
 
 /**
@@ -58,10 +83,10 @@ internal fun systemProp(
  *
  * **Note: this function should be used in JVM tests only, other platforms use the default value.**
  */
-internal fun systemProp(
-    propertyName: String,
-    defaultValue: String
-): String = systemProp(propertyName) ?: defaultValue
+inline std::string system_prop(const std::string& property_name, const std::string& default_value) {
+    std::optional<std::string> value = system_prop(property_name);
+    return value.value_or(default_value);
+}
 
 /**
  * Gets the system property indicated by the specified [property name][propertyName],
@@ -69,4 +94,9 @@ internal fun systemProp(
  *
  * **Note: this function should be used in JVM tests only, other platforms use the default value.**
  */
-internal expect fun systemProp(propertyName: String): String?
+// TODO: expect function - needs platform-specific implementation
+std::optional<std::string> system_prop(const std::string& property_name);
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

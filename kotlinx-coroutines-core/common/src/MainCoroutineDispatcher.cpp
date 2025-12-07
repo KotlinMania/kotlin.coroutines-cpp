@@ -1,6 +1,18 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
+// Original: kotlinx-coroutines-core/common/src/MainCoroutineDispatcher.kt
+//
+// TODO:
+// - Abstract class inheritance from CoroutineDispatcher
+// - toString override needs proper C++ stream operator
+// - limitedParallelism needs implementation
+// - InternalCoroutinesApi annotation handling
 
-import kotlinx.coroutines.internal.*
+#include <string>
+
+namespace kotlinx {
+namespace coroutines {
+
+class CoroutineDispatcher;
 
 /**
  * Base class for special [CoroutineDispatcher] which is confined to application "Main" or "UI" thread
@@ -8,8 +20,8 @@ import kotlinx.coroutines.internal.*
  *
  * Platform may or may not provide instance of `MainDispatcher`, see documentation to [Dispatchers.Main]
  */
-public abstract class MainCoroutineDispatcher : CoroutineDispatcher() {
-
+class MainCoroutineDispatcher : public CoroutineDispatcher {
+public:
     /**
      * Returns dispatcher that executes coroutines immediately when it is already in the right context
      * (e.g. current looper is the same as this handler's looper) without an additional [re-dispatch][CoroutineDispatcher.dispatch].
@@ -40,34 +52,28 @@ public abstract class MainCoroutineDispatcher : CoroutineDispatcher() {
      *
      * [Dispatchers.Main] supports immediate execution for Android, JavaFx and Swing platforms.
      */
-    public abstract val immediate: MainCoroutineDispatcher
+    virtual MainCoroutineDispatcher& get_immediate() = 0;
 
     /**
      * Returns a name of this main dispatcher for debugging purposes. This implementation returns
      * `Dispatchers.Main` or `Dispatchers.Main.immediate` if it is the same as the corresponding
      * reference in [Dispatchers] or a short class-name representation with address otherwise.
      */
-    override fun toString(): String = toStringInternalImpl() ?: "$classSimpleName@$hexAddress"
+    std::string to_string() const override;
 
-    override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher {
-        parallelism.checkParallelism()
-        // MainCoroutineDispatcher is single-threaded -- short-circuit any attempts to limit it
-        return namedOrThis(name)
-    }
+    CoroutineDispatcher& limited_parallelism(int parallelism, const std::string* name) override;
 
     /**
      * Internal method for more specific [toString] implementations. It returns non-null
      * string if this dispatcher is set in the platform as the main one.
      * @suppress
      */
-    @InternalCoroutinesApi
-    protected fun toStringInternalImpl(): String? {
-        val main = Dispatchers.Main
-        if (this === main) return "Dispatchers.Main"
-        val immediate =
-            try { main.immediate }
-            catch (e: UnsupportedOperationException) { null }
-        if (this === immediate) return "Dispatchers.Main.immediate"
-        return null
-    }
-}
+    // @InternalCoroutinesApi
+protected:
+    std::string to_string_internal_impl() const;
+
+    virtual ~MainCoroutineDispatcher() = default;
+};
+
+} // namespace coroutines
+} // namespace kotlinx

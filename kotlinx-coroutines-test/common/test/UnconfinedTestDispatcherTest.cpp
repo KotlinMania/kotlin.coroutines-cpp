@@ -1,163 +1,204 @@
-package kotlinx.coroutines.test
+// Original file: kotlinx-coroutines-test/common/test/UnconfinedTestDispatcherTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert @Test annotations to appropriate test framework
+// TODO: Convert suspend functions and coroutine builders
+// TODO: Handle local class definitions
+// TODO: Convert Flow operations (callbackFlow, combine, collect, etc.)
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace test {
+
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlinx.coroutines.flow.*
+// TODO: import kotlin.test.*
 
 class UnconfinedTestDispatcherTest {
+public:
+    // TODO: @Test
+    void reproducer1742() {
+        // Local class definition
+        template<typename T>
+        class ObservableValue {
+        private:
+            T value_;
+            std::vector<std::function<void(T)>> listeners_;
 
-    @Test
-    fun reproducer1742() {
-        class ObservableValue<T>(initial: T) {
-            var value: T = initial
-                private set
+        public:
+            ObservableValue(T initial) : value_(initial) {}
 
-            private val listeners = mutableListOf<(T) -> Unit>()
+            T value() const { return value_; }
 
-            fun set(value: T) {
-                this.value = value
-                listeners.forEach { it(value) }
+            void set(T value) {
+                value_ = value;
+                for (auto& listener : listeners_) {
+                    listener(value);
+                }
             }
 
-            fun addListener(listener: (T) -> Unit) {
-                listeners.add(listener)
+            void add_listener(std::function<void(T)> listener) {
+                listeners_.push_back(listener);
             }
 
-            fun removeListener(listener: (T) -> Unit) {
-                listeners.remove(listener)
+            void remove_listener(std::function<void(T)> listener) {
+                // TODO: Need proper function comparison
+                // listeners.remove(listener);
             }
-        }
+        };
 
-        fun <T> ObservableValue<T>.observe(): Flow<T> =
-            callbackFlow {
-                val listener = { value: T ->
-                    if (!isClosedForSend) {
-                        trySend(value)
+        auto observe = [](auto& observable_value) -> Flow<decltype(observable_value.value())> {
+            return callback_flow([&](auto& producer) {
+                auto listener = [&](auto value) {
+                    if (!producer.is_closed_for_send()) {
+                        producer.try_send(value);
                     }
-                }
-                addListener(listener)
-                listener(value)
-                awaitClose { removeListener(listener) }
-            }
+                };
+                observable_value.add_listener(listener);
+                listener(observable_value.value());
+                producer.await_close([&]() { observable_value.remove_listener(listener); });
+            });
+        };
 
-        val intProvider = ObservableValue(0)
-        val stringProvider = ObservableValue("")
-        var data = Pair(0, "")
-        val scope = CoroutineScope(UnconfinedTestDispatcher())
-        scope.launch {
+        ObservableValue<int> int_provider(0);
+        ObservableValue<std::string> string_provider("");
+        std::pair<int, std::string> data{0, ""};
+        CoroutineScope scope(UnconfinedTestDispatcher());
+        scope.launch([&]() {
             combine(
-                intProvider.observe(),
-                stringProvider.observe()
-            ) { intValue, stringValue -> Pair(intValue, stringValue) }
-                .collect { pair ->
-                    data = pair
+                observe(int_provider),
+                observe(string_provider),
+                [](int int_value, std::string string_value) {
+                    return std::make_pair(int_value, string_value);
                 }
-        }
+            ).collect([&](auto pair) {
+                data = pair;
+            });
+        });
 
-        intProvider.set(1)
-        stringProvider.set("3")
-        intProvider.set(2)
-        intProvider.set(3)
+        int_provider.set(1);
+        string_provider.set("3");
+        int_provider.set(2);
+        int_provider.set(3);
 
-        scope.cancel()
-        assertEquals(Pair(3, "3"), data)
+        scope.cancel();
+        assert(data == std::make_pair(3, std::string("3")));
     }
 
-    @Test
-    fun reproducer2082() = runTest {
-        val subject1 = MutableStateFlow(1)
-        val subject2 = MutableStateFlow("a")
-        val values = mutableListOf<Pair<Int, String>>()
+    // TODO: @Test
+    void reproducer2082() {
+        run_test([&]() {
+            MutableStateFlow<int> subject1(1);
+            MutableStateFlow<std::string> subject2("a");
+            std::vector<std::pair<int, std::string>> values;
 
-        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
-            combine(subject1, subject2) { intVal, strVal -> intVal to strVal }
-                .collect {
-                    delay(10000)
-                    values += it
-                }
-        }
+            auto job = launch(UnconfinedTestDispatcher(test_scheduler), [&]() {
+                combine(subject1, subject2, [](int int_val, std::string str_val) {
+                    return std::make_pair(int_val, str_val);
+                }).collect([&](auto it) {
+                    delay(10000);
+                    values.push_back(it);
+                });
+            });
 
-        subject1.value = 2
-        delay(10000)
-        subject2.value = "b"
-        delay(10000)
+            subject1.value = 2;
+            delay(10000);
+            subject2.value = "b";
+            delay(10000);
 
-        subject1.value = 3
-        delay(10000)
-        subject2.value = "c"
-        delay(10000)
-        delay(10000)
-        delay(1)
+            subject1.value = 3;
+            delay(10000);
+            subject2.value = "c";
+            delay(10000);
+            delay(10000);
+            delay(1);
 
-        job.cancel()
+            job.cancel();
 
-        assertEquals(listOf(Pair(1, "a"), Pair(2, "a"), Pair(2, "b"), Pair(3, "b"), Pair(3, "c")), values)
+            using Pair = std::pair<int, std::string>;
+            std::vector<Pair> expected = {
+                Pair(1, "a"), Pair(2, "a"), Pair(2, "b"), Pair(3, "b"), Pair(3, "c")
+            };
+            assert(values == expected);
+        });
     }
 
-    @Test
-    fun reproducer2405() = createTestResult {
-        val dispatcher = UnconfinedTestDispatcher()
-        var collectedError = false
-        withContext(dispatcher) {
-            flow { emit(1) }
-                .combine(
-                    flow<String> { throw IllegalArgumentException() }
-                ) { int, string -> int.toString() + string }
-                .catch { emit("error") }
-                .collect {
-                    assertEquals("error", it)
-                    collectedError = true
-                }
-        }
-        assertTrue(collectedError)
+    // TODO: @Test
+    void reproducer2405() {
+        create_test_result([&]() {
+            auto dispatcher = UnconfinedTestDispatcher();
+            bool collected_error = false;
+            with_context(dispatcher, [&]() {
+                flow([&]() { emit(1); })
+                    .combine(
+                        flow<std::string>([&]() { throw std::invalid_argument(""); }),
+                        [](int int_val, std::string string_val) {
+                            return std::to_string(int_val) + string_val;
+                        }
+                    )
+                    .catch_exception([&](auto e) { emit("error"); })
+                    .collect([&](auto it) {
+                        assert(it == "error");
+                        collected_error = true;
+                    });
+            });
+            assert(collected_error);
+        });
     }
 
     /** An example from the [UnconfinedTestDispatcher] documentation. */
-    @Test
-    fun testUnconfinedDispatcher() = runTest {
-        val values = mutableListOf<Int>()
-        val stateFlow = MutableStateFlow(0)
-        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
-            stateFlow.collect {
-                values.add(it)
-            }
-        }
-        stateFlow.value = 1
-        stateFlow.value = 2
-        stateFlow.value = 3
-        job.cancel()
-        assertEquals(listOf(0, 1, 2, 3), values)
+    // TODO: @Test
+    void test_unconfined_dispatcher() {
+        run_test([&]() {
+            std::vector<int> values;
+            MutableStateFlow<int> state_flow(0);
+            auto job = launch(UnconfinedTestDispatcher(test_scheduler), [&]() {
+                state_flow.collect([&](int it) {
+                    values.push_back(it);
+                });
+            });
+            state_flow.value = 1;
+            state_flow.value = 2;
+            state_flow.value = 3;
+            job.cancel();
+            assert(values == std::vector<int>{0, 1, 2, 3});
+        });
     }
 
     /** Tests that child coroutines are eagerly entered. */
-    @Test
-    fun testEagerlyEnteringChildCoroutines() = runTest(UnconfinedTestDispatcher()) {
-        var entered = false
-        val deferred = CompletableDeferred<Unit>()
-        var completed = false
-        launch {
-            entered = true
-            deferred.await()
-            completed = true
-        }
-        assertTrue(entered) // `entered = true` already executed.
-        assertFalse(completed) // however, the child coroutine then suspended, so it is enqueued.
-        deferred.complete(Unit) // resume the coroutine.
-        assertTrue(completed) // now the child coroutine is immediately completed.
+    // TODO: @Test
+    void test_eagerly_entering_child_coroutines() {
+        run_test(UnconfinedTestDispatcher(), [&]() {
+            bool entered = false;
+            auto deferred = CompletableDeferred<void>();
+            bool completed = false;
+            launch([&]() {
+                entered = true;
+                deferred.await();
+                completed = true;
+            });
+            assert(entered); // `entered = true` already executed.
+            assert(!completed); // however, the child coroutine then suspended, so it is enqueued.
+            deferred.complete(); // resume the coroutine.
+            assert(completed); // now the child coroutine is immediately completed.
+        });
     }
 
     /** Tests that the [TestCoroutineScheduler] used for [Dispatchers.Main] gets used by default. */
-    @Test
-    fun testSchedulerReuse() {
-        val dispatcher1 = StandardTestDispatcher()
-        Dispatchers.setMain(dispatcher1)
+    // TODO: @Test
+    void test_scheduler_reuse() {
+        auto dispatcher1 = StandardTestDispatcher();
+        Dispatchers::set_main(dispatcher1);
         try {
-            val dispatcher2 = UnconfinedTestDispatcher()
-            assertSame(dispatcher1.scheduler, dispatcher2.scheduler)
+            auto dispatcher2 = UnconfinedTestDispatcher();
+            // TODO: assertSame
+            assert(dispatcher1.scheduler == dispatcher2.scheduler);
         } finally {
-            Dispatchers.resetMain()
+            Dispatchers::reset_main();
         }
     }
+};
 
-}
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

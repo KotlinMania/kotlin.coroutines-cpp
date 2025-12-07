@@ -1,137 +1,194 @@
-package kotlinx.coroutines.flow
+// Original: kotlinx-coroutines-core/common/test/flow/channels/ChannelBuildersFlowTest.kt
+// TODO: Translate imports to proper C++ includes
+// TODO: Implement TestBase base class
+// TODO: Implement @Test annotation equivalent
+// TODO: Implement runTest coroutine runner
+// TODO: Implement produce, Channel
+// TODO: Implement consumeAsFlow, receiveAsFlow
+// TODO: Implement Flow operations: sum, collect, take, toList
+// TODO: Implement repeat, send
+// TODO: Implement assertFailsWith, assertTrue
+// TODO: Implement NonCancellable, TestException
+// TODO: Implement buffer, onCompletion
+// TODO: Implement produceIn, cancel, join
+// TODO: Implement isClosedForReceive, yield
+// TODO: Implement assertSame, assertNotSame
+// TODO: Implement wrapperDispatcher
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlin.test.*
+#include <vector>
+// TODO: #include proper headers
 
-class ChannelBuildersFlowTest : TestBase() {
-    @Test
-    fun testChannelConsumeAsFlow() = runTest {
-        val channel = produce {
-           repeat(10) {
-               send(it + 1)
-           }
-        }
-        val flow = channel.consumeAsFlow()
-        assertEquals(55, flow.sum())
-        assertFailsWith<IllegalStateException> { flow.collect() }
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+
+class ChannelBuildersFlowTest : public TestBase {
+public:
+    // @Test
+    void test_channel_consume_as_flow() {
+        run_test([]() -> /* suspend */ void {
+            auto channel = produce([](auto& producer) -> /* suspend */ void {
+                for (int i = 0; i < 10; ++i) {
+                    producer.send(i + 1);
+                }
+            });
+            auto flow_instance = channel.consume_as_flow();
+            assert_equals(55, flow_instance.sum());
+            assert_fails_with<IllegalStateException>([&]() { flow_instance.collect(); });
+        });
     }
 
-    @Test
-    fun testChannelReceiveAsFlow() = runTest {
-        val channel = produce {
-           repeat(10) {
-               send(it + 1)
-           }
-        }
-        val flow = channel.receiveAsFlow()
-        assertEquals(55, flow.sum())
-        assertEquals(emptyList(), flow.toList())
+    // @Test
+    void test_channel_receive_as_flow() {
+        run_test([]() -> /* suspend */ void {
+            auto channel = produce([](auto& producer) -> /* suspend */ void {
+                for (int i = 0; i < 10; ++i) {
+                    producer.send(i + 1);
+                }
+            });
+            auto flow_instance = channel.receive_as_flow();
+            assert_equals(55, flow_instance.sum());
+            assert_equals(std::vector<int>(), flow_instance.to_list());
+        });
     }
 
-    @Test
-    fun testConsumeAsFlowCancellation() = runTest {
-        val channel = produce(NonCancellable) { // otherwise failure will cancel scope as well
-            repeat(10) {
-                send(it + 1)
+    // @Test
+    void test_consume_as_flow_cancellation() {
+        run_test([]() -> /* suspend */ void {
+            auto channel = produce(NonCancellable, [](auto& producer) -> /* suspend */ void {
+                // otherwise failure will cancel scope as well
+                for (int i = 0; i < 10; ++i) {
+                    producer.send(i + 1);
+                }
+                throw TestException();
+            });
+            auto flow_instance = channel.consume_as_flow();
+            assert_equals(15, flow_instance.take(5).sum());
+            // the channel should have been canceled, even though took only 5 elements
+            assert_true(channel.is_closed_for_receive());
+            assert_fails_with<IllegalStateException>([&]() { flow_instance.collect(); });
+        });
+    }
+
+    // @Test
+    void test_receive_as_flow_cancellation() {
+        run_test([]() -> /* suspend */ void {
+            auto channel = produce(NonCancellable, [](auto& producer) -> /* suspend */ void {
+                // otherwise failure will cancel scope as well
+                for (int i = 0; i < 10; ++i) {
+                    producer.send(i + 1);
+                }
+                throw TestException();
+            });
+            auto flow_instance = channel.receive_as_flow();
+            assert_equals(15, flow_instance.take(5).sum()); // sum of first 5
+            assert_equals(40, flow_instance.take(5).sum()); // sum the rest 5
+            assert_fails_with<TestException>([&]() { flow_instance.sum(); }); // exception in the rest
+        });
+    }
+
+    // @Test
+    void test_consume_as_flow_exception() {
+        run_test([]() -> /* suspend */ void {
+            auto channel = produce(NonCancellable, [](auto& producer) -> /* suspend */ void {
+                // otherwise failure will cancel scope as well
+                for (int i = 0; i < 10; ++i) {
+                    producer.send(i + 1);
+                }
+                throw TestException();
+            });
+            auto flow_instance = channel.consume_as_flow();
+            assert_fails_with<TestException>([&]() { flow_instance.sum(); });
+            assert_fails_with<IllegalStateException>([&]() { flow_instance.collect(); });
+        });
+    }
+
+    // @Test
+    void test_receive_as_flow_exception() {
+        run_test([]() -> /* suspend */ void {
+            auto channel = produce(NonCancellable, [](auto& producer) -> /* suspend */ void {
+                // otherwise failure will cancel scope as well
+                for (int i = 0; i < 10; ++i) {
+                    producer.send(i + 1);
+                }
+                throw TestException();
+            });
+            auto flow_instance = channel.receive_as_flow();
+            assert_fails_with<TestException>([&]() { flow_instance.sum(); });
+            assert_fails_with<TestException>([&]() { flow_instance.collect(); }); // repeated collection -- same exception
+        });
+    }
+
+    // @Test
+    void test_consume_as_flow_produce_fusing() {
+        run_test([]() -> /* suspend */ void {
+            auto channel = produce([](auto& producer) -> /* suspend */ void {
+                producer.send("OK");
+            });
+            auto flow_instance = channel.consume_as_flow();
+            assert_same(&channel, &flow_instance.produce_in(*this));
+            assert_fails_with<IllegalStateException>([&]() { flow_instance.produce_in(*this); });
+            channel.cancel();
+        });
+    }
+
+    // @Test
+    void test_receive_as_flow_produce_fusing() {
+        run_test([]() -> /* suspend */ void {
+            auto channel = produce([](auto& producer) -> /* suspend */ void {
+                producer.send("OK");
+            });
+            auto flow_instance = channel.receive_as_flow();
+            assert_same(&channel, &flow_instance.produce_in(*this));
+            assert_same(&channel, &flow_instance.produce_in(*this)); // can use produce multiple times
+            channel.cancel();
+        });
+    }
+
+    // @Test
+    void test_consume_as_flow_produce_buffered() {
+        run_test([]() -> /* suspend */ void {
+            expect(1);
+            auto channel = produce([](auto& producer) -> /* suspend */ void {
+                expect(3);
+                for (int i = 1; i <= 10; ++i) {
+                    producer.send(i);
+                }
+                expect(4); // produces everything because of buffering
+            });
+            auto flow_instance = channel.consume_as_flow().buffer(); // request buffering
+            expect(2); // producer is not running yet
+            auto result = flow_instance.produce_in(*this);
+            // run the flow pipeline until it consumes everything into buffer
+            while (!channel.is_closed_for_receive()) {
+                yield();
             }
-            throw TestException()
-        }
-        val flow = channel.consumeAsFlow()
-        assertEquals(15, flow.take(5).sum())
-        // the channel should have been canceled, even though took only 5 elements
-        assertTrue(channel.isClosedForReceive)
-        assertFailsWith<IllegalStateException> { flow.collect() }
+            expect(5); // produced had done running (buffered stuff)
+            assert_not_same(&channel, &result);
+            assert_fails_with<IllegalStateException>([&]() { flow_instance.produce_in(*this); });
+            // check that we received everything
+            std::vector<int> expected = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+            assert_equals(expected, result.to_list());
+            finish(6);
+        });
     }
 
-    @Test
-    fun testReceiveAsFlowCancellation() = runTest {
-        val channel = produce(NonCancellable) { // otherwise failure will cancel scope as well
-            repeat(10) {
-                send(it + 1)
-            }
-            throw TestException()
-        }
-        val flow = channel.receiveAsFlow()
-        assertEquals(15, flow.take(5).sum()) // sum of first 5
-        assertEquals(40, flow.take(5).sum()) // sum the rest 5
-        assertFailsWith<TestException> { flow.sum() } // exception in the rest
+    // @Test
+    void test_produce_in_atomicity() {
+        run_test([]() -> /* suspend */ void {
+            auto flow_instance = flow_of(1).on_completion([](auto) {
+                expect(2);
+            });
+            CoroutineScope scope(wrapper_dispatcher());
+            flow_instance.produce_in(scope);
+            expect(1);
+            scope.cancel();
+            scope.coroutine_context()[Job].join();
+            finish(3);
+        });
     }
+};
 
-    @Test
-    fun testConsumeAsFlowException() = runTest {
-        val channel = produce(NonCancellable) { // otherwise failure will cancel scope as well
-            repeat(10) {
-                send(it + 1)
-            }
-            throw TestException()
-        }
-        val flow = channel.consumeAsFlow()
-        assertFailsWith<TestException> { flow.sum() }
-        assertFailsWith<IllegalStateException> { flow.collect() }
-    }
-
-    @Test
-    fun testReceiveAsFlowException() = runTest {
-        val channel = produce(NonCancellable) { // otherwise failure will cancel scope as well
-            repeat(10) {
-                send(it + 1)
-            }
-            throw TestException()
-        }
-        val flow = channel.receiveAsFlow()
-        assertFailsWith<TestException> { flow.sum() }
-        assertFailsWith<TestException> { flow.collect() } // repeated collection -- same exception
-    }
-
-    @Test
-    fun testConsumeAsFlowProduceFusing() = runTest {
-        val channel = produce { send("OK") }
-        val flow = channel.consumeAsFlow()
-        assertSame(channel, flow.produceIn(this))
-        assertFailsWith<IllegalStateException> { flow.produceIn(this) }
-        channel.cancel()
-    }
-
-    @Test
-    fun testReceiveAsFlowProduceFusing() = runTest {
-        val channel = produce { send("OK") }
-        val flow = channel.receiveAsFlow()
-        assertSame(channel, flow.produceIn(this))
-        assertSame(channel, flow.produceIn(this)) // can use produce multiple times
-        channel.cancel()
-    }
-
-    @Test
-    fun testConsumeAsFlowProduceBuffered() = runTest {
-        expect(1)
-        val channel = produce {
-            expect(3)
-            (1..10).forEach { send(it) }
-            expect(4) // produces everything because of buffering
-        }
-        val flow = channel.consumeAsFlow().buffer() // request buffering
-        expect(2) // producer is not running yet
-        val result = flow.produceIn(this)
-        // run the flow pipeline until it consumes everything into buffer
-        while (!channel.isClosedForReceive) yield()
-        expect(5) // produced had done running (buffered stuff)
-        assertNotSame(channel, result)
-        assertFailsWith<IllegalStateException> { flow.produceIn(this) }
-        // check that we received everything
-        assertEquals((1..10).toList(), result.toList())
-        finish(6)
-    }
-
-    @Test
-    fun testProduceInAtomicity() = runTest {
-        val flow = flowOf(1).onCompletion { expect(2) }
-        val scope = CoroutineScope(wrapperDispatcher())
-        flow.produceIn(scope)
-        expect(1)
-        scope.cancel()
-        scope.coroutineContext[Job]?.join()
-        finish(3)
-    }
-}
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

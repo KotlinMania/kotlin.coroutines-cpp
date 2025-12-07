@@ -1,4 +1,10 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/CompletableJob.kt
+//
+// TODO: @OptIn, @SubclassOptInRequired - no C++ equivalents
+
+namespace kotlinx {
+namespace coroutines {
 
 /**
  * A job that can be completed using [complete()] function.
@@ -10,9 +16,10 @@ package kotlinx.coroutines
  * **The `CompletableJob` interface is not stable for inheritance in 3rd party libraries**,
  * as new methods might be added to this interface in the future, but is stable for use.
  */
-@OptIn(ExperimentalSubclassOptIn::class)
-@SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class)
-public interface CompletableJob : Job {
+// TODO: @OptIn(ExperimentalSubclassOptIn::class) - no C++ equivalent
+// TODO: @SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class) - no C++ equivalent
+class CompletableJob : public Job {
+public:
     /**
      * Completes this job. The result is `true` if this job was completed as a result of this invocation and
      * `false` otherwise (if it was already completed).
@@ -23,7 +30,7 @@ public interface CompletableJob : Job {
      * However, that if this job has children, then it transitions into _completing_ state and becomes _complete_
      * once all its children are [complete][isCompleted]. See [Job] for details.
      */
-    public fun complete(): Boolean
+    virtual bool complete() = 0;
 
     /**
      * Completes this job exceptionally with a given [exception]. The result is `true` if this job was
@@ -37,8 +44,11 @@ public interface CompletableJob : Job {
      * once all its children are [complete][isCompleted]. See [Job] for details.
      *
      * It is the responsibility of the caller to properly handle and report the given [exception].
-     * All the job’s children will receive a [CancellationException] with
+     * All the job's children will receive a [CancellationException] with
      * the [exception] as a cause for the sake of diagnosis.
      */
-    public fun completeExceptionally(exception: Throwable): Boolean
-}
+    virtual bool completeExceptionally(Throwable* exception) = 0;
+};
+
+} // namespace coroutines
+} // namespace kotlinx

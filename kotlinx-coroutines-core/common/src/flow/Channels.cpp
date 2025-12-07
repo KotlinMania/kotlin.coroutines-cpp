@@ -1,15 +1,25 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
+// Transliterated from Kotlin to C++ (first pass - syntax/language translation only)
+// Original: kotlinx-coroutines-core/common/src/flow/Channels.kt
+//
+// TODO: Implement suspend/coroutine semantics
+// TODO: Translate JVM annotations
+// TODO: Implement atomicfu atomic operations
+// TODO: Handle nullability (T?)
+// TODO: Implement Channel operations
+// TODO: Map Kotlin's Unit type
 
-package kotlinx.coroutines.flow
+// @file:JvmMultifileClass
+// @file:JvmName("FlowKt")
 
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.internal.*
-import kotlin.coroutines.*
-import kotlin.jvm.*
-import kotlinx.coroutines.flow.internal.unsafeFlow as flow
+namespace kotlinx { namespace coroutines { namespace flow {
+
+// import kotlinx.atomicfu.*
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.channels.*
+// import kotlinx.coroutines.flow.internal.*
+// import kotlin.coroutines.*
+// import kotlin.jvm.*
+// import kotlinx.coroutines.flow.internal.unsafeFlow as flow
 
 /**
  * Emits all elements from the given [channel] to this flow collector and [cancels][cancel] (consumes)
@@ -22,22 +32,24 @@ import kotlinx.coroutines.flow.internal.unsafeFlow as flow
  * This function provides a more efficient shorthand for `channel.consumeEach { value -> emit(value) }`.
  * See [consumeEach][ReceiveChannel.consumeEach].
  */
-public suspend fun <T> FlowCollector<T>.emitAll(channel: ReceiveChannel<T>): Unit =
-    emitAllImpl(channel, consume = true)
+template<typename T>
+void emit_all(FlowCollector<T>* collector, ReceiveChannel<T>* channel) { // TODO: suspend, extension function
+    emit_all_impl(collector, channel, true);
+}
 
-private suspend fun <T> FlowCollector<T>.emitAllImpl(channel: ReceiveChannel<T>, consume: Boolean) {
-    ensureActive()
-    var cause: Throwable? = null
+template<typename T>
+void emit_all_impl(FlowCollector<T>* collector, ReceiveChannel<T>* channel, bool consume) { // TODO: suspend
+    collector->ensure_active();
+    Throwable* cause = nullptr;
     try {
-        for (element in channel) {
-            emit(element)
+        for (auto element : *channel) { // TODO: channel iteration
+            collector->emit(element);
         }
-    } catch (e: Throwable) {
-        cause = e
-        throw e
-    } finally {
-        if (consume) channel.cancelConsumed(cause)
-    }
+    } catch (Throwable& e) {
+        cause = &e;
+        throw;
+    } // TODO: finally block
+    if (consume) channel->cancel_consumed(cause);
 }
 
 /**
@@ -62,7 +74,10 @@ private suspend fun <T> FlowCollector<T>.emitAllImpl(channel: ReceiveChannel<T>,
  * In particular, [produceIn] returns the original channel.
  * Calls to [flowOn] have generally no effect, unless [buffer] is used to explicitly request buffering.
  */
-public fun <T> ReceiveChannel<T>.receiveAsFlow(): Flow<T> = ChannelAsFlow(this, consume = false)
+template<typename T>
+Flow<T>* receive_as_flow(ReceiveChannel<T>* channel) { // TODO: extension function
+    return new ChannelAsFlow<T>(channel, false);
+}
 
 /**
  * Represents the given receive channel as a hot flow and [consumes][ReceiveChannel.consume] the channel
@@ -84,7 +99,10 @@ public fun <T> ReceiveChannel<T>.receiveAsFlow(): Flow<T> = ChannelAsFlow(this, 
  * In particular, [produceIn] returns the original channel (but throws [IllegalStateException] on repeated calls).
  * Calls to [flowOn] have generally no effect, unless [buffer] is used to explicitly request buffering.
  */
-public fun <T> ReceiveChannel<T>.consumeAsFlow(): Flow<T> = ChannelAsFlow(this, consume = true)
+template<typename T>
+Flow<T>* consume_as_flow(ReceiveChannel<T>* channel) { // TODO: extension function
+    return new ChannelAsFlow<T>(channel, true);
+}
 
 /**
  * Represents an existing [channel] as [ChannelFlow] implementation.
@@ -92,49 +110,68 @@ public fun <T> ReceiveChannel<T>.consumeAsFlow(): Flow<T> = ChannelAsFlow(this, 
  * However, additional [buffer] calls cause a separate buffering channel to be created and that is where
  * the context might play a role, because it is used by the producing coroutine.
  */
-private class ChannelAsFlow<T>(
-    private val channel: ReceiveChannel<T>,
-    private val consume: Boolean,
-    context: CoroutineContext = EmptyCoroutineContext,
-    capacity: Int = Channel.OPTIONAL_CHANNEL,
-    onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND
-) : ChannelFlow<T>(context, capacity, onBufferOverflow) {
-    private val consumed = atomic(false)
+template<typename T>
+class ChannelAsFlow : public ChannelFlow<T> {
+private:
+    ReceiveChannel<T>* channel;
+    bool consume;
+    std::atomic<bool> consumed; // TODO: atomic from kotlinx.atomicfu
 
-    private fun markConsumed() {
+public:
+    ChannelAsFlow(
+        ReceiveChannel<T>* channel,
+        bool consume,
+        CoroutineContext* context = &kEmptyCoroutineContext,
+        int capacity = kOptionalChannel, // Channel.OPTIONAL_CHANNEL
+        BufferOverflow on_buffer_overflow = BufferOverflow::kSuspend
+    ) : ChannelFlow<T>(context, capacity, on_buffer_overflow),
+        channel(channel), consume(consume), consumed(false) {}
+
+    void mark_consumed() {
         if (consume) {
-            check(!consumed.getAndSet(true)) { "ReceiveChannel.consumeAsFlow can be collected just once" }
+            bool expected = false;
+            if (!consumed.compare_exchange_strong(expected, true)) {
+                throw std::runtime_error("ReceiveChannel.consumeAsFlow can be collected just once");
+            }
         }
     }
-    
-    override fun create(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow): ChannelFlow<T> =
-        ChannelAsFlow(channel, consume, context, capacity, onBufferOverflow)
 
-    override fun dropChannelOperators(): Flow<T> =
-        ChannelAsFlow(channel, consume)
-
-    override suspend fun collectTo(scope: ProducerScope<T>) =
-        SendingCollector(scope).emitAllImpl(channel, consume) // use efficient channel receiving code from emitAll
-
-    override fun produceImpl(scope: CoroutineScope): ReceiveChannel<T> {
-        markConsumed() // fail fast on repeated attempt to collect it
-        return if (capacity == Channel.OPTIONAL_CHANNEL) {
-            channel // direct
-        } else
-            super.produceImpl(scope) // extra buffering channel
+    ChannelFlow<T>* create(CoroutineContext* context, int capacity, BufferOverflow on_buffer_overflow) override {
+        return new ChannelAsFlow<T>(channel, consume, context, capacity, on_buffer_overflow);
     }
 
-    override suspend fun collect(collector: FlowCollector<T>) {
-        if (capacity == Channel.OPTIONAL_CHANNEL) {
-            markConsumed()
-            collector.emitAllImpl(channel, consume) // direct
+    Flow<T>* drop_channel_operators() override {
+        return new ChannelAsFlow<T>(channel, consume);
+    }
+
+    void collect_to(ProducerScope<T>* scope) override { // TODO: suspend
+        // use efficient channel receiving code from emitAll
+        SendingCollector<T> collector(scope);
+        emit_all_impl(&collector, channel, consume);
+    }
+
+    ReceiveChannel<T>* produce_impl(CoroutineScope* scope) override {
+        mark_consumed(); // fail fast on repeated attempt to collect it
+        if (this->capacity == kOptionalChannel) {
+            return channel; // direct
         } else {
-            super.collect(collector) // extra buffering channel, produceImpl will mark it as consumed
+            return ChannelFlow<T>::produce_impl(scope); // extra buffering channel
         }
     }
 
-    override fun additionalToStringProps(): String = "channel=$channel"
-}
+    void collect(FlowCollector<T>* collector) override { // TODO: suspend
+        if (this->capacity == kOptionalChannel) {
+            mark_consumed();
+            emit_all_impl(collector, channel, consume); // direct
+        } else {
+            ChannelFlow<T>::collect(collector); // extra buffering channel, produceImpl will mark it as consumed
+        }
+    }
+
+    std::string additional_to_string_props() override {
+        return "channel=" + /* TODO: channel.toString() */;
+    }
+};
 
 /**
  * Creates a [produce] coroutine that collects the given flow.
@@ -151,7 +188,9 @@ private class ChannelAsFlow<T>(
  * default and to control what happens when data is produced faster than it is consumed,
  * that is to control backpressure behavior.
  */
-public fun <T> Flow<T>.produceIn(
-    scope: CoroutineScope
-): ReceiveChannel<T> =
-    asChannelFlow().produceImpl(scope)
+template<typename T>
+ReceiveChannel<T>* produce_in(Flow<T>* flow, CoroutineScope* scope) { // TODO: extension function
+    return flow->as_channel_flow()->produce_impl(scope);
+}
+
+}}} // namespace kotlinx::coroutines::flow

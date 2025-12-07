@@ -1,250 +1,306 @@
-@file:Suppress("DEPRECATION")
+// Original: kotlinx-coroutines-core/common/test/JobTest.kt
+// TODO: Transliterated from Kotlin - needs C++ implementation
+// TODO: @file:Suppress("DEPRECATION")
+// TODO: Handle Job handlers, disposable handles, and completion callbacks
+// TODO: Map test framework annotations to C++ test framework
 
-package kotlinx.coroutines
+#include <vector>
+#include <array>
 
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class JobTest : TestBase() {
-    @Test
-    fun testState() {
-        val job = Job()
-        assertNull(job.parent)
-        assertTrue(job.isActive)
-        job.cancel()
-        assertTrue(!job.isActive)
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.test.*
+
+class JobTest : public TestBase {
+public:
+    // TODO: @Test
+    void test_state() {
+        // TODO: const auto job = Job();
+        // TODO: assertNull(job->parent());
+        // TODO: assertTrue(job->is_active());
+        // TODO: job->cancel();
+        // TODO: assertTrue(!job->is_active());
     }
 
-    @Test
-    fun testHandler() {
-        val job = Job()
-        var fireCount = 0
-        job.invokeOnCompletion { fireCount++ }
-        assertTrue(job.isActive)
-        assertEquals(0, fireCount)
+    // TODO: @Test
+    void test_handler() {
+        // TODO: const auto job = Job();
+        int fire_count = 0;
+        // TODO: job->invoke_on_completion([&] { fire_count++; });
+        // TODO: assertTrue(job->is_active());
+        // TODO: assertEquals(0, fire_count);
         // cancel once
-        job.cancel()
-        assertTrue(!job.isActive)
-        assertEquals(1, fireCount)
+        // TODO: job->cancel();
+        // TODO: assertTrue(!job->is_active());
+        // TODO: assertEquals(1, fire_count);
         // cancel again
-        job.cancel()
-        assertTrue(!job.isActive)
-        assertEquals(1, fireCount)
+        // TODO: job->cancel();
+        // TODO: assertTrue(!job->is_active());
+        // TODO: assertEquals(1, fire_count);
     }
 
-    @Test
-    fun testManyHandlers() {
-        val job = Job()
-        val n = 100 * stressTestMultiplier
-        val fireCount = IntArray(n)
-        for (i in 0 until n) job.invokeOnCompletion { fireCount[i]++ }
-        assertTrue(job.isActive)
-        for (i in 0 until n) assertEquals(0, fireCount[i])
+    // TODO: @Test
+    void test_many_handlers() {
+        // TODO: const auto job = Job();
+        const int n = 100; // TODO: * stressTestMultiplier;
+        std::vector<int> fire_count(n, 0);
+        for (int i = 0; i < n; i++) {
+            // TODO: job->invoke_on_completion([&, i] { fire_count[i]++; });
+        }
+        // TODO: assertTrue(job->is_active());
+        for (int i = 0; i < n; i++) {
+            // TODO: assertEquals(0, fire_count[i]);
+        }
         // cancel once
-        job.cancel()
-        assertTrue(!job.isActive)
-        for (i in 0 until n) assertEquals(1, fireCount[i])
+        // TODO: job->cancel();
+        // TODO: assertTrue(!job->is_active());
+        for (int i = 0; i < n; i++) {
+            // TODO: assertEquals(1, fire_count[i]);
+        }
         // cancel again
-        job.cancel()
-        assertTrue(!job.isActive)
-        for (i in 0 until n) assertEquals(1, fireCount[i])
+        // TODO: job->cancel();
+        // TODO: assertTrue(!job->is_active());
+        for (int i = 0; i < n; i++) {
+            // TODO: assertEquals(1, fire_count[i]);
+        }
     }
 
-    @Test
-    fun testUnregisterInHandler() {
-        val job = Job()
-        val n = 100 * stressTestMultiplier
-        val fireCount = IntArray(n)
-        for (i in 0 until n) {
-            var registration: DisposableHandle? = null
-            registration = job.invokeOnCompletion {
-                fireCount[i]++
-                registration!!.dispose()
-            }
+    // TODO: @Test
+    void test_unregister_in_handler() {
+        // TODO: const auto job = Job();
+        const int n = 100; // TODO: * stressTestMultiplier;
+        std::vector<int> fire_count(n, 0);
+        for (int i = 0; i < n; i++) {
+            // TODO: DisposableHandle* registration = nullptr;
+            // TODO: registration = job->invoke_on_completion([&, i] {
+            //     fire_count[i]++;
+            //     registration->dispose();
+            // });
         }
-        assertTrue(job.isActive)
-        for (i in 0 until n) assertEquals(0, fireCount[i])
+        // TODO: assertTrue(job->is_active());
+        for (int i = 0; i < n; i++) {
+            // TODO: assertEquals(0, fire_count[i]);
+        }
         // cancel once
-        job.cancel()
-        assertTrue(!job.isActive)
-        for (i in 0 until n) assertEquals(1, fireCount[i])
+        // TODO: job->cancel();
+        // TODO: assertTrue(!job->is_active());
+        for (int i = 0; i < n; i++) {
+            // TODO: assertEquals(1, fire_count[i]);
+        }
         // cancel again
-        job.cancel()
-        assertTrue(!job.isActive)
-        for (i in 0 until n) assertEquals(1, fireCount[i])
-    }
-
-    @Test
-    fun testManyHandlersWithUnregister() {
-        val job = Job()
-        val n = 100 * stressTestMultiplier
-        val fireCount = IntArray(n)
-        val registrations = Array<DisposableHandle>(n) { i -> job.invokeOnCompletion { fireCount[i]++ } }
-        assertTrue(job.isActive)
-        fun unreg(i: Int) = i % 4 <= 1
-        for (i in 0 until n) if (unreg(i)) registrations[i].dispose()
-        for (i in 0 until n) assertEquals(0, fireCount[i])
-        job.cancel()
-        assertTrue(!job.isActive)
-        for (i in 0 until n) assertEquals(if (unreg(i)) 0 else 1, fireCount[i])
-    }
-
-    @Test
-    fun testExceptionsInHandler() {
-        val job = Job()
-        val n = 100 * stressTestMultiplier
-        val fireCount = IntArray(n)
-        for (i in 0 until n) job.invokeOnCompletion {
-            fireCount[i]++
-            throw TestException()
+        // TODO: job->cancel();
+        // TODO: assertTrue(!job->is_active());
+        for (int i = 0; i < n; i++) {
+            // TODO: assertEquals(1, fire_count[i]);
         }
-        assertTrue(job.isActive)
-        for (i in 0 until n) assertEquals(0, fireCount[i])
-        val cancelResult = runCatching { job.cancel() }
-        assertTrue(!job.isActive)
-        for (i in 0 until n) assertEquals(1, fireCount[i])
-        assertIs<CompletionHandlerException>(cancelResult.exceptionOrNull())
-        assertIs<TestException>(cancelResult.exceptionOrNull()!!.cause)
     }
 
-    @Test
-    fun testCancelledParent() {
-        val parent = Job()
-        parent.cancel()
-        assertTrue(!parent.isActive)
-        val child = Job(parent)
-        assertTrue(!child.isActive)
-    }
-
-    @Test
-    fun testDisposeSingleHandler() {
-        val job = Job()
-        var fireCount = 0
-        val handler = job.invokeOnCompletion { fireCount++ }
-        handler.dispose()
-        job.cancel()
-        assertEquals(0, fireCount)
-    }
-
-    @Test
-    fun testDisposeMultipleHandler() {
-        val job = Job()
-        val handlerCount = 10
-        var fireCount = 0
-        val handlers = Array(handlerCount) { job.invokeOnCompletion { fireCount++ } }
-        handlers.forEach { it.dispose() }
-        job.cancel()
-        assertEquals(0, fireCount)
-    }
-
-    @Test
-    fun testCancelAndJoinParentWaitChildren() = runTest {
-        expect(1)
-        val parent = Job()
-        launch(parent, start = CoroutineStart.UNDISPATCHED) {
-            expect(2)
-            try {
-                yield() // will get cancelled
-            } finally {
-                expect(5)
-            }
+    // TODO: @Test
+    void test_many_handlers_with_unregister() {
+        // TODO: const auto job = Job();
+        const int n = 100; // TODO: * stressTestMultiplier;
+        std::vector<int> fire_count(n, 0);
+        // TODO: std::vector<DisposableHandle*> registrations(n);
+        // TODO: for (int i = 0; i < n; i++) {
+        //     registrations[i] = job->invoke_on_completion([&, i] { fire_count[i]++; });
+        // }
+        // TODO: assertTrue(job->is_active());
+        auto unreg = [](int i) { return i % 4 <= 1; };
+        for (int i = 0; i < n; i++) {
+            // TODO: if (unreg(i)) registrations[i]->dispose();
         }
-        expect(3)
-        parent.cancel()
-        expect(4)
-        parent.join()
-        finish(6)
-    }
-
-    @Test
-    fun testOnCancellingHandler() = runTest {
-        val job = launch {
-            expect(2)
-            delay(Long.MAX_VALUE)
+        for (int i = 0; i < n; i++) {
+            // TODO: assertEquals(0, fire_count[i]);
         }
-
-        job.invokeOnCompletion(onCancelling = true) {
-            assertNotNull(it)
-            expect(3)
+        // TODO: job->cancel();
+        // TODO: assertTrue(!job->is_active());
+        for (int i = 0; i < n; i++) {
+            // TODO: assertEquals(unreg(i) ? 0 : 1, fire_count[i]);
         }
-
-        expect(1)
-        yield()
-        job.cancelAndJoin()
-        finish(4)
     }
 
-    @Test
-    fun testInvokeOnCancellingFiringOnNormalExit() = runTest {
-        val job = launch {
-            expect(2)
+    // TODO: @Test
+    void test_exceptions_in_handler() {
+        // TODO: const auto job = Job();
+        const int n = 100; // TODO: * stressTestMultiplier;
+        std::vector<int> fire_count(n, 0);
+        for (int i = 0; i < n; i++) {
+            // TODO: job->invoke_on_completion([&, i] {
+            //     fire_count[i]++;
+            //     throw TestException();
+            // });
         }
-        job.invokeOnCompletion(onCancelling = true) {
-            assertNull(it)
-            expect(3)
+        // TODO: assertTrue(job->is_active());
+        for (int i = 0; i < n; i++) {
+            // TODO: assertEquals(0, fire_count[i]);
         }
-        expect(1)
-        job.join()
-        finish(4)
-    }
-
-    @Test
-    fun testOverriddenParent() = runTest {
-        val parent = Job()
-        val deferred = launch(parent, CoroutineStart.ATOMIC) {
-            expect(2)
-            delay(Long.MAX_VALUE)
+        // TODO: const auto cancel_result = run_catching([&] { job->cancel(); });
+        // TODO: assertTrue(!job->is_active());
+        for (int i = 0; i < n; i++) {
+            // TODO: assertEquals(1, fire_count[i]);
         }
-
-        parent.cancel()
-        expect(1)
-        deferred.join()
-        finish(3)
+        // TODO: assertIs<CompletionHandlerException>(cancel_result.exception_or_null());
+        // TODO: assertIs<TestException>(cancel_result.exception_or_null()->cause);
     }
 
-    @Test
-    fun testJobWithParentCancelNormally() {
-        val parent = Job()
-        val job = Job(parent)
-        job.cancel()
-        assertTrue(job.isCancelled)
-        assertFalse(parent.isCancelled)
+    // TODO: @Test
+    void test_cancelled_parent() {
+        // TODO: const auto parent = Job();
+        // TODO: parent->cancel();
+        // TODO: assertTrue(!parent->is_active());
+        // TODO: const auto child = Job(parent);
+        // TODO: assertTrue(!child->is_active());
     }
 
-    @Test
-    fun testJobWithParentCancelException() {
-        val parent = Job()
-        val job = Job(parent)
-        job.completeExceptionally(TestException())
-        assertTrue(job.isCancelled)
-        assertTrue(parent.isCancelled)
+    // TODO: @Test
+    void test_dispose_single_handler() {
+        // TODO: const auto job = Job();
+        int fire_count = 0;
+        // TODO: const auto handler = job->invoke_on_completion([&] { fire_count++; });
+        // TODO: handler->dispose();
+        // TODO: job->cancel();
+        // TODO: assertEquals(0, fire_count);
     }
 
-    @Test
-    fun testIncompleteJobState() = runTest {
-        val parent = coroutineContext.job
-        val job = launch {
-            coroutineContext[Job]!!.invokeOnCompletion {  }
-        }
-        assertSame(parent, job.parent)
-        job.join()
-        assertNull(job.parent)
-        assertTrue(job.isCompleted)
-        assertFalse(job.isActive)
-        assertFalse(job.isCancelled)
+    // TODO: @Test
+    void test_dispose_multiple_handler() {
+        // TODO: const auto job = Job();
+        const int handler_count = 10;
+        int fire_count = 0;
+        // TODO: std::array<DisposableHandle*, handler_count> handlers;
+        // TODO: for (int i = 0; i < handler_count; i++) {
+        //     handlers[i] = job->invoke_on_completion([&] { fire_count++; });
+        // }
+        // TODO: for (auto h : handlers) h->dispose();
+        // TODO: job->cancel();
+        // TODO: assertEquals(0, fire_count);
     }
 
-    @Test
-    fun testChildrenWithIncompleteState() = runTest {
-        val job = async { Wrapper() }
-        job.join()
-        assertTrue(job.children.toList().isEmpty())
+    // TODO: @Test
+    void test_cancel_and_join_parent_wait_children() {
+        // TODO: runTest {
+        expect(1);
+        // TODO: const auto parent = Job();
+        // TODO: launch(parent, start = CoroutineStart.UNDISPATCHED) {
+            expect(2);
+            // TODO: try {
+            //     yield(); // will get cancelled
+            // } finally {
+                expect(5);
+            // }
+        // }
+        expect(3);
+        // TODO: parent->cancel();
+        expect(4);
+        // TODO: parent->join();
+        finish(6);
+        // TODO: }
     }
 
-    private class Wrapper : Incomplete {
-        override val isActive: Boolean
-            get() =  error("")
-        override val list: NodeList?
-            get() = error("")
+    // TODO: @Test
+    void test_on_cancelling_handler() {
+        // TODO: runTest {
+        // TODO: const auto job = launch {
+            expect(2);
+            // TODO: delay(Long.MAX_VALUE);
+        // }
+
+        // TODO: job->invoke_on_completion(on_cancelling = true) {
+        //     assertNotNull(it);
+            expect(3);
+        // }
+
+        expect(1);
+        // TODO: yield();
+        // TODO: job->cancel_and_join();
+        finish(4);
+        // TODO: }
     }
-}
+
+    // TODO: @Test
+    void test_invoke_on_cancelling_firing_on_normal_exit() {
+        // TODO: runTest {
+        // TODO: const auto job = launch {
+            expect(2);
+        // }
+        // TODO: job->invoke_on_completion(on_cancelling = true) {
+        //     assertNull(it);
+            expect(3);
+        // }
+        expect(1);
+        // TODO: job->join();
+        finish(4);
+        // TODO: }
+    }
+
+    // TODO: @Test
+    void test_overridden_parent() {
+        // TODO: runTest {
+        // TODO: const auto parent = Job();
+        // TODO: const auto deferred = launch(parent, CoroutineStart.ATOMIC) {
+            expect(2);
+            // TODO: delay(Long.MAX_VALUE);
+        // }
+
+        // TODO: parent->cancel();
+        expect(1);
+        // TODO: deferred.join();
+        finish(3);
+        // TODO: }
+    }
+
+    // TODO: @Test
+    void test_job_with_parent_cancel_normally() {
+        // TODO: const auto parent = Job();
+        // TODO: const auto job = Job(parent);
+        // TODO: job->cancel();
+        // TODO: assertTrue(job->is_cancelled());
+        // TODO: assertFalse(parent->is_cancelled());
+    }
+
+    // TODO: @Test
+    void test_job_with_parent_cancel_exception() {
+        // TODO: const auto parent = Job();
+        // TODO: const auto job = Job(parent);
+        // TODO: job->complete_exceptionally(TestException());
+        // TODO: assertTrue(job->is_cancelled());
+        // TODO: assertTrue(parent->is_cancelled());
+    }
+
+    // TODO: @Test
+    void test_incomplete_job_state() {
+        // TODO: runTest {
+        // TODO: const auto parent = coroutineContext.job;
+        // TODO: const auto job = launch {
+        //     coroutineContext[Job]!!.invoke_on_completion([]{});
+        // }
+        // TODO: assertSame(parent, job->parent());
+        // TODO: job->join();
+        // TODO: assertNull(job->parent());
+        // TODO: assertTrue(job->is_completed());
+        // TODO: assertFalse(job->is_active());
+        // TODO: assertFalse(job->is_cancelled());
+        // TODO: }
+    }
+
+    // TODO: @Test
+    void test_children_with_incomplete_state() {
+        // TODO: runTest {
+        // TODO: const auto job = async { Wrapper() };
+        // TODO: job->join();
+        // TODO: assertTrue(job->children().to_list().empty());
+        // TODO: }
+    }
+
+private:
+    class Wrapper { // TODO: : public Incomplete {
+    public:
+        // TODO: bool is_active() const override { error(""); }
+        // TODO: NodeList* list() const override { error(""); }
+    };
+};
+
+} // namespace coroutines
+} // namespace kotlinx

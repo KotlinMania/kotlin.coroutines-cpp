@@ -1,9 +1,21 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
+// Original: kotlinx-coroutines-core/common/src/Debug.common.kt
+//
+// TODO:
+// - expect/actual declarations need platform-specific implementations
+// - Property extensions (hexAddress, classSimpleName) need to be implemented as functions or member methods
+// - Lambda types need C++ equivalents (std::function or templates)
+// - ExperimentalCoroutinesApi annotation handling
+// - Interface constraints (where T : Throwable, T : CopyableThrowable<T>) may need template specialization
 
-internal expect val DEBUG: Boolean
-internal expect val Any.hexAddress: String
-internal expect val Any.classSimpleName: String
-internal expect fun assert(value: () -> Boolean)
+namespace kotlinx {
+namespace coroutines {
+
+// TODO: expect declarations - implement platform-specific versions
+extern const bool DEBUG;
+extern std::string hex_address(const void* obj);
+extern std::string class_simple_name(const void* obj);
+extern void assert(std::function<bool()> value);
 
 /**
  * Throwable which can be cloned during stacktrace recovery in a class-specific way.
@@ -23,9 +35,11 @@ internal expect fun assert(value: () -> Boolean)
  * Copy mechanism is used only on JVM, but it might be convenient to implement it in common exceptions,
  * so on JVM their stacktraces will be properly recovered.
  */
-@ExperimentalCoroutinesApi // Since 1.2.0, no ETA on stability
-public interface CopyableThrowable<T> where T : Throwable, T : CopyableThrowable<T> {
-
+// @ExperimentalCoroutinesApi // Since 1.2.0, no ETA on stability
+// TODO: Template constraints need C++ concepts or SFINAE
+template<typename T>
+class CopyableThrowable {
+public:
     /**
      * Creates a copy of the current instance.
      *
@@ -38,5 +52,10 @@ public interface CopyableThrowable<T> where T : Throwable, T : CopyableThrowable
      * that the copy can be later recovered as well and message modification code should handle this situation correctly
      * (e.g. by also storing the original message and checking it) to produce a human-readable result.
      */
-    public fun createCopy(): T?
-}
+    virtual T* create_copy() = 0;
+
+    virtual ~CopyableThrowable() = default;
+};
+
+} // namespace coroutines
+} // namespace kotlinx

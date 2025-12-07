@@ -1,38 +1,71 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/channels/ChannelCoroutine.kt
+//
+// TODO: Implement coroutine semantics (AbstractCoroutine, CoroutineContext)
+// TODO: Implement Kotlin delegation (Channel<E> by _channel)
+// TODO: Map Kotlin visibility modifiers (internal, open, protected)
 
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
+#include <memory>
+#include <exception>
 
-internal open class ChannelCoroutine<E>(
-    parentContext: CoroutineContext,
-    protected val _channel: Channel<E>,
-    initParentJob: Boolean,
-    active: Boolean
-) : AbstractCoroutine<Unit>(parentContext, initParentJob, active), Channel<E> by _channel {
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-    val channel: Channel<E> get() = this
+// Forward declarations
+template<typename E> class Channel;
+class CoroutineContext;
+class CancellationException;
 
-    @Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.2.0, binary compatibility with versions <= 1.1.x")
-    override fun cancel() {
-        cancelInternal(defaultCancellationException())
+template<typename E>
+class ChannelCoroutine : public AbstractCoroutine<void> {
+protected:
+    Channel<E>* _channel;
+
+public:
+    ChannelCoroutine(
+        CoroutineContext* parent_context,
+        Channel<E>* channel,
+        bool init_parent_job,
+        bool active
+    ) : _channel(channel) {
+        // TODO: Call AbstractCoroutine constructor with parentContext, initParentJob, active
     }
 
-    @Suppress("MULTIPLE_DEFAULTS_INHERITED_FROM_SUPERTYPES_DEPRECATION_WARNING") // do not remove the MULTIPLE_DEFAULTS suppression: required in K2
-    @Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.2.0, binary compatibility with versions <= 1.1.x")
-    final override fun cancel(cause: Throwable?): Boolean {
-        cancelInternal(defaultCancellationException())
-        return true
+    // TODO: Implement Channel<E> delegation via _channel
+
+    Channel<E>* channel() {
+        return this;
     }
 
-    @Suppress("MULTIPLE_DEFAULTS_INHERITED_FROM_SUPERTYPES_DEPRECATION_WARNING") // do not remove the MULTIPLE_DEFAULTS suppression: required in K2
-    final override fun cancel(cause: CancellationException?) {
-        if (isCancelled) return // Do not create an exception if the coroutine (-> the channel) is already cancelled
-        cancelInternal(cause ?: defaultCancellationException())
+    // @Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.2.0, binary compatibility with versions <= 1.1.x")
+    void cancel() override {
+        // TODO: cancelInternal(defaultCancellationException())
     }
 
-    override fun cancelInternal(cause: Throwable) {
-        val exception = cause.toCancellationException()
-        _channel.cancel(exception) // cancel the channel
-        cancelCoroutine(exception) // cancel the job
+    // @Suppress("MULTIPLE_DEFAULTS_INHERITED_FROM_SUPERTYPES_DEPRECATION_WARNING")
+    // @Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.2.0, binary compatibility with versions <= 1.1.x")
+    bool cancel(std::exception_ptr cause) {
+        // TODO: cancelInternal(defaultCancellationException())
+        return true;
     }
-}
+
+    // @Suppress("MULTIPLE_DEFAULTS_INHERITED_FROM_SUPERTYPES_DEPRECATION_WARNING")
+    void cancel(CancellationException* cause) {
+        // TODO: if (isCancelled) return
+        // TODO: cancelInternal(cause ?: defaultCancellationException())
+    }
+
+    void cancel_internal(std::exception_ptr cause) override {
+        // TODO: val exception = cause.toCancellationException()
+        // TODO: _channel.cancel(exception)
+        // TODO: cancelCoroutine(exception)
+    }
+};
+
+// TODO: Implement AbstractCoroutine base class
+// TODO: Implement Channel interface
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

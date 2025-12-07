@@ -1,84 +1,110 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/SemaphoreBenchmark.kt
+// TODO: Resolve imports and dependencies
+// TODO: Implement JMH benchmark annotations
+// TODO: Handle suspend functions and coroutines
+// TODO: Implement Semaphore and Channel
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.scheduling.*
-import kotlinx.coroutines.sync.*
-import org.openjdk.jmh.annotations.*
-import java.util.concurrent.*
+namespace kotlinx {
+namespace coroutines {
 
-@Warmup(iterations = 3, time = 500, timeUnit = TimeUnit.MICROSECONDS)
-@Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MICROSECONDS)
-@Fork(value = 1)
-@BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
-@State(Scope.Benchmark)
-open class SemaphoreBenchmark {
-    @Param
-    private var _1_dispatcher: SemaphoreBenchDispatcherCreator = SemaphoreBenchDispatcherCreator.DEFAULT
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlinx.coroutines.scheduling.*
+// TODO: import kotlinx.coroutines.sync.*
+// TODO: import org.openjdk.jmh.annotations.*
+// TODO: import java.util.concurrent.*
 
-    @Param("0", "1000")
-    private var _2_coroutines: Int = 0
+// TODO: @Warmup(iterations = 3, time = 500, timeUnit = TimeUnit.MICROSECONDS)
+// TODO: @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MICROSECONDS)
+// TODO: @Fork(value = 1)
+// TODO: @BenchmarkMode(Mode.AverageTime)
+// TODO: @OutputTimeUnit(TimeUnit.MILLISECONDS)
+// TODO: @State(Scope.Benchmark)
+class SemaphoreBenchmark {
+private:
+    // TODO: @Param annotation
+    SemaphoreBenchDispatcherCreator _1_dispatcher_ = SemaphoreBenchDispatcherCreator::kDefault;
 
-    @Param("1", "2", "4", "8", "32", "128", "100000")
-    private var _3_maxPermits: Int = 0
+    // TODO: @Param("0", "1000")
+    int _2_coroutines_ = 0;
 
-    @Param("1", "2", "4", "8", "16") // local machine
-//    @Param("1", "2", "4", "8", "16", "32", "64", "128") // Server
-    private var _4_parallelism: Int = 0
+    // TODO: @Param("1", "2", "4", "8", "32", "128", "100000")
+    int _3_max_permits_ = 0;
 
-    private lateinit var dispatcher: CoroutineDispatcher
-    private var coroutines = 0
+    // TODO: @Param("1", "2", "4", "8", "16") // local machine
+    // TODO: @Param("1", "2", "4", "8", "16", "32", "64", "128") // Server
+    int _4_parallelism_ = 0;
 
-    @InternalCoroutinesApi
-    @Setup
-    fun setup() {
-        dispatcher = _1_dispatcher.create(_4_parallelism)
-        coroutines = if (_2_coroutines == 0) _4_parallelism else _2_coroutines
+    CoroutineDispatcher* dispatcher_ = nullptr;
+    int coroutines_ = 0;
+
+public:
+    // TODO: @InternalCoroutinesApi annotation
+    // TODO: @Setup annotation
+    void setup() {
+        dispatcher_ = _1_dispatcher_.create(_4_parallelism_);
+        coroutines_ = (_2_coroutines_ == 0) ? _4_parallelism_ : _2_coroutines_;
     }
 
-    @Benchmark
-    fun semaphore() = runBlocking {
-        val n = BATCH_SIZE / coroutines
-        val semaphore = Semaphore(_3_maxPermits)
-        val jobs = ArrayList<Job>(coroutines)
-        repeat(coroutines) {
-            jobs += GlobalScope.launch {
-                repeat(n) {
-                    semaphore.withPermit {
-                        doGeomDistrWork(WORK_INSIDE)
-                    }
-                    doGeomDistrWork(WORK_OUTSIDE)
-                }
+    // TODO: @Benchmark annotation
+    void semaphore() {
+        run_blocking([this]() {
+            int n = kBatchSize / coroutines_;
+            auto semaphore = Semaphore(_3_max_permits_);
+            std::vector<Job> jobs;
+            jobs.reserve(coroutines_);
+            repeat(coroutines_, [&]() {
+                jobs.push_back(GlobalScope::launch([&]() {
+                    repeat(n, [&]() {
+                        semaphore.with_permit([&]() {
+                            do_geom_distr_work(kWorkInside);
+                        });
+                        do_geom_distr_work(kWorkOutside);
+                    });
+                }));
+            });
+            for (auto& job : jobs) {
+                job.join();
             }
-        }
-        jobs.forEach { it.join() }
+        });
     }
 
-    @Benchmark
-    fun channelAsSemaphore() = runBlocking {
-        val n = BATCH_SIZE / coroutines
-        val semaphore = Channel<Unit>(_3_maxPermits)
-        val jobs = ArrayList<Job>(coroutines)
-        repeat(coroutines) {
-            jobs += GlobalScope.launch {
-                repeat(n) {
-                    semaphore.send(Unit) // acquire
-                    doGeomDistrWork(WORK_INSIDE)
-                    semaphore.receive() // release
-                    doGeomDistrWork(WORK_OUTSIDE)
-                }
+    // TODO: @Benchmark annotation
+    void channel_as_semaphore() {
+        run_blocking([this]() {
+            int n = kBatchSize / coroutines_;
+            auto semaphore = Channel<void>(_3_max_permits_);
+            std::vector<Job> jobs;
+            jobs.reserve(coroutines_);
+            repeat(coroutines_, [&]() {
+                jobs.push_back(GlobalScope::launch([&]() {
+                    repeat(n, [&]() {
+                        semaphore.send(); // acquire
+                        do_geom_distr_work(kWorkInside);
+                        semaphore.receive(); // release
+                        do_geom_distr_work(kWorkOutside);
+                    });
+                }));
+            });
+            for (auto& job : jobs) {
+                job.join();
             }
-        }
-        jobs.forEach { it.join() }
+        });
     }
-}
+};
 
-enum class SemaphoreBenchDispatcherCreator(val create: (parallelism: Int) -> CoroutineDispatcher) {
-    FORK_JOIN({ parallelism -> ForkJoinPool(parallelism).asCoroutineDispatcher() }),
-    DEFAULT({ parallelism -> CoroutineScheduler(corePoolSize = parallelism, maxPoolSize = parallelism).asCoroutineDispatcher() })
-}
+enum class SemaphoreBenchDispatcherCreator {
+    kForkJoin,
+    kDefault
+};
 
-private const val WORK_INSIDE = 50
-private const val WORK_OUTSIDE = 50
-private const val BATCH_SIZE = 100000
+// TODO: Implement enum with create function
+// using SemaphoreBenchDispatcherCreatorFn = std::function<CoroutineDispatcher*(int)>;
+
+static constexpr int kWorkInside = 50;
+static constexpr int kWorkOutside = 50;
+static constexpr int kBatchSize = 100000;
+
+} // namespace coroutines
+} // namespace kotlinx

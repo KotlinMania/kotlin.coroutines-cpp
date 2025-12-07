@@ -1,28 +1,67 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/internal/Concurrent.kt
+//
+// TODO: actual typealias for platform types
+// TODO: actual inline function
+// TODO: kotlinx.atomicfu.locks API
+// TODO: kotlin.concurrent.Volatile annotation
+// TODO: kotlin.concurrent.AtomicReference
 
-import kotlinx.atomicfu.*
-import kotlinx.cinterop.*
-import kotlinx.atomicfu.locks.withLock as withLock2
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
 
-internal actual typealias ReentrantLock = kotlinx.atomicfu.locks.SynchronizedObject
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlinx.atomicfu.*
+// import kotlinx.cinterop.*
+// import kotlinx.atomicfu.locks.withLock as withLock2
 
-internal actual inline fun <T> ReentrantLock.withLock(action: () -> T): T = this.withLock2(action)
+// TODO: internal actual typealias
+using ReentrantLock = kotlinx::atomicfu::locks::SynchronizedObject;
 
-internal actual fun <E> identitySet(expectedSize: Int): MutableSet<E> = HashSet()
+// TODO: internal actual inline function
+template<typename T>
+inline T with_lock(ReentrantLock& lock, std::function<T()> action) {
+    // TODO: lock.withLock2(action)
+    return action();
+}
 
-internal actual typealias BenignDataRace = kotlin.concurrent.Volatile
+// TODO: internal actual function
+template<typename E>
+std::unordered_set<E> identity_set(int expected_size) {
+    return std::unordered_set<E>();
+}
 
-internal actual class WorkaroundAtomicReference<V> actual constructor(value: V) {
+// TODO: internal actual typealias
+// TODO: kotlin.concurrent.Volatile - use std::atomic or volatile
+using BenignDataRace = /* kotlin::concurrent::Volatile */ int; // placeholder
 
-    private val nativeAtomic = kotlin.concurrent.AtomicReference<V>(value)
+// TODO: internal actual class
+template<typename V>
+class WorkaroundAtomicReference {
+private:
+    std::atomic<V> native_atomic;
 
-    public actual fun get(): V= nativeAtomic.value
+public:
+    WorkaroundAtomicReference(V value) : native_atomic(value) {}
 
-    public actual fun set(value: V) {
-        nativeAtomic.value = value
+    V get() {
+        return native_atomic.load();
     }
 
-    public actual fun getAndSet(value: V): V = nativeAtomic.getAndSet(value)
+    void set(V value) {
+        native_atomic.store(value);
+    }
 
-    public actual fun compareAndSet(expected: V, value: V): Boolean = nativeAtomic.compareAndSet(expected, value)
-}
+    V get_and_set(V value) {
+        return native_atomic.exchange(value);
+    }
+
+    bool compare_and_set(V expected, V value) {
+        return native_atomic.compare_exchange_strong(expected, value);
+    }
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

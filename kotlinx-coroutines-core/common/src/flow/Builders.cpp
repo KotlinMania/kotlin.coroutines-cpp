@@ -1,15 +1,28 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
+// Transliterated from Kotlin to C++ (first pass - syntax/language translation only)
+// Original: kotlinx-coroutines-core/common/src/flow/Builders.kt
+//
+// TODO: Implement suspend/coroutine semantics - all suspend functions are currently regular functions
+// TODO: Translate @BuilderInference annotation semantics
+// TODO: Translate JVM annotations (@file:JvmMultifileClass, @file:JvmName, @JvmField)
+// TODO: Implement lambda/function type conversions properly
+// TODO: Handle variance modifiers (out T)
+// TODO: Implement Kotlin iterator/iterable protocols in C++
+// TODO: Implement vararg functionality
+// TODO: Map Kotlin's Unit type
+// TODO: Implement object singleton pattern for EmptyFlow
 
-package kotlinx.coroutines.flow
+// @file:JvmMultifileClass
+// @file:JvmName("FlowKt")
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
-import kotlinx.coroutines.flow.internal.*
-import kotlin.coroutines.*
-import kotlin.jvm.*
-import kotlinx.coroutines.flow.internal.unsafeFlow as flow
+namespace kotlinx { namespace coroutines { namespace flow {
+
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.channels.*
+// import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
+// import kotlinx.coroutines.flow.internal.*
+// import kotlin.coroutines.*
+// import kotlin.jvm.*
+// import kotlinx.coroutines.flow.internal.unsafeFlow as flow
 
 /**
  * Creates a _cold_ flow from the given suspendable [block].
@@ -49,20 +62,33 @@ import kotlinx.coroutines.flow.internal.unsafeFlow as flow
  *
  * If you want to switch the context of execution of a flow, use the [flowOn] operator.
  */
-public fun <T> flow(@BuilderInference block: suspend FlowCollector<T>.() -> Unit): Flow<T> = SafeFlow(block)
+template<typename T>
+Flow<T>* flow(std::function<void(FlowCollector<T>*)> block) { // TODO: suspend lambda
+    return new SafeFlow<T>(block);
+}
 
 // Named anonymous object
-private class SafeFlow<T>(private val block: suspend FlowCollector<T>.() -> Unit) : AbstractFlow<T>() {
-    override suspend fun collectSafely(collector: FlowCollector<T>) {
-        collector.block()
+template<typename T>
+class SafeFlow : public AbstractFlow<T> {
+private:
+    std::function<void(FlowCollector<T>*)> block; // TODO: suspend lambda
+
+public:
+    SafeFlow(std::function<void(FlowCollector<T>*)> block) : block(block) {}
+
+    void collect_safely(FlowCollector<T>* collector) override { // TODO: suspend
+        collector->block(); // TODO: extension function call semantics
     }
-}
+};
 
 /**
  * Creates a _cold_ flow that produces a single value from the given functional type.
  */
-public fun <T> (() -> T).asFlow(): Flow<T> = flow {
-    emit(invoke())
+template<typename T>
+Flow<T>* as_flow(std::function<T()> func) {
+    return flow<T>([func](FlowCollector<T>* collector) { // TODO: suspend
+        collector->emit(func());
+    });
 }
 
 /**
@@ -75,35 +101,47 @@ public fun <T> (() -> T).asFlow(): Flow<T> = flow {
  * fun remoteCallFlow(): Flow<R> = ::remoteCall.asFlow()
  * ```
  */
-public fun <T> (suspend () -> T).asFlow(): Flow<T> = flow {
-    emit(invoke())
+template<typename T>
+Flow<T>* as_flow(std::function<T()> func) { // TODO: suspend lambda parameter
+    return flow<T>([func](FlowCollector<T>* collector) { // TODO: suspend
+        collector->emit(func());
+    });
 }
 
 /**
  * Creates a _cold_ flow that produces values from the given iterable.
  */
-public fun <T> Iterable<T>.asFlow(): Flow<T> = flow {
-    forEach { value ->
-        emit(value)
-    }
+template<typename T>
+Flow<T>* as_flow(Iterable<T>* iterable) { // TODO: define Iterable
+    return flow<T>([iterable](FlowCollector<T>* collector) { // TODO: suspend
+        for (auto value : *iterable) { // TODO: proper iterator protocol
+            collector->emit(value);
+        }
+    });
 }
 
 /**
  * Creates a _cold_ flow that produces values from the given iterator.
  */
-public fun <T> Iterator<T>.asFlow(): Flow<T> = flow {
-    forEach { value ->
-        emit(value)
-    }
+template<typename T>
+Flow<T>* as_flow(Iterator<T>* iterator) { // TODO: define Iterator
+    return flow<T>([iterator](FlowCollector<T>* collector) { // TODO: suspend
+        for (auto value : *iterator) { // TODO: proper iterator protocol
+            collector->emit(value);
+        }
+    });
 }
 
 /**
  * Creates a _cold_ flow that produces values from the given sequence.
  */
-public fun <T> Sequence<T>.asFlow(): Flow<T> = flow {
-    forEach { value ->
-        emit(value)
-    }
+template<typename T>
+Flow<T>* as_flow(Sequence<T>* sequence) { // TODO: define Sequence
+    return flow<T>([sequence](FlowCollector<T>* collector) { // TODO: suspend
+        for (auto value : *sequence) { // TODO: proper iterator protocol
+            collector->emit(value);
+        }
+    });
 }
 
 /**
@@ -115,41 +153,58 @@ public fun <T> Sequence<T>.asFlow(): Flow<T> = flow {
  * flowOf(1, 2, 3)
  * ```
  */
-public fun <T> flowOf(vararg elements: T): Flow<T> = flow {
-    for (element in elements) {
-        emit(element)
-    }
+template<typename T>
+Flow<T>* flow_of(std::initializer_list<T> elements) { // TODO: vararg to initializer_list mapping
+    return flow<T>([elements](FlowCollector<T>* collector) { // TODO: suspend
+        for (auto element : elements) {
+            collector->emit(element);
+        }
+    });
 }
 
 /**
  * Creates a flow that produces the given [value].
  */
-public fun <T> flowOf(value: T): Flow<T> = flow {
-    /*
-     * Implementation note: this is just an "optimized" overload of flowOf(vararg)
-     * which significantly reduces the footprint of widespread single-value flows.
-     */
-    emit(value)
+template<typename T>
+Flow<T>* flow_of(T value) {
+    return flow<T>([value](FlowCollector<T>* collector) { // TODO: suspend
+        /*
+         * Implementation note: this is just an "optimized" overload of flowOf(vararg)
+         * which significantly reduces the footprint of widespread single-value flows.
+         */
+        collector->emit(value);
+    });
 }
 
 /**
  * Returns an empty flow.
  */
-public fun <T> emptyFlow(): Flow<T> = EmptyFlow
-
-private object EmptyFlow : Flow<Nothing> {
-    override suspend fun collect(collector: FlowCollector<Nothing>) = Unit
+template<typename T>
+Flow<T>* empty_flow() {
+    return &kEmptyFlow; // TODO: object singleton
 }
+
+// private object EmptyFlow : Flow<Nothing>
+class EmptyFlowImpl : public Flow<void> { // TODO: Nothing type
+    void collect(FlowCollector<void>* collector) override { // TODO: suspend
+        // Unit - do nothing
+    }
+};
+
+static EmptyFlowImpl kEmptyFlow; // TODO: object singleton pattern
 
 /**
  * Creates a _cold_ flow that produces values from the given array.
  * The flow being _cold_ means that the array components are read every time a terminal operator is applied
  * to the resulting flow.
  */
-public fun <T> Array<T>.asFlow(): Flow<T> = flow {
-    forEach { value ->
-        emit(value)
-    }
+template<typename T>
+Flow<T>* as_flow(T* array, size_t size) { // TODO: Array type mapping
+    return flow<T>([array, size](FlowCollector<T>* collector) { // TODO: suspend
+        for (size_t i = 0; i < size; ++i) {
+            collector->emit(array[i]);
+        }
+    });
 }
 
 /**
@@ -157,10 +212,12 @@ public fun <T> Array<T>.asFlow(): Flow<T> = flow {
  * The flow being _cold_ means that the array components are read every time a terminal operator is applied
  * to the resulting flow.
  */
-public fun IntArray.asFlow(): Flow<Int> = flow {
-    forEach { value ->
-        emit(value)
-    }
+Flow<int>* as_flow(int* array, size_t size) { // IntArray
+    return flow<int>([array, size](FlowCollector<int>* collector) { // TODO: suspend
+        for (size_t i = 0; i < size; ++i) {
+            collector->emit(array[i]);
+        }
+    });
 }
 
 /**
@@ -168,28 +225,34 @@ public fun IntArray.asFlow(): Flow<Int> = flow {
  * The flow being _cold_ means that the array components are read every time a terminal operator is applied
  * to the resulting flow.
  */
-public fun LongArray.asFlow(): Flow<Long> = flow {
-    forEach { value ->
-        emit(value)
-    }
+Flow<long>* as_flow(long* array, size_t size) { // LongArray
+    return flow<long>([array, size](FlowCollector<long>* collector) { // TODO: suspend
+        for (size_t i = 0; i < size; ++i) {
+            collector->emit(array[i]);
+        }
+    });
 }
 
 /**
  * Creates a flow that produces values from the range.
  */
-public fun IntRange.asFlow(): Flow<Int> = flow {
-    forEach { value ->
-        emit(value)
-    }
+Flow<int>* as_flow(IntRange range) { // TODO: define IntRange
+    return flow<int>([range](FlowCollector<int>* collector) { // TODO: suspend
+        for (auto value : range) { // TODO: range iteration
+            collector->emit(value);
+        }
+    });
 }
 
 /**
  * Creates a flow that produces values from the range.
  */
-public fun LongRange.asFlow(): Flow<Long> = flow {
-    forEach { value ->
-        emit(value)
-    }
+Flow<long>* as_flow(LongRange range) { // TODO: define LongRange
+    return flow<long>([range](FlowCollector<long>* collector) { // TODO: suspend
+        for (auto value : range) { // TODO: range iteration
+            collector->emit(value);
+        }
+    });
 }
 
 /**
@@ -236,8 +299,10 @@ public fun LongRange.asFlow(): Flow<Long> = flow {
  * }
  * ```
  */
-public fun <T> channelFlow(@BuilderInference block: suspend ProducerScope<T>.() -> Unit): Flow<T> =
-    ChannelFlowBuilder(block)
+template<typename T>
+Flow<T>* channel_flow(std::function<void(ProducerScope<T>*)> block) { // TODO: suspend lambda, @BuilderInference
+    return new ChannelFlowBuilder<T>(block);
+}
 
 /**
  * Creates an instance of a _cold_ [Flow] with elements that are sent to a [SendChannel]
@@ -300,50 +365,70 @@ public fun <T> channelFlow(@BuilderInference block: suspend ProducerScope<T>.() 
  * > `awaitClose` block can be called at any time due to asynchronous nature of cancellation, even
  * > concurrently with the call of the callback.
  */
-public fun <T> callbackFlow(@BuilderInference block: suspend ProducerScope<T>.() -> Unit): Flow<T> = CallbackFlowBuilder(block)
-
-// ChannelFlow implementation that is the first in the chain of flow operations and introduces (builds) a flow
-private open class ChannelFlowBuilder<T>(
-    private val block: suspend ProducerScope<T>.() -> Unit,
-    context: CoroutineContext = EmptyCoroutineContext,
-    capacity: Int = BUFFERED,
-    onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND
-) : ChannelFlow<T>(context, capacity, onBufferOverflow) {
-    override fun create(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow): ChannelFlow<T> =
-        ChannelFlowBuilder(block, context, capacity, onBufferOverflow)
-
-    override suspend fun collectTo(scope: ProducerScope<T>) =
-        block(scope)
-
-    override fun toString(): String =
-        "block[$block] -> ${super.toString()}"
+template<typename T>
+Flow<T>* callback_flow(std::function<void(ProducerScope<T>*)> block) { // TODO: suspend lambda, @BuilderInference
+    return new CallbackFlowBuilder<T>(block);
 }
 
-private class CallbackFlowBuilder<T>(
-    private val block: suspend ProducerScope<T>.() -> Unit,
-    context: CoroutineContext = EmptyCoroutineContext,
-    capacity: Int = BUFFERED,
-    onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND
-) : ChannelFlowBuilder<T>(block, context, capacity, onBufferOverflow) {
+// ChannelFlow implementation that is the first in the chain of flow operations and introduces (builds) a flow
+template<typename T>
+class ChannelFlowBuilder : public ChannelFlow<T> {
+private:
+    std::function<void(ProducerScope<T>*)> block; // TODO: suspend lambda
 
-    override suspend fun collectTo(scope: ProducerScope<T>) {
-        super.collectTo(scope)
+public:
+    ChannelFlowBuilder(
+        std::function<void(ProducerScope<T>*)> block,
+        CoroutineContext* context = &kEmptyCoroutineContext, // TODO: default parameter
+        int capacity = kBuffered, // BUFFERED constant
+        BufferOverflow on_buffer_overflow = BufferOverflow::kSuspend
+    ) : ChannelFlow<T>(context, capacity, on_buffer_overflow), block(block) {}
+
+    ChannelFlow<T>* create(CoroutineContext* context, int capacity, BufferOverflow on_buffer_overflow) override {
+        return new ChannelFlowBuilder<T>(block, context, capacity, on_buffer_overflow);
+    }
+
+    void collect_to(ProducerScope<T>* scope) override { // TODO: suspend
+        block(scope);
+    }
+
+    std::string to_string() override {
+        return "block[" + /* TODO: block.toString() */ "] -> " + ChannelFlow<T>::to_string();
+    }
+};
+
+template<typename T>
+class CallbackFlowBuilder : public ChannelFlowBuilder<T> {
+private:
+    std::function<void(ProducerScope<T>*)> block; // TODO: suspend lambda
+
+public:
+    CallbackFlowBuilder(
+        std::function<void(ProducerScope<T>*)> block,
+        CoroutineContext* context = &kEmptyCoroutineContext,
+        int capacity = kBuffered,
+        BufferOverflow on_buffer_overflow = BufferOverflow::kSuspend
+    ) : ChannelFlowBuilder<T>(block, context, capacity, on_buffer_overflow), block(block) {}
+
+    void collect_to(ProducerScope<T>* scope) override { // TODO: suspend
+        ChannelFlowBuilder<T>::collect_to(scope);
         /*
          * We expect user either call `awaitClose` from within a block (then the channel is closed at this moment)
          * or being closed/cancelled externally/manually. Otherwise "user forgot to call
          * awaitClose and receives unhelpful ClosedSendChannelException exceptions" situation is detected.
          */
-        if (!scope.isClosedForSend) {
-            throw IllegalStateException(
-                """
-                    'awaitClose { yourCallbackOrListener.cancel() }' should be used in the end of callbackFlow block.
-                    Otherwise, a callback/listener may leak in case of external cancellation.
-                    See callbackFlow API documentation for the details.
-                """.trimIndent()
-            )
+        if (!scope->is_closed_for_send()) {
+            throw std::runtime_error( // IllegalStateException
+                "'awaitClose { yourCallbackOrListener.cancel() }' should be used in the end of callbackFlow block.\n"
+                "Otherwise, a callback/listener may leak in case of external cancellation.\n"
+                "See callbackFlow API documentation for the details."
+            );
         }
     }
 
-    override fun create(context: CoroutineContext, capacity: Int, onBufferOverflow: BufferOverflow): ChannelFlow<T> =
-        CallbackFlowBuilder(block, context, capacity, onBufferOverflow)
-}
+    ChannelFlow<T>* create(CoroutineContext* context, int capacity, BufferOverflow on_buffer_overflow) override {
+        return new CallbackFlowBuilder<T>(block, context, capacity, on_buffer_overflow);
+    }
+};
+
+}}} // namespace kotlinx::coroutines::flow

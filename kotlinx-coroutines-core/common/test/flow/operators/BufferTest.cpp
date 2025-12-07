@@ -1,194 +1,250 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/BufferTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Implement suspend functions as regular functions
+// - Map Flow operators to C++ equivalents
+// - Implement min function from <algorithm>
+// - Map wrapperDispatcher() to C++ equivalent
+// - Handle assertFailsWith exception testing
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlin.math.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlin.math.*
+// TODO: import kotlin.test.*
 
 /**
  * A _behavioral_ test for buffering that is introduced by the [buffer] operator to test that it is
  * implemented properly and that adjacent [buffer] calls are fused properly.
  */
-class BufferTest : TestBase() {
-    private val n = 200 // number of elements to emit for test
-    private val defaultBufferSize = 64 // expected default buffer size (per docs)
+class BufferTest : public TestBase {
+private:
+    static constexpr int n = 200; // number of elements to emit for test
+    static constexpr int default_buffer_size = 64; // expected default buffer size (per docs)
 
     // Use capacity == -1 to check case of "no buffer"
-    private fun checkBuffer(capacity: Int, op: suspend Flow<Int>.() -> Flow<Int>) = runTest {
-        expect(1)
+    void check_buffer(int capacity, auto op) {
+        // TODO: runTest {
+        expect(1);
         /*
            Channels perform full rendezvous. Sender does not suspend when there is a suspended receiver and vice-versa.
            Thus, perceived batch size is +2 from capacity.
          */
-        val batchSize = capacity + 2
-        flow {
-            repeat(n) { i ->
-                val batchNo = i / batchSize
-                val batchIdx = i % batchSize
-                expect(batchNo * batchSize * 2 + batchIdx + 2)
-                emit(i)
+        int batch_size = capacity + 2;
+        flow([&](auto& emit) {
+            for (int i = 0; i < n; ++i) {
+                int batch_no = i / batch_size;
+                int batch_idx = i % batch_size;
+                expect(batch_no * batch_size * 2 + batch_idx + 2);
+                emit(i);
             }
-        }
+        })
             .op() // insert user-defined operator
-            .collect { i ->
-                val batchNo = i / batchSize
-                val batchIdx = i % batchSize
+            .collect([&](int i) {
+                int batch_no = i / batch_size;
+                int batch_idx = i % batch_size;
                 // last batch might have smaller size
-                val k = min((batchNo + 1) * batchSize, n) - batchNo * batchSize
-                expect(batchNo * batchSize * 2 + k + batchIdx + 2)
-            }
-        finish(2 * n + 2)
+                int k = std::min((batch_no + 1) * batch_size, n) - batch_no * batch_size;
+                expect(batch_no * batch_size * 2 + k + batch_idx + 2);
+            });
+        finish(2 * n + 2);
+        // TODO: }
     }
 
-    @Test
+public:
+    // TODO: @Test
     // capacity == -1 to checkBuffer means "no buffer" -- emits / collects are sequentially ordered
-    fun testBaseline() =
-        checkBuffer(-1) { this }
+    void testBaseline() {
+        check_buffer(-1, [](auto& flow) { return flow; });
+    }
 
-    @Test
-    fun testBufferDefault() =
-        checkBuffer(defaultBufferSize) {
-            buffer()
-        }
+    // TODO: @Test
+    void testBufferDefault() {
+        check_buffer(default_buffer_size, [](auto& flow) {
+            return flow.buffer();
+        });
+    }
 
-    @Test
-    fun testBufferRendezvous() =
-        checkBuffer(0) {
-            buffer(0)
-        }
+    // TODO: @Test
+    void testBufferRendezvous() {
+        check_buffer(0, [](auto& flow) {
+            return flow.buffer(0);
+        });
+    }
 
-    @Test
-    fun testBuffer1() =
-        checkBuffer(1) {
-            buffer(1)
-        }
+    // TODO: @Test
+    void testBuffer1() {
+        check_buffer(1, [](auto& flow) {
+            return flow.buffer(1);
+        });
+    }
 
-    @Test
-    fun testBuffer2() =
-        checkBuffer(2) {
-            buffer(2)
-        }
+    // TODO: @Test
+    void testBuffer2() {
+        check_buffer(2, [](auto& flow) {
+            return flow.buffer(2);
+        });
+    }
 
-    @Test
-    fun testBuffer3() =
-        checkBuffer(3) {
-            buffer(3)
-        }
+    // TODO: @Test
+    void testBuffer3() {
+        check_buffer(3, [](auto& flow) {
+            return flow.buffer(3);
+        });
+    }
 
-    @Test
-    fun testBuffer00Fused() =
-        checkBuffer(0) {
-            buffer(0).buffer(0)
-        }
+    // TODO: @Test
+    void testBuffer00Fused() {
+        check_buffer(0, [](auto& flow) {
+            return flow.buffer(0).buffer(0);
+        });
+    }
 
-    @Test
-    fun testBuffer01Fused() =
-        checkBuffer(1) {
-            buffer(0).buffer(1)
-        }
+    // TODO: @Test
+    void testBuffer01Fused() {
+        check_buffer(1, [](auto& flow) {
+            return flow.buffer(0).buffer(1);
+        });
+    }
 
-    @Test
-    fun testBuffer11Fused() =
-        checkBuffer(2) {
-            buffer(1).buffer(1)
-        }
+    // TODO: @Test
+    void testBuffer11Fused() {
+        check_buffer(2, [](auto& flow) {
+            return flow.buffer(1).buffer(1);
+        });
+    }
 
-    @Test
-    fun testBuffer111Fused() =
-        checkBuffer(3) {
-            buffer(1).buffer(1).buffer(1)
-        }
+    // TODO: @Test
+    void testBuffer111Fused() {
+        check_buffer(3, [](auto& flow) {
+            return flow.buffer(1).buffer(1).buffer(1);
+        });
+    }
 
-    @Test
-    fun testBuffer123Fused() =
-        checkBuffer(6) {
-            buffer(1).buffer(2).buffer(3)
-        }
+    // TODO: @Test
+    void testBuffer123Fused() {
+        check_buffer(6, [](auto& flow) {
+            return flow.buffer(1).buffer(2).buffer(3);
+        });
+    }
 
-    @Test // multiple calls to buffer() create one channel of default size
-    fun testBufferDefaultTwiceFused() =
-        checkBuffer(defaultBufferSize) {
-            buffer().buffer()
-        }
+    // TODO: @Test
+    // multiple calls to buffer() create one channel of default size
+    void testBufferDefaultTwiceFused() {
+        check_buffer(default_buffer_size, [](auto& flow) {
+            return flow.buffer().buffer();
+        });
+    }
 
-    @Test // explicit buffer takes precedence of default buffer on fuse
-    fun testBufferDefaultBufferFused() =
-        checkBuffer(7) {
-            buffer().buffer(7)
-        }
+    // TODO: @Test
+    // explicit buffer takes precedence of default buffer on fuse
+    void testBufferDefaultBufferFused() {
+        check_buffer(7, [](auto& flow) {
+            return flow.buffer().buffer(7);
+        });
+    }
 
-    @Test // explicit buffer takes precedence of default buffer on fuse
-    fun testBufferBufferDefaultFused() =
-        checkBuffer(8) {
-            buffer(8).buffer()
-        }
+    // TODO: @Test
+    // explicit buffer takes precedence of default buffer on fuse
+    void testBufferBufferDefaultFused() {
+        check_buffer(8, [](auto& flow) {
+            return flow.buffer(8).buffer();
+        });
+    }
 
-    @Test // flowOn operator does not use buffer when dispatches does not change
-    fun testFlowOnNameNoBuffer() =
-        checkBuffer(-1) {
-            flowOn(CoroutineName("Name"))
-        }
+    // TODO: @Test
+    // flowOn operator does not use buffer when dispatches does not change
+    void testFlowOnNameNoBuffer() {
+        check_buffer(-1, [](auto& flow) {
+            return flow.flow_on(CoroutineName("Name"));
+        });
+    }
 
-    @Test // flowOn operator uses default buffer size when dispatcher changes
-    fun testFlowOnDispatcherBufferDefault() =
-        checkBuffer(defaultBufferSize) {
-            flowOn(wrapperDispatcher())
-        }
+    // TODO: @Test
+    // flowOn operator uses default buffer size when dispatcher changes
+    void testFlowOnDispatcherBufferDefault() {
+        check_buffer(default_buffer_size, [](auto& flow) {
+            return flow.flow_on(wrapper_dispatcher());
+        });
+    }
 
-    @Test // flowOn(...).buffer(n) sets explicit buffer size to n
-    fun testFlowOnDispatcherBufferFused() =
-        checkBuffer(5) {
-            flowOn(wrapperDispatcher()).buffer(5)
-        }
-    
-    @Test // buffer(n).flowOn(...) sets explicit buffer size to n
-    fun testBufferFlowOnDispatcherFused() =
-        checkBuffer(6) {
-            buffer(6).flowOn(wrapperDispatcher())
-        }
+    // TODO: @Test
+    // flowOn(...).buffer(n) sets explicit buffer size to n
+    void testFlowOnDispatcherBufferFused() {
+        check_buffer(5, [](auto& flow) {
+            return flow.flow_on(wrapper_dispatcher()).buffer(5);
+        });
+    }
 
-    @Test // flowOn(...).buffer(n) sets explicit buffer size to n
-    fun testFlowOnNameBufferFused() =
-        checkBuffer(7) {
-            flowOn(CoroutineName("Name")).buffer(7)
-        }
+    // TODO: @Test
+    // buffer(n).flowOn(...) sets explicit buffer size to n
+    void testBufferFlowOnDispatcherFused() {
+        check_buffer(6, [](auto& flow) {
+            return flow.buffer(6).flow_on(wrapper_dispatcher());
+        });
+    }
 
-    @Test // buffer(n).flowOn(...) sets explicit buffer size to n
-    fun testBufferFlowOnNameFused() =
-        checkBuffer(8) {
-            buffer(8).flowOn(CoroutineName("Name"))
-        }
+    // TODO: @Test
+    // flowOn(...).buffer(n) sets explicit buffer size to n
+    void testFlowOnNameBufferFused() {
+        check_buffer(7, [](auto& flow) {
+            return flow.flow_on(CoroutineName("Name")).buffer(7);
+        });
+    }
 
-    @Test // multiple flowOn/buffer all fused together
-    fun testBufferFlowOnMultipleFused() =
-        checkBuffer(12) {
-            flowOn(wrapperDispatcher()).buffer(3)
-                .flowOn(CoroutineName("Name")).buffer(4)
-                .flowOn(wrapperDispatcher()).buffer(5)
-        }
+    // TODO: @Test
+    // buffer(n).flowOn(...) sets explicit buffer size to n
+    void testBufferFlowOnNameFused() {
+        check_buffer(8, [](auto& flow) {
+            return flow.buffer(8).flow_on(CoroutineName("Name"));
+        });
+    }
 
-    @Test
-    fun testCancellation() = runTest {
-        val result = flow {
-            emit(1)
-            emit(2)
-            emit(3)
-            expectUnreached()
-            emit(4)
-        }.buffer(0)
+    // TODO: @Test
+    // multiple flowOn/buffer all fused together
+    void testBufferFlowOnMultipleFused() {
+        check_buffer(12, [](auto& flow) {
+            return flow.flow_on(wrapper_dispatcher()).buffer(3)
+                .flow_on(CoroutineName("Name")).buffer(4)
+                .flow_on(wrapper_dispatcher()).buffer(5);
+        });
+    }
+
+    // TODO: @Test
+    void testCancellation() {
+        // TODO: runTest {
+        auto result = flow([](auto& emit) {
+            emit(1);
+            emit(2);
+            emit(3);
+            expectUnreached();
+            emit(4);
+        }).buffer(0)
             .take(2)
-            .toList()
-        assertEquals(listOf(1, 2), result)
+            .to_list();
+        assertEquals(std::vector<int>{1, 2}, result);
+        // TODO: }
     }
 
-    @Test
-    fun testFailsOnIllegalArguments() {
-        val flow = emptyFlow<Int>()
-        assertFailsWith<IllegalArgumentException> { flow.buffer(capacity = -3) }
-        assertFailsWith<IllegalArgumentException> { flow.buffer(capacity = Int.MIN_VALUE) }
-        assertFailsWith<IllegalArgumentException> { flow.buffer(capacity = Channel.CONFLATED, onBufferOverflow = BufferOverflow.DROP_LATEST) }
-        assertFailsWith<IllegalArgumentException> { flow.buffer(capacity = Channel.CONFLATED, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
+    // TODO: @Test
+    void testFailsOnIllegalArguments() {
+        auto flow_var = emptyFlow<int>();
+        assertFailsWith<IllegalArgumentException>([&]() { flow_var.buffer(-3); });
+        assertFailsWith<IllegalArgumentException>([&]() { flow_var.buffer(INT_MIN); });
+        assertFailsWith<IllegalArgumentException>([&]() {
+            flow_var.buffer(Channel::kConflated, BufferOverflow::kDropLatest);
+        });
+        assertFailsWith<IllegalArgumentException>([&]() {
+            flow_var.buffer(Channel::kConflated, BufferOverflow::kDropOldest);
+        });
     }
-}
+};
 
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

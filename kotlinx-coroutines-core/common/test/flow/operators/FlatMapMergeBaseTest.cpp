@@ -1,90 +1,119 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/FlatMapMergeBaseTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Extend FlatMapBaseTest
+// - Map abstract testFlatMapConcurrency as pure virtual
+// - Handle TestResult return type
 
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
-import kotlin.test.assertFailsWith
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-abstract class FlatMapMergeBaseTest : FlatMapBaseTest() {
-    @Test
-    fun testFailureCancellation() = runTest {
-        val flow = flow {
-            expect(2)
-            emit(1)
-            expect(3)
-            emit(2)
-            expect(4)
-        }.flatMap {
-            if (it == 1) flow {
-                hang { expect(6) }
-            } else flow<Int> {
-                expect(5)
-                throw TestException()
-            }
-        }
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.test.*
+// TODO: import kotlin.test.assertFailsWith
 
-        expect(1)
-        assertFailsWith<TestException> { flow.singleOrNull() }
-        finish(7)
-    }
-
-    @Test
-    fun testConcurrentFailure() = runTest {
-        val latch = Channel<Unit>()
-        val flow = flow {
-            expect(2)
-            emit(1)
-            expect(3)
-            emit(2)
-        }.flatMap {
-            if (it == 1) flow<Int> {
-                expect(5)
-                latch.send(Unit)
-                hang {
-                    expect(7)
-                    throw TestException2()
-
-                }
+class FlatMapMergeBaseTest : public FlatMapBaseTest {
+public:
+    // TODO: @Test
+    void testFailureCancellation() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            expect(2);
+            emit(1);
+            expect(3);
+            emit(2);
+            expect(4);
+        }).flat_map([](auto it) {
+            if (it == 1) {
+                return flow([](auto& emit) {
+                    hang([&]() { expect(6); });
+                });
             } else {
-                expect(4)
-                latch.receive()
-                expect(6)
-                throw TestException()
+                return flow<int>([](auto& emit) {
+                    expect(5);
+                    throw TestException();
+                });
             }
-        }
+        });
 
-        expect(1)
-        assertFailsWith<TestException>(flow)
-        finish(8)
+        expect(1);
+        assertFailsWith<TestException>([&]() { flow_var.single_or_null(); });
+        finish(7);
+        // TODO: }
     }
 
-    @Test
-    fun testFailureInMapOperationCancellation() = runTest {
-        val latch = Channel<Unit>()
-        val flow = flow {
-            expect(2)
-            emit(1)
-            expect(3)
-            emit(2)
-            expectUnreached()
-        }.flatMap {
-            if (it == 1) flow {
-                expect(5)
-                latch.send(Unit)
-                hang { expect(7) }
+    // TODO: @Test
+    void testConcurrentFailure() {
+        // TODO: runTest {
+        auto latch = Channel<Unit>();
+        auto flow_var = flow([](auto& emit) {
+            expect(2);
+            emit(1);
+            expect(3);
+            emit(2);
+        }).flat_map([&](auto it) {
+            if (it == 1) {
+                return flow<int>([&](auto& emit) {
+                    expect(5);
+                    latch.send(Unit{});
+                    hang([&]() {
+                        expect(7);
+                        throw TestException2();
+
+                    });
+                });
             } else {
-                expect(4)
-                latch.receive()
-                expect(6)
-                throw TestException()
+                expect(4);
+                latch.receive();
+                expect(6);
+                throw TestException();
             }
-        }
+        });
 
-        expect(1)
-        assertFailsWith<TestException> { flow.count() }
-        finish(8)
+        expect(1);
+        assertFailsWith<TestException>(flow_var);
+        finish(8);
+        // TODO: }
     }
 
-    @Test
-    abstract fun testFlatMapConcurrency(): TestResult
-}
+    // TODO: @Test
+    void testFailureInMapOperationCancellation() {
+        // TODO: runTest {
+        auto latch = Channel<Unit>();
+        auto flow_var = flow([](auto& emit) {
+            expect(2);
+            emit(1);
+            expect(3);
+            emit(2);
+            expectUnreached();
+        }).flat_map([&](auto it) {
+            if (it == 1) {
+                return flow([&](auto& emit) {
+                    expect(5);
+                    latch.send(Unit{});
+                    hang([&]() { expect(7); });
+                });
+            } else {
+                expect(4);
+                latch.receive();
+                expect(6);
+                throw TestException();
+            }
+        });
+
+        expect(1);
+        assertFailsWith<TestException>([&]() { flow_var.count(); });
+        finish(8);
+        // TODO: }
+    }
+
+    // TODO: @Test
+    virtual void testFlatMapConcurrency() = 0; // TODO: TestResult
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

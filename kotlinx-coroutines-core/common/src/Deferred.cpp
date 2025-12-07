@@ -1,6 +1,21 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
+// Original: kotlinx-coroutines-core/common/src/Deferred.kt
+//
+// TODO:
+// - suspend functions: represent as normal functions, coroutine semantics not implemented
+// - SelectClause1<T> needs select infrastructure
+// - OptIn, SubclassOptInRequired, ExperimentalCoroutinesApi annotations
+// - Covariance (out T) needs template handling
+// - Interface inheritance from Job needs proper C++ multiple inheritance
 
-import kotlinx.coroutines.selects.*
+#include <stdexcept>
+
+namespace kotlinx {
+namespace coroutines {
+
+// Forward declarations
+class Job;
+template<typename T> class SelectClause1;
 
 /**
  * Deferred value is a non-blocking cancellable future &mdash; it is a [Job] with a result.
@@ -27,10 +42,11 @@ import kotlinx.coroutines.selects.*
  * All functions on this interface and on all interfaces derived from it are **thread-safe** and can
  * be safely invoked from concurrent coroutines without external synchronization.
  */
-@OptIn(ExperimentalSubclassOptIn::class)
-@SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class)
-public interface Deferred<out T> : Job {
-
+// @OptIn(ExperimentalSubclassOptIn::class)
+// @SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class)
+template<typename T>
+class Deferred : public virtual Job {
+public:
     /**
      * Awaits for completion of this value without blocking the thread and returns the resulting value or throws
      * the exception if the deferred was cancelled.
@@ -64,7 +80,8 @@ public interface Deferred<out T> : Job {
      * Use [isCompleted] to check for completion of this deferred value without waiting, and
      * [join] to wait for completion without returning the result.
      */
-    public suspend fun await(): T
+    // TODO: suspend function - coroutine semantics not implemented
+    virtual T await() = 0;
 
     /**
      * Clause using the [await] suspending function as a [select] clause.
@@ -73,7 +90,7 @@ public interface Deferred<out T> : Job {
      * Note that, if [Deferred] completed with a [CancellationException], throwing it may have unintended
      * consequences. See [await] for details.
      */
-    public val onAwait: SelectClause1<T>
+    virtual SelectClause1<T>& get_on_await() = 0;
 
     /**
      * Returns *completed* result or throws [IllegalStateException] if this deferred value has not
@@ -84,8 +101,8 @@ public interface Deferred<out T> : Job {
      *
      * **Note: This is an experimental api.** This function may be removed or renamed in the future.
      */
-    @ExperimentalCoroutinesApi
-    public fun getCompleted(): T
+    // @ExperimentalCoroutinesApi
+    virtual T get_completed() = 0;
 
     /**
      * Returns *completion exception* result if this deferred was [cancelled][isCancelled] and has [completed][isCompleted],
@@ -97,6 +114,11 @@ public interface Deferred<out T> : Job {
      *
      * **Note: This is an experimental api.** This function may be removed or renamed in the future.
      */
-    @ExperimentalCoroutinesApi
-    public fun getCompletionExceptionOrNull(): Throwable?
-}
+    // @ExperimentalCoroutinesApi
+    virtual std::exception_ptr get_completion_exception_or_null() = 0;
+
+    virtual ~Deferred() = default;
+};
+
+} // namespace coroutines
+} // namespace kotlinx

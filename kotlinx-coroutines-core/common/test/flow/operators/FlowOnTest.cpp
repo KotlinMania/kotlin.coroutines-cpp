@@ -1,358 +1,380 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/FlowOnTest.kt
+// TODO: handle imports (kotlinx.coroutines.testing, kotlinx.coroutines, kotlinx.coroutines.channels, kotlinx.coroutines.testing.flow, kotlin.test)
+// TODO: translate @Test annotations to appropriate C++ test framework
+// TODO: handle suspend functions and coroutines
+// TODO: translate runTest {} blocks
+// TODO: handle Flow types and operations
+// TODO: translate inner classes
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.testing.flow.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class FlowOnTest : TestBase() {
+class FlowOnTest : public TestBase {
+public:
+    // @Test
+    void test_flow_on() /* TODO: = runTest */ {
+        Source source(42);
+        Consumer consumer(42);
 
-    @Test
-    fun testFlowOn() = runTest {
-        val source = Source(42)
-        val consumer = Consumer(42)
+        auto flow = source.produce().as_flow();
+        flow.flow_on(NamedDispatchers("ctx1")).launch_in(*this, [&](auto& builder) {
+            builder.on_each([&consumer](int it) { consumer.consume(it); });
+        }).join();
 
-        val flow = source::produce.asFlow()
-        flow.flowOn(NamedDispatchers("ctx1")).launchIn(this) {
-            onEach { consumer.consume(it) }
-        }.join()
+        assert_equals("ctx1", source.context_name);
+        assert_equals("main", consumer.context_name);
 
-        assertEquals("ctx1", source.contextName)
-        assertEquals("main", consumer.contextName)
+        flow.flow_on(NamedDispatchers("ctx2")).launch_in(*this, [&](auto& builder) {
+            builder.on_each([&consumer](int it) { consumer.consume(it); });
+        }).join();
 
-        flow.flowOn(NamedDispatchers("ctx2")).launchIn(this) {
-            onEach { consumer.consume(it) }
-        }.join()
-
-        assertEquals("ctx2", source.contextName)
-        assertEquals("main", consumer.contextName)
+        assert_equals("ctx2", source.context_name);
+        assert_equals("main", consumer.context_name);
     }
 
-    @Test
-    fun testFlowOnAndOperators() = runTest {
-        val source = Source(42)
-        val consumer = Consumer(42)
-        val captured = ArrayList<String>()
-        val mapper: suspend (Int) -> Int = {
-            captured += NamedDispatchers.nameOr("main")
-            it
-        }
+    // @Test
+    void test_flow_on_and_operators() /* TODO: = runTest */ {
+        Source source(42);
+        Consumer consumer(42);
+        std::vector<std::string> captured;
+        auto mapper = [&captured](int it) /* TODO: suspend */ -> int {
+            captured.push_back(NamedDispatchers::name_or("main"));
+            return it;
+        };
 
-        val flow = source::produce.asFlow()
+        auto flow = source.produce().as_flow();
         flow.map(mapper)
-            .flowOn(NamedDispatchers("ctx1"))
+            .flow_on(NamedDispatchers("ctx1"))
             .map(mapper)
-            .flowOn(NamedDispatchers("ctx2"))
+            .flow_on(NamedDispatchers("ctx2"))
             .map(mapper)
-            .launchIn(this) {
-                onEach { consumer.consume(it) }
-            }.join()
+            .launch_in(*this, [&](auto& builder) {
+                builder.on_each([&consumer](int it) { consumer.consume(it); });
+            }).join();
 
-        assertEquals(listOf("ctx1", "ctx2", "main"), captured)
-        assertEquals("ctx1", source.contextName)
-        assertEquals("main", consumer.contextName)
+        assert_equals(std::vector<std::string>{"ctx1", "ctx2", "main"}, captured);
+        assert_equals("ctx1", source.context_name);
+        assert_equals("main", consumer.context_name);
     }
 
-    @Test
-    public fun testFlowOnThrowingSource() = runTest {
-        val flow = flow {
-            expect(1)
-            emit(NamedDispatchers.name())
-            expect(3)
-            throw TestException()
-        }.map {
-            expect(2)
-            assertEquals("throwing", it)
-            it
-        }.flowOn(NamedDispatchers("throwing"))
+    // @Test
+    void test_flow_on_throwing_source() /* TODO: = runTest */ {
+        auto flow = flow([]() /* TODO: suspend */ {
+            expect(1);
+            emit(NamedDispatchers::name());
+            expect(3);
+            throw TestException();
+        }).map([](const std::string& it) {
+            expect(2);
+            assert_equals("throwing", it);
+            return it;
+        }).flow_on(NamedDispatchers("throwing"));
 
-        assertFailsWith<TestException> { flow.single() }
-        ensureActive()
-        finish(4)
+        assert_fails_with<TestException>([&]() { flow.single(); });
+        ensure_active();
+        finish(4);
     }
 
-    @Test
-    public fun testFlowOnThrowingOperator() = runTest {
-        val flow = flow {
-            expect(1)
-            emit(NamedDispatchers.name())
-            expectUnreached()
-        }.map {
-            expect(2)
-            assertEquals("throwing", it)
-            throw TestException()
-        }.flowOn(NamedDispatchers("throwing"))
+    // @Test
+    void test_flow_on_throwing_operator() /* TODO: = runTest */ {
+        auto flow = flow([]() /* TODO: suspend */ {
+            expect(1);
+            emit(NamedDispatchers::name());
+            expect_unreached();
+        }).map([](const std::string& it) {
+            expect(2);
+            assert_equals("throwing", it);
+            throw TestException();
+        }).flow_on(NamedDispatchers("throwing"));
 
-        assertFailsWith<TestException>(flow)
-        ensureActive()
-        finish(3)
+        assert_fails_with<TestException>(flow);
+        ensure_active();
+        finish(3);
     }
 
-    @Test
-    public fun testFlowOnDownstreamOperator() = runTest() {
-        val flow = flow {
-            expect(2)
-            emit(NamedDispatchers.name())
-            hang { expect(5) }
-            delay(Long.MAX_VALUE)
-        }.map {
-            expect(3)
-            it
-        }.flowOn(NamedDispatchers("throwing"))
-            .map<String, String> {
+    // @Test
+    void test_flow_on_downstream_operator() /* TODO: = runTest */ {
+        auto flow = flow([]() /* TODO: suspend */ {
+            expect(2);
+            emit(NamedDispatchers::name());
+            hang([]() { expect(5); });
+            delay(LONG_MAX);
+        }).map([](const std::string& it) {
+            expect(3);
+            return it;
+        }).flow_on(NamedDispatchers("throwing"))
+            .map<std::string, std::string>([](const std::string&) {
                 expect(4);
-                throw TestException()
-            }
+                throw TestException();
+            });
 
-        expect(1)
-        assertFailsWith<TestException> { flow.single() }
-        ensureActive()
-        finish(6)
+        expect(1);
+        assert_fails_with<TestException>([&]() { flow.single(); });
+        ensure_active();
+        finish(6);
     }
 
-    @Test
-    public fun testFlowOnThrowingConsumer() = runTest {
-        val flow = flow {
-            expect(2)
-            emit(NamedDispatchers.name())
-            hang { expect(4) }
-        }
+    // @Test
+    void test_flow_on_throwing_consumer() /* TODO: = runTest */ {
+        auto flow = flow([]() /* TODO: suspend */ {
+            expect(2);
+            emit(NamedDispatchers::name());
+            hang([]() { expect(4); });
+        });
 
-        expect(1)
-        flow.flowOn(NamedDispatchers("...")).launchIn(this + NamedDispatchers("launch")) {
-            onEach {
-                expect(3)
-                throw TestException()
-            }
-            catch<Throwable> { expect(5) }
-        }.join()
+        expect(1);
+        flow.flow_on(NamedDispatchers("...")).launch_in(*this + NamedDispatchers("launch"), [](auto& builder) {
+            builder
+                .on_each([](const std::string&) {
+                    expect(3);
+                    throw TestException();
+                })
+                .catch_error<Throwable>([](const Throwable&) { expect(5); });
+        }).join();
 
-        ensureActive()
-        finish(6)
+        ensure_active();
+        finish(6);
     }
 
-    @Test
-    fun testFlowOnWithJob() = runTest({ it is IllegalArgumentException }) {
-        flow {
-            emit(1)
-        }.flowOn(NamedDispatchers("foo") + Job())
+    // @Test
+    void test_flow_on_with_job() /* TODO: = runTest({ it is IllegalArgumentException }) */ {
+        flow([]() /* TODO: suspend */ {
+            emit(1);
+        }).flow_on(NamedDispatchers("foo") + Job());
     }
 
-    @Test
-    fun testFlowOnCancellation() = runTest {
-        val latch = Channel<Unit>()
-        expect(1)
-        val job = launch(NamedDispatchers("launch")) {
-            flow<Int> {
-                expect(2)
-                latch.send(Unit)
-                expect(3)
-                hang {
-                    assertEquals("cancelled", NamedDispatchers.name())
-                    expect(5)
-                }
-            }.flowOn(NamedDispatchers("cancelled")).single()
-        }
+    // @Test
+    void test_flow_on_cancellation() /* TODO: = runTest */ {
+        Channel<Unit> latch;
+        expect(1);
+        auto job = launch(NamedDispatchers("launch"), [&]() /* TODO: suspend */ {
+            flow<int>([&]() /* TODO: suspend */ {
+                expect(2);
+                latch.send(Unit{});
+                expect(3);
+                hang([&]() {
+                    assert_equals("cancelled", NamedDispatchers::name());
+                    expect(5);
+                });
+            }).flow_on(NamedDispatchers("cancelled")).single();
+        });
 
-        latch.receive()
-        expect(4)
-        job.cancel()
-        job.join()
-        ensureActive()
-        finish(6)
+        latch.receive();
+        expect(4);
+        job.cancel();
+        job.join();
+        ensure_active();
+        finish(6);
     }
 
-    @Test
-    fun testFlowOnCancellationHappensBefore() = runTest {
-        launch {
+    // @Test
+    void test_flow_on_cancellation_happens_before() /* TODO: = runTest */ {
+        launch([&]() /* TODO: suspend */ {
             try {
-                flow<Int> {
-                    expect(1)
-                    val flowJob = kotlin.coroutines.coroutineContext[Job]!!
-                    launch {
-                        expect(2)
-                        flowJob.cancel()
-                    }
-                    hang { expect(3) }
-                }.flowOn(NamedDispatchers("upstream")).single()
-            } catch (e: CancellationException) {
-                expect(4)
+                flow<int>([&]() /* TODO: suspend */ {
+                    expect(1);
+                    auto flow_job = current_context()[Job::key];
+                    launch([&]() /* TODO: suspend */ {
+                        expect(2);
+                        flow_job->cancel();
+                    });
+                    hang([]() { expect(3); });
+                }).flow_on(NamedDispatchers("upstream")).single();
+            } catch (const CancellationException& e) {
+                expect(4);
             }
-        }.join()
-        ensureActive()
-        finish(5)
+        }).join();
+        ensure_active();
+        finish(5);
     }
 
-    @Test
-    fun testIndependentOperatorContext() = runTest {
-        val value = flow {
-            assertEquals("base", NamedDispatchers.nameOr("main"))
-            expect(1)
-            emit(-239)
-        }.map {
-            assertEquals("base", NamedDispatchers.nameOr("main"))
-            expect(2)
-            it
-        }.flowOn(NamedDispatchers("base"))
-            .map {
-                assertEquals("main", NamedDispatchers.nameOr("main"))
-                expect(3)
-                it
-            }.single()
+    // @Test
+    void test_independent_operator_context() /* TODO: = runTest */ {
+        auto value = flow([]() /* TODO: suspend */ {
+            assert_equals("base", NamedDispatchers::name_or("main"));
+            expect(1);
+            emit(-239);
+        }).map([](int it) {
+            assert_equals("base", NamedDispatchers::name_or("main"));
+            expect(2);
+            return it;
+        }).flow_on(NamedDispatchers("base"))
+            .map([](int it) {
+                assert_equals("main", NamedDispatchers::name_or("main"));
+                expect(3);
+                return it;
+            }).single();
 
-        assertEquals(-239, value)
-        finish(4)
+        assert_equals(-239, value);
+        finish(4);
     }
 
-    @Test
-    fun testMultipleFlowOn() = runTest {
-        flow {
-            assertEquals("ctx1", NamedDispatchers.nameOr("main"))
-            expect(1)
-            emit(1)
-        }.map {
-            assertEquals("ctx1", NamedDispatchers.nameOr("main"))
-            expect(2)
-        }.flowOn(NamedDispatchers("ctx1"))
-            .map {
-                assertEquals("ctx2", NamedDispatchers.nameOr("main"))
-                expect(3)
-            }.flowOn(NamedDispatchers("ctx2"))
-            .map {
-                assertEquals("ctx3", NamedDispatchers.nameOr("main"))
-                expect(4)
-            }.flowOn(NamedDispatchers("ctx3"))
-            .map {
-                assertEquals("main", NamedDispatchers.nameOr("main"))
-                expect(5)
-            }
-            .single()
+    // @Test
+    void test_multiple_flow_on() /* TODO: = runTest */ {
+        flow([]() /* TODO: suspend */ {
+            assert_equals("ctx1", NamedDispatchers::name_or("main"));
+            expect(1);
+            emit(1);
+        }).map([](int) {
+            assert_equals("ctx1", NamedDispatchers::name_or("main"));
+            expect(2);
+        }).flow_on(NamedDispatchers("ctx1"))
+            .map([](int) {
+                assert_equals("ctx2", NamedDispatchers::name_or("main"));
+                expect(3);
+            }).flow_on(NamedDispatchers("ctx2"))
+            .map([](int) {
+                assert_equals("ctx3", NamedDispatchers::name_or("main"));
+                expect(4);
+            }).flow_on(NamedDispatchers("ctx3"))
+            .map([](int) {
+                assert_equals("main", NamedDispatchers::name_or("main"));
+                expect(5);
+            })
+            .single();
 
-        finish(6)
+        finish(6);
     }
 
-    @Test
-    fun testTimeoutExceptionUpstream() = runTest {
-        val flow = flow {
-            emit(1)
-            yield()
-            withTimeout(-1) {}
-            emit(42)
-        }.flowOn(NamedDispatchers("foo")).onEach {
-            expect(1)
-        }
-        assertFailsWith<TimeoutCancellationException>(flow)
-        finish(2)
+    // @Test
+    void test_timeout_exception_upstream() /* TODO: = runTest */ {
+        auto flow = flow([]() /* TODO: suspend */ {
+            emit(1);
+            yield();
+            with_timeout(-1, []() {});
+            emit(42);
+        }).flow_on(NamedDispatchers("foo")).on_each([](int) {
+            expect(1);
+        });
+        assert_fails_with<TimeoutCancellationException>(flow);
+        finish(2);
     }
 
-    @Test
-    fun testTimeoutExceptionDownstream() = runTest {
-        val flow = flow {
-            emit(1)
-            hang { expect(2) }
-        }.flowOn(NamedDispatchers("foo")).onEach {
-            expect(1)
-            withTimeout(-1) {}
-        }
-        assertFailsWith<TimeoutCancellationException>(flow)
-        finish(3)
+    // @Test
+    void test_timeout_exception_downstream() /* TODO: = runTest */ {
+        auto flow = flow([]() /* TODO: suspend */ {
+            emit(1);
+            hang([]() { expect(2); });
+        }).flow_on(NamedDispatchers("foo")).on_each([](int) {
+            expect(1);
+            with_timeout(-1, []() {});
+        });
+        assert_fails_with<TimeoutCancellationException>(flow);
+        finish(3);
     }
 
-    @Test
-    fun testCancellation() = runTest {
-        val result = flow {
-            emit(1)
-            emit(2)
-            emit(3)
-            expectUnreached()
-            emit(4)
-        }.flowOn(wrapperDispatcher())
+    // @Test
+    void test_cancellation() /* TODO: = runTest */ {
+        auto result = flow([]() /* TODO: suspend */ {
+            emit(1);
+            emit(2);
+            emit(3);
+            expect_unreached();
+            emit(4);
+        }).flow_on(wrapper_dispatcher())
             .buffer(0)
             .take(2)
-            .toList()
-        assertEquals(listOf(1, 2), result)
+            .to_list();
+        assert_equals(std::vector<int>{1, 2}, result);
     }
 
-    @Test
-    fun testAtomicStart() = runTest {
+    // @Test
+    void test_atomic_start() /* TODO: = runTest */ {
         try {
-            coroutineScope {
-                val job = coroutineContext[Job]!!
-                val flow = flow {
-                    expect(3)
-                    emit(1)
-                }
-                    .onCompletion { expect(4) }
-                    .flowOn(wrapperDispatcher())
-                    .onCompletion { expect(5) }
+            coroutine_scope([&]() /* TODO: suspend */ {
+                auto job = coroutine_context()[Job::key];
+                auto flow = flow([]() /* TODO: suspend */ {
+                    expect(3);
+                    emit(1);
+                })
+                    .on_completion([]() { expect(4); })
+                    .flow_on(wrapper_dispatcher())
+                    .on_completion([]() { expect(5); });
 
-                launch {
-                    expect(1)
-                    flow.collect()
-                }
-                launch {
-                    expect(2)
-                    job.cancel()
-                }
-            }
-        } catch (e: CancellationException) {
-            finish(6)
+                launch([&]() /* TODO: suspend */ {
+                    expect(1);
+                    flow.collect();
+                });
+                launch([&]() /* TODO: suspend */ {
+                    expect(2);
+                    job->cancel();
+                });
+            });
+        } catch (const CancellationException& e) {
+            finish(6);
         }
     }
 
-    @Test
-    fun testException() = runTest {
-        val flow = flow {
-            emit(314)
-            delay(Long.MAX_VALUE)
-        }.flowOn(NamedDispatchers("upstream"))
-            .map {
-                throw TestException()
-            }
+    // @Test
+    void test_exception() /* TODO: = runTest */ {
+        auto flow = flow([]() /* TODO: suspend */ {
+            emit(314);
+            delay(LONG_MAX);
+        }).flow_on(NamedDispatchers("upstream"))
+            .map([](int) {
+                throw TestException();
+            });
 
-        assertFailsWith<TestException> { flow.single() }
-        assertFailsWith<TestException>(flow)
-        ensureActive()
+        assert_fails_with<TestException>([&]() { flow.single(); });
+        assert_fails_with<TestException>(flow);
+        ensure_active();
     }
 
-    @Test
-    fun testIllegalArgumentException() {
-        val flow = emptyFlow<Int>()
-        assertFailsWith<IllegalArgumentException> { flow.flowOn(Job()) }
+    // @Test
+    void test_illegal_argument_exception() {
+        auto flow = empty_flow<int>();
+        assert_fails_with<IllegalArgumentException>([&]() { flow.flow_on(Job()); });
     }
 
-    private inner class Source(private val value: Int) {
-        public var contextName: String = "unknown"
-
-        fun produce(): Int {
-            contextName = NamedDispatchers.nameOr("main")
-            return value
-        }
-    }
-
-    private inner class Consumer(private val expected: Int) {
-        public var contextName: String = "unknown"
-
-        fun consume(value: Int) {
-            contextName = NamedDispatchers.nameOr("main")
-            assertEquals(expected, value)
-        }
-    }
-
-    @Test
-    fun testCancelledFlowOn() = runTest {
-        assertFailsWith<CancellationException> {
-            coroutineScope {
-                val scope = this
-                flow {
-                    emit(Unit) // emit to buffer
-                    scope.cancel() // now cancel outer scope
-                }.flowOn(wrapperDispatcher()).collect {
+    // @Test
+    void test_cancelled_flow_on() /* TODO: = runTest */ {
+        assert_fails_with<CancellationException>([&]() {
+            coroutine_scope([&]() /* TODO: suspend */ {
+                auto scope = this;
+                flow([]() /* TODO: suspend */ {
+                    emit(Unit{}); // emit to buffer
+                    scope->cancel(); // now cancel outer scope
+                }).flow_on(wrapper_dispatcher()).collect([](const Unit&) {
                     // should not be reached, because cancelled before it runs
-                    expectUnreached()
-                }
-            }
-        }
+                    expect_unreached();
+                });
+            });
+        });
     }
-}
+
+private:
+    class Source {
+    public:
+        std::string context_name = "unknown";
+
+        Source(int value_) : value(value_) {}
+
+        int produce() {
+            context_name = NamedDispatchers::name_or("main");
+            return value;
+        }
+
+    private:
+        int value;
+    };
+
+    class Consumer {
+    public:
+        std::string context_name = "unknown";
+
+        Consumer(int expected_) : expected(expected_) {}
+
+        void consume(int value) {
+            context_name = NamedDispatchers::name_or("main");
+            assert_equals(expected, value);
+        }
+
+    private:
+        int expected;
+    };
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,32 +1,62 @@
-@file:OptIn(ObsoleteWorkersApi::class)
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/EventLoop.kt
+//
+// TODO: @file:OptIn annotation
+// TODO: actual keyword - platform-specific implementation
+// TODO: Worker API from Kotlin/Native
+// TODO: TimeSource API from Kotlin
 
-package kotlinx.coroutines
+namespace kotlinx {
+namespace coroutines {
 
-import kotlin.coroutines.*
-import kotlin.native.concurrent.*
-import kotlin.time.*
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlin.coroutines.*
+// import kotlin.native.concurrent.*
+// import kotlin.time.*
 
-internal actual abstract class EventLoopImplPlatform : EventLoop() {
+// TODO: internal actual abstract class
+class EventLoopImplPlatform : public EventLoop {
+private:
+    // TODO: Worker.current equivalent
+    void* current; // = Worker.current
 
-    private val current = Worker.current
-
-    protected actual fun unpark() {
-        current.executeAfter(0L, {})// send an empty task to unpark the waiting event loop
+protected:
+    void unpark() {
+        // TODO: current.executeAfter equivalent
+        // current.executeAfter(0L, {}) // send an empty task to unpark the waiting event loop
     }
 
-    protected actual fun reschedule(now: Long, delayedTask: EventLoopImplBase.DelayedTask) {
-        val delayTimeMillis = delayNanosToMillis(delayedTask.nanoTime - now)
-        DefaultExecutor.invokeOnTimeout(delayTimeMillis, delayedTask, EmptyCoroutineContext)
+    void reschedule(long now, EventLoopImplBase::DelayedTask* delayed_task) {
+        auto delay_time_millis = delay_nanos_to_millis(delayed_task->nano_time - now);
+        DefaultExecutor::instance().invoke_on_timeout(delay_time_millis, *delayed_task, EmptyCoroutineContext);
     }
+};
+
+// TODO: internal class
+class EventLoopImpl : public EventLoopImplBase {
+public:
+    DisposableHandle invoke_on_timeout(long time_millis, Runnable block, CoroutineContext context) override {
+        return kDefaultDelay.invoke_on_timeout(time_millis, block, context);
+    }
+};
+
+// TODO: internal actual function
+EventLoop* create_event_loop() {
+    return new EventLoopImpl();
 }
 
-internal class EventLoopImpl: EventLoopImplBase() {
-    override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle =
-        DefaultDelay.invokeOnTimeout(timeMillis, block, context)
+// TODO: private val with TimeSource.Monotonic
+// private val startingPoint = TimeSource.Monotonic.markNow()
+namespace {
+    // TODO: TimeSource equivalent
+    long starting_point = 0;
 }
 
-internal actual fun createEventLoop(): EventLoop = EventLoopImpl()
+// TODO: internal actual function
+long nano_time() {
+    // TODO: (TimeSource.Monotonic.markNow() - startingPoint).inWholeNanoseconds
+    return 0;
+}
 
-private val startingPoint = TimeSource.Monotonic.markNow()
-
-internal actual fun nanoTime(): Long = (TimeSource.Monotonic.markNow() - startingPoint).inWholeNanoseconds
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,47 +1,60 @@
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-package kotlinx.coroutines.debug
+// Original file: kotlinx-coroutines-debug/test/EnhanceStackTraceWithTreadDumpAsJsonTest.kt
+// TODO: Convert @file:Suppress annotation
+// TODO: Convert imports to C++ includes
+// TODO: Implement DebugTestBase base class
+// TODO: Implement Gson JSON parsing
+// TODO: Implement DebugProbesImpl API
+// TODO: Convert data class to C++ struct
 
-import kotlinx.coroutines.testing.*
-import com.google.gson.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.debug.internal.*
-import org.junit.Test
-import kotlin.test.*
+// @file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+namespace kotlinx {
+namespace coroutines {
+namespace debug {
 
-class EnhanceStackTraceWithTreadDumpAsJsonTest : DebugTestBase() {
-    private data class StackTraceElementInfoFromJson(
-        val declaringClass: String,
-        val methodName: String,
-        val fileName: String?,
-        val lineNumber: Int
-    )
+class EnhanceStackTraceWithTreadDumpAsJsonTest : public DebugTestBase {
+private:
+    struct StackTraceElementInfoFromJson {
+        std::string declaring_class;
+        std::string method_name;
+        std::string* file_name;  // String?
+        int line_number;
+    };
 
-    @Test
-    fun testEnhancedStackTraceFormatWithDeferred() = runTest {
-        val deferred = async {
-            suspendingMethod()
-            assertTrue(true)
-        }
-        yield()
-
-        val coroutineInfo = DebugProbesImpl.dumpCoroutinesInfo()
-        assertEquals(coroutineInfo.size, 2)
-        val info = coroutineInfo[1]
-        val enhancedStackTraceAsJsonString = DebugProbesImpl.enhanceStackTraceWithThreadDumpAsJson(info)
-        val enhancedStackTraceFromJson = Gson().fromJson(enhancedStackTraceAsJsonString, Array<StackTraceElementInfoFromJson>::class.java)
-        val enhancedStackTrace = DebugProbesImpl.enhanceStackTraceWithThreadDump(info, info.lastObservedStackTrace)
-        assertEquals(enhancedStackTrace.size, enhancedStackTraceFromJson.size)
-        for ((frame, frameFromJson) in enhancedStackTrace.zip(enhancedStackTraceFromJson)) {
-            assertEquals(frame.className, frameFromJson.declaringClass)
-            assertEquals(frame.methodName, frameFromJson.methodName)
-            assertEquals(frame.fileName, frameFromJson.fileName)
-            assertEquals(frame.lineNumber, frameFromJson.lineNumber)
-        }
-
-        deferred.cancelAndJoin()
+public:
+    // @Test
+    void test_enhanced_stack_trace_format_with_deferred() {
+        // TODO: runTest {
+        //     auto deferred = async {
+        //         suspendingMethod()
+        //         assertTrue(true)
+        //     }
+        //     yield()
+        //
+        //     auto coroutineInfo = DebugProbesImpl.dumpCoroutinesInfo()
+        //     assertEquals(coroutineInfo.size, 2)
+        //     auto info = coroutineInfo[1]
+        //     auto enhancedStackTraceAsJsonString = DebugProbesImpl.enhanceStackTraceWithThreadDumpAsJson(info)
+        //     auto enhancedStackTraceFromJson = Gson().fromJson(enhancedStackTraceAsJsonString, Array<StackTraceElementInfoFromJson>::class.java)
+        //     auto enhancedStackTrace = DebugProbesImpl.enhanceStackTraceWithThreadDump(info, info.lastObservedStackTrace)
+        //     assertEquals(enhancedStackTrace.size, enhancedStackTraceFromJson.size)
+        //     for ((frame, frameFromJson) in enhancedStackTrace.zip(enhancedStackTraceFromJson)) {
+        //         assertEquals(frame.className, frameFromJson.declaringClass)
+        //         assertEquals(frame.methodName, frameFromJson.methodName)
+        //         assertEquals(frame.fileName, frameFromJson.fileName)
+        //         assertEquals(frame.lineNumber, frameFromJson.lineNumber)
+        //     }
+        //
+        //     deferred.cancelAndJoin()
+        // }
     }
 
-    private suspend fun suspendingMethod() {
-        delay(Long.MAX_VALUE)
+private:
+    // suspend
+    void suspending_method() {
+        // TODO: delay(Long.MAX_VALUE)
     }
-}
+};
+
+} // namespace debug
+} // namespace coroutines
+} // namespace kotlinx

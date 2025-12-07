@@ -1,158 +1,204 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/internal/ThreadSafeHeap.kt
+//
+// TODO: This is a mechanical transliteration - semantics not fully implemented
+// TODO: atomicfu needs C++ atomic equivalent
+// TODO: @InternalCoroutinesApi annotation - translate to comment
+// TODO: @PublishedApi annotation - JVM-specific
+// TODO: inline functions with lambda parameters need proper implementation
+// TODO: Synchronized operations need platform-specific implementation
+// TODO: Comparable interface needs C++ operator< overload
+// TODO: tailrec functions need iterative or proper recursive implementation
 
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
+#include <atomic>
+#include <vector>
+#include <functional>
+#include <cassert>
+
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
+
+// Forward declaration
+template<typename T> class ThreadSafeHeap;
 
 /**
  * @suppress **This an internal API and should not be used from general code.**
  */
-@InternalCoroutinesApi
-public interface ThreadSafeHeapNode {
-    public var heap: ThreadSafeHeap<*>?
-    public var index: Int
-}
+// TODO: @InternalCoroutinesApi annotation
+class ThreadSafeHeapNode {
+public:
+    ThreadSafeHeap<ThreadSafeHeapNode>* heap;
+    int index;
+
+    ThreadSafeHeapNode() : heap(nullptr), index(-1) {}
+    virtual ~ThreadSafeHeapNode() = default;
+};
 
 /**
  * Synchronized binary heap.
  * @suppress **This an internal API and should not be used from general code.**
  */
-@InternalCoroutinesApi
-public open class ThreadSafeHeap<T> : SynchronizedObject() where T: ThreadSafeHeapNode, T: Comparable<T> {
-    private var a: Array<T?>? = null
+// TODO: @InternalCoroutinesApi annotation
+// TODO: where T: ThreadSafeHeapNode, T: Comparable<T> - needs C++ constraints
+template<typename T>
+class ThreadSafeHeap : public SynchronizedObject {
+private:
+    std::vector<T*> a_;
+    std::atomic<int> _size;
 
-    private val _size = atomic(0)
+public:
+    ThreadSafeHeap() : a_(), _size(0) {}
 
-    public var size: Int
-        get() = _size.value
-        private set(value) { _size.value = value }
+    int size() const { return _size.load(); }
+    bool is_empty() const { return size() == 0; }
 
-    public val isEmpty: Boolean get() = size == 0
+private:
+    void set_size(int value) { _size.store(value); }
 
-    public fun find(
-        predicate: (value: T) -> Boolean
-    ): T? = synchronized(this) block@{
-        for (i in 0 until size) {
-            val value = a?.get(i)!!
-            if (predicate(value)) return@block value
+public:
+    template<typename Predicate>
+    T* find(Predicate predicate) {
+        // TODO: synchronized(this)
+        for (int i = 0; i < size(); ++i) {
+            T* value = a_[i];
+            if (predicate(value)) return value;
         }
-        null
+        return nullptr;
     }
 
-    public fun peek(): T? = synchronized(this) { firstImpl() }
+    T* peek() {
+        // TODO: synchronized(this)
+        return first_impl();
+    }
 
-    public fun removeFirstOrNull(): T? = synchronized(this) {
-        if (size > 0) {
-            removeAtImpl(0)
+    T* remove_first_or_null() {
+        // TODO: synchronized(this)
+        if (size() > 0) {
+            return remove_at_impl(0);
         } else {
-            null
+            return nullptr;
         }
     }
 
-    public inline fun removeFirstIf(predicate: (T) -> Boolean): T? = synchronized(this) {
-        val first = firstImpl() ?: return null
+    template<typename Predicate>
+    T* remove_first_if(Predicate predicate) {
+        // TODO: synchronized(this)
+        T* first = first_impl();
+        if (first == nullptr) return nullptr;
         if (predicate(first)) {
-            removeAtImpl(0)
+            return remove_at_impl(0);
         } else {
-            null
+            return nullptr;
         }
     }
 
-    public fun addLast(node: T): Unit = synchronized(this) { addImpl(node) }
+    void add_last(T* node) {
+        // TODO: synchronized(this)
+        add_impl(node);
+    }
 
-    // Condition also receives current first node in the heap
-    public inline fun addLastIf(node: T, cond: (T?) -> Boolean): Boolean = synchronized(this) {
-        if (cond(firstImpl())) {
-            addImpl(node)
-            true
+    template<typename Condition>
+    bool add_last_if(T* node, Condition cond) {
+        // TODO: synchronized(this)
+        if (cond(first_impl())) {
+            add_impl(node);
+            return true;
         } else {
-            false
+            return false;
         }
     }
 
-    public fun remove(node: T): Boolean = synchronized(this) {
-        return if (node.heap == null) {
-            false
+    bool remove(T* node) {
+        // TODO: synchronized(this)
+        if (node->heap == nullptr) {
+            return false;
         } else {
-            val index = node.index
-            assert { index >= 0 }
-            removeAtImpl(index)
-            true
+            int index = node->index;
+            assert(index >= 0);
+            remove_at_impl(index);
+            return true;
         }
     }
 
-    @PublishedApi
-    internal fun firstImpl(): T? = a?.get(0)
+    // TODO: @PublishedApi annotation
+    T* first_impl() {
+        return a_.empty() ? nullptr : a_[0];
+    }
 
-    @PublishedApi
-    internal fun removeAtImpl(index: Int): T {
-        assert { size > 0 }
-        val a = this.a!!
-        size--
-        if (index < size) {
-            swap(index, size)
-            val j = (index - 1) / 2
-            if (index > 0 && a[index]!! < a[j]!!) {
-                swap(index, j)
-                siftUpFrom(j)
+    // TODO: @PublishedApi annotation
+    T* remove_at_impl(int index) {
+        assert(size() > 0);
+        set_size(size() - 1);
+        if (index < size()) {
+            swap(index, size());
+            int j = (index - 1) / 2;
+            if (index > 0 && *a_[index] < *a_[j]) {
+                swap(index, j);
+                sift_up_from(j);
             } else {
-                siftDownFrom(index)
+                sift_down_from(index);
             }
         }
-        val result = a[size]!!
-        assert { result.heap === this }
-        result.heap = null
-        result.index = -1
-        a[size] = null
-        return result
+        T* result = a_[size()];
+        assert(result->heap == this);
+        result->heap = nullptr;
+        result->index = -1;
+        a_[size()] = nullptr;
+        return result;
     }
 
-    @PublishedApi
-    internal fun addImpl(node: T) {
-        assert { node.heap == null }
-        node.heap = this
-        val a = realloc()
-        val i = size++
-        a[i] = node
-        node.index = i
-        siftUpFrom(i)
+    // TODO: @PublishedApi annotation
+    void add_impl(T* node) {
+        assert(node->heap == nullptr);
+        node->heap = this;
+        std::vector<T*>& a = realloc();
+        int i = size();
+        set_size(size() + 1);
+        a[i] = node;
+        node->index = i;
+        sift_up_from(i);
     }
 
-    private tailrec fun siftUpFrom(i: Int) {
-        if (i <= 0) return
-        val a = a!!
-        val j = (i - 1) / 2
-        if (a[j]!! <= a[i]!!) return
-        swap(i, j)
-        siftUpFrom(j)
+private:
+    // TODO: tailrec function
+    void sift_up_from(int i) {
+        if (i <= 0) return;
+        int j = (i - 1) / 2;
+        if (*a_[j] <= *a_[i]) return;
+        swap(i, j);
+        sift_up_from(j);
     }
 
-    private tailrec fun siftDownFrom(i: Int) {
-        var j = 2 * i + 1
-        if (j >= size) return
-        val a = a!!
-        if (j + 1 < size && a[j + 1]!! < a[j]!!) j++
-        if (a[i]!! <= a[j]!!) return
-        swap(i, j)
-        siftDownFrom(j)
+    // TODO: tailrec function
+    void sift_down_from(int i) {
+        int j = 2 * i + 1;
+        if (j >= size()) return;
+        if (j + 1 < size() && *a_[j + 1] < *a_[j]) j++;
+        if (*a_[i] <= *a_[j]) return;
+        swap(i, j);
+        sift_down_from(j);
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun realloc(): Array<T?> {
-        val a = this.a
-        return when {
-            a == null -> (arrayOfNulls<ThreadSafeHeapNode>(4) as Array<T?>).also { this.a = it }
-            size >= a.size -> a.copyOf(size * 2).also { this.a = it }
-            else -> a
+    std::vector<T*>& realloc() {
+        if (a_.empty()) {
+            a_.resize(4, nullptr);
+        } else if (size() >= static_cast<int>(a_.size())) {
+            a_.resize(size() * 2, nullptr);
         }
+        return a_;
     }
 
-    private fun swap(i: Int, j: Int) {
-        val a = a!!
-        val ni = a[j]!!
-        val nj = a[i]!!
-        a[i] = ni
-        a[j] = nj
-        ni.index = i
-        nj.index = j
+    void swap(int i, int j) {
+        T* ni = a_[j];
+        T* nj = a_[i];
+        a_[i] = ni;
+        a_[j] = nj;
+        ni->index = i;
+        nj->index = j;
     }
-}
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

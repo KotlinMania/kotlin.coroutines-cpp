@@ -1,277 +1,379 @@
-package kotlinx.coroutines.flow
+// Original: kotlinx-coroutines-core/common/test/flow/FlowInvariantsTest.kt
+// TODO: Translate imports to proper C++ includes
+// TODO: Implement TestBase base class
+// TODO: Implement @Test annotation equivalent
+// TODO: Implement runTest, runCatching, exceptionOrNull
+// TODO: Implement Flow, FlowCollector, AbstractFlow
+// TODO: Implement withContext, coroutineScope, launch
+// TODO: Implement channels (produce, Channel, consumeEach)
+// TODO: Implement KClass reflection (expectedException checking)
+// TODO: Implement CoroutineContext, CoroutineName, NonCancellable
+// TODO: Implement Dispatchers and NamedDispatchers
+// TODO: Implement flowOn, launchIn, buffer, onEach
+// TODO: Implement assertFailsWith
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.testing.flow.*
-import kotlin.coroutines.*
-import kotlin.reflect.*
-import kotlin.test.*
+#include <functional>
+#include <optional>
+#include <stdexcept>
+// TODO: #include proper headers
 
-class FlowInvariantsTest : TestBase() {
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-    private fun <T> runParametrizedTest(
-        expectedException: KClass<out Throwable>? = null,
-        testBody: suspend (flowFactory: (suspend FlowCollector<T>.() -> Unit) -> Flow<T>) -> Unit
-    ) = runTest {
-        val r1 = runCatching { testBody { flow(it) } }.exceptionOrNull()
-        check(r1, expectedException)
-        reset()
+class FlowInvariantsTest : public TestBase {
+private:
+    template<typename T>
+    void run_parametrized_test(
+        std::optional</* KClass<out Throwable> */> expected_exception = std::nullopt,
+        std::function<void(std::function<Flow<T>(std::function<void(FlowCollector<T>&)>)>)> test_body
+    ) {
+        run_test([&]() -> /* suspend */ void {
+            auto r1 = run_catching([&]() { test_body([](auto block) { return flow(block); }); }).exception_or_null();
+            check(r1, expected_exception);
+            reset();
 
-        val r2 = runCatching { testBody { abstractFlow(it) } }.exceptionOrNull()
-        check(r2, expectedException)
+            auto r2 = run_catching([&]() { test_body([](auto block) { return abstract_flow(block); }); }).exception_or_null();
+            check(r2, expected_exception);
+        });
     }
 
-    private fun <T> abstractFlow(block: suspend FlowCollector<T>.() -> Unit): Flow<T> = object : AbstractFlow<T>() {
-        override suspend fun collectSafely(collector: FlowCollector<T>) {
-            collector.block()
-        }
-    }
+    template<typename T>
+    Flow<T> abstract_flow(std::function<void(FlowCollector<T>&)> block) {
+        // object : AbstractFlow<T>()
+        struct FlowImpl : public AbstractFlow<T> {
+            std::function<void(FlowCollector<T>&)> block_;
 
-    private fun check(exception: Throwable?, expectedException: KClass<out Throwable>?) {
-        if (expectedException != null && exception == null) fail("Expected $expectedException, but test completed successfully")
-        if (expectedException != null && exception != null) assertTrue(expectedException.isInstance(exception))
-        if (expectedException == null && exception != null) throw exception
-    }
+            FlowImpl(std::function<void(FlowCollector<T>&)> b) : block_(b) {}
 
-    @Test
-    fun testWithContextContract() = runParametrizedTest<Int>(IllegalStateException::class) { flow ->
-        flow {
-            withContext(NonCancellable) {
-                emit(1)
+            void collect_safely(FlowCollector<T>& collector) /* suspend */ override {
+                block_(collector);
             }
-        }.collect {
-            expectUnreached()
+        };
+        return FlowImpl(block);
+    }
+
+    void check(std::exception_ptr exception, std::optional</* KClass<out Throwable> */> expected_exception) {
+        if (expected_exception.has_value() && exception == nullptr) {
+            fail("Expected exception, but test completed successfully");
+        }
+        if (expected_exception.has_value() && exception != nullptr) {
+            // TODO: assertTrue(expectedException.isInstance(exception))
+            assert_true(/* is_instance check */);
+        }
+        if (!expected_exception.has_value() && exception != nullptr) {
+            std::rethrow_exception(exception);
         }
     }
 
-    @Test
-    fun testWithDispatcherContractViolated() = runParametrizedTest<Int>(IllegalStateException::class) { flow ->
-        flow {
-            withContext(NamedDispatchers("foo")) {
-                emit(1)
-            }
-        }.collect {
-            expectUnreached()
-        }
+public:
+    // @Test
+    void test_with_context_contract() {
+        run_parametrized_test<int>(/* IllegalStateException::class */ std::nullopt, [](auto flow_factory) -> /* suspend */ void {
+            flow_factory([](FlowCollector<int>& collector) -> /* suspend */ void {
+                with_context(NonCancellable, [&]() -> /* suspend */ void {
+                    collector.emit(1);
+                });
+            }).collect([](int value) {
+                expect_unreached();
+            });
+        });
     }
 
-    @Test
-    fun testWithNameContractViolated() = runParametrizedTest<Int>(IllegalStateException::class) { flow ->
-        flow {
-            withContext(CoroutineName("foo")) {
-                emit(1)
-            }
-        }.collect {
-            expectUnreached()
-        }
+    // @Test
+    void test_with_dispatcher_contract_violated() {
+        run_parametrized_test<int>(/* IllegalStateException::class */ std::nullopt, [](auto flow_factory) -> /* suspend */ void {
+            flow_factory([](FlowCollector<int>& collector) -> /* suspend */ void {
+                with_context(NamedDispatchers("foo"), [&]() -> /* suspend */ void {
+                    collector.emit(1);
+                });
+            }).collect([](int value) {
+                expect_unreached();
+            });
+        });
     }
 
-    @Test
-    fun testWithContextDoesNotChangeExecution() = runTest {
-        val flow = flow {
-            emit(NamedDispatchers.name())
-        }.flowOn(NamedDispatchers("original"))
+    // @Test
+    void test_with_name_contract_violated() {
+        run_parametrized_test<int>(/* IllegalStateException::class */ std::nullopt, [](auto flow_factory) -> /* suspend */ void {
+            flow_factory([](FlowCollector<int>& collector) -> /* suspend */ void {
+                with_context(CoroutineName("foo"), [&]() -> /* suspend */ void {
+                    collector.emit(1);
+                });
+            }).collect([](int value) {
+                expect_unreached();
+            });
+        });
+    }
 
-        var result = "unknown"
-        withContext(NamedDispatchers("misc")) {
-            flow
-                .flowOn(NamedDispatchers("upstream"))
-                .launchIn(this + NamedDispatchers("consumer")) {
-                    onEach {
-                        result = it
+    // @Test
+    void test_with_context_does_not_change_execution() {
+        run_test([]() -> /* suspend */ void {
+            auto flow_instance = flow([](FlowCollector<std::string>& collector) -> /* suspend */ void {
+                collector.emit(NamedDispatchers::name());
+            }).flow_on(NamedDispatchers("original"));
+
+            std::string result = "unknown";
+            with_context(NamedDispatchers("misc"), [&]() -> /* suspend */ void {
+                flow_instance
+                    .flow_on(NamedDispatchers("upstream"))
+                    .launch_in(*this + NamedDispatchers("consumer"), [&](auto& scope) {
+                        scope.on_each([&](const std::string& it) {
+                            result = it;
+                        });
+                    }).join();
+            });
+            assert_equals("original", result);
+        });
+    }
+
+    // @Test
+    void test_scoped_job() {
+        run_parametrized_test<int>(/* IllegalStateException::class */ std::nullopt, [](auto flow_factory) -> /* suspend */ void {
+            flow_factory([](FlowCollector<int>& collector) -> /* suspend */ void {
+                collector.emit(1);
+            }).buffer(EmptyCoroutineContext, flow_factory).collect([](int value) {
+                expect(1);
+            });
+            finish(2);
+        });
+    }
+
+    // @Test
+    void test_scoped_job_with_violation() {
+        run_parametrized_test<int>(/* IllegalStateException::class */ std::nullopt, [](auto flow_factory) -> /* suspend */ void {
+            flow_factory([](FlowCollector<int>& collector) -> /* suspend */ void {
+                collector.emit(1);
+            }).buffer(Dispatchers::Unconfined, flow_factory).collect([](int value) {
+                expect(1);
+            });
+            finish(2);
+        });
+    }
+
+    // @Test
+    void test_merge_violation() {
+        run_parametrized_test<int>(std::nullopt, [](auto flow_factory) -> /* suspend */ void {
+            auto merge = [](Flow<int>& self, Flow<int>& other) -> Flow<int> {
+                return flow_factory([&](FlowCollector<int>& collector) -> /* suspend */ void {
+                    coroutine_scope([&]() -> /* suspend */ void {
+                        launch([&]() -> /* suspend */ void {
+                            self.collect([&](int value) -> /* suspend */ void {
+                                collector.emit(value);
+                            });
+                        });
+                        other.collect([&](int value) -> /* suspend */ void {
+                            collector.emit(value);
+                        });
+                    });
+                });
+            };
+
+            auto tricky_merge = [](Flow<int>& self, Flow<int>& other) -> Flow<int> {
+                return flow_factory([&](FlowCollector<int>& collector) -> /* suspend */ void {
+                    coroutine_scope([&]() -> /* suspend */ void {
+                        launch([&]() -> /* suspend */ void {
+                            self.collect([&](int value) -> /* suspend */ void {
+                                coroutine_scope([&]() -> /* suspend */ void {
+                                    collector.emit(value);
+                                });
+                            });
+                        });
+                        other.collect([&](int value) -> /* suspend */ void {
+                            collector.emit(value);
+                        });
+                    });
+                });
+            };
+
+            auto flow_instance = flow_of(1);
+            assert_fails_with<IllegalStateException>([&]() { merge(flow_instance, flow_instance).to_list(); });
+            assert_fails_with<IllegalStateException>([&]() { tricky_merge(flow_instance, flow_instance).to_list(); });
+        });
+    }
+
+    // @Test
+    void test_no_merge_violation() {
+        run_test([]() -> /* suspend */ void {
+            auto merge = [](Flow<int>& self, Flow<int>& other) -> Flow<int> {
+                return channel_flow([&](auto& channel_scope) -> /* suspend */ void {
+                    channel_scope.launch([&]() -> /* suspend */ void {
+                        self.collect([&](int value) -> /* suspend */ void {
+                            channel_scope.send(value);
+                        });
+                    });
+                    other.collect([&](int value) -> /* suspend */ void {
+                        channel_scope.send(value);
+                    });
+                });
+            };
+
+            auto tricky_merge = [](Flow<int>& self, Flow<int>& other) -> Flow<int> {
+                return channel_flow([&](auto& channel_scope) -> /* suspend */ void {
+                    coroutine_scope([&]() -> /* suspend */ void {
+                        launch([&]() -> /* suspend */ void {
+                            self.collect([&](int value) -> /* suspend */ void {
+                                coroutine_scope([&]() -> /* suspend */ void {
+                                    channel_scope.send(value);
+                                });
+                            });
+                        });
+                        other.collect([&](int value) -> /* suspend */ void {
+                            channel_scope.send(value);
+                        });
+                    });
+                });
+            };
+
+            auto flow_instance = flow_of(1);
+            assert_equals(std::vector<int>{1, 1}, merge(flow_instance, flow_instance).to_list());
+            assert_equals(std::vector<int>{1, 1}, tricky_merge(flow_instance, flow_instance).to_list());
+        });
+    }
+
+    // @Test
+    void test_scoped_coroutine_no_violation() {
+        run_parametrized_test<int>(std::nullopt, [](auto flow_factory) -> /* suspend */ void {
+            auto buffer_fn = [&](Flow<int>& self) -> Flow<int> {
+                return flow_factory([&](FlowCollector<int>& collector) -> /* suspend */ void {
+                    coroutine_scope([&]() -> /* suspend */ void {
+                        auto channel = produce([&](auto& producer) -> /* suspend */ void {
+                            self.collect([&](int value) -> /* suspend */ void {
+                                producer.send(value);
+                            });
+                        });
+                        channel.consume_each([&](int value) -> /* suspend */ void {
+                            collector.emit(value);
+                        });
+                    });
+                });
+            };
+            auto flow_instance = flow_of(1, 1);
+            assert_equals(std::vector<int>{1, 1}, buffer_fn(flow_instance).to_list());
+        });
+    }
+
+private:
+    Flow<int> buffer(Flow<int>& self, CoroutineContext& coroutine_context,
+                     std::function<Flow<int>(std::function<void(FlowCollector<int>&)>)> flow_factory) {
+        return flow_factory([&](FlowCollector<int>& collector) -> /* suspend */ void {
+            coroutine_scope([&]() -> /* suspend */ void {
+                Channel<int> channel;
+                launch([&]() -> /* suspend */ void {
+                    self.collect([&](int value) -> /* suspend */ void {
+                        channel.send(value);
+                    });
+                    channel.close();
+                });
+
+                launch(coroutine_context, [&]() -> /* suspend */ void {
+                    for (int i : channel) {
+                        collector.emit(i);
                     }
-                }.join()
-        }
-        assertEquals("original", result)
+                });
+            });
+        });
     }
 
-    @Test
-    fun testScopedJob() = runParametrizedTest<Int>(IllegalStateException::class) { flow ->
-        flow { emit(1) }.buffer(EmptyCoroutineContext, flow).collect {
-            expect(1)
-        }
-        finish(2)
+public:
+    // @Test
+    void test_empty_coroutine_context_map() {
+        run_test([]() -> /* suspend */ void {
+            empty_context_test([](Flow<int>& flow) -> Flow<int> {
+                return flow.map([](int it) {
+                    expect(it);
+                    return it + 1;
+                });
+            });
+        });
     }
 
-    @Test
-    fun testScopedJobWithViolation() = runParametrizedTest<Int>(IllegalStateException::class) { flow ->
-        flow { emit(1) }.buffer(Dispatchers.Unconfined, flow).collect {
-            expect(1)
-        }
-        finish(2)
+    // @Test
+    void test_empty_coroutine_context_transform() {
+        run_test([]() -> /* suspend */ void {
+            empty_context_test([](Flow<int>& flow) -> Flow<int> {
+                return flow.transform([](int it, FlowCollector<int>& collector) -> /* suspend */ void {
+                    expect(it);
+                    collector.emit(it + 1);
+                });
+            });
+        });
     }
 
-    @Test
-    fun testMergeViolation() = runParametrizedTest<Int> { flow ->
-        fun Flow<Int>.merge(other: Flow<Int>): Flow<Int> = flow {
-            coroutineScope {
-                launch {
-                    collect { value -> emit(value) }
-                }
-                other.collect { value -> emit(value) }
+    // @Test
+    void test_empty_coroutine_context_transform_while() {
+        run_test([]() -> /* suspend */ void {
+            empty_context_test([](Flow<int>& flow) -> Flow<int> {
+                return flow.transform_while([](int it, FlowCollector<int>& collector) -> /* suspend */ bool {
+                    expect(it);
+                    collector.emit(it + 1);
+                    return true;
+                });
+            });
+        });
+    }
+
+    // @Test
+    void test_empty_coroutine_context_violation_transform() {
+        run_test([]() -> /* suspend */ void {
+            try {
+                empty_context_test([](Flow<int>& flow) -> Flow<int> {
+                    return flow.transform([](int it, FlowCollector<int>& collector) -> /* suspend */ void {
+                        expect(it);
+                        with_context(Dispatchers::Unconfined, [&]() -> /* suspend */ void {
+                            collector.emit(it + 1);
+                        });
+                    });
+                });
+                expect_unreached();
+            } catch (const IllegalStateException& e) {
+                assert_true(std::string(e.what()).find("Flow invariant is violated") != std::string::npos);
+                finish(2);
             }
-        }
-
-        fun Flow<Int>.trickyMerge(other: Flow<Int>): Flow<Int> = flow {
-            coroutineScope {
-                launch {
-                    collect { value ->
-                        coroutineScope { emit(value) }
-                    }
-                }
-                other.collect { value -> emit(value) }
-            }
-        }
-
-        val flowInstance = flowOf(1)
-        assertFailsWith<IllegalStateException> { flowInstance.merge(flowInstance).toList() }
-        assertFailsWith<IllegalStateException> { flowInstance.trickyMerge(flowInstance).toList() }
+        });
     }
 
-    @Test
-    fun testNoMergeViolation() = runTest {
-        fun Flow<Int>.merge(other: Flow<Int>): Flow<Int> = channelFlow {
-            launch {
-                collect { value -> send(value) }
+    // @Test
+    void test_empty_coroutine_context_violation_transform_while() {
+        run_test([]() -> /* suspend */ void {
+            try {
+                empty_context_test([](Flow<int>& flow) -> Flow<int> {
+                    return flow.transform_while([](int it, FlowCollector<int>& collector) -> /* suspend */ bool {
+                        expect(it);
+                        with_context(Dispatchers::Unconfined, [&]() -> /* suspend */ void {
+                            collector.emit(it + 1);
+                        });
+                        return true;
+                    });
+                });
+                expect_unreached();
+            } catch (const IllegalStateException& e) {
+                assert_true(std::string(e.what()).find("Flow invariant is violated") != std::string::npos);
+                finish(2);
             }
-            other.collect { value -> send(value) }
-        }
-
-        fun Flow<Int>.trickyMerge(other: Flow<Int>): Flow<Int> = channelFlow {
-            coroutineScope {
-                launch {
-                    collect { value ->
-                        coroutineScope { send(value) }
-                    }
-                }
-                other.collect { value -> send(value) }
-            }
-        }
-
-        val flow = flowOf(1)
-        assertEquals(listOf(1, 1), flow.merge(flow).toList())
-        assertEquals(listOf(1, 1), flow.trickyMerge(flow).toList())
+        });
     }
 
-    @Test
-    fun testScopedCoroutineNoViolation() = runParametrizedTest<Int> { flow ->
-        fun Flow<Int>.buffer(): Flow<Int> = flow {
-            coroutineScope {
-                val channel = produce {
-                    collect {
-                        send(it)
-                    }
-                }
-                channel.consumeEach {
-                    emit(it)
-                }
-            }
-        }
-        assertEquals(listOf(1, 1), flowOf(1, 1).buffer().toList())
+private:
+    void empty_context_test(std::function<Flow<int>(Flow<int>&)> block) /* suspend */ {
+        auto collector = [&]() -> /* suspend */ int {
+            int result = -1;
+            channel_flow([](auto& scope) -> /* suspend */ void {
+                scope.send(1);
+            }).block()
+                .collect([&](int it) -> /* suspend */ void {
+                    expect(it);
+                    result = it;
+                });
+            return result;
+        };
+
+        int result = with_empty_context([&]() { return collector(); });
+        assert_equals(2, result);
+        finish(3);
     }
+};
 
-    private fun Flow<Int>.buffer(coroutineContext: CoroutineContext, flow: (suspend FlowCollector<Int>.() -> Unit) -> Flow<Int>): Flow<Int> = flow {
-        coroutineScope {
-            val channel = Channel<Int>()
-            launch {
-                collect { value ->
-                    channel.send(value)
-                }
-                channel.close()
-            }
-
-            launch(coroutineContext) {
-                for (i in channel) {
-                    emit(i)
-                }
-            }
-        }
-    }
-
-    @Test
-    fun testEmptyCoroutineContextMap() = runTest {
-        emptyContextTest {
-            map {
-                expect(it)
-                it + 1
-            }
-        }
-    }
-
-    @Test
-    fun testEmptyCoroutineContextTransform() = runTest {
-        emptyContextTest {
-            transform {
-                expect(it)
-                emit(it + 1)
-            }
-        }
-    }
-
-    @Test
-    fun testEmptyCoroutineContextTransformWhile() = runTest {
-        emptyContextTest {
-            transformWhile {
-                expect(it)
-                emit(it + 1)
-                true
-            }
-        }
-    }
-
-    @Test
-    fun testEmptyCoroutineContextViolationTransform() = runTest {
-        try {
-            emptyContextTest {
-                transform {
-                    expect(it)
-                    withContext(Dispatchers.Unconfined) {
-                        emit(it + 1)
-                    }
-                }
-            }
-            expectUnreached()
-        } catch (e: IllegalStateException) {
-            assertTrue(e.message!!.contains("Flow invariant is violated"), "But had: ${e.message}")
-            finish(2)
-        }
-    }
-
-    @Test
-    fun testEmptyCoroutineContextViolationTransformWhile() = runTest {
-        try {
-            emptyContextTest {
-                transformWhile {
-                    expect(it)
-                    withContext(Dispatchers.Unconfined) {
-                        emit(it + 1)
-                    }
-                    true
-                }
-            }
-            expectUnreached()
-        } catch (e: IllegalStateException) {
-            assertTrue(e.message!!.contains("Flow invariant is violated"))
-            finish(2)
-        }
-    }
-
-    private suspend fun emptyContextTest(block: Flow<Int>.() -> Flow<Int>) {
-        suspend fun collector(): Int {
-            var result: Int = -1
-            channelFlow {
-                send(1)
-            }.block()
-                .collect {
-                    expect(it)
-                    result = it
-                }
-            return result
-        }
-
-        val result = withEmptyContext { collector() }
-        assertEquals(2, result)
-        finish(3)
-    }
-}
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

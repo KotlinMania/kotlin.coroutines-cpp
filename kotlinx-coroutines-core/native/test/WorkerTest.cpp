@@ -1,62 +1,77 @@
-package kotlinx.coroutines
+// Original file: kotlinx-coroutines-core/native/test/WorkerTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert @Test annotation to appropriate test framework
+// TODO: Convert suspend functions and coroutine builders
+// TODO: Handle Worker and TransferMode APIs
+// TODO: Handle TestBase inheritance
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.channels.*
-import kotlin.coroutines.*
-import kotlin.native.concurrent.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class WorkerTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.native.concurrent.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testLaunchInWorker() {
-        val worker = Worker.start()
-        worker.execute(TransferMode.SAFE, { }) {
-            runBlocking {
-                launch { }.join()
-                delay(1)
-            }
-        }.result
-        worker.requestTermination()
+class WorkerTest : public TestBase {
+public:
+    // TODO: @Test
+    void test_launch_in_worker() {
+        auto worker = Worker::start();
+        worker.execute(TransferMode::kSafe, []() {}, []() {
+            // TODO: runBlocking is a suspend function
+            // runBlocking {
+            launch([]() {}).join();
+            delay(1);
+            // }
+        }).result;
+        worker.request_termination();
     }
 
-    @Test
-    fun testLaunchInWorkerThroughGlobalScope() {
-        val worker = Worker.start()
-        worker.execute(TransferMode.SAFE, { }) {
-            runBlocking {
-                CoroutineScope(EmptyCoroutineContext).launch {
-                    delay(10)
-                }.join()
-            }
-        }.result
-        worker.requestTermination()
+    // TODO: @Test
+    void test_launch_in_worker_through_global_scope() {
+        auto worker = Worker::start();
+        worker.execute(TransferMode::kSafe, []() {}, []() {
+            // TODO: runBlocking is a suspend function
+            // runBlocking {
+            CoroutineScope(EmptyCoroutineContext).launch([&]() {
+                delay(10);
+            }).join();
+            // }
+        }).result;
+        worker.request_termination();
     }
 
     /**
      * Test that [runBlocking] does not crash after [Worker.requestTermination] is called on the worker that runs it.
      */
-    @Test
-    fun testRunBlockingInTerminatedWorker() {
-        val workerInRunBlocking = Channel<Unit>()
-        val workerTerminated = Channel<Unit>()
-        val checkResumption = Channel<Unit>()
-        val finished = Channel<Unit>()
-        val worker = Worker.start()
-        worker.executeAfter(0) {
-            runBlocking {
-                workerInRunBlocking.send(Unit)
-                workerTerminated.receive()
-                checkResumption.receive()
-                finished.send(Unit)
-            }
-        }
-        runBlocking {
-            workerInRunBlocking.receive()
-            worker.requestTermination()
-            workerTerminated.send(Unit)
-            checkResumption.send(Unit)
-            finished.receive()
-        }
+    // TODO: @Test
+    void test_run_blocking_in_terminated_worker() {
+        Channel<void> worker_in_run_blocking;
+        Channel<void> worker_terminated;
+        Channel<void> check_resumption;
+        Channel<void> finished;
+        auto worker = Worker::start();
+        worker.execute_after(0, [&]() {
+            // TODO: runBlocking is a suspend function
+            // runBlocking {
+            worker_in_run_blocking.send();
+            worker_terminated.receive();
+            check_resumption.receive();
+            finished.send();
+            // }
+        });
+        // TODO: runBlocking is a suspend function
+        // runBlocking {
+        worker_in_run_blocking.receive();
+        worker.request_termination();
+        worker_terminated.send();
+        check_resumption.send();
+        finished.receive();
+        // }
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,74 +1,112 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/CoroutineDispatcherOperatorFunInvokeTest.kt
+// TODO: Review imports and dependencies
+// TODO: Adapt test framework annotations to C++ testing framework
+// TODO: Handle suspend functions and coroutine context
+// TODO: Handle nullable types appropriately
 
-import kotlinx.coroutines.testing.*
-import kotlin.coroutines.ContinuationInterceptor
-import kotlin.coroutines.CoroutineContext
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class CoroutineDispatcherOperatorFunInvokeTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.coroutines.ContinuationInterceptor
+// TODO: import kotlin.coroutines.CoroutineContext
+// TODO: import kotlin.test.*
 
+class CoroutineDispatcherOperatorFunInvokeTest : public TestBase {
+public:
     /**
      * Copy pasted from [WithContextTest.testThrowException],
      * then edited to use operator.
      */
-    @Test
-    fun testThrowException() = runTest {
-        expect(1)
-        try {
-            (wrappedCurrentDispatcher()) {
-                expect(2)
-                throw AssertionError()
+    // @Test
+    void test_throw_exception() {
+        run_test([this]() {
+            expect(1);
+            try {
+                wrapped_current_dispatcher()([this]() {
+                    expect(2);
+                    throw AssertionError();
+                });
+            } catch (const AssertionError& e) {
+                expect(3);
             }
-        } catch (e: AssertionError) {
-            expect(3)
-        }
 
-        yield()
-        finish(4)
+            yield();
+            finish(4);
+        });
     }
 
     /**
      * Copy pasted from [WithContextTest.testWithContextChildWaitSameContext],
      * then edited to use operator fun invoke for [CoroutineDispatcher].
      */
-    @Test
-    fun testWithContextChildWaitSameContext() = runTest {
-        expect(1)
-        (wrappedCurrentDispatcher()) {
-            expect(2)
-            launch {
-                // ^^^ schedules to main thread
-                expect(4) // waits before return
-            }
-            expect(3)
-            "OK".wrap()
-        }.unwrap()
-        finish(5)
+    // @Test
+    void test_with_context_child_wait_same_context() {
+        run_test([this]() {
+            expect(1);
+            wrapped_current_dispatcher()([this]() {
+                expect(2);
+                launch([this]() {
+                    // ^^^ schedules to main thread
+                    expect(4); // waits before return
+                });
+                expect(3);
+                return Wrapper("OK");
+            }).unwrap();
+            finish(5);
+        });
     }
 
-    private class Wrapper(val value: String) : Incomplete {
-        override val isActive: Boolean
-            get() = error("")
-        override val list: NodeList?
-            get() = error("")
+private:
+    class Wrapper : public Incomplete {
+    public:
+        std::string value;
+        explicit Wrapper(std::string v) : value(std::move(v)) {}
+
+        bool is_active() const override {
+            throw std::runtime_error("");
+        }
+        NodeList* list() const override {
+            throw std::runtime_error("");
+        }
+    };
+
+    Wrapper wrap(const std::string& value) {
+        return Wrapper(value);
     }
 
-    private fun String.wrap() = Wrapper(this)
-    private fun Wrapper.unwrap() = value
-
-    private fun CoroutineScope.wrappedCurrentDispatcher() = object : CoroutineDispatcher() {
-        val dispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher
-        override fun dispatch(context: CoroutineContext, block: Runnable) {
-            dispatcher.dispatch(context, block)
-        }
-
-        override fun isDispatchNeeded(context: CoroutineContext): Boolean {
-            return dispatcher.isDispatchNeeded(context)
-        }
-
-        @InternalCoroutinesApi
-        override fun dispatchYield(context: CoroutineContext, block: Runnable) {
-            dispatcher.dispatchYield(context, block)
-        }
+    std::string unwrap(const Wrapper& wrapper) {
+        return wrapper.value;
     }
-}
+
+    class WrappedDispatcher : public CoroutineDispatcher {
+    public:
+        CoroutineDispatcher& dispatcher;
+
+        explicit WrappedDispatcher(CoroutineDispatcher& d) : dispatcher(d) {}
+
+        void dispatch(CoroutineContext context, Runnable block) override {
+            dispatcher.dispatch(context, block);
+        }
+
+        bool is_dispatch_needed(CoroutineContext context) const override {
+            return dispatcher.is_dispatch_needed(context);
+        }
+
+        // @InternalCoroutinesApi
+        void dispatch_yield(CoroutineContext context, Runnable block) override {
+            dispatcher.dispatch_yield(context, block);
+        }
+    };
+
+    WrappedDispatcher wrapped_current_dispatcher() {
+        auto& dispatcher = static_cast<CoroutineDispatcher&>(
+            *coroutine_context[ContinuationInterceptor()]
+        );
+        return WrappedDispatcher(dispatcher);
+    }
+};
+
+} // namespace coroutines
+} // namespace kotlinx

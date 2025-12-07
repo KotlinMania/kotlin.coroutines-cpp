@@ -1,14 +1,56 @@
-package kotlinx.coroutines.test
-import kotlinx.coroutines.*
+// Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestBuilders (Native)
+// Original package: kotlinx.coroutines.test
+// Platform: Native
+//
+// TODO: Import statements removed; fully qualify types or add appropriate includes
+// TODO: actual/expect mechanism - this is the native-specific implementation
+// TODO: suspend functions translated as normal functions; coroutine semantics NOT implemented
+// TODO: typealias needs translation to using or typedef
 
-public actual typealias TestResult = Unit
+namespace kotlinx {
+namespace coroutines {
+namespace test {
 
-internal actual fun createTestResult(testProcedure: suspend CoroutineScope.() -> Unit) {
-    runBlocking {
-        testProcedure()
-    }
+// package kotlinx.coroutines.test
+// import kotlinx.coroutines.*
+
+/**
+ * Native implementation of TestResult.
+ * On JVM and Native, TestResult resolves to Unit.
+ */
+// public actual typealias TestResult = Unit
+using TestResult = void; // TODO: Kotlin Unit translates to void or empty struct
+
+/**
+ * Native implementation of createTestResult.
+ * Runs the test procedure using runBlocking.
+ */
+// TODO: actual function - platform-specific implementation
+// TODO: suspend function - coroutine semantics not implemented
+void create_test_result(std::function<void(CoroutineScope&)> test_procedure) {
+    run_blocking([&](CoroutineScope& scope) {
+        test_procedure(scope);
+    });
 }
 
-internal actual fun systemPropertyImpl(name: String): String? = null
+/**
+ * Native implementation of systemPropertyImpl.
+ * Returns null as native doesn't have system properties like JVM.
+ */
+// TODO: actual function - platform-specific implementation
+std::optional<std::string> system_property_impl(const std::string& name) {
+    return std::nullopt;
+}
 
-internal actual fun dumpCoroutines() { }
+/**
+ * Native implementation of dumpCoroutines.
+ * No-op on native platform.
+ */
+// TODO: actual function - platform-specific implementation
+void dump_coroutines() {
+    // No-op on native
+}
+
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,9 +1,26 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/internal/ThreadLocal.common.kt
+//
+// TODO: This is a mechanical transliteration - semantics not fully implemented
+// TODO: expect class needs platform-specific implementation (e.g., thread_local)
+// TODO: expect function needs platform-specific implementation
+// TODO: Symbol class needs implementation
 
-internal expect class CommonThreadLocal<T> {
-    fun get(): T
-    fun set(value: T)
-}
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
+
+// Forward declaration
+class Symbol;
+
+// TODO: expect class - needs platform-specific implementation
+template<typename T>
+class CommonThreadLocal {
+public:
+    virtual ~CommonThreadLocal() = default;
+    virtual T get() = 0;
+    virtual void set(T value) = 0;
+};
 
 /**
  * Create a thread-local storage for an object of type [T].
@@ -12,4 +29,10 @@ internal expect class CommonThreadLocal<T> {
  * but they may.
  * Therefore, use a unique [name] for each thread-local object.
  */
-internal expect fun<T> commonThreadLocal(name: Symbol): CommonThreadLocal<T>
+// TODO: expect function - needs platform-specific implementation
+template<typename T>
+CommonThreadLocal<T>* common_thread_local(Symbol* name);
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

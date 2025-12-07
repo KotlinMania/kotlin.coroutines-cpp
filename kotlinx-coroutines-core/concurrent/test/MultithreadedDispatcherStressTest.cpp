@@ -1,31 +1,45 @@
-package kotlinx.coroutines
+// Original: kotlinx-coroutines-core/concurrent/test/MultithreadedDispatcherStressTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert test annotations to C++ test framework
+// TODO: Implement atomic operations with std::atomic
+// TODO: Implement newFixedThreadPoolContext
+// TODO: Implement EmptyCoroutineContext, Runnable
 
-import kotlinx.atomicfu.*
-import kotlin.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+
+// TODO: import kotlinx.atomicfu.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.test.*
 
 class MultithreadedDispatcherStressTest {
-    private val shared = atomic(0)
+private:
+    std::atomic<int> shared{0};
 
+public:
     /**
      * Tests that [newFixedThreadPoolContext] will not drop tasks when closed.
      */
-    @Test
-    fun testClosingNotDroppingTasks() {
-        repeat(7) {
-            shared.value = 0
-            val nThreads = it + 1
-            val dispatcher = newFixedThreadPoolContext(nThreads, "testMultiThreadedContext")
-            repeat(1_000) {
-                dispatcher.dispatch(EmptyCoroutineContext, Runnable {
-                    shared.incrementAndGet()
-                })
+    // @Test
+    // TODO: Convert test annotation
+    void test_closing_not_dropping_tasks() {
+        for (int it = 0; it < 7; ++it) {
+            shared.store(0);
+            int n_threads = it + 1;
+            auto dispatcher = new_fixed_thread_pool_context(n_threads, "testMultiThreadedContext");
+            for (int i = 0; i < 1'000; ++i) {
+                dispatcher.dispatch(EmptyCoroutineContext, Runnable([&]() {
+                    shared.fetch_add(1);
+                }));
             }
-            dispatcher.close()
-            while (shared.value < 1_000) {
+            dispatcher.close();
+            while (shared.load() < 1'000) {
                 // spin.
                 // the test will hang here if the dispatcher drops tasks.
             }
         }
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

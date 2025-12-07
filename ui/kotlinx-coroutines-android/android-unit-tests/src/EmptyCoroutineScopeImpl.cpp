@@ -1,20 +1,38 @@
-package kotlinx.coroutines.android
+// Original: ui/kotlinx-coroutines-android/android-unit-tests/src/EmptyCoroutineScopeImpl.kt
+// Transliterated from Kotlin to C++ - First pass syntax conversion
+// TODO: Implement CoroutineScope interface
+// TODO: Map CoroutineContext to C++ equivalent
+// TODO: Implement EmptyCoroutineContext
 
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
+namespace kotlinx {
+namespace coroutines {
+namespace android {
+
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.coroutines.*
 
 // Classes for testing service loader
-internal class EmptyCoroutineScopeImpl1 : CoroutineScope {
-    override val coroutineContext: CoroutineContext
-        get() = EmptyCoroutineContext
-}
+class EmptyCoroutineScopeImpl1 : public CoroutineScope {
+public:
+    CoroutineContext coroutine_context() const override {
+        return EmptyCoroutineContext;
+    }
+};
 
-internal class EmptyCoroutineScopeImpl2 : CoroutineScope {
-    override val coroutineContext: CoroutineContext
-        get() = EmptyCoroutineContext
-}
+class EmptyCoroutineScopeImpl2 : public CoroutineScope {
+public:
+    CoroutineContext coroutine_context() const override {
+        return EmptyCoroutineContext;
+    }
+};
 
-internal class EmptyCoroutineScopeImpl3 : CoroutineScope {
-    override val coroutineContext: CoroutineContext
-        get() = EmptyCoroutineContext
-}
+class EmptyCoroutineScopeImpl3 : public CoroutineScope {
+public:
+    CoroutineContext coroutine_context() const override {
+        return EmptyCoroutineContext;
+    }
+};
+
+} // namespace android
+} // namespace coroutines
+} // namespace kotlinx

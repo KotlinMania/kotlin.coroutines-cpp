@@ -1,63 +1,105 @@
-package kotlinx.coroutines.flow
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/flow/TakeWhileBenchmark.kt
+// TODO: Resolve imports and dependencies
+// TODO: Implement JMH benchmark annotations
+// TODO: Handle suspend functions and coroutines
+// TODO: Implement Flow operations
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.internal.*
-import kotlinx.coroutines.flow.internal.AbortFlowException
-import kotlinx.coroutines.flow.internal.unsafeFlow
-import org.openjdk.jmh.annotations.*
-import java.util.concurrent.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(value = 1)
-@BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
-@State(Scope.Benchmark)
-open class TakeWhileBenchmark {
-    @Param("1", "10", "100", "1000")
-    private var size: Int = 0
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.flow.internal.*
+// TODO: import kotlinx.coroutines.flow.internal.AbortFlowException
+// TODO: import kotlinx.coroutines.flow.internal.unsafeFlow
+// TODO: import org.openjdk.jmh.annotations.*
+// TODO: import java.util.concurrent.*
 
-    private suspend inline fun Flow<Long>.consume() =
-        filter { it % 2L != 0L }
-            .map { it * it }.count()
+// TODO: @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+// TODO: @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+// TODO: @Fork(value = 1)
+// TODO: @BenchmarkMode(Mode.AverageTime)
+// TODO: @OutputTimeUnit(TimeUnit.MICROSECONDS)
+// TODO: @State(Scope.Benchmark)
+class TakeWhileBenchmark {
+private:
+    // TODO: @Param("1", "10", "100", "1000")
+    int size_ = 0;
 
-    @Benchmark
-    fun baseline() = runBlocking<Int> {
-        (0L until size).asFlow().consume()
+    // TODO: suspend inline function
+    template<typename FlowType>
+    int consume(FlowType&& flow) {
+        return flow.filter([](int64_t it) {
+                return it % 2L != 0L;
+            })
+            .map([](int64_t it) {
+                return it * it;
+            })
+            .count();
     }
 
-    @Benchmark
-    fun takeWhileDirect() = runBlocking<Int> {
-        (0L..Long.MAX_VALUE).asFlow().takeWhileDirect { it < size }.consume()
+public:
+    // TODO: @Benchmark annotation
+    int baseline() {
+        return run_blocking<int>([this]() {
+            // TODO: (0L until size).asFlow().consume()
+            return 0;
+        });
     }
 
-    @Benchmark
-    fun takeWhileViaCollectWhile() = runBlocking<Int> {
-        (0L..Long.MAX_VALUE).asFlow().takeWhileViaCollectWhile { it < size }.consume()
+    // TODO: @Benchmark annotation
+    int take_while_direct() {
+        return run_blocking<int>([this]() {
+            // TODO: (0L..Long.MAX_VALUE).asFlow().takeWhileDirect { it < size }.consume()
+            return 0;
+        });
     }
 
+    // TODO: @Benchmark annotation
+    int take_while_via_collect_while() {
+        return run_blocking<int>([this]() {
+            // TODO: (0L..Long.MAX_VALUE).asFlow().takeWhileViaCollectWhile { it < size }.consume()
+            return 0;
+        });
+    }
+
+private:
     // Direct implementation by checking predicate and throwing AbortFlowException
-    private fun <T> Flow<T>.takeWhileDirect(predicate: suspend (T) -> Boolean): Flow<T> = unsafeFlow {
-        try {
-            collect { value ->
-                if (predicate(value)) emit(value)
-                else throw AbortFlowException(this)
+    template<typename T, typename Predicate>
+    Flow<T> take_while_direct(Flow<T> flow, Predicate predicate) {
+        return unsafe_flow([=](auto collector) {
+            try {
+                flow.collect([&](T value) {
+                    if (predicate(value)) {
+                        collector.emit(value);
+                    } else {
+                        throw AbortFlowException(collector);
+                    }
+                });
+            } catch (const AbortFlowException& e) {
+                e.check_ownership(collector);
             }
-        } catch (e: AbortFlowException) {
-            e.checkOwnership(owner = this)
-        }
+        });
     }
 
     // Essentially the same code, but reusing the logic via collectWhile function
-    private fun <T> Flow<T>.takeWhileViaCollectWhile(predicate: suspend (T) -> Boolean): Flow<T> = unsafeFlow {
-        // This return is needed to work around a bug in JS BE: KT-39227
-        return@unsafeFlow collectWhile { value ->
-            if (predicate(value)) {
-                emit(value)
-                true
-            } else {
-                false
-            }
-        }
+    template<typename T, typename Predicate>
+    Flow<T> take_while_via_collect_while(Flow<T> flow, Predicate predicate) {
+        return unsafe_flow([=](auto collector) {
+            // This return is needed to work around a bug in JS BE: KT-39227
+            return flow.collect_while([&](T value) {
+                if (predicate(value)) {
+                    collector.emit(value);
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+        });
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,204 +1,52 @@
+// Original: kotlinx-coroutines-core/common/test/WithTimeoutTest.kt
+// TODO: Transliterated from Kotlin - needs C++ implementation
+// TODO: @file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED", "UNREACHABLE_CODE") // KT-21913
+// TODO: Handle withTimeout with Long parameter (milliseconds)
+// TODO: Map test framework annotations to C++ test framework
 
-@file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED", "UNREACHABLE_CODE") // KT-21913
+#include <cstdint>
 
-package kotlinx.coroutines
+namespace kotlinx {
+namespace coroutines {
 
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
+class WithTimeoutTest : public TestBase {
+public:
+    // TODO: @Test - Tests a case of no timeout and no suspension inside.
+    void test_basic_no_suspend() { /* expect(1); const auto result = with_timeout(10000) { expect(2); "OK"; } assertEquals("OK", result); finish(3); */ }
 
-class WithTimeoutTest : TestBase() {
-    /**
-     * Tests a case of no timeout and no suspension inside.
-     */
-    @Test
-    fun testBasicNoSuspend() = runTest {
-        expect(1)
-        val result = withTimeout(10_000) {
-            expect(2)
-            "OK"
-        }
-        assertEquals("OK", result)
-        finish(3)
-    }
+    // TODO: @Test - Tests a case of no timeout and one suspension inside.
+    void test_basic_suspend() { /* expect(1); const auto result = with_timeout(10000) { expect(2); yield(); expect(3); "OK"; } assertEquals("OK", result); finish(4); */ }
 
-    /**
-     * Tests a case of no timeout and one suspension inside.
-     */
-    @Test
-    fun testBasicSuspend() = runTest {
-        expect(1)
-        val result = withTimeout(10_000) {
-            expect(2)
-            yield()
-            expect(3)
-            "OK"
-        }
-        assertEquals("OK", result)
-        finish(4)
-    }
+    // TODO: @Test - Tests proper dispatching of withTimeout blocks
+    void test_dispatch() { /* expect(1); launch { expect(4); yield(); expect(7); } expect(2); const auto result = with_timeout(1000) { expect(3); yield(); expect(5); "OK"; } assertEquals("OK", result); expect(6); yield(); finish(8); */ }
 
-    /**
-     * Tests proper dispatching of `withTimeout` blocks
-     */
-    @Test
-    fun testDispatch() = runTest {
-        expect(1)
-        launch {
-            expect(4)
-            yield() // back to main
-            expect(7)
-        }
-        expect(2)
-        // test that it does not yield to the above job when started
-        val result = withTimeout(1000) {
-            expect(3)
-            yield() // yield only now
-            expect(5)
-            "OK"
-        }
-        assertEquals("OK", result)
-        expect(6)
-        yield() // back to launch
-        finish(8)
-    }
+    // TODO: @Test - Tests that a 100% CPU-consuming loop will react on timeout if it has yields.
+    void test_yield_blocking_with_timeout() { /* runTest(expected = { it is CancellationException }) { with_timeout(100) { while (true) { yield(); } } } */ }
 
+    // TODO: @Test - Tests that withTimeout waits for children coroutines to complete.
+    void test_with_timeout_child_wait() { /* expect(1); with_timeout(100) { expect(2); launch { expect(4); } expect(3); } finish(5); */ }
 
-    /**
-     * Tests that a 100% CPU-consuming loop will react on timeout if it has yields.
-     */
-    @Test
-    fun testYieldBlockingWithTimeout() = runTest(
-        expected = { it is CancellationException }
-    ) {
-        withTimeout(100) {
-            while (true) {
-                yield()
-            }
-        }
-    }
+    // TODO: @Test
+    void test_bad_class() { /* const auto bad = BadClass(); const auto result = with_timeout(100) { bad; } assertSame(bad, result); */ }
 
-    /**
-     * Tests that [withTimeout] waits for children coroutines to complete.
-     */
-    @Test
-    fun testWithTimeoutChildWait() = runTest {
-        expect(1)
-        withTimeout(100) {
-            expect(2)
-            // launch child with timeout
-            launch {
-                expect(4)
-            }
-            expect(3)
-            // now will wait for child before returning
-        }
-        finish(5)
-    }
+    // TODO: @Test
+    void test_exception_on_timeout() { /* expect(1); try { with_timeout(100) { expect(2); delay(1000); expectUnreached(); "OK"; } } catch (const CancellationException& e) { assertEquals("Timed out waiting for 100 ms", e.message); finish(3); } */ }
 
-    @Test
-    fun testBadClass() = runTest {
-        val bad = BadClass()
-        val result = withTimeout(100) {
-            bad
-        }
-        assertSame(bad, result)
-    }
+    // TODO: @Test
+    void test_suppress_exception_with_result() { /* runTest(expected = { it is CancellationException }) { expect(1); with_timeout(100) { expect(2); try { delay(1000); } catch (...) { finish(3); } "OK"; } expectUnreached(); } */ }
 
-    @Test
-    fun testExceptionOnTimeout() = runTest {
-        expect(1)
-        try {
-            withTimeout(100) {
-                expect(2)
-                delay(1000)
-                expectUnreached()
-                "OK"
-            }
-        } catch (e: CancellationException) {
-            assertEquals("Timed out waiting for 100 ms", e.message)
-            finish(3)
-        }
-    }
+    // TODO: @Test
+    void test_suppress_exception_with_another_exception() { /* expect(1); try { with_timeout(100) { expect(2); try { delay(1000); } catch (...) { expect(3); throw TestException(); } expectUnreached(); "OK"; } expectUnreached(); } catch (const TestException& e) { finish(4); } */ }
 
-    @Test
-    fun testSuppressExceptionWithResult() = runTest(
-        expected = { it is CancellationException }
-    ) {
-        expect(1)
-        withTimeout(100) {
-            expect(2)
-            try {
-                delay(1000)
-            } catch (e: CancellationException) {
-                finish(3)
-            }
-            "OK"
-        }
-        expectUnreached()
-    }
+    // TODO: @Test
+    void test_negative_timeout() { /* expect(1); try { with_timeout(-1) { expectUnreached(); "OK"; } } catch (const TimeoutCancellationException& e) { assertEquals("Timed out immediately", e.message); finish(2); } */ }
 
-    @Test
-    fun testSuppressExceptionWithAnotherException() = runTest{
-        expect(1)
-        try {
-            withTimeout(100) {
-                expect(2)
-                try {
-                    delay(1000)
-                } catch (e: CancellationException) {
-                    expect(3)
-                    throw TestException()
-                }
-                expectUnreached()
-                "OK"
-            }
-            expectUnreached()
-        } catch (e: TestException) {
-            finish(4)
-        }
-    }
+    // TODO: @Test
+    void test_exception_from_within_timeout() { /* expect(1); try { expect(2); with_timeout(1000) { expect(3); throw TestException(); } expectUnreached(); } catch (const TestException& e) { finish(4); } */ }
 
-    @Test
-    fun testNegativeTimeout() = runTest {
-        expect(1)
-        try {
-            withTimeout(-1) {
-                expectUnreached()
-                "OK"
-            }
-        } catch (e: TimeoutCancellationException) {
-            assertEquals("Timed out immediately", e.message)
-            finish(2)
-        }
-    }
+    // TODO: @Test
+    void test_incomplete_with_timeout_state() { /* Job* timeout_job = nullptr; const auto handle = with_timeout(INT64_MAX) { timeout_job = &coroutineContext[Job]!!; timeout_job->invoke_on_completion([]{  }); } handle.dispose(); timeout_job->join(); assertTrue(timeout_job->is_completed()); assertFalse(timeout_job->is_active()); assertFalse(timeout_job->is_cancelled()); */ }
+};
 
-    @Test
-    fun testExceptionFromWithinTimeout() = runTest {
-        expect(1)
-        try {
-            expect(2)
-            withTimeout(1000) {
-                expect(3)
-                throw TestException()
-            }
-            expectUnreached()
-        } catch (e: TestException) {
-            finish(4)
-        }
-    }
-
-    @Test
-    fun testIncompleteWithTimeoutState() = runTest {
-        lateinit var timeoutJob: Job
-        val handle = withTimeout(Long.MAX_VALUE) {
-            timeoutJob = coroutineContext[Job]!!
-            timeoutJob.invokeOnCompletion { }
-        }
-
-        handle.dispose()
-        timeoutJob.join()
-        assertTrue(timeoutJob.isCompleted)
-        assertFalse(timeoutJob.isActive)
-        assertFalse(timeoutJob.isCancelled)
-    }
-}
+} // namespace coroutines
+} // namespace kotlinx

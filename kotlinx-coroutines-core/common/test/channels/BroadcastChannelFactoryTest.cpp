@@ -1,34 +1,48 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/BroadcastChannelFactoryTest.kt
+//
+// TODO: Translate imports
+// TODO: Translate test annotations to C++ test framework
+// TODO: Handle @Suppress annotations
 
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-@Suppress("DEPRECATION_ERROR")
-class BroadcastChannelFactoryTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testRendezvousChannelNotSupported() {
-        assertFailsWith<IllegalArgumentException> { BroadcastChannel<Int>(0) }
+// TODO: @Suppress("DEPRECATION_ERROR")
+class BroadcastChannelFactoryTest : public TestBase {
+public:
+
+    // TODO: @Test
+    void testRendezvousChannelNotSupported() {
+        // TODO: assertFailsWith<IllegalArgumentException>([]() { BroadcastChannel<int>(0); });
     }
 
-    @Test
-    fun testUnlimitedChannelNotSupported() {
-        assertFailsWith<IllegalArgumentException> { BroadcastChannel<Int>(Channel.UNLIMITED) }
+    // TODO: @Test
+    void testUnlimitedChannelNotSupported() {
+        // TODO: assertFailsWith<IllegalArgumentException>([]() { BroadcastChannel<int>(Channel::UNLIMITED); });
     }
 
-    @Test
-    fun testConflatedBroadcastChannel() {
-        assertTrue { BroadcastChannel<Int>(Channel.CONFLATED) is ConflatedBroadcastChannel }
+    // TODO: @Test
+    void testConflatedBroadcastChannel() {
+        // TODO: assertTrue(/* BroadcastChannel<int>(Channel::CONFLATED) is ConflatedBroadcastChannel */);
     }
 
-    @Test
-    fun testBufferedBroadcastChannel() {
-        assertTrue { BroadcastChannel<Int>(1) is BroadcastChannelImpl }
-        assertTrue { BroadcastChannel<Int>(10) is BroadcastChannelImpl }
+    // TODO: @Test
+    void testBufferedBroadcastChannel() {
+        // TODO: assertTrue(/* BroadcastChannel<int>(1) is BroadcastChannelImpl */);
+        // TODO: assertTrue(/* BroadcastChannel<int>(10) is BroadcastChannelImpl */);
     }
 
-    @Test
-    fun testInvalidCapacityNotSupported() {
-        assertFailsWith<IllegalArgumentException> { BroadcastChannel<Int>(-3) }
+    // TODO: @Test
+    void testInvalidCapacityNotSupported() {
+        // TODO: assertFailsWith<IllegalArgumentException>([]() { BroadcastChannel<int>(-3); });
     }
-}
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

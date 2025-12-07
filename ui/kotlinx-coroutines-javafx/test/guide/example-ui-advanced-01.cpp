@@ -1,59 +1,76 @@
 // This file was automatically generated from coroutines-guide-ui.md by Knit tool. Do not edit.
-package kotlinx.coroutines.javafx.guide.exampleUiAdvanced01
+// Transliterated from Kotlin to C++
+// Original: ui/kotlinx-coroutines-javafx/test/guide/example-ui-advanced-01.kt
+// TODO: Resolve imports and dependencies
+// TODO: Implement JavaFX Application framework
+// TODO: Handle suspend functions and coroutines
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.javafx.JavaFx as Main
-import javafx.application.Application
-import javafx.event.EventHandler
-import javafx.geometry.*
-import javafx.scene.*
-import javafx.scene.input.MouseEvent
-import javafx.scene.layout.StackPane
-import javafx.scene.paint.Color
-import javafx.scene.shape.Circle
-import javafx.scene.text.Text
-import javafx.stage.Stage
+namespace kotlinx {
+namespace coroutines {
+namespace javafx {
+namespace guide {
+namespace example_ui_advanced_01 {
 
-fun main(args: Array<String>) {
-    Application.launch(ExampleApp::class.java, *args)
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlinx.coroutines.javafx.JavaFx as Main
+// TODO: import javafx.application.Application
+// TODO: import javafx.event.EventHandler
+// TODO: import javafx.geometry.*
+// TODO: import javafx.scene.*
+// TODO: import javafx.scene.input.MouseEvent
+// TODO: import javafx.scene.layout.StackPane
+// TODO: import javafx.scene.paint.Color
+// TODO: import javafx.scene.shape.Circle
+// TODO: import javafx.scene.text.Text
+// TODO: import javafx.stage.Stage
+
+void main(const std::vector<std::string>& args) {
+    Application::launch<ExampleApp>(args);
 }
 
-class ExampleApp : Application() {
-    val hello = Text("Hello World!").apply {
-        fill = Color.valueOf("#C0C0C0")
+class ExampleApp : public Application {
+private:
+    Text hello_{"Hello World!"};
+    Circle fab_{20.0, Color::value_of("#FF4081")};
+    StackPane root_{};
+    Scene scene_{&root_, 240.0, 380.0};
+
+public:
+    ExampleApp() {
+        hello_.set_fill(Color::value_of("#C0C0C0"));
+
+        root_.children() += &hello_;
+        root_.children() += &fab_;
+        StackPane::set_alignment(&hello_, Pos::kCenter);
+        StackPane::set_alignment(&fab_, Pos::kBottomRight);
+        StackPane::set_margin(&fab_, Insets(15.0));
+
+        scene_.set_fill(Color::value_of("#303030"));
     }
 
-    val fab = Circle(20.0, Color.valueOf("#FF4081"))
-
-    val root = StackPane().apply {
-        children += hello
-        children += fab
-        StackPane.setAlignment(hello, Pos.CENTER)
-        StackPane.setAlignment(fab, Pos.BOTTOM_RIGHT)
-        StackPane.setMargin(fab, Insets(15.0))
+    void start(Stage* stage) override {
+        stage->set_title("Example");
+        stage->set_scene(&scene_);
+        stage->show();
+        setup(&hello_, &fab_);
     }
+};
 
-    val scene = Scene(root, 240.0, 380.0).apply {
-        fill = Color.valueOf("#303030")
-    }
-
-    override fun start(stage: Stage) {
-        stage.title = "Example"
-        stage.scene = scene
-        stage.show()
-        setup(hello, fab)
-    }
+void setup(Text* hello, Circle* fab) {
+    fab->set_on_mouse_clicked(EventHandler([](auto event) {
+        std::cout << "Before launch" << std::endl;
+        GlobalScope::launch(Dispatchers::Main, []() {
+            std::cout << "Inside coroutine" << std::endl;
+            delay(100);
+            std::cout << "After delay" << std::endl;
+        });
+        std::cout << "After launch" << std::endl;
+    }));
 }
 
-fun setup(hello: Text, fab: Circle) {
-    fab.onMouseClicked = EventHandler {
-        println("Before launch")
-        GlobalScope.launch(Dispatchers.Main) {
-            println("Inside coroutine")
-            delay(100)
-            println("After delay")
-        } 
-        println("After launch")
-    }
-}
+} // namespace example_ui_advanced_01
+} // namespace guide
+} // namespace javafx
+} // namespace coroutines
+} // namespace kotlinx

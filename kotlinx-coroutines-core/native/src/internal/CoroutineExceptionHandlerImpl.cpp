@@ -1,27 +1,59 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/internal/CoroutineExceptionHandlerImpl.kt
+//
+// TODO: actual keyword - platform-specific implementation
+// TODO: kotlin.native.* APIs
+// TODO: @OptIn annotation
 
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
-import kotlin.native.*
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
 
-private val lock = SynchronizedObject()
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlinx.coroutines.*
+// import kotlin.coroutines.*
+// import kotlin.native.*
 
-internal actual val platformExceptionHandlers: Collection<CoroutineExceptionHandler>
-    get() = synchronized(lock) { platformExceptionHandlers_ }
-
-private val platformExceptionHandlers_ = mutableSetOf<CoroutineExceptionHandler>()
-
-internal actual fun ensurePlatformExceptionHandlerLoaded(callback: CoroutineExceptionHandler) {
-    synchronized(lock) {
-        platformExceptionHandlers_ += callback
-    }
+namespace {
+    // TODO: private val
+    SynchronizedObject lock;
 }
 
-@OptIn(ExperimentalStdlibApi::class)
-internal actual fun propagateExceptionFinalResort(exception: Throwable) {
+// TODO: internal actual val
+std::vector<CoroutineExceptionHandler*> get_platform_exception_handlers() {
+    // TODO: synchronized(lock) { platformExceptionHandlers_ }
+    return platform_exception_handlers_;
+}
+
+namespace {
+    // TODO: private val
+    std::vector<CoroutineExceptionHandler*> platform_exception_handlers_;
+}
+
+// TODO: internal actual function
+void ensure_platform_exception_handler_loaded(CoroutineExceptionHandler* callback) {
+    // TODO: synchronized(lock) {
+    //     platformExceptionHandlers_ += callback
+    // }
+    platform_exception_handlers_.push_back(callback);
+}
+
+// TODO: @OptIn(ExperimentalStdlibApi::class)
+// TODO: internal actual function
+void propagate_exception_final_resort(std::exception* exception) {
     // log exception
-    processUnhandledException(exception)
+    process_unhandled_exception(exception);
 }
 
-internal actual class DiagnosticCoroutineContextException actual constructor(context: CoroutineContext) :
-    RuntimeException(context.toString())
+// TODO: internal actual class
+class DiagnosticCoroutineContextException : public std::runtime_error {
+public:
+    DiagnosticCoroutineContextException(CoroutineContext context)
+        : std::runtime_error(context.to_string())
+    {
+    }
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

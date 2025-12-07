@@ -1,10 +1,32 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/concurrent/src/internal/LockFreeLinkedList.kt
+//
+// TODO: Implement atomic operations (atomicfu library) - use std::atomic or platform-specific atomics
+// TODO: Map @InternalCoroutinesApi annotation to comment
+// TODO: Map @Suppress("LeakingThis") to comment
+// TODO: Map @JvmField annotation to comment (JVM-specific)
+// TODO: Map @PublishedApi internal to appropriate C++ visibility
+// TODO: Implement tailrec optimization manually (tail call optimization)
+// TODO: Implement 'actual' keyword semantics (expect/actual pattern for multiplatform)
+// TODO: Implement inline functions
+// TODO: Implement Kotlin's 'is' type checking (use dynamic_cast or type traits)
+// TODO: Implement Kotlin's 'as' and 'as?' casting
+// TODO: Implement lambda with receiver syntax for loop
+// TODO: Implement lazy property initialization (lazySet)
+// TODO: Implement assert { } blocks
+// TODO: Implement ::classSimpleName and hexAddress extensions
+// TODO: Implement 'Nothing' return type (use [[noreturn]] or similar)
+// TODO: kotlin.jvm.* imports are JVM-specific, can be ignored
 
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlin.jvm.*
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
 
-private typealias Node = LockFreeLinkedListNode
+// Forward declaration
+class LockFreeLinkedListNode;
+class Removed;
+
+using Node = LockFreeLinkedListNode;
 
 /**
  * Doubly-linked concurrent list node with remove support.
@@ -25,50 +47,82 @@ private typealias Node = LockFreeLinkedListNode
  *
  * @suppress **This is unstable API and it is subject to change.**
  */
-@Suppress("LeakingThis")
-@InternalCoroutinesApi
-public actual open class LockFreeLinkedListNode {
-    private val _next = atomic<Any>(this) // Node | Removed | OpDescriptor
-    private val _prev = atomic(this) // Node to the left (cannot be marked as removed)
-    private val _removedRef = atomic<Removed?>(null) // lazily cached removed ref to this
+// @Suppress("LeakingThis")
+// @InternalCoroutinesApi
+class LockFreeLinkedListNode {
+private:
+    std::atomic<void*> _next; // Node* | Removed* | OpDescriptor* - stored as void* for polymorphism
+    std::atomic<Node*> _prev; // Node to the left (cannot be marked as removed)
+    std::atomic<Removed*> _removed_ref; // lazily cached removed ref to this
 
-    private fun removed(): Removed =
-        _removedRef.value ?: Removed(this).also { _removedRef.lazySet(it) }
+    Removed* removed() {
+        Removed* cached = _removed_ref.load(std::memory_order_relaxed);
+        if (cached != nullptr) return cached;
+        Removed* new_removed = new Removed(this);
+        _removed_ref.store(new_removed, std::memory_order_release); // TODO: lazySet equivalent
+        return new_removed;
+    }
 
-    public actual open val isRemoved: Boolean get() = next is Removed
+public:
+    LockFreeLinkedListNode()
+        : _next(static_cast<void*>(this))
+        , _prev(this)
+        , _removed_ref(nullptr) {
+    }
+
+    virtual bool is_removed() const {
+        void* next_val = _next.load(std::memory_order_acquire);
+        return dynamic_cast<Removed*>(static_cast<Node*>(next_val)) != nullptr; // TODO: implement proper type check
+    }
 
     // LINEARIZABLE. Returns Node | Removed
-    public val next: Any get() = _next.value
+    void* next() const {
+        return _next.load(std::memory_order_acquire);
+    }
 
     // LINEARIZABLE. Returns next non-removed Node
-    public actual val nextNode: Node get() =
-        next.let { (it as? Removed)?.ref ?: it as Node } // unwraps the `next` node
+    Node* next_node() const {
+        void* next_val = next();
+        Removed* removed_ptr = dynamic_cast<Removed*>(static_cast<Node*>(next_val));
+        if (removed_ptr != nullptr) {
+            return removed_ptr->ref;
+        }
+        return static_cast<Node*>(next_val);
+    }
 
     // LINEARIZABLE WHEN THIS NODE IS NOT REMOVED:
     // Returns prev non-removed Node, makes sure prev is correct (prev.next === this)
     // NOTE: if this node is removed, then returns non-removed previous node without applying
     // prev.next correction, which does not provide linearizable backwards iteration, but can be used to
     // resume forward iteration when current node was removed.
-    public actual val prevNode: Node
-        get() = correctPrev() ?: findPrevNonRemoved(_prev.value)
-
-    private tailrec fun findPrevNonRemoved(current: Node): Node {
-        if (!current.isRemoved) return current
-        return findPrevNonRemoved(current._prev.value)
+    Node* prev_node() {
+        Node* corrected = correct_prev();
+        if (corrected != nullptr) return corrected;
+        return find_prev_non_removed(_prev.load(std::memory_order_acquire));
     }
 
+private:
+    // TODO: tailrec optimization
+    Node* find_prev_non_removed(Node* current) {
+        if (!current->is_removed()) return current;
+        return find_prev_non_removed(current->_prev.load(std::memory_order_acquire));
+    }
+
+public:
     // ------ addOneIfEmpty ------
 
-    public actual fun addOneIfEmpty(node: Node): Boolean {
-        node._prev.lazySet(this)
-        node._next.lazySet(this)
+    bool add_one_if_empty(Node* node) {
+        node->_prev.store(this, std::memory_order_release); // TODO: lazySet equivalent
+        node->_next.store(static_cast<void*>(this), std::memory_order_release); // TODO: lazySet equivalent
         while (true) {
-            val next = next
-            if (next !== this) return false // this is not an empty list!
-            if (_next.compareAndSet(this, node)) {
+            void* next_val = next();
+            if (next_val != static_cast<void*>(this)) return false; // this is not an empty list!
+            if (_next.compare_exchange_strong(next_val, static_cast<void*>(node),
+                                               std::memory_order_release,
+                                               std::memory_order_acquire)) {
                 // added successfully (linearized add) -- fixup the list
-                node.finishAdd(this)
-                return true
+                node->finish_add(this);
+                return true;
             }
         }
     }
@@ -78,24 +132,26 @@ public actual open class LockFreeLinkedListNode {
     /**
      * Adds last item to this list. Returns `false` if the list is closed.
      */
-    public actual fun addLast(node: Node, permissionsBitmask: Int): Boolean {
+    bool add_last(Node* node, int permissions_bitmask) {
         while (true) { // lock-free loop on prev.next
-            val currentPrev = prevNode
-            return when {
-                currentPrev is ListClosed ->
-                    currentPrev.forbiddenElementsBitmask and permissionsBitmask == 0 &&
-                        currentPrev.addLast(node, permissionsBitmask)
-                currentPrev.addNext(node, this) -> true
-                else -> continue
+            Node* current_prev = prev_node();
+            ListClosed* closed = dynamic_cast<ListClosed*>(current_prev);
+            if (closed != nullptr) {
+                return (closed->forbidden_elements_bitmask & permissions_bitmask) == 0 &&
+                       closed->add_last(node, permissions_bitmask);
             }
+            if (current_prev->add_next(node, this)) {
+                return true;
+            }
+            continue;
         }
     }
 
     /**
      * Forbids adding new items to this list.
      */
-    public actual fun close(forbiddenElementsBit: Int) {
-        addLast(ListClosed(forbiddenElementsBit), forbiddenElementsBit)
+    void close(int forbidden_elements_bit) {
+        add_last(new ListClosed(forbidden_elements_bit), forbidden_elements_bit);
     }
 
     /**
@@ -121,14 +177,19 @@ public actual open class LockFreeLinkedListNode {
      *  Where `==>` denotes linearization point.
      *  Returns `false` if `next` was not following `this` node.
      */
-    @PublishedApi
-    internal fun addNext(node: Node, next: Node): Boolean {
-        node._prev.lazySet(this)
-        node._next.lazySet(next)
-        if (!_next.compareAndSet(next, node)) return false
+    // @PublishedApi
+    bool add_next(Node* node, Node* next) {
+        node->_prev.store(this, std::memory_order_release); // TODO: lazySet equivalent
+        node->_next.store(static_cast<void*>(next), std::memory_order_release); // TODO: lazySet equivalent
+        void* expected_next = static_cast<void*>(next);
+        if (!_next.compare_exchange_strong(expected_next, static_cast<void*>(node),
+                                            std::memory_order_release,
+                                            std::memory_order_acquire)) {
+            return false;
+        }
         // added successfully (linearized add) -- fixup the list
-        node.finishAdd(next)
-        return true
+        node->finish_add(next);
+        return true;
     }
 
     // ------ removeXXX ------
@@ -140,28 +201,37 @@ public actual open class LockFreeLinkedListNode {
      * **Note**: Invocation of this operation does not guarantee that remove was actually complete if result was `false`.
      * In particular, invoking [nextNode].[prevNode] might still return this node even though it is "already removed".
      */
-    public actual open fun remove(): Boolean =
-        removeOrNext() == null
+    virtual bool remove() {
+        return remove_or_next() == nullptr;
+    }
 
     // returns null if removed successfully or next node if this node is already removed
-    @PublishedApi
-    internal fun removeOrNext(): Node? {
+    // @PublishedApi
+    Node* remove_or_next() {
         while (true) { // lock-free loop on next
-            val next = this.next
-            if (next is Removed) return next.ref // was already removed -- don't try to help (original thread will take care)
-            if (next === this) return next // was not even added
-            val removed = (next as Node).removed()
-            if (_next.compareAndSet(next, removed)) {
+            void* next_val = this->next();
+            Removed* removed_ptr = dynamic_cast<Removed*>(static_cast<Node*>(next_val));
+            if (removed_ptr != nullptr) {
+                return removed_ptr->ref; // was already removed -- don't try to help (original thread will take care)
+            }
+            if (next_val == static_cast<void*>(this)) {
+                return static_cast<Node*>(next_val); // was not even added
+            }
+            Node* next_node = static_cast<Node*>(next_val);
+            Removed* removed = next_node->removed();
+            void* expected = next_val;
+            if (_next.compare_exchange_strong(expected, static_cast<void*>(removed),
+                                               std::memory_order_release,
+                                               std::memory_order_acquire)) {
                 // was removed successfully (linearized remove) -- fixup the list
-                next.correctPrev()
-                return null
+                next_node->correct_prev();
+                return nullptr;
             }
         }
     }
 
     // This is Harris's RDCSS (Restricted Double-Compare Single Swap) operation
     // It inserts "op" descriptor of when "op" status is still undecided (rolls back otherwise)
-
 
     // ------ other helpers ------
 
@@ -187,14 +257,19 @@ public actual open class LockFreeLinkedListNode {
      *                +---------+   +---------+
      * ```
      */
-    private fun finishAdd(next: Node) {
-        next._prev.loop { nextPrev ->
-            if (this.next !== next) return // this or next was removed or another node added, remover/adder fixes up links
-            if (next._prev.compareAndSet(nextPrev, this)) {
+private:
+    void finish_add(Node* next) {
+        // TODO: Implement loop with lambda
+        while (true) {
+            Node* next_prev = next->_prev.load(std::memory_order_acquire);
+            if (this->next() != static_cast<void*>(next)) return; // this or next was removed or another node added, remover/adder fixes up links
+            if (next->_prev.compare_exchange_strong(next_prev, this,
+                                                     std::memory_order_release,
+                                                     std::memory_order_acquire)) {
                 // This newly added node could have been removed, and the above CAS would have added it physically again.
                 // Let us double-check for this situation and correct if needed
-                if (isRemoved) next.correctPrev()
-                return
+                if (is_removed()) next->correct_prev();
+                return;
             }
         }
     }
@@ -209,79 +284,119 @@ public actual open class LockFreeLinkedListNode {
      *   remover of this node will ultimately call [correctPrev] on the next node and that will fix all
      *   the links from this node, too.
      */
-    private tailrec fun correctPrev(): Node? {
-        val oldPrev = _prev.value
-        var prev: Node = oldPrev
-        var last: Node? = null // will be set so that last.next === prev
+    // TODO: tailrec optimization
+    Node* correct_prev() {
+        Node* old_prev = _prev.load(std::memory_order_acquire);
+        Node* prev = old_prev;
+        Node* last = nullptr; // will be set so that last.next === prev
         while (true) { // move the left until first non-removed node
-            val prevNext: Any = prev._next.value
-            when {
-                // fast path to find quickly find prev node when everything is properly linked
-                prevNext === this -> {
-                    if (oldPrev === prev) return prev // nothing to update -- all is fine, prev found
-                    // otherwise need to update prev
-                    if (!this._prev.compareAndSet(oldPrev, prev)) {
-                        // Note: retry from scratch on failure to update prev
-                        return correctPrev()
+            void* prev_next_val = prev->_next.load(std::memory_order_acquire);
+
+            // fast path to find quickly find prev node when everything is properly linked
+            if (prev_next_val == static_cast<void*>(this)) {
+                if (old_prev == prev) return prev; // nothing to update -- all is fine, prev found
+                // otherwise need to update prev
+                Node* expected = old_prev;
+                if (!this->_prev.compare_exchange_strong(expected, prev,
+                                                          std::memory_order_release,
+                                                          std::memory_order_acquire)) {
+                    // Note: retry from scratch on failure to update prev
+                    return correct_prev();
+                }
+                return prev; // return the correct prev
+            }
+
+            // slow path when we need to help remove operations
+            if (this->is_removed()) return nullptr; // nothing to do, this node was removed, bail out asap to save time
+
+            Removed* removed_ptr = dynamic_cast<Removed*>(static_cast<Node*>(prev_next_val));
+            if (removed_ptr != nullptr) {
+                if (last != nullptr) {
+                    // newly added (prev) node is already removed, correct last.next around it
+                    void* expected_last_next = static_cast<void*>(prev);
+                    if (!last->_next.compare_exchange_strong(expected_last_next, static_cast<void*>(removed_ptr->ref),
+                                                              std::memory_order_release,
+                                                              std::memory_order_acquire)) {
+                        return correct_prev(); // retry from scratch on failure to update next
                     }
-                    return prev // return the correct prev
+                    prev = last;
+                    last = nullptr;
+                } else {
+                    prev = prev->_prev.load(std::memory_order_acquire);
                 }
-                // slow path when we need to help remove operations
-                this.isRemoved -> return null // nothing to do, this node was removed, bail out asap to save time
-                prevNext is Removed -> {
-                    if (last !== null) {
-                        // newly added (prev) node is already removed, correct last.next around it
-                        if (!last._next.compareAndSet(prev, prevNext.ref)) {
-                            return correctPrev() // retry from scratch on failure to update next
-                        }
-                        prev = last
-                        last = null
-                    } else {
-                        prev = prev._prev.value
-                    }
-                }
-                else -> { // prevNext is a regular node, but not this -- help delete
-                    last = prev
-                    prev = prevNext as Node
-                }
+            } else { // prevNext is a regular node, but not this -- help delete
+                last = prev;
+                prev = static_cast<Node*>(prev_next_val);
             }
         }
     }
 
-    internal fun validateNode(prev: Node, next: Node) {
-        assert { prev === this._prev.value }
-        assert { next === this._next.value }
+    void validate_node(Node* prev, Node* next) {
+        // TODO: implement assert
+        // assert { prev === this._prev.value }
+        // assert { next === this._next.value }
     }
 
-    override fun toString(): String = "${this::classSimpleName}@${this.hexAddress}"
-}
+public:
+    virtual std::string to_string() const {
+        // TODO: implement ::classSimpleName and hexAddress
+        return "LockFreeLinkedListNode@" + std::to_string(reinterpret_cast<uintptr_t>(this));
+    }
+};
 
-private class Removed(@JvmField val ref: Node) {
-    override fun toString(): String = "Removed[$ref]"
-}
+class Removed {
+public:
+    // @JvmField
+    Node* ref;
+
+    Removed(Node* ref_node) : ref(ref_node) {}
+
+    std::string to_string() const {
+        return "Removed[" + ref->to_string() + "]";
+    }
+};
 
 /**
  * Head (sentinel) item of the linked list that is never removed.
  *
  * @suppress **This is unstable API and it is subject to change.**
  */
-public actual open class LockFreeLinkedListHead : LockFreeLinkedListNode() {
+class LockFreeLinkedListHead : public LockFreeLinkedListNode {
+public:
     /**
      * Iterates over all elements in this list of a specified type.
      */
-    public actual inline fun forEach(block: (Node) -> Unit) {
-        var cur: Node = next as Node
+    // TODO: inline function with lambda
+    template<typename F>
+    void for_each(F block) {
+        Node* cur = static_cast<Node*>(next());
         while (cur != this) {
-            block(cur)
-            cur = cur.nextNode
+            block(cur);
+            cur = cur->next_node();
         }
     }
 
     // just a defensive programming -- makes sure that list head sentinel is never removed
-    public actual final override fun remove(): Nothing = error("head cannot be removed")
+    // TODO: 'Nothing' return type - use [[noreturn]]
+    [[noreturn]] bool remove() override {
+        // TODO: error() function
+        throw std::logic_error("head cannot be removed");
+    }
 
     // optimization: because head is never removed, we don't have to read _next.value to check these:
-    override val isRemoved: Boolean get() = false
-}
+    bool is_removed() const override {
+        return false;
+    }
+};
 
-private class ListClosed(@JvmField val forbiddenElementsBitmask: Int): LockFreeLinkedListNode()
+class ListClosed : public LockFreeLinkedListNode {
+public:
+    // @JvmField
+    int forbidden_elements_bitmask;
+
+    ListClosed(int bitmask) : forbidden_elements_bitmask(bitmask) {}
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

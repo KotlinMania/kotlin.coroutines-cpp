@@ -1,45 +1,57 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/ChannelFactoryTest.kt
+//
+// TODO: Translate imports
+// TODO: Translate test annotations to C++ test framework
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
 
-class ChannelFactoryTest : TestBase() {
-    @Test
-    fun testRendezvousChannel() {
-        assertIs<BufferedChannel<*>>(Channel<Int>())
-        assertIs<BufferedChannel<*>>(Channel<Int>(0))
+class ChannelFactoryTest : public TestBase {
+public:
+    // TODO: @Test
+    void testRendezvousChannel() {
+        // TODO: assertIs<BufferedChannel<int>*>(Channel<int>());
+        // TODO: assertIs<BufferedChannel<int>*>(Channel<int>(0));
     }
 
-    @Test
-    fun testUnlimitedChannel() {
-        assertIs<BufferedChannel<*>>(Channel<Int>(Channel.UNLIMITED))
-        assertIs<BufferedChannel<*>>(Channel<Int>(Channel.UNLIMITED, BufferOverflow.DROP_OLDEST))
-        assertIs<BufferedChannel<*>>(Channel<Int>(Channel.UNLIMITED, BufferOverflow.DROP_LATEST))
+    // TODO: @Test
+    void testUnlimitedChannel() {
+        // TODO: assertIs<BufferedChannel<int>*>(Channel<int>(Channel::UNLIMITED));
+        // TODO: assertIs<BufferedChannel<int>*>(Channel<int>(Channel::UNLIMITED, BufferOverflow::DROP_OLDEST));
+        // TODO: assertIs<BufferedChannel<int>*>(Channel<int>(Channel::UNLIMITED, BufferOverflow::DROP_LATEST));
     }
 
-    @Test
-    fun testConflatedChannel() {
-        assertIs<ConflatedBufferedChannel<*>>(Channel<Int>(Channel.CONFLATED))
-        assertIs<ConflatedBufferedChannel<*>>(Channel<Int>(1, BufferOverflow.DROP_OLDEST))
+    // TODO: @Test
+    void testConflatedChannel() {
+        // TODO: assertIs<ConflatedBufferedChannel<int>*>(Channel<int>(Channel::CONFLATED));
+        // TODO: assertIs<ConflatedBufferedChannel<int>*>(Channel<int>(1, BufferOverflow::DROP_OLDEST));
     }
 
-    @Test
-    fun testBufferedChannel() {
-        assertIs<BufferedChannel<*>>(Channel<Int>(1))
-        assertIs<ConflatedBufferedChannel<*>>(Channel<Int>(1, BufferOverflow.DROP_LATEST))
-        assertIs<BufferedChannel<*>>(Channel<Int>(10))
+    // TODO: @Test
+    void testBufferedChannel() {
+        // TODO: assertIs<BufferedChannel<int>*>(Channel<int>(1));
+        // TODO: assertIs<ConflatedBufferedChannel<int>*>(Channel<int>(1, BufferOverflow::DROP_LATEST));
+        // TODO: assertIs<BufferedChannel<int>*>(Channel<int>(10));
     }
 
-    @Test
-    fun testInvalidCapacityNotSupported() {
-        assertFailsWith<IllegalArgumentException> { Channel<Int>(-3) }
+    // TODO: @Test
+    void testInvalidCapacityNotSupported() {
+        // TODO: assertFailsWith<IllegalArgumentException>([]() { Channel<int>(-3); });
     }
-    
-    @Test
-    fun testUnsupportedBufferOverflow() {
-        assertFailsWith<IllegalArgumentException> { Channel<Int>(Channel.CONFLATED, BufferOverflow.DROP_OLDEST) }
-        assertFailsWith<IllegalArgumentException> { Channel<Int>(Channel.CONFLATED, BufferOverflow.DROP_LATEST) }
+
+    // TODO: @Test
+    void testUnsupportedBufferOverflow() {
+        // TODO: assertFailsWith<IllegalArgumentException>([]() { Channel<int>(Channel::CONFLATED, BufferOverflow::DROP_OLDEST); });
+        // TODO: assertFailsWith<IllegalArgumentException>([]() { Channel<int>(Channel::CONFLATED, BufferOverflow::DROP_LATEST); });
     }
-}
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

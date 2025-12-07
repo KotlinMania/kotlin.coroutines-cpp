@@ -1,10 +1,28 @@
-package kotlinx.coroutines.test
+// Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestCoroutineDispatchers
+// Original package: kotlinx.coroutines.test
+//
+// TODO: Import statements removed; fully qualify types or add appropriate includes
+// TODO: suspend functions translated as normal functions; coroutine semantics NOT implemented
+// TODO: Annotations like @ExperimentalCoroutinesApi, @Suppress preserved as comments
+// TODO: Kotlin property access patterns need C++ getters/setters
+// TODO: Function-level annotations (@Suppress("FunctionName")) preserved in comments
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.test.internal.TestMainDispatcher
-import kotlin.coroutines.*
+#include <memory>
+#include <optional>
+#include <string>
+#include <stdexcept>
+
+namespace kotlinx {
+namespace coroutines {
+namespace test {
+
+// package kotlinx.coroutines.test
+
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.channels.*
+// import kotlinx.coroutines.flow.*
+// import kotlinx.coroutines.test.internal.TestMainDispatcher
+// import kotlin.coroutines.*
 
 /**
  * Creates an instance of an unconfined [TestDispatcher].
@@ -74,44 +92,65 @@ import kotlin.coroutines.*
  *
  * @see StandardTestDispatcher for a more predictable [TestDispatcher].
  */
-@ExperimentalCoroutinesApi
-@Suppress("FunctionName")
-public fun UnconfinedTestDispatcher(
-    scheduler: TestCoroutineScheduler? = null,
-    name: String? = null
-): TestDispatcher = UnconfinedTestDispatcherImpl(
-    scheduler ?: TestMainDispatcher.currentTestScheduler ?: TestCoroutineScheduler(), name)
+// @ExperimentalCoroutinesApi
+// @Suppress("FunctionName")
+// TODO: Kotlin factory function pattern; in C++ use constructor or static factory
+TestDispatcher* unconfined_test_dispatcher(
+    TestCoroutineScheduler* scheduler = nullptr,
+    const std::string* name = nullptr
+) {
+    auto* actual_scheduler = scheduler != nullptr ? scheduler :
+        (TestMainDispatcher::current_test_scheduler() != nullptr ?
+            TestMainDispatcher::current_test_scheduler() :
+            new TestCoroutineScheduler());
+    return new UnconfinedTestDispatcherImpl(actual_scheduler, name);
+}
 
-private class UnconfinedTestDispatcherImpl(
-    override val scheduler: TestCoroutineScheduler,
-    private val name: String? = null
-) : TestDispatcher() {
+class UnconfinedTestDispatcherImpl : public TestDispatcher {
+private:
+    TestCoroutineScheduler* scheduler_;
+    std::optional<std::string> name_;
 
-    override fun isDispatchNeeded(context: CoroutineContext): Boolean = false
+public:
+    UnconfinedTestDispatcherImpl(
+        TestCoroutineScheduler* sched,
+        const std::string* name_arg
+    ) : scheduler_(sched), name_(name_arg ? std::optional<std::string>(*name_arg) : std::nullopt) {}
+
+    TestCoroutineScheduler& scheduler() override {
+        return *scheduler_;
+    }
+
+    bool is_dispatch_needed(const CoroutineContext& context) const override {
+        return false;
+    }
 
     // do not remove the INVISIBLE_REFERENCE and INVISIBLE_SETTER suppressions: required in K2
-    @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "INVISIBLE_SETTER")
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        checkSchedulerInContext(scheduler, context)
-        scheduler.sendDispatchEvent(context)
+    // @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "INVISIBLE_SETTER")
+    void dispatch(const CoroutineContext& context, Runnable* block) override {
+        check_scheduler_in_context(*scheduler_, context);
+        scheduler_->send_dispatch_event(context);
 
         /** copy-pasted from [kotlinx.coroutines.Unconfined.dispatch] */
         /** It can only be called by the [yield] function. See also code of [yield] function. */
-        val yieldContext = context[YieldContext]
-        if (yieldContext !== null) {
+        auto* yield_context = context[YieldContext::Key];
+        if (yield_context != nullptr) {
             // report to "yield" that it is an unconfined dispatcher and don't call "block.run()"
-            yieldContext.dispatcherWasUnconfined = true
-            return
+            yield_context->dispatcher_was_unconfined = true;
+            return;
         }
-        throw UnsupportedOperationException(
+        throw std::runtime_error(
             "Function UnconfinedTestCoroutineDispatcher.dispatch can only be used by " +
-                "the yield function. If you wrap Unconfined dispatcher in your code, make sure you properly delegate " +
-                "isDispatchNeeded and dispatch calls."
-        )
+            std::string("the yield function. If you wrap Unconfined dispatcher in your code, make sure you properly delegate ") +
+            "isDispatchNeeded and dispatch calls."
+        );
     }
 
-    override fun toString(): String = "${name ?: "UnconfinedTestDispatcher"}[scheduler=$scheduler]"
-}
+    std::string to_string() const override {
+        std::string base_name = name_ ? *name_ : "UnconfinedTestDispatcher";
+        return base_name + "[scheduler=" + scheduler_->to_string() + "]";
+    }
+};
 
 /**
  * Creates an instance of a [TestDispatcher] whose tasks are run inside calls to the [scheduler].
@@ -134,21 +173,45 @@ private class UnconfinedTestDispatcherImpl(
  *
  * @see UnconfinedTestDispatcher for a dispatcher that is not confined to any particular thread.
  */
-@Suppress("FunctionName")
-public fun StandardTestDispatcher(
-    scheduler: TestCoroutineScheduler? = null,
-    name: String? = null
-): TestDispatcher = StandardTestDispatcherImpl(
-    scheduler ?: TestMainDispatcher.currentTestScheduler ?: TestCoroutineScheduler(), name)
+// @Suppress("FunctionName")
+// TODO: Kotlin factory function pattern; in C++ use constructor or static factory
+TestDispatcher* standard_test_dispatcher(
+    TestCoroutineScheduler* scheduler = nullptr,
+    const std::string* name = nullptr
+) {
+    auto* actual_scheduler = scheduler != nullptr ? scheduler :
+        (TestMainDispatcher::current_test_scheduler() != nullptr ?
+            TestMainDispatcher::current_test_scheduler() :
+            new TestCoroutineScheduler());
+    return new StandardTestDispatcherImpl(actual_scheduler, name);
+}
 
-private class StandardTestDispatcherImpl(
-    override val scheduler: TestCoroutineScheduler = TestCoroutineScheduler(),
-    private val name: String? = null
-) : TestDispatcher() {
+class StandardTestDispatcherImpl : public TestDispatcher {
+private:
+    TestCoroutineScheduler* scheduler_;
+    std::optional<std::string> name_;
 
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        scheduler.registerEvent(this, 0, block, context) { false }
+public:
+    StandardTestDispatcherImpl(
+        TestCoroutineScheduler* sched = nullptr,
+        const std::string* name_arg = nullptr
+    ) : scheduler_(sched != nullptr ? sched : new TestCoroutineScheduler()),
+        name_(name_arg ? std::optional<std::string>(*name_arg) : std::nullopt) {}
+
+    TestCoroutineScheduler& scheduler() override {
+        return *scheduler_;
     }
 
-    override fun toString(): String = "${name ?: "StandardTestDispatcher"}[scheduler=$scheduler]"
-}
+    void dispatch(const CoroutineContext& context, Runnable* block) override {
+        scheduler_->register_event(this, 0, block, context, [](Runnable*) { return false; });
+    }
+
+    std::string to_string() const override {
+        std::string base_name = name_ ? *name_ : "StandardTestDispatcher";
+        return base_name + "[scheduler=" + scheduler_->to_string() + "]";
+    }
+};
+
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,62 +1,99 @@
-package kotlinx.coroutines.android
+// Original: ui/kotlinx-coroutines-android/test/DisabledHandlerTest.kt
+// Transliterated from Kotlin to C++ - First pass syntax conversion
+// TODO: Implement Robolectric test runner integration
+// TODO: Map @RunWith, @Config, @LooperMode annotations
+// TODO: Convert TestBase inheritance
+// TODO: Implement Android Handler and Message API
+// TODO: Convert object expression to C++ class/lambda
+// TODO: Convert suspend functions to C++ coroutine equivalents
+// TODO: Implement asCoroutineDispatcher for Handler
 
-import kotlinx.coroutines.testing.*
-import android.os.*
-import kotlinx.coroutines.*
-import org.junit.*
-import org.junit.runner.*
-import org.robolectric.*
-import org.robolectric.annotation.*
+namespace kotlinx {
+namespace coroutines {
+namespace android {
 
-@RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE, sdk = [28])
-@LooperMode(LooperMode.Mode.LEGACY)
-class DisabledHandlerTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import android.os.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import org.junit.*
+// TODO: import org.junit.runner.*
+// TODO: import org.robolectric.*
+// TODO: import org.robolectric.annotation.*
 
-    private var delegateToSuper = false
-    private val disabledDispatcher = object : Handler() {
-        override fun sendMessageAtTime(msg: Message?, uptimeMillis: Long): Boolean {
-            if (delegateToSuper) return super.sendMessageAtTime(msg, uptimeMillis)
-            return false
-        }
-    }.asCoroutineDispatcher()
+// TODO: @RunWith(RobolectricTestRunner::class)
+// TODO: @Config(manifest = Config.NONE, sdk = [28])
+// TODO: @LooperMode(LooperMode.Mode.LEGACY)
+class DisabledHandlerTest : public TestBase {
+private:
+    bool delegate_to_super_ = false;
 
-    @Test
-    fun testRunBlocking() {
-        expect(1)
-        try {
-            runBlocking(disabledDispatcher) {
-                expectUnreached()
+    // TODO: Convert object expression to C++ class
+    class DisabledHandler : public Handler {
+    private:
+        DisabledHandlerTest& parent_;
+
+    public:
+        explicit DisabledHandler(DisabledHandlerTest& parent) : parent_(parent) {}
+
+        bool sendMessageAtTime(Message* msg, long uptime_millis) override {
+            if (parent_.delegate_to_super_) {
+                return Handler::sendMessageAtTime(msg, uptime_millis);
             }
-            expectUnreached()
-        } catch (e: CancellationException) {
-            finish(2)
+            return false;
         }
-    }
+    };
 
-    @Test
-    fun testInvokeOnCancellation() = runTest {
-        val job = launch(disabledDispatcher, start = CoroutineStart.LAZY) { expectUnreached() }
-        job.invokeOnCompletion { if (it != null) expect(2) }
-        yield()
-        expect(1)
-        job.join()
-        finish(3)
-    }
+    CoroutineDispatcher disabled_dispatcher_ = DisabledHandler(*this).asCoroutineDispatcher();
 
-    @Test
-    fun testWithTimeout() = runTest {
-        delegateToSuper = true
+public:
+    // TODO: @Test
+    void testRunBlocking() {
+        expect(1);
         try {
-            withContext(disabledDispatcher) {
-                expect(1)
-                delegateToSuper = false
-                delay(Long.MAX_VALUE - 1)
-                expectUnreached()
-            }
-            expectUnreached()
-        } catch (e: CancellationException) {
-            finish(2)
+            runBlocking(disabled_dispatcher_, [] {
+                expectUnreached();
+            });
+            expectUnreached();
+        } catch (const CancellationException& e) {
+            finish(2);
         }
     }
-}
+
+    // TODO: @Test
+    void testInvokeOnCancellation() {
+        runTest([this] {
+            auto job = launch(disabled_dispatcher_, CoroutineStart::LAZY, [] {
+                expectUnreached();
+            });
+            job.invokeOnCompletion([](auto it) {
+                if (it != nullptr) expect(2);
+            });
+            yield();
+            expect(1);
+            job.join();
+            finish(3);
+        });
+    }
+
+    // TODO: @Test
+    void testWithTimeout() {
+        runTest([this] {
+            delegate_to_super_ = true;
+            try {
+                withContext(disabled_dispatcher_, [this] {
+                    expect(1);
+                    delegate_to_super_ = false;
+                    delay(LONG_MAX - 1);
+                    expectUnreached();
+                });
+                expectUnreached();
+            } catch (const CancellationException& e) {
+                finish(2);
+            }
+        });
+    }
+};
+
+} // namespace android
+} // namespace coroutines
+} // namespace kotlinx

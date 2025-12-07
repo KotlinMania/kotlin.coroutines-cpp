@@ -1,139 +1,154 @@
-@file:Suppress("DEPRECATION_ERROR")
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/BroadcastTest.kt
+//
+// TODO: Translate file-level annotations (@file:Suppress)
+// TODO: Translate imports
+// TODO: Translate suspend functions to C++ coroutines
+// TODO: Translate test annotations to C++ test framework
 
-package kotlinx.coroutines.channels
+// TODO: @file:Suppress("DEPRECATION_ERROR")
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.selects.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-class BroadcastTest : TestBase() {
-    @Test
-    fun testBroadcastBasic() = runTest {
-        expect(1)
-        val b = broadcast {
-            expect(4)
-            send(1) // goes to receiver
-            expect(5)
-            select<Unit> { onSend(2) {} } // goes to buffer
-            expect(6)
-            send(3) // suspends, will not be consumes, but will not be cancelled either
-            expect(10)
-        }
-        yield() // has no effect, because default is lazy
-        expect(2)
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.selects.*
+// TODO: import kotlin.test.*
 
-        val subscription = b.openSubscription()
-        expect(3)
-        assertEquals(1, subscription.receive()) // suspends
-        expect(7)
-        assertEquals(2, subscription.receive()) // suspends
-        expect(8)
-        subscription.cancel()
-        expect(9)
-        yield() // to broadcast
-        finish(11)
+class BroadcastTest : public TestBase {
+public:
+    // TODO: @Test
+    void testBroadcastBasic() /* = runTest */ {
+        expect(1);
+        // TODO: auto b = broadcast([&]() {
+        //     expect(4);
+        //     send(1); // goes to receiver
+        //     expect(5);
+        //     select<void>([&]() { onSend(2, []() {}); }); // goes to buffer
+        //     expect(6);
+        //     send(3); // suspends, will not be consumes, but will not be cancelled either
+        //     expect(10);
+        // });
+        // TODO: yield(); // has no effect, because default is lazy
+        expect(2);
+
+        // TODO: auto subscription = b.openSubscription();
+        expect(3);
+        // TODO: assertEquals(1, subscription.receive()); // suspends
+        expect(7);
+        // TODO: assertEquals(2, subscription.receive()); // suspends
+        expect(8);
+        // TODO: subscription.cancel();
+        expect(9);
+        // TODO: yield(); // to broadcast
+        finish(11);
     }
 
     /**
      * See https://github.com/Kotlin/kotlinx.coroutines/issues/1713
      */
-    @Test
-    fun testChannelBroadcastLazyCancel() = runTest {
-        expect(1)
-        val a = produce {
-            expect(3)
-            assertFailsWith<CancellationException> { send("MSG") }
-            expect(5)
-        }
-        expect(2)
-        yield() // to produce
-        val b = a.broadcast()
-        b.cancel()
-        expect(4)
-        yield() // to abort produce
-        assertTrue(a.isClosedForReceive) // the source channel was consumed
-        finish(6)
+    // TODO: @Test
+    void testChannelBroadcastLazyCancel() /* = runTest */ {
+        expect(1);
+        // TODO: auto a = produce([&]() {
+        //     expect(3);
+        //     assertFailsWith<CancellationException>([&]() { send("MSG"); });
+        //     expect(5);
+        // });
+        expect(2);
+        // TODO: yield(); // to produce
+        // TODO: auto b = a.broadcast();
+        // TODO: b.cancel();
+        expect(4);
+        // TODO: yield(); // to abort produce
+        // TODO: assertTrue(a.isClosedForReceive); // the source channel was consumed
+        finish(6);
     }
 
-    @Test
-    fun testChannelBroadcastLazyClose() = runTest {
-        expect(1)
-        val a = produce {
-            expect(3)
-            send("MSG")
-            expectUnreached() // is not executed, because send is cancelled
-        }
-        expect(2)
-        yield() // to produce
-        val b = a.broadcast()
-        b.close()
-        expect(4)
-        yield() // to abort produce
-        assertTrue(a.isClosedForReceive) // the source channel was consumed
-        finish(5)
+    // TODO: @Test
+    void testChannelBroadcastLazyClose() /* = runTest */ {
+        expect(1);
+        // TODO: auto a = produce([&]() {
+        //     expect(3);
+        //     send("MSG");
+        //     expectUnreached(); // is not executed, because send is cancelled
+        // });
+        expect(2);
+        // TODO: yield(); // to produce
+        // TODO: auto b = a.broadcast();
+        // TODO: b.close();
+        expect(4);
+        // TODO: yield(); // to abort produce
+        // TODO: assertTrue(a.isClosedForReceive); // the source channel was consumed
+        finish(5);
     }
 
-    @Test
-    fun testChannelBroadcastEagerCancel() = runTest {
-        expect(1)
-        val a = produce<Unit> {
-            expect(3)
-            yield() // back to main
-            expectUnreached() // will be cancelled
-        }
-        expect(2)
-        val b = a.broadcast(start = CoroutineStart.DEFAULT)
-        yield() // to produce
-        expect(4)
-        b.cancel()
-        yield() // to produce (cancelled)
-        assertTrue(a.isClosedForReceive) // the source channel was consumed
-        finish(5)
+    // TODO: @Test
+    void testChannelBroadcastEagerCancel() /* = runTest */ {
+        expect(1);
+        // TODO: auto a = produce<void>([&]() {
+        //     expect(3);
+        //     yield(); // back to main
+        //     expectUnreached(); // will be cancelled
+        // });
+        expect(2);
+        // TODO: auto b = a.broadcast(CoroutineStart::DEFAULT);
+        // TODO: yield(); // to produce
+        expect(4);
+        // TODO: b.cancel();
+        // TODO: yield(); // to produce (cancelled)
+        // TODO: assertTrue(a.isClosedForReceive); // the source channel was consumed
+        finish(5);
     }
 
-    @Test
-    fun testChannelBroadcastEagerClose() = runTest {
-        expect(1)
-        val a = produce<Unit> {
-            expect(3)
-            yield() // back to main
-            // shall eventually get cancelled
-            assertFailsWith<CancellationException> {
-                while (true) { send(Unit) }
-            }
-        }
-        expect(2)
-        val b = a.broadcast(start = CoroutineStart.DEFAULT)
-        yield() // to produce
-        expect(4)
-        b.close()
-        yield() // to produce (closed)
-        assertTrue(a.isClosedForReceive) // the source channel was consumed
-        finish(5)
+    // TODO: @Test
+    void testChannelBroadcastEagerClose() /* = runTest */ {
+        expect(1);
+        // TODO: auto a = produce<void>([&]() {
+        //     expect(3);
+        //     yield(); // back to main
+        //     // shall eventually get cancelled
+        //     assertFailsWith<CancellationException>([&]() {
+        //         while (true) { send(void); }
+        //     });
+        // });
+        expect(2);
+        // TODO: auto b = a.broadcast(CoroutineStart::DEFAULT);
+        // TODO: yield(); // to produce
+        expect(4);
+        // TODO: b.close();
+        // TODO: yield(); // to produce (closed)
+        // TODO: assertTrue(a.isClosedForReceive); // the source channel was consumed
+        finish(5);
     }
 
-    @Test
-    fun testBroadcastCloseWithException() = runTest {
-        expect(1)
-        val b = broadcast(NonCancellable, capacity = 1) {
-            expect(2)
-            send(1)
-            expect(3)
-            send(2) // suspends
-            expect(5)
-            // additional attempts to send fail
-            assertFailsWith<TestException> { send(3) }
-        }
-        val sub = b.openSubscription()
-        yield() // into broadcast
-        expect(4)
-        b.close(TestException()) // close broadcast channel with exception
-        assertTrue(b.isClosedForSend) // sub was also closed
-        assertEquals(1, sub.receive()) // 1st element received
-        assertEquals(2, sub.receive()) // 2nd element received
-        assertFailsWith<TestException> { sub.receive() } // then closed with exception
-        yield() // to cancel broadcast
-        finish(6)
+    // TODO: @Test
+    void testBroadcastCloseWithException() /* = runTest */ {
+        expect(1);
+        // TODO: auto b = broadcast(NonCancellable, /* capacity = */ 1, [&]() {
+        //     expect(2);
+        //     send(1);
+        //     expect(3);
+        //     send(2); // suspends
+        //     expect(5);
+        //     // additional attempts to send fail
+        //     assertFailsWith<TestException>([&]() { send(3); });
+        // });
+        // TODO: auto sub = b.openSubscription();
+        // TODO: yield(); // into broadcast
+        expect(4);
+        // TODO: b.close(TestException()); // close broadcast channel with exception
+        // TODO: assertTrue(b.isClosedForSend); // sub was also closed
+        // TODO: assertEquals(1, sub.receive()); // 1st element received
+        // TODO: assertEquals(2, sub.receive()); // 2nd element received
+        // TODO: assertFailsWith<TestException>([&]() { sub.receive(); }); // then closed with exception
+        // TODO: yield(); // to cancel broadcast
+        finish(6);
     }
-}
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

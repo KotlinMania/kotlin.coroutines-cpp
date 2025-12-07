@@ -1,197 +1,126 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/ChannelUndeliveredElementTest.kt
+//
+// TODO: Translate imports
+// TODO: Translate suspend functions to C++ coroutines
+// TODO: Translate test annotations to C++ test framework
+// TODO: Translate atomicfu operations
 
-import kotlinx.coroutines.testing.*
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-class ChannelUndeliveredElementTest : TestBase() {
-    @Test
-    fun testSendSuccessfully() = runTest {
-        runAllKindsTest { kind ->
-            val channel = kind.create<Resource> { it.cancel() }
-            val res = Resource("OK")
-            launch {
-                channel.send(res)
-            }
-            val ok = channel.receive()
-            assertEquals("OK", ok.value)
-            assertFalse(res.isCancelled) // was not cancelled
-            channel.close()
-            assertFalse(res.isCancelled) // still was not cancelled
-        }
-    }
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.atomicfu.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testRendezvousSendCancelled() = runTest {
-        val channel = Channel<Resource> { it.cancel() }
-        val res = Resource("OK")
-        val sender = launch(start = CoroutineStart.UNDISPATCHED) {
-            assertFailsWith<CancellationException> {
-                channel.send(res) // suspends & get cancelled
-            }
-        }
-        sender.cancelAndJoin()
-        assertTrue(res.isCancelled)
-    }
+class ChannelUndeliveredElementTest : public TestBase {
+private:
+    class Resource {
+    private:
+        std::string value_;
+        // TODO: atomic<bool> _cancelled{false};
 
-    @Test
-    fun testBufferedSendCancelled() = runTest {
-        val channel = Channel<Resource>(1) { it.cancel() }
-        val resA = Resource("A")
-        val resB = Resource("B")
-        val sender = launch(start = CoroutineStart.UNDISPATCHED) {
-            channel.send(resA) // goes to buffer
-            assertFailsWith<CancellationException> {
-                channel.send(resB) // suspends & get cancelled
-            }
-        }
-        sender.cancelAndJoin()
-        assertFalse(resA.isCancelled) // it is in buffer, not cancelled
-        assertTrue(resB.isCancelled) // send was cancelled
-        channel.cancel() // now cancel the channel
-        assertTrue(resA.isCancelled) // now cancelled in buffer
-    }
+    public:
+        explicit Resource(const std::string& value) : value_(value) {}
 
-    @Test
-    fun testUnlimitedChannelCancelled() = runTest {
-        val channel = Channel<Resource>(Channel.UNLIMITED) { it.cancel() }
-        val resA = Resource("A")
-        val resB = Resource("B")
-        channel.send(resA) // goes to buffer
-        channel.send(resB) // goes to buffer
-        assertFalse(resA.isCancelled) // it is in buffer, not cancelled
-        assertFalse(resB.isCancelled) //  it is in buffer, not cancelled
-        channel.cancel() // now cancel the channel
-        assertTrue(resA.isCancelled) // now cancelled in buffer
-        assertTrue(resB.isCancelled) // now cancelled in buffer
-    }
+        const std::string& get_value() const { return value_; }
 
-    @Test
-    fun testConflatedResourceCancelled() = runTest {
-        val channel = Channel<Resource>(Channel.CONFLATED) { it.cancel() }
-        val resA = Resource("A")
-        val resB = Resource("B")
-        channel.send(resA)
-        assertFalse(resA.isCancelled)
-        assertFalse(resB.isCancelled)
-        channel.send(resB)
-        assertTrue(resA.isCancelled) // it was conflated (lost) and thus cancelled
-        assertFalse(resB.isCancelled)
-        channel.close()
-        assertFalse(resB.isCancelled) // not cancelled yet, can be still read by receiver
-        channel.cancel()
-        assertTrue(resB.isCancelled) // now it is cancelled
-    }
-
-    @Test
-    fun testSendToClosedChannel() = runTest {
-        runAllKindsTest { kind ->
-            val channel = kind.create<Resource> { it.cancel() }
-            channel.close() // immediately close channel
-            val res = Resource("OK")
-            assertFailsWith<ClosedSendChannelException> {
-                channel.send(res) // send fails to closed channel, resource was not delivered
-            }
-            assertTrue(res.isCancelled)
-        }
-    }
-
-    private suspend fun runAllKindsTest(test: suspend CoroutineScope.(TestChannelKind) -> Unit) {
-        for (kind in TestChannelKind.values()) {
-            if (kind.viaBroadcast) continue // does not support onUndeliveredElement
-            try {
-                withContext(Job()) {
-                    test(kind)
-                }
-            } catch(e: Throwable) {
-                error("$kind: $e", e)
-            }
-        }
-    }
-
-    private class Resource(val value: String) {
-        private val _cancelled = atomic(false)
-
-        val isCancelled: Boolean
-            get() = _cancelled.value
-
-        fun cancel() {
-            check(!_cancelled.getAndSet(true)) { "Already cancelled" }
-        }
-    }
-
-    @Test
-    fun testHandlerIsNotInvoked() = runTest { // #2826
-        val channel = Channel<Unit> {
-            expectUnreached()
+        bool is_cancelled() const {
+            // TODO: return _cancelled.value;
+            return false;
         }
 
-        expect(1)
-        launch {
-            expect(2)
-            channel.receive()
+        void cancel() {
+            // TODO: check(!_cancelled.getAndSet(true)) { "Already cancelled" };
         }
-        channel.send(Unit)
-        finish(3)
+    };
+
+    /* suspend */ void runAllKindsTest(/* std::function<void(TestChannelKind)> test */) {
+        // TODO: for (auto kind : TestChannelKind::values()) {
+        //     if (kind.viaBroadcast) continue; // does not support onUndeliveredElement
+        //     try {
+        //         withContext(Job(), [&]() {
+        //             test(kind);
+        //         });
+        //     } catch(const std::exception& e) {
+        //         error(std::string(kind.toString()) + ": " + e.what(), e);
+        //     }
+        // }
     }
 
-    @Test
-    fun testChannelBufferOverflow() = runTest {
-        testBufferOverflowStrategy(listOf(1, 2), BufferOverflow.DROP_OLDEST)
-        testBufferOverflowStrategy(listOf(3), BufferOverflow.DROP_LATEST)
+public:
+    // TODO: @Test
+    void testSendSuccessfully() /* = runTest */ {
+        // TODO: Implementation
     }
 
-    private suspend fun testBufferOverflowStrategy(expectedDroppedElements: List<Int>, strategy: BufferOverflow) {
-        val list = ArrayList<Int>()
-        val channel = Channel<Int>(
-            capacity = 2,
-            onBufferOverflow = strategy,
-            onUndeliveredElement = { value -> list.add(value) }
-        )
-
-        channel.send(1)
-        channel.send(2)
-
-        channel.send(3)
-        channel.trySend(4).onFailure { expectUnreached() }
-        assertEquals(expectedDroppedElements, list)
+    // TODO: @Test
+    void testRendezvousSendCancelled() /* = runTest */ {
+        // TODO: Implementation
     }
 
-
-    @Test
-    fun testTrySendDoesNotInvokeHandlerOnClosedConflatedChannel() = runTest {
-        val conflated = Channel<Int>(Channel.CONFLATED, onUndeliveredElement = {
-            expectUnreached()
-        })
-        conflated.close(IndexOutOfBoundsException())
-        conflated.trySend(3)
+    // TODO: @Test
+    void testBufferedSendCancelled() /* = runTest */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testTrySendDoesNotInvokeHandlerOnClosedChannel() = runTest {
-        val conflated = Channel<Int>(3, onUndeliveredElement = {
-            expectUnreached()
-        })
-        conflated.close(IndexOutOfBoundsException())
-        repeat(10) {
-            conflated.trySend(3)
-        }
+    // TODO: @Test
+    void testUnlimitedChannelCancelled() /* = runTest */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testTrySendDoesNotInvokeHandler() {
-        for (capacity in 0..2) {
-            testTrySendDoesNotInvokeHandler(capacity)
-        }
+    // TODO: @Test
+    void testConflatedResourceCancelled() /* = runTest */ {
+        // TODO: Implementation
     }
 
-    private fun testTrySendDoesNotInvokeHandler(capacity: Int) {
-        val channel = Channel<Int>(capacity, BufferOverflow.DROP_LATEST, onUndeliveredElement = {
-            expectUnreached()
-        })
-        repeat(10) {
-            channel.trySend(3)
-        }
+    // TODO: @Test
+    void testSendToClosedChannel() /* = runTest */ {
+        // TODO: Implementation
     }
-}
+
+    // TODO: @Test
+    void testHandlerIsNotInvoked() /* = runTest */ { // #2826
+        // TODO: Implementation
+    }
+
+    // TODO: @Test
+    void testChannelBufferOverflow() /* = runTest */ {
+        // TODO: testBufferOverflowStrategy({1, 2}, BufferOverflow::DROP_OLDEST);
+        // TODO: testBufferOverflowStrategy({3}, BufferOverflow::DROP_LATEST);
+    }
+
+private:
+    /* suspend */ void testBufferOverflowStrategy(/* std::vector<int> expectedDroppedElements, */ BufferOverflow /* strategy */) {
+        // TODO: Implementation
+    }
+
+public:
+    // TODO: @Test
+    void testTrySendDoesNotInvokeHandlerOnClosedConflatedChannel() /* = runTest */ {
+        // TODO: Implementation
+    }
+
+    // TODO: @Test
+    void testTrySendDoesNotInvokeHandlerOnClosedChannel() /* = runTest */ {
+        // TODO: Implementation
+    }
+
+    // TODO: @Test
+    void testTrySendDoesNotInvokeHandler() {
+        // TODO: for (int capacity = 0; capacity <= 2; capacity++) {
+        //     testTrySendDoesNotInvokeHandler(capacity);
+        // }
+    }
+
+private:
+    void testTrySendDoesNotInvokeHandler(int /* capacity */) {
+        // TODO: Implementation
+    }
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

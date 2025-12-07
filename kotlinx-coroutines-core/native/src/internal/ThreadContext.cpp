@@ -1,5 +1,20 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/internal/ThreadContext.kt
+//
+// TODO: actual keyword - platform-specific implementation
 
-import kotlin.coroutines.*
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
 
-internal actual fun threadContextElements(context: CoroutineContext): Any = 0
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlin.coroutines.*
+
+// TODO: internal actual function
+int thread_context_elements(CoroutineContext context) {
+    return 0;
+}
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

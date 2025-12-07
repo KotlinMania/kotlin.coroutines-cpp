@@ -1,6 +1,23 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.kt
+//
+// TODO: This is a mechanical transliteration - semantics not fully implemented
+// TODO: expect functions need platform-specific implementations
+// TODO: Continuation, Throwable, StackTraceElement need C++ equivalents
+// TODO: CoroutineStackFrame interface needs implementation
+// TODO: @PublishedApi annotation - JVM-specific
+// TODO: suspend inline functions not directly translatable
 
-import kotlin.coroutines.*
+#include <exception>
+
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
+
+// Forward declarations
+template<typename T> class Continuation;
+class StackTraceElement;
+class CoroutineStackFrame;
 
 /**
  * Tries to recover stacktrace for given [exception] and [continuation].
@@ -11,13 +28,20 @@ import kotlin.coroutines.*
  *
  * Works only on JVM with enabled debug-mode.
  */
-internal expect fun <E: Throwable> recoverStackTrace(exception: E, continuation: Continuation<*>): E
+// TODO: expect function - needs platform-specific implementation
+template<typename E>
+E* recover_stack_trace(E* exception, Continuation<void>* continuation) {
+    return exception;
+}
 
 /**
  * initCause on JVM, nop on other platforms
  */
-@Suppress("EXTENSION_SHADOWED_BY_MEMBER")
-internal expect fun Throwable.initCause(cause: Throwable)
+// TODO: expect function - needs platform-specific implementation
+// TODO: @Suppress("EXTENSION_SHADOWED_BY_MEMBER")
+inline void init_cause(std::exception* self, std::exception* cause) {
+    // No-op in common implementation
+}
 
 /**
  * Tries to recover stacktrace for given [exception]. Used in non-suspendable points of awaiting.
@@ -26,22 +50,42 @@ internal expect fun Throwable.initCause(cause: Throwable)
  *
  * Works only on JVM with enabled debug-mode.
  */
-internal expect fun <E: Throwable> recoverStackTrace(exception: E): E
+// TODO: expect function - needs platform-specific implementation
+template<typename E>
+E* recover_stack_trace(E* exception) {
+    return exception;
+}
 
 // Name conflict with recoverStackTrace
-@Suppress("NOTHING_TO_INLINE")
-internal expect suspend inline fun recoverAndThrow(exception: Throwable): Nothing
+// TODO: expect suspend inline function - not directly translatable
+// [[noreturn]] inline void recover_and_throw(std::exception* exception) {
+//     throw *exception;
+// }
 
 /**
  * The opposite of [recoverStackTrace].
  * It is guaranteed that `unwrap(recoverStackTrace(e)) === e`
  */
-@PublishedApi // Used from kotlinx-coroutines-test and reactor modules via suppress, not part of ABI
-internal expect fun <E: Throwable> unwrap(exception: E): E
-
-internal expect class StackTraceElement
-
-internal expect interface CoroutineStackFrame {
-    public val callerFrame: CoroutineStackFrame?
-    public fun getStackTraceElement(): StackTraceElement?
+// TODO: @PublishedApi annotation
+// TODO: expect function - needs platform-specific implementation
+template<typename E>
+E* unwrap(E* exception) {
+    return exception;
 }
+
+// TODO: expect class - needs platform-specific implementation
+class StackTraceElement {
+    // Platform-specific implementation
+};
+
+// TODO: expect interface - needs platform-specific implementation
+class CoroutineStackFrame {
+public:
+    virtual ~CoroutineStackFrame() = default;
+    virtual CoroutineStackFrame* get_caller_frame() = 0;
+    virtual StackTraceElement* get_stack_trace_element() = 0;
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

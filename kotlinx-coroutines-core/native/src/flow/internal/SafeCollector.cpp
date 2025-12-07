@@ -1,28 +1,62 @@
-package kotlinx.coroutines.flow.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt
+//
+// TODO: actual keyword - platform-specific implementation
+// TODO: suspend function semantics
+// TODO: currentCoroutineContext function
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlin.coroutines.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+namespace internal {
 
-internal actual class SafeCollector<T> actual constructor(
-    internal actual val collector: FlowCollector<T>,
-    internal actual val collectContext: CoroutineContext
-) : FlowCollector<T> {
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.flow.*
+// import kotlin.coroutines.*
+
+// TODO: internal actual class
+template<typename T>
+class SafeCollector : public FlowCollector<T> {
+public:
+    FlowCollector<T>* collector;
+    CoroutineContext collect_context;
 
     // Note, it is non-capturing lambda, so no extra allocation during init of SafeCollector
-    internal actual val collectContextSize = collectContext.fold(0) { count, _ -> count + 1 }
-    private var lastEmissionContext: CoroutineContext? = null
+    int collect_context_size;
 
-    actual override suspend fun emit(value: T) {
-        val currentContext = currentCoroutineContext()
-        currentContext.ensureActive()
-        if (lastEmissionContext !== currentContext) {
-            checkContext(currentContext)
-            lastEmissionContext = currentContext
+private:
+    CoroutineContext* last_emission_context;
+
+public:
+    SafeCollector(FlowCollector<T>* collector, CoroutineContext collect_context)
+        : collector(collector)
+        , collect_context(collect_context)
+        , last_emission_context(nullptr)
+    {
+        collect_context_size = collect_context.fold(0, [](int count, auto /* element */) {
+            return count + 1;
+        });
+    }
+
+    // TODO: actual override suspend function
+    void emit(T value) /* suspend */ override {
+        auto current_context = current_coroutine_context();
+        current_context.ensure_active();
+
+        if (last_emission_context != &current_context) {
+            check_context(current_context);
+            last_emission_context = &current_context;
         }
-        collector.emit(value)
+        collector->emit(value);
     }
 
-    public actual fun releaseIntercepted() {
+    void release_intercepted() {
+        // Empty implementation
     }
-}
+};
+
+} // namespace internal
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

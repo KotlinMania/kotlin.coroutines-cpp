@@ -1,201 +1,197 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/CatchTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Implement suspend functions as regular functions
+// - Map Flow operators to C++ equivalents
+// - Map ContinuationInterceptor to C++ equivalent
+// - Map assertIs template to C++ test assertions
+// - Handle CancellationException properly
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class CatchTest : TestBase() {
-    @Test
-    fun testCatchEmit() = runTest {
-        val flow = flow {
-            emit(1)
-            throw TestException()
-        }
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.test.*
 
-        assertEquals(42, flow.catch { emit(41) }.sum())
-        assertFailsWith<TestException>(flow)
+class CatchTest : public TestBase {
+public:
+    // TODO: @Test
+    void testCatchEmit() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            emit(1);
+            throw TestException();
+        });
+
+        assertEquals(42, flow_var.catch_error([](auto& emit, auto e) { emit(41); }).sum());
+        assertFailsWith<TestException>(flow_var);
+        // TODO: }
     }
 
-    @Test
-    fun testCatchEmitExceptionFromDownstream() = runTest {
-        var executed = 0
-        val flow = flow {
-            emit(1)
-        }.catch { emit(42) }.map {
-            ++executed
-            throw TestException()
-        }
+    // TODO: @Test
+    void testCatchEmitExceptionFromDownstream() {
+        // TODO: runTest {
+        int executed = 0;
+        auto flow_var = flow([](auto& emit) {
+            emit(1);
+        }).catch_error([](auto& emit, auto e) { emit(42); }).map([&](auto it) {
+            ++executed;
+            throw TestException();
+            return it;
+        });
 
-        assertFailsWith<TestException>(flow)
-        assertEquals(1, executed)
+        assertFailsWith<TestException>(flow_var);
+        assertEquals(1, executed);
+        // TODO: }
     }
 
-    @Test
-    fun testCatchEmitAll() = runTest {
-        val flow = flow {
-            emit(1)
-            throw TestException()
-        }.catch { emitAll(flowOf(2)) }
+    // TODO: @Test
+    void testCatchEmitAll() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            emit(1);
+            throw TestException();
+        }).catch_error([](auto& emit, auto e) { emit_all(emit, flow_of(2)); });
 
-        assertEquals(3, flow.sum())
+        assertEquals(3, flow_var.sum());
+        // TODO: }
     }
 
-    @Test
-    fun testCatchEmitAllExceptionFromDownstream() = runTest {
-        var executed = 0
-        val flow = flow {
-            emit(1)
-        }.catch { emitAll(flowOf(1, 2, 3)) }.map {
-            ++executed
-            throw TestException()
-        }
+    // TODO: @Test
+    void testCatchEmitAllExceptionFromDownstream() {
+        // TODO: runTest {
+        int executed = 0;
+        auto flow_var = flow([](auto& emit) {
+            emit(1);
+        }).catch_error([](auto& emit, auto e) { emit_all(emit, flow_of(1, 2, 3)); }).map([&](auto it) {
+            ++executed;
+            throw TestException();
+            return it;
+        });
 
-        assertFailsWith<TestException>(flow)
-        assertEquals(1, executed)
+        assertFailsWith<TestException>(flow_var);
+        assertEquals(1, executed);
+        // TODO: }
     }
 
-    @Test
-    fun testWithTimeoutCatch() = runTest {
-        val flow = flow<Int> {
-            withTimeout(1) {
-                hang { expect(1) }
-            }
-            expectUnreached()
-        }.catch { emit(1) }
+    // TODO: @Test
+    void testWithTimeoutCatch() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            with_timeout(1, [&]() {
+                hang([&]() { expect(1); });
+            });
+            expectUnreached();
+        }).catch_error([](auto& emit, auto e) { emit(1); });
 
-        assertEquals(1, flow.single())
-        finish(2)
+        assertEquals(1, flow_var.single());
+        finish(2);
+        // TODO: }
     }
 
-    @Test
-    fun testCancellationFromUpstreamCatch() = runTest {
-        val flow = flow<Int> {
-            hang {  }
-        }.catch { expectUnreached() }
+    // TODO: @Test
+    void testCancellationFromUpstreamCatch() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            hang([]() {  });
+        }).catch_error([](auto& emit, auto e) { expectUnreached(); });
 
-        val job = launch {
-            expect(1)
-            flow.collect {  }
-        }
+        auto job = launch([&]() {
+            expect(1);
+            flow_var.collect([](auto) {  });
+        });
 
-        yield()
-        expect(2)
-        job.cancelAndJoin()
-        finish(3)
+        yield();
+        expect(2);
+        job.cancel_and_join();
+        finish(3);
+        // TODO: }
     }
 
-    @Test
-    fun testCatchContext() = runTest {
-        expect(1)
-        val flow = flow {
-            expect(2)
-            emit("OK")
-            expect(3)
-            throw TestException()
-        }
-        val d0 = coroutineContext[ContinuationInterceptor] as CoroutineContext
-        val d1 = wrapperDispatcher(coroutineContext)
-        val d2 = wrapperDispatcher(coroutineContext)
-        flow
-            .catch { e ->
-                expect(4)
-                assertIs<TestException>(e)
-                assertEquals("A", kotlin.coroutines.coroutineContext[CoroutineName]?.name)
-                assertSame(d1, kotlin.coroutines.coroutineContext[ContinuationInterceptor] as CoroutineContext)
-                throw e // rethrow downstream
-            }
-            .flowOn(CoroutineName("A"))
-            .catch { e ->
-                expect(5)
-                assertIs<TestException>(e)
-                assertEquals("B", kotlin.coroutines.coroutineContext[CoroutineName]?.name)
-                assertSame(d1, kotlin.coroutines.coroutineContext[ContinuationInterceptor] as CoroutineContext)
-                throw e // rethrow downstream
-            }
-            .flowOn(CoroutineName("B"))
-            .catch { e ->
-                expect(6)
-                assertIs<TestException>(e)
-                assertSame(d1, kotlin.coroutines.coroutineContext[ContinuationInterceptor] as CoroutineContext)
-                throw e // rethrow downstream
-            }
-            .flowOn(d1)
-            .catch { e ->
-                expect(7)
-                assertIs<TestException>(e)
-                assertSame(d2, kotlin.coroutines.coroutineContext[ContinuationInterceptor] as CoroutineContext)
-                throw e // rethrow downstream
-            }
-            .flowOn(d2)
-            // flowOn with a different dispatcher introduces asynchrony so that all exceptions in the
-            // upstream flows are handled before they go downstream
-            .onEach {
-                expectUnreached() // already cancelled
-            }
-            .catch { e ->
-                expect(8)
-                assertIs<TestException>(e)
-                assertSame(d0, kotlin.coroutines.coroutineContext[ContinuationInterceptor] as CoroutineContext)
-            }
-            .collect()
-        finish(9)
+    // TODO: @Test
+    void testCatchContext() {
+        // TODO: runTest {
+        expect(1);
+        auto flow_var = flow([](auto& emit) {
+            expect(2);
+            emit("OK");
+            expect(3);
+            throw TestException();
+        });
+        // TODO: Implementation with multiple flowOn and catch operators
+        // See original Kotlin code for full context switching logic
+        finish(9);
+        // TODO: }
     }
 
-    @Test
-    fun testUpstreamExceptionConcurrentWithDownstream() = runTest {
-        val flow = flow {
+    // TODO: @Test
+    void testUpstreamExceptionConcurrentWithDownstream() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
             try {
-                expect(1)
-                emit(1)
+                expect(1);
+                emit(1);
             } finally {
-                expect(3)
-                throw TestException()
+                expect(3);
+                throw TestException();
             }
-        }.catch { expectUnreached() }.onEach {
-            expect(2)
-            throw TestException2()
-        }
+        }).catch_error([](auto& emit, auto e) { expectUnreached(); }).on_each([](auto it) {
+            expect(2);
+            throw TestException2();
+        });
 
-        assertFailsWith<TestException>(flow)
-        finish(4)
+        assertFailsWith<TestException>(flow_var);
+        finish(4);
+        // TODO: }
     }
 
-    @Test
-    fun testUpstreamExceptionConcurrentWithDownstreamCancellation() = runTest {
-        val flow = flow {
+    // TODO: @Test
+    void testUpstreamExceptionConcurrentWithDownstreamCancellation() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
             try {
-                expect(1)
-                emit(1)
+                expect(1);
+                emit(1);
             } finally {
-                expect(3)
-                throw TestException()
+                expect(3);
+                throw TestException();
             }
-        }.catch { expectUnreached() }.onEach {
-            expect(2)
-            throw CancellationException("")
-        }
+        }).catch_error([](auto& emit, auto e) { expectUnreached(); }).on_each([](auto it) {
+            expect(2);
+            throw CancellationException("");
+        });
 
-        assertFailsWith<TestException>(flow)
-        finish(4)
+        assertFailsWith<TestException>(flow_var);
+        finish(4);
+        // TODO: }
     }
 
-    @Test
-    fun testUpstreamCancellationIsIgnoredWhenDownstreamFails() = runTest {
-        val flow = flow {
+    // TODO: @Test
+    void testUpstreamCancellationIsIgnoredWhenDownstreamFails() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
             try {
-                expect(1)
-                emit(1)
+                expect(1);
+                emit(1);
             } finally {
-                expect(3)
-                throw CancellationException("")
+                expect(3);
+                throw CancellationException("");
             }
-        }.catch { expectUnreached() }.onEach {
-            expect(2)
-            throw TestException("")
-        }
+        }).catch_error([](auto& emit, auto e) { expectUnreached(); }).on_each([](auto it) {
+            expect(2);
+            throw TestException("");
+        });
 
-        assertFailsWith<TestException>(flow)
-        finish(4)
+        assertFailsWith<TestException>(flow_var);
+        finish(4);
+        // TODO: }
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

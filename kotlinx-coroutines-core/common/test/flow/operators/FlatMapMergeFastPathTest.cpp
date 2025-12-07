@@ -1,85 +1,109 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/FlatMapMergeFastPathTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Extend FlatMapMergeBaseTest
+// - Map flatMapMerge with buffer
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
-import kotlin.test.assertFailsWith
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class FlatMapMergeFastPathTest : FlatMapMergeBaseTest() {
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.test.*
+// TODO: import kotlin.test.assertFailsWith
 
-    override fun <T> Flow<T>.flatMap(mapper: suspend (T) -> Flow<T>): Flow<T> = flatMapMerge(transform = mapper).buffer(64)
+class FlatMapMergeFastPathTest : public FlatMapMergeBaseTest {
+public:
 
-    @Test
-    override fun testFlatMapConcurrency() = runTest {
-        var concurrentRequests = 0
-        val flow = (1..100).asFlow().flatMapMerge(concurrency = 2) { value ->
-            flow {
-                ++concurrentRequests
-                emit(value)
-                delay(Long.MAX_VALUE)
-            }
-        }.buffer(64)
+    Flow<int> flat_map(Flow<int> flow_var, auto mapper) override {
+        return flow_var.flat_map_merge(mapper).buffer(64);
+    }
 
-        val consumer = launch {
-            flow.collect { value ->
-                expect(value)
-            }
+    // TODO: @Test
+    void testFlatMapConcurrency() override {
+        // TODO: runTest {
+        int concurrent_requests = 0;
+        auto flow_var = as_flow(1, 100).flat_map_merge(2, [&](int value) {
+            return flow([&, value](auto& emit) {
+                ++concurrent_requests;
+                emit(value);
+                delay(LONG_MAX);
+            });
+        }).buffer(64);
+
+        auto consumer = launch([&]() {
+            flow_var.collect([&](int value) {
+                expect(value);
+            });
+        });
+
+        for (int i = 0; i < 4; ++i) {
+            yield();
         }
 
-        repeat(4) {
-            yield()
-        }
-
-        assertEquals(2, concurrentRequests)
-        consumer.cancelAndJoin()
-        finish(3)
+        assertEquals(2, concurrent_requests);
+        consumer.cancel_and_join();
+        finish(3);
+        // TODO: }
     }
 
-    @Test
-    fun testCancellationExceptionDownstream() = runTest {
-        val flow = flowOf(1, 2, 3).flatMapMerge {
-            flow {
-                emit(it)
-                throw CancellationException("")
-            }
-        }.buffer(64)
+    // TODO: @Test
+    void testCancellationExceptionDownstream() {
+        // TODO: runTest {
+        auto flow_var = flow_of(1, 2, 3).flat_map_merge([](auto it) {
+            return flow([it](auto& emit) {
+                emit(it);
+                throw CancellationException("");
+            });
+        }).buffer(64);
 
-        assertEquals(listOf(1, 2, 3), flow.toList())
+        assertEquals(std::vector<int>{1, 2, 3}, flow_var.to_list());
+        // TODO: }
     }
 
-    @Test
-    fun testCancellationExceptionUpstream() = runTest {
-        val flow = flow {
-            expect(1)
-            emit(1)
-            expect(2)
-            yield()
-            throw CancellationException("")
-        }.flatMapMerge {
-            flow {
-                expect(3)
-                emit(it)
-                hang { expect(4) }
-            }
-        }.buffer(64)
+    // TODO: @Test
+    void testCancellationExceptionUpstream() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            expect(1);
+            emit(1);
+            expect(2);
+            yield();
+            throw CancellationException("");
+        }).flat_map_merge([](auto it) {
+            return flow([it](auto& emit) {
+                expect(3);
+                emit(it);
+                hang([&]() { expect(4); });
+            });
+        }).buffer(64);
 
-        assertFailsWith<CancellationException>(flow)
-        finish(5)
+        assertFailsWith<CancellationException>(flow_var);
+        finish(5);
+        // TODO: }
     }
 
-    @Test
-    fun testCancellation() = runTest {
-        val result = flow {
-            emit(1)
-            emit(2)
-            emit(3)
-            emit(4)
-            expectUnreached() // Cancelled by take
-            emit(5)
-        }.flatMapMerge(2) { v -> flow { emit(v) } }
+    // TODO: @Test
+    void testCancellation() {
+        // TODO: runTest {
+        auto result = flow([](auto& emit) {
+            emit(1);
+            emit(2);
+            emit(3);
+            emit(4);
+            expectUnreached(); // Cancelled by take
+            emit(5);
+        }).flat_map_merge(2, [](auto v) { return flow([v](auto& emit) { emit(v); }); })
             .buffer(64)
             .take(2)
-            .toList()
-        assertEquals(listOf(1, 2), result)
+            .to_list();
+        assertEquals(std::vector<int>{1, 2}, result);
+        // TODO: }
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

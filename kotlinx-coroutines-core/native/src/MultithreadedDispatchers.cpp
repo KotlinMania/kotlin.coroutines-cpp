@@ -1,120 +1,135 @@
-@file:OptIn(ObsoleteWorkersApi::class)
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/MultithreadedDispatchers.kt
+//
+// TODO: @file:OptIn annotation
+// TODO: Worker API from Kotlin/Native
+// TODO: AtomicReference from Kotlin concurrent
+// TODO: Channel API from kotlinx.coroutines
+// TODO: suspend functions and coroutine semantics
+// TODO: runBlocking implementation
 
-package kotlinx.coroutines
+namespace kotlinx {
+namespace coroutines {
 
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.internal.*
-import kotlin.coroutines.*
-import kotlin.concurrent.AtomicReference
-import kotlin.native.concurrent.*
-import kotlin.time.*
-import kotlin.time.Duration.Companion.milliseconds
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlinx.atomicfu.*
+// import kotlinx.coroutines.channels.*
+// import kotlinx.coroutines.internal.*
+// import kotlin.coroutines.*
+// import kotlin.concurrent.AtomicReference
+// import kotlin.native.concurrent.*
+// import kotlin.time.*
+// import kotlin.time.Duration.Companion.milliseconds
 
-@DelicateCoroutinesApi
-public actual fun newFixedThreadPoolContext(nThreads: Int, name: String): CloseableCoroutineDispatcher {
-    require(nThreads >= 1) { "Expected at least one thread, but got: $nThreads" }
-    return MultiWorkerDispatcher(name, nThreads)
+// TODO: @DelicateCoroutinesApi annotation
+CloseableCoroutineDispatcher* new_fixed_thread_pool_context(int n_threads, std::string name) {
+    if (n_threads < 1) {
+        throw std::invalid_argument("Expected at least one thread, but got: " + std::to_string(n_threads));
+    }
+    return new MultiWorkerDispatcher(name, n_threads);
 }
 
-internal class WorkerDispatcher(name: String) : CloseableCoroutineDispatcher(), Delay {
-    private val worker = Worker.start(name = name)
+// TODO: internal class
+class WorkerDispatcher : public CloseableCoroutineDispatcher, public Delay {
+private:
+    void* worker; // TODO: Worker type
 
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        worker.executeAfter(0L) { block.run() }
+public:
+    WorkerDispatcher(std::string name) {
+        // TODO: worker = Worker.start(name = name)
     }
 
-    override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        val handle = schedule(timeMillis, Runnable {
-            with(continuation) { resumeUndispatched(Unit) }
-        })
-        continuation.disposeOnCancellation(handle)
+    void dispatch(CoroutineContext context, Runnable block) override {
+        // TODO: worker.executeAfter(0L) { block.run() }
     }
 
-    override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle =
-        schedule(timeMillis, block)
+    void schedule_resume_after_delay(long time_millis, CancellableContinuation<void>& continuation) override {
+        auto handle = schedule(time_millis, Runnable([&continuation]() {
+            continuation.resume_undispatched(/* Unit */);
+        }));
+        continuation.dispose_on_cancellation(handle);
+    }
 
-    private fun schedule(timeMillis: Long, block: Runnable): DisposableHandle {
+    DisposableHandle invoke_on_timeout(long time_millis, Runnable block, CoroutineContext context) override {
+        return schedule(time_millis, block);
+    }
+
+private:
+    DisposableHandle schedule(long time_millis, Runnable block) {
         // Workers don't have an API to cancel sent "executeAfter" block, but we are trying
         // to control the damage and reduce reachable objects by nulling out `block`
         // that may retain a lot of references, and leaving only an empty shell after a timely disposal
         // This is a class and not an object with `block` in a closure because that would defeat the purpose.
-        class DisposableBlock(block: Runnable) : DisposableHandle, Function0<Unit> {
-            private val disposableHolder = AtomicReference<Runnable?>(block)
+        class DisposableBlock : public DisposableHandle {
+        private:
+            // TODO: AtomicReference<Runnable?>
+            std::atomic<Runnable*> disposable_holder;
 
-            override fun invoke() {
-                disposableHolder.value?.run()
+        public:
+            DisposableBlock(Runnable block) : disposable_holder(new Runnable(block)) {}
+
+            void operator()() {
+                auto* block_ptr = disposable_holder.load();
+                if (block_ptr != nullptr) {
+                    block_ptr->run();
+                }
             }
 
-            override fun dispose() {
-                disposableHolder.value = null
+            void dispose() override {
+                disposable_holder.store(nullptr);
             }
 
-            fun isDisposed() = disposableHolder.value == null
-        }
-
-        fun Worker.runAfterDelay(block: DisposableBlock, targetMoment: TimeMark) {
-            if (block.isDisposed()) return
-            val durationUntilTarget = -targetMoment.elapsedNow()
-            val quantum = 100.milliseconds
-            if (durationUntilTarget > quantum) {
-                executeAfter(quantum.inWholeMicroseconds) { runAfterDelay(block, targetMoment) }
-            } else {
-                executeAfter(maxOf(0, durationUntilTarget.inWholeMicroseconds), block)
+            bool is_disposed() {
+                return disposable_holder.load() == nullptr;
             }
-        }
+        };
 
-        val disposableBlock = DisposableBlock(block)
-        val targetMoment = TimeSource.Monotonic.markNow() + timeMillis.milliseconds
-        worker.runAfterDelay(disposableBlock, targetMoment)
-        return disposableBlock
+        // TODO: Worker.runAfterDelay implementation with TimeSource
+        auto disposable_block = new DisposableBlock(block);
+        // TODO: val targetMoment = TimeSource.Monotonic.markNow() + timeMillis.milliseconds
+        // TODO: worker.runAfterDelay(disposableBlock, targetMoment)
+        return disposable_block;
     }
 
-    override fun close() {
-        worker.requestTermination().result // Note: calling "result" blocks
+public:
+    void close() override {
+        // TODO: worker.requestTermination().result // Note: calling "result" blocks
     }
-}
+};
 
-private class MultiWorkerDispatcher(
-    private val name: String,
-    private val workersCount: Int
-) : CloseableCoroutineDispatcher() {
-    private val tasksQueue = Channel<Runnable>(Channel.UNLIMITED)
-    private val availableWorkers = Channel<CancellableContinuation<Runnable>>(Channel.UNLIMITED)
-    private val workerPool = OnDemandAllocatingPool(workersCount) {
-        Worker.start(name = "$name-$it").apply {
-            executeAfter { workerRunLoop() }
-        }
-    }
+// TODO: private class
+class MultiWorkerDispatcher : public CloseableCoroutineDispatcher {
+private:
+    std::string name;
+    int workers_count;
+    Channel<Runnable>* tasks_queue;
+    Channel<CancellableContinuation<Runnable>*>* available_workers;
+    OnDemandAllocatingPool* worker_pool;
 
     /**
      * (number of tasks - number of workers) * 2 + (1 if closed)
      */
-    private val tasksAndWorkersCounter = atomic(0L)
+    std::atomic<long> tasks_and_workers_counter;
 
-    @Suppress("NOTHING_TO_INLINE")
-    private inline fun Long.isClosed() = this and 1L == 1L
-    @Suppress("NOTHING_TO_INLINE")
-    private inline fun Long.hasTasks() = this >= 2
-    @Suppress("NOTHING_TO_INLINE")
-    private inline fun Long.hasWorkers() = this < 0
+    inline bool is_closed(long value) const { return (value & 1L) == 1L; }
+    inline bool has_tasks(long value) const { return value >= 2; }
+    inline bool has_workers(long value) const { return value < 0; }
 
-    private fun workerRunLoop() = runBlocking {
+    void worker_run_loop() {
+        // TODO: runBlocking implementation
         while (true) {
-            val state = tasksAndWorkersCounter.getAndUpdate {
-                if (it.isClosed() && !it.hasTasks()) return@runBlocking
-                it - 2
+            auto state = tasks_and_workers_counter.fetch_sub(2);
+            if (is_closed(state) && !has_tasks(state)) {
+                return;
             }
-            if (state.hasTasks()) {
+
+            if (has_tasks(state)) {
                 // we promised to process a task, and there are some
-                tasksQueue.receive().run()
+                tasks_queue->receive().run();
             } else {
                 try {
-                    suspendCancellableCoroutine {
-                        val result = availableWorkers.trySend(it)
-                        checkChannelResult(result)
-                    }.run()
-                } catch (e: CancellationException) {
+                    // TODO: suspendCancellableCoroutine implementation
+                } catch (CancellationException& e) {
                     /** we are cancelled from [close] and thus will never get back to this branch of code,
                     but there may still be pending work, so we can't just exit here. */
                 }
@@ -123,59 +138,85 @@ private class MultiWorkerDispatcher(
     }
 
     // a worker that promised to be here and should actually arrive, so we wait for it in a blocking manner.
-    private fun obtainWorker(): CancellableContinuation<Runnable> =
-        availableWorkers.tryReceive().getOrNull() ?: runBlocking { availableWorkers.receive() }
-
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        val state = tasksAndWorkersCounter.getAndUpdate {
-            if (it.isClosed())
-                throw IllegalStateException("Dispatcher $name was closed, attempted to schedule: $block")
-            it + 2
-        }
-        if (state.hasWorkers()) {
-            // there are workers that have nothing to do, let's grab one of them
-            obtainWorker().resume(block)
+    CancellableContinuation<Runnable>* obtain_worker() {
+        auto result = available_workers->try_receive();
+        // TODO: getOrNull equivalent
+        if (/* has value */) {
+            return /* value */nullptr;
         } else {
-            workerPool.allocate()
+            // TODO: runBlocking { availableWorkers.receive() }
+            return nullptr;
+        }
+    }
+
+public:
+    MultiWorkerDispatcher(std::string name, int workers_count)
+        : name(name)
+        , workers_count(workers_count)
+        , tasks_and_workers_counter(0L)
+    {
+        // TODO: tasks_queue = Channel<Runnable>(Channel.UNLIMITED)
+        // TODO: available_workers = Channel<CancellableContinuation<Runnable>>(Channel.UNLIMITED)
+        // TODO: worker_pool = OnDemandAllocatingPool implementation
+    }
+
+    void dispatch(CoroutineContext context, Runnable block) override {
+        auto state = tasks_and_workers_counter.fetch_add(2);
+        if (is_closed(state)) {
+            throw std::runtime_error("Dispatcher " + name + " was closed, attempted to schedule: " + /* block.toString() */ "");
+        }
+
+        if (has_workers(state)) {
+            // there are workers that have nothing to do, let's grab one of them
+            obtain_worker()->resume(block);
+        } else {
+            worker_pool->allocate();
             // no workers are available, we must queue the task
-            val result = tasksQueue.trySend(block)
-            checkChannelResult(result)
+            auto result = tasks_queue->try_send(block);
+            check_channel_result(result);
         }
     }
 
-    override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher {
-        parallelism.checkParallelism()
-        if (parallelism >= workersCount) {
-            return namedOrThis(name)
+    CoroutineDispatcher* limited_parallelism(int parallelism, std::string* name = nullptr) override {
+        check_parallelism(parallelism);
+        if (parallelism >= workers_count) {
+            return named_or_this(name);
         }
-        return super.limitedParallelism(parallelism, name)
+        return CloseableCoroutineDispatcher::limited_parallelism(parallelism, name);
     }
 
-    override fun close() {
-        tasksAndWorkersCounter.getAndUpdate { if (it.isClosed()) it else it or 1L }
-        val workers = workerPool.close() // no new workers will be created
+    void close() override {
+        tasks_and_workers_counter.fetch_or(1L);
+        auto workers = worker_pool->close(); // no new workers will be created
+
         while (true) {
             // check if there are workers that await tasks in their personal channels, we need to wake them up
-            val state = tasksAndWorkersCounter.getAndUpdate {
-                if (it.hasWorkers()) it + 2 else it
+            auto state = tasks_and_workers_counter.load();
+            if (has_workers(state)) {
+                tasks_and_workers_counter.fetch_add(2);
+            } else {
+                break;
             }
-            if (!state.hasWorkers())
-                break
-            obtainWorker().cancel()
+            if (!has_workers(state)) {
+                break;
+            }
+            obtain_worker()->cancel();
         }
+
         /*
          * Here we cannot avoid waiting on `.result`, otherwise it will lead
          * to a native memory leak, including a pthread handle.
          */
-        val requests = workers.map { it.requestTermination() }
-        requests.map { it.result }
+        // TODO: val requests = workers.map { it.requestTermination() }
+        // TODO: requests.map { it.result }
     }
 
-    private fun checkChannelResult(result: ChannelResult<*>) {
-        if (!result.isSuccess)
-            throw IllegalStateException(
-                "Internal invariants of $this were violated, please file a bug to kotlinx.coroutines",
-                result.exceptionOrNull()
-            )
+private:
+    void check_channel_result(/* ChannelResult<*> */ void* result) {
+        // TODO: if (!result.isSuccess)
+        //     throw IllegalStateException(...)
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

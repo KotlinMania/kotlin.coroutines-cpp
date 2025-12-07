@@ -1,65 +1,87 @@
-package kotlinx.coroutines.debug
+// Original file: kotlinx-coroutines-debug/test/WithContextUndispatchedTest.kt
+// TODO: Convert imports to C++ includes
+// TODO: Implement DebugTestBase base class
+// TODO: Convert @Test annotation
+// TODO: Implement flow APIs (flowOf, flow, zip, flowOn, collect)
+// TODO: Implement FlowCollector
+// TODO: Implement verifyPartialDump
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import org.junit.*
+namespace kotlinx {
+namespace coroutines {
+namespace debug {
 
-// Test four our internal optimization "withContextUndispatched"
-class WithContextUndispatchedTest : DebugTestBase() {
-
-    @Test
-    fun testZip() = runTest {
-        val f1 = flowOf("a")
-        val f2 = flow {
-            nestedEmit()
-            yield()
-        }
-        f1.zip(f2) { i, j -> i + j }.collect {
-            bar(false)
-        }
+// Test for our internal optimization "withContextUndispatched"
+class WithContextUndispatchedTest : public DebugTestBase {
+public:
+    // @Test
+    void test_zip() {
+        // TODO: runTest {
+        //     auto f1 = flowOf("a")
+        //     auto f2 = flow {
+        //         nestedEmit()
+        //         yield()
+        //     }
+        //     f1.zip(f2) { i, j -> i + j }.collect {
+        //         bar(false)
+        //     }
+        // }
     }
 
-    private suspend fun FlowCollector<Int>.nestedEmit() {
-        emit(1)
-        emit(2)
+private:
+    // suspend
+    void nested_emit(/* FlowCollector<Int>* collector */) {
+        // TODO: emit(1)
+        // emit(2)
     }
 
-    @Test
-    fun testUndispatchedFlowOn() = runTest {
-        val flow = flowOf(1, 2, 3).flowOn(CoroutineName("..."))
-        flow.collect {
-            bar(true)
-        }
+public:
+    // @Test
+    void test_undispatched_flow_on() {
+        // TODO: runTest {
+        //     auto flow = flowOf(1, 2, 3).flowOn(CoroutineName("..."))
+        //     flow.collect {
+        //         bar(true)
+        //     }
+        // }
     }
 
-    @Test
-    fun testUndispatchedFlowOnWithNestedCaller() = runTest {
-        val flow = flow {
-            nestedEmit()
-        }.flowOn(CoroutineName("..."))
-        flow.collect {
-            bar(true)
-        }
+    // @Test
+    void test_undispatched_flow_on_with_nested_caller() {
+        // TODO: runTest {
+        //     auto flow = flow {
+        //         nestedEmit()
+        //     }.flowOn(CoroutineName("..."))
+        //     flow.collect {
+        //         bar(true)
+        //     }
+        // }
     }
 
-    private suspend fun bar(forFlowOn: Boolean) {
-        yield()
-        if (forFlowOn) {
-            verifyFlowOn()
-        } else {
-            verifyZip()
-        }
-        yield()
+private:
+    // suspend
+    void bar(bool for_flow_on) {
+        // TODO: yield()
+        // if (forFlowOn) {
+        //     verifyFlowOn()
+        // } else {
+        //     verifyZip()
+        // }
+        // yield()
     }
 
-    private suspend fun verifyFlowOn() {
-        yield() // suspend
-        verifyPartialDump(1, "verifyFlowOn", "bar")
+    // suspend
+    void verify_flow_on() {
+        // TODO: yield() // suspend
+        // verifyPartialDump(1, "verifyFlowOn", "bar")
     }
 
-    private suspend fun verifyZip() {
-        yield() // suspend
-        verifyPartialDump(2, "verifyZip", "bar", "nestedEmit")
+    // suspend
+    void verify_zip() {
+        // TODO: yield() // suspend
+        // verifyPartialDump(2, "verifyZip", "bar", "nestedEmit")
     }
-}
+};
+
+} // namespace debug
+} // namespace coroutines
+} // namespace kotlinx

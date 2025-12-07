@@ -1,99 +1,83 @@
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-package kotlinx.coroutines.debug
+// Original file: kotlinx-coroutines-debug/test/DumpCoroutineInfoAsJsonAndReferencesTest.kt
+// TODO: Convert @file:Suppress annotation
+// TODO: Convert imports to C++ includes
+// TODO: Implement @ExperimentalStdlibApi
+// TODO: Implement DebugTestBase base class
+// TODO: Implement DebugProbesImpl API
+// TODO: Implement Gson JSON parsing
+// TODO: Convert data class to C++ struct
+// TODO: Implement coroutine context APIs
 
-import kotlinx.coroutines.testing.*
-import com.google.gson.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.debug.internal.*
-import org.junit.Test
-import kotlin.coroutines.*
-import kotlin.test.*
+// @file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+namespace kotlinx {
+namespace coroutines {
+namespace debug {
 
-@ExperimentalStdlibApi
-class DumpCoroutineInfoAsJsonAndReferencesTest : DebugTestBase() {
-    private data class CoroutineInfoFromJson(
-        val name: String?,
-        val id: Long?,
-        val dispatcher: String?,
-        val sequenceNumber: Long?,
-        val state: String?
-    )
+// @ExperimentalStdlibApi
+class DumpCoroutineInfoAsJsonAndReferencesTest : public DebugTestBase {
+private:
+    struct CoroutineInfoFromJson {
+        std::string* name;  // String?
+        long* id;           // Long?
+        std::string* dispatcher;  // String?
+        long* sequence_number;    // Long?
+        std::string* state;       // String?
+    };
 
-    @Test
-    fun testDumpOfUnnamedCoroutine() =
-        runTestWithNamedDeferred(name = null)
-
-    @Test
-    fun testDumpOfNamedCoroutine() =
-        runTestWithNamedDeferred("Name")
-
-    @Test
-    fun testDumpOfNamedCoroutineWithSpecialCharacters() =
-        runTestWithNamedDeferred("Name with\n \"special\" characters\\/\t\b")
-
-    @Test
-    fun testDumpWithNoCoroutines() {
-        val dumpResult = DebugProbesImpl.dumpCoroutinesInfoAsJsonAndReferences()
-        assertEquals(dumpResult.size, 4)
-        assertIsEmptyArray(dumpResult[1])
-        assertIsEmptyArray(dumpResult[2])
-        assertIsEmptyArray(dumpResult[3])
+public:
+    // @Test
+    void test_dump_of_unnamed_coroutine() {
+        // TODO: run_test_with_named_deferred(name = nullptr)
     }
 
-    private fun assertIsEmptyArray(obj: Any) =
-        assertTrue(obj is Array<*> && obj.isEmpty())
-
-    private fun runTestWithNamedDeferred(name: String?) = runTest {
-        val context = if (name == null) EmptyCoroutineContext else CoroutineName(name)
-        val deferred = async(context) {
-            suspendingMethod()
-            assertTrue(true)
-        }
-        yield()
-        verifyDump()
-        deferred.cancelAndJoin()
+    // @Test
+    void test_dump_of_named_coroutine() {
+        // TODO: run_test_with_named_deferred("Name")
     }
 
-    private suspend fun suspendingMethod() {
-        delay(Long.MAX_VALUE)
+    // @Test
+    void test_dump_of_named_coroutine_with_special_characters() {
+        // TODO: run_test_with_named_deferred("Name with\n \"special\" characters\\/\t\b")
     }
 
-    private fun verifyDump() {
-        val dumpResult = DebugProbesImpl.dumpCoroutinesInfoAsJsonAndReferences()
-
-        assertEquals(dumpResult.size, 4)
-
-        val coroutinesInfoAsJsonString = dumpResult[0]
-        val lastObservedThreads = dumpResult[1]
-        val lastObservedFrames = dumpResult[2]
-        val coroutinesInfo = dumpResult[3]
-
-        assertIs<String>(coroutinesInfoAsJsonString)
-        assertIs<Array<*>>(lastObservedThreads)
-        assertIs<Array<*>>(lastObservedFrames)
-        assertIs<Array<*>>(coroutinesInfo)
-
-        val coroutinesInfoFromJson =
-            Gson().fromJson(coroutinesInfoAsJsonString, Array<CoroutineInfoFromJson>::class.java)
-
-        val size = coroutinesInfo.size
-        assertTrue(size != 0)
-        assertEquals(size, coroutinesInfoFromJson.size)
-        assertEquals(size, lastObservedFrames.size)
-        assertEquals(size, lastObservedThreads.size)
-
-        for (i in 0 until size) {
-            val info = coroutinesInfo[i]
-            val infoFromJson = coroutinesInfoFromJson[i]
-            assertIs<DebugCoroutineInfo>(info)
-            assertEquals(info.lastObservedThread, lastObservedThreads[i])
-            assertEquals(info.lastObservedFrame, lastObservedFrames[i])
-            assertEquals(info.sequenceNumber, infoFromJson.sequenceNumber)
-            assertEquals(info.state, infoFromJson.state)
-            val context = info.context
-            assertEquals(context[CoroutineName.Key]?.name, infoFromJson.name)
-            assertEquals(context[CoroutineId.Key]?.id, infoFromJson.id)
-            assertEquals(context[CoroutineDispatcher.Key]?.toString(), infoFromJson.dispatcher)
-        }
+    // @Test
+    void test_dump_with_no_coroutines() {
+        // TODO: auto dumpResult = DebugProbesImpl.dumpCoroutinesInfoAsJsonAndReferences()
+        // TODO: assertEquals(dumpResult.size, 4)
+        // TODO: assertIsEmptyArray(dumpResult[1])
+        // TODO: assertIsEmptyArray(dumpResult[2])
+        // TODO: assertIsEmptyArray(dumpResult[3])
     }
-}
+
+private:
+    void assert_is_empty_array(void* obj) {
+        // TODO: assertTrue(obj is Array<*> && obj.isEmpty())
+    }
+
+    void run_test_with_named_deferred(const char* name) {
+        // TODO: runTest {
+        //     auto context = (name == nullptr) ? EmptyCoroutineContext : CoroutineName(name)
+        //     auto deferred = async(context) {
+        //         suspendingMethod()
+        //         assertTrue(true)
+        //     }
+        //     yield()
+        //     verifyDump()
+        //     deferred.cancelAndJoin()
+        // }
+    }
+
+    // suspend
+    void suspending_method() {
+        // TODO: delay(Long.MAX_VALUE)
+    }
+
+    void verify_dump() {
+        // TODO: auto dumpResult = DebugProbesImpl.dumpCoroutinesInfoAsJsonAndReferences()
+        // TODO: Parse JSON and verify all fields match
+    }
+};
+
+} // namespace debug
+} // namespace coroutines
+} // namespace kotlinx

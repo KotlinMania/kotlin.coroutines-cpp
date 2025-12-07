@@ -1,53 +1,104 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/CoroutineContext.kt
+//
+// TODO: actual/expect keyword not directly translatable
+// TODO: object keyword - translate to singleton or namespace with static members
+// TODO: Continuation interface from Kotlin coroutines
+// TODO: suspend function semantics
 
-import kotlinx.coroutines.internal.*
-import kotlin.coroutines.*
+namespace kotlinx {
+namespace coroutines {
 
-internal actual object DefaultExecutor : CoroutineDispatcher(), Delay {
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlinx.coroutines.internal.*
+// import kotlin.coroutines.*
 
-    private val delegate = WorkerDispatcher(name = "DefaultExecutor")
+// TODO: internal actual object -> singleton pattern
+class DefaultExecutor : public CoroutineDispatcher, public Delay {
+private:
+    WorkerDispatcher delegate;
 
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        delegate.dispatch(context, block)
+    // Private constructor for singleton
+    DefaultExecutor() : delegate("DefaultExecutor") {}
+
+public:
+    static DefaultExecutor& instance() {
+        static DefaultExecutor instance;
+        return instance;
     }
 
-    override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        delegate.scheduleResumeAfterDelay(timeMillis, continuation)
+    void dispatch(CoroutineContext context, Runnable block) override {
+        delegate.dispatch(context, block);
     }
 
-    override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle {
-        return delegate.invokeOnTimeout(timeMillis, block, context)
+    void schedule_resume_after_delay(long time_millis, CancellableContinuation<void>& continuation) override {
+        delegate.schedule_resume_after_delay(time_millis, continuation);
     }
 
-    actual fun enqueue(task: Runnable): Unit {
-        delegate.dispatch(EmptyCoroutineContext, task)
+    DisposableHandle invoke_on_timeout(long time_millis, Runnable block, CoroutineContext context) override {
+        return delegate.invoke_on_timeout(time_millis, block, context);
     }
+
+    void enqueue(Runnable task) {
+        delegate.dispatch(EmptyCoroutineContext, task);
+    }
+};
+
+// TODO: expect function - platform-specific declaration
+CoroutineDispatcher* create_default_dispatcher();
+
+// TODO: @PublishedApi internal actual
+Delay& kDefaultDelay = DefaultExecutor::instance();
+
+CoroutineContext CoroutineScope::new_coroutine_context(CoroutineContext context) {
+    auto combined = this->coroutine_context + context;
+    if (combined != Dispatchers::kDefault && combined[ContinuationInterceptor] == nullptr) {
+        return combined + Dispatchers::kDefault;
+    }
+    return combined;
 }
 
-internal expect fun createDefaultDispatcher(): CoroutineDispatcher
-
-@PublishedApi
-internal actual val DefaultDelay: Delay = DefaultExecutor
-
-public actual fun CoroutineScope.newCoroutineContext(context: CoroutineContext): CoroutineContext {
-    val combined = coroutineContext + context
-    return if (combined !== Dispatchers.Default && combined[ContinuationInterceptor] == null)
-        combined + Dispatchers.Default else combined
-}
-
-public actual fun CoroutineContext.newCoroutineContext(addedContext: CoroutineContext): CoroutineContext {
-    return this + addedContext
+CoroutineContext CoroutineContext::new_coroutine_context(CoroutineContext added_context) {
+    return *this + added_context;
 }
 
 // No debugging facilities on native
-internal actual inline fun <T> withCoroutineContext(context: CoroutineContext, countOrElement: Any?, block: () -> T): T = block()
-internal actual inline fun <T> withContinuationContext(continuation: Continuation<*>, countOrElement: Any?, block: () -> T): T = block()
-internal actual fun Continuation<*>.toDebugString(): String = toString()
-internal actual val CoroutineContext.coroutineName: String? get() = null // not supported on native
-
-internal actual class UndispatchedCoroutine<in T> actual constructor(
-    context: CoroutineContext,
-    uCont: Continuation<T>
-) : ScopeCoroutine<T>(context, uCont) {
-    override fun afterResume(state: Any?) = uCont.resumeWith(recoverResult(state, uCont))
+template<typename T>
+inline T with_coroutine_context(CoroutineContext context, void* count_or_element, std::function<T()> block) {
+    return block();
 }
+
+template<typename T>
+inline T with_continuation_context(Continuation<void>& continuation, void* count_or_element, std::function<T()> block) {
+    return block();
+}
+
+std::string to_debug_string(Continuation<void>& continuation) {
+    // TODO: toString equivalent
+    return "";
+}
+
+std::string* coroutine_name(CoroutineContext& context) {
+    return nullptr; // not supported on native
+}
+
+// TODO: internal actual class
+template<typename T>
+class UndispatchedCoroutine : public ScopeCoroutine<T> {
+private:
+    Continuation<T>& u_cont;
+
+public:
+    UndispatchedCoroutine(CoroutineContext context, Continuation<T>& u_cont)
+        : ScopeCoroutine<T>(context, u_cont)
+        , u_cont(u_cont)
+    {
+    }
+
+    void after_resume(void* state) override {
+        u_cont.resume_with(recover_result(state, u_cont));
+    }
+};
+
+} // namespace coroutines
+} // namespace kotlinx

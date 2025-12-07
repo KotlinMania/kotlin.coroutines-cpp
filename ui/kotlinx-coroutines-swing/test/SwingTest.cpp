@@ -1,27 +1,43 @@
-package kotlinx.coroutines.swing
+// Transliterated from Kotlin to C++
+// Original: ui/kotlinx-coroutines-swing/test/SwingTest.kt
+// TODO: Resolve imports and dependencies
+// TODO: Implement JUnit test framework equivalents
+// TODO: Handle Swing platform initialization
+// TODO: Implement MainDispatcherTestBase base class
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import org.junit.*
-import org.junit.Test
-import javax.swing.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace swing {
 
-class SwingTest : MainDispatcherTestBase.WithRealTimeDelay() {
-    @Before
-    fun setup() {
-        ignoreLostThreads("AWT-EventQueue-")
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import org.junit.*
+// TODO: import org.junit.Test
+// TODO: import javax.swing.*
+// TODO: import kotlin.test.*
+
+class SwingTest : public MainDispatcherTestBase::WithRealTimeDelay {
+public:
+    // TODO: @Before annotation
+    void setup() {
+        ignore_lost_threads("AWT-EventQueue-");
     }
 
-    override fun isMainThread() = SwingUtilities.isEventDispatchThread()
-
-    override fun scheduleOnMainQueue(block: () -> Unit) {
-        SwingUtilities.invokeLater { block() }
+    bool is_main_thread() override {
+        return SwingUtilities::is_event_dispatch_thread();
     }
 
-    /** Tests that the Main dispatcher is in fact the JavaFx one. */
-    @Test
-    fun testMainIsJavaFx() {
-        assertSame(Dispatchers.Swing, Dispatchers.Main)
+    void schedule_on_main_queue(std::function<void()> block) override {
+        SwingUtilities::invoke_later([block]() { block(); });
     }
-}
+
+    // Tests that the Main dispatcher is in fact the JavaFx one.
+    // TODO: @Test annotation
+    void test_main_is_java_fx() {
+        assert_same(Dispatchers::Swing, Dispatchers::Main);
+    }
+};
+
+} // namespace swing
+} // namespace coroutines
+} // namespace kotlinx

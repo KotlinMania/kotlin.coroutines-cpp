@@ -1,15 +1,29 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
+// Transliterated from Kotlin to C++ (first-pass, syntax-only)
+// Original: kotlinx-coroutines-core/common/src/flow/operators/Context.kt
+//
+// TODO: Implement coroutine semantics (suspend functions, coroutine context)
+// TODO: Map Kotlin Flow types to C++ equivalents
+// TODO: Handle Channel types and buffer overflow strategies
+// TODO: Implement FusibleFlow interface
+// TODO: Map Job type from coroutine context
+// TODO: Implement context propagation
 
-package kotlinx.coroutines.flow
+#pragma once
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
-import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
-import kotlinx.coroutines.flow.internal.*
-import kotlin.coroutines.*
-import kotlin.jvm.*
+// @file:JvmMultifileClass
+// @file:JvmName("FlowKt")
+
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
+// TODO: import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
+// TODO: import kotlinx.coroutines.flow.internal.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.jvm.*
 
 /**
  * Buffers flow emissions via channel of a specified capacity and runs collector in a separate coroutine.
@@ -117,30 +131,39 @@ import kotlin.jvm.*
  *   [SUSPEND][BufferOverflow.SUSPEND], supported only when `capacity >= 0` or `capacity == Channel.BUFFERED`,
  *   implicitly creates a channel with at least one buffered element).
  */
-@Suppress("NAME_SHADOWING")
-public fun <T> Flow<T>.buffer(capacity: Int = BUFFERED, onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND): Flow<T> {
-    require(capacity >= 0 || capacity == BUFFERED || capacity == CONFLATED) {
-        "Buffer size should be non-negative, BUFFERED, or CONFLATED, but was $capacity"
+// @Suppress("NAME_SHADOWING")
+template<typename T>
+Flow<T> buffer(Flow<T> flow, int capacity = BUFFERED, BufferOverflow onBufferOverflow = BufferOverflow::SUSPEND) {
+    // require(capacity >= 0 || capacity == BUFFERED || capacity == CONFLATED)
+    if (!(capacity >= 0 || capacity == BUFFERED || capacity == CONFLATED)) {
+        throw std::invalid_argument("Buffer size should be non-negative, BUFFERED, or CONFLATED, but was " + std::to_string(capacity));
     }
-    require(capacity != CONFLATED || onBufferOverflow == BufferOverflow.SUSPEND) {
-        "CONFLATED capacity cannot be used with non-default onBufferOverflow"
+    // require(capacity != CONFLATED || onBufferOverflow == BufferOverflow.SUSPEND)
+    if (!(capacity != CONFLATED || onBufferOverflow == BufferOverflow::SUSPEND)) {
+        throw std::invalid_argument("CONFLATED capacity cannot be used with non-default onBufferOverflow");
     }
     // desugar CONFLATED capacity to (0, DROP_OLDEST)
-    var capacity = capacity
-    var onBufferOverflow = onBufferOverflow
-    if (capacity == CONFLATED) {
-        capacity = 0
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    int capacity_local = capacity;
+    BufferOverflow onBufferOverflow_local = onBufferOverflow;
+    if (capacity_local == CONFLATED) {
+        capacity_local = 0;
+        onBufferOverflow_local = BufferOverflow::DROP_OLDEST;
     }
     // create a flow
-    return when (this) {
-        is FusibleFlow -> fuse(capacity = capacity, onBufferOverflow = onBufferOverflow)
-        else -> ChannelFlowOperatorImpl(this, capacity = capacity, onBufferOverflow = onBufferOverflow)
+    // return when (this)
+    // TODO: implement dynamic dispatch/type checking
+    if (auto* fusible = dynamic_cast<FusibleFlow<T>*>(&flow)) {
+        return fusible->fuse(capacity_local, onBufferOverflow_local);
+    } else {
+        return ChannelFlowOperatorImpl<T>(flow, capacity_local, onBufferOverflow_local);
     }
 }
 
-@Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.4.0, binary compatibility with earlier versions")
-public fun <T> Flow<T>.buffer(capacity: Int = BUFFERED): Flow<T> = buffer(capacity)
+// @Deprecated(level = DeprecationLevel.HIDDEN, message = "Since 1.4.0, binary compatibility with earlier versions")
+template<typename T>
+Flow<T> buffer(Flow<T> flow, int capacity = BUFFERED) {
+    return buffer(flow, capacity);
+}
 
 /**
  * Conflates flow emissions via conflated channel and runs collector in a separate coroutine.
@@ -187,7 +210,10 @@ public fun <T> Flow<T>.buffer(capacity: Int = BUFFERED): Flow<T> = buffer(capaci
  * applied to it, so applying `conflate` to a `StateFlow` has no effect.
  * See [StateFlow] documentation on Operator Fusion.
  */
-public fun <T> Flow<T>.conflate(): Flow<T> = buffer(CONFLATED)
+template<typename T>
+Flow<T> conflate(Flow<T> flow) {
+    return buffer(flow, CONFLATED);
+}
 
 /**
  * Changes the context where this flow is executed to the given [context].
@@ -240,12 +266,17 @@ public fun <T> Flow<T>.conflate(): Flow<T> = buffer(CONFLATED)
  *
  * @throws [IllegalArgumentException] if provided context contains [Job] instance.
  */
-public fun <T> Flow<T>.flowOn(context: CoroutineContext): Flow<T> {
-    checkFlowContext(context)
-    return when {
-        context == EmptyCoroutineContext -> this
-        this is FusibleFlow -> fuse(context = context)
-        else -> ChannelFlowOperatorImpl(this, context = context)
+template<typename T>
+Flow<T> flow_on(Flow<T> flow, CoroutineContext context) {
+    check_flow_context(context);
+    // return when
+    if (context == EmptyCoroutineContext) {
+        return flow;
+    }
+    if (auto* fusible = dynamic_cast<FusibleFlow<T>*>(&flow)) {
+        return fusible->fuse(context);
+    } else {
+        return ChannelFlowOperatorImpl<T>(flow, context);
     }
 }
 
@@ -257,31 +288,51 @@ public fun <T> Flow<T>.flowOn(context: CoroutineContext): Flow<T> {
  * This operator provides a shortcut for `.onEach { currentCoroutineContext().ensureActive() }`.
  * See [ensureActive][CoroutineContext.ensureActive] for details.
  */
-public fun <T> Flow<T>.cancellable(): Flow<T> =
-    when (this) {
-        is CancellableFlow<*> -> this // Fast-path, already cancellable
-        else -> CancellableFlowImpl(this)
+template<typename T>
+Flow<T> cancellable(Flow<T> flow) {
+    // return when (this)
+    if (dynamic_cast<CancellableFlow<T>*>(&flow)) {
+        return flow; // Fast-path, already cancellable
+    } else {
+        return CancellableFlowImpl<T>(flow);
     }
+}
 
 /**
  * Internal marker for flows that are [cancellable].
  */
-internal interface CancellableFlow<out T> : Flow<T>
+template<typename T>
+class CancellableFlow : public Flow<T> {
+    // Marker interface
+};
 
 /**
  * Named implementation class for a flow that is defined by the [cancellable] function.
  */
-private class CancellableFlowImpl<T>(private val flow: Flow<T>) : CancellableFlow<T> {
-    override suspend fun collect(collector: FlowCollector<T>) {
-        flow.collect {
-            currentCoroutineContext().ensureActive()
-            collector.emit(it)
-        }
+template<typename T>
+class CancellableFlowImpl : public CancellableFlow<T> {
+private:
+    Flow<T> flow;
+
+public:
+    CancellableFlowImpl(Flow<T> flow_) : flow(flow_) {}
+
+    // TODO: suspend function
+    void collect(FlowCollector<T> collector) /* override */ {
+        flow.collect([&](T it) {
+            current_coroutine_context().ensure_active();
+            collector.emit(it);
+        });
+    }
+};
+
+void check_flow_context(CoroutineContext context) {
+    // require(context[Job] == null)
+    if (context[Job] != nullptr) {
+        throw std::invalid_argument("Flow context cannot contain job in it. Had " + to_string(context));
     }
 }
 
-private fun checkFlowContext(context: CoroutineContext) {
-    require(context[Job] == null) {
-        "Flow context cannot contain job in it. Had $context"
-    }
-}
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

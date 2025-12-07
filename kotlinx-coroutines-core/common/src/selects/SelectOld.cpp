@@ -1,8 +1,23 @@
-package kotlinx.coroutines.selects
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/selects/SelectOld.kt
+//
+// TODO: This is a mechanical syntax transliteration. The following Kotlin constructs need proper C++ implementation:
+// - suspend functions (marked but not implemented as C++20 coroutines)
+// - inline functions with crossinline parameters
+// - Continuation<T> type (Kotlin coroutine continuation)
+// - suspendCoroutineUninterceptedOrReturn primitive
+// - CancellableContinuationImpl
+// - CoroutineScope, CoroutineStart.UNDISPATCHED
+// - CoroutineDispatcher and context management
+// - @PublishedApi, @OptIn, @ExperimentalStdlibApi annotations (kept as comments)
 
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
-import kotlin.coroutines.intrinsics.*
+namespace kotlinx {
+namespace coroutines {
+namespace selects {
+
+// import kotlinx.coroutines.*
+// import kotlin.coroutines.*
+// import kotlin.coroutines.intrinsics.*
 
 /*
  * For binary compatibility, we need to maintain the previous `select` implementations.
@@ -12,14 +27,20 @@ import kotlin.coroutines.intrinsics.*
  * We keep the old `select` functions as [selectOld] and [selectUnbiasedOld] for test purpose.
  */
 
-@PublishedApi
-internal class SelectBuilderImpl<R>(
-    uCont: Continuation<R> // unintercepted delegate continuation
-) : SelectImplementation<R>(uCont.context) {
-    private val cont = CancellableContinuationImpl(uCont.intercepted(), MODE_CANCELLABLE)
+// @PublishedApi
+template<typename R>
+class SelectBuilderImpl : public SelectImplementation<R> {
+private:
+    CancellableContinuationImpl<R> cont;
 
-    @PublishedApi
-    internal fun getResult(): Any? {
+public:
+    // uCont: unintercepted delegate continuation
+    explicit SelectBuilderImpl(Continuation<R>& u_cont)
+        : SelectImplementation<R>(u_cont.context),
+          cont(u_cont.intercepted(), kModeCancellable) {}
+
+    // @PublishedApi
+    void* get_result() {
         // In the current `select` design, the [select] and [selectUnbiased] functions
         // do not wrap the operation in `suspendCoroutineUninterceptedOrReturn` and
         // suspend explicitly via [doSelect] call, which returns the final result.
@@ -33,52 +54,68 @@ internal class SelectBuilderImpl<R>(
         // 3) wrap the [doSelect] call in an additional coroutine, which we launch in UNDISPATCHED mode;
         // 4) resume the created CancellableContinuationImpl after the [doSelect] invocation completes;
         // 5) use CancellableContinuationImpl.getResult() as a result of this function.
-        if (cont.isCompleted) return cont.getResult()
-        CoroutineScope(context).launch(start = CoroutineStart.UNDISPATCHED) {
-            val result = try {
-                doSelect()
-            } catch (e: Throwable) {
-                cont.resumeUndispatchedWithException(e)
-                return@launch
+        if (cont.is_completed()) return cont.get_result();
+
+        // TODO: CoroutineScope and launch not implemented
+        auto scope = CoroutineScope(this->context);
+        scope.launch(/* start = */ CoroutineStart::kUndispatched, [this]() {
+            // TODO: suspend function call
+            R result;
+            try {
+                result = this->do_select();
+            } catch (std::exception& e) {
+                cont.resume_undispatched_with_exception(e);
+                return;
             }
-            cont.resumeUndispatched(result)
-        }
-        return cont.getResult()
+            cont.resume_undispatched(result);
+        });
+        return cont.get_result();
     }
 
-    @PublishedApi
-    internal fun handleBuilderException(e: Throwable) {
-        cont.resumeWithException(e) // will be thrown later via `cont.getResult()`
+    // @PublishedApi
+    void handle_builder_exception(std::exception& e) {
+        cont.resume_with_exception(e); // will be thrown later via `cont.getResult()`
     }
-}
+};
 
-@PublishedApi
-internal class UnbiasedSelectBuilderImpl<R>(
-    uCont: Continuation<R> // unintercepted delegate continuation
-) : UnbiasedSelectImplementation<R>(uCont.context) {
-    private val cont = CancellableContinuationImpl(uCont.intercepted(), MODE_CANCELLABLE)
+// @PublishedApi
+template<typename R>
+class UnbiasedSelectBuilderImpl : public UnbiasedSelectImplementation<R> {
+private:
+    CancellableContinuationImpl<R> cont;
 
-    @PublishedApi
-    internal fun initSelectResult(): Any? {
+public:
+    // uCont: unintercepted delegate continuation
+    explicit UnbiasedSelectBuilderImpl(Continuation<R>& u_cont)
+        : UnbiasedSelectImplementation<R>(u_cont.context),
+          cont(u_cont.intercepted(), kModeCancellable) {}
+
+    // @PublishedApi
+    void* init_select_result() {
         // Here, we do the same trick as in [SelectBuilderImpl].
-        if (cont.isCompleted) return cont.getResult()
-        CoroutineScope(context).launch(start = CoroutineStart.UNDISPATCHED) {
-            val result = try {
-                doSelect()
-            } catch (e: Throwable) {
-                cont.resumeUndispatchedWithException(e)
-                return@launch
+        if (cont.is_completed()) return cont.get_result();
+
+        // TODO: CoroutineScope and launch not implemented
+        auto scope = CoroutineScope(this->context);
+        scope.launch(/* start = */ CoroutineStart::kUndispatched, [this]() {
+            // TODO: suspend function call
+            R result;
+            try {
+                result = this->do_select();
+            } catch (std::exception& e) {
+                cont.resume_undispatched_with_exception(e);
+                return;
             }
-            cont.resumeUndispatched(result)
-        }
-        return cont.getResult()
+            cont.resume_undispatched(result);
+        });
+        return cont.get_result();
     }
 
-    @PublishedApi
-    internal fun handleBuilderException(e: Throwable) {
-        cont.resumeWithException(e)
+    // @PublishedApi
+    void handle_builder_exception(std::exception& e) {
+        cont.resume_with_exception(e);
     }
-}
+};
 
 /*
  * This is the old version of `select`. It should work to guarantee binary compatibility.
@@ -96,48 +133,61 @@ internal class UnbiasedSelectBuilderImpl<R>(
  *
  * These signatures are not used by the already compiled code, but their body is.
  */
-@PublishedApi
-internal suspend inline fun <R> selectOld(crossinline builder: SelectBuilder<R>.() -> Unit): R {
-    return suspendCoroutineUninterceptedOrReturn { uCont ->
-        val scope = SelectBuilderImpl(uCont)
+// @PublishedApi
+template<typename R, typename BuilderFunc>
+R select_old(BuilderFunc&& builder) {
+    // TODO: suspend function semantics not implemented
+    // TODO: suspendCoroutineUninterceptedOrReturn not directly translatable
+    return suspend_coroutine_unintercepted_or_return<R>([&builder](Continuation<R>& u_cont) -> void* {
+        SelectBuilderImpl<R> scope(u_cont);
         try {
-            builder(scope)
-        } catch (e: Throwable) {
-            scope.handleBuilderException(e)
+            builder(scope);
+        } catch (std::exception& e) {
+            scope.handle_builder_exception(e);
         }
-        scope.getResult()
-    }
+        return scope.get_result();
+    });
 }
 
 // This is the old version of `selectUnbiased`. It should work to guarantee binary compatibility.
-@PublishedApi
-internal suspend inline fun <R> selectUnbiasedOld(crossinline builder: SelectBuilder<R>.() -> Unit): R =
-    suspendCoroutineUninterceptedOrReturn { uCont ->
-        val scope = UnbiasedSelectBuilderImpl(uCont)
+// @PublishedApi
+template<typename R, typename BuilderFunc>
+R select_unbiased_old(BuilderFunc&& builder) {
+    // TODO: suspend function semantics not implemented
+    return suspend_coroutine_unintercepted_or_return<R>([&builder](Continuation<R>& u_cont) -> void* {
+        UnbiasedSelectBuilderImpl<R> scope(u_cont);
         try {
-            builder(scope)
-        } catch (e: Throwable) {
-            scope.handleBuilderException(e)
+            builder(scope);
+        } catch (std::exception& e) {
+            scope.handle_builder_exception(e);
         }
-        scope.initSelectResult()
-    }
+        return scope.init_select_result();
+    });
+}
 
-@OptIn(ExperimentalStdlibApi::class)
-private fun <T> CancellableContinuation<T>.resumeUndispatched(result: T) {
-    val dispatcher = context[CoroutineDispatcher]
-    if (dispatcher != null) {
-        dispatcher.resumeUndispatched(result)
+// @OptIn(ExperimentalStdlibApi::class)
+template<typename T>
+void resume_undispatched(CancellableContinuation<T>& cont, T result) {
+    // TODO: context[CoroutineDispatcher] not directly translatable
+    auto* dispatcher = cont.context.template get<CoroutineDispatcher>();
+    if (dispatcher != nullptr) {
+        dispatcher->resume_undispatched(result);
     } else {
-        resume(result)
+        cont.resume(result);
     }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
-private fun CancellableContinuation<*>.resumeUndispatchedWithException(exception: Throwable) {
-    val dispatcher = context[CoroutineDispatcher]
-    if (dispatcher != null) {
-        dispatcher.resumeUndispatchedWithException(exception)
+// @OptIn(ExperimentalStdlibApi::class)
+void resume_undispatched_with_exception(CancellableContinuation<void*>& cont, std::exception& exception) {
+    // TODO: context[CoroutineDispatcher] not directly translatable
+    auto* dispatcher = cont.context.template get<CoroutineDispatcher>();
+    if (dispatcher != nullptr) {
+        dispatcher->resume_undispatched_with_exception(exception);
     } else {
-        resumeWithException(exception)
+        cont.resume_with_exception(exception);
     }
 }
+
+} // namespace selects
+} // namespace coroutines
+} // namespace kotlinx

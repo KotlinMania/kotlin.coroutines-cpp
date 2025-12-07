@@ -1,33 +1,70 @@
-package kotlinx.coroutines.exceptions
+// Original: kotlinx-coroutines-core/concurrent/test/ConcurrentTestUtilities.common.kt
+// TODO: Remove or convert import statements
+// TODO: Implement expect functions for platform-specific implementations
+// TODO: Implement Random, Volatile, CloseableCoroutineDispatcher
+// TODO: Implement inline functions
+// TODO: Handle kotlin.concurrent.Volatile annotation
 
-import kotlinx.coroutines.*
-import kotlin.concurrent.Volatile
-import kotlin.random.*
+namespace kotlinx {
+namespace coroutines {
+namespace exceptions {
 
-fun randomWait() {
-    val n = Random.nextInt(1000)
-    if (n < 500) return // no wait 50% of time
-    repeat(n) {
-        BlackHole.sink *= 3
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.concurrent.Volatile
+// TODO: import kotlin.random.*
+
+void random_wait() {
+    int n = Random::next_int(1000);
+    if (n < 500) return; // no wait 50% of time
+    for (int i = 0; i < n; ++i) {
+        BlackHole::sink *= 3;
     }
     // use the BlackHole value somehow, so even if the compiler gets smarter, it won't remove the object
-    val sinkValue = if (BlackHole.sink > 16) 1 else 0
-    if (n + sinkValue > 900) yieldThread()
+    int sink_value = (BlackHole::sink > 16) ? 1 : 0;
+    if (n + sink_value > 900) yield_thread();
 }
 
-private object BlackHole {
-    @Volatile
-    var sink = 1
+// TODO: Implement as singleton or namespace
+namespace {
+    struct BlackHoleImpl {
+        // @Volatile
+        // TODO: Use std::atomic or other thread-safe mechanism
+        int sink = 1;
+    };
 }
 
-expect inline fun yieldThread()
+struct BlackHole {
+    static int sink;
+};
 
-expect fun currentThreadName(): String
+int BlackHole::sink = 1;
 
-inline fun CloseableCoroutineDispatcher.use(block: (CloseableCoroutineDispatcher) -> Unit) {
+// expect inline fun yieldThread()
+// TODO: Platform-specific implementation
+inline void yield_thread() {
+    // TODO: Implement platform-specific thread yield
+}
+
+// expect fun currentThreadName(): String
+// TODO: Platform-specific implementation
+std::string current_thread_name() {
+    // TODO: Implement platform-specific thread name retrieval
+    return "";
+}
+
+// inline fun CloseableCoroutineDispatcher.use(block: (CloseableCoroutineDispatcher) -> Unit)
+// TODO: Implement as extension method or free function
+template<typename Func>
+inline void use(CloseableCoroutineDispatcher& dispatcher, Func block) {
     try {
-        block(this)
-    } finally {
-        close()
+        block(dispatcher);
+    } catch (...) {
+        dispatcher.close();
+        throw;
     }
+    dispatcher.close();
 }
+
+} // namespace exceptions
+} // namespace coroutines
+} // namespace kotlinx

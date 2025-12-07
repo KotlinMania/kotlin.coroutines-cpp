@@ -1,25 +1,65 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/CoroutineName.kt
+//
+// TODO: data class maps to struct with equality operators
+// TODO: AbstractCoroutineContextElement is a base class
 
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.CoroutineContext
+namespace kotlinx {
+namespace coroutines {
+
+// TODO: import kotlin.coroutines.AbstractCoroutineContextElement
+// TODO: import kotlin.coroutines.CoroutineContext
 
 /**
  * User-specified name of coroutine. This name is used in debugging mode.
  * See [newCoroutineContext][CoroutineScope.newCoroutineContext] for the description of coroutine debugging facilities.
  */
-public data class CoroutineName(
+// TODO: data class - generate equality operators, copy constructor, etc.
+class CoroutineName : public AbstractCoroutineContextElement {
+public:
     /**
      * User-defined coroutine name.
      */
-    val name: String
-) : AbstractCoroutineContextElement(CoroutineName) {
+    std::string name;
+
     /**
      * Key for [CoroutineName] instance in the coroutine context.
      */
-    public companion object Key : CoroutineContext.Key<CoroutineName>
+    // TODO: companion object Key - static nested class
+    class Key : public CoroutineContext::Key<CoroutineName> {
+    public:
+        static Key instance;
+    };
+
+    // Constructor
+    CoroutineName(const std::string& name_param)
+        : AbstractCoroutineContextElement(Key::instance), name(name_param) {}
 
     /**
      * Returns a string representation of the object.
      */
-    override fun toString(): String = "CoroutineName($name)"
-}
+    std::string toString() const override {
+        return "CoroutineName(" + name + ")";
+    }
+
+    // TODO: data class auto-generated methods
+    // Equality operator
+    bool operator==(const CoroutineName& other) const {
+        return name == other.name;
+    }
+
+    bool operator!=(const CoroutineName& other) const {
+        return !(*this == other);
+    }
+
+    // Copy method (data class feature)
+    CoroutineName copy(const std::string& name_param = name) const {
+        return CoroutineName(name_param);
+    }
+};
+
+// Static member initialization
+CoroutineName::Key CoroutineName::Key::instance;
+
+} // namespace coroutines
+} // namespace kotlinx

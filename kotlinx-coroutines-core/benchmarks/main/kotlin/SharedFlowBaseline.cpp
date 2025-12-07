@@ -1,24 +1,41 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/benchmarks/main/kotlin/SharedFlowBaseline.kt
+// TODO: Resolve imports and dependencies
+// TODO: Implement kotlinx.benchmark annotations
+// TODO: Handle suspend functions and coroutines
+// TODO: Implement MutableSharedFlow
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlinx.benchmark.*
+namespace kotlinx {
+namespace coroutines {
 
-// Stresses out 'syncrhonozed' codepath in MutableSharedFlow
-@State(Scope.Benchmark)
-@Measurement(iterations = 3, time = 1, timeUnit = BenchmarkTimeUnit.SECONDS)
-@OutputTimeUnit(BenchmarkTimeUnit.MICROSECONDS)
-@BenchmarkMode(Mode.AverageTime)
-open class SharedFlowBaseline {
-    private var size: Int = 10_000
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.flow.*
+// TODO: import kotlinx.benchmark.*
 
-    @Benchmark
-    fun baseline() = runBlocking {
-        val flow = MutableSharedFlow<Unit>()
-        launch {
-            repeat(size) { flow.emit(Unit) }
-        }
+// Stresses out 'synchronized' codepath in MutableSharedFlow
+// TODO: @State(Scope.Benchmark)
+// TODO: @Measurement(iterations = 3, time = 1, timeUnit = BenchmarkTimeUnit.SECONDS)
+// TODO: @OutputTimeUnit(BenchmarkTimeUnit.MICROSECONDS)
+// TODO: @BenchmarkMode(Mode.AverageTime)
+class SharedFlowBaseline {
+private:
+    int size_ = 10000;
 
-        flow.take(size).collect {  }
+public:
+    // TODO: @Benchmark annotation
+    void baseline() {
+        run_blocking([this]() {
+            auto flow = MutableSharedFlow<void>();
+            launch([&]() {
+                repeat(size_, [&]() {
+                    flow.emit();
+                });
+            });
+
+            flow.take(size_).collect([](auto) {});
+        });
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

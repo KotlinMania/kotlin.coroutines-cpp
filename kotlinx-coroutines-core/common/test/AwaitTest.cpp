@@ -1,381 +1,442 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/AwaitTest.kt
+// TODO: Review imports and dependencies
+// TODO: Adapt test framework annotations to C++ testing framework
+// TODO: Handle suspend functions and coroutine context
+// TODO: Handle nullable types appropriately
 
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class AwaitTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testAwaitAll() = runTest {
-        expect(1)
-        val d = async {
-            expect(3)
-            "OK"
-        }
+class AwaitTest : public TestBase {
+public:
+    // @Test
+    void test_await_all() {
+        run_test([this]() {
+            expect(1);
+            auto d = async([this]() {
+                expect(3);
+                return "OK";
+            });
 
-        val d2 = async {
-            yield()
-            expect(4)
-            1L
-        }
+            auto d2 = async([this]() {
+                yield();
+                expect(4);
+                return 1L;
+            });
 
-        expect(2)
-        require(d2.isActive && !d2.isCompleted)
+            expect(2);
+            require(d2.is_active() && !d2.is_completed());
 
-        assertEquals(listOf("OK", 1L), awaitAll(d, d2))
-        expect(5)
+            assert_equals(std::vector<std::any>({"OK", 1L}), await_all(d, d2));
+            expect(5);
 
-        require(d.isCompleted && d2.isCompleted)
-        require(!d.isCancelled && !d2.isCancelled)
-        finish(6)
+            require(d.is_completed() && d2.is_completed());
+            require(!d.is_cancelled() && !d2.is_cancelled());
+            finish(6);
+        });
     }
 
-    @Test
-    fun testAwaitAllLazy() = runTest {
-        expect(1)
-        val d = async(start = CoroutineStart.LAZY) {
-            expect(2)
-            1
-        }
-        val d2 = async(start = CoroutineStart.LAZY) {
-            expect(3)
-            2
-        }
-        assertEquals(listOf(1, 2), awaitAll(d, d2))
-        finish(4)
+    // @Test
+    void test_await_all_lazy() {
+        run_test([this]() {
+            expect(1);
+            auto d = async(CoroutineStart::kLazy, [this]() {
+                expect(2);
+                return 1;
+            });
+            auto d2 = async(CoroutineStart::kLazy, [this]() {
+                expect(3);
+                return 2;
+            });
+            assert_equals(std::vector<int>({1, 2}), await_all(d, d2));
+            finish(4);
+        });
     }
 
-    @Test
-    fun testAwaitAllTyped() = runTest {
-        val d1 = async { 1L }
-        val d2 = async { "" }
-        val d3 = async { }
+    // @Test
+    void test_await_all_typed() {
+        run_test([this]() {
+            auto d1 = async([]() { return 1L; });
+            auto d2 = async([]() { return ""; });
+            auto d3 = async([]() { /* void */ });
 
-        assertEquals(listOf(1L, ""), listOf(d1, d2).awaitAll())
-        assertEquals(listOf(1L, Unit), listOf(d1, d3).awaitAll())
-        assertEquals(listOf("", Unit), listOf(d2, d3).awaitAll())
+            assert_equals(std::vector<std::any>({1L, ""}), await_all({d1, d2}));
+            assert_equals(std::vector<std::any>({1L, std::monostate{}}), await_all({d1, d3}));
+            assert_equals(std::vector<std::any>({"", std::monostate{}}), await_all({d2, d3}));
+        });
     }
 
-    @Test
-    fun testAwaitAllExceptionally() = runTest {
-        expect(1)
-        val d = async {
-            expect(3)
-            "OK"
-        }
+    // @Test
+    void test_await_all_exceptionally() {
+        run_test([this]() {
+            expect(1);
+            auto d = async([this]() {
+                expect(3);
+                return "OK";
+            });
 
-        val d2 = async(NonCancellable) {
-            yield()
-            throw TestException()
-        }
+            auto d2 = async(NonCancellable, [this]() {
+                yield();
+                throw TestException();
+            });
 
-        val d3 = async {
-            expect(4)
-            delay(Long.MAX_VALUE)
-            1
-        }
+            auto d3 = async([this]() {
+                expect(4);
+                delay(LONG_MAX);
+                return 1;
+            });
 
-        expect(2)
-        try {
-            awaitAll(d, d2, d3)
-        } catch (e: TestException) {
-            expect(5)
-        }
-
-        yield()
-        require(d.isCompleted && d2.isCancelled && d3.isActive)
-        d3.cancel()
-        finish(6)
-    }
-
-    @Test
-    fun testAwaitAllMultipleExceptions() = runTest {
-        val d = async(NonCancellable) {
-            expect(2)
-            throw TestException()
-        }
-
-        val d2 = async(NonCancellable) {
-            yield()
-            throw TestException()
-        }
-
-        val d3 = async {
-            yield()
-        }
-
-        expect(1)
-        try {
-            awaitAll(d, d2, d3)
-        } catch (e: TestException) {
-            expect(3)
-        }
-
-        finish(4)
-    }
-
-    @Test
-    fun testAwaitAllCancellation() = runTest {
-        val outer = async {
-
-            expect(1)
-            val inner = async {
-                expect(4)
-                delay(Long.MAX_VALUE)
+            expect(2);
+            try {
+                await_all(d, d2, d3);
+            } catch (const TestException& e) {
+                expect(5);
             }
 
-            expect(2)
-            awaitAll(inner)
-            expectUnreached()
-        }
-
-        yield()
-        expect(3)
-        yield()
-        require(outer.isActive)
-        outer.cancel()
-        require(outer.isCancelled)
-        finish(5)
+            yield();
+            require(d.is_completed() && d2.is_cancelled() && d3.is_active());
+            d3.cancel();
+            finish(6);
+        });
     }
 
-    @Test
-    fun testAwaitAllPartiallyCompleted() = runTest {
-        val d1 = async { expect(1); 1 }
-        d1.await()
-        val d2 = async { expect(3); 2 }
-        expect(2)
-        assertEquals(listOf(1, 2), awaitAll(d1, d2))
-        require(d1.isCompleted && d2.isCompleted)
-        finish(4)
+    // @Test
+    void test_await_all_multiple_exceptions() {
+        run_test([this]() {
+            auto d = async(NonCancellable, [this]() {
+                expect(2);
+                throw TestException();
+            });
+
+            auto d2 = async(NonCancellable, [this]() {
+                yield();
+                throw TestException();
+            });
+
+            auto d3 = async([this]() {
+                yield();
+            });
+
+            expect(1);
+            try {
+                await_all(d, d2, d3);
+            } catch (const TestException& e) {
+                expect(3);
+            }
+
+            finish(4);
+        });
     }
 
-    @Test
-    fun testAwaitAllPartiallyCompletedExceptionally() = runTest {
-        val d1 = async(NonCancellable) {
-            expect(1)
-            throw TestException()
-        }
+    // @Test
+    void test_await_all_cancellation() {
+        run_test([this]() {
+            auto outer = async([this]() {
+                expect(1);
+                auto inner = async([this]() {
+                    expect(4);
+                    delay(LONG_MAX);
+                });
 
-        yield()
+                expect(2);
+                await_all(inner);
+                expect_unreached();
+            });
 
-        // This job is called after exception propagation
-        val d2 = async { expect(4) }
-
-        expect(2)
-        try {
-            awaitAll(d1, d2)
-            expectUnreached()
-        } catch (e: TestException) {
-            expect(3)
-        }
-
-        require(d2.isActive)
-        d2.await()
-        require(d1.isCompleted && d2.isCompleted)
-        finish(5)
+            yield();
+            expect(3);
+            yield();
+            require(outer.is_active());
+            outer.cancel();
+            require(outer.is_cancelled());
+            finish(5);
+        });
     }
 
-    @Test
-    fun testAwaitAllFullyCompleted() = runTest {
-        val d1 = CompletableDeferred(Unit)
-        val d2 = CompletableDeferred(Unit)
-        val job = async { expect(3) }
-        expect(1)
-        awaitAll(d1, d2)
-        expect(2)
-        job.await()
-        finish(4)
+    // @Test
+    void test_await_all_partially_completed() {
+        run_test([this]() {
+            auto d1 = async([this]() { expect(1); return 1; });
+            d1.await();
+            auto d2 = async([this]() { expect(3); return 2; });
+            expect(2);
+            assert_equals(std::vector<int>({1, 2}), await_all(d1, d2));
+            require(d1.is_completed() && d2.is_completed());
+            finish(4);
+        });
     }
 
-    @Test
-    fun testAwaitOnSet() = runTest {
-        val d1 = CompletableDeferred(Unit)
-        val d2 = CompletableDeferred(Unit)
-        val job = async { expect(2) }
-        expect(1)
-        listOf(d1, d2, job).awaitAll()
-        finish(3)
+    // @Test
+    void test_await_all_partially_completed_exceptionally() {
+        run_test([this]() {
+            auto d1 = async(NonCancellable, [this]() {
+                expect(1);
+                throw TestException();
+            });
+
+            yield();
+
+            // This job is called after exception propagation
+            auto d2 = async([this]() { expect(4); });
+
+            expect(2);
+            try {
+                await_all(d1, d2);
+                expect_unreached();
+            } catch (const TestException& e) {
+                expect(3);
+            }
+
+            require(d2.is_active());
+            d2.await();
+            require(d1.is_completed() && d2.is_completed());
+            finish(5);
+        });
     }
 
-    @Test
-    fun testAwaitAllFullyCompletedExceptionally() = runTest {
-        val d1 = CompletableDeferred<Unit>(parent = null)
-            .apply { completeExceptionally(TestException()) }
-        val d2 = CompletableDeferred<Unit>(parent = null)
-            .apply { completeExceptionally(TestException()) }
-        val job = async { expect(3) }
-        expect(1)
-        try {
-            awaitAll(d1, d2)
-        } catch (e: TestException) {
-            expect(2)
-        }
-
-        job.await()
-        finish(4)
+    // @Test
+    void test_await_all_fully_completed() {
+        run_test([this]() {
+            auto d1 = CompletableDeferred<void>();
+            auto d2 = CompletableDeferred<void>();
+            auto job = async([this]() { expect(3); });
+            expect(1);
+            await_all(d1, d2);
+            expect(2);
+            job.await();
+            finish(4);
+        });
     }
 
-    @Test
-    fun testAwaitAllSameJobMultipleTimes() = runTest {
-        val d = async { "OK" }
-        // Duplicates are allowed though kdoc doesn't guarantee that
-        assertEquals(listOf("OK", "OK", "OK"), awaitAll(d, d, d))
+    // @Test
+    void test_await_on_set() {
+        run_test([this]() {
+            auto d1 = CompletableDeferred<void>();
+            auto d2 = CompletableDeferred<void>();
+            auto job = async([this]() { expect(2); });
+            expect(1);
+            std::vector<Deferred<void>> list = {d1, d2, job};
+            await_all(list);
+            finish(3);
+        });
     }
 
-    @Test
-    fun testAwaitAllSameThrowingJobMultipleTimes() = runTest {
-        val d1 =
-            async(NonCancellable) { throw TestException() }
-        val d2 = async { } // do nothing
+    // @Test
+    void test_await_all_fully_completed_exceptionally() {
+        run_test([this]() {
+            auto d1 = CompletableDeferred<void>(/* parent = */ nullptr);
+            d1.complete_exceptionally(TestException());
+            auto d2 = CompletableDeferred<void>(/* parent = */ nullptr);
+            d2.complete_exceptionally(TestException());
+            auto job = async([this]() { expect(3); });
+            expect(1);
+            try {
+                await_all(d1, d2);
+            } catch (const TestException& e) {
+                expect(2);
+            }
 
-        try {
-            expect(1)
+            job.await();
+            finish(4);
+        });
+    }
+
+    // @Test
+    void test_await_all_same_job_multiple_times() {
+        run_test([this]() {
+            auto d = async([]() { return "OK"; });
             // Duplicates are allowed though kdoc doesn't guarantee that
-            awaitAll(d1, d2, d1, d2)
-            expectUnreached()
-        } catch (e: TestException) {
-            finish(2)
-        }
+            assert_equals(std::vector<std::string>({"OK", "OK", "OK"}), await_all(d, d, d));
+        });
     }
 
-    @Test
-    fun testAwaitAllEmpty() = runTest {
-        expect(1)
-        assertEquals(emptyList(), awaitAll<Unit>())
-        assertEquals(emptyList(), emptyList<Deferred<Unit>>().awaitAll())
-        finish(2)
+    // @Test
+    void test_await_all_same_throwing_job_multiple_times() {
+        run_test([this]() {
+            auto d1 = async(NonCancellable, [this]() { throw TestException(); });
+            auto d2 = async([this]() { /* do nothing */ });
+
+            try {
+                expect(1);
+                // Duplicates are allowed though kdoc doesn't guarantee that
+                await_all(d1, d2, d1, d2);
+                expect_unreached();
+            } catch (const TestException& e) {
+                finish(2);
+            }
+        });
+    }
+
+    // @Test
+    void test_await_all_empty() {
+        run_test([this]() {
+            expect(1);
+            assert_equals(std::vector<void>(), await_all<void>());
+            std::vector<Deferred<void>> empty_list;
+            assert_equals(std::vector<void>(), await_all(empty_list));
+            finish(2);
+        });
     }
 
     // joinAll
 
-    @Test
-    fun testJoinAll() = runTest {
-        val d1 = launch { expect(2) }
-        val d2 = async {
-            expect(3)
-            "OK"
-        }
-        val d3 = launch { expect(4) }
+    // @Test
+    void test_join_all() {
+        run_test([this]() {
+            auto d1 = launch([this]() { expect(2); });
+            auto d2 = async([this]() {
+                expect(3);
+                return "OK";
+            });
+            auto d3 = launch([this]() { expect(4); });
 
-        expect(1)
-        joinAll(d1, d2, d3)
-        finish(5)
+            expect(1);
+            join_all(d1, d2, d3);
+            finish(5);
+        });
     }
 
-    @Test
-    fun testJoinAllLazy() = runTest {
-        expect(1)
-        val d = async(start = CoroutineStart.LAZY) {
-            expect(2)
-        }
-        val d2 = launch(start = CoroutineStart.LAZY) {
-            expect(3)
-        }
-        joinAll(d, d2)
-        finish(4)
+    // @Test
+    void test_join_all_lazy() {
+        run_test([this]() {
+            expect(1);
+            auto d = async(CoroutineStart::kLazy, [this]() {
+                expect(2);
+            });
+            auto d2 = launch(CoroutineStart::kLazy, [this]() {
+                expect(3);
+            });
+            join_all(d, d2);
+            finish(4);
+        });
     }
 
-    @Test
-    fun testJoinAllExceptionally() = runTest {
-        val d1 = launch {
-            expect(2)
-        }
-        val d2 = async(NonCancellable) {
-            expect(3)
-            throw TestException()
-        }
-        val d3 = async {
-            expect(4)
-        }
+    // @Test
+    void test_join_all_exceptionally() {
+        run_test([this]() {
+            auto d1 = launch([this]() {
+                expect(2);
+            });
+            auto d2 = async(NonCancellable, [this]() {
+                expect(3);
+                throw TestException();
+            });
+            auto d3 = async([this]() {
+                expect(4);
+            });
 
-        expect(1)
-        joinAll(d1, d2, d3)
-        finish(5)
+            expect(1);
+            join_all(d1, d2, d3);
+            finish(5);
+        });
     }
 
-    @Test
-    fun testJoinAllCancellation() = runTest {
-        val outer = launch {
-            expect(2)
-            val inner = launch {
-                expect(3)
-                delay(Long.MAX_VALUE)
-            }
+    // @Test
+    void test_join_all_cancellation() {
+        run_test([this]() {
+            auto outer = launch([this]() {
+                expect(2);
+                auto inner = launch([this]() {
+                    expect(3);
+                    delay(LONG_MAX);
+                });
 
-            joinAll(inner)
-            expectUnreached()
-        }
+                join_all(inner);
+                expect_unreached();
+            });
 
-        expect(1)
-        yield()
-        require(outer.isActive)
-        yield()
-        outer.cancel()
-        outer.join()
-        finish(4)
+            expect(1);
+            yield();
+            require(outer.is_active());
+            yield();
+            outer.cancel();
+            outer.join();
+            finish(4);
+        });
     }
 
-    @Test
-    fun testJoinAllAlreadyCompleted() = runTest {
-        val job = launch {
-            expect(1)
-        }
+    // @Test
+    void test_join_all_already_completed() {
+        run_test([this]() {
+            auto job = launch([this]() {
+                expect(1);
+            });
 
-        job.join()
-        expect(2)
+            job.join();
+            expect(2);
 
-        joinAll(job)
-        finish(3)
+            join_all(job);
+            finish(3);
+        });
     }
 
-    @Test
-    fun testJoinAllEmpty() = runTest {
-        expect(1)
-        joinAll()
-        listOf<Job>().joinAll()
-        finish(2)
+    // @Test
+    void test_join_all_empty() {
+        run_test([this]() {
+            expect(1);
+            join_all();
+            std::vector<Job*> empty_list;
+            join_all(empty_list);
+            finish(2);
+        });
     }
 
-    @Test
-    fun testJoinAllSameJob() = runTest {
-        val job = launch { }
-        joinAll(job, job, job)
+    // @Test
+    void test_join_all_same_job() {
+        run_test([this]() {
+            auto job = launch([]() { });
+            join_all(job, job, job);
+        });
     }
 
-    @Test
-    fun testJoinAllSameJobExceptionally() = runTest {
-        val job =
-            async(NonCancellable) { throw TestException() }
-        joinAll(job, job, job)
+    // @Test
+    void test_join_all_same_job_exceptionally() {
+        run_test([this]() {
+            auto job = async(NonCancellable, [this]() { throw TestException(); });
+            join_all(job, job, job);
+        });
     }
 
-    @Test
-    fun testAwaitAllDelegates() = runTest {
-        expect(1)
-        val deferred = CompletableDeferred<String>()
-        @OptIn(InternalForInheritanceCoroutinesApi::class)
-        val delegate = object : Deferred<String> by deferred {}
-        launch {
-            expect(3)
-            deferred.complete("OK")
-        }
-        expect(2)
-        awaitAll(delegate)
-        finish(4)
+    // @Test
+    void test_await_all_delegates() {
+        run_test([this]() {
+            expect(1);
+            auto deferred = CompletableDeferred<std::string>();
+            // @OptIn(InternalForInheritanceCoroutinesApi::class)
+            // TODO: object : Deferred<String> by deferred {}
+            Deferred<std::string>* delegate = &deferred;
+            launch([this, &deferred]() {
+                expect(3);
+                deferred.complete("OK");
+            });
+            expect(2);
+            await_all(delegate);
+            finish(4);
+        });
     }
 
-    @Test
-    fun testCancelAwaitAllDelegate() = runTest {
-        expect(1)
-        val deferred = CompletableDeferred<String>()
-        @OptIn(InternalForInheritanceCoroutinesApi::class)
-        val delegate = object : Deferred<String> by deferred {}
-        launch {
-            expect(3)
-            deferred.cancel()
-        }
-        expect(2)
-        assertFailsWith<CancellationException> { awaitAll(delegate) }
-        finish(4)
+    // @Test
+    void test_cancel_await_all_delegate() {
+        run_test([this]() {
+            expect(1);
+            auto deferred = CompletableDeferred<std::string>();
+            // @OptIn(InternalForInheritanceCoroutinesApi::class)
+            // TODO: object : Deferred<String> by deferred {}
+            Deferred<std::string>* delegate = &deferred;
+            launch([this, &deferred]() {
+                expect(3);
+                deferred.cancel();
+            });
+            expect(2);
+            assert_fails_with<CancellationException>([&]() { await_all(delegate); });
+            finish(4);
+        });
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

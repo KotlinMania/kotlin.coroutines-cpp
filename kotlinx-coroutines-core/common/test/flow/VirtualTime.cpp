@@ -1,99 +1,168 @@
-package kotlinx.coroutines
+// Original: kotlinx-coroutines-core/common/test/flow/VirtualTime.kt
+// TODO: Translate imports to proper C++ includes
+// TODO: Implement CoroutineDispatcher, Delay interfaces
+// TODO: Implement CoroutineScope, CoroutineContext
+// TODO: Implement DisposableHandle, Runnable
+// TODO: Implement CancellableContinuation
+// TODO: Implement ContinuationInterceptor
+// TODO: Implement launch, withContext
+// TODO: Implement ThreadLocalEventLoop
+// TODO: Implement JvmField annotation equivalent
 
-import kotlinx.coroutines.testing.*
-import kotlin.coroutines.*
-import kotlin.jvm.*
+#include <vector>
+#include <algorithm>
+#include <memory>
+#include <cstdint>
+#include <limits>
+// TODO: #include proper headers
 
-internal class VirtualTimeDispatcher(enclosingScope: CoroutineScope) : CoroutineDispatcher(), Delay {
-    private val originalDispatcher = enclosingScope.coroutineContext[ContinuationInterceptor] as CoroutineDispatcher
-    private val heap = ArrayList<TimedTask>() // TODO use MPP heap/ordered set implementation (commonize ThreadSafeHeap)
+namespace kotlinx {
+namespace coroutines {
 
-    var currentTime = 0L
-        private set
+class VirtualTimeDispatcher : public CoroutineDispatcher, public Delay {
+private:
+    CoroutineDispatcher* original_dispatcher_;
+    std::vector<TimedTask*> heap_; // TODO use MPP heap/ordered set implementation (commonize ThreadSafeHeap)
+    int64_t current_time_;
 
-    init {
+    class TimedTask : public DisposableHandle, public Runnable {
+    private:
+        Runnable* runnable_;
+        VirtualTimeDispatcher* parent_;
+
+    public:
+        int64_t deadline; // @JvmField equivalent
+
+        TimedTask(Runnable* r, int64_t dl, VirtualTimeDispatcher* p)
+            : runnable_(r), deadline(dl), parent_(p) {}
+
+        void dispose() override {
+            auto& heap = parent_->heap_;
+            heap.erase(std::remove(heap.begin(), heap.end(), this), heap.end());
+        }
+
+        void run() override {
+            runnable_->run();
+        }
+    };
+
+public:
+    VirtualTimeDispatcher(CoroutineScope& enclosing_scope)
+        : current_time_(0) {
+        original_dispatcher_ = dynamic_cast<CoroutineDispatcher*>(
+            &enclosing_scope.coroutine_context()[ContinuationInterceptor]
+        );
+
         /*
          * Launch "event-loop-owning" task on start of the virtual time event loop.
          * It ensures the progress of the enclosing event-loop and polls the timed queue
          * when the enclosing event loop is empty, emulating virtual time.
          */
-        enclosingScope.launch {
+        enclosing_scope.launch([this]() -> /* suspend */ void {
             while (true) {
-                val delayNanos = ThreadLocalEventLoop.currentOrNull()?.processNextEvent()
-                    ?: error("Event loop is missing, virtual time source works only as part of event loop")
-                if (delayNanos <= 0) continue
-                if (delayNanos > 0 && delayNanos != Long.MAX_VALUE) {
-                    if (usesSharedEventLoop) {
-                        val targetTime = currentTime + delayNanos
-                        while (currentTime < targetTime) {
-                            val nextTask = heap.minByOrNull { it.deadline } ?: break
-                            if (nextTask.deadline > targetTime) break
-                            heap.remove(nextTask)
-                            currentTime = nextTask.deadline
-                            nextTask.run()
+                auto* event_loop = ThreadLocalEventLoop::current_or_null();
+                if (!event_loop) {
+                    throw std::runtime_error("Event loop is missing, virtual time source works only as part of event loop");
+                }
+                int64_t delay_nanos = event_loop->process_next_event();
+
+                if (delay_nanos <= 0) continue;
+
+                if (delay_nanos > 0 && delay_nanos != std::numeric_limits<int64_t>::max()) {
+                    if (uses_shared_event_loop) {
+                        int64_t target_time = current_time_ + delay_nanos;
+                        while (current_time_ < target_time) {
+                            auto min_it = std::min_element(heap_.begin(), heap_.end(),
+                                [](TimedTask* a, TimedTask* b) { return a->deadline < b->deadline; });
+
+                            if (min_it == heap_.end()) break;
+                            TimedTask* next_task = *min_it;
+
+                            if (next_task->deadline > target_time) break;
+
+                            heap_.erase(min_it);
+                            current_time_ = next_task->deadline;
+                            next_task->run();
                         }
-                        currentTime = maxOf(currentTime, targetTime)
+                        current_time_ = std::max(current_time_, target_time);
                     } else {
-                        error("Unexpected external delay: $delayNanos")
+                        throw std::runtime_error("Unexpected external delay: " + std::to_string(delay_nanos));
                     }
                 }
-                val nextTask = heap.minByOrNull { it.deadline } ?: return@launch
-                heap.remove(nextTask)
-                currentTime = nextTask.deadline
-                nextTask.run()
+
+                auto min_it = std::min_element(heap_.begin(), heap_.end(),
+                    [](TimedTask* a, TimedTask* b) { return a->deadline < b->deadline; });
+
+                if (min_it == heap_.end()) return;
+                TimedTask* next_task = *min_it;
+
+                heap_.erase(min_it);
+                current_time_ = next_task->deadline;
+                next_task->run();
             }
-        }
+        });
     }
 
-    private inner class TimedTask(
-        private val runnable: Runnable,
-        @JvmField val deadline: Long
-    ) : DisposableHandle, Runnable by runnable {
-
-        override fun dispose() {
-            heap.remove(this)
-        }
+    int64_t current_time() const {
+        return current_time_;
     }
 
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        originalDispatcher.dispatch(context, block)
+    void dispatch(CoroutineContext& context, Runnable& block) override {
+        original_dispatcher_->dispatch(context, block);
     }
 
-    override fun isDispatchNeeded(context: CoroutineContext): Boolean = originalDispatcher.isDispatchNeeded(context)
-
-    override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle {
-        val task = TimedTask(block, deadline(timeMillis))
-        heap += task
-        return task
+    bool is_dispatch_needed(CoroutineContext& context) override {
+        return original_dispatcher_->is_dispatch_needed(context);
     }
 
-    override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        val task = TimedTask(Runnable { with(continuation) { resumeUndispatched(Unit) } }, deadline(timeMillis))
-        heap += task
-        continuation.invokeOnCancellation { task.dispose() }
+    DisposableHandle* invoke_on_timeout(int64_t time_millis, Runnable& block, CoroutineContext& context) override {
+        TimedTask* task = new TimedTask(&block, deadline(time_millis), this);
+        heap_.push_back(task);
+        return task;
     }
 
-    private fun deadline(timeMillis: Long) =
-        if (timeMillis == Long.MAX_VALUE) Long.MAX_VALUE else currentTime + timeMillis
-}
+    void schedule_resume_after_delay(int64_t time_millis, CancellableContinuation<void>& continuation) override {
+        auto* block = new /* Runnable */ auto([&continuation]() {
+            continuation.resume_undispatched(/* Unit */ {});
+        });
+        TimedTask* task = new TimedTask(block, deadline(time_millis), this);
+        heap_.push_back(task);
+        continuation.invoke_on_cancellation([task](auto) { task->dispose(); });
+    }
+
+private:
+    int64_t deadline(int64_t time_millis) {
+        return (time_millis == std::numeric_limits<int64_t>::max())
+            ? std::numeric_limits<int64_t>::max()
+            : current_time_ + time_millis;
+    }
+};
 
 /**
- * Runs a test ([TestBase.runTest]) with a virtual time source.
+ * Runs a test (TestBase::runTest) with a virtual time source.
  * This runner has the following constraints:
  * 1) It works only in the event-loop environment and it is relying on it.
  *    None of the coroutines should be launched in any dispatcher different from a current
  * 2) Regular tasks always dominate delayed ones. It means that
  *    `launch { while(true) yield() }` will block the progress of the delayed tasks
- * 3) [TestBase.finish] should always be invoked.
+ * 3) TestBase::finish should always be invoked.
  *    Given all the constraints into account, it is easy to mess up with a test and actually
- *    return from [withVirtualTime] before the test is executed completely.
+ *    return from withVirtualTime before the test is executed completely.
  *    To decrease the probability of such error, additional `finish` constraint is added.
  */
-public fun TestBase.withVirtualTime(block: suspend CoroutineScope.() -> Unit) = runTest {
-    withContext(Dispatchers.Unconfined) {
-        // Create a platform-independent event loop
-        val dispatcher = VirtualTimeDispatcher(this)
-        withContext(dispatcher) { block() }
-        checkFinishCall(allowNotUsingExpect = false)
-    }
+template<typename Func>
+void with_virtual_time(TestBase& test_base, Func&& block) {
+    test_base.run_test([block = std::forward<Func>(block)]() -> /* suspend */ void {
+        with_context(Dispatchers::Unconfined, [&]() -> /* suspend */ void {
+            // Create a platform-independent event loop
+            VirtualTimeDispatcher dispatcher(*this);
+            with_context(dispatcher, [&]() -> /* suspend */ void {
+                block();
+            });
+            check_finish_call(/* allowNotUsingExpect = */ false);
+        });
+    });
 }
+
+} // namespace coroutines
+} // namespace kotlinx

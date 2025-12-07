@@ -1,106 +1,159 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/BooleanTerminationTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Implement suspend functions as regular functions
+// - Map Flow operators to C++ equivalents
+// - Implement test assertions (assertTrue, assertFalse, assertEquals, etc.)
+// - Handle coroutine context (runTest)
+// - Map expectUnreached() to test helper
 
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class BooleanTerminationTest : TestBase() {
-    @Test
-    fun testAnyNominal() = runTest {
-        val flow = flow {
-            emit(1)
-            emit(2)
-        }
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.test.*
 
-        assertTrue(flow.any { it > 0 })
-        assertTrue(flow.any { it % 2 == 0 })
-        assertFalse(flow.any { it > 5 })
+class BooleanTerminationTest : public TestBase {
+public:
+    // TODO: @Test
+    void testAnyNominal() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            emit(1);
+            emit(2);
+        });
+
+        assertTrue(flow_var.any([](auto it) { return it > 0; }));
+        assertTrue(flow_var.any([](auto it) { return it % 2 == 0; }));
+        assertFalse(flow_var.any([](auto it) { return it > 5; }));
+        // TODO: }
     }
 
-    @Test
-    fun testAnyEmpty() = runTest {
-        assertFalse(emptyFlow<Int>().any { it > 0 })
+    // TODO: @Test
+    void testAnyEmpty() {
+        // TODO: runTest {
+        assertFalse(emptyFlow<int>().any([](auto it) { return it > 0; }));
+        // TODO: }
     }
 
-    @Test
-    fun testAnyInfinite() = runTest {
-        assertTrue(flow { while (true) { emit(5) } }.any { it == 5 })
+    // TODO: @Test
+    void testAnyInfinite() {
+        // TODO: runTest {
+        assertTrue(flow([](auto& emit) {
+            while (true) {
+                emit(5);
+            }
+        }).any([](auto it) { return it == 5; }));
+        // TODO: }
     }
 
-    @Test
-    fun testAnyShortCircuit() = runTest {
-        assertTrue(flow {
-            emit(1)
-            emit(2)
-            expectUnreached()
-        }.any {
-            it == 2
-        })
+    // TODO: @Test
+    void testAnyShortCircuit() {
+        // TODO: runTest {
+        assertTrue(flow([](auto& emit) {
+            emit(1);
+            emit(2);
+            expectUnreached();
+        }).any([](auto it) {
+            return it == 2;
+        }));
+        // TODO: }
     }
 
-    @Test
-    fun testAllNominal() = runTest {
-        val flow = flow {
-            emit(1)
-            emit(2)
-        }
+    // TODO: @Test
+    void testAllNominal() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            emit(1);
+            emit(2);
+        });
 
-        assertTrue(flow.all { it > 0 })
-        assertFalse(flow.all { it % 2 == 0 })
-        assertFalse(flow.all { it > 5 })
+        assertTrue(flow_var.all([](auto it) { return it > 0; }));
+        assertFalse(flow_var.all([](auto it) { return it % 2 == 0; }));
+        assertFalse(flow_var.all([](auto it) { return it > 5; }));
+        // TODO: }
     }
 
-    @Test
-    fun testAllEmpty() = runTest {
-        assertTrue(emptyFlow<Int>().all { it > 0 })
+    // TODO: @Test
+    void testAllEmpty() {
+        // TODO: runTest {
+        assertTrue(emptyFlow<int>().all([](auto it) { return it > 0; }));
+        // TODO: }
     }
 
-    @Test
-    fun testAllInfinite() = runTest {
-        assertFalse(flow { while (true) { emit(5) } }.all { it == 0 })
+    // TODO: @Test
+    void testAllInfinite() {
+        // TODO: runTest {
+        assertFalse(flow([](auto& emit) {
+            while (true) {
+                emit(5);
+            }
+        }).all([](auto it) { return it == 0; }));
+        // TODO: }
     }
 
-    @Test
-    fun testAllShortCircuit() = runTest {
-        assertFalse(flow {
-            emit(1)
-            emit(2)
-            expectUnreached()
-        }.all {
-            it <= 1
-        })
+    // TODO: @Test
+    void testAllShortCircuit() {
+        // TODO: runTest {
+        assertFalse(flow([](auto& emit) {
+            emit(1);
+            emit(2);
+            expectUnreached();
+        }).all([](auto it) {
+            return it <= 1;
+        }));
+        // TODO: }
     }
 
-    @Test
-    fun testNoneNominal() = runTest {
-        val flow = flow {
-            emit(1)
-            emit(2)
-        }
+    // TODO: @Test
+    void testNoneNominal() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            emit(1);
+            emit(2);
+        });
 
-        assertFalse(flow.none { it > 0 })
-        assertFalse(flow.none { it % 2 == 0 })
-        assertTrue(flow.none { it > 5 })
+        assertFalse(flow_var.none([](auto it) { return it > 0; }));
+        assertFalse(flow_var.none([](auto it) { return it % 2 == 0; }));
+        assertTrue(flow_var.none([](auto it) { return it > 5; }));
+        // TODO: }
     }
 
-    @Test
-    fun testNoneEmpty() = runTest {
-        assertTrue(emptyFlow<Int>().none { it > 0 })
+    // TODO: @Test
+    void testNoneEmpty() {
+        // TODO: runTest {
+        assertTrue(emptyFlow<int>().none([](auto it) { return it > 0; }));
+        // TODO: }
     }
 
-    @Test
-    fun testNoneInfinite() = runTest {
-        assertFalse(flow { while (true) { emit(5) } }.none { it == 5 })
+    // TODO: @Test
+    void testNoneInfinite() {
+        // TODO: runTest {
+        assertFalse(flow([](auto& emit) {
+            while (true) {
+                emit(5);
+            }
+        }).none([](auto it) { return it == 5; }));
+        // TODO: }
     }
 
-    @Test
-    fun testNoneShortCircuit() = runTest {
-        assertFalse(flow {
-            emit(1)
-            emit(2)
-            expectUnreached()
-        }.none {
-            it == 2
-        })
+    // TODO: @Test
+    void testNoneShortCircuit() {
+        // TODO: runTest {
+        assertFalse(flow([](auto& emit) {
+            emit(1);
+            emit(2);
+            expectUnreached();
+        }).none([](auto it) {
+            return it == 2;
+        }));
+        // TODO: }
     }
 
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

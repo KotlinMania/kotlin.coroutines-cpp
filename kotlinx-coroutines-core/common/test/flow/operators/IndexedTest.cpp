@@ -1,42 +1,57 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/IndexedTest.kt
+// TODO: handle imports (kotlinx.coroutines.testing, kotlinx.coroutines, kotlin.test)
+// TODO: translate @Test annotations to appropriate C++ test framework
+// TODO: handle suspend functions and coroutines
+// TODO: translate runTest {} blocks
+// TODO: handle Flow types and operations
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class IndexedTest : TestBase() {
-
-    @Test
-    fun testWithIndex() = runTest {
-        val flow = flowOf(3, 2, 1).withIndex()
-        assertEquals(listOf(IndexedValue(0, 3), IndexedValue(1, 2), IndexedValue(2, 1)), flow.toList())
+class IndexedTest : public TestBase {
+public:
+    // @Test
+    void test_with_index() /* TODO: = runTest */ {
+        auto flow = flow_of(3, 2, 1).with_index();
+        assert_equals(
+            std::vector<IndexedValue<int>>{IndexedValue(0, 3), IndexedValue(1, 2), IndexedValue(2, 1)},
+            flow.to_list()
+        );
     }
 
-    @Test
-    fun testWithIndexEmpty() = runTest {
-        val flow = emptyFlow<Int>().withIndex()
-        assertEquals(emptyList(), flow.toList())
+    // @Test
+    void test_with_index_empty() /* TODO: = runTest */ {
+        auto flow = empty_flow<int>().with_index();
+        assert_equals(std::vector<IndexedValue<int>>{}, flow.to_list());
     }
 
-    @Test
-    fun testCollectIndexed() = runTest {
-        val result = ArrayList<IndexedValue<Long>>()
-        flowOf(3L, 2L, 1L).collectIndexed { index, value ->
-            result.add(IndexedValue(index, value))
-        }
-        assertEquals(listOf(IndexedValue(0, 3L), IndexedValue(1, 2L), IndexedValue(2, 1L)), result)
+    // @Test
+    void test_collect_indexed() /* TODO: = runTest */ {
+        std::vector<IndexedValue<int64_t>> result;
+        flow_of(3L, 2L, 1L).collect_indexed([&result](int index, int64_t value) {
+            result.push_back(IndexedValue(index, value));
+        });
+        assert_equals(
+            std::vector<IndexedValue<int64_t>>{IndexedValue(0, 3L), IndexedValue(1, 2L), IndexedValue(2, 1L)},
+            result
+        );
     }
 
-    @Test
-    fun testCollectIndexedEmptyFlow() = runTest {
-        val flow = flow<Int> {
-            expect(1)
-        }
+    // @Test
+    void test_collect_indexed_empty_flow() /* TODO: = runTest */ {
+        auto flow = flow<int>([]() /* TODO: suspend */ {
+            expect(1);
+        });
 
-        flow.collectIndexed { _, _ ->
-            expectUnreached()
-        }
+        flow.collect_indexed([](int, int) {
+            expect_unreached();
+        });
 
-        finish(2)
+        finish(2);
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

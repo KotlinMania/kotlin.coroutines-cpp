@@ -1,16 +1,34 @@
-package kotlinx.coroutines.debug.junit5
+// Original: kotlinx-coroutines-debug/test/junit5/RegisterExtensionExample.kt
+// Transliterated from Kotlin to C++ - First pass syntax conversion
+// TODO: Implement JUnit5 test framework integration (@Test, @RegisterExtension)
+// TODO: Convert suspend functions to C++ coroutine equivalents
+// TODO: Map runBlocking to C++ blocking coroutine runner
+// TODO: Implement CoroutinesTimeoutExtension.seconds factory method
 
-import kotlinx.coroutines.*
-import org.junit.jupiter.api.*
-import org.junit.jupiter.api.extension.*
+namespace kotlinx {
+namespace coroutines {
+namespace debug {
+namespace junit5 {
+
+// TODO: import kotlinx.coroutines.*
+// TODO: import org.junit.jupiter.api.*
+// TODO: import org.junit.jupiter.api.extension.*
 
 class RegisterExtensionExample {
-    @JvmField
-    @RegisterExtension
-    internal val timeout = CoroutinesTimeoutExtension.seconds(5)
+public:
+    // TODO: @JvmField
+    // TODO: @RegisterExtension
+    CoroutinesTimeoutExtension timeout = CoroutinesTimeoutExtension::seconds(5);
 
-    @Test
-    fun testThatHangs() = runBlocking {
-        delay(Long.MAX_VALUE) // somewhere deep in the stack
+    // TODO: @Test
+    void testThatHangs() {
+        runBlocking([&] {
+            delay(LONG_MAX); // somewhere deep in the stack
+        });
     }
-}
+};
+
+} // namespace junit5
+} // namespace debug
+} // namespace coroutines
+} // namespace kotlinx

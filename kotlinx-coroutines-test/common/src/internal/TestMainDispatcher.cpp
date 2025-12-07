@@ -1,100 +1,212 @@
-package kotlinx.coroutines.test.internal
+// Transliterated from Kotlin to C++ - kotlinx.coroutines.test.internal.TestMainDispatcher
+// Original package: kotlinx.coroutines.test.internal
+//
+// TODO: Import statements removed; fully qualify types or add appropriate includes
+// TODO: Kotlin internal visibility needs C++ equivalent
+// TODO: Kotlin lazy delegation pattern needs C++ equivalent
+// TODO: Annotations (@Suppress) preserved as comments
+// TODO: Kotlin atomic operations (kotlinx.atomicfu) need C++ std::atomic equivalents
+// TODO: expect function needs platform-specific implementation
 
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.test.*
-import kotlin.coroutines.*
+#include <atomic>
+#include <functional>
+#include <stdexcept>
+#include <string>
+
+namespace kotlinx {
+namespace coroutines {
+namespace test {
+namespace internal {
+
+// package kotlinx.coroutines.test.internal
+
+// import kotlinx.atomicfu.*
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.test.*
+// import kotlin.coroutines.*
 
 /**
  * The testable main dispatcher used by kotlinx-coroutines-test.
  * It is a [MainCoroutineDispatcher] that delegates all actions to a settable delegate.
  */
-internal class TestMainDispatcher(createInnerMain: () -> CoroutineDispatcher):
-    MainCoroutineDispatcher(),
-    Delay
-{
-    internal constructor(delegate: CoroutineDispatcher): this({ delegate })
+class TestMainDispatcher : public MainCoroutineDispatcher, public Delay {
+private:
+    std::function<CoroutineDispatcher*()> create_inner_main_;
+    CoroutineDispatcher* main_dispatcher_;
+    bool main_dispatcher_initialized_;
+    NonConcurrentlyModifiable<CoroutineDispatcher*>* delegate_;
 
-    private val mainDispatcher by lazy(createInnerMain)
-    private var delegate = NonConcurrentlyModifiable<CoroutineDispatcher?>(null, "Dispatchers.Main")
+public:
+    TestMainDispatcher(std::function<CoroutineDispatcher*()> create_inner_main)
+        : create_inner_main_(create_inner_main),
+          main_dispatcher_(nullptr),
+          main_dispatcher_initialized_(false),
+          delegate_(new NonConcurrentlyModifiable<CoroutineDispatcher*>(nullptr, "Dispatchers.Main")) {}
 
-    private val dispatcher
-        get() = delegate.value ?: mainDispatcher
+    TestMainDispatcher(CoroutineDispatcher* delegate)
+        : TestMainDispatcher([delegate]() { return delegate; }) {}
 
-    private val delay
-        get() = dispatcher as? Delay ?: defaultDelay
-
-    override val immediate: MainCoroutineDispatcher
-        get() = (dispatcher as? MainCoroutineDispatcher)?.immediate ?: this
-
-    override fun dispatch(context: CoroutineContext, block: Runnable) = dispatcher.dispatch(context, block)
-
-    override fun isDispatchNeeded(context: CoroutineContext): Boolean = dispatcher.isDispatchNeeded(context)
-
-    override fun dispatchYield(context: CoroutineContext, block: Runnable) = dispatcher.dispatchYield(context, block)
-
-    fun setDispatcher(dispatcher: CoroutineDispatcher) {
-        delegate.value = dispatcher
+private:
+    CoroutineDispatcher* get_main_dispatcher() {
+        if (!main_dispatcher_initialized_) {
+            main_dispatcher_ = create_inner_main_();
+            main_dispatcher_initialized_ = true;
+        }
+        return main_dispatcher_;
     }
 
-    fun resetDispatcher() {
-        delegate.value = null
+    CoroutineDispatcher* dispatcher() {
+        auto* d = delegate_->value();
+        return d != nullptr ? d : get_main_dispatcher();
     }
 
-    override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) =
-        delay.scheduleResumeAfterDelay(timeMillis, continuation)
-
-    override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle =
-        delay.invokeOnTimeout(timeMillis, block, context)
-
-    companion object {
-        internal val currentTestDispatcher
-            get() = (Dispatchers.Main as? TestMainDispatcher)?.delegate?.value as? TestDispatcher
-
-        internal val currentTestScheduler
-            get() = currentTestDispatcher?.scheduler
+    Delay* delay() {
+        auto* d = dispatcher();
+        auto* delay_impl = dynamic_cast<Delay*>(d);
+        return delay_impl != nullptr ? delay_impl : &default_delay;
     }
 
+public:
+    MainCoroutineDispatcher* immediate() override {
+        auto* d = dispatcher();
+        auto* main_disp = dynamic_cast<MainCoroutineDispatcher*>(d);
+        if (main_disp != nullptr) {
+            return main_disp->immediate();
+        }
+        return this;
+    }
+
+    void dispatch(const CoroutineContext& context, Runnable* block) override {
+        dispatcher()->dispatch(context, block);
+    }
+
+    bool is_dispatch_needed(const CoroutineContext& context) const override {
+        return dispatcher()->is_dispatch_needed(context);
+    }
+
+    void dispatch_yield(const CoroutineContext& context, Runnable* block) override {
+        dispatcher()->dispatch_yield(context, block);
+    }
+
+    void set_dispatcher(CoroutineDispatcher* disp) {
+        delegate_->set_value(disp);
+    }
+
+    void reset_dispatcher() {
+        delegate_->set_value(nullptr);
+    }
+
+    void schedule_resume_after_delay(int64_t time_millis, CancellableContinuation<void>* continuation) override {
+        delay()->schedule_resume_after_delay(time_millis, continuation);
+    }
+
+    DisposableHandle* invoke_on_timeout(int64_t time_millis, Runnable* block, const CoroutineContext& context) override {
+        return delay()->invoke_on_timeout(time_millis, block, context);
+    }
+
+    static TestDispatcher* current_test_dispatcher() {
+        auto* main = Dispatchers::Main;
+        auto* test_main = dynamic_cast<TestMainDispatcher*>(main);
+        if (test_main == nullptr) return nullptr;
+        auto* delegate_val = test_main->delegate_->value();
+        return dynamic_cast<TestDispatcher*>(delegate_val);
+    }
+
+    static TestCoroutineScheduler* current_test_scheduler() {
+        auto* disp = current_test_dispatcher();
+        return disp != nullptr ? &disp->scheduler() : nullptr;
+    }
+
+private:
     /**
      * A wrapper around a value that attempts to throw when writing happens concurrently with reading.
      *
      * The read operations never throw. Instead, the failures detected inside them will be remembered and thrown on the
      * next modification.
      */
-    private class NonConcurrentlyModifiable<T>(initialValue: T, private val name: String) {
-        private val reader: AtomicRef<Throwable?> = atomic(null) // last reader to attempt access
-        private val readers = atomic(0) // number of concurrent readers
-        private val writer: AtomicRef<Throwable?> = atomic(null) // writer currently performing value modification
-        private val exceptionWhenReading: AtomicRef<Throwable?> = atomic(null) // exception from reading
-        private val _value = atomic(initialValue) // the backing field for the value
+    template<typename T>
+    class NonConcurrentlyModifiable {
+    private:
+        std::atomic<void*> reader_; // last reader to attempt access (stored as Throwable*)
+        std::atomic<int> readers_; // number of concurrent readers
+        std::atomic<void*> writer_; // writer currently performing value modification (stored as Throwable*)
+        std::atomic<void*> exception_when_reading_; // exception from reading (stored as Throwable*)
+        std::atomic<T> value_; // the backing field for the value
+        std::string name_;
 
-        private fun concurrentWW(location: Throwable) = IllegalStateException("$name is modified concurrently", location)
-        private fun concurrentRW(location: Throwable) = IllegalStateException("$name is used concurrently with setting it", location)
+        std::logic_error concurrent_ww(void* location) const {
+            return std::logic_error(name_ + " is modified concurrently");
+        }
 
-        var value: T
-            get() {
-                reader.value = Throwable("reader location")
-                readers.incrementAndGet()
-                writer.value?.let { exceptionWhenReading.value = concurrentRW(it) }
-                val result = _value.value
-                readers.decrementAndGet()
-                return result
+        std::logic_error concurrent_rw(void* location) const {
+            return std::logic_error(name_ + " is used concurrently with setting it");
+        }
+
+    public:
+        NonConcurrentlyModifiable(T initial_value, const std::string& name)
+            : reader_(nullptr), readers_(0), writer_(nullptr),
+              exception_when_reading_(nullptr), value_(initial_value), name_(name) {}
+
+        T value() {
+            // TODO: Kotlin Throwable("reader location") for stack traces
+            void* reader_location = reinterpret_cast<void*>(1); // placeholder
+            reader_.store(reader_location);
+            readers_.fetch_add(1);
+
+            void* writer_val = writer_.load();
+            if (writer_val != nullptr) {
+                exception_when_reading_.store(reinterpret_cast<void*>(1)); // placeholder exception
             }
-            set(value) {
-                exceptionWhenReading.getAndSet(null)?.let { throw it }
-                if (readers.value != 0) reader.value?.let { throw concurrentRW(it) }
-                val writerLocation = Throwable("other writer location")
-                writer.getAndSet(writerLocation)?.let { throw concurrentWW(it) }
-                _value.value = value
-                writer.compareAndSet(writerLocation, null)
-                if (readers.value != 0) reader.value?.let { throw concurrentRW(it) }
+
+            T result = value_.load();
+            readers_.fetch_sub(1);
+            return result;
+        }
+
+        void set_value(T new_value) {
+            void* exception = exception_when_reading_.exchange(nullptr);
+            if (exception != nullptr) {
+                throw std::logic_error("Concurrent read/write detected");
             }
-    }
-}
 
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
-private val defaultDelay
-    inline get() = DefaultDelay
+            if (readers_.load() != 0) {
+                void* reader_val = reader_.load();
+                if (reader_val != nullptr) {
+                    throw concurrent_rw(reader_val);
+                }
+            }
 
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
-internal expect fun Dispatchers.getTestMainDispatcher(): TestMainDispatcher
+            // TODO: Kotlin Throwable("other writer location") for stack traces
+            void* writer_location = reinterpret_cast<void*>(2); // placeholder
+            void* prev_writer = writer_.exchange(writer_location);
+            if (prev_writer != nullptr) {
+                throw concurrent_ww(prev_writer);
+            }
+
+            value_.store(new_value);
+            writer_.compare_exchange_strong(writer_location, nullptr);
+
+            if (readers_.load() != 0) {
+                void* reader_val = reader_.load();
+                if (reader_val != nullptr) {
+                    throw concurrent_rw(reader_val);
+                }
+            }
+        }
+    };
+
+    static Delay default_delay;
+};
+
+// @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
+// TODO: DefaultDelay is an internal implementation detail
+Delay TestMainDispatcher::default_delay; // placeholder
+
+// @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") // do not remove the INVISIBLE_REFERENCE suppression: required in K2
+// TODO: expect function - needs platform-specific implementation
+TestMainDispatcher& get_test_main_dispatcher(Dispatchers& dispatchers);
+
+} // namespace internal
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

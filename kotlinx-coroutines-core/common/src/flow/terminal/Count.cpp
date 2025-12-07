@@ -1,32 +1,48 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
+// Transliterated from Kotlin to C++ (first-pass, syntax-only)
+// Original: kotlinx-coroutines-core/common/src/flow/terminal/Count.kt
+//
+// TODO: Implement coroutine semantics (suspend functions)
+// TODO: Map Kotlin Flow types to C++ equivalents
 
-package kotlinx.coroutines.flow
+#pragma once
 
-import kotlin.jvm.*
+// @file:JvmMultifileClass
+// @file:JvmName("FlowKt")
+
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+
+// TODO: import kotlin.jvm.*
 
 /**
  * Returns the number of elements in this flow.
  */
-public suspend fun <T> Flow<T>.count(): Int  {
-    var i = 0
-    collect {
-        ++i
-    }
+template<typename T>
+int count(Flow<T> flow) {
+    int i = 0;
+    flow.collect([&](T) {
+        ++i;
+    });
 
-    return i
+    return i;
 }
 
 /**
  * Returns the number of elements matching the given predicate.
  */
-public suspend fun <T> Flow<T>.count(predicate: suspend (T) -> Boolean): Int {
-    var i = 0
-    collect { value ->
+template<typename T, typename Predicate>
+int count(Flow<T> flow, Predicate predicate) {
+    int i = 0;
+    flow.collect([&](T value) {
         if (predicate(value)) {
-            ++i
+            ++i;
         }
-    }
+    });
 
-    return i
+    return i;
 }
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

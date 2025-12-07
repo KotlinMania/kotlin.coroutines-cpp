@@ -1,164 +1,177 @@
-@file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-21913
+// Original: kotlinx-coroutines-core/common/test/JobStatesTest.kt
+// TODO: Transliterated from Kotlin - needs C++ implementation
+// TODO: @file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-21913
+// TODO: Handle Job state transitions and lifecycle
+// TODO: Map test framework annotations to C++ test framework
 
-package kotlinx.coroutines
+namespace kotlinx {
+namespace coroutines {
 
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.test.*
 
 /**
- * Tests that the transitions to the state of the [Job] correspond to documentation in the
- * table that is presented in the [Job] documentation.
+ * Tests that the transitions to the state of the Job correspond to documentation in the
+ * table that is presented in the Job documentation.
  */
-class JobStatesTest : TestBase() {
-    @Test
-    public fun testNormalCompletion() = runTest {
-        expect(1)
-        val parent = coroutineContext.job
-        val job = launch(start = CoroutineStart.LAZY) {
-            expect(2)
+class JobStatesTest : public TestBase {
+public:
+    // TODO: @Test
+    void test_normal_completion() {
+        // TODO: runTest {
+        expect(1);
+        // TODO: const auto parent = coroutineContext.job;
+        // TODO: const auto job = launch(start = CoroutineStart.LAZY) {
+            expect(2);
             // launches child
-            launch {
-                expect(4)
-            }
+            // TODO: launch {
+                expect(4);
+            // }
             // completes normally
-        }
+        // }
         // New job
-        assertFalse(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
-        assertSame(parent, job.parent)
+        // TODO: assertFalse(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
+        // TODO: assertSame(parent, job.parent());
         // New -> Active
-        job.start()
-        assertTrue(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
-        assertSame(parent, job.parent)
+        // TODO: job.start();
+        // TODO: assertTrue(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
+        // TODO: assertSame(parent, job.parent());
         // Active -> Completing
-        yield() // scheduled & starts child
-        expect(3)
-        assertTrue(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
-        assertSame(parent, job.parent)
+        // TODO: yield(); // scheduled & starts child
+        expect(3);
+        // TODO: assertTrue(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
+        // TODO: assertSame(parent, job.parent());
         // Completing -> Completed
-        yield()
-        finish(5)
-        assertFalse(job.isActive)
-        assertTrue(job.isCompleted)
-        assertFalse(job.isCancelled)
-        assertNull(job.parent)
+        // TODO: yield();
+        finish(5);
+        // TODO: assertFalse(job.is_active());
+        // TODO: assertTrue(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
+        // TODO: assertNull(job.parent());
+        // TODO: }
     }
 
-    @Test
-    public fun testCompletingFailed() = runTest(
-        unhandled = listOf({ it -> it is TestException })
-    ) {
-        expect(1)
-        val job = launch(NonCancellable, start = CoroutineStart.LAZY) {
-            expect(2)
+    // TODO: @Test
+    void test_completing_failed() {
+        // TODO: runTest(unhandled = listOf({ it -> it is TestException })) {
+        expect(1);
+        // TODO: const auto job = launch(NonCancellable, start = CoroutineStart.LAZY) {
+            expect(2);
             // launches child
-            launch {
-                expect(4)
-                throw TestException()
-            }
+            // TODO: launch {
+                expect(4);
+                // TODO: throw TestException();
+            // }
             // completes normally
-        }
+        // }
         // New job
-        assertFalse(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
+        // TODO: assertFalse(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
         // New -> Active
-        job.start()
-        assertTrue(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
+        // TODO: job.start();
+        // TODO: assertTrue(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
         // Active -> Completing
-        yield() // scheduled & starts child
-        expect(3)
-        assertTrue(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
+        // TODO: yield(); // scheduled & starts child
+        expect(3);
+        // TODO: assertTrue(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
         // Completing -> Cancelled
-        yield()
-        finish(5)
-        assertFalse(job.isActive)
-        assertTrue(job.isCompleted)
-        assertTrue(job.isCancelled)
+        // TODO: yield();
+        finish(5);
+        // TODO: assertFalse(job.is_active());
+        // TODO: assertTrue(job.is_completed());
+        // TODO: assertTrue(job.is_cancelled());
+        // TODO: }
     }
 
-    @Test
-    public fun testFailed() = runTest(
-        unhandled = listOf({ it -> it is TestException })
-    ) {
-        expect(1)
-        val job = launch(NonCancellable, start = CoroutineStart.LAZY) {
-            expect(2)
+    // TODO: @Test
+    void test_failed() {
+        // TODO: runTest(unhandled = listOf({ it -> it is TestException })) {
+        expect(1);
+        // TODO: const auto job = launch(NonCancellable, start = CoroutineStart.LAZY) {
+            expect(2);
             // launches child
-            launch(start = CoroutineStart.ATOMIC) {
-                expect(4)
-            }
+            // TODO: launch(start = CoroutineStart.ATOMIC) {
+                expect(4);
+            // }
             // failing
-            throw TestException()
-        }
+            // TODO: throw TestException();
+        // }
         // New job
-        assertFalse(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
+        // TODO: assertFalse(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
         // New -> Active
-        job.start()
-        assertTrue(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
+        // TODO: job.start();
+        // TODO: assertTrue(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
         // Active -> Cancelling
-        yield() // scheduled & starts child
-        expect(3)
-        assertFalse(job.isActive)
-        assertFalse(job.isCompleted)
-        assertTrue(job.isCancelled)
+        // TODO: yield(); // scheduled & starts child
+        expect(3);
+        // TODO: assertFalse(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertTrue(job.is_cancelled());
         // Cancelling -> Cancelled
-        yield()
-        finish(5)
-        assertFalse(job.isActive)
-        assertTrue(job.isCompleted)
-        assertTrue(job.isCancelled)
+        // TODO: yield();
+        finish(5);
+        // TODO: assertFalse(job.is_active());
+        // TODO: assertTrue(job.is_completed());
+        // TODO: assertTrue(job.is_cancelled());
+        // TODO: }
     }
 
-    @Test
-    public fun testCancelling() = runTest {
-        expect(1)
-        val job = launch(NonCancellable, start = CoroutineStart.LAZY) {
-            expect(2)
+    // TODO: @Test
+    void test_cancelling() {
+        // TODO: runTest {
+        expect(1);
+        // TODO: const auto job = launch(NonCancellable, start = CoroutineStart.LAZY) {
+            expect(2);
             // launches child
-            launch(start = CoroutineStart.ATOMIC) {
-                expect(4)
-            }
+            // TODO: launch(start = CoroutineStart.ATOMIC) {
+                expect(4);
+            // }
             // completes normally
-        }
+        // }
         // New job
-        assertFalse(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
+        // TODO: assertFalse(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
         // New -> Active
-        job.start()
-        assertTrue(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
+        // TODO: job.start();
+        // TODO: assertTrue(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
         // Active -> Completing
-        yield() // scheduled & starts child
-        expect(3)
-        assertTrue(job.isActive)
-        assertFalse(job.isCompleted)
-        assertFalse(job.isCancelled)
+        // TODO: yield(); // scheduled & starts child
+        expect(3);
+        // TODO: assertTrue(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertFalse(job.is_cancelled());
         // Completing -> Cancelling
-        job.cancel()
-        assertFalse(job.isActive)
-        assertFalse(job.isCompleted)
-        assertTrue(job.isCancelled)
+        // TODO: job.cancel();
+        // TODO: assertFalse(job.is_active());
+        // TODO: assertFalse(job.is_completed());
+        // TODO: assertTrue(job.is_cancelled());
         // Cancelling -> Cancelled
-        yield()
-        finish(5)
-        assertFalse(job.isActive)
-        assertTrue(job.isCompleted)
-        assertTrue(job.isCancelled)
+        // TODO: yield();
+        finish(5);
+        // TODO: assertFalse(job.is_active());
+        // TODO: assertTrue(job.is_completed());
+        // TODO: assertTrue(job.is_cancelled());
+        // TODO: }
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

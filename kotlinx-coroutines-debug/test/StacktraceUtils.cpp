@@ -1,48 +1,60 @@
-package kotlinx.coroutines.debug
+// Original file: kotlinx-coroutines-debug/test/StacktraceUtils.kt
+// TODO: Convert imports to C++ includes
+// TODO: Implement string manipulation utilities
+// TODO: Implement DebugProbes API
+// TODO: Convert Kotlin regex to C++ equivalents
+// TODO: Implement data classes as structs
+// TODO: Implement companion object patterns
 
-import java.io.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace debug {
 
-public fun String.trimStackTrace(): String =
-    trimIndent()
-        // Remove source line
-        .replace(Regex(":[0-9]+"), "")
-        // Remove coroutine id
-        .replace(Regex("#[0-9]+"), "")
-        // Remove trace prefix: "java.base@11.0.16.1/java.lang.Thread.sleep" => "java.lang.Thread.sleep"
-        .replace(Regex("(?<=\tat )[^\n]*/"), "")
-        .replace(Regex("\t"), "")
-        .replace("sun.misc.Unsafe.", "jdk.internal.misc.Unsafe.") // JDK8->JDK11
-
-public fun verifyStackTrace(e: Throwable, traces: List<String>) {
-    val stacktrace = toStackTrace(e)
-    val trimmedStackTrace = stacktrace.trimStackTrace()
-    traces.forEach {
-        assertTrue(
-            trimmedStackTrace.contains(it.trimStackTrace()),
-            "\nExpected trace element:\n$it\n\nActual stacktrace:\n$stacktrace"
-        )
-    }
-
-    val causes = stacktrace.count("Caused by")
-    assertNotEquals(0, causes)
-    assertEquals(causes, traces.map { it.count("Caused by") }.sum())
+// Extension function converted to free function
+std::string trim_stack_trace(const std::string& str) {
+    // TODO: Implement trimIndent()
+    //     .replace(Regex(":[0-9]+"), "")
+    //     .replace(Regex("#[0-9]+"), "")
+    //     .replace(Regex("(?<=\tat )[^\n]*/"), "")
+    //     .replace(Regex("\t"), "")
+    //     .replace("sun.misc.Unsafe.", "jdk.internal.misc.Unsafe.") // JDK8->JDK11
+    return "";
 }
 
-public fun toStackTrace(t: Throwable): String {
-    val sw = StringWriter()
-    t.printStackTrace(PrintWriter(sw))
-    return sw.toString()
+void verify_stack_trace(const std::exception& e, const std::vector<std::string>& traces) {
+    // TODO: auto stacktrace = toStackTrace(e)
+    // auto trimmedStackTrace = stacktrace.trimStackTrace()
+    // for (auto& trace : traces) {
+    //     assertTrue(
+    //         trimmedStackTrace.contains(trace.trimStackTrace()),
+    //         "\nExpected trace element:\n" + trace + "\n\nActual stacktrace:\n" + stacktrace
+    //     )
+    // }
+    //
+    // auto causes = stacktrace.count("Caused by")
+    // assertNotEquals(0, causes)
+    // assertEquals(causes, traces.map { it.count("Caused by") }.sum())
 }
 
-public fun String.count(substring: String): Int = split(substring).size - 1
+std::string to_stack_trace(const std::exception& t) {
+    // TODO: auto sw = StringWriter()
+    // t.printStackTrace(PrintWriter(sw))
+    // return sw.toString()
+    return "";
+}
 
-public fun verifyDump(vararg traces: String, ignoredCoroutine: String? = null, finally: () -> Unit) {
-    try {
-        verifyDump(*traces, ignoredCoroutine = ignoredCoroutine)
-    } finally {
-        finally()
-    }
+int count_substring(const std::string& str, const std::string& substring) {
+    // TODO: return str.split(substring).size - 1
+    return 0;
+}
+
+void verify_dump_with_finally(const std::vector<std::string>& traces, const char* ignored_coroutine,
+                               std::function<void()> finally_func) {
+    // TODO: try {
+    //     verifyDump(traces, ignoredCoroutine)
+    // } finally {
+    //     finally_func()
+    // }
 }
 
 /** Clean the stacktraces from artifacts of BlockHound instrumentation
@@ -56,18 +68,18 @@ public fun verifyDump(vararg traces: String, ignoredCoroutine: String? = null, f
  *   - An additional native call is placed on top of the stack, with the original name that also has
  *     `$$BlockHound$$_` prepended at the last component.
  */
-private fun cleanBlockHoundTraces(frames: List<String>): List<String> {
-    val result = mutableListOf<String>()
-    val blockHoundSubstr = "\$\$BlockHound\$\$_"
-    var i = 0
-    while (i < frames.size) {
-        result.add(frames[i].replace(blockHoundSubstr, ""))
-        if (frames[i].contains(blockHoundSubstr)) {
-            i += 1
-        }
-        i += 1
+std::vector<std::string> clean_block_hound_traces(const std::vector<std::string>& frames) {
+    std::vector<std::string> result;
+    const std::string block_hound_substr = "$$BlockHound$$_";
+    size_t i = 0;
+    while (i < frames.size()) {
+        // TODO: result.push_back(frames[i].replace(blockHoundSubstr, ""))
+        // if (frames[i].contains(blockHoundSubstr)) {
+        //     i += 1
+        // }
+        i += 1;
     }
-    return result
+    return result;
 }
 
 /**
@@ -79,148 +91,93 @@ private fun cleanBlockHoundTraces(frames: List<String>): List<String> {
  *
  * See https://github.com/Kotlin/kotlinx.coroutines/issues/3700 for the example of failure
  */
-private fun removeJavaUtilConcurrentTraces(frames: List<String>): List<String> =
-    frames.filter { !it.contains("java.util.concurrent") }
-
-private data class CoroutineDump(
-    val header: CoroutineDumpHeader,
-    val coroutineStackTrace: List<String>,
-    val threadStackTrace: List<String>,
-    val originDump: String,
-    val originHeader: String,
-) {
-    companion object {
-        private val COROUTINE_CREATION_FRAME_REGEX =
-            "at _COROUTINE\\._CREATION\\._\\(.*\\)".toRegex()
-
-        fun parse(dump: String, traceCleaner: ((List<String>) -> List<String>)? = null): CoroutineDump {
-            val lines = dump
-                .trimStackTrace()
-                .split("\n")
-            val header = CoroutineDumpHeader.parse(lines[0])
-            val traceLines = lines.slice(1 until lines.size)
-            val cleanedTraceLines = if (traceCleaner != null) {
-                traceCleaner(traceLines)
-            } else {
-                traceLines
-            }
-            val coroutineStackTrace = mutableListOf<String>()
-            val threadStackTrace = mutableListOf<String>()
-            var trace = coroutineStackTrace
-            for (line in cleanedTraceLines) {
-                if (line.isEmpty()) {
-                    continue
-                }
-                if (line.matches(COROUTINE_CREATION_FRAME_REGEX)) {
-                    require(trace !== threadStackTrace) {
-                        "Found more than one coroutine creation frame"
-                    }
-                    trace = threadStackTrace
-                    continue
-                }
-                trace.add(line)
-            }
-            return CoroutineDump(header, coroutineStackTrace, threadStackTrace, dump, lines[0])
-        }
-    }
-
-    fun verify(expected: CoroutineDump) {
-        assertEquals(
-            expected.header, header,
-            "Coroutine stacktrace headers are not matched:\n\t- ${expected.originHeader}\n\t+ ${originHeader}\n"
-        )
-        verifyStackTrace("coroutine stack", coroutineStackTrace, expected.coroutineStackTrace)
-        verifyStackTrace("thread stack", threadStackTrace, expected.threadStackTrace)
-    }
-
-    private fun verifyStackTrace(traceName: String, actualStackTrace: List<String>, expectedStackTrace: List<String>) {
-        // It is possible there are more stack frames in a dump than we check
-        for ((ix, expectedLine) in expectedStackTrace.withIndex()) {
-            val actualLine = actualStackTrace[ix]
-            assertEquals(
-                expectedLine, actualLine,
-                "Following lines from $traceName are not matched:\n\t- ${expectedLine}\n\t+ ${actualLine}\nActual dump:\n$originDump\n\n"
-            )
-        }
-    }
+std::vector<std::string> remove_java_util_concurrent_traces(const std::vector<std::string>& frames) {
+    // TODO: return frames.filter { !it.contains("java.util.concurrent") }
+    return {};
 }
 
-private data class CoroutineDumpHeader(
-    val name: String?,
-    val className: String,
-    val state: String,
-) {
-    companion object {
-        /**
-         * Parses following strings:
-         *
-         * - Coroutine "coroutine#10":DeferredCoroutine{Active}@66d87651, state: RUNNING
-         * - Coroutine DeferredCoroutine{Active}@66d87651, state: RUNNING
-         *
-         * into:
-         *
-         * - `CoroutineDumpHeader(name = "coroutine", className = "DeferredCoroutine", state = "RUNNING")`
-         * - `CoroutineDumpHeader(name = null, className = "DeferredCoroutine", state = "RUNNING")`
-         */
-        fun parse(header: String): CoroutineDumpHeader {
-            val (identFull, stateFull) = header.split(", ", limit = 2)
-            val nameAndClassName = identFull.removePrefix("Coroutine ").split('@', limit = 2)[0]
-            val (name, className) = nameAndClassName.split(':', limit = 2).let { parts ->
-                val (quotedName, classNameWithState) = if (parts.size == 1) {
-                    null to parts[0]
-                } else {
-                    parts[0] to parts[1]
-                }
-                val name = quotedName?.removeSurrounding("\"")?.split('#', limit = 2)?.get(0)
-                val className = classNameWithState.replace("\\{.*\\}".toRegex(), "")
-                name to className
-            }
-            val state = stateFull.removePrefix("state: ")
-            return CoroutineDumpHeader(name, className, state)
-        }
-    }
-}
+struct CoroutineDump {
+    struct Header {
+        std::string* name;      // String?
+        std::string class_name;
+        std::string state;
 
-public fun verifyDump(vararg expectedTraces: String, ignoredCoroutine: String? = null) {
-    val baos = ByteArrayOutputStream()
-    DebugProbes.dumpCoroutines(PrintStream(baos))
-    val wholeDump = baos.toString()
-    val traces = wholeDump.split("\n\n")
-    assertTrue(traces[0].startsWith("Coroutines dump"))
+        // TODO: static Header parse(const std::string& header)
+    };
 
-    val dumps = traces
-        // Drop "Coroutine dump" line
-        .drop(1)
-        // Parse dumps and filter out ignored coroutines
-        .mapNotNull { trace ->
-            val dump = CoroutineDump.parse(trace, {
-                removeJavaUtilConcurrentTraces(cleanBlockHoundTraces(it))
-            })
-            if (dump.header.className == ignoredCoroutine) {
-                null
-            } else {
-                dump
-            }
-        }
+    Header header;
+    std::vector<std::string> coroutine_stack_trace;
+    std::vector<std::string> thread_stack_trace;
+    std::string origin_dump;
+    std::string origin_header;
 
-    assertEquals(expectedTraces.size, dumps.size)
-    dumps.zip(expectedTraces.map { CoroutineDump.parse(it, ::removeJavaUtilConcurrentTraces) })
-        .forEach { (dump, expectedDump) ->
-            dump.verify(expectedDump)
-        }
-}
+    // TODO: static CoroutineDump parse(const std::string& dump, ...)
 
-public fun String.trimPackage() = replace("kotlinx.coroutines.debug.", "")
-
-public fun verifyPartialDump(createdCoroutinesCount: Int, vararg frames: String) {
-    val baos = ByteArrayOutputStream()
-    DebugProbes.dumpCoroutines(PrintStream(baos))
-    val dump = baos.toString()
-    val trace = dump.split("\n\n")
-    val matches = frames.all { frame ->
-        trace.any { tr -> tr.contains(frame) }
+    void verify(const CoroutineDump& expected) {
+        // TODO: assertEquals(expected.header, header, ...)
+        // verify_stack_trace("coroutine stack", coroutine_stack_trace, expected.coroutine_stack_trace)
+        // verify_stack_trace("thread stack", thread_stack_trace, expected.thread_stack_trace)
     }
 
-    assertEquals(createdCoroutinesCount, DebugProbes.dumpCoroutinesInfo().size)
-    assertTrue(matches)
+private:
+    void verify_stack_trace(const std::string& trace_name,
+                           const std::vector<std::string>& actual_stack_trace,
+                           const std::vector<std::string>& expected_stack_trace) {
+        // TODO: for (size_t ix = 0; ix < expected_stack_trace.size(); ++ix) {
+        //     auto expectedLine = expected_stack_trace[ix]
+        //     auto actualLine = actual_stack_trace[ix]
+        //     assertEquals(expectedLine, actualLine, ...)
+        // }
+    }
+};
+
+void verify_dump(const std::vector<std::string>& expected_traces, const char* ignored_coroutine = nullptr) {
+    // TODO: auto baos = ByteArrayOutputStream()
+    // DebugProbes.dumpCoroutines(PrintStream(baos))
+    // auto wholeDump = baos.toString()
+    // auto traces = wholeDump.split("\n\n")
+    // assertTrue(traces[0].startsWith("Coroutines dump"))
+    //
+    // auto dumps = traces
+    //     .drop(1)
+    //     .mapNotNull { trace ->
+    //         auto dump = CoroutineDump.parse(trace, {
+    //             removeJavaUtilConcurrentTraces(cleanBlockHoundTraces(it))
+    //         })
+    //         if (dump.header.className == ignoredCoroutine) {
+    //             null
+    //         } else {
+    //             dump
+    //         }
+    //     }
+    //
+    // assertEquals(expectedTraces.size, dumps.size)
+    // dumps.zip(expectedTraces.map { CoroutineDump.parse(it, ::removeJavaUtilConcurrentTraces) })
+    //     .forEach { (dump, expectedDump) ->
+    //         dump.verify(expectedDump)
+    //     }
 }
+
+std::string trim_package(const std::string& str) {
+    // TODO: return str.replace("kotlinx.coroutines.debug.", "")
+    return "";
+}
+
+void verify_partial_dump(int created_coroutines_count, const std::vector<std::string>& frames) {
+    // TODO: auto baos = ByteArrayOutputStream()
+    // DebugProbes.dumpCoroutines(PrintStream(baos))
+    // auto dump = baos.toString()
+    // auto trace = dump.split("\n\n")
+    // auto matches = std::all_of(frames.begin(), frames.end(), [&](const auto& frame) {
+    //     return std::any_of(trace.begin(), trace.end(), [&](const auto& tr) {
+    //         return tr.contains(frame)
+    //     })
+    // })
+    //
+    // assertEquals(created_coroutines_count, DebugProbes.dumpCoroutinesInfo().size)
+    // assertTrue(matches)
+}
+
+} // namespace debug
+} // namespace coroutines
+} // namespace kotlinx

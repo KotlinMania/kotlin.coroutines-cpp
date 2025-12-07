@@ -1,99 +1,113 @@
-package kotlinx.coroutines
+// Original: kotlinx-coroutines-core/common/test/UnconfinedCancellationTest.kt
+// TODO: Transliterated from Kotlin - needs C++ implementation
+// TODO: Handle Unconfined dispatcher cancellation behavior
+// TODO: Map test framework annotations to C++ test framework
 
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class UnconfinedCancellationTest : TestBase() {
-    @Test
-    fun testUnconfinedCancellation() = runTest {
-        val parent = Job()
-        launch(parent) {
-            expect(1)
-            parent.cancel()
-            launch(Dispatchers.Unconfined) {
-                expectUnreached()
-            }
-
-        }.join()
-        finish(2)
+class UnconfinedCancellationTest : public TestBase {
+public:
+    // TODO: @Test
+    void test_unconfined_cancellation() {
+        // TODO: runTest {
+        // TODO: const auto parent = Job();
+        // TODO: launch(parent) {
+            expect(1);
+            // TODO: parent->cancel();
+            // TODO: launch(Dispatchers.Unconfined) {
+            //     expect_unreached();
+            // }
+        // }.join();
+        finish(2);
+        // TODO: }
     }
 
-    @Test
-    fun testUnconfinedCancellationState() = runTest {
-        val parent = Job()
-        launch(parent) {
-            expect(1)
-            parent.cancel()
-            val job = launch(Dispatchers.Unconfined) {
-                expectUnreached()
-            }
-
-            assertTrue(job.isCancelled)
-            assertTrue(job.isCompleted)
-            assertFalse(job.isActive)
-        }.join()
-        finish(2)
+    // TODO: @Test
+    void test_unconfined_cancellation_state() {
+        // TODO: runTest {
+        // TODO: const auto parent = Job();
+        // TODO: launch(parent) {
+            expect(1);
+            // TODO: parent->cancel();
+            // TODO: const auto job = launch(Dispatchers.Unconfined) {
+            //     expect_unreached();
+            // }
+            // TODO: assertTrue(job.is_cancelled());
+            // TODO: assertTrue(job.is_completed());
+            // TODO: assertFalse(job.is_active());
+        // }.join();
+        finish(2);
+        // TODO: }
     }
 
-    @Test
-    fun testUnconfinedCancellationLazy() = runTest {
-        val parent = Job()
-        launch(parent) {
-            expect(1)
-            val job = launch(Dispatchers.Unconfined, start = CoroutineStart.LAZY) {
-                expectUnreached()
-            }
-            job.invokeOnCompletion { expect(2) }
-            assertFalse(job.isCompleted)
-
-            parent.cancel()
-            job.join()
-        }.join()
-        finish(3)
+    // TODO: @Test
+    void test_unconfined_cancellation_lazy() {
+        // TODO: runTest {
+        // TODO: const auto parent = Job();
+        // TODO: launch(parent) {
+            expect(1);
+            // TODO: const auto job = launch(Dispatchers.Unconfined, start = CoroutineStart.LAZY) {
+            //     expect_unreached();
+            // }
+            // TODO: job.invoke_on_completion { expect(2); }
+            // TODO: assertFalse(job.is_completed());
+            // TODO: parent->cancel();
+            // TODO: job.join();
+        // }.join();
+        finish(3);
+        // TODO: }
     }
 
-    @Test
-    fun testUndispatchedCancellation() = runTest {
-        val parent = Job()
-        launch(parent) {
-            expect(1)
-            parent.cancel()
-            launch(start = CoroutineStart.UNDISPATCHED) {
-                expect(2)
-                yield()
-                expectUnreached()
-            }
-
-        }.join()
-        finish(3)
+    // TODO: @Test
+    void test_undispatched_cancellation() {
+        // TODO: runTest {
+        // TODO: const auto parent = Job();
+        // TODO: launch(parent) {
+            expect(1);
+            // TODO: parent->cancel();
+            // TODO: launch(start = CoroutineStart.UNDISPATCHED) {
+                expect(2);
+                // TODO: yield();
+                // expect_unreached();
+            // }
+        // }.join();
+        finish(3);
+        // TODO: }
     }
 
-    @Test
-    fun testCancelledAtomicUnconfined() = runTest {
-        val parent = Job()
-        launch(parent) {
-            expect(1)
-            parent.cancel()
-            launch(Dispatchers.Unconfined, start = CoroutineStart.ATOMIC) {
-                expect(2)
-                yield()
-                expectUnreached()
-            }
-        }.join()
-        finish(3)
+    // TODO: @Test
+    void test_cancelled_atomic_unconfined() {
+        // TODO: runTest {
+        // TODO: const auto parent = Job();
+        // TODO: launch(parent) {
+            expect(1);
+            // TODO: parent->cancel();
+            // TODO: launch(Dispatchers.Unconfined, start = CoroutineStart.ATOMIC) {
+                expect(2);
+                // TODO: yield();
+                // expect_unreached();
+            // }
+        // }.join();
+        finish(3);
+        // TODO: }
     }
 
-
-    @Test
-    fun testCancelledWithContextUnconfined() = runTest {
-        val parent = Job()
-        launch(parent) {
-            expect(1)
-            parent.cancel()
-            withContext(Dispatchers.Unconfined) {
-                expectUnreached()
-            }
-        }.join()
-        finish(2)
+    // TODO: @Test
+    void test_cancelled_with_context_unconfined() {
+        // TODO: runTest {
+        // TODO: const auto parent = Job();
+        // TODO: launch(parent) {
+            expect(1);
+            // TODO: parent->cancel();
+            // TODO: with_context(Dispatchers.Unconfined) {
+            //     expect_unreached();
+            // }
+        // }.join();
+        finish(2);
+        // TODO: }
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

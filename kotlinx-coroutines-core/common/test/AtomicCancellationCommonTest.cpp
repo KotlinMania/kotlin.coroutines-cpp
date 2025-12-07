@@ -1,154 +1,190 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/AtomicCancellationCommonTest.kt
+// TODO: Review imports and dependencies
+// TODO: Adapt test framework annotations to C++ testing framework
+// TODO: Handle suspend functions and coroutine context
+// TODO: Handle nullable types appropriately
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.selects.*
-import kotlinx.coroutines.sync.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class AtomicCancellationCommonTest : TestBase() {
-    @Test
-    fun testCancellableLaunch() = runTest {
-        expect(1)
-        val job = launch {
-            expectUnreached() // will get cancelled before start
-        }
-        expect(2)
-        job.cancel()
-        finish(3)
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.selects.*
+// TODO: import kotlinx.coroutines.sync.*
+// TODO: import kotlin.test.*
+
+class AtomicCancellationCommonTest : public TestBase {
+public:
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_cancellable_launch() {
+        run_test([this]() {
+            expect(1);
+            auto job = launch([this]() {
+                expect_unreached(); // will get cancelled before start
+            });
+            expect(2);
+            job.cancel();
+            finish(3);
+        });
     }
 
-    @Test
-    fun testAtomicLaunch() = runTest {
-        expect(1)
-        val job = launch(start = CoroutineStart.ATOMIC) {
-            finish(4) // will execute even after it was cancelled
-        }
-        expect(2)
-        job.cancel()
-        expect(3)
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_atomic_launch() {
+        run_test([this]() {
+            expect(1);
+            auto job = launch(CoroutineStart::kAtomic, [this]() {
+                finish(4); // will execute even after it was cancelled
+            });
+            expect(2);
+            job.cancel();
+            expect(3);
+        });
     }
 
-    @Test
-    fun testUndispatchedLaunch() = runTest {
-        expect(1)
-        assertFailsWith<CancellationException> {
-            withContext(Job()) {
-                cancel()
-                launch(start = CoroutineStart.UNDISPATCHED) {
-                    expect(2)
-                    yield()
-                    expectUnreached()
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_undispatched_launch() {
+        run_test([this]() {
+            expect(1);
+            assert_fails_with<CancellationException>([this]() {
+                with_context(Job(), [this]() {
+                    cancel();
+                    launch(CoroutineStart::kUndispatched, [this]() {
+                        expect(2);
+                        yield();
+                        expect_unreached();
+                    });
+                });
+            });
+            finish(3);
+        });
+    }
+
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_undispatched_launch_with_unconfined_context() {
+        run_test([this]() {
+            expect(1);
+            assert_fails_with<CancellationException>([this]() {
+                with_context(Dispatchers::Unconfined + Job(), [this]() {
+                    cancel();
+                    launch(CoroutineStart::kUndispatched, [this]() {
+                        expect(2);
+                        yield();
+                        expect_unreached();
+                    });
+                });
+            });
+            finish(3);
+        });
+    }
+
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_deferred_await_cancellable() {
+        run_test([this]() {
+            expect(1);
+            auto deferred = async([this]() { // deferred, not yet complete
+                expect(4);
+                return "OK";
+            });
+            assert_equals(false, deferred.is_completed());
+            Job* job = nullptr;
+            launch([this, &deferred, &job]() { // will cancel job as soon as deferred completes
+                expect(5);
+                assert_equals(true, deferred.is_completed());
+                job->cancel();
+            });
+            job = &launch(CoroutineStart::kUndispatched, [this, &deferred]() {
+                expect(2);
+                try {
+                    deferred.await(); // suspends
+                    expect_unreached(); // will not execute -- cancelled while dispatched
+                } catch (...) {
+                    finish(7); // but will execute finally blocks
                 }
-            }
-        }
-        finish(3)
+            });
+            expect(3); // continues to execute when the job suspends
+            yield(); // to deferred & canceller
+            expect(6);
+        });
     }
 
-    @Test
-    fun testUndispatchedLaunchWithUnconfinedContext() = runTest {
-        expect(1)
-        assertFailsWith<CancellationException> {
-            withContext(Dispatchers.Unconfined + Job()) {
-                cancel()
-                launch(start = CoroutineStart.UNDISPATCHED) {
-                    expect(2)
-                    yield()
-                    expectUnreached()
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_job_join_cancellable() {
+        run_test([this]() {
+            expect(1);
+            auto job_to_join = launch([this]() { // not yet complete
+                expect(4);
+            });
+            assert_equals(false, job_to_join.is_completed());
+            Job* job = nullptr;
+            launch([this, &job_to_join, &job]() { // will cancel job as soon as jobToJoin completes
+                expect(5);
+                assert_equals(true, job_to_join.is_completed());
+                job->cancel();
+            });
+            job = &launch(CoroutineStart::kUndispatched, [this, &job_to_join]() {
+                expect(2);
+                try {
+                    job_to_join.join(); // suspends
+                    expect_unreached(); // will not execute -- cancelled while dispatched
+                } catch (...) {
+                    finish(7); // but will execute finally blocks
                 }
-            }
-        }
-        finish(3)
+            });
+            expect(3); // continues to execute when the job suspends
+            yield(); // to jobToJoin & canceller
+            expect(6);
+        });
     }
 
-    @Test
-    fun testDeferredAwaitCancellable() = runTest {
-        expect(1)
-        val deferred = async { // deferred, not yet complete
-            expect(4)
-            "OK"
-        }
-        assertEquals(false, deferred.isCompleted)
-        var job: Job? = null
-        launch { // will cancel job as soon as deferred completes
-            expect(5)
-            assertEquals(true, deferred.isCompleted)
-            job!!.cancel()
-        }
-        job = launch(start = CoroutineStart.UNDISPATCHED) {
-            expect(2)
-            try {
-                deferred.await() // suspends
-                expectUnreached() // will not execute -- cancelled while dispatched
-            } finally {
-                finish(7) // but will execute finally blocks
-            }
-        }
-        expect(3) // continues to execute when the job suspends
-        yield() // to deferred & canceller
-        expect(6)
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_lock_cancellable() {
+        run_test([this]() {
+            expect(1);
+            auto mutex = Mutex(true); // locked mutex
+            auto job = launch(CoroutineStart::kUndispatched, [this, &mutex]() {
+                expect(2);
+                mutex.lock(); // suspends
+                expect_unreached(); // should NOT execute because of cancellation
+            });
+            expect(3);
+            mutex.unlock(); // unlock mutex first
+            job.cancel(); // cancel the job next
+            yield(); // now yield
+            finish(4);
+        });
     }
 
-    @Test
-    fun testJobJoinCancellable() = runTest {
-        expect(1)
-        val jobToJoin = launch { // not yet complete
-            expect(4)
-        }
-        assertEquals(false, jobToJoin.isCompleted)
-        var job: Job? = null
-        launch { // will cancel job as soon as jobToJoin completes
-            expect(5)
-            assertEquals(true, jobToJoin.isCompleted)
-            job!!.cancel()
-        }
-        job = launch(start = CoroutineStart.UNDISPATCHED) {
-            expect(2)
-            try {
-                jobToJoin.join() // suspends
-                expectUnreached() // will not execute -- cancelled while dispatched
-            } finally {
-                finish(7) // but will execute finally blocks
-            }
-        }
-        expect(3) // continues to execute when the job suspends
-        yield() // to jobToJoin & canceller
-        expect(6)
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_select_lock_cancellable() {
+        run_test([this]() {
+            expect(1);
+            auto mutex = Mutex(true); // locked mutex
+            auto job = launch(CoroutineStart::kUndispatched, [this, &mutex]() {
+                expect(2);
+                select<std::string>([this, &mutex]() { // suspends
+                    mutex.on_lock([this]() {
+                        expect(4);
+                        return "OK";
+                    });
+                });
+                expect_unreached(); // should NOT execute because of cancellation
+            });
+            expect(3);
+            mutex.unlock(); // unlock mutex first
+            job.cancel(); // cancel the job next
+            yield(); // now yield
+            finish(4);
+        });
     }
+};
 
-    @Test
-    fun testLockCancellable() = runTest {
-        expect(1)
-        val mutex = Mutex(true) // locked mutex
-        val job = launch(start = CoroutineStart.UNDISPATCHED) {
-            expect(2)
-            mutex.lock() // suspends
-            expectUnreached() // should NOT execute because of cancellation
-        }
-        expect(3)
-        mutex.unlock() // unlock mutex first
-        job.cancel() // cancel the job next
-        yield() // now yield
-        finish(4)
-    }
-
-    @Test
-    fun testSelectLockCancellable() = runTest {
-        expect(1)
-        val mutex = Mutex(true) // locked mutex
-        val job = launch(start = CoroutineStart.UNDISPATCHED) {
-            expect(2)
-            select<String> { // suspends
-                mutex.onLock {
-                    expect(4)
-                    "OK"
-                }
-            }
-            expectUnreached() // should NOT execute because of cancellation
-        }
-        expect(3)
-        mutex.unlock() // unlock mutex first
-        job.cancel() // cancel the job next
-        yield() // now yield
-        finish(4)
-    }
-}
+} // namespace coroutines
+} // namespace kotlinx

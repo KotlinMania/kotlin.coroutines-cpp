@@ -1,143 +1,178 @@
-package kotlinx.coroutines.android
+// Original: ui/kotlinx-coroutines-android/test/HandlerDispatcherAsyncTest.kt
+// Transliterated from Kotlin to C++ - First pass syntax conversion
+// TODO: Implement Robolectric test runner integration
+// TODO: Map @RunWith, @Config, @LooperMode annotations
+// TODO: Convert TestBase inheritance
+// TODO: Implement Android Looper, Handler, Message API
+// TODO: Implement Robolectric Shadows and ReflectionHelpers
+// TODO: Convert suspend functions to C++ coroutine equivalents
+// TODO: Implement asHandler and asCoroutineDispatcher extensions
+// TODO: Convert reflection API (getDeclaredMethod, invoke)
 
-import kotlinx.coroutines.testing.*
-import android.os.*
-import kotlinx.coroutines.*
-import org.junit.Test
-import org.junit.runner.*
-import org.robolectric.*
-import org.robolectric.Shadows.*
-import org.robolectric.annotation.*
-import org.robolectric.shadows.*
-import org.robolectric.util.*
-import java.util.concurrent.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace android {
 
-@RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE, sdk = [28])
-@LooperMode(LooperMode.Mode.LEGACY)
-class HandlerDispatcherAsyncTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import android.os.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import org.junit.Test
+// TODO: import org.junit.runner.*
+// TODO: import org.robolectric.*
+// TODO: import org.robolectric.Shadows.*
+// TODO: import org.robolectric.annotation.*
+// TODO: import org.robolectric.shadows.*
+// TODO: import org.robolectric.util.*
+// TODO: import java.util.concurrent.*
+// TODO: import kotlin.test.*
 
+// TODO: @RunWith(RobolectricTestRunner::class)
+// TODO: @Config(manifest = Config.NONE, sdk = [28])
+// TODO: @LooperMode(LooperMode.Mode.LEGACY)
+class HandlerDispatcherAsyncTest : public TestBase {
+public:
     /**
      * Because [Dispatchers.Main] is a singleton, we cannot vary its initialization behavior. As a
      * result we only test its behavior on the newest API level and assert that it uses async
      * messages. We rely on the other tests to exercise the variance of the mechanism that the main
      * dispatcher uses to ensure it has correct behavior on all API levels.
      */
-    @Test
-    fun mainIsAsync() = runTest {
-        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", 28)
+    // TODO: @Test
+    void mainIsAsync() {
+        runTest([this] {
+            ReflectionHelpers::setStaticField(typeid(Build::VERSION), "SDK_INT", 28);
 
-        val mainLooper = shadowOf(Looper.getMainLooper())
-        mainLooper.pause()
-        val mainMessageQueue = shadowOf(Looper.getMainLooper().queue)
+            auto main_looper = shadowOf(Looper::getMainLooper());
+            main_looper.pause();
+            auto main_message_queue = shadowOf(Looper::getMainLooper().queue());
 
-        val job = launch(Dispatchers.Main) {
-            expect(2)
-        }
+            auto job = launch(Dispatchers.Main, [this] {
+                expect(2);
+            });
 
-        val message = mainMessageQueue.head
-        assertTrue(message.isAsynchronous)
-        job.join(mainLooper)
+            auto message = main_message_queue.head();
+            assertTrue(message.is_asynchronous());
+            job.join(main_looper);
+        });
     }
 
-    @Test
-    fun asyncMessagesApi14() = runTest {
-        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", 14)
+    // TODO: @Test
+    void asyncMessagesApi14() {
+        runTest([this] {
+            ReflectionHelpers::setStaticField(typeid(Build::VERSION), "SDK_INT", 14);
 
-        val main = Looper.getMainLooper().asHandler(async = true).asCoroutineDispatcher()
+            auto main = Looper::getMainLooper().asHandler(/*async=*/true).asCoroutineDispatcher();
 
-        val mainLooper = shadowOf(Looper.getMainLooper())
-        mainLooper.pause()
-        val mainMessageQueue = shadowOf(Looper.getMainLooper().queue)
+            auto main_looper = shadowOf(Looper::getMainLooper());
+            main_looper.pause();
+            auto main_message_queue = shadowOf(Looper::getMainLooper().queue());
 
-        val job = launch(main) {
-            expect(2)
-        }
+            auto job = launch(main, [this] {
+                expect(2);
+            });
 
-        val message = mainMessageQueue.head
-        assertFalse(message.isAsynchronous)
-        job.join(mainLooper)
+            auto message = main_message_queue.head();
+            assertFalse(message.is_asynchronous());
+            job.join(main_looper);
+        });
     }
 
-    @Test
-    fun asyncMessagesApi16() = runTest {
-        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", 16)
+    // TODO: @Test
+    void asyncMessagesApi16() {
+        runTest([this] {
+            ReflectionHelpers::setStaticField(typeid(Build::VERSION), "SDK_INT", 16);
 
-        val main = Looper.getMainLooper().asHandler(async = true).asCoroutineDispatcher()
+            auto main = Looper::getMainLooper().asHandler(/*async=*/true).asCoroutineDispatcher();
 
-        val mainLooper = shadowOf(Looper.getMainLooper())
-        mainLooper.pause()
-        val mainMessageQueue = shadowOf(Looper.getMainLooper().queue)
+            auto main_looper = shadowOf(Looper::getMainLooper());
+            main_looper.pause();
+            auto main_message_queue = shadowOf(Looper::getMainLooper().queue());
 
-        val job = launch(main) {
-            expect(2)
-        }
+            auto job = launch(main, [this] {
+                expect(2);
+            });
 
-        val message = mainMessageQueue.head
-        assertTrue(message.isAsynchronous)
-        job.join(mainLooper)
+            auto message = main_message_queue.head();
+            assertTrue(message.is_asynchronous());
+            job.join(main_looper);
+        });
     }
 
-    @Test
-    fun asyncMessagesApi28() = runTest {
-        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", 28)
+    // TODO: @Test
+    void asyncMessagesApi28() {
+        runTest([this] {
+            ReflectionHelpers::setStaticField(typeid(Build::VERSION), "SDK_INT", 28);
 
-        val main = Looper.getMainLooper().asHandler(async = true).asCoroutineDispatcher()
+            auto main = Looper::getMainLooper().asHandler(/*async=*/true).asCoroutineDispatcher();
 
-        val mainLooper = shadowOf(Looper.getMainLooper())
-        mainLooper.pause()
-        val mainMessageQueue = shadowOf(Looper.getMainLooper().queue)
+            auto main_looper = shadowOf(Looper::getMainLooper());
+            main_looper.pause();
+            auto main_message_queue = shadowOf(Looper::getMainLooper().queue());
 
-        val job = launch(main) {
-            expect(2)
-        }
+            auto job = launch(main, [this] {
+                expect(2);
+            });
 
-        val message = mainMessageQueue.head
-        assertTrue(message.isAsynchronous)
-        job.join(mainLooper)
+            auto message = main_message_queue.head();
+            assertTrue(message.is_asynchronous());
+            job.join(main_looper);
+        });
     }
 
-    @Test
-    fun noAsyncMessagesIfNotRequested() = runTest {
-        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", 28)
+    // TODO: @Test
+    void noAsyncMessagesIfNotRequested() {
+        runTest([this] {
+            ReflectionHelpers::setStaticField(typeid(Build::VERSION), "SDK_INT", 28);
 
-        val main = Looper.getMainLooper().asHandler(async = false).asCoroutineDispatcher()
+            auto main = Looper::getMainLooper().asHandler(/*async=*/false).asCoroutineDispatcher();
 
-        val mainLooper = shadowOf(Looper.getMainLooper())
-        mainLooper.pause()
-        val mainMessageQueue = shadowOf(Looper.getMainLooper().queue)
+            auto main_looper = shadowOf(Looper::getMainLooper());
+            main_looper.pause();
+            auto main_message_queue = shadowOf(Looper::getMainLooper().queue());
 
-        val job = launch(main) {
-            expect(2)
-        }
+            auto job = launch(main, [this] {
+                expect(2);
+            });
 
-        val message = mainMessageQueue.head
-        assertFalse(message.isAsynchronous)
-        job.join(mainLooper)
+            auto message = main_message_queue.head();
+            assertFalse(message.is_asynchronous());
+            job.join(main_looper);
+        });
     }
 
-    @Test
-    fun testToString() {
-        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", 28)
-        val main = Looper.getMainLooper().asHandler(async = true).asCoroutineDispatcher("testName")
-        assertEquals("testName", main.toString())
-        assertEquals("testName.immediate", main.immediate.toString())
-        assertEquals("testName.immediate", main.immediate.immediate.toString())
+    // TODO: @Test
+    void testToString() {
+        ReflectionHelpers::setStaticField(typeid(Build::VERSION), "SDK_INT", 28);
+        auto main = Looper::getMainLooper().asHandler(/*async=*/true).asCoroutineDispatcher("testName");
+        assertEquals("testName", main.toString());
+        assertEquals("testName.immediate", main.immediate.toString());
+        assertEquals("testName.immediate", main.immediate.immediate.toString());
     }
 
-    private suspend fun Job.join(mainLooper: ShadowLooper) {
-        expect(1)
-        mainLooper.unPause()
-        join()
-        finish(3)
+private:
+    // TODO: Convert suspend function
+    void join(Job& job, ShadowLooper& main_looper) {
+        expect(1);
+        main_looper.unPause();
+        job.join();
+        finish(3);
     }
 
     // TODO compile against API 23+ so this can be invoked without reflection.
-    private val Looper.queue: MessageQueue
-        get() = Looper::class.java.getDeclaredMethod("getQueue").invoke(this) as MessageQueue
+    MessageQueue queue(const Looper& looper) {
+        // return Looper::class.java.getDeclaredMethod("getQueue").invoke(this) as MessageQueue
+        // TODO: Implement reflection
+        return MessageQueue();
+    }
 
     // TODO compile against API 22+ so this can be invoked without reflection.
-    private val Message.isAsynchronous: Boolean
-        get() = Message::class.java.getDeclaredMethod("isAsynchronous").invoke(this) as Boolean
-}
+    bool is_asynchronous(const Message& message) {
+        // return Message::class.java.getDeclaredMethod("isAsynchronous").invoke(this) as Boolean
+        // TODO: Implement reflection
+        return false;
+    }
+};
+
+} // namespace android
+} // namespace coroutines
+} // namespace kotlinx

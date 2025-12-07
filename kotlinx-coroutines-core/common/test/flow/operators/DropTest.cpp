@@ -1,57 +1,78 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/DropTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Map drop() operator to C++ equivalent
+// - Map assertFailsWith for negative count validation
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class DropTest : TestBase() {
-    @Test
-    fun testDrop() = runTest {
-        val flow = flow {
-            emit(1)
-            emit(2)
-            emit(3)
-        }
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
 
-        assertEquals(5, flow.drop(1).sum())
-        assertEquals(0, flow.drop(Int.MAX_VALUE).sum())
-        assertNull(flow.drop(Int.MAX_VALUE).singleOrNull())
-        assertEquals(3, flow.drop(1).take(2).drop(1).single())
+class DropTest : public TestBase {
+public:
+    // TODO: @Test
+    void testDrop() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            emit(1);
+            emit(2);
+            emit(3);
+        });
+
+        assertEquals(5, flow_var.drop(1).sum());
+        assertEquals(0, flow_var.drop(INT_MAX).sum());
+        assertNull(flow_var.drop(INT_MAX).single_or_null());
+        assertEquals(3, flow_var.drop(1).take(2).drop(1).single());
+        // TODO: }
     }
 
-    @Test
-    fun testEmptyFlow() = runTest {
-        assertEquals(0, flowOf<Int>().drop(1).sum())
+    // TODO: @Test
+    void testEmptyFlow() {
+        // TODO: runTest {
+        assertEquals(0, flow_of<int>().drop(1).sum());
+        // TODO: }
     }
 
-    @Test
-    fun testNegativeCount() {
-        assertFailsWith<IllegalArgumentException> {
-            emptyFlow<Int>().drop(-1)
-        }
+    // TODO: @Test
+    void testNegativeCount() {
+        assertFailsWith<IllegalArgumentException>([&]() {
+            empty_flow<int>().drop(-1);
+        });
     }
 
-    @Test
-    fun testErrorCancelsUpstream() = runTest {
-        val flow = flow {
-            coroutineScope {
-                launch(start = CoroutineStart.ATOMIC) {
-                    hang { expect(5) }
-                }
-                expect(2)
-                emit(1)
-                expect(3)
-                emit(2)
-                expectUnreached()
-            }
-        }.drop(1)
-            .map<Int, Int> {
-                expect(4)
-                throw TestException()
-            }.catch { emit(42) }
+    // TODO: @Test
+    void testErrorCancelsUpstream() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            coroutine_scope([&]() {
+                launch(CoroutineStart::kAtomic, [&]() {
+                    hang([&]() { expect(5); });
+                });
+                expect(2);
+                emit(1);
+                expect(3);
+                emit(2);
+                expectUnreached();
+            });
+        }).drop(1)
+            .map<int, int>([](auto it) {
+                expect(4);
+                throw TestException();
+                return it;
+            }).catch_error([](auto& emit, auto e) { emit(42); });
 
-        expect(1)
-        assertEquals(42, flow.single())
-        finish(6)
+        expect(1);
+        assertEquals(42, flow_var.single());
+        finish(6);
+        // TODO: }
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

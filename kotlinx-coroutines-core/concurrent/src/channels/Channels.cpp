@@ -1,10 +1,22 @@
-@file:JvmMultifileClass
-@file:JvmName("ChannelsKt")
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/concurrent/src/channels/Channels.kt
+//
+// TODO: Map @file:JvmMultifileClass and @file:JvmName annotations (JVM-specific, likely ignore in C++)
+// TODO: Implement SendChannel<E> template class
+// TODO: Implement ChannelResult<T> template class with isSuccess, success(), closed() methods
+// TODO: Implement runBlocking coroutine builder
+// TODO: Implement runCatching utility (Result type)
+// TODO: Handle suspend function semantics for send()
+// TODO: Map @Deprecated annotation to [[deprecated]] or comments
+// TODO: Map DeprecationLevel.HIDDEN to appropriate C++ deprecation mechanism
+// TODO: kotlin.jvm.* imports are JVM-specific, can be ignored
 
-package kotlinx.coroutines.channels
+// @file:JvmMultifileClass
+// @file:JvmName("ChannelsKt")
 
-import kotlinx.coroutines.*
-import kotlin.jvm.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
 /**
  * Adds [element] to this channel, **blocking** the caller while this channel is full,
@@ -27,34 +39,53 @@ import kotlin.jvm.*
  *
  * @throws `InterruptedException` on JVM if the current thread is interrupted during the blocking send operation.
  */
-public fun <E> SendChannel<E>.trySendBlocking(element: E): ChannelResult<Unit> {
+template<typename E>
+ChannelResult<void> try_send_blocking(SendChannel<E>* channel, const E& element) {
     /*
      * Sent successfully -- bail out.
      * But failure may indicate either that the channel is full or that
      * it is close. Go to slow path on failure to simplify the successful path and
      * to materialize default exception.
      */
-    trySend(element).onSuccess { return ChannelResult.success(Unit) }
-    return runBlocking {
-        val r = runCatching { send(element) }
-        if (r.isSuccess) ChannelResult.success(Unit)
-        else ChannelResult.closed(r.exceptionOrNull())
+    auto result = channel->try_send(element);
+    if (result.is_success()) {
+        return ChannelResult<void>::success();
     }
+    // TODO: runBlocking is a coroutine builder that blocks the current thread
+    // TODO: Implement runCatching and Result<T> type
+    return run_blocking([&]() {
+        // TODO: suspend function call to send()
+        auto r = run_catching([&]() { channel->send(element); });
+        if (r.is_success()) {
+            return ChannelResult<void>::success();
+        } else {
+            return ChannelResult<void>::closed(r.exception_or_null());
+        }
+    });
 }
 
 /** @suppress */
-@Deprecated(
-    level = DeprecationLevel.HIDDEN,
-    message = "Deprecated in the favour of 'trySendBlocking'. " +
-        "Consider handling the result of 'trySendBlocking' explicitly and rethrow exception if necessary",
-    replaceWith = ReplaceWith("trySendBlocking(element)")
-) // WARNING in 1.5.0, ERROR in 1.6.0
-public fun <E> SendChannel<E>.sendBlocking(element: E) {
+// @Deprecated(
+//     level = DeprecationLevel.HIDDEN,
+//     message = "Deprecated in the favour of 'trySendBlocking'. " +
+//         "Consider handling the result of 'trySendBlocking' explicitly and rethrow exception if necessary",
+//     replaceWith = ReplaceWith("trySendBlocking(element)")
+// ) // WARNING in 1.5.0, ERROR in 1.6.0
+template<typename E>
+[[deprecated("Deprecated in the favour of 'trySendBlocking'. Consider handling the result of 'trySendBlocking' explicitly and rethrow exception if necessary")]]
+void send_blocking(SendChannel<E>* channel, const E& element) {
     // fast path
-    if (trySend(element).isSuccess)
-        return
-    // slow path
-    runBlocking {
-        send(element)
+    if (channel->try_send(element).is_success()) {
+        return;
     }
+    // slow path
+    // TODO: runBlocking is a coroutine builder that blocks the current thread
+    run_blocking([&]() {
+        // TODO: suspend function call
+        channel->send(element);
+    });
 }
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

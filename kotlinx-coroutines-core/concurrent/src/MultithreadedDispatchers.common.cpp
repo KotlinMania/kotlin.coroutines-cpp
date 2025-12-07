@@ -1,8 +1,17 @@
-@file:JvmMultifileClass
-@file:JvmName("ThreadPoolDispatcherKt")
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/concurrent/src/MultithreadedDispatchers.common.kt
+//
+// TODO: Map @file:JvmMultifileClass and @file:JvmName annotations (JVM-specific, likely ignore in C++)
+// TODO: Implement CloseableCoroutineDispatcher interface
+// TODO: Handle 'expect fun' - declares platform-specific implementation
+// TODO: Implement @ExperimentalCoroutinesApi and @DelicateCoroutinesApi annotations as comments
+// TODO: Implement Job.cancel and Dispatchers.IO references
+// TODO: kotlin.jvm.* imports are JVM-specific, can be ignored
 
-import kotlin.jvm.*
+// @file:JvmMultifileClass
+// @file:JvmName("ThreadPoolDispatcherKt")
+namespace kotlinx {
+namespace coroutines {
 
 /**
  * Creates a coroutine execution context using a single thread with built-in [yield] support.
@@ -29,10 +38,11 @@ import kotlin.jvm.*
  *
  * @param name the base name of the created thread.
  */
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
-public fun newSingleThreadContext(name: String): CloseableCoroutineDispatcher =
-    newFixedThreadPoolContext(1, name)
+// @ExperimentalCoroutinesApi
+// @DelicateCoroutinesApi
+inline CloseableCoroutineDispatcher* new_single_thread_context(const std::string& name) {
+    return new_fixed_thread_pool_context(1, name);
+}
 
 /**
  * Creates a coroutine execution context with the fixed-size thread-pool and built-in [yield] support.
@@ -60,6 +70,10 @@ public fun newSingleThreadContext(name: String): CloseableCoroutineDispatcher =
  * @param nThreads the number of threads.
  * @param name the base name of the created threads.
  */
-@ExperimentalCoroutinesApi
-@DelicateCoroutinesApi
-public expect fun newFixedThreadPoolContext(nThreads: Int, name: String): CloseableCoroutineDispatcher
+// @ExperimentalCoroutinesApi
+// @DelicateCoroutinesApi
+// TODO: 'expect fun' means platform-specific implementation required
+CloseableCoroutineDispatcher* new_fixed_thread_pool_context(int n_threads, const std::string& name);
+
+} // namespace coroutines
+} // namespace kotlinx

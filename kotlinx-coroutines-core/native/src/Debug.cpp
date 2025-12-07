@@ -1,12 +1,41 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/Debug.kt
+//
+// TODO: actual keyword - platform-specific implementation marker
+// TODO: Extension properties (hexAddress, classSimpleName) need alternative approach
+// TODO: inline functions
 
-import kotlin.math.*
-import kotlin.native.*
+namespace kotlinx {
+namespace coroutines {
 
-internal actual val DEBUG: Boolean = false
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlin.math.*
+// import kotlin.native.*
 
-internal actual val Any.hexAddress: String get() = identityHashCode().toUInt().toString(16)
+// TODO: internal actual val
+const bool kDebug = false;
 
-internal actual val Any.classSimpleName: String get() = this::class.simpleName ?: "Unknown"
+// TODO: Extension property - implement as template or free function
+template<typename T>
+std::string hex_address(const T& obj) {
+    // TODO: identityHashCode equivalent
+    unsigned int hash = 0; // std::hash or identity hash
+    std::stringstream ss;
+    ss << std::hex << hash;
+    return ss.str();
+}
 
-internal actual inline fun assert(value: () -> Boolean) {}
+// TODO: Extension property - implement as template or free function
+template<typename T>
+std::string class_simple_name(const T& obj) {
+    // TODO: this::class.simpleName or typeid
+    return "Unknown";
+}
+
+// TODO: internal actual inline - empty in release builds
+inline void assert(std::function<bool()> value) {
+    // Empty implementation
+}
+
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,49 +1,69 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/FlattenConcatTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Extend FlatMapBaseTest
+// - Map flattenConcat operator
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class FlattenConcatTest : FlatMapBaseTest() {
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.test.*
 
-    override fun <T> Flow<T>.flatMap(mapper: suspend (T) -> Flow<T>): Flow<T> = map(mapper).flattenConcat()
+class FlattenConcatTest : public FlatMapBaseTest {
+public:
 
-    @Test
-    fun testFlatMapConcurrency() = runTest {
-        var concurrentRequests = 0
-        val flow = (1..100).asFlow().map { value ->
-            flow {
-                ++concurrentRequests
-                emit(value)
-                delay(Long.MAX_VALUE)
-            }
-        }.flattenConcat()
-
-        val consumer = launch {
-            flow.collect { value ->
-                expect(value)
-            }
-        }
-
-        repeat(4) {
-            yield()
-        }
-
-        assertEquals(1, concurrentRequests)
-        consumer.cancelAndJoin()
-        finish(2)
+    Flow<int> flat_map(Flow<int> flow_var, auto mapper) override {
+        return flow_var.map(mapper).flatten_concat();
     }
 
-    @Test
-    fun testCancellation() = runTest {
-        val flow = flow {
-            repeat(5) {
-                emit(flow {
-                    if (it == 2) throw CancellationException("")
-                    emit(1)
-                })
-            }
+    // TODO: @Test
+    void testFlatMapConcurrency() {
+        // TODO: runTest {
+        int concurrent_requests = 0;
+        auto flow_var = as_flow(1, 100).map([&](int value) {
+            return flow([&, value](auto& emit) {
+                ++concurrent_requests;
+                emit(value);
+                delay(LONG_MAX);
+            });
+        }).flatten_concat();
+
+        auto consumer = launch([&]() {
+            flow_var.collect([&](int value) {
+                expect(value);
+            });
+        });
+
+        for (int i = 0; i < 4; ++i) {
+            yield();
         }
-        assertFailsWith<CancellationException>(flow.flattenConcat())
+
+        assertEquals(1, concurrent_requests);
+        consumer.cancel_and_join();
+        finish(2);
+        // TODO: }
     }
-}
+
+    // TODO: @Test
+    void testCancellation() {
+        // TODO: runTest {
+        auto flow_var = flow([](auto& emit) {
+            for (int i = 0; i < 5; ++i) {
+                emit(flow([i](auto& emit_inner) {
+                    if (i == 2) throw CancellationException("");
+                    emit_inner(1);
+                }));
+            }
+        });
+        assertFailsWith<CancellationException>([&]() { flow_var.flatten_concat(); });
+        // TODO: }
+    }
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,4 +1,10 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/CompletionHandler.common.kt
+//
+// TODO: typealias maps to using declaration in C++
+
+namespace kotlinx {
+namespace coroutines {
 
 /**
  * Handler for [Job.invokeOnCompletion] and [CancellableContinuation.invokeOnCancellation].
@@ -24,4 +30,8 @@ package kotlinx.coroutines
  * This type should not be used in general application code.
  */
 // TODO: deprecate. This doesn't seem better than a simple function type.
-public typealias CompletionHandler = (cause: Throwable?) -> Unit
+// TODO: typealias CompletionHandler = (cause: Throwable?) -> Unit
+using CompletionHandler = std::function<void(Throwable*)>;
+
+} // namespace coroutines
+} // namespace kotlinx

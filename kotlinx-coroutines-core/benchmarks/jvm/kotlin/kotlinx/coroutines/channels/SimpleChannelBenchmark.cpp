@@ -1,57 +1,86 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/channels/SimpleChannelBenchmark.kt
+// TODO: Resolve imports and dependencies
+// TODO: Implement JMH benchmark annotations
+// TODO: Handle suspend functions and coroutines
 
-import kotlinx.coroutines.*
-import org.openjdk.jmh.annotations.*
-import java.util.concurrent.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(value = 1)
-@BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
-@State(Scope.Benchmark)
-open class SimpleChannelBenchmark {
+// TODO: import kotlinx.coroutines.*
+// TODO: import org.openjdk.jmh.annotations.*
+// TODO: import java.util.concurrent.*
 
-    private val iterations = 10_000
+// TODO: @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+// TODO: @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
+// TODO: @Fork(value = 1)
+// TODO: @BenchmarkMode(Mode.AverageTime)
+// TODO: @OutputTimeUnit(TimeUnit.MICROSECONDS)
+// TODO: @State(Scope.Benchmark)
+class SimpleChannelBenchmark {
+private:
+    static constexpr int kIterations = 10000;
 
-    @Volatile
-    private var sink: Int = 0
+    // TODO: @Volatile annotation
+    int sink_ = 0;
 
-    @Benchmark
-    fun cancellable() = runBlocking {
-        val ch = CancellableChannel()
-        launch {
-            repeat(iterations) { ch.send(it) }
-        }
+public:
+    // TODO: @Benchmark annotation
+    void cancellable() {
+        run_blocking([this]() {
+            auto ch = CancellableChannel();
+            launch([&]() {
+                repeat(kIterations, [&](int it) {
+                    ch.send(it);
+                });
+            });
 
-        launch {
-            repeat(iterations) { sink = ch.receive() }
-        }
+            launch([&]() {
+                repeat(kIterations, [&]() {
+                    sink_ = ch.receive();
+                });
+            });
+        });
     }
 
-    @Benchmark
-    fun cancellableReusable() = runBlocking {
-        val ch = CancellableReusableChannel()
-        launch {
-            repeat(iterations) { ch.send(it) }
-        }
+    // TODO: @Benchmark annotation
+    void cancellable_reusable() {
+        run_blocking([this]() {
+            auto ch = CancellableReusableChannel();
+            launch([&]() {
+                repeat(kIterations, [&](int it) {
+                    ch.send(it);
+                });
+            });
 
-        launch {
-            repeat(iterations) { sink = ch.receive() }
-        }
+            launch([&]() {
+                repeat(kIterations, [&]() {
+                    sink_ = ch.receive();
+                });
+            });
+        });
     }
 
-    @Benchmark
-    fun nonCancellable() = runBlocking {
-        val ch = NonCancellableChannel()
-        launch {
-            repeat(iterations) { ch.send(it) }
-        }
+    // TODO: @Benchmark annotation
+    void non_cancellable() {
+        run_blocking([this]() {
+            auto ch = NonCancellableChannel();
+            launch([&]() {
+                repeat(kIterations, [&](int it) {
+                    ch.send(it);
+                });
+            });
 
-        launch {
-            repeat(iterations) {
-                sink = ch.receive()
-            }
-        }
+            launch([&]() {
+                repeat(kIterations, [&]() {
+                    sink_ = ch.receive();
+                });
+            });
+        });
     }
-}
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

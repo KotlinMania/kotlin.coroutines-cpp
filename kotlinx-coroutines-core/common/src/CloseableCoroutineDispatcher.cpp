@@ -1,4 +1,11 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/CloseableCoroutineDispatcher.kt
+//
+// TODO: expect/actual mechanism not available in C++ - use virtual/abstract or platform-specific includes
+// TODO: AutoCloseable interface maps to C++ RAII or explicit close() method
+
+namespace kotlinx {
+namespace coroutines {
 
 /**
  * [CoroutineDispatcher] that provides a method to close it,
@@ -10,8 +17,16 @@ package kotlinx.coroutines
  * **The `CloseableCoroutineDispatcher` class is not stable for inheritance in 3rd party libraries**, as new methods
  * might be added to this interface in the future, but is stable for use.
  */
-@ExperimentalCoroutinesApi
-public expect abstract class CloseableCoroutineDispatcher() : CoroutineDispatcher, AutoCloseable {
+// TODO: @ExperimentalCoroutinesApi - no C++ equivalent
+// TODO: expect abstract class - platform-specific, use pure virtual
+// TODO: AutoCloseable - C++ RAII or explicit close method
+class CloseableCoroutineDispatcher : public CoroutineDispatcher {
+public:
+    // Default constructor
+    CloseableCoroutineDispatcher() {}
+
+    // Virtual destructor for proper cleanup
+    virtual ~CloseableCoroutineDispatcher() {}
 
     /**
      * Initiate the closing sequence of the coroutine dispatcher.
@@ -20,5 +35,9 @@ public expect abstract class CloseableCoroutineDispatcher() : CoroutineDispatche
      *
      * Invocations of `close` are idempotent and thread-safe.
      */
-    public abstract override fun close()
-}
+    // TODO: abstract override fun - pure virtual
+    virtual void close() = 0;
+};
+
+} // namespace coroutines
+} // namespace kotlinx

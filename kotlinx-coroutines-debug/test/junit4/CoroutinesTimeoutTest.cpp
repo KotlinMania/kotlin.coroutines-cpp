@@ -1,52 +1,83 @@
-package kotlinx.coroutines.debug.junit4
+// Original: kotlinx-coroutines-debug/test/junit4/CoroutinesTimeoutTest.kt
+// Transliterated from Kotlin to C++ - First pass syntax conversion
+// TODO: Implement JUnit4 test framework integration
+// TODO: Map @Rule annotation to C++ test fixture pattern
+// TODO: Convert TestBase inheritance
+// TODO: Implement TestFailureValidation test helper
+// TODO: Convert suspend functions to C++ coroutine equivalents
+// TODO: Map runBlocking to C++ blocking coroutine runner
+// TODO: Convert Long.MAX_VALUE to C++ equivalent
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import org.junit.*
-import org.junit.runners.model.*
+namespace kotlinx {
+namespace coroutines {
+namespace debug {
+namespace junit4 {
 
-class CoroutinesTimeoutTest : TestBase(disableOutCheck = true) {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import org.junit.*
+// TODO: import org.junit.runners.model.*
 
-    @Rule
-    @JvmField
-    public val validation = TestFailureValidation(
+class CoroutinesTimeoutTest : public TestBase {
+public:
+    CoroutinesTimeoutTest() : TestBase(/*disableOutCheck=*/true) {}
+
+    // TODO: @Rule
+    // TODO: @JvmField
+    // public
+    TestFailureValidation validation = TestFailureValidation(
         1000, false, true,
-        TestResultSpec("throwingTest", error = RuntimeException::class.java),
+        TestResultSpec("throwingTest", /*error=*/typeid(RuntimeException)),
         TestResultSpec("successfulTest"),
         TestResultSpec(
-            "hangingTest", expectedOutParts = listOf(
+            "hangingTest", /*expectedOutParts=*/std::vector<std::string>{
                 "Coroutines dump",
                 "Test hangingTest timed out after 1 seconds",
                 "BlockingCoroutine{Active}",
                 "runBlocking",
                 "at kotlinx.coroutines.debug.junit4.CoroutinesTimeoutTest.suspendForever",
-                "at kotlinx.coroutines.debug.junit4.CoroutinesTimeoutTest\$hangingTest\$1.invokeSuspend"),
-            notExpectedOutParts = listOf("delay", "throwingTest"),
-            error = TestTimedOutException::class.java)
-    )
+                "at kotlinx.coroutines.debug.junit4.CoroutinesTimeoutTest$hangingTest$1.invokeSuspend"
+            },
+            /*notExpectedOutParts=*/std::vector<std::string>{"delay", "throwingTest"},
+            /*error=*/typeid(TestTimedOutException))
+    );
 
-    @Test
-    fun hangingTest() = runBlocking<Unit> {
-        suspendForever()
-        expectUnreached()
+    // TODO: @Test
+    void hangingTest() {
+        runBlocking<void>([] {
+            suspendForever();
+            expectUnreached();
+        });
     }
 
-    private suspend fun suspendForever() {
-        delay(Long.MAX_VALUE)
-        expectUnreached()
+private:
+    // TODO: Convert suspend function
+    void suspendForever() {
+        delay(LONG_MAX);
+        expectUnreached();
     }
 
-    @Test
-    fun throwingTest() = runBlocking<Unit> {
-        throw RuntimeException()
+public:
+    // TODO: @Test
+    void throwingTest() {
+        runBlocking<void>([] {
+            throw RuntimeException();
+        });
     }
 
-    @Test
-    fun successfulTest() = runBlocking {
-        val job = launch {
-            yield()
-        }
+    // TODO: @Test
+    void successfulTest() {
+        runBlocking([&] {
+            auto job = launch([&] {
+                yield();
+            });
 
-        job.join()
+            job.join();
+        });
     }
-}
+};
+
+} // namespace junit4
+} // namespace debug
+} // namespace coroutines
+} // namespace kotlinx

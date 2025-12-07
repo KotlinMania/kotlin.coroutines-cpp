@@ -1,8 +1,14 @@
-@file:Suppress("DEPRECATION_ERROR")
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/CompletableDeferred.kt
+//
+// TODO: @file:Suppress - no C++ equivalent
+// TODO: Result<T> needs custom implementation
+// TODO: fold method on Result needs implementation
 
-package kotlinx.coroutines
+namespace kotlinx {
+namespace coroutines {
 
-import kotlinx.coroutines.selects.*
+// TODO: import kotlinx.coroutines.selects.* - use includes
 
 /**
  * A [Deferred] that can be completed via public functions [complete] or [cancel][Job.cancel].
@@ -16,9 +22,11 @@ import kotlinx.coroutines.selects.*
  * All functions on this interface are **thread-safe** and can
  * be safely invoked from concurrent coroutines without external synchronization.
  */
-@OptIn(ExperimentalSubclassOptIn::class)
-@SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class)
-public interface CompletableDeferred<T> : Deferred<T> {
+// TODO: @OptIn(ExperimentalSubclassOptIn::class) - no C++ equivalent
+// TODO: @SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class) - no C++ equivalent
+template<typename T>
+class CompletableDeferred : public Deferred<T> {
+public:
     /**
      * Completes this deferred value with a given [value]. The result is `true` if this deferred was
      * completed as a result of this invocation and `false` otherwise (if it was already completed).
@@ -29,7 +37,7 @@ public interface CompletableDeferred<T> : Deferred<T> {
      * However, if this deferred has children, then it transitions into _completing_ state and becomes _complete_
      * once all its children are [complete][isCompleted]. See [Job] for details.
      */
-    public fun complete(value: T): Boolean
+    virtual bool complete(T value) = 0;
 
     /**
      * Completes this deferred value exceptionally with a given [exception]. The result is `true` if this deferred was
@@ -41,8 +49,8 @@ public interface CompletableDeferred<T> : Deferred<T> {
      * However, that if this deferred has children, then it transitions into _cancelling_ state and becomes _cancelled_
      * once all its children are [complete][isCompleted]. See [Job] for details.
      */
-    public fun completeExceptionally(exception: Throwable): Boolean
-}
+    virtual bool completeExceptionally(Throwable* exception) = 0;
+};
 
 /**
  * Completes this deferred value with the value or exception in the given [result]. Returns `true` if this deferred
@@ -53,38 +61,85 @@ public interface CompletableDeferred<T> : Deferred<T> {
  * This function transitions this deferred in the same ways described by [CompletableDeferred.complete] and
  * [CompletableDeferred.completeExceptionally].
  */
-public fun <T> CompletableDeferred<T>.completeWith(result: Result<T>): Boolean =
-    result.fold({ complete(it) }, { completeExceptionally(it) })
+// TODO: Extension function
+template<typename T>
+bool completeWith(CompletableDeferred<T>* deferred, Result<T> result) {
+    // TODO: result.fold({ complete(it) }, { completeExceptionally(it) })
+    // Placeholder implementation
+    if (result.isSuccess()) {
+        return deferred->complete(result.getValue());
+    } else {
+        return deferred->completeExceptionally(result.getException());
+    }
+}
 
 /**
  * Creates a [CompletableDeferred] in an _active_ state.
  * It is optionally a child of a [parent] job.
  */
-@Suppress("FunctionName")
-public fun <T> CompletableDeferred(parent: Job? = null): CompletableDeferred<T> = CompletableDeferredImpl(parent)
+// TODO: @Suppress("FunctionName") - naming convention, no C++ equivalent
+template<typename T>
+CompletableDeferred<T>* CompletableDeferred(Job* parent = nullptr) {
+    return new CompletableDeferredImpl<T>(parent);
+}
 
 /**
  * Creates an already _completed_ [CompletableDeferred] with a given [value].
  */
-@Suppress("FunctionName")
-public fun <T> CompletableDeferred(value: T): CompletableDeferred<T> = CompletableDeferredImpl<T>(null).apply { complete(value) }
+// TODO: @Suppress("FunctionName") - no C++ equivalent
+template<typename T>
+CompletableDeferred<T>* CompletableDeferred(T value) {
+    auto* deferred = new CompletableDeferredImpl<T>(nullptr);
+    deferred->complete(value);
+    return deferred;
+}
 
 /**
  * Concrete implementation of [CompletableDeferred].
  */
-@OptIn(InternalForInheritanceCoroutinesApi::class)
-@Suppress("UNCHECKED_CAST")
-private class CompletableDeferredImpl<T>(
-    parent: Job?
-) : JobSupport(true), CompletableDeferred<T> {
-    init { initParentJob(parent) }
-    override val onCancelComplete get() = true
-    override fun getCompleted(): T = getCompletedInternal() as T
-    override suspend fun await(): T = awaitInternal() as T
-    override val onAwait: SelectClause1<T> get() = onAwaitInternal as SelectClause1<T>
+// TODO: @OptIn(InternalForInheritanceCoroutinesApi::class) - no C++ equivalent
+// TODO: @Suppress("UNCHECKED_CAST") - no C++ equivalent
+// TODO: private class - access control
+template<typename T>
+class CompletableDeferredImpl : public JobSupport, public CompletableDeferred<T> {
+private:
+    Job* parent_job;
 
-    override fun complete(value: T): Boolean =
-        makeCompleting(value)
-    override fun completeExceptionally(exception: Throwable): Boolean =
-        makeCompleting(CompletedExceptionally(exception))
-}
+public:
+    CompletableDeferredImpl(Job* parent)
+        : JobSupport(true), parent_job(parent) {
+        initParentJob(parent);
+    }
+
+    bool get_onCancelComplete() override {
+        return true;
+    }
+
+    T getCompleted() override {
+        // TODO: getCompletedInternal() as T - cast
+        return static_cast<T>(this->getCompletedInternal());
+    }
+
+    // TODO: suspend fun
+    T await() override {
+        // TODO: awaitInternal() as T - cast
+        return static_cast<T>(this->awaitInternal());
+    }
+
+    // TODO: val onAwait property
+    SelectClause1<T>* get_onAwait() override {
+        // TODO: onAwaitInternal as SelectClause1<T> - cast
+        return static_cast<SelectClause1<T>*>(this->onAwaitInternal);
+    }
+
+    bool complete(T value) override {
+        return this->makeCompleting(value);
+    }
+
+    bool completeExceptionally(Throwable* exception) override {
+        return this->makeCompleting(new CompletedExceptionally(exception));
+    }
+};
+
+} // namespace coroutines
+} // namespace kotlinx

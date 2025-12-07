@@ -1,16 +1,36 @@
-@file:JvmName("TestBuildersKt")
-@file:JvmMultifileClass
+// Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestBuilders
+// Original package: kotlinx.coroutines.test
+//
+// TODO: Kotlin @file annotations (@JvmName, @JvmMultifileClass) not directly translatable
+// TODO: Import statements removed; fully qualify types or add appropriate includes
+// TODO: suspend functions translated as normal functions; coroutine semantics NOT implemented
+// TODO: expect/actual mechanism needs platform-specific implementation strategy
+// TODO: Kotlin property delegation, inline classes, and operator overloads may need manual review
+// TODO: Annotations like @Deprecated preserved as comments
 
-package kotlinx.coroutines.test
+#include <functional>
+#include <memory>
+#include <string>
+#include <optional>
+#include <stdexcept>
+#include <atomic>
+#include <chrono>
 
-import kotlinx.atomicfu.atomic
-import kotlinx.coroutines.*
-import kotlinx.coroutines.selects.*
-import kotlin.coroutines.*
-import kotlin.jvm.*
-import kotlin.time.*
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
+namespace kotlinx {
+namespace coroutines {
+namespace test {
+
+// @file:JvmName("TestBuildersKt")
+// @file:JvmMultifileClass
+
+// import kotlinx.atomicfu.atomic
+// import kotlinx.coroutines.*
+// import kotlinx.coroutines.selects.*
+// import kotlin.coroutines.*
+// import kotlin.jvm.*
+// import kotlin.time.*
+// import kotlin.time.Duration.Companion.milliseconds
+// import kotlin.time.Duration.Companion.seconds
 
 /**
  * A test result.
@@ -27,7 +47,8 @@ import kotlin.time.Duration.Companion.seconds
  *   with a [TestResult] is to immediately `return` it from a test.
  * - Don't nest functions returning a [TestResult].
  */
-public expect class TestResult
+// TODO: expect class - needs platform-specific implementation
+class TestResult; // expect declaration
 
 /**
  * Executes [testBody] as a test in a new coroutine, returning [TestResult].
@@ -156,15 +177,17 @@ public expect class TestResult
  *
  * @throws IllegalArgumentException if the [context] is invalid. See the [TestScope] constructor docs for details.
  */
-public fun runTest(
-    context: CoroutineContext = EmptyCoroutineContext,
-    timeout: Duration = DEFAULT_TIMEOUT.getOrThrow(),
-    testBody: suspend TestScope.() -> Unit
-): TestResult {
-    check(context[RunningInRunTest] == null) {
-        "Calls to `runTest` can't be nested. Please read the docs on `TestResult` for details."
+// TODO: suspend function - coroutine semantics not implemented
+TestResult run_test(
+    CoroutineContext context = empty_coroutine_context(),
+    Duration timeout = kDefaultTimeout.get_or_throw(),
+    std::function<void(TestScope&)> test_body
+) {
+    // TODO: check() is Kotlin's require-like function; map to assertion or exception
+    if (context[running_in_run_test] != nullptr) {
+        throw std::invalid_argument("Calls to `runTest` can't be nested. Please read the docs on `TestResult` for details.");
     }
-    return TestScope(context + RunningInRunTest).runTest(timeout, testBody)
+    return TestScope(context + running_in_run_test).run_test(timeout, test_body);
 }
 
 /**
@@ -280,98 +303,113 @@ public fun runTest(
  *
  * @throws IllegalArgumentException if the [context] is invalid. See the [TestScope] constructor docs for details.
  */
-@Deprecated(
-    "Define a total timeout for the whole test instead of using dispatchTimeoutMs. " +
-        "Warning: the proposed replacement is not identical as it uses 'dispatchTimeoutMs' as the timeout for the whole test!",
-    ReplaceWith("runTest(context, timeout = dispatchTimeoutMs.milliseconds, testBody)",
-        "kotlin.time.Duration.Companion.milliseconds"),
-    DeprecationLevel.WARNING
-) // Warning since 1.7.0, was experimental in 1.6.x
-public fun runTest(
-    context: CoroutineContext = EmptyCoroutineContext,
-    dispatchTimeoutMs: Long,
-    testBody: suspend TestScope.() -> Unit
-): TestResult {
-    if (context[RunningInRunTest] != null)
-        throw IllegalStateException("Calls to `runTest` can't be nested. Please read the docs on `TestResult` for details.")
-    @Suppress("DEPRECATION")
-    return TestScope(context + RunningInRunTest).runTest(dispatchTimeoutMs = dispatchTimeoutMs, testBody)
+// @Deprecated(
+//     "Define a total timeout for the whole test instead of using dispatchTimeoutMs. " +
+//         "Warning: the proposed replacement is not identical as it uses 'dispatchTimeoutMs' as the timeout for the whole test!",
+//     ReplaceWith("runTest(context, timeout = dispatchTimeoutMs.milliseconds, testBody)",
+//         "kotlin.time.Duration.Companion.milliseconds"),
+//     DeprecationLevel.WARNING
+// ) // Warning since 1.7.0, was experimental in 1.6.x
+// TODO: Deprecated - mark for removal or document
+// TODO: suspend function - coroutine semantics not implemented
+[[deprecated("Define a total timeout for the whole test instead of using dispatchTimeoutMs")]]
+TestResult run_test(
+    CoroutineContext context = empty_coroutine_context(),
+    int64_t dispatch_timeout_ms,
+    std::function<void(TestScope&)> test_body
+) {
+    if (context[running_in_run_test] != nullptr)
+        throw std::invalid_argument("Calls to `runTest` can't be nested. Please read the docs on `TestResult` for details.");
+    // @Suppress("DEPRECATION")
+    return TestScope(context + running_in_run_test).run_test(dispatch_timeout_ms, test_body);
 }
 
 /**
  * Performs [runTest] on an existing [TestScope]. See the documentation for [runTest] for details.
  */
-public fun TestScope.runTest(
-    timeout: Duration = DEFAULT_TIMEOUT.getOrThrow(),
-    testBody: suspend TestScope.() -> Unit
-): TestResult = asSpecificImplementation().let { scope ->
-    scope.enter()
-    createTestResult {
-        val testBodyFinished = AtomicBoolean(false)
+// TODO: suspend function - coroutine semantics not implemented
+TestResult run_test(
+    TestScope& scope,
+    Duration timeout = kDefaultTimeout.get_or_throw(),
+    std::function<void(TestScope&)> test_body
+) {
+    auto& scope_impl = scope.as_specific_implementation();
+    scope_impl.enter();
+    return create_test_result([&]() {
+        AtomicBoolean test_body_finished(false);
         /** TODO: moving this [AbstractCoroutine.start] call outside [createTestResult] fails on JS. */
-        scope.start(CoroutineStart.UNDISPATCHED, scope) {
+        scope_impl.start(CoroutineStart::kUndispatched, scope_impl, [&]() {
             /* we're using `UNDISPATCHED` to avoid the event loop, but we do want to set up the timeout machinery
             before any code executes, so we have to park here. */
-            yield()
+            yield();
             try {
-                testBody()
-            } finally {
-                testBodyFinished.value = true
+                test_body(scope_impl);
+            } catch (...) {
+                test_body_finished.value = true;
+                throw;
             }
-        }
-        var timeoutError: Throwable? = null
-        var cancellationException: CancellationException? = null
-        val workRunner = launch(CoroutineName("kotlinx.coroutines.test runner")) {
+            test_body_finished.value = true;
+        });
+        Throwable* timeout_error = nullptr;
+        CancellationException* cancellation_exception = nullptr;
+        auto work_runner = launch(CoroutineName("kotlinx.coroutines.test runner"), [&]() {
             while (true) {
-                val executedSomething = testScheduler.tryRunNextTaskUnless { !isActive }
-                if (executedSomething) {
+                bool executed_something = scope_impl.test_scheduler().try_run_next_task_unless([&]() { return !is_active(); });
+                if (executed_something) {
                     /** yield to check for cancellation. On JS, we can't use [ensureActive] here, as the cancellation
                      * procedure needs a chance to run concurrently. */
-                    yield()
+                    yield();
                 } else {
                     // waiting for the next task to be scheduled, or for the test runner to be cancelled
-                    testScheduler.receiveDispatchEvent()
+                    scope_impl.test_scheduler().receive_dispatch_event();
                 }
             }
-        }
+        });
         try {
-            withTimeout(timeout) {
-                coroutineContext.job.invokeOnCompletion(onCancelling = true) { exception ->
-                    if (exception is TimeoutCancellationException) {
-                        dumpCoroutines()
-                        val activeChildren = scope.children.filter(Job::isActive).toList()
-                        val message = "After waiting for $timeout, " + when {
-                            testBodyFinished.value && activeChildren.isNotEmpty() ->
-                                "there were active child jobs: $activeChildren. " +
-                                    "Use `TestScope.backgroundScope` " +
-                                    "to launch the coroutines that need to be cancelled when the test body finishes"
-                            testBodyFinished.value ->
-                                "the test completed, but only after the timeout"
-                            else ->
-                                "the test body did not run to completion"
+            with_timeout(timeout, [&]() {
+                coroutine_context().job().invoke_on_completion(true, [&](std::exception_ptr exception) {
+                    // TODO: Kotlin exception handling differs from C++; needs adaptation
+                    if (/* exception is TimeoutCancellationException */) {
+                        dump_coroutines();
+                        auto active_children = scope_impl.children().filter([](Job& j) { return j.is_active(); }).to_list();
+                        std::string message = "After waiting for " + std::to_string(timeout.count()) + ", ";
+                        if (test_body_finished.value && !active_children.empty()) {
+                            message += "there were active child jobs: " /* + activeChildren */ +
+                                ". Use `TestScope.backgroundScope` " +
+                                "to launch the coroutines that need to be cancelled when the test body finishes";
+                        } else if (test_body_finished.value) {
+                            message += "the test completed, but only after the timeout";
+                        } else {
+                            message += "the test body did not run to completion";
                         }
-                        timeoutError = UncompletedCoroutinesError(message)
-                        cancellationException = CancellationException("The test timed out")
-                        (scope as Job).cancel(cancellationException!!)
+                        timeout_error = new UncompletedCoroutinesError(message);
+                        cancellation_exception = new CancellationException("The test timed out");
+                        // (scope as Job).cancel(cancellationException!!)
+                        static_cast<Job&>(scope_impl).cancel(*cancellation_exception);
                     }
-                }
-                scope.join()
-                workRunner.cancelAndJoin()
+                });
+                scope_impl.join();
+                work_runner.cancel_and_join();
+            });
+        } catch (const TimeoutCancellationException&) {
+            scope_impl.join();
+            auto completion = scope_impl.get_completion_exception_or_null();
+            if (completion != nullptr && completion != cancellation_exception) {
+                timeout_error->add_suppressed(*completion);
             }
-        } catch (_: TimeoutCancellationException) {
-            scope.join()
-            val completion = scope.getCompletionExceptionOrNull()
-            if (completion != null && completion !== cancellationException) {
-                timeoutError!!.addSuppressed(completion)
-            }
-            workRunner.cancelAndJoin()
-        } finally {
-            backgroundScope.cancel()
-            testScheduler.advanceUntilIdleOr { false }
-            val uncaughtExceptions = scope.leave()
-            throwAll(timeoutError ?: scope.getCompletionExceptionOrNull(), uncaughtExceptions)
+            work_runner.cancel_and_join();
+        } catch (...) {
+            scope_impl.background_scope().cancel();
+            scope_impl.test_scheduler().advance_until_idle_or([]() { return false; });
+            auto uncaught_exceptions = scope_impl.leave();
+            throw_all(timeout_error != nullptr ? timeout_error : scope_impl.get_completion_exception_or_null(), uncaught_exceptions);
+            throw;
         }
-    }
+        scope_impl.background_scope().cancel();
+        scope_impl.test_scheduler().advance_until_idle_or([]() { return false; });
+        auto uncaught_exceptions = scope_impl.leave();
+        throw_all(timeout_error != nullptr ? timeout_error : scope_impl.get_completion_exception_or_null(), uncaught_exceptions);
+    });
 }
 
 /**
@@ -383,44 +421,60 @@ public fun TestScope.runTest(
  * idle before throwing [AssertionError]. If some dispatcher linked to [TestCoroutineScheduler] receives a
  * task during that time, the timer gets reset.
  */
-@Deprecated(
-    "Define a total timeout for the whole test instead of using dispatchTimeoutMs. " +
-        "Warning: the proposed replacement is not identical as it uses 'dispatchTimeoutMs' as the timeout for the whole test!",
-    ReplaceWith("this.runTest(timeout = dispatchTimeoutMs.milliseconds, testBody)",
-        "kotlin.time.Duration.Companion.milliseconds"),
-    DeprecationLevel.WARNING
-) // Warning since 1.7.0, was experimental in 1.6.x
-public fun TestScope.runTest(
-    dispatchTimeoutMs: Long,
-    testBody: suspend TestScope.() -> Unit
-): TestResult = asSpecificImplementation().let {
-    it.enter()
-    @Suppress("DEPRECATION")
-    createTestResult {
-        runTestCoroutineLegacy(it, dispatchTimeoutMs.milliseconds, TestScopeImpl::tryGetCompletionCause, testBody) {
-            backgroundScope.cancel()
-            testScheduler.advanceUntilIdleOr { false }
-            it.legacyLeave()
-        }
-    }
+// @Deprecated(
+//     "Define a total timeout for the whole test instead of using dispatchTimeoutMs. " +
+//         "Warning: the proposed replacement is not identical as it uses 'dispatchTimeoutMs' as the timeout for the whole test!",
+//     ReplaceWith("this.runTest(timeout = dispatchTimeoutMs.milliseconds, testBody)",
+//         "kotlin.time.Duration.Companion.milliseconds"),
+//     DeprecationLevel.WARNING
+// ) // Warning since 1.7.0, was experimental in 1.6.x
+// TODO: Deprecated - mark for removal or document
+// TODO: suspend function - coroutine semantics not implemented
+[[deprecated("Define a total timeout for the whole test instead of using dispatchTimeoutMs")]]
+TestResult run_test(
+    TestScope& scope,
+    int64_t dispatch_timeout_ms,
+    std::function<void(TestScope&)> test_body
+) {
+    auto& scope_impl = scope.as_specific_implementation();
+    scope_impl.enter();
+    // @Suppress("DEPRECATION")
+    return create_test_result([&]() {
+        run_test_coroutine_legacy(scope_impl, std::chrono::milliseconds(dispatch_timeout_ms),
+            &TestScopeImpl::try_get_completion_cause, test_body, [&]() {
+                scope_impl.background_scope().cancel();
+                scope_impl.test_scheduler().advance_until_idle_or([]() { return false; });
+                return scope_impl.legacy_leave();
+            });
+    });
 }
 
 /**
  * Runs [testProcedure], creating a [TestResult].
  */
-internal expect fun createTestResult(testProcedure: suspend CoroutineScope.() -> Unit): TestResult
+// TODO: expect function - needs platform-specific implementation
+TestResult create_test_result(std::function<void(CoroutineScope&)> test_procedure);
 
 /** A coroutine context element indicating that the coroutine is running inside `runTest`. */
-internal object RunningInRunTest : CoroutineContext.Key<RunningInRunTest>, CoroutineContext.Element {
-    override val key: CoroutineContext.Key<*>
-        get() = this
+// TODO: object singleton pattern
+class RunningInRunTest : public CoroutineContext::Key<RunningInRunTest>, public CoroutineContext::Element {
+public:
+    CoroutineContext::Key<RunningInRunTest>* key() const override {
+        // TODO: Kotlin object self-reference pattern
+        return const_cast<RunningInRunTest*>(this);
+    }
 
-    override fun toString(): String = "RunningInRunTest"
-}
+    std::string to_string() const override {
+        return "RunningInRunTest";
+    }
+};
+
+// Singleton instance
+inline RunningInRunTest running_in_run_test;
 
 /** The default timeout to use when waiting for asynchronous completions of the coroutines managed by
  * a [TestCoroutineScheduler]. */
-internal const val DEFAULT_DISPATCH_TIMEOUT_MS = 60_000L
+constexpr int64_t kDefaultDispatchTimeoutMs = 60000L;
 
 /**
  * The default timeout to use when running a test.
@@ -430,9 +484,13 @@ internal const val DEFAULT_DISPATCH_TIMEOUT_MS = 60_000L
  * Otherwise, the parsing error would only be thrown in one tests, while the
  * other ones would get an incomprehensible `NoClassDefFoundError`.
  */
-private val DEFAULT_TIMEOUT: Result<Duration> = runCatching {
-    systemProperty("kotlinx.coroutines.test.default_timeout", Duration::parse, 60.seconds)
-}
+// TODO: Kotlin Result type needs translation; using std::optional or custom Result type
+// TODO: runCatching lambda needs translation
+// private val DEFAULT_TIMEOUT: Result<Duration> = runCatching {
+//     systemProperty("kotlinx.coroutines.test.default_timeout", Duration::parse, 60.seconds)
+// }
+// TODO: Implement result-based default timeout initialization
+Result<Duration> kDefaultTimeout; // placeholder
 
 /**
  * Run the [body][testBody] of the [test coroutine][coroutine], waiting for asynchronous completions for at most
@@ -443,19 +501,24 @@ private val DEFAULT_TIMEOUT: Result<Duration> = runCatching {
  * The [cleanup] procedure may either throw [UncompletedCoroutinesError] to denote that child coroutines were leaked, or
  * return a list of uncaught exceptions that should be reported at the end of the test.
  */
-@Deprecated("Used for support of legacy behavior")
-internal suspend fun <T : AbstractCoroutine<Unit>> CoroutineScope.runTestCoroutineLegacy(
-    coroutine: T,
-    dispatchTimeout: Duration,
-    tryGetCompletionCause: T.() -> Throwable?,
-    testBody: suspend T.() -> Unit,
-    cleanup: () -> List<Throwable>,
+// @Deprecated("Used for support of legacy behavior")
+// TODO: Deprecated - mark for removal or document
+// TODO: suspend function - coroutine semantics not implemented
+template<typename T>
+[[deprecated("Used for support of legacy behavior")]]
+void run_test_coroutine_legacy(
+    CoroutineScope& scope,
+    T& coroutine,
+    Duration dispatch_timeout,
+    std::function<Throwable*(T&)> try_get_completion_cause,
+    std::function<void(T&)> test_body,
+    std::function<std::vector<Throwable*>()> cleanup
 ) {
-    val scheduler = coroutine.coroutineContext[TestCoroutineScheduler]!!
+    auto scheduler = coroutine.coroutine_context()[TestCoroutineScheduler::Key];
     /** TODO: moving this [AbstractCoroutine.start] call outside [createTestResult] fails on JS. */
-    coroutine.start(CoroutineStart.UNDISPATCHED, coroutine) {
-        testBody()
-    }
+    coroutine.start(CoroutineStart::kUndispatched, coroutine, [&]() {
+        test_body(coroutine);
+    });
     /**
      * This is the legacy behavior, kept for now for compatibility only.
      *
@@ -479,136 +542,170 @@ internal suspend fun <T : AbstractCoroutine<Unit>> CoroutineScope.runTestCorouti
      *    The background work is not running on a dedicated thread.
      *    Instead, the test thread itself is used, by spawning a separate coroutine.
      */
-    var completed = false
+    bool completed = false;
     while (!completed) {
-        scheduler.advanceUntilIdle()
-        if (coroutine.isCompleted) {
+        scheduler->advance_until_idle();
+        if (coroutine.is_completed()) {
             /* don't even enter `withTimeout`; this allows to use a timeout of zero to check that there are no
            non-trivial dispatches. */
-            completed = true
-            continue
+            completed = true;
+            continue;
         }
         // in case progress depends on some background work, we need to keep spinning it.
-        val backgroundWorkRunner = launch(CoroutineName("background work runner")) {
+        auto background_work_runner = launch(CoroutineName("background work runner"), [&]() {
             while (true) {
-                val executedSomething = scheduler.tryRunNextTaskUnless { !isActive }
-                if (executedSomething) {
+                bool executed_something = scheduler->try_run_next_task_unless([&]() { return !is_active(); });
+                if (executed_something) {
                     // yield so that the `select` below has a chance to finish successfully or time out
-                    yield()
+                    yield();
                 } else {
                     // no more tasks, we should suspend until there are some more.
                     // this doesn't interfere with the `select` below, because different channels are used.
-                    scheduler.receiveDispatchEvent()
+                    scheduler->receive_dispatch_event();
                 }
             }
-        }
+        });
         try {
-            select<Unit> {
-                coroutine.onJoin {
+            // TODO: select expression needs translation
+            select<void>([&](auto& selector) {
+                selector.on_join(coroutine, [&]() {
                     // observe that someone completed the test coroutine and leave without waiting for the timeout
-                    completed = true
-                }
-                scheduler.onDispatchEventForeground {
+                    completed = true;
+                });
+                selector.on_dispatch_event_foreground(*scheduler, [&]() {
                     // we received knowledge that `scheduler` observed a dispatch event, so we reset the timeout
-                }
-                onTimeout(dispatchTimeout) {
-                    throw handleTimeout(coroutine, dispatchTimeout, tryGetCompletionCause, cleanup)
-                }
-            }
-        } finally {
-            backgroundWorkRunner.cancelAndJoin()
+                });
+                selector.on_timeout(dispatch_timeout, [&]() {
+                    throw handle_timeout(coroutine, dispatch_timeout, try_get_completion_cause, cleanup);
+                });
+            });
+        } catch (...) {
+            background_work_runner.cancel_and_join();
+            throw;
         }
+        background_work_runner.cancel_and_join();
     }
-    coroutine.getCompletionExceptionOrNull()?.let { exception ->
-        val exceptions = try {
-            cleanup()
-        } catch (e: UncompletedCoroutinesError) {
+    if (auto exception = coroutine.get_completion_exception_or_null()) {
+        std::vector<Throwable*> exceptions;
+        try {
+            exceptions = cleanup();
+        } catch (const UncompletedCoroutinesError&) {
             // it's normal that some jobs are not completed if the test body has failed, won't clutter the output
-            emptyList()
+            exceptions = {};
         }
-        throwAll(exception, exceptions)
+        throw_all(exception, exceptions);
     }
-    throwAll(null, cleanup())
+    throw_all(nullptr, cleanup());
 }
 
 /**
  * Invoked on timeout in [runTest]. Just builds a nice [UncompletedCoroutinesError] and returns it.
  */
-private inline fun <T : AbstractCoroutine<Unit>> handleTimeout(
-    coroutine: T,
-    dispatchTimeout: Duration,
-    tryGetCompletionCause: T.() -> Throwable?,
-    cleanup: () -> List<Throwable>,
-): AssertionError {
-    val uncaughtExceptions = try {
-        cleanup()
-    } catch (e: UncompletedCoroutinesError) {
+template<typename T>
+AssertionError handle_timeout(
+    T& coroutine,
+    Duration dispatch_timeout,
+    std::function<Throwable*(T&)> try_get_completion_cause,
+    std::function<std::vector<Throwable*>()> cleanup
+) {
+    std::vector<Throwable*> uncaught_exceptions;
+    try {
+        uncaught_exceptions = cleanup();
+    } catch (const UncompletedCoroutinesError&) {
         // we expect these and will instead throw a more informative exception.
-        emptyList()
+        uncaught_exceptions = {};
     }
-    val activeChildren = coroutine.children.filter { it.isActive }.toList()
-    val completionCause = if (coroutine.isCancelled) coroutine.tryGetCompletionCause() else null
-    var message = "After waiting for $dispatchTimeout"
-    if (completionCause == null)
-        message += ", the test coroutine is not completing"
-    if (activeChildren.isNotEmpty())
-        message += ", there were active child jobs: $activeChildren"
-    if (completionCause != null && activeChildren.isEmpty()) {
-        message += if (coroutine.isCompleted)
-            ", the test coroutine completed"
-        else
-            ", the test coroutine was not completed"
+    auto active_children = coroutine.children().filter([](auto& it) { return it.is_active(); }).to_list();
+    Throwable* completion_cause = coroutine.is_cancelled() ? try_get_completion_cause(coroutine) : nullptr;
+    std::string message = "After waiting for " + std::to_string(dispatch_timeout.count());
+    if (completion_cause == nullptr)
+        message += ", the test coroutine is not completing";
+    if (!active_children.empty())
+        message += ", there were active child jobs: " /* + activeChildren */;
+    if (completion_cause != nullptr && active_children.empty()) {
+        message += coroutine.is_completed() ?
+            ", the test coroutine completed" :
+            ", the test coroutine was not completed";
     }
-    val error = UncompletedCoroutinesError(message)
-    completionCause?.let { cause -> error.addSuppressed(cause) }
-    uncaughtExceptions.forEach { error.addSuppressed(it) }
-    return error
+    AssertionError error(message);
+    if (completion_cause) {
+        error.add_suppressed(*completion_cause);
+    }
+    for (auto* e : uncaught_exceptions) {
+        error.add_suppressed(*e);
+    }
+    return error;
 }
 
-internal fun throwAll(head: Throwable?, other: List<Throwable>) {
-    if (head != null) {
-        other.forEach { head.addSuppressed(it) }
-        throw head
+void throw_all(Throwable* head, const std::vector<Throwable*>& other) {
+    if (head != nullptr) {
+        for (auto* t : other) {
+            head->add_suppressed(*t);
+        }
+        throw *head;
     } else {
-        with(other) {
-            firstOrNull()?.apply {
-                drop(1).forEach { addSuppressed(it) }
-                throw this
+        if (!other.empty()) {
+            auto* first = other[0];
+            for (size_t i = 1; i < other.size(); ++i) {
+                first->add_suppressed(*other[i]);
             }
+            throw *first;
         }
     }
 }
 
-internal expect fun dumpCoroutines()
+// TODO: expect function - needs platform-specific implementation
+void dump_coroutines();
 
-private fun <T: Any> systemProperty(
-    name: String,
-    parse: (String) -> T,
-    default: T,
-): T {
-    val value = systemPropertyImpl(name) ?: return default
-    return parse(value)
+template<typename T>
+T system_property(
+    const std::string& name,
+    std::function<T(const std::string&)> parse,
+    T default_value
+) {
+    auto value = system_property_impl(name);
+    if (!value) return default_value;
+    return parse(*value);
 }
 
-internal expect fun systemPropertyImpl(name: String): String?
+// TODO: expect function - needs platform-specific implementation
+std::optional<std::string> system_property_impl(const std::string& name);
 
-@Deprecated(
-    "This is for binary compatibility with the `runTest` overload that existed at some point",
-    level = DeprecationLevel.HIDDEN
-)
-@JvmName("runTest\$default")
-@Suppress("DEPRECATION", "UNUSED_PARAMETER")
-public fun TestScope.runTestLegacy(
-    dispatchTimeoutMs: Long,
-    testBody: suspend TestScope.() -> Unit,
-    marker: Int,
-    unused2: Any?,
-): TestResult = runTest(dispatchTimeoutMs = if (marker and 1 != 0) dispatchTimeoutMs else 60_000L, testBody)
+// @Deprecated(
+//     "This is for binary compatibility with the `runTest` overload that existed at some point",
+//     level = DeprecationLevel.HIDDEN
+// )
+// @JvmName("runTest\$default")
+// @Suppress("DEPRECATION", "UNUSED_PARAMETER")
+// TODO: Deprecated and hidden - for binary compatibility only
+// TODO: JvmName annotation not applicable in C++
+[[deprecated("This is for binary compatibility")]]
+TestResult run_test_legacy(
+    TestScope& scope,
+    int64_t dispatch_timeout_ms,
+    std::function<void(TestScope&)> test_body,
+    int marker,
+    void* unused2
+) {
+    return scope.run_test(
+        (marker & 1) != 0 ? dispatch_timeout_ms : 60000L,
+        test_body
+    );
+}
 
 // Remove after https://youtrack.jetbrains.com/issue/KT-62423/
-private class AtomicBoolean(initial: Boolean) {
-    private val container = atomic(initial)
-    var value: Boolean
-        get() = container.value
-        set(value: Boolean) { container.value = value }
-}
+class AtomicBoolean {
+private:
+    std::atomic<bool> container;
+public:
+    bool value;
+
+    explicit AtomicBoolean(bool initial) : container(initial), value(initial) {}
+
+    // TODO: Kotlin property with getter/setter needs manual synchronization
+    // For now, direct access to value field (not thread-safe as in Kotlin version)
+};
+
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

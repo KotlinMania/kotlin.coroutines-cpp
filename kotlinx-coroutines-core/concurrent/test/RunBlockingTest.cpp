@@ -1,197 +1,268 @@
-package kotlinx.coroutines
+// Original: kotlinx-coroutines-core/concurrent/test/RunBlockingTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert test annotations to C++ test framework
+// TODO: Implement suspend functions and coroutines
+// TODO: Handle TestBase inheritance
+// TODO: Implement runTest, runBlocking, launch, GlobalScope
+// TODO: Implement withTimeout, withTimeoutOrNull, delay
+// TODO: Implement EventLoop, ContinuationInterceptor
+// TODO: Implement Duration types from kotlin.time
+// TODO: Implement assertIs, assertSame
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.exceptions.*
-import kotlin.coroutines.*
-import kotlin.test.*
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
+namespace kotlinx {
+namespace coroutines {
 
-class RunBlockingTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.exceptions.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.test.*
+// TODO: import kotlin.time.Duration.Companion.milliseconds
+// TODO: import kotlin.time.Duration.Companion.seconds
 
-    @Test
-    fun testWithTimeoutBusyWait() = runTest {
-        val value = withTimeoutOrNull(10) {
-            while (isActive) {
-                // Busy wait
-            }
-            "value"
-        }
-
-        assertEquals("value", value)
-    }
-
-    @Test
-    fun testPrivateEventLoop() {
-        expect(1)
-        runBlocking {
-            expect(2)
-            assertIs<EventLoop>(coroutineContext[ContinuationInterceptor])
-            yield() // is supported!
-            expect(3)
-        }
-        finish(4)
-    }
-
-    @Test
-    fun testOuterEventLoop() {
-        expect(1)
-        runBlocking {
-            expect(2)
-            val outerEventLoop = coroutineContext[ContinuationInterceptor] as EventLoop
-            runBlocking(coroutineContext) {
-                expect(3)
-                // still same event loop
-                assertSame(coroutineContext[ContinuationInterceptor], outerEventLoop)
-                yield() // still works
-                expect(4)
-            }
-            expect(5)
-        }
-        finish(6)
-    }
-
-    @Test
-    fun testOtherDispatcher() = runTest {
-        expect(1)
-        val name = "RunBlockingTest.testOtherDispatcher"
-        val thread = newSingleThreadContext(name)
-        runBlocking(thread) {
-            expect(2)
-            assertSame(coroutineContext[ContinuationInterceptor], thread)
-            assertTrue(currentThreadName().contains(name))
-            yield() // should work
-            expect(3)
-        }
-        finish(4)
-        thread.close()
-    }
-
-    @Test
-    fun testCancellation()  = runTest {
-        newFixedThreadPoolContext(2, "testCancellation").use {
-            val job = GlobalScope.launch(it) {
-                runBlocking(coroutineContext) {
-                    while (true) {
-                        yield()
-                    }
+class RunBlockingTest : public TestBase {
+public:
+    // @Test
+    // TODO: Convert test annotation
+    void test_with_timeout_busy_wait() {
+        runTest([&]() {
+            // TODO: suspend function
+            auto value = with_timeout_or_null(10, [&]() -> std::optional<std::string> {
+                // TODO: suspend function
+                while (is_active()) {
+                    // Busy wait
                 }
-            }
+                return "value";
+            });
 
-            runBlocking {
-                job.cancelAndJoin()
-            }
-        }
+            assertEquals("value", value);
+        });
     }
 
-    @Test
-    fun testCancelWithDelay() {
+    // @Test
+    // TODO: Convert test annotation
+    void test_private_event_loop() {
+        expect(1);
+        runBlocking([&]() {
+            // TODO: suspend function
+            expect(2);
+            auto* event_loop = coroutine_context()[ContinuationInterceptor];
+            assertIs<EventLoop>(event_loop);
+            yield(); // is supported!
+            expect(3);
+        });
+        finish(4);
+    }
+
+    // @Test
+    // TODO: Convert test annotation
+    void test_outer_event_loop() {
+        expect(1);
+        runBlocking([&]() {
+            // TODO: suspend function
+            expect(2);
+            auto* outer_event_loop = dynamic_cast<EventLoop*>(coroutine_context()[ContinuationInterceptor]);
+            runBlocking(coroutine_context(), [&]() {
+                // TODO: suspend function
+                expect(3);
+                // still same event loop
+                assertSame(coroutine_context()[ContinuationInterceptor], outer_event_loop);
+                yield(); // still works
+                expect(4);
+            });
+            expect(5);
+        });
+        finish(6);
+    }
+
+    // @Test
+    // TODO: Convert test annotation
+    void test_other_dispatcher() {
+        runTest([&]() {
+            // TODO: suspend function
+            expect(1);
+            std::string name = "RunBlockingTest.testOtherDispatcher";
+            auto thread = new_single_thread_context(name);
+            runBlocking(thread, [&]() {
+                // TODO: suspend function
+                expect(2);
+                assertSame(coroutine_context()[ContinuationInterceptor], &thread);
+                assertTrue(current_thread_name().find(name) != std::string::npos);
+                yield(); // should work
+                expect(3);
+            });
+            finish(4);
+            thread.close();
+        });
+    }
+
+    // @Test
+    // TODO: Convert test annotation
+    void test_cancellation() {
+        runTest([&]() {
+            // TODO: suspend function
+            auto context = new_fixed_thread_pool_context(2, "testCancellation");
+            context.use([&]() {
+                auto job = GlobalScope::launch(context, [&]() {
+                    // TODO: suspend function
+                    runBlocking(coroutine_context(), [&]() {
+                        // TODO: suspend function
+                        while (true) {
+                            yield();
+                        }
+                    });
+                });
+
+                runBlocking([&]() {
+                    // TODO: suspend function
+                    job.cancel_and_join();
+                });
+            });
+        });
+    }
+
+    // @Test
+    // TODO: Convert test annotation
+    void test_cancel_with_delay() {
         // see https://github.com/Kotlin/kotlinx.coroutines/issues/586
         try {
-            runBlocking {
-                expect(1)
-                coroutineContext.cancel()
-                expect(2)
+            runBlocking([&]() {
+                // TODO: suspend function
+                expect(1);
+                coroutine_context().cancel();
+                expect(2);
                 try {
-                    delay(1)
-                    expectUnreached()
-                } finally {
-                    expect(3)
+                    delay(1);
+                    expectUnreached();
+                } catch (...) {
+                    expect(3);
+                    throw;
                 }
-            }
-            expectUnreached()
-        } catch (e: CancellationException) {
-            finish(4)
+            });
+            expectUnreached();
+        } catch (const CancellationException& e) {
+            finish(4);
         }
     }
 
-    @Test
-    fun testDispatchOnShutdown(): Unit = assertFailsWith<CancellationException> {
-        runBlocking {
-            expect(1)
-            val job = launch(NonCancellable) {
-                try {
-                    expect(2)
-                    delay(Long.MAX_VALUE)
-                } finally {
-                    finish(4)
-                }
-            }
+    // @Test
+    // TODO: Convert test annotation
+    void test_dispatch_on_shutdown() {
+        assert_fails_with<CancellationException>([&]() {
+            runBlocking([&]() {
+                // TODO: suspend function
+                expect(1);
+                auto job = launch(NonCancellable, [&]() {
+                    // TODO: suspend function
+                    try {
+                        expect(2);
+                        delay(LONG_MAX);
+                    } catch (...) {
+                        finish(4);
+                        throw;
+                    }
+                });
 
-            yield()
-            expect(3)
-            coroutineContext.cancel()
-            job.cancel()
-        }
-    }.let { }
-
-    @Test
-    fun testDispatchOnShutdown2(): Unit = assertFailsWith<CancellationException> {
-        runBlocking {
-            coroutineContext.cancel()
-            expect(1)
-            val job = launch(NonCancellable, start = CoroutineStart.UNDISPATCHED) {
-                try {
-                    expect(2)
-                    delay(Long.MAX_VALUE)
-                } finally {
-                    finish(4)
-                }
-            }
-
-            expect(3)
-            job.cancel()
-        }
-    }.let { }
-
-    @Test
-    fun testNestedRunBlocking() = runBlocking {
-        delay(100)
-        val value = runBlocking {
-            delay(100)
-            runBlocking {
-                delay(100)
-                1
-            }
-        }
-
-        assertEquals(1, value)
+                yield();
+                expect(3);
+                coroutine_context().cancel();
+                job.cancel();
+            });
+        });
+        // .let { }
     }
 
-    @Test
-    fun testIncompleteState() {
-        val handle = runBlocking {
+    // @Test
+    // TODO: Convert test annotation
+    void test_dispatch_on_shutdown2() {
+        assert_fails_with<CancellationException>([&]() {
+            runBlocking([&]() {
+                // TODO: suspend function
+                coroutine_context().cancel();
+                expect(1);
+                auto job = launch(NonCancellable, CoroutineStart::kUndispatched, [&]() {
+                    // TODO: suspend function
+                    try {
+                        expect(2);
+                        delay(LONG_MAX);
+                    } catch (...) {
+                        finish(4);
+                        throw;
+                    }
+                });
+
+                expect(3);
+                job.cancel();
+            });
+        });
+        // .let { }
+    }
+
+    // @Test
+    // TODO: Convert test annotation
+    void test_nested_run_blocking() {
+        runBlocking([&]() {
+            // TODO: suspend function
+            delay(100);
+            auto value = runBlocking([&]() {
+                // TODO: suspend function
+                delay(100);
+                return runBlocking([&]() {
+                    // TODO: suspend function
+                    delay(100);
+                    return 1;
+                });
+            });
+
+            assertEquals(1, value);
+        });
+    }
+
+    // @Test
+    // TODO: Convert test annotation
+    void test_incomplete_state() {
+        auto handle = runBlocking([&]() {
+            // TODO: suspend function
             // See #835
-            coroutineContext[Job]!!.invokeOnCompletion { }
-        }
+            return coroutine_context()[Job]->invoke_on_completion([]() { });
+        });
 
-        handle.dispose()
+        handle.dispose();
     }
 
-    @Test
-    fun testCancelledParent() {
-        val job = Job()
-        job.cancel()
-        assertFailsWith<CancellationException> {
-            runBlocking(job) {
-                expectUnreached()
-            }
-        }
+    // @Test
+    // TODO: Convert test annotation
+    void test_cancelled_parent() {
+        auto job = Job();
+        job.cancel();
+        assert_fails_with<CancellationException>([&]() {
+            runBlocking(job, [&]() {
+                // TODO: suspend function
+                expectUnreached();
+            });
+        });
     }
 
     /** Tests that the delayed tasks scheduled on a closed `runBlocking` event loop get processed in reasonable time. */
-    @Test
-    fun testReschedulingDelayedTasks() {
-        val job = runBlocking {
-            val dispatcher = coroutineContext[ContinuationInterceptor]!!
-            GlobalScope.launch(dispatcher) {
-                delay(1.milliseconds)
-            }
-        }
-        runBlocking {
-            withTimeout(10.seconds) {
-                job.join()
-            }
-        }
+    // @Test
+    // TODO: Convert test annotation
+    void test_rescheduling_delayed_tasks() {
+        auto job = runBlocking([&]() {
+            // TODO: suspend function
+            auto* dispatcher = coroutine_context()[ContinuationInterceptor];
+            return GlobalScope::launch(dispatcher, [&]() {
+                // TODO: suspend function
+                delay(1 /* milliseconds */);
+            });
+        });
+        runBlocking([&]() {
+            // TODO: suspend function
+            with_timeout(10'000 /* seconds */, [&]() {
+                // TODO: suspend function
+                job.join();
+            });
+        });
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

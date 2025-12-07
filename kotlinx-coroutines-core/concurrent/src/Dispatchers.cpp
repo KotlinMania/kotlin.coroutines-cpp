@@ -1,4 +1,13 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/concurrent/src/Dispatchers.kt
+//
+// TODO: Implement CoroutineDispatcher class
+// TODO: Handle 'expect val' - this declares a platform-specific property
+// TODO: Implement extension property syntax (Dispatchers.IO)
+// TODO: Map @Suppress annotation to appropriate C++ pragma or comment
+
+namespace kotlinx {
+namespace coroutines {
 
 /**
  * The [CoroutineDispatcher] that is designed for offloading blocking IO tasks to a shared pool of threads.
@@ -36,7 +45,10 @@ package kotlinx.coroutines
  * val databasePoolDispatcher = Dispatchers.IO.limitedParallelism(128)
  * ```
  */
-@Suppress("EXTENSION_SHADOWED_BY_MEMBER")
-public expect val Dispatchers.IO: CoroutineDispatcher
+// @Suppress("EXTENSION_SHADOWED_BY_MEMBER")
+// TODO: 'expect val' means platform-specific implementation required
+// TODO: This is an extension property on Dispatchers object - implement as namespace member or static method
+// CoroutineDispatcher* io; // declared in Dispatchers namespace/class
 
-
+} // namespace coroutines
+} // namespace kotlinx

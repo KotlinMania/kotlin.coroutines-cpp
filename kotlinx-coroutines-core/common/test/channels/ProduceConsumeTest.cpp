@@ -1,56 +1,71 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/ProduceConsumeTest.kt
+//
+// TODO: Translate imports
+// TODO: Translate suspend functions to C++ coroutines
+// TODO: Translate test annotations to C++ test framework
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-class ProduceConsumeTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testRendezvous() = runTest {
-        testProducer(1)
+class ProduceConsumeTest : public TestBase {
+public:
+
+    // TODO: @Test
+    void testRendezvous() /* = runTest */ {
+        // TODO: testProducer(1);
     }
 
-    @Test
-    fun testSmallBuffer() = runTest {
-        testProducer(1)
+    // TODO: @Test
+    void testSmallBuffer() /* = runTest */ {
+        // TODO: testProducer(1);
     }
 
-    @Test
-    fun testMediumBuffer() = runTest {
-        testProducer(10)
+    // TODO: @Test
+    void testMediumBuffer() /* = runTest */ {
+        // TODO: testProducer(10);
     }
 
-    @Test
-    fun testLargeMediumBuffer() = runTest {
-        testProducer(1000)
+    // TODO: @Test
+    void testLargeMediumBuffer() /* = runTest */ {
+        // TODO: testProducer(1000);
     }
 
-    @Test
-    fun testUnlimited() = runTest {
-        testProducer(Channel.UNLIMITED)
+    // TODO: @Test
+    void testUnlimited() /* = runTest */ {
+        // TODO: testProducer(Channel::UNLIMITED);
     }
 
-    private suspend fun testProducer(producerCapacity: Int) {
-        testProducer(1, producerCapacity)
-        testProducer(10, producerCapacity)
-        testProducer(100, producerCapacity)
+private:
+    /* suspend */ void testProducer(int producerCapacity) {
+        // TODO: testProducer(1, producerCapacity);
+        // TODO: testProducer(10, producerCapacity);
+        // TODO: testProducer(100, producerCapacity);
     }
 
-    private suspend fun testProducer(messages: Int, producerCapacity: Int) {
-        var sentAll = false
-        val producer = GlobalScope.produce(coroutineContext, capacity = producerCapacity) {
-            for (i in 1..messages) {
-                send(i)
-            }
-            sentAll = true
-        }
-        var consumed = 0
-        for (x in producer) {
-            consumed++
-        }
-        assertTrue(sentAll)
-        assertEquals(messages, consumed)
+    /* suspend */ void testProducer(int messages, int /* producerCapacity */) {
+        bool sentAll = false;
+        // TODO: auto producer = GlobalScope.produce(coroutineContext, /* capacity = producerCapacity */, [&]() {
+        //     for (int i = 1; i <= messages; i++) {
+        //         send(i);
+        //     }
+        //     sentAll = true;
+        // });
+        int consumed = 0;
+        // TODO: for (auto x : producer) {
+        //     consumed++;
+        // }
+        // TODO: assertTrue(sentAll);
+        // TODO: assertEquals(messages, consumed);
     }
-}
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,135 +1,191 @@
-package kotlinx.coroutines.sync
+// Original: kotlinx-coroutines-core/concurrent/test/sync/SemaphoreStressTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert test annotations to C++ test framework
+// TODO: Implement suspend functions and coroutines
+// TODO: Handle TestBase inheritance
+// TODO: Implement Semaphore, withPermit
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.exceptions.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace sync {
 
-class SemaphoreStressTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.exceptions.*
+// TODO: import kotlin.test.*
 
-    private val iterations = (if (isNative) 1_000 else 10_000) * stressTestMultiplier
+class SemaphoreStressTest : public TestBase {
+private:
+    int iterations = (is_native ? 1'000 : 10'000) * stress_test_multiplier;
 
-    @Test
-    fun testStressTestAsMutex() = runTest {
-        val n = iterations
-        val k = 100
-        var shared = 0
-        val semaphore = Semaphore(1)
-        val jobs = List(n) {
-            launch(Dispatchers.Default) {
-                repeat(k) {
-                    semaphore.acquire()
-                    shared++
-                    semaphore.release()
-                }
-            }
-        }
-        jobs.forEach { it.join() }
-        assertEquals(n * k, shared)
-    }
-
-    @Test
-    fun testStress() = runTest {
-        val n = iterations
-        val k = 100
-        val semaphore = Semaphore(10)
-        val jobs = List(n) {
-            launch(Dispatchers.Default) {
-                repeat(k) {
-                    semaphore.acquire()
-                    semaphore.release()
-                }
-            }
-        }
-        jobs.forEach { it.join() }
-    }
-
-    @Test
-    fun testStressAsMutex() = runTest {
-        runBlocking(Dispatchers.Default) {
-            val n = iterations
-            val k = 100
-            var shared = 0
-            val semaphore = Semaphore(1)
-            val jobs = List(n) {
-                launch {
-                    repeat(k) {
-                        semaphore.acquire()
-                        shared++
-                        semaphore.release()
+public:
+    // @Test
+    // TODO: Convert test annotation
+    void test_stress_test_as_mutex() {
+        runTest([&]() {
+            // TODO: suspend function
+            int n = iterations;
+            int k = 100;
+            int shared = 0;
+            Semaphore semaphore(1);
+            std::vector<Job> jobs;
+            for (int i = 0; i < n; ++i) {
+                jobs.push_back(launch(Dispatchers::Default, [&]() {
+                    // TODO: suspend function
+                    for (int j = 0; j < k; ++j) {
+                        semaphore.acquire();
+                        shared++;
+                        semaphore.release();
                     }
-                }
+                }));
             }
-            jobs.forEach { it.join() }
-            assertEquals(n * k, shared)
-        }
+            for (auto& job : jobs) {
+                job.join();
+            }
+            assertEquals(n * k, shared);
+        });
     }
 
-    @Test
-    fun testStressCancellation() = runTest {
-        val n = iterations
-        val semaphore = Semaphore(1)
-        semaphore.acquire()
-        repeat(n) {
-            val job = launch(Dispatchers.Default) {
-                semaphore.acquire()
+    // @Test
+    // TODO: Convert test annotation
+    void test_stress() {
+        runTest([&]() {
+            // TODO: suspend function
+            int n = iterations;
+            int k = 100;
+            Semaphore semaphore(10);
+            std::vector<Job> jobs;
+            for (int i = 0; i < n; ++i) {
+                jobs.push_back(launch(Dispatchers::Default, [&]() {
+                    // TODO: suspend function
+                    for (int j = 0; j < k; ++j) {
+                        semaphore.acquire();
+                        semaphore.release();
+                    }
+                }));
             }
-            yield()
-            job.cancelAndJoin()
-        }
-        assertEquals(0, semaphore.availablePermits)
-        semaphore.release()
-        assertEquals(1, semaphore.availablePermits)
+            for (auto& job : jobs) {
+                job.join();
+            }
+        });
+    }
+
+    // @Test
+    // TODO: Convert test annotation
+    void test_stress_as_mutex() {
+        runTest([&]() {
+            // TODO: suspend function
+            runBlocking(Dispatchers::Default, [&]() {
+                // TODO: suspend function
+                int n = iterations;
+                int k = 100;
+                int shared = 0;
+                Semaphore semaphore(1);
+                std::vector<Job> jobs;
+                for (int i = 0; i < n; ++i) {
+                    jobs.push_back(launch([&]() {
+                        // TODO: suspend function
+                        for (int j = 0; j < k; ++j) {
+                            semaphore.acquire();
+                            shared++;
+                            semaphore.release();
+                        }
+                    }));
+                }
+                for (auto& job : jobs) {
+                    job.join();
+                }
+                assertEquals(n * k, shared);
+            });
+        });
+    }
+
+    // @Test
+    // TODO: Convert test annotation
+    void test_stress_cancellation() {
+        runTest([&]() {
+            // TODO: suspend function
+            int n = iterations;
+            Semaphore semaphore(1);
+            semaphore.acquire();
+            for (int i = 0; i < n; ++i) {
+                auto job = launch(Dispatchers::Default, [&]() {
+                    // TODO: suspend function
+                    semaphore.acquire();
+                });
+                yield();
+                job.cancel_and_join();
+            }
+            assertEquals(0, semaphore.available_permits());
+            semaphore.release();
+            assertEquals(1, semaphore.available_permits());
+        });
     }
 
     /**
      * This checks if repeated releases that race with cancellations put
      * the semaphore into an incorrect state where permits are leaked.
      */
-    @Test
-    fun testStressReleaseCancelRace() = runTest {
-        val n = iterations
-        val semaphore = Semaphore(1, 1)
-        newSingleThreadContext("SemaphoreStressTest").use { pool ->
-            repeat (n) {
-                // Initially, we hold the permit and no one else can `acquire`,
-                // otherwise it's a bug.
-                assertEquals(0, semaphore.availablePermits)
-                var job1EnteredCriticalSection = false
-                val job1 = launch(start = CoroutineStart.UNDISPATCHED) {
-                    semaphore.acquire()
-                    job1EnteredCriticalSection = true
-                    semaphore.release()
+    // @Test
+    // TODO: Convert test annotation
+    void test_stress_release_cancel_race() {
+        runTest([&]() {
+            // TODO: suspend function
+            int n = iterations;
+            Semaphore semaphore(1, 1);
+            auto pool = new_single_thread_context("SemaphoreStressTest");
+            pool.use([&]() {
+                for (int i = 0; i < n; ++i) {
+                    // Initially, we hold the permit and no one else can `acquire`,
+                    // otherwise it's a bug.
+                    assertEquals(0, semaphore.available_permits());
+                    bool job1_entered_critical_section = false;
+                    auto job1 = launch(CoroutineStart::kUndispatched, [&]() {
+                        // TODO: suspend function
+                        semaphore.acquire();
+                        job1_entered_critical_section = true;
+                        semaphore.release();
+                    });
+                    // check that `job1` didn't finish the call to `acquire()`
+                    assertEquals(false, job1_entered_critical_section);
+                    auto job2 = launch(pool, [&]() {
+                        // TODO: suspend function
+                        semaphore.release();
+                    });
+                    // Because `job2` executes in a separate thread, this
+                    // cancellation races with the call to `release()`.
+                    job1.cancel_and_join();
+                    job2.join();
+                    assertEquals(1, semaphore.available_permits());
+                    semaphore.acquire();
                 }
-                // check that `job1` didn't finish the call to `acquire()`
-                assertEquals(false, job1EnteredCriticalSection)
-                val job2 = launch(pool) {
-                    semaphore.release()
-                }
-                // Because `job2` executes in a separate thread, this
-                // cancellation races with the call to `release()`.
-                job1.cancelAndJoin()
-                job2.join()
-                assertEquals(1, semaphore.availablePermits)
-                semaphore.acquire()
-            }
-        }
+            });
+        });
     }
 
-    @Test
-    fun testShouldBeUnlockedOnCancellation() = runTest {
-        val semaphore = Semaphore(1)
-        val n = 1000 * stressTestMultiplier
-        repeat(n) {
-            val job = launch(Dispatchers.Default) {
-                semaphore.acquire()
-                semaphore.release()
+    // @Test
+    // TODO: Convert test annotation
+    void test_should_be_unlocked_on_cancellation() {
+        runTest([&]() {
+            // TODO: suspend function
+            Semaphore semaphore(1);
+            int n = 1000 * stress_test_multiplier;
+            for (int i = 0; i < n; ++i) {
+                auto job = launch(Dispatchers::Default, [&]() {
+                    // TODO: suspend function
+                    semaphore.acquire();
+                    semaphore.release();
+                });
+                semaphore.with_permit([&]() {
+                    job.cancel();
+                });
+                job.join();
+                assertTrue(semaphore.available_permits() == 1);
             }
-            semaphore.withPermit {
-                job.cancel()
-            }
-            job.join()
-            assertTrue { semaphore.availablePermits == 1 }
-        }
+        });
     }
-}
+};
+
+} // namespace sync
+} // namespace coroutines
+} // namespace kotlinx

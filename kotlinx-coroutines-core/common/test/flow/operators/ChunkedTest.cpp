@@ -1,88 +1,119 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/ChunkedTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Implement @OptIn(ExperimentalCoroutinesApi::class) equivalent
+// - Map Flow operators to C++ equivalents
+// - Map chunked() operator to C++ equivalent
+// - Map joinToString() to C++ equivalent
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-@OptIn(ExperimentalCoroutinesApi::class)
-class ChunkedTest : TestBase() {
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testChunked() = runTest {
-        doTest(flowOf(1, 2, 3, 4, 5), 2, listOf(listOf(1, 2), listOf(3, 4), listOf(5)))
-        doTest(flowOf(1, 2, 3, 4, 5), 3, listOf(listOf(1, 2, 3), listOf(4, 5)))
-        doTest(flowOf(1, 2, 3, 4), 2, listOf(listOf(1, 2), listOf(3, 4)))
-        doTest(flowOf(1), 3, listOf(listOf(1)))
+// TODO: @OptIn(ExperimentalCoroutinesApi::class)
+class ChunkedTest : public TestBase {
+public:
+
+    // TODO: @Test
+    void testChunked() {
+        // TODO: runTest {
+        do_test(flow_of(1, 2, 3, 4, 5), 2, {{1, 2}, {3, 4}, {5}});
+        do_test(flow_of(1, 2, 3, 4, 5), 3, {{1, 2, 3}, {4, 5}});
+        do_test(flow_of(1, 2, 3, 4), 2, {{1, 2}, {3, 4}});
+        do_test(flow_of(1), 3, {{1}});
+        // TODO: }
     }
 
-    private suspend fun <T> doTest(flow: Flow<T>, chunkSize: Int, expected: List<List<T>>) {
-        assertEquals(expected, flow.chunked(chunkSize).toList())
-        assertEquals(flow.toList().chunked(chunkSize), flow.chunked(chunkSize).toList())
+private:
+    template<typename T>
+    void do_test(Flow<T> flow_var, int chunk_size, std::vector<std::vector<T>> expected) {
+        assertEquals(expected, flow_var.chunked(chunk_size).to_list());
+        assertEquals(flow_var.to_list().chunked(chunk_size), flow_var.chunked(chunk_size).to_list());
     }
 
-    @Test
-    fun testEmpty() = runTest {
-        doTest(emptyFlow<Int>(), 1, emptyList())
-        doTest(emptyFlow<Int>(), 2, emptyList())
+public:
+    // TODO: @Test
+    void testEmpty() {
+        // TODO: runTest {
+        do_test(empty_flow<int>(), 1, {});
+        do_test(empty_flow<int>(), 2, {});
+        // TODO: }
     }
 
-    @Test
-    fun testChunkedCancelled() = runTest {
-        val result = flow {
-            expect(1)
-            emit(1)
-            emit(2)
-            expect(2)
-        }.chunked(1).buffer().take(1).toList()
-        assertEquals(listOf(listOf(1)), result)
-        finish(3)
+    // TODO: @Test
+    void testChunkedCancelled() {
+        // TODO: runTest {
+        auto result = flow([](auto& emit) {
+            expect(1);
+            emit(1);
+            emit(2);
+            expect(2);
+        }).chunked(1).buffer().take(1).to_list();
+        assertEquals(std::vector<std::vector<int>>{{1}}, result);
+        finish(3);
+        // TODO: }
     }
 
-    @Test
-    fun testChunkedCancelledWithSuspension() = runTest {
-        val result = flow {
-            expect(1)
-            emit(1)
-            yield()
-            expectUnreached()
-            emit(2)
-        }.chunked(1).buffer().take(1).toList()
-        assertEquals(listOf(listOf(1)), result)
-        finish(2)
+    // TODO: @Test
+    void testChunkedCancelledWithSuspension() {
+        // TODO: runTest {
+        auto result = flow([](auto& emit) {
+            expect(1);
+            emit(1);
+            yield();
+            expectUnreached();
+            emit(2);
+        }).chunked(1).buffer().take(1).to_list();
+        assertEquals(std::vector<std::vector<int>>{{1}}, result);
+        finish(2);
+        // TODO: }
     }
 
-    @Test
-    fun testChunkedDoesNotIgnoreCancellation() = runTest {
-        expect(1)
-        val result = flow {
-            coroutineScope {
-                launch {
-                    hang { expect(2) }
-                }
-                yield()
-                emit(1)
-                emit(2)
-            }
-        }.chunked(1).take(1).toList()
-        assertEquals(listOf(listOf(1)), result)
-        finish(3)
+    // TODO: @Test
+    void testChunkedDoesNotIgnoreCancellation() {
+        // TODO: runTest {
+        expect(1);
+        auto result = flow([](auto& emit) {
+            coroutine_scope([&]() {
+                launch([&]() {
+                    hang([&]() { expect(2); });
+                });
+                yield();
+                emit(1);
+                emit(2);
+            });
+        }).chunked(1).take(1).to_list();
+        assertEquals(std::vector<std::vector<int>>{{1}}, result);
+        finish(3);
+        // TODO: }
     }
 
-    @Test
-    fun testIae() {
-        assertFailsWith<IllegalArgumentException> { emptyFlow<Int>().chunked(-1) }
-        assertFailsWith<IllegalArgumentException> { emptyFlow<Int>().chunked(0) }
-        assertFailsWith<IllegalArgumentException> { emptyFlow<Int>().chunked(Int.MIN_VALUE) }
-        assertFailsWith<IllegalArgumentException> { emptyFlow<Int>().chunked(Int.MIN_VALUE + 1) }
+    // TODO: @Test
+    void testIae() {
+        assertFailsWith<IllegalArgumentException>([&]() { empty_flow<int>().chunked(-1); });
+        assertFailsWith<IllegalArgumentException>([&]() { empty_flow<int>().chunked(0); });
+        assertFailsWith<IllegalArgumentException>([&]() { empty_flow<int>().chunked(INT_MIN); });
+        assertFailsWith<IllegalArgumentException>([&]() { empty_flow<int>().chunked(INT_MIN + 1); });
     }
 
-    @Test
-    fun testSample() = runTest {
-        val result = flowOf("a", "b", "c", "d", "e")
+    // TODO: @Test
+    void testSample() {
+        // TODO: runTest {
+        auto result = flow_of("a", "b", "c", "d", "e")
             .chunked(2)
-            .map { it.joinToString(separator = "") }
-            .toList()
-        assertEquals(listOf("ab", "cd", "e"), result)
+            .map([](auto it) { return join_to_string(it, ""); })
+            .to_list();
+        assertEquals(std::vector<std::string>{"ab", "cd", "e"}, result);
+        // TODO: }
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

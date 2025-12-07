@@ -1,100 +1,146 @@
-package kotlinx.coroutines.channels
+// Original: kotlinx-coroutines-core/concurrent/test/channels/ChannelCancelUndeliveredElementStressTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert test annotations to C++ test framework
+// TODO: Implement suspend functions and coroutines
+// TODO: Handle TestBase inheritance
+// TODO: Implement atomic operations with std::atomic
+// TODO: Implement Channel with onUndeliveredElement
+// TODO: Implement Random, select, assertIs
+// TODO: Implement BufferedChannel
 
-import kotlinx.coroutines.testing.*
-import kotlinx.atomicfu.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.selects.*
-import kotlin.random.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
 
-class ChannelCancelUndeliveredElementStressTest : TestBase() {
-    private val repeatTimes = (if (isNative) 1_000 else 10_000) * stressTestMultiplier
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.atomicfu.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.selects.*
+// TODO: import kotlin.random.*
+// TODO: import kotlin.test.*
+
+class ChannelCancelUndeliveredElementStressTest : public TestBase {
+private:
+    int repeat_times = (is_native ? 1'000 : 10'000) * stress_test_multiplier;
 
     // total counters
-    private var sendCnt = 0
-    private var trySendFailedCnt = 0
-    private var receivedCnt = 0
-    private var undeliveredCnt = 0
+    int send_cnt = 0;
+    int try_send_failed_cnt = 0;
+    int received_cnt = 0;
+    int undelivered_cnt = 0;
 
     // last operation
-    private var lastReceived = 0
-    private var dSendCnt = 0
-    private var dSendExceptionCnt = 0
-    private var dTrySendFailedCnt = 0
-    private var dReceivedCnt = 0
-    private val dUndeliveredCnt = atomic(0)
+    int last_received = 0;
+    int d_send_cnt = 0;
+    int d_send_exception_cnt = 0;
+    int d_try_send_failed_cnt = 0;
+    int d_received_cnt = 0;
+    std::atomic<int> d_undelivered_cnt{0};
 
-    @Test
-    fun testStress() = runTest {
-        repeat(repeatTimes) {
-            val channel = Channel<Int>(1) { dUndeliveredCnt.incrementAndGet() }
-            val j1 = launch(Dispatchers.Default) {
-                sendOne(channel) // send first
-                sendOne(channel) // send second
-            }
-            val j2 = launch(Dispatchers.Default) {
-                receiveOne(channel) // receive one element from the channel
-                channel.cancel() // cancel the channel
-            }
+public:
+    // @Test
+    // TODO: Convert test annotation
+    void test_stress() {
+        runTest([&]() {
+            // TODO: suspend function
+            for (int i = 0; i < repeat_times; ++i) {
+                auto channel = Channel<int>(1, [&](int) {
+                    d_undelivered_cnt.fetch_add(1);
+                });
+                auto j1 = launch(Dispatchers::Default, [&]() {
+                    // TODO: suspend function
+                    send_one(channel); // send first
+                    send_one(channel); // send second
+                });
+                auto j2 = launch(Dispatchers::Default, [&]() {
+                    // TODO: suspend function
+                    receive_one(channel); // receive one element from the channel
+                    channel.cancel(); // cancel the channel
+                });
 
-            joinAll(j1, j2)
+                join_all(j1, j2);
 
-            // All elements must be either received or undelivered (IN every run)
-            if (dSendCnt - dTrySendFailedCnt != dReceivedCnt + dUndeliveredCnt.value) {
-                println("          Send: $dSendCnt")
-                println("Send exception: $dSendExceptionCnt")
-                println("trySend failed: $dTrySendFailedCnt")
-                println("      Received: $dReceivedCnt")
-                println("   Undelivered: ${dUndeliveredCnt.value}")
-                error("Failed")
-            }
-            (channel as? BufferedChannel<*>)?.checkSegmentStructureInvariants()
-            trySendFailedCnt += dTrySendFailedCnt
-            receivedCnt += dReceivedCnt
-            undeliveredCnt += dUndeliveredCnt.value
-            // clear for next run
-            dSendCnt = 0
-            dSendExceptionCnt = 0
-            dTrySendFailedCnt = 0
-            dReceivedCnt = 0
-            dUndeliveredCnt.value = 0
-        }
-        // Stats
-        println("          Send: $sendCnt")
-        println("trySend failed: $trySendFailedCnt")
-        println("      Received: $receivedCnt")
-        println("   Undelivered: $undeliveredCnt")
-        assertEquals(sendCnt - trySendFailedCnt, receivedCnt + undeliveredCnt)
-    }
-
-    private suspend fun sendOne(channel: Channel<Int>) {
-        dSendCnt++
-        val i = ++sendCnt
-        try {
-            when (Random.nextInt(2)) {
-                0 -> channel.send(i)
-                1 -> if (!channel.trySend(i).isSuccess) {
-                    dTrySendFailedCnt++
+                // All elements must be either received or undelivered (IN every run)
+                if (d_send_cnt - d_try_send_failed_cnt != d_received_cnt + d_undelivered_cnt.load()) {
+                    std::cout << "          Send: " << d_send_cnt << std::endl;
+                    std::cout << "Send exception: " << d_send_exception_cnt << std::endl;
+                    std::cout << "trySend failed: " << d_try_send_failed_cnt << std::endl;
+                    std::cout << "      Received: " << d_received_cnt << std::endl;
+                    std::cout << "   Undelivered: " << d_undelivered_cnt.load() << std::endl;
+                    throw std::runtime_error("Failed");
                 }
+                auto* buffered_channel = dynamic_cast<BufferedChannel<int>*>(&channel);
+                if (buffered_channel) {
+                    buffered_channel->check_segment_structure_invariants();
+                }
+                try_send_failed_cnt += d_try_send_failed_cnt;
+                received_cnt += d_received_cnt;
+                undelivered_cnt += d_undelivered_cnt.load();
+                // clear for next run
+                d_send_cnt = 0;
+                d_send_exception_cnt = 0;
+                d_try_send_failed_cnt = 0;
+                d_received_cnt = 0;
+                d_undelivered_cnt.store(0);
             }
-        } catch (e: Throwable) {
-            assertIs<CancellationException>(e) // the only exception possible in this test
-            dSendExceptionCnt++
-            throw e
+            // Stats
+            std::cout << "          Send: " << send_cnt << std::endl;
+            std::cout << "trySend failed: " << try_send_failed_cnt << std::endl;
+            std::cout << "      Received: " << received_cnt << std::endl;
+            std::cout << "   Undelivered: " << undelivered_cnt << std::endl;
+            assertEquals(send_cnt - try_send_failed_cnt, received_cnt + undelivered_cnt);
+        });
+    }
+
+private:
+    void send_one(Channel<int>& channel) {
+        // TODO: suspend function
+        d_send_cnt++;
+        int i = ++send_cnt;
+        try {
+            switch (Random::next_int(2)) {
+                case 0:
+                    channel.send(i);
+                    break;
+                case 1:
+                    if (!channel.try_send(i).is_success()) {
+                        d_try_send_failed_cnt++;
+                    }
+                    break;
+            }
+        } catch (const std::exception& e) {
+            // assertIs<CancellationException>(e) // the only exception possible in this test
+            d_send_exception_cnt++;
+            throw;
         }
     }
 
-    private suspend fun receiveOne(channel: Channel<Int>) {
-        val received = when (Random.nextInt(3)) {
-            0 -> channel.receive()
-            1 -> channel.receiveCatching().getOrElse { error("Cannot be closed yet") }
-            2 -> select {
-                channel.onReceive { it }
-            }
-            else -> error("Cannot happen")
+    void receive_one(Channel<int>& channel) {
+        // TODO: suspend function
+        int received;
+        switch (Random::next_int(3)) {
+            case 0:
+                received = channel.receive();
+                break;
+            case 1:
+                received = channel.receive_catching().get_or_else([]() {
+                    throw std::runtime_error("Cannot be closed yet");
+                });
+                break;
+            case 2:
+                received = select<int>([&](auto& builder) {
+                    builder.on_receive(channel, [](int it) { return it; });
+                });
+                break;
+            default:
+                throw std::runtime_error("Cannot happen");
         }
-        assertTrue(received > lastReceived)
-        dReceivedCnt++
-        lastReceived = received
+        assertTrue(received > last_received);
+        d_received_cnt++;
+        last_received = received;
     }
-}
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

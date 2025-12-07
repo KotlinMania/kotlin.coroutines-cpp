@@ -1,44 +1,82 @@
-@file:Suppress("UNCHECKED_CAST")
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/internal/InlineList.kt
+//
+// TODO: This is a mechanical transliteration - semantics not fully implemented
+// TODO: @JvmInline value class needs C++ equivalent (std::variant or union)
+// TODO: ArrayList needs std::vector equivalent
+// TODO: Inline functions need proper C++ implementation
+// TODO: assert function needs implementation
 
-package kotlinx.coroutines.internal
+#include <vector>
+#include <variant>
+#include <functional>
 
-import kotlinx.coroutines.assert
-import kotlin.jvm.*
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
 
 /*
  * Inline class that represents a mutable list, but does not allocate an underlying storage
  * for zero and one elements.
  * Cannot be parametrized with `List<*>`.
  */
-@JvmInline
-internal value class InlineList<E>(private val holder: Any? = null) {
-    operator fun plus(element: E): InlineList<E>  {
-        assert { element !is List<*> } // Lists are prohibited
-        return when (holder) {
-            null -> InlineList(element)
-            is ArrayList<*> -> {
-                (holder as ArrayList<E>).add(element)
-                InlineList(holder)
-            }
-            else -> {
-                val list = ArrayList<E>(4)
-                list.add(holder as E)
-                list.add(element)
-                InlineList(list)
-            }
+// TODO: @JvmInline - value class, using std::variant as approximation
+template<typename E>
+class InlineList {
+private:
+    // TODO: holder can be: nullptr, E*, or std::vector<E*>*
+    std::variant<std::monostate, E*, std::vector<E*>*> holder_;
+
+public:
+    InlineList() : holder_(std::monostate{}) {}
+
+    explicit InlineList(void* holder) {
+        // TODO: proper variant construction based on holder type
+        holder_ = std::monostate{};
+    }
+
+    InlineList<E> operator+(E* element) {
+        // TODO: assert { element !is List<*> } // Lists are prohibited
+
+        if (std::holds_alternative<std::monostate>(holder_)) {
+            // null -> InlineList(element)
+            InlineList<E> result;
+            result.holder_ = element;
+            return result;
+        } else if (std::holds_alternative<std::vector<E*>*>(holder_)) {
+            // is ArrayList<*>
+            auto* list = std::get<std::vector<E*>*>(holder_);
+            list->push_back(element);
+            return *this;
+        } else {
+            // single element
+            auto* list = new std::vector<E*>();
+            list->reserve(4);
+            list->push_back(std::get<E*>(holder_));
+            list->push_back(element);
+            InlineList<E> result;
+            result.holder_ = list;
+            return result;
         }
     }
 
-    inline fun forEachReversed(action: (E) -> Unit) {
-        when (holder) {
-            null -> return
-            !is ArrayList<*> -> action(holder as E)
-            else -> {
-                val list = holder as ArrayList<E>
-                for (i in (list.size - 1) downTo 0) {
-                    action(list[i])
-                }
+    template<typename Action>
+    void for_each_reversed(Action action) {
+        if (std::holds_alternative<std::monostate>(holder_)) {
+            return;
+        } else if (std::holds_alternative<E*>(holder_)) {
+            // !is ArrayList<*>
+            action(std::get<E*>(holder_));
+        } else {
+            // is ArrayList<*>
+            auto* list = std::get<std::vector<E*>*>(holder_);
+            for (int i = static_cast<int>(list->size()) - 1; i >= 0; --i) {
+                action((*list)[i]);
             }
         }
     }
-}
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

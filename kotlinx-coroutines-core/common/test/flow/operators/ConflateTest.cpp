@@ -1,23 +1,41 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/ConflateTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Map withVirtualTime to C++ equivalent
+// - Map delay() to C++ equivalent
+// - Map conflate() operator
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class ConflateTest : TestBase() {
-    @Test // from example
-    fun testExample() = withVirtualTime {
-        expect(1)
-        val flow = flow {
-            for (i in 1..30) {
-                delay(100)
-                emit(i)
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlin.test.*
+
+class ConflateTest : public TestBase {
+public:
+    // TODO: @Test
+    // from example
+    void testExample() {
+        // TODO: withVirtualTime {
+        expect(1);
+        auto flow_var = flow([](auto& emit) {
+            for (int i = 1; i <= 30; ++i) {
+                delay(100);
+                emit(i);
             }
-        }
-        val result = flow.conflate().onEach {
-            delay(1000)
-        }.toList()
-        assertEquals(listOf(1, 10, 20, 30), result)
-        finish(2)
+        });
+        auto result = flow_var.conflate().on_each([](auto it) {
+            delay(1000);
+        }).to_list();
+        assertEquals(std::vector<int>{1, 10, 20, 30}, result);
+        finish(2);
+        // TODO: }
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

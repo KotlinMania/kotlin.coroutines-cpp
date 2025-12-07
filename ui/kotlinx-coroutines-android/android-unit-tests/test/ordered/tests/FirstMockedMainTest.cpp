@@ -1,41 +1,53 @@
-package ordered.tests
+// Original: ui/kotlinx-coroutines-android/android-unit-tests/test/ordered/tests/FirstMockedMainTest.kt
+// Transliterated from Kotlin to C++ - First pass syntax conversion
+// TODO: Implement JUnit @Before, @After, @Test annotations
+// TODO: Convert TestBase inheritance
+// TODO: Convert Dispatchers.setMain/resetMain to C++ equivalents
+// TODO: Implement exception message checking (contains)
+// TODO: Convert nullable assertion operator (!!)
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.test.*
-import org.junit.*
-import org.junit.Test
-import java.lang.IllegalStateException
-import kotlin.test.*
+namespace ordered {
+namespace tests {
 
-open class FirstMockedMainTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.test.*
+// TODO: import org.junit.*
+// TODO: import org.junit.Test
+// TODO: import java.lang.IllegalStateException
+// TODO: import kotlin.test.*
 
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
+class FirstMockedMainTest : public TestBase {
+public:
+    // TODO: @Before
+    void setUp() {
+        Dispatchers::setMain(Dispatchers.Unconfined);
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
+    // TODO: @After
+    void tearDown() {
+        Dispatchers::resetMain();
     }
 
-    @Test
-    fun testComponent() {
-        val component = TestComponent()
-        component.launchSomething()
-        assertTrue(component.launchCompleted)
+    // TODO: @Test
+    void testComponent() {
+        TestComponent component;
+        component.launch_something();
+        assertTrue(component.launch_completed);
     }
 
-    @Test
-    fun testFailureWhenReset() {
-        Dispatchers.resetMain()
-        val component = TestComponent()
+    // TODO: @Test
+    void testFailureWhenReset() {
+        Dispatchers::resetMain();
+        TestComponent component;
         try {
-            component.launchSomething()
-            throw component.caughtException
-        } catch (e: IllegalStateException) {
-            assertTrue(e.message!!.contains("Dispatchers.setMain"))
+            component.launch_something();
+            throw component.caught_exception;
+        } catch (const std::invalid_argument& e) {
+            assertTrue(std::string(e.what()).find("Dispatchers.setMain") != std::string::npos);
         }
     }
-}
+};
+
+} // namespace tests
+} // namespace ordered

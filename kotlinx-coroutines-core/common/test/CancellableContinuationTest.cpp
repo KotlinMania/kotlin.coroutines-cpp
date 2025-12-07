@@ -1,139 +1,167 @@
-@file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-21913
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/CancellableContinuationTest.kt
+// TODO: Review imports and dependencies
+// TODO: Adapt test framework annotations to C++ testing framework
+// TODO: Handle suspend functions and coroutine context
+// TODO: Handle nullable types appropriately
 
-package kotlinx.coroutines
+// @file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-21913
 
-import kotlinx.coroutines.testing.*
-import kotlin.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class CancellableContinuationTest : TestBase() {
-    @Test
-    fun testResumeWithExceptionAndResumeWithException() = runTest {
-        var continuation: Continuation<Unit>? = null
-        val job = launch {
-            try {
-                expect(2)
-                suspendCancellableCoroutine<Unit> { c ->
-                    continuation = c
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.test.*
+
+class CancellableContinuationTest : public TestBase {
+public:
+    // @Test
+    void test_resume_with_exception_and_resume_with_exception() {
+        run_test([this]() {
+            Continuation<void>* continuation = nullptr;
+            auto job = launch([this, &continuation]() {
+                try {
+                    expect(2);
+                    suspend_cancellable_coroutine<void>([&continuation](auto c) {
+                        continuation = &c;
+                    });
+                } catch (const TestException& e) {
+                    expect(3);
                 }
-            } catch (e: TestException) {
-                expect(3)
-            }
-        }
-        expect(1)
-        yield()
-        continuation!!.resumeWithException(TestException())
-        yield()
-        assertFailsWith<IllegalStateException> { continuation!!.resumeWithException(TestException()) }
-        job.join()
-        finish(4)
+            });
+            expect(1);
+            yield();
+            continuation->resume_with_exception(TestException());
+            yield();
+            assert_fails_with<IllegalStateException>([&]() {
+                continuation->resume_with_exception(TestException());
+            });
+            job.join();
+            finish(4);
+        });
     }
 
-    @Test
-    fun testResumeAndResumeWithException() = runTest {
-        var continuation: Continuation<Unit>? = null
-        val job = launch {
-            expect(2)
-            suspendCancellableCoroutine<Unit> { c ->
-                continuation = c
-            }
-            expect(3)
-        }
-        expect(1)
-        yield()
-        continuation!!.resume(Unit)
-        job.join()
-        assertFailsWith<IllegalStateException> { continuation!!.resumeWithException(TestException()) }
-        finish(4)
+    // @Test
+    void test_resume_and_resume_with_exception() {
+        run_test([this]() {
+            Continuation<void>* continuation = nullptr;
+            auto job = launch([this, &continuation]() {
+                expect(2);
+                suspend_cancellable_coroutine<void>([&continuation](auto c) {
+                    continuation = &c;
+                });
+                expect(3);
+            });
+            expect(1);
+            yield();
+            continuation->resume();
+            job.join();
+            assert_fails_with<IllegalStateException>([&]() {
+                continuation->resume_with_exception(TestException());
+            });
+            finish(4);
+        });
     }
 
-    @Test
-    fun testResumeAndResume() = runTest {
-        var continuation: Continuation<Unit>? = null
-        val job = launch {
-            expect(2)
-            suspendCancellableCoroutine<Unit> { c ->
-                continuation = c
-            }
-            expect(3)
-        }
-        expect(1)
-        yield()
-        continuation!!.resume(Unit)
-        job.join()
-        assertFailsWith<IllegalStateException> { continuation!!.resume(Unit) }
-        finish(4)
+    // @Test
+    void test_resume_and_resume() {
+        run_test([this]() {
+            Continuation<void>* continuation = nullptr;
+            auto job = launch([this, &continuation]() {
+                expect(2);
+                suspend_cancellable_coroutine<void>([&continuation](auto c) {
+                    continuation = &c;
+                });
+                expect(3);
+            });
+            expect(1);
+            yield();
+            continuation->resume();
+            job.join();
+            assert_fails_with<IllegalStateException>([&]() { continuation->resume(); });
+            finish(4);
+        });
     }
 
     /**
      * Cancelling outer job may, in practise, race with attempt to resume continuation and resumes
      * should be ignored. Here suspended coroutine is cancelled but then resumed with exception.
      */
-    @Test
-    fun testCancelAndResumeWithException() = runTest {
-        var continuation: Continuation<Unit>? = null
-        val job = launch {
-            try {
-                expect(2)
-                suspendCancellableCoroutine<Unit> { c ->
-                    continuation = c
+    // @Test
+    void test_cancel_and_resume_with_exception() {
+        run_test([this]() {
+            Continuation<void>* continuation = nullptr;
+            auto job = launch([this, &continuation]() {
+                try {
+                    expect(2);
+                    suspend_cancellable_coroutine<void>([&continuation](auto c) {
+                        continuation = &c;
+                    });
+                } catch (const CancellationException& e) {
+                    expect(3);
                 }
-            } catch (e: CancellationException) {
-                expect(3)
-            }
-        }
-        expect(1)
-        yield()
-        job.cancel() // Cancel job
-        yield()
-        continuation!!.resumeWithException(TestException()) // Should not fail
-        finish(4)
+            });
+            expect(1);
+            yield();
+            job.cancel(); // Cancel job
+            yield();
+            continuation->resume_with_exception(TestException()); // Should not fail
+            finish(4);
+        });
     }
 
     /**
      * Cancelling outer job may, in practise, race with attempt to resume continuation and resumes
      * should be ignored. Here suspended coroutine is cancelled but then resumed with exception.
      */
-    @Test
-    fun testCancelAndResume() = runTest {
-        var continuation: Continuation<Unit>? = null
-        val job = launch {
-            try {
-                expect(2)
-                suspendCancellableCoroutine<Unit> { c ->
-                    continuation = c
+    // @Test
+    void test_cancel_and_resume() {
+        run_test([this]() {
+            Continuation<void>* continuation = nullptr;
+            auto job = launch([this, &continuation]() {
+                try {
+                    expect(2);
+                    suspend_cancellable_coroutine<void>([&continuation](auto c) {
+                        continuation = &c;
+                    });
+                } catch (const CancellationException& e) {
+                    expect(3);
                 }
-            } catch (e: CancellationException) {
-                expect(3)
-            }
-        }
-        expect(1)
-        yield()
-        job.cancel() // Cancel job
-        yield()
-        continuation!!.resume(Unit) // Should not fail
-        finish(4)
+            });
+            expect(1);
+            yield();
+            job.cancel(); // Cancel job
+            yield();
+            continuation->resume(); // Should not fail
+            finish(4);
+        });
     }
 
-    @Test
-    fun testCompleteJobWhileSuspended() = runTest {
-        expect(1)
-        val completableJob = Job()
-        val coroutineBlock = suspend {
-            assertFailsWith<CancellationException> {
-                suspendCancellableCoroutine<Unit> { cont ->
-                    expect(2)
-                    assertSame(completableJob, cont.context[Job])
-                    completableJob.complete()
-                }
-                expectUnreached()
-            }
-            expect(3)
-        }
-        coroutineBlock.startCoroutine(Continuation(completableJob) {
-            assertEquals(Unit, it.getOrNull())
-            expect(4)
-        })
-        finish(5)
+    // @Test
+    void test_complete_job_while_suspended() {
+        run_test([this]() {
+            expect(1);
+            auto completable_job = Job();
+            auto coroutine_block = []() {
+                assert_fails_with<CancellationException>([]() {
+                    suspend_cancellable_coroutine<void>([](auto cont) {
+                        expect(2);
+                        assert_same(completable_job, cont.context[Job()]);
+                        completable_job.complete();
+                    });
+                    expect_unreached();
+                });
+                expect(3);
+            };
+            coroutine_block.start_coroutine(Continuation(completable_job, [this](auto it) {
+                assert_equals(std::monostate{}, it.get_or_null());
+                expect(4);
+            }));
+            finish(5);
+        });
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

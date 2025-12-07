@@ -1,3 +1,17 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/internal/SystemProps.kt
+//
+// TODO: actual keyword - platform-specific implementation
 
-internal actual fun systemProp(propertyName: String): String? = null
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
+
+// TODO: internal actual function
+std::string* system_prop(std::string property_name) {
+    return nullptr;
+}
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

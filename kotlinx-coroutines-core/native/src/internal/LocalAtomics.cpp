@@ -1,16 +1,37 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/internal/LocalAtomics.kt
+//
+// TODO: actual keyword - platform-specific implementation
+// TODO: kotlinx.atomicfu atomic primitives
 
-import kotlinx.atomicfu.*
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
 
-internal actual class LocalAtomicInt actual constructor(value: Int) {
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlinx.atomicfu.*
 
-    private val iRef = atomic(value)
+// TODO: internal actual class
+class LocalAtomicInt {
+private:
+    std::atomic<int> i_ref;
 
-    actual fun set(value: Int) {
-        iRef.value = value
+public:
+    LocalAtomicInt(int value) : i_ref(value) {}
+
+    void set(int value) {
+        i_ref.store(value);
     }
 
-    actual fun get(): Int = iRef.value
+    int get() {
+        return i_ref.load();
+    }
 
-    actual fun decrementAndGet(): Int = iRef.decrementAndGet()
-}
+    int decrement_and_get() {
+        return i_ref.fetch_sub(1) - 1;
+    }
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

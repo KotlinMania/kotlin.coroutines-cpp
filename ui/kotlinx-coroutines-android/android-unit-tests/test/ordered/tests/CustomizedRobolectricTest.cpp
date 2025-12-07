@@ -1,53 +1,70 @@
-package ordered.tests
+// Original: ui/kotlinx-coroutines-android/android-unit-tests/test/ordered/tests/CustomizedRobolectricTest.kt
+// Transliterated from Kotlin to C++ - First pass syntax conversion
+// TODO: Implement Robolectric test runner integration
+// TODO: Map @Config, @RunWith, @LooperMode annotations
+// TODO: Convert TestBase inheritance
+// TODO: Implement ShadowLooper API
+// TODO: Convert Dispatchers.setMain/resetMain to C++ equivalents
+// TODO: Implement GlobalScope.launch with exception handler
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.test.*
-import org.junit.Test
-import org.junit.runner.*
-import org.robolectric.*
-import org.robolectric.annotation.*
-import org.robolectric.shadows.*
-import kotlin.test.*
+namespace ordered {
+namespace tests {
 
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.test.*
+// TODO: import org.junit.Test
+// TODO: import org.junit.runner.*
+// TODO: import org.robolectric.*
+// TODO: import org.robolectric.annotation.*
+// TODO: import org.robolectric.shadows.*
+// TODO: import kotlin.test.*
 
-class InitMainDispatcherBeforeRobolectricTestRunner(testClass: Class<*>) : RobolectricTestRunner(testClass) {
-
-    init {
-        kotlin.runCatching {
+class InitMainDispatcherBeforeRobolectricTestRunner : public RobolectricTestRunner {
+public:
+    explicit InitMainDispatcherBeforeRobolectricTestRunner(const std::type_info& test_class)
+        : RobolectricTestRunner(test_class) {
+        // TODO: Convert kotlin.runCatching
+        try {
             // touch Main, watch it burn
-            GlobalScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, _ -> }) {  }
+            GlobalScope.launch(Dispatchers.Main + CoroutineExceptionHandler([](auto, auto) { })) { };
+        } catch (...) {
+            // Silently catch exceptions
         }
     }
-}
+};
 
-@Config(manifest = Config.NONE, sdk = [28])
-@RunWith(InitMainDispatcherBeforeRobolectricTestRunner::class)
-@LooperMode(LooperMode.Mode.LEGACY)
-class CustomizedRobolectricTest : TestBase() {
-    @Test
-    fun testComponent()  {
+// TODO: @Config(manifest = Config.NONE, sdk = [28])
+// TODO: @RunWith(InitMainDispatcherBeforeRobolectricTestRunner::class)
+// TODO: @LooperMode(LooperMode.Mode.LEGACY)
+class CustomizedRobolectricTest : public TestBase {
+public:
+    // TODO: @Test
+    void testComponent() {
         // Note that main is not set at all
-        val component = TestComponent()
-        checkComponent(component)
+        TestComponent component;
+        check_component(component);
     }
 
-    @Test
-    fun testComponentAfterReset()  {
+    // TODO: @Test
+    void testComponentAfterReset() {
         // Note that main is not set at all
-        val component = TestComponent()
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        Dispatchers.resetMain()
-        checkComponent(component)
+        TestComponent component;
+        Dispatchers::setMain(Dispatchers.Unconfined);
+        Dispatchers::resetMain();
+        check_component(component);
     }
 
-
-    private fun checkComponent(component: TestComponent) {
-        val mainLooper = ShadowLooper.getShadowMainLooper()
-        mainLooper.pause()
-        component.launchSomething()
-        assertFalse(component.launchCompleted)
-        mainLooper.unPause()
-        assertTrue(component.launchCompleted)
+private:
+    void check_component(TestComponent& component) {
+        auto main_looper = ShadowLooper::getShadowMainLooper();
+        main_looper.pause();
+        component.launch_something();
+        assertFalse(component.launch_completed);
+        main_looper.unPause();
+        assertTrue(component.launch_completed);
     }
-}
+};
+
+} // namespace tests
+} // namespace ordered

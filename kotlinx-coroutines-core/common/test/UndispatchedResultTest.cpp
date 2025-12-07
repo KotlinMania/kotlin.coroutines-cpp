@@ -1,64 +1,52 @@
-package kotlinx.coroutines
+// Original: kotlinx-coroutines-core/common/test/UndispatchedResultTest.kt
+// TODO: Transliterated from Kotlin - needs C++ implementation
+// TODO: Handle undispatched result propagation
+// TODO: Map test framework annotations to C++ test framework
 
-import kotlinx.coroutines.testing.*
-import kotlin.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class UndispatchedResultTest : TestBase() {
-
-    @Test
-    fun testWithContext() = runTest {
-        invokeTest { block -> withContext(wrapperDispatcher(coroutineContext), block) }
+class UndispatchedResultTest : public TestBase {
+public:
+    // TODO: @Test
+    void test_with_context() {
+        // TODO: runTest {
+        //     invoke_test([](auto block) { with_context(wrapper_dispatcher(coroutineContext), block); });
+        // }
     }
 
-    @Test
-    fun testWithContextFastPath() = runTest {
-        invokeTest { block -> withContext(coroutineContext, block) }
+    // TODO: @Test
+    void test_with_context_fast_path() {
+        // TODO: runTest {
+        //     invoke_test([](auto block) { with_context(coroutineContext, block); });
+        // }
     }
 
-    @Test
-    fun testWithTimeout() = runTest {
-        invokeTest { block -> withTimeout(Long.MAX_VALUE, block) }
+    // TODO: @Test
+    void test_with_timeout() {
+        // TODO: runTest {
+        //     invoke_test([](auto block) { with_timeout(Long.MAX_VALUE, block); });
+        // }
     }
 
-    @Test
-    fun testAsync() = runTest {
-        invokeTest { block -> async(NonCancellable, block = block).await() }
+    // TODO: @Test
+    void test_async() {
+        // TODO: runTest {
+        //     invoke_test([](auto block) { async(NonCancellable, block = block).await(); });
+        // }
     }
 
-    @Test
-    fun testCoroutineScope() = runTest {
-        invokeTest { block -> coroutineScope(block) }
+    // TODO: @Test
+    void test_coroutine_scope() {
+        // TODO: runTest {
+        //     invoke_test([](auto block) { coroutine_scope(block); });
+        // }
     }
 
-    private suspend fun invokeTest(scopeProvider: suspend (suspend CoroutineScope.() -> Unit) -> Unit) {
-        invokeTest(EmptyCoroutineContext, scopeProvider)
-        invokeTest(Unconfined, scopeProvider)
-    }
+private:
+    // TODO: Implement invoke_test helper methods
+    // Skipping detailed implementation
+};
 
-    private suspend fun invokeTest(
-        context: CoroutineContext,
-        scopeProvider: suspend (suspend CoroutineScope.() -> Unit) -> Unit
-    ) {
-        try {
-            scopeProvider { block(context) }
-        } catch (e: TestException) {
-            finish(5)
-            reset()
-        }
-    }
-
-    private suspend fun CoroutineScope.block(context: CoroutineContext) {
-        try {
-            expect(1)
-            // Will cancel its parent
-            async<Unit>(context) {
-                expect(2)
-                throw TestException()
-            }.await()
-        } catch (e: TestException) {
-            expect(3)
-        }
-        expect(4)
-    }
-}
+} // namespace coroutines
+} // namespace kotlinx

@@ -1,47 +1,63 @@
-package kotlinx.coroutines.debug
+// Original file: kotlinx-coroutines-debug/test/DumpWithCreationStackTraceTest.kt
+// TODO: Convert imports to C++ includes
+// TODO: Implement DebugTestBase base class
+// TODO: Convert @Before/@Test annotations
+// TODO: Implement DebugProbes API
+// TODO: Implement verifyDump function
 
-import kotlinx.coroutines.*
-import org.junit.*
-import org.junit.Test
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace debug {
 
-class DumpWithCreationStackTraceTest : DebugTestBase() {
-    @Before
-    override fun setUp() {
-        super.setUp()
-        DebugProbes.enableCreationStackTraces = true
+class DumpWithCreationStackTraceTest : public DebugTestBase {
+public:
+    // @Before
+    void set_up() override {
+        DebugTestBase::set_up();
+        // TODO: DebugProbes.enableCreationStackTraces = true
     }
 
-    @Test
-    fun testCoroutinesDump() = runTest {
-        val deferred = createActiveDeferred()
-        yield()
-        verifyDump(
-            "Coroutine \"coroutine#1\":BlockingCoroutine{Active}@70d1cb56, state: RUNNING\n" +
-                "\tat java.lang.Thread.getStackTrace(Thread.java)\n" +
-                "\tat kotlinx.coroutines.debug.internal.DebugProbesImpl.enhanceStackTraceWithThreadDumpImpl(DebugProbesImpl.kt)\n" +
-                "\tat kotlinx.coroutines.debug.internal.DebugProbesImpl.dumpCoroutinesSynchronized(DebugProbesImpl.kt)\n" +
-                "\tat kotlinx.coroutines.debug.internal.DebugProbesImpl.dumpCoroutines(DebugProbesImpl.kt)\n" +
-                "\tat kotlinx.coroutines.debug.DebugProbes.dumpCoroutines(DebugProbes.kt:182)\n" +
-                "\tat kotlinx.coroutines.debug.StacktraceUtilsKt.verifyDump(StacktraceUtils.kt)\n" +
-                "\tat kotlinx.coroutines.debug.StacktraceUtilsKt.verifyDump\$default(StacktraceUtils.kt)\n" +
-                "\tat kotlinx.coroutines.debug.DumpWithCreationStackTraceTest\$testCoroutinesDump\$1.invokeSuspend(DumpWithCreationStackTraceTest.kt)\n" +
-                "\tat _COROUTINE._CREATION._(CoroutineDebugging.kt)\n" +
-                "\tat kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(IntrinsicsJvm.kt)",
-
-            "Coroutine \"coroutine#2\":DeferredCoroutine{Active}@383fa309, state: SUSPENDED\n" +
-                "\tat kotlinx.coroutines.debug.DumpWithCreationStackTraceTest\$createActiveDeferred\$1.invokeSuspend(DumpWithCreationStackTraceTest.kt)"
-        )
-        deferred.cancelAndJoin()
+    // @Test
+    void test_coroutines_dump() {
+        // TODO: runTest {
+        //     auto deferred = createActiveDeferred()
+        //     yield()
+        //     verifyDump(
+        //         "Coroutine \"coroutine#1\":BlockingCoroutine{Active}@70d1cb56, state: RUNNING\n" +
+        //             "\tat java.lang.Thread.getStackTrace(Thread.java)\n" +
+        //             "\tat kotlinx.coroutines.debug.internal.DebugProbesImpl.enhanceStackTraceWithThreadDumpImpl(DebugProbesImpl.kt)\n" +
+        //             "\tat kotlinx.coroutines.debug.internal.DebugProbesImpl.dumpCoroutinesSynchronized(DebugProbesImpl.kt)\n" +
+        //             "\tat kotlinx.coroutines.debug.internal.DebugProbesImpl.dumpCoroutines(DebugProbesImpl.kt)\n" +
+        //             "\tat kotlinx.coroutines.debug.DebugProbes.dumpCoroutines(DebugProbes.kt:182)\n" +
+        //             "\tat kotlinx.coroutines.debug.StacktraceUtilsKt.verifyDump(StacktraceUtils.kt)\n" +
+        //             "\tat kotlinx.coroutines.debug.StacktraceUtilsKt.verifyDump$default(StacktraceUtils.kt)\n" +
+        //             "\tat kotlinx.coroutines.debug.DumpWithCreationStackTraceTest$testCoroutinesDump$1.invokeSuspend(DumpWithCreationStackTraceTest.kt)\n" +
+        //             "\tat _COROUTINE._CREATION._(CoroutineDebugging.kt)\n" +
+        //             "\tat kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(IntrinsicsJvm.kt)",
+        //
+        //         "Coroutine \"coroutine#2\":DeferredCoroutine{Active}@383fa309, state: SUSPENDED\n" +
+        //             "\tat kotlinx.coroutines.debug.DumpWithCreationStackTraceTest$createActiveDeferred$1.invokeSuspend(DumpWithCreationStackTraceTest.kt)"
+        //     )
+        //     deferred.cancelAndJoin()
+        // }
     }
 
-
-    private fun CoroutineScope.createActiveDeferred(): Deferred<*> = async {
-        suspendingMethod()
-        assertTrue(true)
+private:
+    // TODO: Deferred<void>* create_active_deferred(CoroutineScope* scope)
+    void* create_active_deferred(/* CoroutineScope* scope */) {
+        // TODO: return async {
+        //     suspendingMethod()
+        //     assertTrue(true)
+        // }
+        return nullptr;
     }
 
-    private suspend fun suspendingMethod() {
-        delay(Long.MAX_VALUE)
+    // suspend
+    void suspending_method() {
+        // TODO: delay(Long.MAX_VALUE)
     }
-}
+};
+
+} // namespace debug
+} // namespace coroutines
+} // namespace kotlinx

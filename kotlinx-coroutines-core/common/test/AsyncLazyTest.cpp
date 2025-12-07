@@ -1,184 +1,218 @@
-@file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-21913
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/AsyncLazyTest.kt
+// TODO: Review imports and dependencies
+// TODO: Adapt test framework annotations to C++ testing framework
+// TODO: Handle suspend functions and coroutine context
+// TODO: Handle nullable types appropriately
 
-package kotlinx.coroutines
+// @file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-21913
 
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class AsyncLazyTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testSimple() = runTest {
-        expect(1)
-        val d = async(start = CoroutineStart.LAZY) {
-            expect(3)
-            42
-        }
-        expect(2)
-        assertTrue(!d.isActive && !d.isCompleted)
-        assertEquals(d.await(), 42)
-        assertTrue(!d.isActive && d.isCompleted && !d.isCancelled)
-        expect(4)
-        assertEquals(d.await(), 42) // second await -- same result
-        finish(5)
+class AsyncLazyTest : public TestBase {
+public:
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_simple() {
+        run_test([this]() {
+            expect(1);
+            auto d = async(CoroutineStart::kLazy, [this]() {
+                expect(3);
+                return 42;
+            });
+            expect(2);
+            assert_true(!d.is_active() && !d.is_completed());
+            assert_equals(d.await(), 42);
+            assert_true(!d.is_active() && d.is_completed() && !d.is_cancelled());
+            expect(4);
+            assert_equals(d.await(), 42); // second await -- same result
+            finish(5);
+        });
     }
 
-    @Test
-    fun testLazyDeferAndYield() = runTest {
-        expect(1)
-        val d = async(start = CoroutineStart.LAZY) {
-            expect(3)
-            yield() // this has not effect, because parent coroutine is waiting
-            expect(4)
-            42
-        }
-        expect(2)
-        assertTrue(!d.isActive && !d.isCompleted)
-        assertEquals(d.await(), 42)
-        assertTrue(!d.isActive && d.isCompleted && !d.isCancelled)
-        expect(5)
-        assertEquals(d.await(), 42) // second await -- same result
-        finish(6)
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_lazy_defer_and_yield() {
+        run_test([this]() {
+            expect(1);
+            auto d = async(CoroutineStart::kLazy, [this]() {
+                expect(3);
+                yield(); // this has not effect, because parent coroutine is waiting
+                expect(4);
+                return 42;
+            });
+            expect(2);
+            assert_true(!d.is_active() && !d.is_completed());
+            assert_equals(d.await(), 42);
+            assert_true(!d.is_active() && d.is_completed() && !d.is_cancelled());
+            expect(5);
+            assert_equals(d.await(), 42); // second await -- same result
+            finish(6);
+        });
     }
 
-    @Test
-    fun testLazyDeferAndYield2() = runTest {
-        expect(1)
-        val d = async(start = CoroutineStart.LAZY) {
-            expect(7)
-            42
-        }
-        expect(2)
-        assertTrue(!d.isActive && !d.isCompleted)
-        launch { // see how it looks from another coroutine
-            expect(4)
-            assertTrue(!d.isActive && !d.isCompleted)
-            yield() // yield back to main
-            expect(6)
-            assertTrue(d.isActive && !d.isCompleted) // implicitly started by main's await
-            yield() // yield to d
-        }
-        expect(3)
-        assertTrue(!d.isActive && !d.isCompleted)
-        yield() // yield to second child (lazy async is not computing yet)
-        expect(5)
-        assertTrue(!d.isActive && !d.isCompleted)
-        assertEquals(d.await(), 42) // starts computing
-        assertTrue(!d.isActive && d.isCompleted && !d.isCancelled)
-        finish(8)
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_lazy_defer_and_yield2() {
+        run_test([this]() {
+            expect(1);
+            auto d = async(CoroutineStart::kLazy, [this]() {
+                expect(7);
+                return 42;
+            });
+            expect(2);
+            assert_true(!d.is_active() && !d.is_completed());
+            launch([this, &d]() { // see how it looks from another coroutine
+                expect(4);
+                assert_true(!d.is_active() && !d.is_completed());
+                yield(); // yield back to main
+                expect(6);
+                assert_true(d.is_active() && !d.is_completed()); // implicitly started by main's await
+                yield(); // yield to d
+            });
+            expect(3);
+            assert_true(!d.is_active() && !d.is_completed());
+            yield(); // yield to second child (lazy async is not computing yet)
+            expect(5);
+            assert_true(!d.is_active() && !d.is_completed());
+            assert_equals(d.await(), 42); // starts computing
+            assert_true(!d.is_active() && d.is_completed() && !d.is_cancelled());
+            finish(8);
+        });
     }
 
-    @Test
-    fun testSimpleException() = runTest(
-        expected = { it is TestException }
-    ) {
-        expect(1)
-        val d = async<Unit>(start = CoroutineStart.LAZY) {
-            finish(3)
-            throw TestException()
-        }
-        expect(2)
-        assertTrue(!d.isActive && !d.isCompleted)
-        d.await() // will throw IOException
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_simple_exception() {
+        run_test([](auto it) { return /* TODO: lambda to check TestException */ dynamic_cast<TestException*>(it) != nullptr; },
+        [this]() {
+            expect(1);
+            auto d = async<void>(CoroutineStart::kLazy, [this]() {
+                finish(3);
+                throw TestException();
+            });
+            expect(2);
+            assert_true(!d.is_active() && !d.is_completed());
+            d.await(); // will throw IOException
+        });
     }
 
-    @Test
-    fun testLazyDeferAndYieldException() =  runTest(
-        expected = { it is TestException }
-    ) {
-        expect(1)
-        val d = async<Unit>(start = CoroutineStart.LAZY) {
-            expect(3)
-            yield() // this has not effect, because parent coroutine is waiting
-            finish(4)
-            throw TestException()
-        }
-        expect(2)
-        assertTrue(!d.isActive && !d.isCompleted)
-        d.await() // will throw IOException
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_lazy_defer_and_yield_exception() {
+        run_test([](auto it) { return dynamic_cast<TestException*>(it) != nullptr; },
+        [this]() {
+            expect(1);
+            auto d = async<void>(CoroutineStart::kLazy, [this]() {
+                expect(3);
+                yield(); // this has not effect, because parent coroutine is waiting
+                finish(4);
+                throw TestException();
+            });
+            expect(2);
+            assert_true(!d.is_active() && !d.is_completed());
+            d.await(); // will throw IOException
+        });
     }
 
-    @Test
-    fun testCatchException() = runTest {
-        expect(1)
-        val d = async<Unit>(NonCancellable, start = CoroutineStart.LAZY) {
-            expect(3)
-            throw TestException()
-        }
-        expect(2)
-        assertTrue(!d.isActive && !d.isCompleted)
-        try {
-            d.await() // will throw IOException
-        } catch (e: TestException) {
-            assertTrue(!d.isActive && d.isCompleted && d.isCancelled)
-            expect(4)
-        }
-        finish(5)
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_catch_exception() {
+        run_test([this]() {
+            expect(1);
+            auto d = async<void>(NonCancellable, CoroutineStart::kLazy, [this]() {
+                expect(3);
+                throw TestException();
+            });
+            expect(2);
+            assert_true(!d.is_active() && !d.is_completed());
+            try {
+                d.await(); // will throw IOException
+            } catch (const TestException& e) {
+                assert_true(!d.is_active() && d.is_completed() && d.is_cancelled());
+                expect(4);
+            }
+            finish(5);
+        });
     }
 
-    @Test
-    fun testStart() = runTest {
-        expect(1)
-        val d = async(start = CoroutineStart.LAZY) {
-            expect(4)
-            42
-        }
-        expect(2)
-        assertTrue(!d.isActive && !d.isCompleted)
-        assertTrue(d.start())
-        assertTrue(d.isActive && !d.isCompleted)
-        expect(3)
-        assertTrue(!d.start())
-        yield() // yield to started coroutine
-        assertTrue(!d.isActive && d.isCompleted && !d.isCancelled) // and it finishes
-        expect(5)
-        assertEquals(d.await(), 42) // await sees result
-        finish(6)
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_start() {
+        run_test([this]() {
+            expect(1);
+            auto d = async(CoroutineStart::kLazy, [this]() {
+                expect(4);
+                return 42;
+            });
+            expect(2);
+            assert_true(!d.is_active() && !d.is_completed());
+            assert_true(d.start());
+            assert_true(d.is_active() && !d.is_completed());
+            expect(3);
+            assert_true(!d.start());
+            yield(); // yield to started coroutine
+            assert_true(!d.is_active() && d.is_completed() && !d.is_cancelled()); // and it finishes
+            expect(5);
+            assert_equals(d.await(), 42); // await sees result
+            finish(6);
+        });
     }
 
-    @Test
-    fun testCancelBeforeStart() = runTest(
-        expected = { it is CancellationException }
-    ) {
-        expect(1)
-        val d = async(start = CoroutineStart.LAZY) {
-            expectUnreached()
-            42
-        }
-        expect(2)
-        assertTrue(!d.isActive && !d.isCompleted)
-        d.cancel()
-        assertTrue(!d.isActive && d.isCompleted && d.isCancelled)
-        assertTrue(!d.start())
-        finish(3)
-        assertEquals(d.await(), 42) // await shall throw CancellationException
-        expectUnreached()
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_cancel_before_start() {
+        run_test([](auto it) { return dynamic_cast<CancellationException*>(it) != nullptr; },
+        [this]() {
+            expect(1);
+            auto d = async(CoroutineStart::kLazy, [this]() {
+                expect_unreached();
+                return 42;
+            });
+            expect(2);
+            assert_true(!d.is_active() && !d.is_completed());
+            d.cancel();
+            assert_true(!d.is_active() && d.is_completed() && d.is_cancelled());
+            assert_true(!d.start());
+            finish(3);
+            assert_equals(d.await(), 42); // await shall throw CancellationException
+            expect_unreached();
+        });
     }
 
-    @Test
-    fun testCancelWhileComputing() = runTest(
-        expected = { it is CancellationException }
-    ) {
-        expect(1)
-        val d = async(start = CoroutineStart.LAZY) {
-            expect(4)
-            yield() // yield to main, that is going to cancel us
-            expectUnreached()
-            42
-        }
-        expect(2)
-        assertTrue(!d.isActive && !d.isCompleted && !d.isCancelled)
-        assertTrue(d.start())
-        assertTrue(d.isActive && !d.isCompleted && !d.isCancelled)
-        expect(3)
-        yield() // yield to d
-        expect(5)
-        assertTrue(d.isActive && !d.isCompleted && !d.isCancelled)
-        d.cancel()
-        assertTrue(!d.isActive && d.isCancelled) // cancelling !
-        assertTrue(!d.isActive && d.isCancelled) // still cancelling
-        finish(6)
-        assertEquals(d.await(), 42) // await shall throw CancellationException
-        expectUnreached()
+    // @Test
+    // TODO: Translate @Test annotation
+    void test_cancel_while_computing() {
+        run_test([](auto it) { return dynamic_cast<CancellationException*>(it) != nullptr; },
+        [this]() {
+            expect(1);
+            auto d = async(CoroutineStart::kLazy, [this]() {
+                expect(4);
+                yield(); // yield to main, that is going to cancel us
+                expect_unreached();
+                return 42;
+            });
+            expect(2);
+            assert_true(!d.is_active() && !d.is_completed() && !d.is_cancelled());
+            assert_true(d.start());
+            assert_true(d.is_active() && !d.is_completed() && !d.is_cancelled());
+            expect(3);
+            yield(); // yield to d
+            expect(5);
+            assert_true(d.is_active() && !d.is_completed() && !d.is_cancelled());
+            d.cancel();
+            assert_true(!d.is_active() && d.is_cancelled()); // cancelling !
+            assert_true(!d.is_active() && d.is_cancelled()); // still cancelling
+            finish(6);
+            assert_equals(d.await(), 42); // await shall throw CancellationException
+            expect_unreached();
+        });
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

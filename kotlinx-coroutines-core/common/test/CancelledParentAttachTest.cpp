@@ -1,113 +1,149 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/CancelledParentAttachTest.kt
+// TODO: Review imports and dependencies
+// TODO: Adapt test framework annotations to C++ testing framework
+// TODO: Handle suspend functions and coroutine context
+// TODO: Handle nullable types appropriately
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.internal.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
 
-class CancelledParentAttachTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlinx.coroutines.flow.internal.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testAsync() = runTest {
-        CoroutineStart.entries.forEach { testAsyncCancelledParent(it) }
+class CancelledParentAttachTest : public TestBase {
+public:
+    // @Test
+    void test_async() {
+        run_test([this]() {
+            for (auto start : CoroutineStart::entries) {
+                test_async_cancelled_parent(start);
+            }
+        });
     }
 
-    private suspend fun testAsyncCancelledParent(start: CoroutineStart) {
+private:
+    void test_async_cancelled_parent(CoroutineStart start) {
         try {
-            withContext(Job()) {
-                cancel()
-                expect(1)
-                val d = async<Int>(start = start) { 42 }
-                expect(2)
-                d.invokeOnCompletion {
-                    finish(3)
-                    reset()
-                }
-            }
-            expectUnreached()
-        } catch (_: CancellationException) {
+            with_context(Job(), [this, start]() {
+                cancel();
+                expect(1);
+                auto d = async<int>(start, [this]() { return 42; });
+                expect(2);
+                d.invoke_on_completion([this]() {
+                    finish(3);
+                    reset();
+                });
+            });
+            expect_unreached();
+        } catch (const CancellationException&) {
             // Expected
         }
     }
 
-    @Test
-    fun testLaunch() = runTest {
-        CoroutineStart.entries.forEach { testLaunchCancelledParent(it) }
+public:
+    // @Test
+    void test_launch() {
+        run_test([this]() {
+            for (auto start : CoroutineStart::entries) {
+                test_launch_cancelled_parent(start);
+            }
+        });
     }
 
-    private suspend fun testLaunchCancelledParent(start: CoroutineStart) {
+private:
+    void test_launch_cancelled_parent(CoroutineStart start) {
         try {
-            withContext(Job()) {
-                cancel()
-                expect(1)
-                val d = launch(start = start) { }
-                expect(2)
-                d.invokeOnCompletion {
-                    finish(3)
-                    reset()
-                }
-            }
-            expectUnreached()
-        } catch (_: CancellationException) {
+            with_context(Job(), [this, start]() {
+                cancel();
+                expect(1);
+                auto d = launch(start, [this]() { });
+                expect(2);
+                d.invoke_on_completion([this]() {
+                    finish(3);
+                    reset();
+                });
+            });
+            expect_unreached();
+        } catch (const CancellationException&) {
             // Expected
         }
     }
 
-    @Test
-    fun testProduce() = runTest({ it is CancellationException }) {
-        cancel()
-        expect(1)
-        val d = produce<Int> { }
-        expect(2)
-        (d as Job).invokeOnCompletion {
-            finish(3)
-            reset()
-        }
+public:
+    // @Test
+    void test_produce() {
+        run_test([](auto it) { return dynamic_cast<CancellationException*>(it) != nullptr; },
+        [this]() {
+            cancel();
+            expect(1);
+            auto d = produce<int>([this]() { });
+            expect(2);
+            static_cast<Job&>(d).invoke_on_completion([this]() {
+                finish(3);
+                reset();
+            });
+        });
     }
 
-    @Test
-    fun testBroadcast() = runTest {
-        CoroutineStart.entries.forEach { testBroadcastCancelledParent(it) }
-    }
-
-    @Suppress("DEPRECATION_ERROR")
-    private suspend fun testBroadcastCancelledParent(start: CoroutineStart) {
-        try {
-            withContext(Job()) {
-                cancel()
-                expect(1)
-                val bc = broadcast<Int>(start = start) {}
-                expect(2)
-                (bc as Job).invokeOnCompletion {
-                    finish(3)
-                    reset()
-                }
+    // @Test
+    void test_broadcast() {
+        run_test([this]() {
+            for (auto start : CoroutineStart::entries) {
+                test_broadcast_cancelled_parent(start);
             }
-            expectUnreached()
-        } catch (_: CancellationException) {
+        });
+    }
+
+private:
+    // @Suppress("DEPRECATION_ERROR")
+    void test_broadcast_cancelled_parent(CoroutineStart start) {
+        try {
+            with_context(Job(), [this, start]() {
+                cancel();
+                expect(1);
+                auto bc = broadcast<int>(start, []() {});
+                expect(2);
+                static_cast<Job&>(bc).invoke_on_completion([this]() {
+                    finish(3);
+                    reset();
+                });
+            });
+            expect_unreached();
+        } catch (const CancellationException&) {
             // Expected
         }
     }
 
-    @Test
-    fun testScopes() = runTest {
-        testScope { coroutineScope { } }
-        testScope { supervisorScope { } }
-        testScope { flowScope { } }
-        testScope { withTimeout(Long.MAX_VALUE) { } }
-        testScope { withContext(Job()) { } }
-        testScope { withContext(CoroutineName("")) { } }
+public:
+    // @Test
+    void test_scopes() {
+        run_test([this]() {
+            test_scope([]() { coroutine_scope([]() { }); });
+            test_scope([]() { supervisor_scope([]() { }); });
+            test_scope([]() { flow_scope([]() { }); });
+            test_scope([]() { with_timeout(LONG_MAX, []() { }); });
+            test_scope([]() { with_context(Job(), []() { }); });
+            test_scope([]() { with_context(CoroutineName(""), []() { }); });
+        });
     }
 
-    private suspend inline fun testScope(crossinline block: suspend () -> Unit) {
+private:
+    template<typename Block>
+    void test_scope(Block block) {
         try {
-            withContext(Job()) {
-                cancel()
-                block()
-            }
-            expectUnreached()
-        } catch (_: CancellationException) {
+            with_context(Job(), [&block]() {
+                cancel();
+                block();
+            });
+            expect_unreached();
+        } catch (const CancellationException&) {
             // Expected
         }
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

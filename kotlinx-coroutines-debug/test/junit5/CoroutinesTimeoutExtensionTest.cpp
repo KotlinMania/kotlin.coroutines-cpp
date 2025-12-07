@@ -1,12 +1,24 @@
-package kotlinx.coroutines.debug.junit5
+// Original: kotlinx-coroutines-debug/test/junit5/CoroutinesTimeoutExtensionTest.kt
+// Transliterated from Kotlin to C++ - First pass syntax conversion
+// TODO: Implement JUnit5 test framework integration (@Test, @RegisterExtension)
+// TODO: Convert nested classes to C++ nested classes or separate classes
+// TODO: Convert suspend functions to C++ coroutine equivalents
+// TODO: Map runBlocking to C++ blocking coroutine runner
+// TODO: Convert GlobalScope.launch to C++ equivalent
+// TODO: Implement CoroutinesTimeoutExtension
 
-import kotlinx.coroutines.*
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.*
-import org.junit.jupiter.api.parallel.*
+namespace kotlinx {
+namespace coroutines {
+namespace debug {
+namespace junit5 {
+
+// TODO: import kotlinx.coroutines.*
+// TODO: import org.junit.jupiter.api.Test
+// TODO: import org.junit.jupiter.api.extension.*
+// TODO: import org.junit.jupiter.api.parallel.*
 
 class CoroutinesTimeoutExtensionTest {
-
+public:
     /**
      * Tests that disabling coroutine creation stacktraces in [CoroutinesTimeoutExtension] does lead to them not being
      * created.
@@ -16,28 +28,36 @@ class CoroutinesTimeoutExtensionTest {
      * This test class is not intended to be run manually. Instead, use [CoroutinesTimeoutTest] as the entry point.
      */
     class DisabledStackTracesTest {
-        @JvmField
-        @RegisterExtension
-        internal val timeout = CoroutinesTimeoutExtension(500, true, false)
+    public:
+        // TODO: @JvmField
+        // TODO: @RegisterExtension
+        CoroutinesTimeoutExtension timeout = CoroutinesTimeoutExtension(500, true, false);
 
-        private val job = GlobalScope.launch(Dispatchers.Unconfined) { hangForever() }
+    private:
+        Job job = GlobalScope.launch(Dispatchers.Unconfined) { hangForever(); };
 
-        private suspend fun hangForever() {
-            suspendCancellableCoroutine<Unit> {  }
-            expectUnreached()
+        // TODO: Convert suspend function
+        void hangForever() {
+            suspendCancellableCoroutine<void>([] {  });
+            expectUnreached();
         }
 
-        @Test
-        fun hangingTest() = runBlocking<Unit> {
-            waitForHangJob()
-            expectUnreached()
+    public:
+        // TODO: @Test
+        void hangingTest() {
+            runBlocking<void>([&] {
+                waitForHangJob();
+                expectUnreached();
+            });
         }
 
-        private suspend fun waitForHangJob() {
-            job.join()
-            expectUnreached()
+    private:
+        // TODO: Convert suspend function
+        void waitForHangJob() {
+            job.join();
+            expectUnreached();
         }
-    }
+    };
 
     /**
      * Tests that [CoroutinesTimeoutExtension] is installed eagerly and detects the coroutines that were launched before
@@ -48,29 +68,36 @@ class CoroutinesTimeoutExtensionTest {
      * This test class is not intended to be run manually. Instead, use [CoroutinesTimeoutTest] as the entry point.
      */
     class EagerTest {
+    public:
+        // TODO: @JvmField
+        // TODO: @RegisterExtension
+        CoroutinesTimeoutExtension timeout = CoroutinesTimeoutExtension(500);
 
-        @JvmField
-        @RegisterExtension
-        internal val timeout = CoroutinesTimeoutExtension(500)
+    private:
+        Job job = GlobalScope.launch(Dispatchers.Unconfined) { hangForever(); };
 
-        private val job = GlobalScope.launch(Dispatchers.Unconfined) { hangForever() }
-
-        private suspend fun hangForever() {
-            suspendCancellableCoroutine<Unit> {  }
-            expectUnreached()
+        // TODO: Convert suspend function
+        void hangForever() {
+            suspendCancellableCoroutine<void>([] {  });
+            expectUnreached();
         }
 
-        @Test
-        fun hangingTest() = runBlocking<Unit> {
-            waitForHangJob()
-            expectUnreached()
+    public:
+        // TODO: @Test
+        void hangingTest() {
+            runBlocking<void>([&] {
+                waitForHangJob();
+                expectUnreached();
+            });
         }
 
-        private suspend fun waitForHangJob() {
-            job.join()
-            expectUnreached()
+    private:
+        // TODO: Convert suspend function
+        void waitForHangJob() {
+            job.join();
+            expectUnreached();
         }
-    }
+    };
 
     /**
      * Tests that [CoroutinesTimeoutExtension] performs sensibly in some simple scenarios.
@@ -80,38 +107,52 @@ class CoroutinesTimeoutExtensionTest {
      * This test class is not intended to be run manually. Instead, use [CoroutinesTimeoutTest] as the entry point.
      */
     class SimpleTest {
+    public:
+        // TODO: @JvmField
+        // TODO: @RegisterExtension
+        CoroutinesTimeoutExtension timeout = CoroutinesTimeoutExtension(1000, false, true);
 
-        @JvmField
-        @RegisterExtension
-        internal val timeout = CoroutinesTimeoutExtension(1000, false, true)
-
-        @Test
-        fun hangingTest() = runBlocking<Unit> {
-            suspendForever()
-            expectUnreached()
+        // TODO: @Test
+        void hangingTest() {
+            runBlocking<void>([&] {
+                suspendForever();
+                expectUnreached();
+            });
         }
 
-        private suspend fun suspendForever() {
-            delay(Long.MAX_VALUE)
-            expectUnreached()
+    private:
+        // TODO: Convert suspend function
+        void suspendForever() {
+            delay(LONG_MAX);
+            expectUnreached();
         }
 
-        @Test
-        fun throwingTest() = runBlocking<Unit> {
-            throw RuntimeException()
+    public:
+        // TODO: @Test
+        void throwingTest() {
+            runBlocking<void>([] {
+                throw RuntimeException();
+            });
         }
 
-        @Test
-        fun successfulTest() = runBlocking {
-            val job = launch {
-                yield()
-            }
+        // TODO: @Test
+        void successfulTest() {
+            runBlocking([&] {
+                auto job = launch([&] {
+                    yield();
+                });
 
-            job.join()
+                job.join();
+            });
         }
-    }
+    };
+};
+
+void expectUnreached() {
+    throw std::runtime_error("Should not be reached");
 }
 
-private fun expectUnreached(): Nothing {
-    error("Should not be reached")
-}
+} // namespace junit5
+} // namespace debug
+} // namespace coroutines
+} // namespace kotlinx

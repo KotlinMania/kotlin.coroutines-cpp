@@ -1,6 +1,15 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/Annotations.kt
+//
+// TODO: Annotations are not directly translatable to C++
+// TODO: @MustBeDocumented, @Retention, @RequiresOptIn, @Target have no C++ equivalents
+// TODO: Consider using preprocessor macros or attributes for similar behavior
+// TODO: Annotation classes map to empty marker types or documentation comments
 
-import kotlinx.coroutines.flow.*
+namespace kotlinx {
+namespace coroutines {
+
+// TODO: import kotlinx.coroutines.flow.* - removed, use fully qualified names or add includes
 
 /**
  * Marks declarations in the coroutines that are **delicate** &mdash;
@@ -9,14 +18,12 @@ import kotlinx.coroutines.flow.*
  * properly used and does not create problems like memory and resource leaks.
  * Carefully read documentation of any declaration marked as `DelicateCoroutinesApi`.
  */
-@MustBeDocumented
-@Retention(value = AnnotationRetention.BINARY)
-@RequiresOptIn(
-    level = RequiresOptIn.Level.WARNING,
-    message = "This is a delicate API and its use requires care." +
-        " Make sure you fully read and understand documentation of the declaration that is marked as a delicate API."
-)
-public annotation class DelicateCoroutinesApi
+// TODO: @MustBeDocumented - no C++ equivalent
+// TODO: @Retention(value = AnnotationRetention.BINARY) - no C++ equivalent
+// TODO: @RequiresOptIn - no C++ equivalent, consider using [[deprecated]] or custom attributes
+struct DelicateCoroutinesApi {
+    // Annotation marker type
+};
 
 /**
  * Marks declarations that are still **experimental** in coroutines API, which means that the design of the
@@ -24,23 +31,13 @@ public annotation class DelicateCoroutinesApi
  * Roughly speaking, there is a chance that those declarations will be deprecated in the near future or
  * the semantics of their behavior may change in some way that may break some code.
  */
-@MustBeDocumented
-@Retention(value = AnnotationRetention.BINARY)
-@Target(
-    AnnotationTarget.CLASS,
-    AnnotationTarget.ANNOTATION_CLASS,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.FIELD,
-    AnnotationTarget.LOCAL_VARIABLE,
-    AnnotationTarget.VALUE_PARAMETER,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.PROPERTY_GETTER,
-    AnnotationTarget.PROPERTY_SETTER,
-    AnnotationTarget.TYPEALIAS
-)
-@RequiresOptIn(level = RequiresOptIn.Level.WARNING)
-public annotation class ExperimentalCoroutinesApi
+// TODO: @MustBeDocumented - no C++ equivalent
+// TODO: @Retention(value = AnnotationRetention.BINARY) - no C++ equivalent
+// TODO: @Target(...) - no C++ equivalent
+// TODO: @RequiresOptIn(level = RequiresOptIn.Level.WARNING) - no C++ equivalent
+struct ExperimentalCoroutinesApi {
+    // Annotation marker type
+};
 
 /**
  * Marks [Flow]-related API as a feature preview.
@@ -53,16 +50,13 @@ public annotation class ExperimentalCoroutinesApi
  *
  * The best way to speed up preview feature promotion is providing the feedback on the feature.
  */
-@MustBeDocumented
-@Retention(value = AnnotationRetention.BINARY)
-@RequiresOptIn(
-    level = RequiresOptIn.Level.WARNING,
-    message = "This declaration is in a preview state and can be changed in a backwards-incompatible manner with a best-effort migration. " +
-            "Its usage should be marked with '@kotlinx.coroutines.FlowPreview' or '@OptIn(kotlinx.coroutines.FlowPreview::class)' " +
-            "if you accept the drawback of relying on preview API"
-)
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.TYPEALIAS, AnnotationTarget.PROPERTY)
-public annotation class FlowPreview
+// TODO: @MustBeDocumented - no C++ equivalent
+// TODO: @Retention(value = AnnotationRetention.BINARY) - no C++ equivalent
+// TODO: @RequiresOptIn - no C++ equivalent
+// TODO: @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.TYPEALIAS, AnnotationTarget.PROPERTY)
+struct FlowPreview {
+    // Annotation marker type
+};
 
 /**
  * Marks declarations that are **obsolete** in coroutines API, which means that the design of the corresponding
@@ -70,49 +64,43 @@ public annotation class FlowPreview
  * Roughly speaking, these declarations will be deprecated in the future but there is no replacement for them yet,
  * so they cannot be deprecated right away.
  */
-@MustBeDocumented
-@Retention(value = AnnotationRetention.BINARY)
-@RequiresOptIn(level = RequiresOptIn.Level.WARNING)
-public annotation class ObsoleteCoroutinesApi
+// TODO: @MustBeDocumented - no C++ equivalent
+// TODO: @Retention(value = AnnotationRetention.BINARY) - no C++ equivalent
+// TODO: @RequiresOptIn(level = RequiresOptIn.Level.WARNING) - no C++ equivalent
+struct ObsoleteCoroutinesApi {
+    // Annotation marker type
+};
 
 /**
  * Marks declarations that are **internal** in coroutines API, which means that should not be used outside of
  * `kotlinx.coroutines`, because their signatures and semantics will change between future releases without any
  * warnings and without providing any migration aids.
  */
-@MustBeDocumented
-@Retention(value = AnnotationRetention.BINARY)
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.TYPEALIAS, AnnotationTarget.PROPERTY)
-@RequiresOptIn(
-    level = RequiresOptIn.Level.ERROR, message = "This is an internal kotlinx.coroutines API that " +
-            "should not be used from outside of kotlinx.coroutines. No compatibility guarantees are provided. " +
-            "It is recommended to report your use-case of internal API to kotlinx.coroutines issue tracker, " +
-            "so stable API could be provided instead"
-)
-public annotation class InternalCoroutinesApi
+// TODO: @MustBeDocumented - no C++ equivalent
+// TODO: @Retention(value = AnnotationRetention.BINARY) - no C++ equivalent
+// TODO: @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.TYPEALIAS, AnnotationTarget.PROPERTY)
+// TODO: @RequiresOptIn - no C++ equivalent
+struct InternalCoroutinesApi {
+    // Annotation marker type
+};
 
 /**
  * Marks declarations that cannot be safely inherited from.
  */
-@Target(AnnotationTarget.CLASS)
-@RequiresOptIn(
-    level = RequiresOptIn.Level.WARNING, message =
-    "Inheriting from this kotlinx.coroutines API is unstable. " +
-        "Either new methods may be added in the future, which would break the inheritance, " +
-        "or correctly inheriting from it requires fulfilling contracts that may change in the future."
-)
-public annotation class ExperimentalForInheritanceCoroutinesApi
+// TODO: @Target(AnnotationTarget.CLASS) - no C++ equivalent
+// TODO: @RequiresOptIn - no C++ equivalent
+struct ExperimentalForInheritanceCoroutinesApi {
+    // Annotation marker type
+};
 
 /**
  * Marks declarations that cannot be safely inherited from.
  */
-@Target(AnnotationTarget.CLASS)
-@RequiresOptIn(
-    level = RequiresOptIn.Level.WARNING, message =
-    "This is a kotlinx.coroutines API that is not intended to be inherited from, " +
-        "as the library may handle predefined instances of this in a special manner. " +
-        "This will be an error in a future release. " +
-        "If you need to inherit from this, please describe your use case in " +
-        "https://github.com/Kotlin/kotlinx.coroutines/issues, so that we can provide a stable API for inheritance. "
-)
-public annotation class InternalForInheritanceCoroutinesApi
+// TODO: @Target(AnnotationTarget.CLASS) - no C++ equivalent
+// TODO: @RequiresOptIn - no C++ equivalent
+struct InternalForInheritanceCoroutinesApi {
+    // Annotation marker type
+};
+
+} // namespace coroutines
+} // namespace kotlinx

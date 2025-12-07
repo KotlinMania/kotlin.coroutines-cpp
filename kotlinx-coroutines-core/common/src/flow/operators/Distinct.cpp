@@ -1,10 +1,23 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
+// Transliterated from Kotlin to C++ (first-pass, syntax-only)
+// Original: kotlinx-coroutines-core/common/src/flow/operators/Distinct.kt
+//
+// TODO: Implement coroutine semantics (suspend functions)
+// TODO: Map Kotlin Flow types to C++ equivalents
+// TODO: Implement StateFlow type
+// TODO: Handle default lambda functions
+// TODO: Implement NULL sentinel value
 
-package kotlinx.coroutines.flow
+#pragma once
 
-import kotlinx.coroutines.flow.internal.*
-import kotlin.jvm.*
+// @file:JvmMultifileClass
+// @file:JvmName("FlowKt")
+
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+
+// TODO: import kotlinx.coroutines.flow.internal.*
+// TODO: import kotlin.jvm.*
 
 /**
  * Returns flow where all subsequent repetitions of the same value are filtered out.
@@ -14,11 +27,15 @@ import kotlin.jvm.*
  * See [StateFlow] documentation on Operator Fusion.
  * Also, repeated application of `distinctUntilChanged` operator on any flow has no effect.
  */
-public fun <T> Flow<T>.distinctUntilChanged(): Flow<T> =
-    when (this) {
-        is StateFlow<*> -> this // state flows are always distinct
-        else -> distinctUntilChangedBy(keySelector = defaultKeySelector, areEquivalent = defaultAreEquivalent)
+template<typename T>
+Flow<T> distinct_until_changed(Flow<T> flow) {
+    // return when (this)
+    if (dynamic_cast<StateFlow<T>*>(&flow)) {
+        return flow; // state flows are always distinct
+    } else {
+        return distinct_until_changed_by(flow, default_key_selector, default_are_equivalent);
     }
+}
 
 /**
  * Returns flow where all subsequent repetitions of the same value are filtered out, when compared
@@ -26,9 +43,11 @@ public fun <T> Flow<T>.distinctUntilChanged(): Flow<T> =
  *
  * Note that repeated application of `distinctUntilChanged` operator with the same parameter has no effect.
  */
-@Suppress("UNCHECKED_CAST")
-public fun <T> Flow<T>.distinctUntilChanged(areEquivalent: (old: T, new: T) -> Boolean): Flow<T> =
-    distinctUntilChangedBy(keySelector = defaultKeySelector, areEquivalent = areEquivalent as (Any?, Any?) -> Boolean)
+// @Suppress("UNCHECKED_CAST")
+template<typename T, typename Fn>
+Flow<T> distinct_until_changed(Flow<T> flow, Fn are_equivalent) {
+    return distinct_until_changed_by(flow, default_key_selector, are_equivalent);
+}
 
 /**
  * Returns flow where all subsequent repetitions of the same key are filtered out, where
@@ -36,12 +55,16 @@ public fun <T> Flow<T>.distinctUntilChanged(areEquivalent: (old: T, new: T) -> B
  *
  * Note that repeated application of `distinctUntilChanged` operator with the same parameter has no effect.
  */
-public fun <T, K> Flow<T>.distinctUntilChangedBy(keySelector: (T) -> K): Flow<T> =
-    distinctUntilChangedBy(keySelector = keySelector, areEquivalent = defaultAreEquivalent)
+template<typename T, typename K, typename Fn>
+Flow<T> distinct_until_changed_by(Flow<T> flow, Fn key_selector) {
+    return distinct_until_changed_by(flow, key_selector, default_are_equivalent);
+}
 
-private val defaultKeySelector: (Any?) -> Any? = { it }
+// Default key selector
+auto default_key_selector = [](auto it) { return it; };
 
-private val defaultAreEquivalent: (Any?, Any?) -> Boolean = { old, new -> old == new }
+// Default are equivalent
+auto default_are_equivalent = [](auto old_val, auto new_val) { return old_val == new_val; };
 
 /**
  * Returns flow where all subsequent repetitions of the same key are filtered out, where
@@ -50,28 +73,52 @@ private val defaultAreEquivalent: (Any?, Any?) -> Boolean = { old, new -> old ==
  *
  * NOTE: It is non-inline to share a single implementing class.
  */
-private fun <T> Flow<T>.distinctUntilChangedBy(
-    keySelector: (T) -> Any?,
-    areEquivalent: (old: Any?, new: Any?) -> Boolean
-): Flow<T> = when {
-    this is DistinctFlowImpl<*> && this.keySelector === keySelector && this.areEquivalent === areEquivalent -> this // same
-    else -> DistinctFlowImpl(this, keySelector, areEquivalent)
-}
-
-private class DistinctFlowImpl<T>(
-    private val upstream: Flow<T>,
-    @JvmField val keySelector: (T) -> Any?,
-    @JvmField val areEquivalent: (old: Any?, new: Any?) -> Boolean
-): Flow<T> {
-    override suspend fun collect(collector: FlowCollector<T>) {
-        var previousKey: Any? = NULL
-        upstream.collect { value ->
-            val key = keySelector(value)
-            @Suppress("UNCHECKED_CAST")
-            if (previousKey === NULL || !areEquivalent(previousKey, key)) {
-                previousKey = key
-                collector.emit(value)
-            }
+template<typename T, typename KeySelector, typename AreEquivalent>
+Flow<T> distinct_until_changed_by(
+    Flow<T> flow,
+    KeySelector key_selector,
+    AreEquivalent are_equivalent
+) {
+    // return when
+    if (auto* distinct = dynamic_cast<DistinctFlowImpl<T>*>(&flow)) {
+        if (distinct->key_selector == key_selector && distinct->are_equivalent == are_equivalent) {
+            return flow; // same
         }
     }
+    return DistinctFlowImpl<T>(flow, key_selector, are_equivalent);
 }
+
+template<typename T>
+class DistinctFlowImpl : public Flow<T> {
+private:
+    Flow<T> upstream;
+
+public:
+    // @JvmField
+    std::function<void*(T)> key_selector;
+    // @JvmField
+    std::function<bool(void*, void*)> are_equivalent;
+
+    DistinctFlowImpl(
+        Flow<T> upstream_,
+        std::function<void*(T)> key_selector_,
+        std::function<bool(void*, void*)> are_equivalent_
+    ) : upstream(upstream_), key_selector(key_selector_), are_equivalent(are_equivalent_) {}
+
+    // TODO: suspend function
+    void collect(FlowCollector<T> collector) /* override */ {
+        void* previous_key = NULL;
+        upstream.collect([&](T value) {
+            void* key = key_selector(value);
+            // @Suppress("UNCHECKED_CAST")
+            if (previous_key == NULL || !are_equivalent(previous_key, key)) {
+                previous_key = key;
+                collector.emit(value);
+            }
+        });
+    }
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

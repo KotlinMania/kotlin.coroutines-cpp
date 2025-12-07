@@ -1,95 +1,134 @@
-package kotlinx.coroutines.test
+// Original file: kotlinx-coroutines-test/common/test/TestDispatchersTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert @Test, @BeforeTest, @AfterTest annotations to appropriate test framework
+// TODO: Convert suspend functions and coroutine builders
+// TODO: Handle OrderedExecutionTestBase inheritance
+// TODO: Convert inner class syntax
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.test.internal.*
-import kotlin.coroutines.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace test {
 
-class TestDispatchersTest: OrderedExecutionTestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.test.internal.*
+// TODO: import kotlin.coroutines.*
+// TODO: import kotlin.test.*
 
-    @BeforeTest
-    fun setUp() {
-        Dispatchers.setMain(StandardTestDispatcher())
+class TestDispatchersTest : public OrderedExecutionTestBase {
+public:
+    // TODO: @BeforeTest
+    void set_up() {
+        Dispatchers::set_main(StandardTestDispatcher());
     }
 
-    @AfterTest
-    fun tearDown() {
-        Dispatchers.resetMain()
+    // TODO: @AfterTest
+    void tear_down() {
+        Dispatchers::reset_main();
     }
 
     /** Tests that asynchronous execution of tests does not happen concurrently with [AfterTest]. */
-    @Test
-    fun testMainMocking() = runTest {
-        val mainAtStart = TestMainDispatcher.currentTestDispatcher
-        assertNotNull(mainAtStart)
-        withContext(Dispatchers.Main) {
-            delay(10)
-        }
-        withContext(Dispatchers.Default) {
-            delay(10)
-        }
-        withContext(Dispatchers.Main) {
-            delay(10)
-        }
-        assertSame(mainAtStart, TestMainDispatcher.currentTestDispatcher)
+    // TODO: @Test
+    void test_main_mocking() {
+        run_test([&]() {
+            auto main_at_start = TestMainDispatcher::current_test_dispatcher;
+            assert(main_at_start != nullptr);
+            with_context(Dispatchers::main(), [&]() {
+                delay(10);
+            });
+            with_context(Dispatchers::default_dispatcher(), [&]() {
+                delay(10);
+            });
+            with_context(Dispatchers::main(), [&]() {
+                delay(10);
+            });
+            // TODO: assertSame
+            assert(main_at_start == TestMainDispatcher::current_test_dispatcher);
+        });
     }
 
     /** Tests that the mocked [Dispatchers.Main] correctly forwards [Delay] methods. */
-    @Test
-    fun testMockedMainImplementsDelay() = runTest {
-        val main = Dispatchers.Main
-        withContext(main) {
-            delay(10)
-        }
-        withContext(Dispatchers.Default) {
-            delay(10)
-        }
-        withContext(main) {
-            delay(10)
+    // TODO: @Test
+    void test_mocked_main_implements_delay() {
+        run_test([&]() {
+            auto main = Dispatchers::main();
+            with_context(main, [&]() {
+                delay(10);
+            });
+            with_context(Dispatchers::default_dispatcher(), [&]() {
+                delay(10);
+            });
+            with_context(main, [&]() {
+                delay(10);
+            });
+        });
+    }
+
+    /** Tests that [Dispatchers.setMain] fails when called with [Dispatchers.Main]. */
+    // TODO: @Test
+    void test_self_set() {
+        // TODO: assertFailsWith<IllegalArgumentException>
+        try {
+            Dispatchers::set_main(Dispatchers::main());
+            assert(false && "should have thrown");
+        } catch (const std::invalid_argument& e) {
+            // expected
         }
     }
 
-    /** Tests that [Distpachers.setMain] fails when called with [Dispatchers.Main]. */
-    @Test
-    fun testSelfSet() {
-        assertFailsWith<IllegalArgumentException> { Dispatchers.setMain(Dispatchers.Main) }
+    // TODO: @Test
+    void test_immediate_dispatcher() {
+        run_test([&]() {
+            Dispatchers::set_main(new ImmediateDispatcher());
+            expect(1);
+            with_context(Dispatchers::main(), [&]() {
+                expect(3);
+            });
+
+            Dispatchers::set_main(new RegularDispatcher());
+            with_context(Dispatchers::main(), [&]() {
+                expect(6);
+            });
+
+            finish(7);
+        });
     }
 
-    @Test
-    fun testImmediateDispatcher() = runTest {
-        Dispatchers.setMain(ImmediateDispatcher())
-        expect(1)
-        withContext(Dispatchers.Main) {
-            expect(3)
+private:
+    class ImmediateDispatcher : public CoroutineDispatcher {
+    private:
+        TestDispatchersTest* outer_;
+    public:
+        ImmediateDispatcher(TestDispatchersTest* outer) : outer_(outer) {}
+
+        bool is_dispatch_needed(const CoroutineContext& context) override {
+            outer_->expect(2);
+            return false;
         }
 
-        Dispatchers.setMain(RegularDispatcher())
-        withContext(Dispatchers.Main) {
-            expect(6)
+        void dispatch(const CoroutineContext& context, Runnable block) override {
+            throw std::runtime_error("Shouldn't be reached");
+        }
+    };
+
+    class RegularDispatcher : public CoroutineDispatcher {
+    private:
+        TestDispatchersTest* outer_;
+    public:
+        RegularDispatcher(TestDispatchersTest* outer) : outer_(outer) {}
+
+        bool is_dispatch_needed(const CoroutineContext& context) override {
+            outer_->expect(4);
+            return true;
         }
 
-        finish(7)
-    }
-
-    private inner class ImmediateDispatcher : CoroutineDispatcher() {
-        override fun isDispatchNeeded(context: CoroutineContext): Boolean {
-            expect(2)
-            return false
+        void dispatch(const CoroutineContext& context, Runnable block) override {
+            outer_->expect(5);
+            block.run();
         }
+    };
+};
 
-        override fun dispatch(context: CoroutineContext, block: Runnable) = throw RuntimeException("Shouldn't be reached")
-    }
-
-    private inner class RegularDispatcher : CoroutineDispatcher() {
-        override fun isDispatchNeeded(context: CoroutineContext): Boolean {
-            expect(4)
-            return true
-        }
-
-        override fun dispatch(context: CoroutineContext, block: Runnable) {
-            expect(5)
-            block.run()
-        }
-    }
-}
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

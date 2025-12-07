@@ -1,11 +1,24 @@
-@file:JvmMultifileClass
-@file:JvmName("FlowKt")
+// Transliterated from Kotlin to C++ (first-pass, syntax-only)
+// Original: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt
+//
+// TODO: Implement coroutine semantics (suspend functions, launch, CoroutineScope)
+// TODO: Map Kotlin Flow types to C++ equivalents
+// TODO: Implement Job type
+// TODO: Implement mapLatest operator
+// TODO: Handle inline functions and crossinline
 
-package kotlinx.coroutines.flow
+#pragma once
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.internal.*
-import kotlin.jvm.*
+// @file:JvmMultifileClass
+// @file:JvmName("FlowKt")
+
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.flow.internal.*
+// TODO: import kotlin.jvm.*
 
 /**
  * Terminal flow operator that collects the given flow but ignores all emitted values.
@@ -23,7 +36,10 @@ import kotlin.jvm.*
  *     .collect() // trigger collection of the flow
  * ```
  */
-public suspend fun Flow<*>.collect(): Unit = collect(NopCollector)
+template<typename T>
+void collect(Flow<T> flow) {
+    flow.collect(NopCollector{});
+}
 
 /**
  * Terminal flow operator that [launches][launch] the [collection][collect] of the given flow in the [scope].
@@ -42,8 +58,11 @@ public suspend fun Flow<*>.collect(): Unit = collect(NopCollector)
  *
  * In this example, note that the `job` returned by [launchIn] is not used, and the provided scope takes care of cancellation.
  */
-public fun <T> Flow<T>.launchIn(scope: CoroutineScope): Job = scope.launch {
-    collect() // tail-call
+template<typename T>
+Job launch_in(Flow<T> flow, CoroutineScope scope) {
+    return scope.launch([&flow]() {
+        collect(flow); // tail-call
+    });
 }
 
 /**
@@ -52,11 +71,21 @@ public fun <T> Flow<T>.launchIn(scope: CoroutineScope): Job = scope.launch {
  *
  * See also [collect] and [withIndex].
  */
-public suspend inline fun <T> Flow<T>.collectIndexed(crossinline action: suspend (index: Int, value: T) -> Unit): Unit =
-    collect(object : FlowCollector<T> {
-        private var index = 0
-        override suspend fun emit(value: T) = action(checkIndexOverflow(index++), value)
-    })
+template<typename T, typename Action>
+void collect_indexed(Flow<T> flow, Action action) {
+    struct IndexedCollector : FlowCollector<T> {
+        int index = 0;
+        Action action;
+
+        IndexedCollector(Action action_) : action(action_) {}
+
+        void emit(T value) /* override */ {
+            action(check_index_overflow(index++), value);
+        }
+    };
+
+    flow.collect(IndexedCollector{action});
+}
 
 /**
  * Terminal flow operator that collects the given flow with a provided [action].
@@ -79,7 +108,8 @@ public suspend inline fun <T> Flow<T>.collectIndexed(crossinline action: suspend
  *
  * prints "Collecting 1, Collecting 2, 2 collected"
  */
-public suspend fun <T> Flow<T>.collectLatest(action: suspend (value: T) -> Unit) {
+template<typename T, typename Action>
+void collect_latest(Flow<T> flow, Action action) {
     /*
      * Implementation note:
      * buffer(0) is inserted here to fulfil user's expectations in sequential usages, e.g.:
@@ -93,21 +123,36 @@ public suspend fun <T> Flow<T>.collectLatest(action: suspend (value: T) -> Unit)
      * It's not the case for intermediate operators which users mostly use for interactive UI,
      * where performance of dispatch is more important.
      */
-    mapLatest(action).buffer(0).collect()
+    collect(buffer(map_latest(flow, action), 0));
 }
 
 /**
  * Collects all the values from the given [flow] and emits them to the collector.
  * It is a shorthand for `flow.collect { value -> emit(value) }`.
  */
-public suspend fun <T> FlowCollector<T>.emitAll(flow: Flow<T>) {
-    ensureActive()
-    flow.collect(this)
+template<typename T>
+void emit_all(FlowCollector<T> collector, Flow<T> flow) {
+    ensure_active(collector);
+    flow.collect(collector);
 }
 
 /** @suppress */
-@Deprecated(level = DeprecationLevel.HIDDEN, message = "Backwards compatibility with JS and K/N")
-public suspend inline fun <T> Flow<T>.collect(crossinline action: suspend (value: T) -> Unit): Unit =
-    collect(object : FlowCollector<T> {
-        override suspend fun emit(value: T) = action(value)
-    })
+// @Deprecated(level = DeprecationLevel.HIDDEN, message = "Backwards compatibility with JS and K/N")
+template<typename T, typename Action>
+void collect(Flow<T> flow, Action action) {
+    struct ActionCollector : FlowCollector<T> {
+        Action action;
+
+        ActionCollector(Action action_) : action(action_) {}
+
+        void emit(T value) /* override */ {
+            action(value);
+        }
+    };
+
+    flow.collect(ActionCollector{action});
+}
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

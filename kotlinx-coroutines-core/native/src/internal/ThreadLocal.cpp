@@ -1,14 +1,62 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/native/src/internal/ThreadLocal.kt
+//
+// TODO: actual keyword - platform-specific implementation
+// TODO: kotlin.native.concurrent.ThreadLocal annotation
+// TODO: @Suppress annotation
+// TODO: Symbol type (likely a unique identifier)
 
-import kotlin.native.concurrent.ThreadLocal
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
 
-internal actual class CommonThreadLocal<T>(private val name: Symbol) {
-    @Suppress("UNCHECKED_CAST")
-    actual fun get(): T = Storage[name] as T
-    actual fun set(value: T) { Storage[name] = value }
+// TODO: Remove imports, fully qualify or add includes:
+// import kotlin.native.concurrent.ThreadLocal
+
+// TODO: internal actual class
+template<typename T>
+class CommonThreadLocal {
+private:
+    void* name; // TODO: Symbol type
+
+public:
+    CommonThreadLocal(void* name) : name(name) {}
+
+    // TODO: @Suppress("UNCHECKED_CAST")
+    T get() {
+        return static_cast<T>(Storage::instance()[name]);
+    }
+
+    void set(T value) {
+        Storage::instance()[name] = static_cast<void*>(value);
+    }
+};
+
+// TODO: internal actual function
+template<typename T>
+CommonThreadLocal<T>* common_thread_local(void* name) {
+    return new CommonThreadLocal<T>(name);
 }
 
-internal actual fun <T> commonThreadLocal(name: Symbol): CommonThreadLocal<T> = CommonThreadLocal(name)
+// TODO: @ThreadLocal private object implementing MutableMap
+class Storage {
+private:
+    std::unordered_map<void*, void*> storage;
 
-@ThreadLocal
-private object Storage: MutableMap<Symbol, Any?> by mutableMapOf()
+    Storage() = default;
+
+public:
+    static Storage& instance() {
+        // TODO: thread_local for proper ThreadLocal behavior
+        static Storage instance;
+        return instance;
+    }
+
+    void*& operator[](void* key) {
+        return storage[key];
+    }
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

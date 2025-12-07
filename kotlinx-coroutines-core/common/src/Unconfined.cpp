@@ -1,42 +1,60 @@
-package kotlinx.coroutines
+// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
+// Original: kotlinx-coroutines-core/common/src/Unconfined.kt
+//
+// TODO:
+// - object declaration needs singleton pattern
+// - CoroutineContext.Key infrastructure
+// - YieldContext integration with coroutine context
+// - @JvmField annotation (affects JVM bytecode generation only)
 
-import kotlin.coroutines.*
-import kotlin.jvm.*
+#include <stdexcept>
+#include <string>
+
+namespace kotlinx {
+namespace coroutines {
+
+class CoroutineContext;
+class CoroutineDispatcher;
+class Runnable;
+class AbstractCoroutineContextElement;
 
 /**
  * A coroutine dispatcher that is not confined to any specific thread.
  */
-internal object Unconfined : CoroutineDispatcher() {
+// internal object
+class Unconfined /* : CoroutineDispatcher() */ {
+private:
+    Unconfined() = default; // Private constructor for singleton
 
-    override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher {
-        throw UnsupportedOperationException("limitedParallelism is not supported for Dispatchers.Unconfined")
-    }
+public:
+    static Unconfined& instance();
 
-    override fun isDispatchNeeded(context: CoroutineContext): Boolean = false
+    CoroutineDispatcher& limited_parallelism(int parallelism, const std::string* name);
 
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        /** It can only be called by the [yield] function. See also code of [yield] function. */
-        val yieldContext = context[YieldContext]
-        if (yieldContext != null) {
-            // report to "yield" that it is an unconfined dispatcher and don't call "block.run()"
-            yieldContext.dispatcherWasUnconfined = true
-            return
-        }
-        throw UnsupportedOperationException("Dispatchers.Unconfined.dispatch function can only be used by the yield function. " +
-            "If you wrap Unconfined dispatcher in your code, make sure you properly delegate " +
-            "isDispatchNeeded and dispatch calls.")
-    }
-    
-    override fun toString(): String = "Dispatchers.Unconfined"
-}
+    bool is_dispatch_needed(const CoroutineContext& context) { return false; }
+
+    void dispatch(const CoroutineContext& context, Runnable& block);
+
+    std::string to_string() const { return "Dispatchers.Unconfined"; }
+};
 
 /**
  * Used to detect calls to [Unconfined.dispatch] from [yield] function.
  */
-@PublishedApi
-internal class YieldContext : AbstractCoroutineContextElement(Key) {
-    companion object Key : CoroutineContext.Key<YieldContext>
+// @PublishedApi
+// internal
+class YieldContext /* : AbstractCoroutineContextElement(Key) */ {
+public:
+    // companion object Key : CoroutineContext.Key<YieldContext>
+    struct Key {
+        // TODO: Implement CoroutineContext.Key interface
+    };
 
-    @JvmField
-    var dispatcherWasUnconfined = false
-}
+    // @JvmField
+    bool dispatcher_was_unconfined = false;
+
+    YieldContext() = default;
+};
+
+} // namespace coroutines
+} // namespace kotlinx

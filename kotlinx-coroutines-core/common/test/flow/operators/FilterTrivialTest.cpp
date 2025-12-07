@@ -1,74 +1,107 @@
-package kotlinx.coroutines.flow
+// Original file: kotlinx-coroutines-core/common/test/flow/operators/FilterTrivialTest.kt
+//
+// TODO: Mechanical C++ transliteration - Requires comprehensive updates:
+// - Import test framework headers
+// - Map filterNotNull() operator to C++ equivalent
+// - Map filterIsInstance() operators (template and KClass versions)
+// - Handle open class Super and class Sub inheritance
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class FilterTrivialTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testFilterNotNull() = runTest {
-        val flow = flowOf(1, 2, null)
-        assertEquals(3, flow.filterNotNull().sum())
+class FilterTrivialTest : public TestBase {
+public:
+
+    // TODO: @Test
+    void testFilterNotNull() {
+        // TODO: runTest {
+        auto flow_var = flow_of<std::optional<int>>(1, 2, std::nullopt);
+        assertEquals(3, flow_var.filter_not_null().sum());
+        // TODO: }
     }
 
-    @Test
-    fun testEmptyFlowNotNull() = runTest {
-        val sum = emptyFlow<Int?>().filterNotNull().sum()
-        assertEquals(0, sum)
+    // TODO: @Test
+    void testEmptyFlowNotNull() {
+        // TODO: runTest {
+        int sum = empty_flow<std::optional<int>>().filter_not_null().sum();
+        assertEquals(0, sum);
+        // TODO: }
     }
 
-    @Test
-    fun testFilterIsInstance() = runTest {
-        val flow = flowOf("value", 2.0)
-        assertEquals(2.0, flow.filterIsInstance<Double>().single())
-        assertEquals("value", flow.filterIsInstance<String>().single())
+    // TODO: @Test
+    void testFilterIsInstance() {
+        // TODO: runTest {
+        auto flow_var = flow_of<std::any>("value", 2.0);
+        assertEquals(2.0, flow_var.filter_is_instance<double>().single());
+        assertEquals("value", flow_var.filter_is_instance<std::string>().single());
+        // TODO: }
     }
 
-    @Test
-    fun testParametrizedFilterIsInstance() = runTest {
-        val flow = flowOf("value", 2.0)
-        assertEquals(2.0, flow.filterIsInstance(Double::class).single())
-        assertEquals("value", flow.filterIsInstance(String::class).single())
+    // TODO: @Test
+    void testParametrizedFilterIsInstance() {
+        // TODO: runTest {
+        auto flow_var = flow_of<std::any>("value", 2.0);
+        assertEquals(2.0, flow_var.filter_is_instance(typeid(double)).single());
+        assertEquals("value", flow_var.filter_is_instance(typeid(std::string)).single());
+        // TODO: }
     }
 
-    @Test
-    fun testSubtypesFilterIsInstance() = runTest {
-        open class Super
-        class Sub : Super()
+    // TODO: @Test
+    void testSubtypesFilterIsInstance() {
+        // TODO: runTest {
+        class Super {};
+        class Sub : public Super {};
 
-        val flow = flowOf(Super(), Super(), Super(), Sub(), Sub(), Sub())
-        assertEquals(6, flow.filterIsInstance<Super>().count())
-        assertEquals(3, flow.filterIsInstance<Sub>().count())
+        auto flow_var = flow_of<Super*>(new Super(), new Super(), new Super(), new Sub(), new Sub(), new Sub());
+        assertEquals(6, flow_var.filter_is_instance<Super*>().count());
+        assertEquals(3, flow_var.filter_is_instance<Sub*>().count());
+        // TODO: }
     }
 
-    @Test
-    fun testSubtypesParametrizedFilterIsInstance() = runTest {
-        open class Super
-        class Sub : Super()
+    // TODO: @Test
+    void testSubtypesParametrizedFilterIsInstance() {
+        // TODO: runTest {
+        class Super {};
+        class Sub : public Super {};
 
-        val flow = flowOf(Super(), Super(), Super(), Sub(), Sub(), Sub())
-        assertEquals(6, flow.filterIsInstance(Super::class).count())
-        assertEquals(3, flow.filterIsInstance(Sub::class).count())
+        auto flow_var = flow_of<Super*>(new Super(), new Super(), new Super(), new Sub(), new Sub(), new Sub());
+        assertEquals(6, flow_var.filter_is_instance(typeid(Super*)).count());
+        assertEquals(3, flow_var.filter_is_instance(typeid(Sub*)).count());
+        // TODO: }
     }
 
-    @Test
-    fun testFilterIsInstanceNullable() = runTest {
-        val flow = flowOf(1, 2, null)
-        assertEquals(2, flow.filterIsInstance<Int>().count())
-        assertEquals(3, flow.filterIsInstance<Int?>().count())
+    // TODO: @Test
+    void testFilterIsInstanceNullable() {
+        // TODO: runTest {
+        auto flow_var = flow_of<std::optional<int>>(1, 2, std::nullopt);
+        assertEquals(2, flow_var.filter_is_instance<int>().count());
+        assertEquals(3, flow_var.filter_is_instance<std::optional<int>>().count());
+        // TODO: }
     }
 
-    @Test
-    fun testEmptyFlowIsInstance() = runTest {
-        val sum = emptyFlow<Int>().filterIsInstance<Int>().sum()
-        assertEquals(0, sum)
+    // TODO: @Test
+    void testEmptyFlowIsInstance() {
+        // TODO: runTest {
+        int sum = empty_flow<int>().filter_is_instance<int>().sum();
+        assertEquals(0, sum);
+        // TODO: }
     }
 
-    @Test
-    fun testEmptyFlowParametrizedIsInstance() = runTest {
-        val sum = emptyFlow<Int>().filterIsInstance(Int::class).sum()
-        assertEquals(0, sum)
+    // TODO: @Test
+    void testEmptyFlowParametrizedIsInstance() {
+        // TODO: runTest {
+        int sum = empty_flow<int>().filter_is_instance(typeid(int)).sum();
+        assertEquals(0, sum);
+        // TODO: }
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

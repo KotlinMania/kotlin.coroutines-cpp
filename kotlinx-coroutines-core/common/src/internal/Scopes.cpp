@@ -1,43 +1,80 @@
-package kotlinx.coroutines.internal
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/src/internal/Scopes.kt
+//
+// TODO: This is a mechanical transliteration - semantics not fully implemented
+// TODO: CoroutineContext, Continuation need C++ equivalents
+// TODO: AbstractCoroutine, CoroutineStackFrame need implementation
+// TODO: @JvmField annotation - JVM-specific, translate to comment
+// TODO: suspend functions and coroutine semantics not implemented
 
-import kotlinx.coroutines.*
-import kotlin.coroutines.*
-import kotlin.coroutines.intrinsics.*
-import kotlin.jvm.*
+#include <string>
+
+namespace kotlinx {
+namespace coroutines {
+namespace internal {
+
+// Forward declarations
+class CoroutineContext;
+template<typename T> class Continuation;
+template<typename T> class AbstractCoroutine;
+class CoroutineStackFrame;
+class CoroutineScope;
 
 /**
  * This is a coroutine instance that is created by [coroutineScope] builder.
  */
-internal open class ScopeCoroutine<in T>(
-    context: CoroutineContext,
-    @JvmField val uCont: Continuation<T> // unintercepted continuation
-) : AbstractCoroutine<T>(context, true, true), CoroutineStackFrame {
+template<typename T>
+class ScopeCoroutine : public AbstractCoroutine<T>, public CoroutineStackFrame {
+public:
+    Continuation<T>* u_cont; // unintercepted continuation
 
-    final override val callerFrame: CoroutineStackFrame? get() = uCont as? CoroutineStackFrame
-    final override fun getStackTraceElement(): StackTraceElement? = null
+    ScopeCoroutine(CoroutineContext* context, Continuation<T>* u_cont)
+        : AbstractCoroutine<T>(context, true, true), u_cont(u_cont) {}
 
-    final override val isScopedCoroutine: Boolean get() = true
+    CoroutineStackFrame* get_caller_frame() override {
+        // TODO: u_cont as? CoroutineStackFrame
+        return nullptr;
+    }
 
-    override fun afterCompletion(state: Any?) {
+    void* get_stack_trace_element() override { return nullptr; }
+
+    bool is_scoped_coroutine() override { return true; }
+
+    void after_completion(void* state) override {
         // Resume in a cancellable way by default when resuming from another context
-        uCont.intercepted().resumeCancellableWith(recoverResult(state, uCont))
+        // TODO: u_cont.intercepted().resumeCancellableWith(recoverResult(state, u_cont))
     }
 
     /**
      * Invoked when a scoped coorutine was completed in an undispatched manner directly
      * at the place of its start because it never suspended.
      */
-    open fun afterCompletionUndispatched() {
+    virtual void after_completion_undispatched() {
+        // Empty default implementation
     }
 
-    override fun afterResume(state: Any?) {
+    void after_resume(void* state) override {
         // Resume direct because scope is already in the correct context
-        uCont.resumeWith(recoverResult(state, uCont))
+        // TODO: u_cont.resumeWith(recoverResult(state, u_cont))
     }
-}
+};
 
-internal class ContextScope(context: CoroutineContext) : CoroutineScope {
-    override val coroutineContext: CoroutineContext = context
+class ContextScope : public CoroutineScope {
+private:
+    CoroutineContext* coroutine_context_;
+
+public:
+    explicit ContextScope(CoroutineContext* context) : coroutine_context_(context) {}
+
+    CoroutineContext* get_coroutine_context() override { return coroutine_context_; }
+
     // CoroutineScope is used intentionally for user-friendly representation
-    override fun toString(): String = "CoroutineScope(coroutineContext=$coroutineContext)"
-}
+    std::string to_string() {
+        // TODO: "CoroutineScope(coroutineContext=$coroutineContext)"
+        return "CoroutineScope(coroutineContext=...)";
+    }
+};
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

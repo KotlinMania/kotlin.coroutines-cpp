@@ -1,145 +1,128 @@
-@file:Suppress("PackageDirectoryMismatch")
-package definitely.not.kotlinx.coroutines
+// Original file: kotlinx-coroutines-debug/test/SanitizedProbesTest.kt
+// TODO: Convert @file:Suppress annotation
+// TODO: Convert imports to C++ includes
+// TODO: Implement DebugTestBase base class
+// TODO: Convert @Test annotation
+// TODO: Implement DebugProbes API
+// TODO: Implement verifyDump, verifyStackTrace
+// TODO: Implement select builder
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.debug.*
-import kotlinx.coroutines.selects.*
-import org.junit.*
-import org.junit.Test
-import java.util.concurrent.*
-import kotlin.test.*
+// @file:Suppress("PackageDirectoryMismatch")
+namespace definitely {
+namespace not {
+namespace kotlinx {
+namespace coroutines {
 
-class SanitizedProbesTest : DebugTestBase() {
-    @Before
-    override fun setUp() {
-        super.setUp()
-        DebugProbes.sanitizeStackTraces = true
-        DebugProbes.enableCreationStackTraces = true
+class SanitizedProbesTest : public DebugTestBase {
+public:
+    // @Before
+    void set_up() override {
+        DebugTestBase::set_up();
+        // TODO: DebugProbes.sanitizeStackTraces = true
+        // TODO: DebugProbes.enableCreationStackTraces = true
     }
 
-    @Test
-    fun testRecoveredStackTrace() = runTest {
-        val deferred = createDeferred()
-        val traces = listOf(
-            "java.util.concurrent.ExecutionException\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest\$createDeferredNested\$1.invokeSuspend(SanitizedProbesTest.kt:97)\n" +
-                    "\tat _COROUTINE._BOUNDARY._(CoroutineDebugging.kt)\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.oneMoreNestedMethod(SanitizedProbesTest.kt:67)\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.nestedMethod(SanitizedProbesTest.kt:61)\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest\$testRecoveredStackTrace\$1.invokeSuspend(SanitizedProbesTest.kt:50)\n" +
-                    "\tat _COROUTINE._CREATION._(CoroutineDebugging.kt)\n" +
-                    "\tat kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(IntrinsicsJvm.kt:116)\n" +
-                    "\tat kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable(Cancellable.kt:23)\n" +
-                    "\tat kotlinx.coroutines.testing.TestBase.runTest\$default(TestBase.kt:141)\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.testRecoveredStackTrace(SanitizedProbesTest.kt:33)",
-            "Caused by: java.util.concurrent.ExecutionException\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest\$createDeferredNested\$1.invokeSuspend(SanitizedProbesTest.kt:57)\n" +
-                    "\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:32)\n"
-        )
-        nestedMethod(deferred, traces)
-        deferred.join()
+    // @Test
+    void test_recovered_stack_trace() {
+        // TODO: runTest {
+        //     auto deferred = createDeferred()
+        //     auto traces = std::vector<std::string>{
+        //         "java.util.concurrent.ExecutionException\n" +
+        //                 "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest$createDeferredNested$1.invokeSuspend(SanitizedProbesTest.kt:97)\n" +
+        //                 "\tat _COROUTINE._BOUNDARY._(CoroutineDebugging.kt)\n" +
+        //                 "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.oneMoreNestedMethod(SanitizedProbesTest.kt:67)\n" +
+        //                 "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.nestedMethod(SanitizedProbesTest.kt:61)\n" +
+        //                 "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest$testRecoveredStackTrace$1.invokeSuspend(SanitizedProbesTest.kt:50)\n" +
+        //                 "\tat _COROUTINE._CREATION._(CoroutineDebugging.kt)\n" +
+        //                 "\tat kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(IntrinsicsJvm.kt:116)\n" +
+        //                 "\tat kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable(Cancellable.kt:23)\n" +
+        //                 "\tat kotlinx.coroutines.testing.TestBase.runTest$default(TestBase.kt:141)\n" +
+        //                 "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.testRecoveredStackTrace(SanitizedProbesTest.kt:33)",
+        //         "Caused by: java.util.concurrent.ExecutionException\n" +
+        //                 "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest$createDeferredNested$1.invokeSuspend(SanitizedProbesTest.kt:57)\n" +
+        //                 "\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:32)\n"
+        //     }
+        //     nestedMethod(deferred, traces)
+        //     deferred.join()
+        // }
     }
 
-    @Test
-    fun testCoroutinesDump() = runTest {
-        val deferred = createActiveDeferred()
-        yield()
-        verifyDump(
-            "Coroutine \"coroutine#3\":BlockingCoroutine{Active}@7d68ef40, state: RUNNING\n" +
-                "\tat java.lang.Thread.getStackTrace(Thread.java)\n" +
-                "\tat _COROUTINE._CREATION._(CoroutineDebugging.kt)\n" +
-                "\tat kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(IntrinsicsJvm.kt:116)\n" +
-                "\tat kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable(Cancellable.kt:23)\n" +
-                "\tat kotlinx.coroutines.testing.TestBase.runTest\$default(TestBase.kt:141)\n" +
-                "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.testCoroutinesDump(SanitizedProbesTest.kt:56)",
-
-            "Coroutine \"coroutine#4\":DeferredCoroutine{Active}@75c072cb, state: SUSPENDED\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest\$createActiveDeferred\$1.invokeSuspend(SanitizedProbesTest.kt:63)\n" +
-                    "\tat _COROUTINE._CREATION._(CoroutineDebugging.kt)\n" +
-                    "\tat kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(IntrinsicsJvm.kt:116)\n" +
-                    "\tat kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable(Cancellable.kt:23)\n" +
-                    "\tat kotlinx.coroutines.BuildersKt__Builders_commonKt.async\$default(Builders.common.kt)\n" +
-                    "\tat kotlinx.coroutines.BuildersKt.async\$default(Unknown Source)\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.createActiveDeferred(SanitizedProbesTest.kt:62)\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.access\$createActiveDeferred(SanitizedProbesTest.kt:16)\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest\$testCoroutinesDump\$1.invokeSuspend(SanitizedProbesTest.kt:57)\n" +
-                    "\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:32)\n" +
-                    "\tat kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:237)\n" +
-                    "\tat kotlinx.coroutines.testing.TestBase.runTest\$default(TestBase.kt:141)\n" +
-                    "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.testCoroutinesDump(SanitizedProbesTest.kt:56)"
-        )
-        deferred.cancelAndJoin()
+    // @Test
+    void test_coroutines_dump() {
+        // TODO: Large verifyDump call with multiple coroutines
     }
 
-    @Test
-    fun testSelectBuilder() = runTest {
-        val selector = launchSelector()
-        expect(1)
-        yield()
-        expect(3)
-        verifyDump("Coroutine \"coroutine#1\":BlockingCoroutine{Active}@35fc6dc4, state: RUNNING\n" +
-                "\tat java.lang.Thread.getStackTrace(Thread.java:1552)\n" + // Skip the rest
-                "\tat _COROUTINE._CREATION._(CoroutineDebugging.kt)\n" +
-                "\tat kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(IntrinsicsJvm.kt:116)",
-
-            "Coroutine \"coroutine#2\":StandaloneCoroutine{Active}@1b68b9a4, state: SUSPENDED\n" +
-                "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest\$launchSelector\$1\$1\$1.invokeSuspend(SanitizedProbesTest.kt)\n" +
-                "\tat _COROUTINE._CREATION._(CoroutineDebugging.kt)\n" +
-                "\tat kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(IntrinsicsJvm.kt:116)\n" +
-                "\tat kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable(Cancellable.kt:25)\n" +
-                "\tat kotlinx.coroutines.BuildersKt__Builders_commonKt.launch\$default(Builders.common.kt)\n" +
-                "\tat kotlinx.coroutines.BuildersKt.launch\$default(Unknown Source)\n" +
-                "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.launchSelector(SanitizedProbesTest.kt:100)\n" +
-                "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.access\$launchSelector(SanitizedProbesTest.kt:16)\n" +
-                "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest\$testSelectBuilder\$1.invokeSuspend(SanitizedProbesTest.kt:89)\n" +
-                "\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:32)\n" +
-                "\tat kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:233)\n" +
-                "\tat kotlinx.coroutines.testing.TestBase.runTest\$default(TestBase.kt:154)\n" +
-                "\tat definitely.not.kotlinx.coroutines.SanitizedProbesTest.testSelectBuilder(SanitizedProbesTest.kt:88)")
-        finish(4)
-        selector.cancelAndJoin()
+    // @Test
+    void test_select_builder() {
+        // TODO: runTest {
+        //     auto selector = launchSelector()
+        //     expect(1)
+        //     yield()
+        //     expect(3)
+        //     verifyDump(...)
+        //     finish(4)
+        //     selector.cancelAndJoin()
+        // }
     }
 
-    private fun CoroutineScope.launchSelector(): Job {
-        val job = CompletableDeferred(Unit)
-        return launch {
-            select<Int> {
-                job.onJoin {
-                    expect(2)
-                    delay(Long.MAX_VALUE)
-                    1
-                }
-            }
-        }
+private:
+    void* launch_selector(/* CoroutineScope* scope */) {
+        // TODO: auto job = CompletableDeferred(Unit)
+        // return launch {
+        //     select<Int> {
+        //         job.onJoin {
+        //             expect(2)
+        //             delay(Long.MAX_VALUE)
+        //             1
+        //         }
+        //     }
+        // }
+        return nullptr;
     }
 
-    private fun CoroutineScope.createActiveDeferred(): Deferred<*> = async {
-        suspendingMethod()
-        assertTrue(true)
+    void* create_active_deferred(/* CoroutineScope* scope */) {
+        // TODO: return async {
+        //     suspendingMethod()
+        //     assertTrue(true)
+        // }
+        return nullptr;
     }
 
-    private suspend fun suspendingMethod() {
-        delay(Long.MAX_VALUE)
+    // suspend
+    void suspending_method() {
+        // TODO: delay(Long.MAX_VALUE)
     }
 
-    private fun CoroutineScope.createDeferred(): Deferred<*> = createDeferredNested()
-
-    private fun CoroutineScope.createDeferredNested(): Deferred<*> = async(NonCancellable) {
-        throw ExecutionException(null)
+    void* create_deferred(/* CoroutineScope* scope */) {
+        // TODO: return createDeferredNested()
+        return nullptr;
     }
 
-    private suspend fun nestedMethod(deferred: Deferred<*>, traces: List<String>) {
-        oneMoreNestedMethod(deferred, traces)
-        assertTrue(true) // Prevent tail-call optimization
+    void* create_deferred_nested(/* CoroutineScope* scope */) {
+        // TODO: return async(NonCancellable) {
+        //     throw ExecutionException(null)
+        // }
+        return nullptr;
     }
 
-    private suspend fun oneMoreNestedMethod(deferred: Deferred<*>, traces: List<String>) {
-        try {
-            deferred.await()
-            expectUnreached()
-        } catch (e: ExecutionException) {
-            verifyStackTrace(e, traces)
-        }
+    // suspend
+    void nested_method(void* deferred, const std::vector<std::string>& traces) {
+        // TODO: oneMoreNestedMethod(deferred, traces)
+        // assertTrue(true) // Prevent tail-call optimization
     }
-}
+
+    // suspend
+    void one_more_nested_method(void* deferred, const std::vector<std::string>& traces) {
+        // TODO: try {
+        //     deferred.await()
+        //     expectUnreached()
+        // } catch (ExecutionException e) {
+        //     verifyStackTrace(e, traces)
+        // }
+    }
+};
+
+} // namespace coroutines
+} // namespace kotlinx
+} // namespace not
+} // namespace definitely

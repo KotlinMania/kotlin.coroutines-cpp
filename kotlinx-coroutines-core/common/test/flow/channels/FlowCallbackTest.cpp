@@ -1,54 +1,77 @@
-@file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-21913
+// Original: kotlinx-coroutines-core/common/test/flow/channels/FlowCallbackTest.kt
+// @file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-21913
+// TODO: Translate imports to proper C++ includes
+// TODO: Implement TestBase base class
+// TODO: Implement @Test annotation equivalent
+// TODO: Implement runTest coroutine runner
+// TODO: Implement callbackFlow builder
+// TODO: Implement CoroutineScope, Job
+// TODO: Implement launch, send, close, awaitClose
+// TODO: Implement toList
+// TODO: Implement IllegalStateException
+// TODO: Implement string contains checking
 
-package kotlinx.coroutines.flow
+#include <vector>
+#include <string>
+#include <stdexcept>
+// TODO: #include proper headers
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class FlowCallbackTest : TestBase() {
-    @Test
-    fun testClosedPrematurely() = runTest {
-        val outerScope = this
-        val flow = callbackFlow {
-            // ~ callback-based API
-            outerScope.launch(Job()) {
-                expect(2)
-                try {
-                    send(1)
-                    expectUnreached()
-                } catch (e: IllegalStateException) {
-                    expect(3)
-                    assertTrue(e.message!!.contains("awaitClose"))
-                }
+class FlowCallbackTest : public TestBase {
+public:
+    // @Test
+    void test_closed_prematurely() {
+        run_test([]() -> /* suspend */ void {
+            CoroutineScope& outer_scope = *this;
+            auto flow_instance = callback_flow([&](auto& scope) -> /* suspend */ void {
+                // ~ callback-based API
+                outer_scope.launch(Job(), [&](auto& launch_scope) -> /* suspend */ void {
+                    expect(2);
+                    try {
+                        scope.send(1);
+                        expect_unreached();
+                    } catch (const IllegalStateException& e) {
+                        expect(3);
+                        assert_true(std::string(e.what()).find("awaitClose") != std::string::npos);
+                    }
+                });
+                expect(1);
+            });
+
+            try {
+                flow_instance.collect();
+            } catch (const IllegalStateException& e) {
+                expect(4);
+                assert_true(std::string(e.what()).find("awaitClose") != std::string::npos);
             }
-            expect(1)
-        }
-        try {
-            flow.collect()
-        } catch (e: IllegalStateException) {
-            expect(4)
-            assertTrue(e.message!!.contains("awaitClose"))
-        }
-        finish(5)
+            finish(5);
+        });
     }
 
-    @Test
-    fun testNotClosedPrematurely() = runTest {
-        val outerScope = this
-        val flow = callbackFlow {
-            // ~ callback-based API
-            outerScope.launch(Job()) {
-                expect(2)
-                send(1)
-                close()
-            }
-            expect(1)
-            awaitClose()
-        }
+    // @Test
+    void test_not_closed_prematurely() {
+        run_test([]() -> /* suspend */ void {
+            CoroutineScope& outer_scope = *this;
+            auto flow_instance = callback_flow([&](auto& scope) -> /* suspend */ void {
+                // ~ callback-based API
+                outer_scope.launch(Job(), [&](auto& launch_scope) -> /* suspend */ void {
+                    expect(2);
+                    scope.send(1);
+                    scope.close();
+                });
+                expect(1);
+                scope.await_close();
+            });
 
-        assertEquals(listOf(1), flow.toList())
-        finish(3)
+            assert_equals(std::vector<int>{1}, flow_instance.to_list());
+            finish(3);
+        });
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

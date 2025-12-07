@@ -1,173 +1,101 @@
-package kotlinx.coroutines.channels
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/channels/ChannelUndeliveredElementFailureTest.kt
+//
+// TODO: Translate imports
+// TODO: Translate suspend functions to C++ coroutines
+// TODO: Translate test annotations to C++ test framework
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.internal.*
-import kotlinx.coroutines.selects.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace channels {
+
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.internal.*
+// TODO: import kotlinx.coroutines.selects.*
+// TODO: import kotlin.test.*
 
 /**
  * Tests for failures inside `onUndeliveredElement` handler in [Channel].
  */
-class ChannelUndeliveredElementFailureTest : TestBase() {
-    private val item = "LOST"
-    private val onCancelFail: (String) -> Unit = { throw TestException(it) }
-    private val shouldBeUnhandled: List<(Throwable) -> Boolean> = listOf({ it.isElementCancelException() })
+class ChannelUndeliveredElementFailureTest : public TestBase {
+private:
+    const char* item = "LOST";
+    // TODO: std::function<void(const std::string&)> onCancelFail = [](const std::string& it) { throw TestException(it); };
+    // TODO: std::vector<std::function<bool(const std::exception&)>> shouldBeUnhandled = { [](const std::exception& it) { return isElementCancelException(it); } };
 
-    private fun Throwable.isElementCancelException() =
-        this is UndeliveredElementException && cause is TestException && cause!!.message == item
-
-    @Test
-    fun testSendCancelledFail() = runTest(unhandled = shouldBeUnhandled) {
-        val channel = Channel(onUndeliveredElement = onCancelFail)
-        val job = launch(start = CoroutineStart.UNDISPATCHED) {
-            channel.send(item)
-            expectUnreached()
-        }
-        job.cancel()
+    bool isElementCancelException(const std::exception& /* e */) {
+        // TODO: return e is UndeliveredElementException && e.cause is TestException && e.cause.message == item
+        return false;
     }
 
-    @Test
-    fun testSendSelectCancelledFail() = runTest(unhandled = shouldBeUnhandled) {
-        val channel = Channel(onUndeliveredElement = onCancelFail)
-        val job = launch(start = CoroutineStart.UNDISPATCHED) {
-            select {
-                channel.onSend(item) {
-                    expectUnreached()
-                }
-            }
-        }
-        job.cancel()
+public:
+    // TODO: @Test
+    void testSendCancelledFail() /* = runTest(unhandled = shouldBeUnhandled) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testReceiveCancelledFail() = runTest(unhandled = shouldBeUnhandled) {
-        val channel = Channel(onUndeliveredElement = onCancelFail)
-        val job = launch(start = CoroutineStart.UNDISPATCHED) {
-            channel.receive()
-            expectUnreached() // will be cancelled before it dispatches
-        }
-        channel.send(item)
-        job.cancel()
+    // TODO: @Test
+    void testSendSelectCancelledFail() /* = runTest(unhandled = shouldBeUnhandled) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testReceiveSelectCancelledFail() = runTest(unhandled = shouldBeUnhandled) {
-        val channel = Channel(onUndeliveredElement = onCancelFail)
-        val job = launch(start = CoroutineStart.UNDISPATCHED) {
-            select<Unit> {
-                channel.onReceive {
-                    expectUnreached()
-                }
-            }
-            expectUnreached() // will be cancelled before it dispatches
-        }
-        channel.send(item)
-        job.cancel()
+    // TODO: @Test
+    void testReceiveCancelledFail() /* = runTest(unhandled = shouldBeUnhandled) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testReceiveCatchingCancelledFail() = runTest(unhandled = shouldBeUnhandled) {
-        val channel = Channel(onUndeliveredElement = onCancelFail)
-        val job = launch(start = CoroutineStart.UNDISPATCHED) {
-            channel.receiveCatching()
-            expectUnreached() // will be cancelled before it dispatches
-        }
-        channel.send(item)
-        job.cancel()
+    // TODO: @Test
+    void testReceiveSelectCancelledFail() /* = runTest(unhandled = shouldBeUnhandled) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testReceiveOrClosedSelectCancelledFail() = runTest(unhandled = shouldBeUnhandled) {
-        val channel = Channel(onUndeliveredElement = onCancelFail)
-        val job = launch(start = CoroutineStart.UNDISPATCHED) {
-            select<Unit> {
-                channel.onReceiveCatching {
-                    expectUnreached()
-                }
-            }
-            expectUnreached() // will be cancelled before it dispatches
-        }
-        channel.send(item)
-        job.cancel()
+    // TODO: @Test
+    void testReceiveCatchingCancelledFail() /* = runTest(unhandled = shouldBeUnhandled) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testHasNextCancelledFail() = runTest(unhandled = shouldBeUnhandled) {
-        val channel = Channel(onUndeliveredElement = onCancelFail)
-        val job = launch(start = CoroutineStart.UNDISPATCHED) {
-            channel.iterator().hasNext()
-            expectUnreached() // will be cancelled before it dispatches
-        }
-        channel.send(item)
-        job.cancel()
+    // TODO: @Test
+    void testReceiveOrClosedSelectCancelledFail() /* = runTest(unhandled = shouldBeUnhandled) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testChannelCancelledFail() = runTest(expected = { it.isElementCancelException() }) {
-        val channel = Channel(1, onUndeliveredElement = onCancelFail)
-        channel.send(item)
-        channel.cancel()
-        expectUnreached()
+    // TODO: @Test
+    void testHasNextCancelledFail() /* = runTest(unhandled = shouldBeUnhandled) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testFailedHandlerInClosedConflatedChannel() = runTest(expected = { it is UndeliveredElementException }) {
-        val conflated = Channel<Int>(Channel.CONFLATED, onUndeliveredElement = {
-            finish(2)
-            throw TestException()
-        })
-        expect(1)
-        conflated.close(IndexOutOfBoundsException())
-        conflated.send(3)
+    // TODO: @Test
+    void testChannelCancelledFail() /* = runTest(expected = { it.isElementCancelException() }) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testFailedHandlerInClosedBufferedChannel() = runTest(expected = { it is UndeliveredElementException }) {
-        val conflated = Channel<Int>(3, onUndeliveredElement = {
-            finish(2)
-            throw TestException()
-        })
-        expect(1)
-        conflated.close(IndexOutOfBoundsException())
-        conflated.send(3)
+    // TODO: @Test
+    void testFailedHandlerInClosedConflatedChannel() /* = runTest(expected = { it is UndeliveredElementException }) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testSendDropOldestInvokeHandlerBuffered() = runTest(expected = { it is UndeliveredElementException }) {
-        val channel = Channel<Int>(1, BufferOverflow.DROP_OLDEST, onUndeliveredElement = {
-            finish(2)
-            throw TestException()
-        })
-
-        channel.send(42)
-        expect(1)
-        channel.send(12)
+    // TODO: @Test
+    void testFailedHandlerInClosedBufferedChannel() /* = runTest(expected = { it is UndeliveredElementException }) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testSendDropLatestInvokeHandlerBuffered() = runTest(expected = { it is UndeliveredElementException }) {
-        val channel = Channel<Int>(2, BufferOverflow.DROP_LATEST, onUndeliveredElement = {
-            finish(2)
-            throw TestException()
-        })
-
-        channel.send(42)
-        channel.send(12)
-        expect(1)
-        channel.send(12)
-        expectUnreached()
+    // TODO: @Test
+    void testSendDropOldestInvokeHandlerBuffered() /* = runTest(expected = { it is UndeliveredElementException }) */ {
+        // TODO: Implementation
     }
 
-    @Test
-    fun testSendDropOldestInvokeHandlerConflated() = runTest(expected = { it is UndeliveredElementException }) {
-        val channel = Channel<Int>(Channel.CONFLATED, onUndeliveredElement = {
-            finish(2)
-            throw TestException()
-        })
-        channel.send(42)
-        expect(1)
-        channel.send(42)
-        expectUnreached()
+    // TODO: @Test
+    void testSendDropLatestInvokeHandlerBuffered() /* = runTest(expected = { it is UndeliveredElementException }) */ {
+        // TODO: Implementation
     }
-}
+
+    // TODO: @Test
+    void testSendDropOldestInvokeHandlerConflated() /* = runTest(expected = { it is UndeliveredElementException }) */ {
+        // TODO: Implementation
+    }
+};
+
+} // namespace channels
+} // namespace coroutines
+} // namespace kotlinx

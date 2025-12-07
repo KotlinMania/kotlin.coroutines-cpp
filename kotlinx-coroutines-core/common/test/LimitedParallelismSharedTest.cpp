@@ -1,59 +1,74 @@
-package kotlinx.coroutines
+// Original: kotlinx-coroutines-core/common/test/LimitedParallelismSharedTest.kt
+// TODO: Transliterated from Kotlin - needs C++ implementation
+// TODO: Handle limited parallelism dispatchers
+// TODO: Map test framework annotations to C++ test framework
 
-import kotlinx.coroutines.testing.*
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.test.*
+#include <vector>
 
-class LimitedParallelismSharedTest : TestBase() {
+namespace kotlinx {
+namespace coroutines {
 
-    @Test
-    fun testLimitedDefault() = runTest {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlin.coroutines.CoroutineContext
+// TODO: import kotlin.coroutines.EmptyCoroutineContext
+// TODO: import kotlin.test.*
+
+class LimitedParallelismSharedTest : public TestBase {
+public:
+    // TODO: @Test
+    void test_limited_default() {
+        // TODO: runTest {
         // Test that evaluates the very basic completion of tasks in limited dispatcher
         // for all supported platforms.
         // For more specific and concurrent tests, see 'concurrent' package.
-        val view = Dispatchers.Default.limitedParallelism(1)
-        val view2 = Dispatchers.Default.limitedParallelism(1)
-        val j1 = launch(view) {
-            while (true) {
-                yield()
-            }
-        }
-        val j2 = launch(view2) { j1.cancel() }
-        joinAll(j1, j2)
+        // TODO: const auto view = Dispatchers.Default.limited_parallelism(1);
+        // TODO: const auto view2 = Dispatchers.Default.limited_parallelism(1);
+        // TODO: const auto j1 = launch(view) {
+        //     while (true) {
+        //         yield();
+        //     }
+        // }
+        // TODO: const auto j2 = launch(view2) { j1.cancel(); }
+        // TODO: join_all(j1, j2);
+        // TODO: }
     }
 
-    @Test
-    fun testParallelismSpec() {
-        assertFailsWith<IllegalArgumentException> { Dispatchers.Default.limitedParallelism(0) }
-        assertFailsWith<IllegalArgumentException> { Dispatchers.Default.limitedParallelism(-1) }
-        assertFailsWith<IllegalArgumentException> { Dispatchers.Default.limitedParallelism(Int.MIN_VALUE) }
-        Dispatchers.Default.limitedParallelism(Int.MAX_VALUE)
+    // TODO: @Test
+    void test_parallelism_spec() {
+        // TODO: assertFailsWith<IllegalArgumentException>([&] { Dispatchers.Default.limited_parallelism(0); });
+        // TODO: assertFailsWith<IllegalArgumentException>([&] { Dispatchers.Default.limited_parallelism(-1); });
+        // TODO: assertFailsWith<IllegalArgumentException>([&] { Dispatchers.Default.limited_parallelism(INT_MIN); });
+        // TODO: Dispatchers.Default.limited_parallelism(INT_MAX);
     }
 
     /**
      * Checks that even if the dispatcher sporadically fails, the limited dispatcher will still allow reaching the
      * target parallelism level.
      */
-    @Test
-    fun testLimitedParallelismOfOccasionallyFailingDispatcher() {
-        val limit = 5
-        var doFail = false
-        val workerQueue = mutableListOf<Runnable>()
-        val limited = object: CoroutineDispatcher() {
-            override fun dispatch(context: CoroutineContext, block: Runnable) {
-                if (doFail) throw TestException()
-                workerQueue.add(block)
-            }
-        }.limitedParallelism(limit)
-        repeat(6 * limit) {
-            try {
-                limited.dispatch(EmptyCoroutineContext, Runnable { /* do nothing */ })
-            } catch (_: DispatchException) {
-                // ignore
-            }
-            doFail = !doFail
+    // TODO: @Test
+    void test_limited_parallelism_of_occasionally_failing_dispatcher() {
+        const int limit = 5;
+        bool do_fail = false;
+        std::vector<Runnable*> worker_queue;
+        // TODO: const auto limited = [&]() {
+        //     struct : public CoroutineDispatcher {
+        //         void dispatch(const CoroutineContext& context, Runnable* block) override {
+        //             if (do_fail) throw TestException();
+        //             worker_queue.push_back(block);
+        //         }
+        //     };
+        // }().limited_parallelism(limit);
+        for (int i = 0; i < 6 * limit; i++) {
+            // TODO: try {
+            //     limited.dispatch(EmptyCoroutineContext, new Runnable{[]{}});
+            // } catch (const DispatchException&) {
+            //     // ignore
+            // }
+            do_fail = !do_fail;
         }
-        assertEquals(limit, workerQueue.size)
+        // TODO: assertEquals(limit, worker_queue.size());
     }
-}
+};
+
+} // namespace coroutines
+} // namespace kotlinx

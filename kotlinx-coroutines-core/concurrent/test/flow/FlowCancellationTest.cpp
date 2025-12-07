@@ -1,60 +1,90 @@
-package kotlinx.coroutines.flow
+// Original: kotlinx-coroutines-core/concurrent/test/flow/FlowCancellationTest.kt
+// TODO: Remove or convert import statements
+// TODO: Convert test annotations to C++ test framework
+// TODO: Implement suspend functions and coroutines
+// TODO: Handle TestBase inheritance
+// TODO: Implement flow, launchIn, currentCoroutineContext
+// TODO: Implement withEmptyContext
 
-import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.*
-import kotlin.test.*
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
 
-class FlowCancellationTest : TestBase() {
+// TODO: import kotlinx.coroutines.testing.*
+// TODO: import kotlinx.coroutines.*
+// TODO: import kotlinx.coroutines.channels.*
+// TODO: import kotlinx.coroutines.flow.*
+// TODO: import kotlin.test.*
 
-    @Test
-    fun testEmitIsCooperative() = runTest {
-        val latch = Channel<Unit>(1)
-        val job = flow {
-            expect(1)
-            latch.send(Unit)
-            while (true) {
-                emit(42)
-            }
-        }.launchIn(this + Dispatchers.Default)
+class FlowCancellationTest : public TestBase {
+public:
+    // @Test
+    // TODO: Convert test annotation
+    void test_emit_is_cooperative() {
+        runTest([&]() {
+            // TODO: suspend function
+            auto latch = Channel<void>(1);
+            auto job = flow([&](auto& emitter) {
+                // TODO: suspend function
+                expect(1);
+                latch.send(Unit);
+                while (true) {
+                    emitter.emit(42);
+                }
+            }).launch_in(*this + Dispatchers::Default);
 
-        latch.receive()
-        expect(2)
-        job.cancelAndJoin()
-        finish(3)
+            latch.receive();
+            expect(2);
+            job.cancel_and_join();
+            finish(3);
+        });
     }
 
-    @Test
-    fun testIsActiveOnCurrentContext() = runTest {
-        val latch = Channel<Unit>(1)
-        val job = flow<Unit> {
-            expect(1)
-            latch.send(Unit)
-            while (currentCoroutineContext().isActive) {
-                // Do nothing
-            }
-        }.launchIn(this + Dispatchers.Default)
+    // @Test
+    // TODO: Convert test annotation
+    void test_is_active_on_current_context() {
+        runTest([&]() {
+            // TODO: suspend function
+            auto latch = Channel<void>(1);
+            auto job = flow<void>([&](auto& emitter) {
+                // TODO: suspend function
+                expect(1);
+                latch.send(Unit);
+                while (current_coroutine_context().is_active()) {
+                    // Do nothing
+                }
+            }).launch_in(*this + Dispatchers::Default);
 
-        latch.receive()
-        expect(2)
-        job.cancelAndJoin()
-        finish(3)
+            latch.receive();
+            expect(2);
+            job.cancel_and_join();
+            finish(3);
+        });
     }
 
-    @Test
-    fun testFlowWithEmptyContext() = runTest {
-        expect(1)
-        withEmptyContext {
-            val flow = flow {
-                expect(2)
-                emit("OK")
-            }
-            flow.collect {
-                expect(3)
-                assertEquals("OK", it)
-            }
-        }
-        finish(4)
+    // @Test
+    // TODO: Convert test annotation
+    void test_flow_with_empty_context() {
+        runTest([&]() {
+            // TODO: suspend function
+            expect(1);
+            with_empty_context([&]() {
+                // TODO: suspend function
+                auto flow_obj = flow([&](auto& emitter) {
+                    // TODO: suspend function
+                    expect(2);
+                    emitter.emit("OK");
+                });
+                flow_obj.collect([&](const std::string& it) {
+                    expect(3);
+                    assertEquals("OK", it);
+                });
+            });
+            finish(4);
+        });
     }
-}
+};
+
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

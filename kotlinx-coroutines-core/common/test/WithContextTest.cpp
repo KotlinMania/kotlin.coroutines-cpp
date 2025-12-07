@@ -1,378 +1,114 @@
+// Original: kotlinx-coroutines-core/common/test/WithContextTest.kt
+// TODO: Transliterated from Kotlin - needs C++ implementation
+// TODO: @file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-22237
+// TODO: Handle withContext behavior and context switching
+// TODO: Map test framework annotations to C++ test framework
 
-@file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-22237
+namespace kotlinx {
+namespace coroutines {
 
-package kotlinx.coroutines
-
-import kotlinx.coroutines.testing.*
-import kotlin.test.*
-
-class WithContextTest : TestBase() {
-
-    @Test
-    fun testThrowException() = runTest {
-        expect(1)
-        try {
-            withContext<Unit>(coroutineContext) {
-                expect(2)
-                throw AssertionError()
-            }
-        } catch (e: AssertionError) {
-            expect(3)
-        }
-
-        yield()
-        finish(4)
+class WithContextTest : public TestBase {
+public:
+    // TODO: @Test
+    void test_throw_exception() {
+        // TODO: runTest { expect(1); try { with_context<void>(coroutineContext) { expect(2); throw std::runtime_error(); } } catch (...) { expect(3); } yield(); finish(4); }
     }
 
-    @Test
-    fun testThrowExceptionFromWrappedContext() = runTest {
-        expect(1)
-        try {
-            withContext<Unit>(wrapperDispatcher(coroutineContext)) {
-                expect(2)
-                throw AssertionError()
-            }
-        } catch (e: AssertionError) {
-            expect(3)
-        }
-
-        yield()
-        finish(4)
+    // TODO: @Test
+    void test_throw_exception_from_wrapped_context() {
+        // TODO: runTest { expect(1); try { with_context<void>(wrapper_dispatcher(coroutineContext)) { expect(2); throw std::runtime_error(); } } catch (...) { expect(3); } yield(); finish(4); }
     }
 
-    @Test
-    fun testSameContextNoSuspend() = runTest {
-        expect(1)
-        launch(coroutineContext) { // make sure there is not early dispatch here
-            finish(5) // after main exits
-        }
-        expect(2)
-        val result = withContext(coroutineContext) { // same context!
-            expect(3) // still here
-            "OK".wrap()
-        }.unwrap()
-        assertEquals("OK", result)
-        expect(4)
-        // will wait for the first coroutine
+    // TODO: @Test
+    void test_same_context_no_suspend() {
+        // TODO: runTest { expect(1); launch(coroutineContext) { finish(5); } expect(2); const auto result = with_context(coroutineContext) { expect(3); "OK".wrap(); }.unwrap(); assertEquals("OK", result); expect(4); }
     }
 
-    @Test
-    fun testSameContextWithSuspend() = runTest {
-        expect(1)
-        launch(coroutineContext) { // make sure there is not early dispatch here
-            expect(4)
-        }
-        expect(2)
-        val result = withContext(coroutineContext) { // same context!
-            expect(3) // still here
-            yield() // now yields to launch!
-            expect(5)
-            "OK".wrap()
-        }.unwrap()
-        assertEquals("OK", result)
-        finish(6)
+    // TODO: @Test
+    void test_same_context_with_suspend() {
+        // TODO: runTest { expect(1); launch(coroutineContext) { expect(4); } expect(2); const auto result = with_context(coroutineContext) { expect(3); yield(); expect(5); "OK".wrap(); }.unwrap(); assertEquals("OK", result); finish(6); }
     }
 
-    @Test
-    fun testCancelWithJobNoSuspend() = runTest {
-        expect(1)
-        launch(coroutineContext) { // make sure there is not early dispatch to here
-            finish(6) // after main exits
-        }
-        expect(2)
-        val job = Job()
-        try {
-            withContext(coroutineContext + job) {
-                // same context + new job
-                expect(3) // still here
-                job.cancel() // cancel out job!
-                try {
-                    yield() // shall throw CancellationException
-                    expectUnreached()
-                } catch (e: CancellationException) {
-                    expect(4)
-                }
-                "OK".wrap()
-            }
-
-            expectUnreached()
-        } catch (e: CancellationException) {
-            expect(5)
-            // will wait for the first coroutine
-        }
+    // TODO: @Test
+    void test_cancel_with_job_no_suspend() {
+        // TODO: runTest { expect(1); launch(coroutineContext) { finish(6); } expect(2); const auto job = Job(); try { with_context(coroutineContext + job) { expect(3); job.cancel(); try { yield(); expectUnreached(); } catch (...) { expect(4); } "OK".wrap(); } expectUnreached(); } catch (...) { expect(5); } }
     }
 
-    @Test
-    fun testCancelWithJobWithSuspend() = runTest(
-        expected = { it is CancellationException }
-    ) {
-        expect(1)
-        launch(coroutineContext) { // make sure there is not early dispatch to here
-            expect(4)
-        }
-        expect(2)
-        val job = Job()
-        withContext(coroutineContext + job) { // same context + new job
-            expect(3) // still here
-            yield() // now yields to launch!
-            expect(5)
-            job.cancel() // cancel out job!
-            try {
-                yield() // shall throw CancellationException
-                expectUnreached()
-            } catch (e: CancellationException) {
-                finish(6)
-            }
-            "OK".wrap()
-        }
-        // still fails, because parent job was cancelled
-        expectUnreached()
+    // TODO: @Test
+    void test_cancel_with_job_with_suspend() {
+        // TODO: runTest(expected = { it is CancellationException }) { expect(1); launch(coroutineContext) { expect(4); } expect(2); const auto job = Job(); with_context(coroutineContext + job) { expect(3); yield(); expect(5); job.cancel(); try { yield(); expectUnreached(); } catch (...) { finish(6); } "OK".wrap(); } expectUnreached(); }
     }
 
-    @Test
-    fun testRunCancellableDefault() = runTest(
-        expected = { it is CancellationException }
-    ) {
-        val job = Job()
-        job.cancel() // cancel before it has a chance to run
-        withContext(job + wrapperDispatcher(coroutineContext)) {
-            expectUnreached() // will get cancelled
-        }
+    // TODO: @Test
+    void test_run_cancellable_default() {
+        // TODO: runTest(expected = { it is CancellationException }) { const auto job = Job(); job.cancel(); with_context(job + wrapper_dispatcher(coroutineContext)) { expectUnreached(); } }
     }
 
-    @Test
-    fun testRunCancellationUndispatchedVsException() = runTest {
-        expect(1)
-        var job: Job? = null
-        job = launch(start = CoroutineStart.UNDISPATCHED) {
-            expect(2)
-            try {
-                // Same dispatcher, different context
-                withContext<Unit>(CoroutineName("testRunCancellationUndispatchedVsException")) {
-                    expect(3)
-                    yield() // must suspend
-                    expect(5)
-                    job!!.cancel() // cancel this job _before_ it throws
-                    throw TestException()
-                }
-            } catch (e: TestException) {
-                // must have caught TextException
-                expect(6)
-            }
-        }
-        expect(4)
-        yield() // to coroutineScope
-        finish(7)
+    // TODO: @Test
+    void test_run_cancellation_undispatched_vs_exception() {
+        // TODO: runTest { expect(1); Job* job = nullptr; job = launch(start = CoroutineStart.UNDISPATCHED) { expect(2); try { with_context<void>(CoroutineName("test")) { expect(3); yield(); expect(5); job->cancel(); throw TestException(); } } catch (const TestException& e) { expect(6); } } expect(4); yield(); finish(7); }
     }
 
-    @Test
-    fun testRunCancellationDispatchedVsException() = runTest {
-        expect(1)
-        var job: Job? = null
-        job = launch(start = CoroutineStart.UNDISPATCHED) {
-            expect(2)
-            try {
-                // "Different" dispatcher (schedules execution back and forth)
-                withContext<Unit>(wrapperDispatcher(coroutineContext)) {
-                    expect(4)
-                    yield() // must suspend
-                    expect(6)
-                    job!!.cancel() // cancel this job _before_ it throws
-                    throw TestException()
-                }
-            } catch (e: TestException) {
-                // must have caught TextException
-                expect(8)
-            }
-        }
-        expect(3)
-        yield() // withContext is next
-        expect(5)
-        yield() // withContext again
-        expect(7)
-        yield() // to catch block
-        finish(9)
+    // TODO: @Test
+    void test_run_cancellation_dispatched_vs_exception() {
+        // TODO: runTest { expect(1); Job* job = nullptr; job = launch(start = CoroutineStart.UNDISPATCHED) { expect(2); try { with_context<void>(wrapper_dispatcher(coroutineContext)) { expect(4); yield(); expect(6); job->cancel(); throw TestException(); } } catch (const TestException& e) { expect(8); } } expect(3); yield(); expect(5); yield(); expect(7); yield(); finish(9); }
     }
 
-    @Test
-    fun testRunSelfCancellationWithException() = runTest {
-        expect(1)
-        var job: Job? = null
-        job = launch(Job()) {
-            try {
-                expect(3)
-                withContext<Unit>(wrapperDispatcher(coroutineContext)) {
-                    require(isActive)
-                    expect(5)
-                    job!!.cancel()
-                    require(!isActive)
-                    throw TestException() // but throw an exception
-                }
-            } catch (e: Throwable) {
-                expect(7)
-                // make sure TestException, not CancellationException is thrown
-                assertIs<TestException>(e, "Caught $e")
-            }
-        }
-        expect(2)
-        yield() // to the launched job
-        expect(4)
-        yield() // again to the job
-        expect(6)
-        yield() // again to exception handler
-        finish(8)
+    // TODO: @Test
+    void test_run_self_cancellation_with_exception() {
+        // TODO: runTest { expect(1); Job* job = nullptr; job = launch(Job()) { try { expect(3); with_context<void>(wrapper_dispatcher(coroutineContext)) { require(is_active()); expect(5); job->cancel(); require(!is_active()); throw TestException(); } } catch (const std::exception& e) { expect(7); assertIs<TestException>(e); } } expect(2); yield(); expect(4); yield(); expect(6); yield(); finish(8); }
     }
 
-    @Test
-    fun testRunSelfCancellation() = runTest {
-        expect(1)
-        var job: Job? = null
-        job = launch(Job()) {
-            try {
-                expect(3)
-                withContext(wrapperDispatcher(coroutineContext)) {
-                    require(isActive)
-                    expect(5)
-                    job!!.cancel() // cancel itself
-                    require(!isActive)
-                    "OK".wrap()
-                }
-                expectUnreached()
-            } catch (e: Throwable) {
-                expect(7)
-                // make sure CancellationException is thrown
-                assertIs<CancellationException>(e, "Caught $e")
-            }
-        }
-
-        expect(2)
-        yield() // to the launched job
-        expect(4)
-        yield() // again to the job
-        expect(6)
-        yield() // again to exception handler
-        finish(8)
+    // TODO: @Test
+    void test_run_self_cancellation() {
+        // TODO: runTest { expect(1); Job* job = nullptr; job = launch(Job()) { try { expect(3); with_context(wrapper_dispatcher(coroutineContext)) { require(is_active()); expect(5); job->cancel(); require(!is_active()); "OK".wrap(); } expectUnreached(); } catch (const std::exception& e) { expect(7); assertIs<CancellationException>(e); } } expect(2); yield(); expect(4); yield(); expect(6); yield(); finish(8); }
     }
 
-    @Test
-    fun testWithContextScopeFailure() = runTest {
-        expect(1)
-        try {
-            withContext(wrapperDispatcher(coroutineContext)) {
-                expect(2)
-                // launch a child that fails
-                launch {
-                    expect(4)
-                    throw TestException()
-                }
-                expect(3)
-                "OK".wrap()
-            }
-            expectUnreached()
-        } catch (e: TestException) {
-            // ensure that we can catch exception outside of the scope
-            expect(5)
-        }
-        finish(6)
+    // TODO: @Test
+    void test_with_context_scope_failure() {
+        // TODO: runTest { expect(1); try { with_context(wrapper_dispatcher(coroutineContext)) { expect(2); launch { expect(4); throw TestException(); } expect(3); "OK".wrap(); } expectUnreached(); } catch (const TestException& e) { expect(5); } finish(6); }
     }
 
-    @Test
-    fun testWithContextChildWaitSameContext() = runTest {
-        expect(1)
-        withContext(coroutineContext) {
-            expect(2)
-            launch {
-                // ^^^ schedules to main thread
-                expect(4) // waits before return
-            }
-            expect(3)
-            "OK".wrap()
-        }.unwrap()
-        finish(5)
+    // TODO: @Test
+    void test_with_context_child_wait_same_context() {
+        // TODO: runTest { expect(1); with_context(coroutineContext) { expect(2); launch { expect(4); } expect(3); "OK".wrap(); }.unwrap(); finish(5); }
     }
 
-    @Test
-    fun testWithContextChildWaitWrappedContext() = runTest {
-        expect(1)
-        withContext(wrapperDispatcher(coroutineContext)) {
-            expect(2)
-            launch {
-                // ^^^ schedules to main thread
-                expect(4) // waits before return
-            }
-            expect(3)
-            "OK".wrap()
-        }.unwrap()
-        finish(5)
+    // TODO: @Test
+    void test_with_context_child_wait_wrapped_context() {
+        // TODO: runTest { expect(1); with_context(wrapper_dispatcher(coroutineContext)) { expect(2); launch { expect(4); } expect(3); "OK".wrap(); }.unwrap(); finish(5); }
     }
 
-    @Test
-    fun testIncompleteWithContextState() = runTest {
-        lateinit var ctxJob: Job
-        withContext(wrapperDispatcher(coroutineContext)) {
-            ctxJob = coroutineContext[Job]!!
-            ctxJob.invokeOnCompletion { }
-        }
-
-        ctxJob.join()
-        assertTrue(ctxJob.isCompleted)
-        assertFalse(ctxJob.isActive)
-        assertFalse(ctxJob.isCancelled)
+    // TODO: @Test
+    void test_incomplete_with_context_state() {
+        // TODO: runTest { Job* ctx_job = nullptr; with_context(wrapper_dispatcher(coroutineContext)) { ctx_job = &coroutineContext[Job]!!; ctx_job->invoke_on_completion([]{  }); } ctx_job->join(); assertTrue(ctx_job->is_completed()); assertFalse(ctx_job->is_active()); assertFalse(ctx_job->is_cancelled()); }
     }
 
-    @Test
-    fun testWithContextCancelledJob() = runTest {
-        expect(1)
-        val job = Job()
-        job.cancel()
-        try {
-            withContext(job) {
-                expectUnreached()
-            }
-        } catch (e: CancellationException) {
-            expect(2)
-        }
-        finish(3)
+    // TODO: @Test
+    void test_with_context_cancelled_job() {
+        // TODO: runTest { expect(1); const auto job = Job(); job.cancel(); try { with_context(job) { expectUnreached(); } } catch (...) { expect(2); } finish(3); }
     }
 
-    @Test
-    fun testWithContextCancelledThisJob() = runTest(
-        expected = { it is CancellationException }
-    ) {
-        coroutineContext.cancel()
-        withContext(wrapperDispatcher(coroutineContext)) {
-            expectUnreached()
-        }
-        expectUnreached()
+    // TODO: @Test
+    void test_with_context_cancelled_this_job() {
+        // TODO: runTest(expected = { it is CancellationException }) { coroutineContext.cancel(); with_context(wrapper_dispatcher(coroutineContext)) { expectUnreached(); } expectUnreached(); }
     }
 
-    @Test
-    fun testSequentialCancellation() = runTest {
-        val job = launch {
-            expect(1)
-            withContext(wrapperDispatcher()) {
-                expect(2)
-            }
-            expectUnreached()
-        }
-
-        yield()
-        val job2 = launch {
-            expect(3)
-            job.cancel()
-        }
-
-        joinAll(job, job2)
-        finish(4)
+    // TODO: @Test
+    void test_sequential_cancellation() {
+        // TODO: runTest { const auto job = launch { expect(1); with_context(wrapper_dispatcher()) { expect(2); } expectUnreached(); }; yield(); const auto job2 = launch { expect(3); job.cancel(); }; join_all(job, job2); finish(4); }
     }
 
-    private class Wrapper(val value: String) : Incomplete {
-        override val isActive: Boolean
-            get() =  error("")
-        override val list: NodeList?
-            get() = error("")
-    }
+private:
+    struct Wrapper { // TODO: : public Incomplete {
+        std::string value;
+        // TODO: bool is_active() const override { error(""); }
+        // TODO: NodeList* list() const override { error(""); }
+    };
 
-    private fun String.wrap() = Wrapper(this)
-    private fun Wrapper.unwrap() = value
-}
+    Wrapper wrap(const std::string& s) { return Wrapper{s}; }
+    std::string unwrap(const Wrapper& w) { return w.value; }
+};
+
+} // namespace coroutines
+} // namespace kotlinx
