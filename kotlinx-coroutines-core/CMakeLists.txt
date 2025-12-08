@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
+project(kotlinx-coroutines-core VERSION 1.0.0 LANGUAGES CXX)
 
 # Create the main kotlinx-coroutines-core library
 set(CORE_SOURCES
@@ -24,6 +25,8 @@ target_include_directories(kotlinx-coroutines-core
         $<INSTALL_INTERFACE:include>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/common/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/src/channels
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/src/sync
 )
 
 # Link against threading libraries
@@ -49,25 +52,5 @@ install(TARGETS kotlinx-coroutines-core
 install(EXPORT kotlinx-coroutines-core-targets
     FILE kotlinx-coroutines-core-targets.cmake
     NAMESPACE kotlinx::
-    DESTINATION lib/cmake/kotlinx-coroutines-core
-)
-
-# Create a config file for find_package
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/kotlinx-coroutines-core-config-version.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
-
-configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/kotlinx-coroutines-core-config.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/kotlinx-coroutines-core-config.cmake"
-    INSTALL_DESTINATION lib/cmake/kotlinx-coroutines-core
-)
-
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/kotlinx-coroutines-core-config.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/kotlinx-coroutines-core-config-version.cmake"
     DESTINATION lib/cmake/kotlinx-coroutines-core
 )

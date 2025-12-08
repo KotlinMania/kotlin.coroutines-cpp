@@ -22,6 +22,7 @@
  * - Kotlin's inline classes -> C++ pointer encoding with bit masks
  */
 
+#include <kotlinx/coroutines/JobSupport.hpp>
 #include <atomic>
 #include <memory>
 #include <vector>
