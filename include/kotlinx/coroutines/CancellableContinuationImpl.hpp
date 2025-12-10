@@ -309,6 +309,233 @@ private:
    int resume_mode;
 };
 
+// Void Specialization of Impl
+template <>
+class CancellableContinuationImpl<void> : public DispatchedTask<void>, 
+                                    public CancellableContinuation<void>, 
+                                    public CoroutineStackFrame, 
+                                    public Waiter,
+                                    public std::enable_shared_from_this<CancellableContinuationImpl<void>> {
+public:
+    CancellableContinuationImpl(std::shared_ptr<Continuation<void>> delegate, int resume_mode)
+        : DispatchedTask<void>(resume_mode), delegate(delegate), resume_mode(resume_mode) {
+        state_.store(&Active::instance, std::memory_order_release);
+    }
+
+    std::shared_ptr<Continuation<void>> get_delegate() override { return delegate; }
+    
+    Result<void> take_state() override {
+        State* s = state_.load(std::memory_order_acquire);
+        if (dynamic_cast<CompletedContinuation*>(s)) {
+             return Result<void>::success();
+        }
+        if (auto* c = dynamic_cast<CancelledContinuation*>(s)) {
+             return Result<void>::failure(c->cause);
+        }
+        throw std::runtime_error("Invalid state in take_state");
+    }
+
+    bool is_active() const override { 
+        return state_.load(std::memory_order_acquire)->is_active_state();
+    }
+
+    void resume(std::function<void(std::exception_ptr)> on_cancellation) override {
+        auto self = this->shared_from_this();
+        void* token = try_resume();
+        if (token) {
+            complete_resume(token);
+        }
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override { return delegate->get_context(); }
+
+    void resume_with(Result<void> result) override {
+        delegate->resume_with(result);
+    }
+
+    bool is_completed() const override { 
+        State* s = state_.load(std::memory_order_acquire);
+        return s != &Active::instance && !is_cancelled_state(s);
+    }
+    
+    bool is_cancelled() const override { 
+        return is_cancelled_state(state_.load(std::memory_order_acquire));
+    }
+
+    void complete_resume(void* token) override {
+        dispatch_resume(token);
+    }
+    
+    void init_cancellability() override {
+        auto ctx = get_context();
+        if (!ctx) return;
+        
+        auto job_element = ctx->get(Job::typeKey);
+        auto job = std::dynamic_pointer_cast<Job>(job_element);
+        
+        if (job) {
+             auto new_handle = job->invoke_on_completion(true, true, [self = this->weak_from_this()](std::exception_ptr cause){
+                 if (auto p = self.lock()) {
+                     p->cancel(cause);
+                 }
+             });
+             {
+                 std::lock_guard<std::mutex> lock(parent_handle_mutex_);
+                 parentHandle_ = new_handle;
+                 if (is_completed()) {
+                     new_handle->dispose();
+                     parentHandle_ = nullptr;
+                 }
+             }
+        }
+    }
+    
+    bool cancel(std::exception_ptr cause = nullptr) override {
+        while(true) {
+            State* expected = state_.load(std::memory_order_acquire);
+            if (expected->is_active_state()) {
+                 auto* res = new CancelledContinuation(cause);
+                 if (state_.compare_exchange_strong(expected, res, std::memory_order_release, std::memory_order_acquire)) {
+                     if (auto* ah = dynamic_cast<ActiveHandler*>(expected)) {
+                         ah->handler(cause);
+                         delete ah;
+                     }
+                     detach_child();
+                     dispatch_resume(res); 
+                     return true;
+                 }
+                 delete res;
+            } else {
+                return false;
+            }
+        }
+    }
+    
+    void invoke_on_cancellation(std::function<void(std::exception_ptr)> handler) override {
+        while(true) {
+             State* expected = state_.load(std::memory_order_acquire);
+             if (expected == &Active::instance) {
+                 auto* ah = new ActiveHandler(handler);
+                 if (state_.compare_exchange_strong(expected, ah, std::memory_order_release, std::memory_order_acquire)) {
+                     return;
+                 }
+                 delete ah;
+             } else if (auto* c = dynamic_cast<CancelledContinuation*>(expected)) {
+                 handler(c->cause);
+                 return;
+             } else if (dynamic_cast<ActiveHandler*>(expected)) {
+                 return;
+             } else {
+                 return;
+             }
+        }
+    }
+
+    void* try_resume(void* idempotent = nullptr) override {
+        while(true) {
+            State* expected = state_.load(std::memory_order_acquire);
+            if (expected->is_active_state()) {
+                 auto* res = new CompletedContinuation(nullptr); // No result for void
+                 if (state_.compare_exchange_strong(expected, res, std::memory_order_release, std::memory_order_acquire)) {
+                     if (auto* ah = dynamic_cast<ActiveHandler*>(expected)) {
+                         delete ah; 
+                     }
+                     detach_child();
+                     return res; 
+                 }
+                 delete res;
+            } else {
+                return nullptr;
+            }
+        }
+    }
+
+    void* try_resume_with_exception(std::exception_ptr exception) override {
+        while(true) {
+            State* expected = state_.load(std::memory_order_acquire);
+            if (expected->is_active_state()) {
+                 auto* res = new CancelledContinuation(exception); 
+                 if (state_.compare_exchange_strong(expected, res, std::memory_order_release, std::memory_order_acquire)) {
+                     if (auto* ah = dynamic_cast<ActiveHandler*>(expected)) {
+                         delete ah; 
+                     }
+                     detach_child();
+                     return res;
+                 }
+                 delete res;
+            } else {
+                return nullptr; 
+            }
+        }
+    }
+
+    void resume_undispatched(CoroutineDispatcher* dispatcher) override {
+        auto dc = std::dynamic_pointer_cast<DispatchedContinuation<void>>(delegate);
+        if (dc && dc->dispatcher.get() == dispatcher) {
+             void* token = try_resume();
+             if (token) {
+                 detach_child();
+                 dc->continuation->resume_with(Result<void>::success()); 
+             }
+        } else {
+             resume(nullptr);
+        }
+    }
+
+    void resume_undispatched_with_exception(CoroutineDispatcher* dispatcher, std::exception_ptr exception) override {
+        auto dc = std::dynamic_pointer_cast<DispatchedContinuation<void>>(delegate);
+        if (dc && dc->dispatcher.get() == dispatcher) {
+             void* token = try_resume_with_exception(exception);
+             if (token) {
+                 detach_child();
+                 dc->continuation->resume_with(Result<void>::failure(exception));
+             }
+        } else {
+             resume_with(Result<void>::failure(exception));
+        }
+    }
+
+    void get_result() {
+        State* s = state_.load(std::memory_order_acquire);
+        if (auto* c = dynamic_cast<CancelledContinuation*>(s)) {
+            std::rethrow_exception(c->cause);
+        }
+        if (dynamic_cast<CompletedContinuation*>(s)) {
+             return; // Void result
+        }
+        if (s == &Active::instance) return; // Suspended?
+        throw std::runtime_error("Invalid state in get_result");
+    }
+
+private:
+   bool is_cancelled_state(State* s) const {
+       return dynamic_cast<CancelledContinuation*>(s) != nullptr;
+   }
+   
+   std::atomic<State*> state_;
+    
+    std::shared_ptr<DisposableHandle> parentHandle_;
+    std::mutex parent_handle_mutex_;
+
+    void detach_child() {
+        std::lock_guard<std::mutex> lock(parent_handle_mutex_);
+        if (parentHandle_) {
+            parentHandle_->dispose();
+            parentHandle_ = nullptr;
+        }
+    }
+
+    void dispatch_resume(void* state) {
+         if (auto* c = dynamic_cast<CompletedContinuation*>((State*)state)) {
+             delegate->resume_with(Result<void>::success());
+         } else if (auto* c = dynamic_cast<CancelledContinuation*>((State*)state)) {
+             delegate->resume_with(Result<void>::failure(c->cause));
+         }
+   }
+   std::shared_ptr<Continuation<void>> delegate;
+   int resume_mode;
+};
+
 
 // ------------------------------------------------------------------
 // SuspendingCancellableCoroutine Implementation

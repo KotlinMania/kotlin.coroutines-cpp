@@ -25,28 +25,26 @@ public:
     AbstractCoroutine(CoroutineContext parent_context, bool init_parent_job = true, bool active = true)
         : JobSupport(active),
           parent_context(parent_context),
-          context(parent_context) { // Simplified ctx init
+          context(parent_context) { 
         if (init_parent_job) {
-             // init_parent_job_internal(std::dynamic_pointer_cast<Job>(parent_context.get(Job::key)));
-             // Need smart retrieval of Job from context which is shared_ptr now?
-             // CoroutineContext and Element hierarchy need fix for correct shared_ptr usage
+             init_parent_job_internal(parent_context.get(Job::Key));
         }
     }
 
     virtual ~AbstractCoroutine() = default;
 
     CoroutineContext parent_context;
-    CoroutineContext context; // Should be shared_ptr<CoroutineContext>
+    CoroutineContext context; 
 
     std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
-        // return std::make_shared<CoroutineContext>(context); // copy?
-        // AbstractCoroutine logic needs heavy strict pointer refactor
-        return std::make_shared<CoroutineContext>(); // Stub for now
+        // Return parent_context + this
+        auto self = std::const_pointer_cast<AbstractCoroutine<T>>(std::static_pointer_cast<const AbstractCoroutine<T>>(shared_from_this()));
+        return std::make_shared<CombinedContext>(parent_context, self);
     }
     
     // Continuation impl
     std::shared_ptr<CoroutineContext> get_context() const override {
-        return std::make_shared<CoroutineContext>();
+        return get_coroutine_context();
     }
 
     bool is_active() const override {
@@ -60,22 +58,43 @@ public:
     virtual std::string cancellation_exception_message() {
         return "AbstractCoroutine was cancelled";
     }
-
+    
+    // Kotlin: resumeWith(result)
     void resume_with(Result<T> result) override {
-        // std::any state = make_completing_once(result.to_state());
-        // after_resume(state);
-        // Stub:
-        if (result.is_success()) on_completed(result.get_or_throw());
-        else on_cancelled(result.exception_or_null(), false);
+        void* state;
+        if (result.is_success()) {
+            if constexpr (std::is_void_v<T>) {
+                state = nullptr; // Unit
+            } else {
+                state = new T(result.get_or_throw()); 
+            }
+        } else {
+            state = new CompletedExceptionally(result.exception_or_null());
+        }
+        
+        void* final_state = make_completing_once(state);
+        
+        if (final_state == (void*)COMPLETING_WAITING_CHILDREN) return;
+        
+        after_resume(final_state);
+    }
+    
+    void* make_completing_once(void* proposed_update) {
+        if (make_completing(proposed_update)) {
+            return nullptr;
+        }
+        return (void*)COMPLETING_ALREADY;
     }
 
     virtual void after_resume(std::any state) {
-        // after_completion(state);
+        // after_completion(state); as per kotlin
     }
     
-    virtual void after_completion(std::any state) {}
-    
-    // handle_coroutine_exception delegation?
+    virtual void after_completion(void* state) override {
+        if (auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<CompletedExceptionally*>(state))) { 
+             // if (ex) on_cancelled...
+        }
+    }
     
     std::string name_string() {
         return "AbstractCoroutine";
@@ -83,12 +102,16 @@ public:
 
     template <typename R>
     void start(CoroutineStart start_strategy, R receiver, std::function<T(R)> block) {
-        // start_strategy.invoke(block, receiver, this);
+        invoke(start_strategy, block, receiver, this->shared_from_this());
     }
 
-protected:
-    virtual void on_completion_internal(std::any state) {
-        // ...
+    // Helper for parent init
+    void init_parent_job_internal(std::shared_ptr<Job> parent) {
+        if (parent) {
+            parent->start(); // ensure started
+            auto handle = parent->attach_child(std::static_pointer_cast<Job>(shared_from_this()));
+            // store handle
+        }
     }
 };
 

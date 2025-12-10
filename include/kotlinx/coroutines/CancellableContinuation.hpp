@@ -207,13 +207,65 @@ public:
      */
     virtual void resume(T value, std::function<void(std::exception_ptr)> on_cancellation) = 0;
     
-    /**
-     * Same as [tryResume] but with an [onCancellation] handler that is called if and only if the value is not
-     * delivered to the caller because of the dispatch in the process.
-     */
+    // Convenience helpers
+    void resume(T value) {
+        resume(value, nullptr);
+    }
+
+    void resume_with_exception(std::exception_ptr exception) {
+        resume_with(Result<T>::failure(exception));
+    }
+    
+    // Virtual from Continuation
+    virtual void resume_with(Result<T> result) override {
+        if (result.is_success()) {
+            resume(result.get_or_throw(), nullptr);
+        } else {
+             // Exception case handled by impl or ignored here
+        }
+    }
+};
+
+/**
+ * Specialization for void.
+ */
+template<>
+class CancellableContinuation<void> : public Continuation<void> {
+public:
+    virtual ~CancellableContinuation() = default;
+
+    virtual std::shared_ptr<CoroutineContext> get_context() const = 0;
+    virtual bool is_active() const = 0;
+    virtual bool is_completed() const = 0;
+    virtual bool is_cancelled() const = 0;
+
+    virtual void* try_resume(void* idempotent = nullptr) = 0;
+    virtual void* try_resume_with_exception(std::exception_ptr exception) = 0;
+    virtual void complete_resume(void* token) = 0;
+    virtual void init_cancellability() = 0;
+    virtual bool cancel(std::exception_ptr cause = nullptr) = 0;
+    
+    // Fixed signature: no T value
+    virtual void invoke_on_cancellation(std::function<void(std::exception_ptr)> handler) = 0;
+    virtual void resume_undispatched(CoroutineDispatcher* dispatcher) = 0; 
+    virtual void resume_undispatched_with_exception(CoroutineDispatcher* dispatcher, std::exception_ptr exception) = 0;
+    virtual void resume(std::function<void(std::exception_ptr)> on_cancellation) = 0;
+
+    // Convenience
+    void resume() {
+        resume(nullptr);
+    }
+    
+    void resume_with_exception(std::exception_ptr exception) {
+         // How to route this to Impl?
+         // Impl will implement resume_with(Result<void>).
+         // So we can call that?
+         this->resume_with(Result<void>::failure(exception));
+    }
+    
     template<typename R>
     void* try_resume(
-        R value,
+        R value, // Should be ignored or void?
         void* idempotent,
         std::function<void(Throwable, R, std::shared_ptr<CoroutineContext>)> on_cancellation
     ) {

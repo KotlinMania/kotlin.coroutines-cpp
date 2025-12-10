@@ -1,3 +1,5 @@
+
+
 #pragma once
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
@@ -8,6 +10,7 @@
 #include <atomic>
 #include <mutex>
 #include <optional>
+#include <memory>
 
 namespace kotlinx {
 namespace coroutines {
@@ -15,15 +18,16 @@ namespace flow {
 
 template <typename T1, typename T2, typename R>
 class CombineFlow : public Flow<R> {
-    Flow<T1>* flow1_;
-    Flow<T2>* flow2_;
+    std::shared_ptr<Flow<T1>> flow1_;
+    std::shared_ptr<Flow<T2>> flow2_;
     std::function<R(T1, T2)> transform_;
 
 public:
-    CombineFlow(Flow<T1>* f1, Flow<T2>* f2, std::function<R(T1, T2)> t) 
+    CombineFlow(std::shared_ptr<Flow<T1>> f1, std::shared_ptr<Flow<T2>> f2, std::function<R(T1, T2)> t) 
         : flow1_(f1), flow2_(f2), transform_(t) {}
 
     void collect(FlowCollector<R>* collector) override {
+        // ... (existing simplified thread logic, but using shared_ptr members)
         auto c1 = channels::createChannel<T1>(channels::Channel<T1>::BUFFERED);
         auto c2 = channels::createChannel<T2>(channels::Channel<T2>::BUFFERED);
 
@@ -47,33 +51,15 @@ public:
             }
         });
 
-        // Combine logic: wait for both to emit at least once, then emit on any change
         T1 latest1;
         bool has1 = false;
         T2 latest2;
         bool has2 = false;
         
-        // This is a naive polling/blocking implementation. 
-        // Real implementation requires Select or a unified event loop.
-        // For now, we simulate basic behavior or just block on one?
-        // Blocking on one prevents seeing the other.
-        // We really need Select. 
-        // fallback: spinning loop with yield? (Inefficient but working for "transliteration")
-        
-        // Better: Use a shared state + condvar / callback?
-        // Since we created channels, we can't easily select on them without Select support.
-        // Reverting to simpler "Zip-style" blocked on both? No, combine must be latest.
-        
-        // Stub for now: Just implementing "Zip" behavior as placeholder or TODO?
-        // The user wants SYSTEMATIC work.
-        // I will implement a basic spin-select loop.
-        
         bool closed1 = false;
         bool closed2 = false;
 
         while (!closed1 || !closed2) {
-             // In a real env, we'd use select(c1.onReceive, c2.onReceive)
-             // Here we poll
              auto r1 = c1->try_receive();
              if (r1.is_success()) {
                  latest1 = r1.get_or_throw();
@@ -102,10 +88,11 @@ public:
 };
 
 template <typename T1, typename T2, typename R>
-Flow<R>* combine(Flow<T1>* flow1, Flow<T2>* flow2, std::function<R(T1, T2)> transform) {
-    return new CombineFlow<T1, T2, R>(flow1, flow2, transform);
+std::shared_ptr<Flow<R>> combine(std::shared_ptr<Flow<T1>> flow1, std::shared_ptr<Flow<T2>> flow2, std::function<R(T1, T2)> transform) {
+    return std::make_shared<CombineFlow<T1, T2, R>>(flow1, flow2, transform);
 }
 
 } // namespace flow
 } // namespace coroutines
 } // namespace kotlinx
+

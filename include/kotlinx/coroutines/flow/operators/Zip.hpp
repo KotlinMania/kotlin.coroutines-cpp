@@ -10,8 +10,44 @@ namespace flow {
  * Zips values from the current flow with [other] flow using provided [transform].
  */
 template <typename T1, typename T2, typename R>
-Flow<R>* zip(Flow<T1>* flow, Flow<T2>* other, std::function<R(T1, T2)> transform) {
-    return internal::zip_impl(flow, other, transform);
+std::shared_ptr<Flow<R>> zip(std::shared_ptr<Flow<T1>> flow1, std::shared_ptr<Flow<T2>> flow2, std::function<R(T1, T2)> transform) {
+    return flow<R>([=](FlowCollector<R>* collector) {
+        flow_scope<void>([&](CoroutineScope& scope){
+            auto c1 = std::make_shared<BufferedChannel<T1>>(0);
+            auto c2 = std::make_shared<BufferedChannel<T2>>(0);
+            
+            scope.launch([&](){
+                try {
+                    flow1->collect([&](T1 v){ c1->send(v); });
+                    c1->close();
+                } catch(...) {
+                    c1->close(std::current_exception());
+                }
+            });
+            
+            scope.launch([&](){
+                try {
+                    flow2->collect([&](T2 v){ c2->send(v); });
+                    c2->close();
+                } catch(...) {
+                    c2->close(std::current_exception());
+                }
+            });
+            
+            while(true) {
+                auto r1 = c1->receive_catching();
+                if (r1.is_closed()) break;
+                auto r2 = c2->receive_catching();
+                if (r2.is_closed()) break;
+                
+                if (r1.is_success() && r2.is_success()) {
+                    collector->emit(transform(r1.get_or_throw(), r2.get_or_throw()));
+                } else {
+                    break;
+                }
+            }
+        });
+    });
 }
 
 /**
@@ -19,7 +55,7 @@ Flow<R>* zip(Flow<T1>* flow, Flow<T2>* other, std::function<R(T1, T2)> transform
  * the most recently emitted values by each flow.
  */
 template <typename T1, typename T2, typename R>
-Flow<R>* combine(Flow<T1>* flow, Flow<T2>* other, std::function<R(T1, T2)> transform) {
+std::shared_ptr<Flow<R>> combine(std::shared_ptr<Flow<T1>> flow, std::shared_ptr<Flow<T2>> other, std::function<R(T1, T2)> transform) {
     return kotlinx::coroutines::flow::combine(flow, other, transform);
 }
 
@@ -28,7 +64,7 @@ Flow<R>* combine(Flow<T1>* flow, Flow<T2>* other, std::function<R(T1, T2)> trans
  * the most recently emitted values by each flow.
  */
 template <typename T1, typename T2, typename R>
-Flow<R>* combineTransform(Flow<T1>* flow, Flow<T2>* other, std::function<void(FlowCollector<R>*, T1, T2)> transform) {
+std::shared_ptr<Flow<R>> combineTransform(std::shared_ptr<Flow<T1>> flow, std::shared_ptr<Flow<T2>> other, std::function<void(FlowCollector<R>*, T1, T2)> transform) {
     // TODO: Implement combineTransform (requires custom flow or flatMap)
     return nullptr;
 }
@@ -38,7 +74,7 @@ Flow<R>* combineTransform(Flow<T1>* flow, Flow<T2>* other, std::function<void(Fl
  * the most recently emitted values by each flow.
  */
 template <typename T1, typename T2, typename T3, typename R>
-Flow<R>* combine(Flow<T1>* f1, Flow<T2>* f2, Flow<T3>* f3, std::function<R(T1, T2, T3)> transform) {
+std::shared_ptr<Flow<R>> combine(std::shared_ptr<Flow<T1>> f1, std::shared_ptr<Flow<T2>> f2, std::shared_ptr<Flow<T3>> f3, std::function<R(T1, T2, T3)> transform) {
     // TODO: Implement 3-way combine (requires internal::combine_impl support for N-arity)
     return nullptr; // Placeholder for systematic porting
 }
@@ -48,7 +84,7 @@ Flow<R>* combine(Flow<T1>* f1, Flow<T2>* f2, Flow<T3>* f3, std::function<R(T1, T
  * the most recently emitted values by each flow.
  */
 template <typename T1, typename T2, typename T3, typename T4, typename R>
-Flow<R>* combine(Flow<T1>* f1, Flow<T2>* f2, Flow<T3>* f3, Flow<T4>* f4, std::function<R(T1, T2, T3, T4)> transform) {
+std::shared_ptr<Flow<R>> combine(std::shared_ptr<Flow<T1>> f1, std::shared_ptr<Flow<T2>> f2, std::shared_ptr<Flow<T3>> f3, std::shared_ptr<Flow<T4>> f4, std::function<R(T1, T2, T3, T4)> transform) {
     // TODO: Implement 4-way combine
     return nullptr;
 }
@@ -58,10 +94,11 @@ Flow<R>* combine(Flow<T1>* f1, Flow<T2>* f2, Flow<T3>* f3, Flow<T4>* f4, std::fu
  * the most recently emitted values by each flow.
  */
 template <typename T, typename R>
-Flow<R>* combine(std::vector<Flow<T>*> flows, std::function<R(std::vector<T>)> transform) {
+std::shared_ptr<Flow<R>> combine(std::vector<std::shared_ptr<Flow<T>>> flows, std::function<R(std::vector<T>)> transform) {
     // TODO: Implement vector-based combine (combineInternal)
     return nullptr;
 }
+
 
 
 } // namespace flow

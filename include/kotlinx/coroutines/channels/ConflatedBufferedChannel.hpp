@@ -8,9 +8,7 @@ namespace channels {
 
 /**
  * This is a special [BufferedChannel] extension that supports [DROP_OLDEST] and [DROP_LATEST]
- * strategies for buffer overflowing. This implementation ensures that `send(e)` never suspends,
- * either extracting the first element ([DROP_OLDEST]) or dropping the sending one ([DROP_LATEST])
- * when the channel capacity exceeds.
+ * strategies for buffer overflowing. This implementation ensures that `send(e)` never suspends.
  */
 template <typename E>
 class ConflatedBufferedChannel : public BufferedChannel<E> {
@@ -25,7 +23,7 @@ public:
         }
     }
 
-    void send(E element) override {
+    ChannelAwaiter<void> send(E element) override {
         // Never suspends - implement via try_send
         auto result = try_send(element);
         if (result.is_closed()) {
@@ -34,15 +32,25 @@ public:
             }
             throw ClosedSendChannelException("Channel was closed");
         }
+        return ChannelAwaiter<void>(); // Ready
     }
 
     ChannelResult<void> try_send(E element) override {
-        std::lock_guard<std::mutex> lock(this->mtx);
+        std::unique_lock<std::mutex> lock(this->mtx);
         if (this->closed_) {
               return ChannelResult<void>::closed(this->closeCause_);
         }
 
-        auto& buffer = this->buffer;
+        // 1. Check waiting receivers
+        while (!this->receivers_.empty()) {
+             auto* receiver = this->receivers_.front();
+             this->receivers_.pop_front();
+             if (receiver->try_resume(element)) {
+                 return ChannelResult<void>::success();
+             }
+        }
+
+        auto& buffer = this->buffer_;
         int cap = this->capacity_;
 
         if (cap != Channel<E>::UNLIMITED && static_cast<int>(buffer.size()) >= cap) {
@@ -59,7 +67,6 @@ public:
         }
 
         buffer.push_back(std::move(element));
-        this->not_empty.notify_one();
         return ChannelResult<void>::success();
     }
 };

@@ -142,16 +142,10 @@ template<typename T>
 class AbstractFlow : public Flow<T> {
 public:
     void collect(FlowCollector<T>* collector) override {
-        // TODO: SafeCollector implementation to ensure context preservation
-        // SafeCollector<T> safeCollector(collector, coroutineContext);
-        // try {
-        //     collectSafely(&safeCollector);
-        // } catch (...) {
-        //     safeCollector.releaseIntercepted();
-        //     throw;
-        // }
-        // safeCollector.releaseIntercepted();
-        collect_safely(collector);
+        // Collect context (mocked for now as empty/default)
+        CoroutineContext safeContext; 
+        internal::SafeCollector<T> safeCollector(collector, safeContext);
+        collect_safely(&safeCollector);
     }
 
     /**

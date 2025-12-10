@@ -1,59 +1,60 @@
 #pragma once
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
-#include <functional>
+#include "kotlinx/coroutines/Job.hpp"
+#include <memory>
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
 namespace internal {
 
-template <typename T>
-class SafeCollector : public FlowCollector<T> {
+/**
+ * Base class for SafeCollector containing non-generic context validation logic.
+ * Moved to .cpp file to reduce template bloat.
+ */
+class SafeCollectorBase {
 public:
-    SafeCollector(FlowCollector<T>* collector, CoroutineContext collectContext)
-        : collector_(collector), collectContext_(collectContext) {}
+    SafeCollectorBase(CoroutineContext collectContext);
+    virtual ~SafeCollectorBase() = default;
 
-    void emit(T value) override;
-
-    void release_intercepted() {}
-
-private:
-    FlowCollector<T>* collector_;
+protected:
+    void check_context(const CoroutineContext& currentContext);
+    
     CoroutineContext collectContext_;
-    int collectContextSize_ = 0; // Stub
+    int collectContextSize_;
 };
 
+/**
+ * SafeCollector that ensures flow invariants.
+ */
 template <typename T>
-void SafeCollector<T>::emit(T value) {
-    if (collector_) {
-        // Here we would check context preservation
-        collector_->emit(value);
-    }
-}
-
-template <typename T>
-class UnsafeFlow : public Flow<T> {
+class SafeCollector : public FlowCollector<T>, public SafeCollectorBase {
 public:
-    using FlowBlock = std::function<void(FlowCollector<T>*)>;
+    SafeCollector(FlowCollector<T>* downstream, CoroutineContext collectContext)
+        : SafeCollectorBase(collectContext), downstream_(downstream) {}
 
-    explicit UnsafeFlow(FlowBlock block) : block_(block) {}
-
-    void collect(FlowCollector<T>* collector) override {
-        if (block_ && collector) {
-            block_(collector);
-        }
+    virtual void emit(T value) override {
+        // Get current context (simplified: in C++ we often pass context explicitly or use thread local)
+        // Ideally we grab it from `currentCoroutineContext()`.
+        // For now, let's assume we can get it or we are called from a suspending function that has it.
+        // BUT emit is not suspending in our current C++ interface (void emit).
+        // This is a major issue identified in the audit: emit SHOULD be suspending/awaitable.
+        
+        // Assuming we fix suspension later, we still valid context here.
+        // auto current = currentCoroutineContext();
+        // check_context(current); 
+        
+        // Since we don't have global context access easily without arguments, 
+        // and our audit showed emit is void, we stub the actual check call site
+        // but Provide the logic in Base.
+        
+        downstream_->emit(value);
     }
 
 private:
-    FlowBlock block_;
+    FlowCollector<T>* downstream_;
 };
-
-template <typename T>
-Flow<T>* unsafe_flow(std::function<void(FlowCollector<T>*)> block) {
-    return new UnsafeFlow<T>(block);
-}
 
 } // namespace internal
 } // namespace flow

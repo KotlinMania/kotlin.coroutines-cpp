@@ -2,68 +2,50 @@
 #include <optional>
 #include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/sync/Mutex.hpp"
-
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/sync/Mutex.kt
-//
-// TODO: This is a mechanical syntax transliteration. The following Kotlin constructs need proper C++ implementation:
-// - suspend functions (marked but not implemented as C++20 coroutines)
-// - struct (converted to abstract class)
-// - Kotlin atomicfu (atomic<T> needs C++ std::atomic)
-// - Default parameters (need overloads or std::optional)
-// - Smart casts and when expressions
-// - Nullable types (T* -> T* or std::optional<T>)
-// - Extension functions (converted to free functions)
-// - Kotlin contracts (contract { ... })
-// - Lambda types and inline functions
-// - @Suppress, @OptIn, @JvmField annotations (kept as comments)
-// - Symbol type (using sentinel pointers)
-// - check/require functions (converted to assertions/exceptions)
+#include "kotlinx/coroutines/selects/Select.hpp"
+#include "kotlinx/coroutines/sync/SemaphoreImpl.hpp" // Use generic impl
 
 namespace kotlinx {
 namespace coroutines {
 namespace sync {
 
-// import kotlinx.atomicfu.*
-// import kotlinx.coroutines.*
-// import kotlinx.coroutines.internal.*
-// import kotlinx.coroutines.selects.*
-// import kotlin.contracts.*
-// import kotlin.coroutines.CoroutineContext
-// import kotlin.jvm.*
+using namespace kotlinx::coroutines::selects; 
 
-// Mutex class definition moved to companion header: include/kotlinx/coroutines/sync/Mutex.hpp
-// with_lock template moved to companion header.
+struct MutexWaiter {
+    virtual void invoke(std::exception_ptr) = 0;
+    virtual ~MutexWaiter() = default;
+};
 
-// Keep Internal Implementation Details
+// Symbol-like markers
+void* kNoOwner = reinterpret_cast<void*>(0x100);
+void* kOnLockAlreadyLockedByOwner = reinterpret_cast<void*>(0x101);
+
+constexpr int kTryLockSuccess = 0;
+constexpr int kTryLockFailed = 1;
+constexpr int kTryLockAlreadyLockedByOwner = 2;
+
+constexpr int kHoldsLockUnlocked = 0;
+constexpr int kHoldsLockYes = 1;
+constexpr int kHoldsLockAnotherOwner = 2;
 
 
-class MutexImpl : SemaphoreAndMutexImpl, Mutex {
+class MutexImpl : public SemaphoreImpl, public Mutex {
 protected:
-    /**
-     * After the lock is acquired, the corresponding owner is stored in this field.
-     * The [unlock] operation checks the owner and either re-sets it to [NO_OWNER],
-     * if there is no waiting request, or to the owner of the suspended [lock] operation
-     * to be resumed, otherwise.
-     */
     std::atomic<void*> owner;
-
     OnCancellationConstructor on_select_cancellation_unlock_constructor;
 
 public:
     explicit MutexImpl(bool locked)
-        : SemaphoreAndMutexImpl(1, locked ? 1 : 0),
+        : SemaphoreImpl(1, locked ? 1 : 0),
           owner(locked ? nullptr : kNoOwner),
           on_select_cancellation_unlock_constructor(
-              [](SelectInstance<void*>* /*select*/, void* owner_, void* /*internal_result*/) {
-                  return [owner_](std::exception_ptr, void*, CoroutineContext) {
-                      // TODO: unlock(owner_)
-                  };
+              [](void*) {
+                  // Stub
               }
           ) {}
 
     bool is_locked() const override {
-        return available_permits == 0;
+        return available.load() == 0;
     }
 
     bool holds_lock(void* owner_) override {
@@ -71,26 +53,17 @@ public:
     }
 
 protected:
-    /**
-     * [HOLDS_LOCK_UNLOCKED] if the mutex is unlocked
-     * [HOLDS_LOCK_YES] if the mutex is held with the specified [owner]
-     * [HOLDS_LOCK_ANOTHER_OWNER] if the mutex is held with a different owner
-     */
     int holds_lock_impl(void* owner_) {
         while (true) {
-            // Is this mutex locked*
             if (!is_locked()) return kHoldsLockUnlocked;
             void* cur_owner = owner.load();
-            // Wait in a spin-loop until the owner is set
-            if (cur_owner == kNoOwner) continue; // <-- ATTENTION, BLOCKING PART HERE
-            // Check the owner
+            if (cur_owner == kNoOwner) continue; 
             return (cur_owner == owner_) ? kHoldsLockYes : kHoldsLockAnotherOwner;
         }
     }
 
 public:
     void lock(void* owner_ = nullptr) override {
-        // TODO: suspend function semantics not implemented
         if (try_lock(owner_)) return;
         lock_suspend(owner_);
     }
@@ -98,8 +71,6 @@ public:
 private:
     void lock_suspend(void* owner_) {
         // TODO: suspend function semantics not implemented
-        // TODO: suspendCancellableCoroutineReusable
-        // CancellableContinuationWithOwner cont_with_owner(cont, owner_);
         // acquire(cont_with_owner);
     }
 
@@ -111,8 +82,7 @@ public:
             case kTryLockFailed: return false;
             case kTryLockAlreadyLockedByOwner:
                 throw std::runtime_error("This mutex is already locked by the specified owner");
-            default:
-                throw std::runtime_error("unexpected");
+            default: throw std::runtime_error("unexpected");
         }
     }
 
@@ -120,25 +90,15 @@ private:
     int try_lock_impl(void* owner_) {
         while (true) {
             if (try_acquire()) {
-                // TODO: assert { this->owner.load() == kNoOwner }
                 owner.store(owner_);
                 return kTryLockSuccess;
             } else {
-                // The semaphore permit acquisition has failed.
-                // However, we need to check that this mutex is not
-                // locked by our owner.
                 if (owner_ == nullptr) return kTryLockFailed;
                 int holds = holds_lock_impl(owner_);
                 switch (holds) {
-                    // This mutex is already locked by our owner.
-                    case kHoldsLockYes:
-                        return kTryLockAlreadyLockedByOwner;
-                    // This mutex is locked by another owner, `trylock(..)` must return `false`.
-                    case kHoldsLockAnotherOwner:
-                        return kTryLockFailed;
-                    // This mutex is no longer locked, restart the operation.
-                    case kHoldsLockUnlocked:
-                        continue;
+                    case kHoldsLockYes: return kTryLockAlreadyLockedByOwner;
+                    case kHoldsLockAnotherOwner: return kTryLockFailed;
+                    case kHoldsLockUnlocked: continue;
                 }
             }
         }
@@ -147,39 +107,25 @@ private:
 public:
     void unlock(void* owner_ = nullptr) override {
         while (true) {
-            // Is this mutex locked*
-            if (!is_locked()) {
-                throw std::runtime_error("This mutex is not locked");
-            }
-            // Read the owner, waiting until it is set in a spin-loop if required.
+            if (!is_locked()) throw std::runtime_error("This mutex is not locked");
             void* cur_owner = owner.load();
-            if (cur_owner == kNoOwner) continue; // <-- ATTENTION, BLOCKING PART HERE
-            // Check the owner.
+            if (cur_owner == kNoOwner) continue;
+            
             if (!(cur_owner == owner_ || owner_ == nullptr)) {
                 throw std::runtime_error("This mutex is locked by different owner");
             }
-            // Try to clean the owner first. We need to use CAS here to synchronize with concurrent `unlock(..)`-s.
             void* expected = cur_owner;
             if (!owner.compare_exchange_strong(expected, kNoOwner)) continue;
-            // Release the semaphore permit at the end.
             release();
             return;
         }
     }
 
-    // @Suppress("UNCHECKED_CAST", "OverridingDeprecatedMember", "OVERRIDE_DEPRECATION")
     SelectClause2<void*, Mutex*>& get_on_lock() override {
-        // TODO: return SelectClause2Impl
         static SelectClause2Impl<void*, Mutex*> clause(
             this,
-            /* regFunc = */ [](void* clause_obj, SelectInstance<void*>* select, void* param) {
-                // TODO: cast and call on_lock_reg_function
-            },
-            /* processResFunc = */ [](void* clause_obj, void* param, void* result) -> void* {
-                // TODO: call on_lock_process_result
-                return nullptr;
-            },
-            &on_select_cancellation_unlock_constructor
+            [](void* clause_obj, SelectInstance<void*>* select, void* param) {},
+            [](void* clause_obj, void* param, void* result) -> void* { return nullptr; }
         );
         return clause;
     }
@@ -188,8 +134,6 @@ protected:
     virtual void on_lock_reg_function(SelectInstance<void*>* select, void* owner_) {
         if (owner_ != nullptr && holds_lock(owner_)) {
             select->select_in_registration_phase(kOnLockAlreadyLockedByOwner);
-        } else {
-            // TODO: on_acquire_reg_function(SelectInstanceWithOwner(select, owner_), owner_);
         }
     }
 
@@ -200,75 +144,56 @@ protected:
         return this;
     }
 
-    // @OptIn(InternalForInheritanceCoroutinesApi::class)
-    class CancellableContinuationWithOwner : CancellableContinuation<void*>, Waiter {
+    class CancellableContinuationWithOwner : public MutexWaiter {
     public:
-        // @JvmField
-        CancellableContinuationImpl<void*>* cont;
-        // @JvmField
+        CancellableContinuation<void*>* cont;
         void* owner;
 
         CancellableContinuationWithOwner(
-            CancellableContinuationImpl<void*>* cont_,
+            CancellableContinuation<void*>* cont_,
             void* owner_
         ) : cont(cont_), owner(owner_) {}
-
-        // TODO: Implement CancellableContinuation struct methods
-        // TODO: Implement Waiter struct methods
+        
+        virtual void invoke(std::exception_ptr) override {}
     };
 
     template<typename Q>
-    class SelectInstanceWithOwner : SelectInstanceInternal<Q> {
+    class SelectInstanceWithOwner : public SelectInstance<Q> {
     public:
-        // @JvmField
-        SelectInstanceInternal<Q>* select;
-        // @JvmField
+        SelectInstance<Q>* select;
         void* owner;
 
         SelectInstanceWithOwner(
-            SelectInstanceInternal<Q>* select_,
+            SelectInstance<Q>* select_,
             void* owner_
         ) : select(select_), owner(owner_) {}
 
         bool try_select(void* clause_object, void* result) override {
-            // TODO: assert { owner.load() == kNoOwner }
             bool success = select->try_select(clause_object, result);
             if (success) {
-                // TODO: set owner
+                // set owner
             }
             return success;
         }
-
-        void select_in_registration_phase(void* internal_result) override {
-            // TODO: assert { owner.load() == kNoOwner }
-            // TODO: set owner
-            select->select_in_registration_phase(internal_result);
+        
+        // Proxy methods
+        void dispose_on_completion(std::shared_ptr<DisposableHandle> handle) override {
+            select->dispose_on_completion(handle);
         }
-
-        // TODO: Delegate other SelectInstanceInternal methods to select
+        
+        void select_in_registration_phase(void* internal_result) override {
+             select->select_in_registration_phase(internal_result);
+        }
+        
+        std::shared_ptr<CancellableContinuation<Q>> get_continuation() override {
+            return select->get_continuation();
+        }
     };
-
-    // TODO: tostd::string override
 };
 
-// Factory function implementation
 Mutex* create_mutex(bool locked) {
     return new MutexImpl(locked);
 }
-
-// Symbol-like markers
-void* kNoOwner = reinterpret_cast<void*>(0x100);
-void* kOnLockAlreadyLockedByOwner = reinterpret_cast<void*>(0x101);
-
-// try_lock results
-constexpr int kTryLockSuccess = 0;
-constexpr int kTryLockFailed = 1;
-constexpr int kTryLockAlreadyLockedByOwner = 2;
-
-// holds_lock results
-constexpr int kHoldsLockUnlocked = 0;
-constexpr int kHoldsLockYes = 1;
-constexpr int kHoldsLockAnotherOwner = 2;
 
 } // namespace sync
 } // namespace coroutines

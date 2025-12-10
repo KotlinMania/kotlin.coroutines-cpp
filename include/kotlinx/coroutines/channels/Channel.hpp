@@ -1,9 +1,11 @@
 #pragma once
+#include "kotlinx/coroutines/CancellableContinuation.hpp"
 #include "BufferOverflow.hpp"
 #include <memory>
 #include <exception>
 #include <functional>
 #include <string>
+#include <optional>
 
 namespace kotlinx {
 namespace coroutines {
@@ -19,35 +21,26 @@ using OnUndeliveredElement = std::function<void(const E&, std::exception_ptr)>;
 
 /**
  * Indicates an attempt to send to a channel that was closed for sending.
- * This exception is thrown when trying to send to a closed channel without a cause.
  */
 class ClosedSendChannelException : public std::runtime_error {
 public:
-    explicit ClosedSendChannelException(const std::string& message = "Channel was closed")
-        : std::runtime_error(message) {}
+    explicit ClosedSendChannelException(const std::string& message = "Channel was closed");
 };
 
 /**
  * Indicates an attempt to receive from a channel that was closed for receiving.
- * This exception is thrown when trying to receive from a closed channel without a cause.
  */
 class ClosedReceiveChannelException : public std::runtime_error {
 public:
-    explicit ClosedReceiveChannelException(const std::string& message = "Channel was closed")
-        : std::runtime_error(message) {}
+    explicit ClosedReceiveChannelException(const std::string& message = "Channel was closed");
 };
 
 /**
  * A discriminated union representing a channel operation result.
- * It encapsulates the knowledge of whether the operation succeeded, failed with an option to retry,
- * or failed because the channel was closed.
- *
- * This matches the Kotlin ChannelResult<T> implementation with proper value semantics.
  */
 template <typename T>
 class ChannelResult {
 private:
-    // Internal storage using a union-like approach
     enum class ResultType { SUCCESS, FAILURE, CLOSED };
 
     ResultType type;
@@ -57,13 +50,8 @@ private:
     };
 
 public:
-    // Constructor for success
     ChannelResult(T value) : type(ResultType::SUCCESS), success_value(std::move(value)) {}
-
-    // Constructor for failure
     ChannelResult() : type(ResultType::FAILURE) {}
-
-    // Constructor for closed
     ChannelResult(std::exception_ptr cause) : type(ResultType::CLOSED), closed_cause(cause) {}
 
     ChannelResult(const ChannelResult& other) : type(other.type) {
@@ -90,19 +78,8 @@ public:
         }
     }
 
-    /**
-     * Returns `true` if the operation was successful.
-     */
     bool is_success() const { return type == ResultType::SUCCESS; }
-
-    /**
-     * Returns `true` if the operation failed (either closed or empty/full).
-     */
     bool is_failure() const { return type == ResultType::FAILURE || type == ResultType::CLOSED; }
-
-    /**
-     * Returns `true` if the operation failed because the channel was closed.
-     */
     bool is_closed() const { return type == ResultType::CLOSED; }
 
     T* get_or_null() const { return is_success() ? const_cast<T*>(&success_value) : nullptr; }
@@ -116,12 +93,8 @@ public:
         throw std::runtime_error("Channel operation failed");
     }
 
-    /**
- * Returns the exception with which the channel was closed, or `nullptr` if the channel was not closed or was closed without a cause.
- */
     std::exception_ptr exception_or_null() const { return is_closed() ? closed_cause : nullptr; }
 
-    // Factory methods
     static ChannelResult<T> success(T value) { return ChannelResult<T>(std::move(value)); }
     static ChannelResult<T> failure() { return ChannelResult<T>(); }
     static ChannelResult<T> closed(std::exception_ptr cause = nullptr) { return ChannelResult<T>(cause); }
@@ -150,9 +123,54 @@ public:
     static ChannelResult<void> closed(std::exception_ptr cause = nullptr) { return ChannelResult<void>(cause); }
 };
 
+// --- Awaiter Infrastructure ---
+
+template <typename T>
+struct ChannelAwaiter {
+    std::optional<T> fast_val;
+    std::optional<SuspendingCancellableCoroutine<T>> slow_awaiter;
+
+    // Constructors
+    ChannelAwaiter(T val) : fast_val(std::move(val)) {}
+    ChannelAwaiter(SuspendingCancellableCoroutine<T> awaiter) : slow_awaiter(std::move(awaiter)) {}
+
+    // Awaitable interface
+    bool await_ready() { return fast_val.has_value(); }
+
+    void await_suspend(std::coroutine_handle<> h) {
+        if (!fast_val && slow_awaiter) slow_awaiter->await_suspend(h);
+    }
+
+    T await_resume() {
+        if (fast_val) return std::move(*fast_val);
+        if (slow_awaiter) return slow_awaiter->await_resume();
+        throw std::runtime_error("ChannelAwaiter invalid state");
+    }
+};
+
+// Void specialization
+template <>
+struct ChannelAwaiter<void> {
+    bool ready;
+    std::optional<SuspendingCancellableCoroutine<void>> slow_awaiter;
+
+    ChannelAwaiter() : ready(true) {} // Default constructor means immediate success
+    ChannelAwaiter(SuspendingCancellableCoroutine<void> awaiter) : ready(false), slow_awaiter(std::move(awaiter)) {}
+
+    bool await_ready() { return ready; }
+
+    void await_suspend(std::coroutine_handle<> h) {
+        if (!ready && slow_awaiter) slow_awaiter->await_suspend(h);
+    }
+
+    void await_resume() {
+        if (!ready && slow_awaiter) slow_awaiter->await_resume();
+    }
+};
+
 template <typename E>
 struct ChannelIterator {
-    virtual bool has_next() = 0; // suspend
+    virtual ChannelAwaiter<bool> has_next() = 0; // suspend
     virtual E next() = 0;
     virtual ~ChannelIterator() = default;
 };
@@ -161,7 +179,7 @@ template <typename E>
 struct SendChannel {
     virtual ~SendChannel() = default;
     virtual bool is_closed_for_send() const = 0;
-    virtual void send(E element) = 0; // suspend
+    virtual ChannelAwaiter<void> send(E element) = 0; // suspend
     virtual ChannelResult<void> try_send(E element) = 0;
     virtual bool close(std::exception_ptr cause = nullptr) = 0;
     virtual void invoke_on_close(std::function<void(std::exception_ptr)> handler) = 0;
@@ -172,10 +190,12 @@ struct ReceiveChannel {
     virtual ~ReceiveChannel() = default;
     virtual bool is_closed_for_receive() const = 0;
     virtual bool is_empty() const = 0;
-    virtual E receive() = 0; // suspend
-    virtual ChannelResult<E> receive_catching() = 0; // suspend
+    virtual ChannelAwaiter<E> receive() = 0; // suspend
+    virtual ChannelAwaiter<ChannelResult<E>> receive_catching() = 0; // suspend
     virtual ChannelResult<E> try_receive() = 0;
+    virtual ChannelAwaiter<ChannelResult<E>> receive_with_timeout(long timeout_millis) = 0; // suspend with timeout
     virtual std::shared_ptr<ChannelIterator<E>> iterator() = 0;
+
     virtual void cancel(std::exception_ptr cause = nullptr) = 0;
 };
 
@@ -192,7 +212,7 @@ struct Channel : public SendChannel<E>, public ReceiveChannel<E> {
 };
 
 /**
- * Creates a channel with the specified capacity, buffer overflow strategy, and onUndeliveredElement handler.
+ * Creates a channel with the specified capacity.
  */
 template <typename E>
 std::shared_ptr<Channel<E>> createChannel(

@@ -114,6 +114,16 @@ public:
 
 // CoroutineDispatcher implementation
 
+CoroutineDispatcher::CoroutineDispatcher() : AbstractCoroutineContextElement(ContinuationInterceptor::typeKey) {}
+
+bool CoroutineDispatcher::is_dispatch_needed(const CoroutineContext& context) const {
+    return true;
+}
+
+void CoroutineDispatcher::dispatch_yield(const CoroutineContext& context, std::shared_ptr<Runnable> block) const {
+    dispatch(context, block);
+}
+
 // Template method intercept_continuation is in header
 
 // Explicit instantiation for common types if needed, or keep in header if possible.

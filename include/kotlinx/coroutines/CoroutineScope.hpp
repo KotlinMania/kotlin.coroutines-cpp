@@ -46,23 +46,8 @@ struct CoroutineScope {
 // Singleton usually
 class GlobalScope : public CoroutineScope {
 public:
-    static GlobalScope* instance() {
-        static GlobalScope s_instance;
-        return &s_instance;
-    }
-
-    std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
-        // Return EmptyCoroutineContext shared ptr
-        // Since we don't have EmptyCoroutineContext class defined, return base or new impl
-        // Assuming CoroutineContext() works if it was concrete? No it's abstract.
-        // We need an EmptyCoroutineContext implementation.
-        // For now return a dummy handle or nullptr (dangerous).
-        // Let's create EmptyCoroutineContext in context_impl or locally.
-        class EmptyContext : public CoroutineContext {
-             Key* key() const { return nullptr; }
-        };
-        return std::make_shared<EmptyContext>();
-    }
+    static GlobalScope* instance();
+    std::shared_ptr<CoroutineContext> get_coroutine_context() const override;
 };
 
 } // namespace coroutines

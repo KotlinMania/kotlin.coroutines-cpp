@@ -49,19 +49,14 @@ public:
      // Kotlin: Key : AbstractCoroutineContextKey<ContinuationInterceptor, CoroutineDispatcher>(ContinuationInterceptor)
      // essentially it uses ContinuationInterceptor::key.
     
-    // AbstractCoroutineContextElement constructor usually takes a Key*
-    CoroutineDispatcher() : AbstractCoroutineContextElement(ContinuationInterceptor::typeKey) {}
+    CoroutineDispatcher();
     virtual ~CoroutineDispatcher() = default;
 
-    virtual bool is_dispatch_needed(const CoroutineContext& context) const {
-        return true;
-    }
+    virtual bool is_dispatch_needed(const CoroutineContext& context) const;
 
     virtual void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const = 0;
 
-    virtual void dispatch_yield(const CoroutineContext& context, std::shared_ptr<Runnable> block) const {
-        dispatch(context, block);
-    }
+    virtual void dispatch_yield(const CoroutineContext& context, std::shared_ptr<Runnable> block) const;
     
     // ContinuationInterceptor overrides
     CoroutineContext::Key* key() const override { return ContinuationInterceptor::typeKey; }

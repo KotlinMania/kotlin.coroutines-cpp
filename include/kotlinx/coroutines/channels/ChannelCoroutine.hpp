@@ -22,21 +22,48 @@ public:
 
     virtual ~ChannelCoroutine() = default;
 
-    // Channel delegation
+    // SendChannel delegation
     bool is_closed_for_send() const override { return _channel->is_closed_for_send(); }
-    void send(E element) override { _channel->send(element); }
-    ChannelResult<void> try_send(E element) override { return _channel->try_send(element); }
+    
+    ChannelAwaiter<void> send(E element) override { 
+        // Delegate suspend function
+        return _channel->send(std::move(element)); 
+    }
+    
+    ChannelResult<void> try_send(E element) override { return _channel->try_send(std::move(element)); }
+    
     bool close(std::exception_ptr cause = nullptr) override { return _channel->close(cause); }
-    void invoke_on_close(std::function<void(std::exception_ptr)> handler) override { _channel->invoke_on_close(handler); }
+    
+    void invoke_on_close(std::function<void(std::exception_ptr)> handler) override { 
+        _channel->invoke_on_close(handler); 
+    }
 
+    // ReceiveChannel delegation
     bool is_closed_for_receive() const override { return _channel->is_closed_for_receive(); }
     bool is_empty() const override { return _channel->is_empty(); }
-    E receive() override { return _channel->receive(); }
-    ChannelResult<E> receive_catching() override { return _channel->receive_catching(); }
+    
+    ChannelAwaiter<E> receive() override { 
+        return _channel->receive(); 
+    }
+    
+    ChannelAwaiter<ChannelResult<E>> receive_catching() override { 
+        return _channel->receive_catching(); 
+    }
+    
     ChannelResult<E> try_receive() override { return _channel->try_receive(); }
+    
+    ChannelAwaiter<ChannelResult<E>> receive_with_timeout(long timeout_millis) override { 
+        return _channel->receive_with_timeout(timeout_millis); 
+    }
+    
     std::shared_ptr<ChannelIterator<E>> iterator() override { return _channel->iterator(); }
+
+    // Cancellation logic matching ChannelCoroutine.kt
     void cancel(std::exception_ptr cause = nullptr) override { 
+        // cancelInternal logic:
+        // 1. Cancel the channel
         _channel->cancel(cause);
+        // 2. Cancel the coroutine (Job)
         AbstractCoroutine<Unit>::cancel(cause);
     }
 

@@ -9,6 +9,7 @@
  */
 
 #include "kotlinx/coroutines/AbstractCoroutine.hpp"
+#include "kotlinx/coroutines/Unit.hpp"
 
 namespace kotlinx {
 namespace coroutines {

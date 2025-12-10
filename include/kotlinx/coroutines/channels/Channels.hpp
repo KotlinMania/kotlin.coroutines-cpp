@@ -1,5 +1,7 @@
 #pragma once
 #include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/channels/BufferedChannel.hpp"
+#include "kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
 #include <functional>
 #include <vector>
 #include <exception>
@@ -7,6 +9,50 @@
 namespace kotlinx {
 namespace coroutines {
 namespace channels {
+
+// Implementation of createChannel factory
+template <typename E>
+std::shared_ptr<Channel<E>> createChannel(
+    int capacity,
+    BufferOverflow onBufferOverflow,
+    OnUndeliveredElement<E> onUndeliveredElement
+) {
+    using namespace kotlinx::coroutines::channels; // For constants if needed, though they are in Channel<E>
+    
+    // Constants from Channel<E>
+    int RENDEZVOUS = Channel<E>::RENDEZVOUS;
+    int CONFLATED = Channel<E>::CONFLATED;
+    int UNLIMITED = Channel<E>::UNLIMITED;
+    int BUFFERED = Channel<E>::BUFFERED;
+    int DEFAULT = Channel<E>::getDefaultBufferCapacity();
+
+    if (capacity == RENDEZVOUS) {
+        if (onBufferOverflow == BufferOverflow::SUSPEND) {
+            return std::make_shared<BufferedChannel<E>>(RENDEZVOUS, onUndeliveredElement);
+        } else {
+            return std::make_shared<ConflatedBufferedChannel<E>>(1, onBufferOverflow, onUndeliveredElement);
+        }
+    } else if (capacity == CONFLATED) {
+        if (onBufferOverflow != BufferOverflow::SUSPEND) {
+             throw std::invalid_argument("CONFLATED capacity cannot be used with non-default onBufferOverflow");
+        }
+        return std::make_shared<ConflatedBufferedChannel<E>>(1, BufferOverflow::DROP_OLDEST, onUndeliveredElement);
+    } else if (capacity == UNLIMITED) {
+        return std::make_shared<BufferedChannel<E>>(UNLIMITED, onUndeliveredElement);
+    } else if (capacity == BUFFERED) {
+        if (onBufferOverflow == BufferOverflow::SUSPEND) {
+            return std::make_shared<BufferedChannel<E>>(DEFAULT, onUndeliveredElement);
+        } else {
+            return std::make_shared<ConflatedBufferedChannel<E>>(1, onBufferOverflow, onUndeliveredElement);
+        }
+    } else {
+        if (onBufferOverflow == BufferOverflow::SUSPEND) {
+            return std::make_shared<BufferedChannel<E>>(capacity, onUndeliveredElement);
+        } else {
+             return std::make_shared<ConflatedBufferedChannel<E>>(capacity, onBufferOverflow, onUndeliveredElement);
+        }
+    }
+}
 
 // Helper for consume (RAII)
 template <typename E>
