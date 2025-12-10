@@ -25,7 +25,7 @@ public:
      */
     std::string to_string() const override;
 
-    CoroutineDispatcher& limited_parallelism(int parallelism, const std::string* name = nullptr) override;
+    std::shared_ptr<CoroutineDispatcher> limited_parallelism(int parallelism, const std::string& name = "") override;
 
 protected:
     /**

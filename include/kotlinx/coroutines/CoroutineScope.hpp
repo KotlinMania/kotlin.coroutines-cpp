@@ -1,6 +1,6 @@
 #pragma once
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
+#include <memory>
 
 namespace kotlinx {
 namespace coroutines {
@@ -39,14 +39,29 @@ struct CoroutineScope {
      * The context of this scope.
      * Context is encapsulated by the scope and used for implementation of coroutine builders that are extensions on the scope.
      */
-    virtual CoroutineContext get_coroutine_context() const = 0;
+    virtual std::shared_ptr<CoroutineContext> get_coroutine_context() const = 0;
 };
 
-// GlobalScope definition Stub
-struct GlobalScope : CoroutineScope {
-    CoroutineContext get_coroutine_context() const override {
-        // Return EmptyCoroutineContext
-        return CoroutineContext(); 
+// GlobalScope definition 
+// Singleton usually
+class GlobalScope : public CoroutineScope {
+public:
+    static GlobalScope* instance() {
+        static GlobalScope s_instance;
+        return &s_instance;
+    }
+
+    std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
+        // Return EmptyCoroutineContext shared ptr
+        // Since we don't have EmptyCoroutineContext class defined, return base or new impl
+        // Assuming CoroutineContext() works if it was concrete? No it's abstract.
+        // We need an EmptyCoroutineContext implementation.
+        // For now return a dummy handle or nullptr (dangerous).
+        // Let's create EmptyCoroutineContext in context_impl or locally.
+        class EmptyContext : public CoroutineContext {
+             Key* key() const { return nullptr; }
+        };
+        return std::make_shared<EmptyContext>();
     }
 };
 

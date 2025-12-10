@@ -1,9 +1,10 @@
 #pragma once
 #include <string>
 #include <memory>
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
+#include "kotlinx/coroutines/Runnable.hpp"
+
 
 namespace kotlinx {
 namespace coroutines {
@@ -47,9 +48,8 @@ public:
      // Re-use ContinuationInterceptor key or define its own? 
      // Kotlin: Key : AbstractCoroutineContextKey<ContinuationInterceptor, CoroutineDispatcher>(ContinuationInterceptor)
      // essentially it uses ContinuationInterceptor::key.
-     
-    // We can just use ContinuationInterceptor::key for the constructor
     
+    // AbstractCoroutineContextElement constructor usually takes a Key*
     CoroutineDispatcher() : AbstractCoroutineContextElement(ContinuationInterceptor::typeKey) {}
     virtual ~CoroutineDispatcher() = default;
 
@@ -66,39 +66,11 @@ public:
     // ContinuationInterceptor overrides
     CoroutineContext::Key* key() const override { return ContinuationInterceptor::typeKey; }
 
-    // Intercept
-     // Note: In C++ templates, we might need explicit implementation here or in .cpp if not templated on T
-     // But intercept_continuation is generic <T>.
-    // virtual std::shared_ptr<Continuation<T>> intercept_continuation(std::shared_ptr<Continuation<T>> continuation) override; 
-    // Cannot override template method virtual? 
-    // C++ doesn't support virtual template methods. 
-    // The interface ContinuationInterceptor must have had a non-template generic or we cast.
-    // For now, let's keep it as is in provided HPP but make sure it works.
-    
-    // Actually, ContinuationInterceptor.hpp I wrote has `template <typename T> intercept_continuation`.
-    // This cannot be virtual.
-    // The design in C++ for this usually involves type erasure or base classes.
-    // For this task, I'll stick to the "likely intended" structure where it's non-virtual in the interface 
-    // (if the interface is just a concept) OR we assume type erasure.
-    // But wait, the user code has `override fun <T> interceptContinuation(...)`.
-    // Kotlin generic methods in interfaces ARE virtual. C++ cannot do this.
-    // We must assume `ContinuationInterceptor` uses a base class `ContinuationBase` for interception if we want runtime polymorphism,
-    // OR we relies on `AbstractCoroutineContextElement::get` returning correct type.
-    
-    // Correct C++ mapping for `interceptContinuation`:
-    // It's likely NOT virtual in the C++ `ContinuationInterceptor` base if it's templated. 
-    // But `CoroutineDispatcher` is a specific type.
-    // Intercept
     template <typename T>
     std::shared_ptr<Continuation<T>> intercept_continuation(std::shared_ptr<Continuation<T>> continuation);
 
     void release_intercepted_continuation(std::shared_ptr<ContinuationBase> continuation) override;
 
-    /**
-     * @suppress **Error**: Operator '+' on two CoroutineDispatcher objects is meaningless.
-     * CoroutineDispatcher is a coroutine context element and `+` is a set-sum operator for coroutine contexts.
-     * The dispatcher to the right of `+` just replaces the dispatcher to the left.
-     */
     virtual std::shared_ptr<CoroutineDispatcher> plus(std::shared_ptr<CoroutineDispatcher> other) {
         return other;
     }
@@ -112,15 +84,4 @@ public:
 } // namespace coroutines
 } // namespace kotlinx
 
-#include "kotlinx/coroutines/DispatchedContinuation.hpp"
-
-namespace kotlinx {
-namespace coroutines {
-
-template <typename T>
-std::shared_ptr<Continuation<T>> CoroutineDispatcher::intercept_continuation(std::shared_ptr<Continuation<T>> continuation) {
-    return std::make_shared<DispatchedContinuation<T>>(shared_from_this(), continuation);
-}
-
-} // namespace coroutines
-} // namespace kotlinx
+// Implementation of intercept_continuation moved to DispatchedContinuation.hpp to avoid circular dependency

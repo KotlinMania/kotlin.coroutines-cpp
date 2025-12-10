@@ -1,9 +1,7 @@
 #pragma once
-#include "core_fwd.hpp"
-#include "CoroutineContext.hpp"
-#include "Runnable.hpp"
-#include "Continuation.hpp"
-#include "ContinuationInterceptor.hpp"
-// #include "kotlinx/coroutines/DispatchedContinuation.hpp" // Cycle breaker
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/Runnable.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 
-// This file now aggregates the implementation details that were previously inline.
+// This file aggregates the implementation details that were previously inline.

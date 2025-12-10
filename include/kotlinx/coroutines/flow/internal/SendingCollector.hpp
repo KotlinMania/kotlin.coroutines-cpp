@@ -1,5 +1,4 @@
 #pragma once
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 
@@ -9,18 +8,21 @@ namespace flow {
 namespace internal {
 
 // Collection that sends values to a channel
+// Corresponds to kotlinx.coroutines.flow.internal.SendingCollector
 template <typename T>
 class SendingCollector : public FlowCollector<T> {
 public:
-    explicit SendingCollector(SendChannel<T>* channel) : channel_(channel) {}
+    explicit SendingCollector(channels::SendChannel<T>* channel) : channel_(channel) {}
 
     void emit(T value) override {
-        // TODO: implement channel_.send(value) once channel semantics are fully ported
-        // channel_->send(value);
+        if (channel_->is_closed_for_send()) {
+             throw channels::ClosedSendChannelException("Channel was closed");
+        }
+        channel_->send(value);
     }
 
 private:
-    SendChannel<T>* channel_;
+    channels::SendChannel<T>* channel_;
 };
 
 } // namespace internal

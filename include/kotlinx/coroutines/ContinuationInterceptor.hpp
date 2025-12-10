@@ -1,6 +1,6 @@
 #pragma once
-#include "CoroutineContext.hpp"
-#include "core_fwd.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -17,14 +17,10 @@ struct ContinuationInterceptor : public virtual CoroutineContext::Element {
     ContinuationInterceptor() = default;
     
     virtual CoroutineContext::Key* key() const override { return typeKey; }
-
-    template <typename T>
-    class Continuation;
     
-    template <typename T>
-    std::shared_ptr<Continuation<T>> intercept_continuation(std::shared_ptr<Continuation<T>> continuation) {
-        return continuation; // Default implementation? Or abstract? Usually abstract in impls.
-    }
+    // In C++ interface, we can't have virtual template methods.
+    // However, ContinuationInterceptor usually acts as a mixin.
+    // The actual interception logic is specific to Dispatchers.
     
     virtual void release_intercepted_continuation(std::shared_ptr<ContinuationBase> continuation) = 0;
 };

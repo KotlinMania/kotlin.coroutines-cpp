@@ -1,56 +1,62 @@
 #pragma once
-#include "JobSupport.hpp"
-#include "../../../kotlinx-coroutines-core/common/src/CompletableJob.hpp"
+#include "kotlinx/coroutines/JobSupport.hpp"
+#include "kotlinx/coroutines/CompletableJob.hpp"
+#include <memory>
+#include <exception>
 
 namespace kotlinx {
 namespace coroutines {
 
 /**
- * Concrete implementation of CompletableJob that extends JobSupport.
- * This is the standard implementation returned by Job() and SupervisorJob() factory functions.
- *
- * Based on Kotlin's JobImpl:
- * internal open class JobImpl(parent: Job?) : JobSupport(true), CompletableJob {
- *     init { initParentJob(parent) }
- *     override val onCancelComplete get() = true
- *     override val handlesException: Boolean = handlesException()
- *     override fun complete() = makeCompleting(Unit)
- *     override fun completeExceptionally(exception: Throwable): Boolean =
- *         makeCompleting(CompletedExceptionally(exception))
- * }
+ * Concrete job implementation.
  */
-class JobImpl : public JobSupport, public virtual CompletableJob {
+class JobImpl : public JobSupport, public CompletableJob {
+    std::shared_ptr<DisposableHandle> parent_handle_keeper_;
+
 public:
-    /**
-     * Creates a new JobImpl with the specified active state.
-     */
-    explicit JobImpl(bool active = true);
+    explicit JobImpl(std::shared_ptr<Job> parent) : JobSupport(true) {
+        // Note: init_parent_job cannot be called here due to shared_from_this() requirement.
+        // Use create() factory or manually call init_parent_job().
+        // If constructed directly, parent is IGNORED initially until init is called?
+        // But we store parent_ in JobSupport::parent_ member?
+        // We can't set parent_ safely without attaching?
+        // We'll leave it for init_parent_job.
+    }
+    
+    static std::shared_ptr<JobImpl> create(std::shared_ptr<Job> parent) {
+        auto job = std::make_shared<JobImpl>(parent);
+        job->init_parent_job(parent);
+        return job;
+    }
+    
+    // Internal init method (public for flexibility if needed, but risky)
+    void init_parent_job(std::shared_ptr<Job> parent) {
+        if (!parent) {
+             parent_ = nullptr;
+             return;
+        }
+        parent_ = parent;
+        parent->start();
+        parent_handle_keeper_ = parent->attach_child(shared_from_this());
+        parentHandle_.store(parent_handle_keeper_.get());
+    }
 
-    /**
-     * Creates a new JobImpl with the specified parent.
-     */
-    explicit JobImpl(struct Job* parent);
-
-    virtual ~JobImpl();
-
-    // CoroutineContext::Element interface implementation
-    CoroutineContext::Key* key() const;
-
-    // JobImpl-specific overrides
-    bool on_cancel_complete() const { return true; }
-    bool handles_exception() const;
-
-    // CompletableJob interface implementation
-    bool complete();
-    bool complete_exceptionally(Throwable* exception);
-
-private:
-    // Helper method for computed handlesException property
-    bool handles_exception_impl() const;
-
-    // Factory functions
-    friend CompletableJob* createJob(struct Job* parent);
-    friend CompletableJob* createSupervisorJob(struct Job* parent);
+    // CompletableJob implementation
+    bool complete() override {
+        return make_completing(nullptr);
+    }
+    
+    bool complete_exceptionally(std::exception_ptr exception) override {
+        return make_completing(exception);
+    }
+    
+    // Ensure we expose key() if JobSupport implements it (JobSupport implements key() from Job/Context)
+    // JobSupport implements key() -> ContinuationInterceptor? 
+    // Wait, JobSupport implements Job. Job implements Element. Element has key().
+    // JobSupport::key() -> Job::Key.
+    
+    // Destructor
+    ~JobImpl() override = default;
 };
 
 } // namespace coroutines

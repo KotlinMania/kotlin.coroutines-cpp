@@ -5,7 +5,11 @@
 namespace kotlinx {
 namespace coroutines {
 
-class CompletedExceptionally {
+struct JobState {
+    virtual ~JobState() = default;
+};
+
+class CompletedExceptionally : public JobState {
 public:
     std::exception_ptr cause;
     std::atomic<bool> handled;

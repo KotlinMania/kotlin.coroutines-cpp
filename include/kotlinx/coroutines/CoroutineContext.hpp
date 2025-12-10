@@ -2,7 +2,6 @@
 #include <memory>
 #include <functional>
 #include <string>
-#include "core_fwd.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -15,31 +14,27 @@ public:
 
     class Key {
     public:
-        // Optional name for debugging
         const char* name = nullptr;
-        Key(const char* name = nullptr) : name(name) {}
+        explicit Key(const char* name = nullptr) : name(name) {}
         virtual ~Key() = default;
     };
 
     template <typename E>
     class KeyTyped : public Key {
     public:
-        KeyTyped(const char* name = nullptr) : Key(name) {}
+        explicit KeyTyped(const char* name = nullptr) : Key(name) {}
     };
 
     virtual std::shared_ptr<Element> get(Key* key) const { return nullptr; }
     
-    // Operator + stub
-    std::shared_ptr<CoroutineContext> operator+(std::shared_ptr<CoroutineContext> other) const {
-        // dummy
-        return nullptr; // In reality, return CombinedContext
-    }
+    // Operator + for context composition
+    // Typically implemented via fold or CombinedContext
+    std::shared_ptr<CoroutineContext> operator+(std::shared_ptr<CoroutineContext> other) const;
     
-    std::shared_ptr<CoroutineContext> operator+(CoroutineContext* other) const {
-        return nullptr;
-    }
-    
-    // For T* + T* syntax in C++, we usually need free functions, but usage is likely internal or specific
+    template <typename R>
+    R fold(R initial, std::function<R(R, std::shared_ptr<Element>)> operation) const;
+
+    std::shared_ptr<CoroutineContext> minusKey(Key* key) const;
 };
 
 struct CoroutineContext::Element : public CoroutineContext {
@@ -47,18 +42,18 @@ struct CoroutineContext::Element : public CoroutineContext {
     
     std::shared_ptr<Element> get(Key* k) const override {
         if (this->key() == k) {
-            // return shared_from_this(); // needs enable_shared_from_this
-            return nullptr; 
+             // We need shared_from_this() capability here, typically Element inherits enable_shared_from_this
+             // For now, strict interface definition
+             return nullptr; 
         }
         return nullptr;
     }
 };
 
-// AbstractCoroutineContextElement implementation
 class AbstractCoroutineContextElement : public virtual CoroutineContext::Element {
 public:
     Key* key_;
-    AbstractCoroutineContextElement(Key* key) : key_(key) {}
+    explicit AbstractCoroutineContextElement(Key* key) : key_(key) {}
 
     Key* key() const override { return key_; }
 };

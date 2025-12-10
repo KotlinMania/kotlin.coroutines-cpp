@@ -15,9 +15,8 @@ std::string MainCoroutineDispatcher::to_string() const {
     return to_string_internal_impl();
 }
 
-CoroutineDispatcher& MainCoroutineDispatcher::limited_parallelism(int parallelism, const std::string* name) {
-    // Stub implementation
-    return *this; // Should imply limitations on the main thread which is already single threaded usually
+std::shared_ptr<CoroutineDispatcher> MainCoroutineDispatcher::limited_parallelism(int parallelism, const std::string& name) {
+     throw std::runtime_error("limited_parallelism not implemented");
 }
 
 std::string MainCoroutineDispatcher::to_string_internal_impl() const {

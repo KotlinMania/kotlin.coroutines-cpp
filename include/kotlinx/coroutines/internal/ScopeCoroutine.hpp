@@ -15,17 +15,19 @@ public:
     ScopeCoroutine(CoroutineContext context, std::shared_ptr<Continuation<T>> uCont)
         : AbstractCoroutine<T>(context, true, true), u_cont(uCont) {}
 
-    bool is_scoped_coroutine() const override { return true; }
+    // bool is_scoped_coroutine() const override { return true; } // Not standard in AbstractCoroutine API
     
-    // Additional overrides if needed
+    // Resume delegate
+    void after_completion(std::any state) override {
+        // u_cont->resume_with(state);
+    }
 };
 
-// Also ContextScope
 class ContextScope : public CoroutineScope {
-    CoroutineContext context_;
+    std::shared_ptr<CoroutineContext> context_;
 public:
-    explicit ContextScope(CoroutineContext context) : context_(context) {}
-    CoroutineContext get_coroutine_context() const override { return context_; }
+    explicit ContextScope(std::shared_ptr<CoroutineContext> context) : context_(context) {}
+    std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return context_; }
 };
 
 } // namespace internal

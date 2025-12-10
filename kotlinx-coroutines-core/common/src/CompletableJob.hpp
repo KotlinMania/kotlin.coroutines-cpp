@@ -31,21 +31,9 @@ public:
     virtual bool complete() = 0;
 
     /**
-     * Completes this job exceptionally with a given [exception]. The result is `true` if this job was
-     * completed as a result of this invocation and `false` otherwise (if it was already completed).
-     * [exception] parameter is used as an additional debug information that is not handled by any exception handlers.
-     *
-     * Subsequent invocations of this function have no effect and always produce `false`.
-     *
-     * This function transitions this job into the _cancelled_ state if it has not been _completed_ or _cancelled_ yet.
-     * However, if this job has children, then it transitions into the _cancelling_ state and becomes _cancelled_
-     * once all its children are [complete][isCompleted]. See [Job] for details.
-     *
-     * It is the responsibility of the caller to properly handle and report the given [exception].
-     * All the job's children will receive a [CancellationException] with
-     * the [exception] as a cause for the sake of diagnosis.
+     * Completes this job exceptionally with a given [exception]. 
      */
-    virtual bool complete_exceptionally(Throwable* exception) = 0;
+    virtual bool complete_exceptionally(std::exception_ptr exception) = 0;
     
     virtual ~CompletableJob() = default;
 };

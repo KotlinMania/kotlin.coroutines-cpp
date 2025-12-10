@@ -1,7 +1,7 @@
 #pragma once
-#include "core_fwd.hpp"
-#include "CoroutineContext.hpp"
-#include "Result.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/Result.hpp"
+#include <memory>
 
 namespace kotlinx {
 namespace coroutines {
@@ -14,7 +14,8 @@ public:
 template <typename T>
 class Continuation : public ContinuationBase {
 public:
-    virtual CoroutineContext get_context() const = 0;
+    // Return shared_ptr to avoid slicing abstract base class
+    virtual std::shared_ptr<CoroutineContext> get_context() const = 0;
     virtual void resume_with(Result<T> result) = 0;
 };
 

@@ -1,7 +1,7 @@
 #pragma once
-#include "kotlinx/coroutines/core_fwd.hpp"
-#include <string>
-#include <memory>
+#include "kotlinx/coroutines/flow/Flow.hpp"
+#include "kotlinx/coroutines/flow/StateFlow.hpp"
+#include <limits>
 #include <chrono>
 
 namespace kotlinx {
@@ -14,15 +14,20 @@ enum class SharingCommand {
     STOP_AND_RESET_REPLAY_CACHE
 };
 
+// Interface for sharing strategies
 struct SharingStarted {
     virtual ~SharingStarted() = default;
-
-    // TODO: command method returning Flow<SharingCommand>
-    // virtual std::shared_ptr<Flow<SharingCommand>> command(std::shared_ptr<StateFlow<int>> subscriptionCount) = 0;
-
-    static std::shared_ptr<SharingStarted> Eagerly();
-    static std::shared_ptr<SharingStarted> Lazily();
-    static std::shared_ptr<SharingStarted> WhileSubscribed(int64_t stopTimeoutMillis = 0, int64_t replayExpirationMillis = -1);
+    
+    // Returns a flow of commands to control the upstream execution
+    virtual Flow<SharingCommand>* command(StateFlow<int>* subscription_count) = 0;
+    
+    // Static factories
+    static SharingStarted* Eagerly();
+    static SharingStarted* Lazily();
+    static SharingStarted* WhileSubscribed(
+        long long stop_timeout_millis = 0,
+        long long replay_expiration_millis = std::numeric_limits<long long>::max()
+    );
 };
 
 } // namespace flow

@@ -17,14 +17,33 @@ namespace internal {
 using kotlinx::coroutines::channels::Channel;
 using kotlinx::coroutines::channels::BufferOverflow;
 
+/**
+ * Operators that can fuse with **downstream** [buffer] and [flowOn] operators implement this interface.
+ *
+ * @suppress **This an internal API and should not be used from general code.**
+ */
 template <typename T>
 struct FusibleFlow : public Flow<T> {
     virtual ~FusibleFlow() = default;
+
+    /**
+     * This function is called by [flowOn] (with context) and [buffer] (with capacity) operators
+     * that are applied to this flow. Should not be used with [capacity] of [Channel.CONFLATED]
+     * (it shall be desugared to `capacity = 0, onBufferOverflow = DROP_OLDEST`).
+     */
     virtual Flow<T>* fuse(const CoroutineContext& context, int capacity, BufferOverflow on_overflow) {
         return this;
     }
 };
 
+/**
+ * Operators that use channels as their "output" extend this `ChannelFlow` and are always fused with each other.
+ * This class servers as a skeleton implementation of [FusibleFlow] and provides other cross-cutting
+ * methods like ability to [produceIn] the corresponding flow, thus making it
+ * possible to directly use the backing channel if it exists (hence the `ChannelFlow` name).
+ *
+ * @suppress **This an internal API and should not be used from general code.**
+ */
 template <typename T>
 class ChannelFlow : public FusibleFlow<T> {
 public:
@@ -33,6 +52,12 @@ public:
 
     virtual ~ChannelFlow() = default;
 
+    /**
+     * When this [ChannelFlow] implementation can work without a channel (supports [Channel.OPTIONAL_CHANNEL]),
+     * then it should return a non-null value from this function, so that a caller can use it without the effect of
+     * additional [flowOn] and [buffer] operators, by incorporating its
+     * [context], [capacity], and [onBufferOverflow] into its own implementation.
+     */
     virtual Flow<T>* drop_channel_operators() { return nullptr; }
 
     Flow<T>* fuse(const CoroutineContext& context, int capacity, BufferOverflow on_overflow) override;
@@ -46,7 +71,17 @@ public:
 
 protected:
     virtual ChannelFlow<T>* create(const CoroutineContext& context, int capacity, BufferOverflow on_overflow) = 0;
+    
     virtual void collect_to(ProducerScope<T>* scope) = 0;
+
+    /**
+     * Here we use ATOMIC start for a reason (#1825).
+     * NB: [produceImpl] is used for [flowOn].
+     * For non-atomic start it is possible to observe the situation,
+     * where the pipeline after the [flowOn] call successfully executes (mostly, its `onCompletion`)
+     * handlers, while the pipeline before does not, because it was cancelled during its dispatch.
+     * Thus `onCompletion` and `finally` blocks won't be executed and it may lead to a different kinds of memory leaks.
+     */
     virtual ReceiveChannel<T>* produce_impl(CoroutineScope* scope);
 
     const CoroutineContext& context() const { return context_; }

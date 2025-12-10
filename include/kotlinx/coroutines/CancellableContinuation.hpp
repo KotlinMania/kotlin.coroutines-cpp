@@ -1,13 +1,20 @@
 #pragma once
 #include <string>
 #include <functional>
-#include "kotlinx/coroutines/core_fwd.hpp"
+#include <memory>
+#include <coroutine>
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Job.hpp"
-#include "kotlinx/coroutines/CoroutineDispatcher.hpp"
+#include "kotlinx/coroutines/DisposableHandle.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
 
 namespace kotlinx {
 namespace coroutines {
+
+class CoroutineDispatcher; 
+
+// Throwable alias standard
+using Throwable = std::exception_ptr;
 
 /**
  * Cancellable [continuation][Continuation] is a thread-safe continuation primitive with the support of
@@ -83,7 +90,7 @@ namespace coroutines {
  *     // Will be invoked if the continuation is cancelled while being dispatched
  *     resourceToClose.close()
  * }
- * ```
+  * ```
  *
  * #### Continuation states
  *
@@ -114,12 +121,13 @@ namespace coroutines {
  *    +-----------+
  * ```
  */
-// @OptIn(ExperimentalSubclassOptIn::class)
-// @SubclassOptInRequired(InternalForInheritanceCoroutinesApi::class)
 template<typename T>
 class CancellableContinuation : public Continuation<T> {
 public:
     virtual ~CancellableContinuation() = default;
+
+    // Inherited from Continuation
+    virtual std::shared_ptr<CoroutineContext> get_context() const = 0;
 
     /**
      * Returns `true` when this continuation is active -- it was created,
@@ -149,162 +157,98 @@ public:
      * Tries to resume this continuation with the specified [value] and returns a non-nullptr class token if successful,
      * or `nullptr` otherwise (it was already resumed or cancelled). When a non-nullptr class is returned,
      * [completeResume] must be invoked with it.
-     *
-     * When [idempotent] is not `nullptr`, this function performs an _idempotent_ operation, so that
-     * further invocations with the same non-nullptr reference produce the same result.
-     *
-     * @suppress **This is unstable API and it is subject to change.**
      */
-    // @InternalCoroutinesApi
     virtual void* try_resume(T value, void* idempotent = nullptr) = 0;
-
-    /**
-     * Same as [tryResume] but with an [onCancellation] handler that is called if and only if the value is not
-     * delivered to the caller because of the dispatch in the process.
-     *
-     * The purpose of this function is to enable atomic delivery guarantees: either resumption succeeded, passing
-     * the responsibility for [value] to the continuation, or the [onCancellation] block will be invoked,
-     * allowing one to free the resources in [value].
-     *
-     * Implementation note: current implementation always returns RESUME_TOKEN or `nullptr`
-     *
-     * @suppress  **This is unstable API and it is subject to change.**
-     */
-    // @InternalCoroutinesApi
-    template<typename R>
-    void* try_resume(
-        R value,
-        void* idempotent,
-        std::function<void(Throwable*, R, CoroutineContext)> on_cancellation
-    ) {
-        // Default impl or pure virtual? The snippet had abstract in one and impl in another
-        return nullptr; // Stub for now as interface
-    }
-
+    
     /**
      * Tries to resume this continuation with the specified [exception] and returns a non-nullptr class token if successful,
      * or `nullptr` otherwise (it was already resumed or cancelled). When a non-nullptr class is returned,
      * [completeResume] must be invoked with it.
-     *
-     * @suppress **This is unstable API and it is subject to change.**
      */
-    // @InternalCoroutinesApi
     virtual void* try_resume_with_exception(std::exception_ptr exception) = 0;
-
+    
     /**
      * Completes the execution of [tryResume] or [tryResumeWithException] on its non-nullptr result.
-     *
-     * @suppress **This is unstable API and it is subject to change.**
      */
-    // @InternalCoroutinesApi
     virtual void complete_resume(void* token) = 0;
-
+    
     /**
      * Internal function that setups cancellation behavior in [suspendCancellableCoroutine].
-     * It's illegal to call this function in any non-`kotlinx.coroutines` code and
-     * such calls lead to undefined behaviour.
-     * Exposed in our ABI since 1.0.0 within `suspendCancellableCoroutine` body.
-     *
-     * @suppress **This is unstable API and it is subject to change.**
      */
-    // @InternalCoroutinesApi
     virtual void init_cancellability() = 0;
-
+    
     /**
      * Cancels this continuation with an optional cancellation `cause`. The result is `true` if this continuation was
      * cancelled as a result of this invocation, and `false` otherwise.
-     * [cancel] might return `false` when the continuation was either [resumed][resume] or already [cancelled][cancel].
      */
     virtual bool cancel(std::exception_ptr cause = nullptr) = 0;
-
+    
     /**
      * Registers a [handler] to be **synchronously** invoked on [cancellation][cancel] (regular or exceptional) of this continuation.
-     * When the continuation is already cancelled, the handler is immediately invoked with the cancellation exception.
-     * Otherwise, the handler will be invoked as soon as this continuation is cancelled.
-     *
-     * The installed [handler] should not throw any exceptions.
-     * If it does, they will get caught, wrapped into a `CompletionHandlerException` and
-     * processed as an uncaught exception in the context of the current coroutine
-     * (see [CoroutineExceptionHandler]).
-     *
-     * At most one [handler] can be installed on a continuation.
-     * Attempting to call `invokeOnCancellation` a second time produces an [IllegalStateException].
-     *
-     * This handler is also called when this continuation [resumes][Continuation.resume] normally (with a value) and then
-     * is cancelled while waiting to be dispatched. More generally speaking, this handler is called whenever
-     * the caller of [suspendCancellableCoroutine] is getting a [CancellationException].
-     *
-     * A typical example of `invokeOnCancellation` usage is given in
-     * the documentation for the [suspendCancellableCoroutine] function.
-     *
-     * **Note**: Implementations of [CompletionHandler] must be fast, non-blocking, and thread-safe.
-     * This [handler] can be invoked concurrently with the surrounding code.
-     * There is no guarantee on the execution context in which the [handler] will be invoked.
      */
     virtual void invoke_on_cancellation(std::function<void(std::exception_ptr)> handler) = 0;
-
+    
     /**
      * Resumes this continuation with the specified [value] in the invoker thread without going through
      * the [dispatch][CoroutineDispatcher.dispatch] function of the [CoroutineDispatcher] in the [context].
      * This function is designed to only be used by [CoroutineDispatcher] implementations.
-     * **It should not be used in general code**.
-     *
-     * **Note: This function is experimental.** Its signature general code may be changed in the future.
      */
-    // @ExperimentalCoroutinesApi
     virtual void resume_undispatched(CoroutineDispatcher* dispatcher, T value) = 0;
-
+    
     /**
      * Resumes this continuation with the specified [exception] in the invoker thread without going through
      * the [dispatch][CoroutineDispatcher.dispatch] function of the [CoroutineDispatcher] in the [context].
      * This function is designed to only be used by [CoroutineDispatcher] implementations.
-     * **It should not be used in general code**.
-     *
-     * **Note: This function is experimental.** Its signature general code may be changed in the future.
      */
-    // @ExperimentalCoroutinesApi
     virtual void resume_undispatched_with_exception(CoroutineDispatcher* dispatcher, std::exception_ptr exception) = 0;
-
-    /** @suppress */
-    // @Deprecated("Use the overload that also accepts the `value` and the coroutine context in lambda")
+    
+    /**
+     * Resumes this continuation with the specified [value] and cancellation handler.
+     */
     virtual void resume(T value, std::function<void(std::exception_ptr)> on_cancellation) = 0;
     
-    // Internal helper for resume_undispatched_impl logic if needed
-    // virtual void resume_undispatched_impl(CoroutineDispatcher* dispatcher, T value) = 0;
+    /**
+     * Same as [tryResume] but with an [onCancellation] handler that is called if and only if the value is not
+     * delivered to the caller because of the dispatch in the process.
+     */
+    template<typename R>
+    void* try_resume(
+        R value,
+        void* idempotent,
+        std::function<void(Throwable, R, std::shared_ptr<CoroutineContext>)> on_cancellation
+    ) {
+         return nullptr; 
+    }
 };
-
-// Forward declaration of CancellableContinuationImpl for the reusable function
-template<typename T>
-class CancellableContinuationImpl;
 
 /**
  * Suspends the coroutine like [suspendCoroutine], but providing a [CancellableContinuation] to
  * the [block].
  */
+// Forward declaration
+template <typename T>
+class CancellableContinuationImpl;
+
+template <typename T>
+class SuspendingCancellableCoroutine {
+public:
+    std::function<void(CancellableContinuation<T>&)> block;
+    std::shared_ptr<CancellableContinuationImpl<T>> impl;
+
+    SuspendingCancellableCoroutine(std::function<void(CancellableContinuation<T>&)> b) : block(b) {}
+
+    bool await_ready() { return false; }
+
+    void await_suspend(std::coroutine_handle<> h);
+
+    T await_resume();
+};
+
 template<typename T>
-T suspend_cancellable_coroutine(std::function<void(CancellableContinuation<T>&)> block) {
-    // Stub
-    return T();
+auto suspend_cancellable_coroutine(std::function<void(CancellableContinuation<T>&)> block) {
+    return SuspendingCancellableCoroutine<T>(block);
 }
 
-/**
- * Suspends the coroutine similar to [suspendCancellableCoroutine], but an instance of
- * [CancellableContinuationImpl] is reused.
- */
-template<typename T>
-T suspend_cancellable_coroutine_reusable(std::function<void(CancellableContinuationImpl<T>&)> block) {
-    // Stub
-    return T();
-}
-
-template<typename T>
-CancellableContinuationImpl<T>* get_or_create_cancellable_continuation(Continuation<T>* delegate) {
-    return nullptr;
-}
-
-/**
- * Disposes the specified [handle] when this continuation is cancelled.
- */
 void dispose_on_cancellation(CancellableContinuation<void>& cont, DisposableHandle* handle);
 
 } // namespace coroutines

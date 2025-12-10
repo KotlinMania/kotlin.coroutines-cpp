@@ -15,3 +15,9 @@ local.properties
 benchmarks.jar
 /kotlin-js-store
 /.kotlin
+/tmp/
+include/kotlinx/coroutines/sync/Mutex.hpp
+*.o
+test_dispatchers
+test_job
+test_cancellation

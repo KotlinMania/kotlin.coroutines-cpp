@@ -2,7 +2,9 @@
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Runnable.hpp"
+#include "kotlinx/coroutines/internal/DispatchedTask.hpp"
 #include <atomic>
+#include <memory>
 
 namespace kotlinx {
 namespace coroutines {
@@ -13,49 +15,53 @@ public:
 };
 
 template <typename T>
-class DispatchedContinuation : public Continuation<T>, public DispatchedContinuationBase {
+class DispatchedContinuation : public Continuation<T>, 
+                               public DispatchedTask<T>,
+                               public std::enable_shared_from_this<DispatchedContinuation<T>> {
 public:
     std::shared_ptr<CoroutineDispatcher> dispatcher;
     std::shared_ptr<Continuation<T>> continuation;
     
     DispatchedContinuation(std::shared_ptr<CoroutineDispatcher> dispatcher, std::shared_ptr<Continuation<T>> continuation)
-        : dispatcher(dispatcher), continuation(continuation) {}
+        : DispatchedTask<T>(MODE_CANCELLABLE), dispatcher(dispatcher), continuation(continuation) {}
 
-    CoroutineContext get_context() const override {
+    std::shared_ptr<CoroutineContext> get_context() const override {
         return continuation->get_context();
     }
 
+    std::shared_ptr<Continuation<T>> get_delegate() override {
+        return continuation;
+    }
+    
+    Result<T> take_state() override {
+        return result_;
+    }
+
     void resume_with(Result<T> result) override {
-        // Dispatch logic
-        // context = continuation.context
-        // if dispatcher.isDispatchNeeded(context)
-        //    dispatcher.dispatch(context, this_as_runnable_with_result)
-        // else
-        //    resume_undispatched
-        
-        // Simplified for C++ port: always dispatch for now or basic check
-        if (dispatcher->is_dispatch_needed(get_context())) {
-             // We need to pass 'this' as Runnable, but 'this' is templated.
-             // Usually implies DispatchedContinuation implements Runnable (via Base).
-             // And we need to store the result to pass it to the continuation later.
+        auto context = get_context();
+        if (dispatcher->is_dispatch_needed(*context)) {
              this->result_ = result;
-             dispatcher->dispatch(get_context(), std::shared_ptr<Runnable>(this, [](Runnable*){})); // weak ref or shared_from_this?
+             // Dispatch self
+             dispatcher->dispatch(*context, this->shared_from_this());
         } else {
-            continuation->resume_with(result);
+             continuation->resume_with(result);
         }
     }
     
     void run() override {
-        continuation->resume_with(result_);
-    }
-    
-    void release() override {
-        // cleanup if needed
+        DispatchedTask<T>::run();
     }
 
 private:
     Result<T> result_;
 };
+
+
+// Implement CoroutineDispatcher::intercept_continuation here
+template <typename T>
+std::shared_ptr<Continuation<T>> CoroutineDispatcher::intercept_continuation(std::shared_ptr<Continuation<T>> continuation) {
+    return std::make_shared<DispatchedContinuation<T>>(shared_from_this(), continuation);
+}
 
 } // namespace coroutines
 } // namespace kotlinx

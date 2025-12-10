@@ -1,5 +1,4 @@
 #pragma once
-#include "kotlinx/coroutines/core_fwd.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -165,180 +164,11 @@ enum class CoroutineStart {
 
     /**
      * Atomically (i.e., in a non-cancellable way) schedules the coroutine for execution according to its context.
-     *
-     * This is similar to [DEFAULT], but the coroutine is guaranteed to start executing even if it was cancelled.
-     * This only affects the behavior until the body of the coroutine starts executing;
-     * inside the body, cancellation will work as usual.
-     *
-     * Like [ATOMIC], [UNDISPATCHED], too, ensures that coroutines will be started in any case.
-     * The difference is that, instead of immediately starting them on the same thread,
-     * [ATOMIC] performs the full dispatch procedure just as [DEFAULT] does.
-     *
-     * Because of this, we can use [ATOMIC] in cases where we want to be certain that some code eventually runs
-     * and uses a specific dispatcher to do that.
-     *
-     * Example:
-     * ```
-     * auto mutex = Mutex()
-     *
-     * mutex.lock() // lock the mutex outside the coroutine
-     * // ... // initial portion of the work, protected by the mutex
-     * auto job = launch(start = CoroutineStart.ATOMIC) {
-     *     // the work must continue in a coroutine, but still under the mutex
-     *     println("Coroutine running!")
-     *     try {
-     *         // this `try` block will be entered in any case because of ATOMIC
-     *         println("Starting task...")
-     *         delay(10.milliseconds) // throws due to cancellation
-     *         println("Finished task.")
-     *     } finally {
-     *         mutex.unlock() // correctly release the mutex
-     *     }
-     * }
-     *
-     * job.cancelAndJoin() // we immediately cancel the coroutine.
-     * mutex.withLock {
-     *     println("The lock has been returned correctly!")
-     * }
-     * ```
-     *
-     * Here, we used [ATOMIC] to ensure that a mutex that was acquired outside the coroutine does get released
-     * even if cancellation happens between `lock()` and `launch`.
-     * As a result, the mutex will always be released.
-     *
-     * The behavior of [ATOMIC] can be described with the following examples:
-     *
-     * ```
-     * // Example of cancelling atomically started coroutines
-     * runBlocking {
-     *     println("1. Atomically starting a coroutine that goes through a dispatch.")
-     *     launch(start = CoroutineStart.ATOMIC) {
-     *         check(!isActive) // attempting to suspend later will throw
-     *         println("4. The coroutine was cancelled (isActive = $isActive), but starts anyway.")
-     *         try {
-     *             delay(10.milliseconds) // will throw: the coroutine is cancelled
-     *             println("This code will never run.")
-     *         } catch (e: CancellationException) {
-     *             println("5. Cancellation at later points still works.")
-     *             throw e
-     *         }
-     *     }
-     *     println("2. Cancelling this coroutine and all of its children.")
-     *     cancel()
-     *     launch(Dispatchers.Unconfined, start = CoroutineStart.ATOMIC) {
-     *         check(!isActive) // attempting to suspend will throw
-     *         println("3. An undispatched coroutine starts.")
-     *     }
-     *     ensureActive() // we can even crash the current coroutine.
-     * }
-     * ```
-     *
-     * This is a **delicate** API. The coroutine starts execution even if its [Job] is cancelled before starting.
-     * However, the resources used within a coroutine may rely on the cancellation mechanism,
-     * and cannot be used after the [Job] cancellation. For instance, in Android development, updating a UI element
-     * is not allowed if the coroutine's scope, which is tied to the element's lifecycle, has been cancelled.
      */
      ATOMIC,
 
     /**
      * Immediately executes the coroutine until its first suspension point _in the current thread_.
-     *
-     * Starting a coroutine using [UNDISPATCHED] is similar to using [Dispatchers.Unconfined] with [DEFAULT], except:
-     * - Resumptions from later suspensions will properly use the actual dispatcher from the coroutine's context.
-     *   Only the code until the first suspension point will be executed immediately.
-     * - Even if the coroutine was cancelled already, its code will still start running, similar to [ATOMIC].
-     * - The coroutine will not form an event loop. See [Dispatchers.Unconfined] for an explanation of event loops.
-     *
-     * This set of behaviors makes [UNDISPATCHED] well-suited for cases where the coroutine has a distinct
-     * initialization phase whose side effects we want to rely on later.
-     *
-     * Example:
-     * ```
-     * auto tasks = 0
-     * repeat(3) {
-     *     launch(start = CoroutineStart.UNDISPATCHED) {
-     *         tasks++
-     *         try {
-     *             println("Waiting for a reply...")
-     *             delay(50.milliseconds)
-     *             println("Got a reply!")
-     *         } finally {
-     *             tasks--
-     *         }
-     *     }
-     * }
-     * // Because of UNDISPATCHED,
-     * // we know that the tasks already ran to their first suspension point,
-     * // so this number is non-zero initially.
-     * while (tasks > 0) {
-     *     println("currently active: $tasks")
-     *     delay(10.milliseconds)
-     * }
-     * ```
-     *
-     * Here, we implement a publisher-subscriber interaction, where [UNDISPATCHED] ensures that the
-     * subscribers do get registered before the publisher first checks if it can stop emitting values due to
-     * the lack of subscribers.
-     *
-     * ```
-     * // Constant usage of stack space
-     * auto CoroutineScope__dot__factorialWithUnconfined(n: Int): Deferred<Int> { return ; }
-     *     async(Dispatchers.Unconfined) {
-     *         if (n > 0) {
-     *             n * factorialWithUnconfined(n - 1).await()
-     *         } else {
-     *             1 // replace with `error()` to see the stacktrace
-     *         }
-     *     }
-     *
-     * // Linearly increasing usage of stack space
-     * auto CoroutineScope__dot__factorialWithUndispatched(n: Int): Deferred<Int> { return ; }
-     *     async(start = CoroutineStart.UNDISPATCHED) {
-     *         if (n > 0) {
-     *             n * factorialWithUndispatched(n - 1).await()
-     *         } else {
-     *             1 // replace with `error()` to see the stacktrace
-     *         }
-     *     }
-     * ```
-     *
-     * Calling `factorialWithUnconfined` from this example will result in a constant-size stack,
-     * whereas `factorialWithUndispatched` will lead to `n` recursively nested calls,
-     * resulting in a stack overflow for large values of `n`.
-     *
-     * The behavior of [UNDISPATCHED] can be described with the following examples:
-     *
-     * ```
-     * runBlocking {
-     *     println("1. About to start a new coroutine.")
-     *     launch(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
-     *         println("2. The coroutine is immediately started in the same thread.")
-     *         delay(10.milliseconds)
-     *         println("4. The execution continues in a Dispatchers.Default thread.")
-     *     }
-     *     println("3. Execution of the outer coroutine only continues later.")
-     * }
-     * ```
-     *
-     * ```
-     * // Cancellation does not prevent the coroutine from being started
-     * runBlocking {
-     *     println("1. First, we cancel this scope.")
-     *     cancel()
-     *     println("2. Now, we start a new UNDISPATCHED child.")
-     *     launch(start = CoroutineStart.UNDISPATCHED) {
-     *         check(!isActive) // the child is already cancelled
-     *         println("3. We entered the coroutine despite being cancelled.")
-     *     }
-     *     println("4. Execution of the outer coroutine only continues later.")
-     * }
-     * ```
-     *
-     * **Pitfall**: unlike [Dispatchers.Unconfined] and [MainCoroutineDispatcher.immediate], nested undispatched
-     * coroutines do not form an event loop that otherwise prevents potential stack overflow in case of unlimited
-     * nesting. This property is necessary for the use case of guaranteed initialization, but may be undesirable in
-     * other cases.
-     * See [Dispatchers.Unconfined] for an explanation of event loops.
      */
     UNDISPATCHED
 };
@@ -346,7 +176,9 @@ enum class CoroutineStart {
 /**
  * Returns true if the start option is LAZY.
  */
-bool is_lazy(CoroutineStart start);
+inline bool is_lazy(CoroutineStart start) {
+    return start == CoroutineStart::LAZY;
+}
 
 } // namespace coroutines
 } // namespace kotlinx
