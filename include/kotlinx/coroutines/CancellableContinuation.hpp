@@ -20,7 +20,7 @@ using Throwable = std::exception_ptr;
  * Cancellable [continuation][Continuation] is a thread-safe continuation primitive with the support of
  * an asynchronous cancellation.
  *
- * Cancellable continuation can be [resumed][Continuation.resumeWith], but unlike regular [Continuation],
+ * Cancellable continuation can be [resumed][Continuation.resume_with], but unlike regular [Continuation],
  * it also might be [cancelled][CancellableContinuation.cancel] explicitly or [implicitly][Job.cancel] via a parent [job][Job].
  *
  * If the continuation is cancelled successfully, it resumes with a [CancellationException] or
@@ -40,7 +40,7 @@ using Throwable = std::exception_ptr;
  *     future.whenComplete { result, throwable ->
  *         if (throwable != nullptr) {
  *             // Resume continuation with an exception if an external source failed
- *             c.resumeWithException(throwable)
+ *             c.resume_withException(throwable)
  *         } else {
  *             // Resume continuation with a value if it was computed
  *             c.resume(result)
@@ -67,14 +67,14 @@ using Throwable = std::exception_ptr;
  * successfully, even if [CancellableContinuation.resume] was already invoked but not yet executed.
  *
  * The cancellation of the coroutine's job is generally asynchronous with respect to the suspended coroutine.
- * The suspended coroutine is resumed with a call to its [Continuation.resumeWith] member function or to the
+ * The suspended coroutine is resumed with a call to its [Continuation.resume_with] member function or to the
  * [resume][Continuation.resume] extension function.
  * However, when the coroutine is resumed, it does not immediately start executing but is passed to its
  * [CoroutineDispatcher] to schedule its execution when the dispatcher's resources become available for execution.
  * The job's cancellation can happen before, after, and concurrently with the call to `resume`. In any
  * case, prompt cancellation guarantees that the coroutine will not resume its code successfully.
  *
- * If the coroutine was resumed with an exception (for example, using the [Continuation.resumeWithException] extension
+ * If the coroutine was resumed with an exception (for example, using the [Continuation.resume_withException] extension
  * function) and cancelled, then the exception thrown by the `suspendCancellableCoroutine` function is determined
  * by what happened first: exceptional resume or cancellation.
  *
@@ -105,7 +105,7 @@ using Throwable = std::exception_ptr;
  * For a detailed description of each state, see the corresponding properties' documentation.
  *
  * A successful invocation of [cancel] transitions the continuation from an _active_ to a _cancelled_ state, while
- * an invocation of [Continuation.resume] or [Continuation.resumeWithException] transitions it from
+ * an invocation of [Continuation.resume] or [Continuation.resume_withException] transitions it from
  * an _active_ to _resumed_ state.
  *
  * Possible state transitions diagram:
@@ -131,7 +131,7 @@ public:
 
     /**
      * Returns `true` when this continuation is active -- it was created,
-     * but not yet [resumed][Continuation.resumeWith] or [cancelled][CancellableContinuation.cancel].
+     * but not yet [resumed][Continuation.resume_with] or [cancelled][CancellableContinuation.cancel].
      *
      * This state implies that [isCompleted] and [isCancelled] are `false`,
      * but this can change immediately after the invocation because of parallel calls to [cancel] and [resume].
@@ -139,7 +139,7 @@ public:
     virtual bool is_active() const = 0;
 
     /**
-     * Returns `true` when this continuation was completed -- [resumed][Continuation.resumeWith] or
+     * Returns `true` when this continuation was completed -- [resumed][Continuation.resume_with] or
      * [cancelled][CancellableContinuation.cancel].
      *
      * This state implies that [isActive] is `false`.
