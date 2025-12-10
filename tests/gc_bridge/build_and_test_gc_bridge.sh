@@ -4,6 +4,12 @@
 
 set -e
 
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+cd "$SCRIPT_DIR"
+
 echo "==================================================="
 echo "Building Kotlin Native GC Bridge Test"
 echo "==================================================="
@@ -11,7 +17,7 @@ echo "==================================================="
 # Compile C++ implementation
 echo
 echo "Step 1: Compiling C++ implementation..."
-clang++ -std=c++17 -I include \
+clang++ -std=c++17 -I "$PROJECT_ROOT/include" \
     -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=1 \
     -c test_kotlin_gc_bridge_impl.cpp \
     -o test_kotlin_gc_bridge_impl.o
@@ -38,7 +44,7 @@ if ! command -v kotlinc-native &> /dev/null; then
     
     # Run standalone test
     echo "Step 3: Running standalone C++ test..."
-    clang++ -std=c++17 -I include \
+    clang++ -std=c++17 -I "$PROJECT_ROOT/include" \
         -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=0 \
         test_kotlin_gc_bridge.cpp \
         -o test_gc_bridge_standalone
@@ -56,7 +62,7 @@ fi
 echo
 echo "Step 3: Generating Kotlin Native cinterop..."
 cinterop -def test_gc_bridge.def \
-    -compiler-option -I$(pwd)/include \
+    -compiler-option -I"$PROJECT_ROOT/include" \
     -o test_gc_bridge || {
     echo "✗ cinterop failed"
     echo "Trying with kotlinc-native directly..."
@@ -74,7 +80,7 @@ kotlinc-native test_kotlin_gc_bridge.kt \
     echo "This is expected - we need proper cinterop setup"
     echo "Running standalone test instead..."
     
-    clang++ -std=c++17 -I include \
+    clang++ -std=c++17 -I "$PROJECT_ROOT/include" \
         -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=0 \
         test_kotlin_gc_bridge.cpp \
         -o test_gc_bridge_standalone

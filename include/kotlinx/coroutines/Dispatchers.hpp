@@ -33,6 +33,14 @@ public:
      */
     static CoroutineDispatcher& get_io();
 
+    // TODO: MISSING API - kotlinx.coroutines.Dispatchers
+    // public final fun shutdown(): Unit
+    // Shuts down built-in dispatchers, such as Default and IO, and prevents creating new ones.
+    // This is a **delicate** API. It is not supposed to be called from a general application-level
+    // code and its invocation is irreversible. All Kotlin coroutines APIs that use dispatchers will
+    // stop working after this function is invoked.
+    // Translation: static void shutdown();
+
 private:
     Dispatchers() = delete; // Prevent instantiation
 };

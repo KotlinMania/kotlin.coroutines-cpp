@@ -290,6 +290,18 @@ struct Job : public virtual CoroutineContext::Element {
         bool invoke_immediately,
         std::function<void(std::exception_ptr)> handler) = 0;
 
+    // TODO: MISSING API - kotlinx.coroutines.Job
+    // public abstract fun getOnJoin(): SelectClause0
+    // Returns a select clause that selects when this job is complete. This clause never fails,
+    // even if the job completes exceptionally.
+    // Translation: virtual SelectClause0 get_on_join() const = 0;
+    
+    // TODO: MISSING API - kotlinx.coroutines.Job  
+    // public abstract fun plus(Job): Job
+    // Returns a job that is a combination of this job and the specified job. The resulting job
+    // completes when both jobs complete or when any of them fails.
+    // Translation: virtual std::shared_ptr<Job> plus(std::shared_ptr<Job> other) = 0;
+
     // Key override
     CoroutineContext::Key* key() const override { return type_key; }
 };

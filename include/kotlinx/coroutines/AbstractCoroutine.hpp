@@ -111,6 +111,34 @@ public:
         }
     }
     
+    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
+    // public final override fun getContext(): CoroutineContext
+    // Already present as get_context() inherited from Continuation
+    
+    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
+    // public fun getCoroutineContext(): CoroutineContext
+    // Already present as get_coroutine_context() inherited from CoroutineScope
+    
+    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
+    // public fun isActive(): Boolean  
+    // Already present as is_active() inherited from Job
+    
+    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
+    // public final fun resumeWith(result: Result<T>): Unit
+    // Already present as resume_with() inherited from Continuation
+    
+    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
+    // protected final fun onCompletionInternal(state: Any?): Unit
+    // This is called when coroutine completes and passes the state to on_completed or on_cancelled.
+    // Should be: protected void on_completion_internal(void* state);
+    // Currently we have after_completion which is similar but not exact match.
+    
+    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
+    // public final fun start(start: CoroutineStart, receiver: R, block: suspend R.() -> T)
+    // Starts this coroutine with the given code block and start strategy.
+    // Already present as template<typename R> void start(CoroutineStart, R, std::function<T(R)>)
+    // BUT: Signature doesn't match exactly - Kotlin has suspend lambda, we have function
+    
     std::string name_string() {
         return "AbstractCoroutine";
     }

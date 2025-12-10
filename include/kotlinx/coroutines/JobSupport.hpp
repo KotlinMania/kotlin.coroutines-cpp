@@ -344,6 +344,88 @@ protected:
         });
         if (exception) handle_on_completion_exception(exception);
     }
+
+    // TODO: MISSING API - kotlinx.coroutines.JobSupport
+    // Many methods from Kotlin's JobSupport are missing or need review:
+    //
+    // public final fun attachChild(child: ChildJob): ChildHandle
+    //   - Present as attach_child()
+    //
+    // protected final fun awaitInternal(continuation: Continuation<T>): Any?
+    //   - Missing: Suspend function to wait for completion
+    //   - Translation: protected Awaitable<T> await_internal();
+    //
+    // public fun cancel(cause: CancellationException = null)
+    //   - Present as cancel(exception_ptr)
+    //
+    // public final fun cancelCoroutine(cause: Throwable): Boolean
+    //   - Missing: Cancel with a specific cause, returns true if cancelled
+    //   - Translation: bool cancel_coroutine(std::exception_ptr cause);
+    //
+    // public fun cancelInternal(cause: Throwable)
+    //   - Missing: Internal cancellation without children notification
+    //   - Translation: void cancel_internal(std::exception_ptr cause);
+    //
+    // public fun getChildJobCancellationCause(): CancellationException
+    //   - Missing: Get the exception to use for child cancellation
+    //   - Translation: std::exception_ptr get_child_job_cancellation_cause();
+    //
+    // protected final fun getCompletionCause(): Throwable?
+    //   - Missing: Get the exception that completed this job
+    //   - Translation: protected std::exception_ptr get_completion_cause();
+    //
+    // protected final fun getCompletionCauseHandled(): Boolean
+    //   - Missing: Check if completion cause was handled
+    //   - Translation: protected bool get_completion_cause_handled();
+    //
+    // public final fun getCompletionExceptionOrNull(): Throwable?
+    //   - Missing: Get completion exception if failed, null otherwise
+    //   - Translation: std::exception_ptr get_completion_exception_or_null();
+    //
+    // protected final fun getOnAwaitInternal(): SelectClause1<T>
+    //   - Missing: Select clause for awaiting with a value
+    //   - Translation: protected SelectClause1<T> get_on_await_internal();
+    //
+    // public final fun getOnJoin(): SelectClause0
+    //   - Present in Job interface but implementation missing here
+    //
+    // protected fun handleJobException(exception: Throwable): Boolean
+    //   - Present as handle_job_exception()
+    //
+    // protected final fun initParentJob(parent: Job?)
+    //   - Missing: Initialize parent-child relationship
+    //   - Translation: protected void init_parent_job(std::shared_ptr<Job> parent);
+    //
+    // public fun isActive(): Boolean
+    //   - Present as is_active()
+    //
+    // public final fun isCancelled(): Boolean
+    //   - Present as is_cancelled()
+    //
+    // public final fun isCompleted(): Boolean  
+    //   - Present as is_completed()
+    //
+    // public final fun join(continuation: Continuation<Unit>): Any?
+    //   - Present as join() but not as suspend function
+    //
+    // protected fun onCancelling(cause: Throwable?)
+    //   - Present as on_cancelling()
+    //
+    // public fun parentCancelled(parentJob: ParentJob)
+    //   - Present as parent_cancelled()
+    //
+    // public fun plus(other: Job): Job
+    //   - Missing: Combine two jobs
+    //   - Translation: std::shared_ptr<Job> plus(std::shared_ptr<Job> other);
+    //
+    // public final fun start(): Boolean
+    //   - Present as start()
+    //
+    // public final fun toCancellationException(cause: Throwable?, message: String?): CancellationException
+    //   - Missing: Convert throwable to CancellationException
+    //   - Translation: std::exception_ptr to_cancellation_exception(
+    //                     std::exception_ptr cause = nullptr, 
+    //                     std::string message = "");
 };
 
 } // namespace coroutines

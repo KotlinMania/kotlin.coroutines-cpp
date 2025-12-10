@@ -61,6 +61,15 @@ public:
         long long time_millis,
         std::shared_ptr<Runnable> block,
         const CoroutineContext& context) = 0;
+
+    // TODO: MISSING API - kotlinx.coroutines.Delay
+    // public abstract suspend fun delay(timeMillis: Long): Unit
+    // Delays coroutine for a given time without blocking a thread and resumes it after a specified time.
+    // This is a suspending function. If the Job of the current coroutine is cancelled while this
+    // suspending function is waiting, this function immediately resumes with CancellationException.
+    // Translation: This should be a co-routine suspending function that integrates with our
+    // suspend mechanism. Current delay() implementations are blocking.
+    // Signature (when suspend macros ready): Awaitable<void> delay(long long time_millis);
 };
 
 /**
