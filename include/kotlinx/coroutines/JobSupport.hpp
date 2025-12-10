@@ -228,6 +228,8 @@ public:
     
     virtual ~JobSupport() = default;
 
+    virtual bool handle_job_exception(std::exception_ptr exception) { return false; }
+
     // Job overrides
     std::shared_ptr<Job> get_parent() const override { return parent_; }
     std::shared_ptr<Element> get(Key* k) const override {

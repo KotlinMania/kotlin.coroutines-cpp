@@ -13,7 +13,7 @@ struct Job;
 struct JobSupport;
 struct ChildJob;
 struct ParentJob;
-class AbstractCoroutine;
+template <typename T> class AbstractCoroutine;
 
 namespace internal {
     class LockFreeLinkedListNode;

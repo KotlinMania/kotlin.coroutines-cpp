@@ -22,24 +22,40 @@ namespace coroutines {
 template <typename T>
 class AbstractCoroutine : public JobSupport, public Continuation<T>, public CoroutineScope {
 public:
-    AbstractCoroutine(CoroutineContext parent_context, bool init_parent_job = true, bool active = true)
+    using JobSupport::start;
+    AbstractCoroutine(std::shared_ptr<CoroutineContext> parent_context, bool init_parent_job = true, bool active = true)
         : JobSupport(active),
           parent_context(parent_context),
-          context(parent_context) { 
+          context(parent_context) { // Initial assignment, will be overwritten or used correctly
+        
+        // context = parent_context + this
+        // "this" is Job, Job implements Element.
+        // We cannot use shared_from_this() in constructor.
+        // So we delay context creation? no, Kotlin does it in constructor "val context = parentContext + this"
+        // In C++, we can't get shared_from_this in constructor.
+        // Logic: if we need fully constructed context in constructor, we have a problem.
+        // Usually context is used later.
+        // We can just store parent_context and construct CombinedContext on demand or in start()?
+        
         if (init_parent_job) {
-             init_parent_job_internal(parent_context.get(Job::Key));
+             init_parent_job_internal(parent_context->get(Job::typeKey));
         }
     }
 
     virtual ~AbstractCoroutine() = default;
 
-    CoroutineContext parent_context;
-    CoroutineContext context; 
+    std::shared_ptr<CoroutineContext> parent_context;
+    std::shared_ptr<CoroutineContext> context; 
 
     std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
-        // Return parent_context + this
+        // Return fully constructed context (parent + this)
+        // This is safe to call after construction
         auto self = std::const_pointer_cast<AbstractCoroutine<T>>(std::static_pointer_cast<const AbstractCoroutine<T>>(shared_from_this()));
-        return std::make_shared<CombinedContext>(parent_context, self);
+        
+        // Cast self to Element
+        auto self_element = std::static_pointer_cast<CoroutineContext::Element>(self);
+
+        return std::make_shared<CombinedContext>(parent_context, self_element);
     }
     
     // Continuation impl
@@ -59,7 +75,6 @@ public:
         return "AbstractCoroutine was cancelled";
     }
     
-    // Kotlin: resumeWith(result)
     void resume_with(Result<T> result) override {
         void* state;
         if (result.is_success()) {
@@ -106,11 +121,18 @@ public:
     }
 
     // Helper for parent init
-    void init_parent_job_internal(std::shared_ptr<Job> parent) {
-        if (parent) {
-            parent->start(); // ensure started
-            auto handle = parent->attach_child(std::static_pointer_cast<Job>(shared_from_this()));
-            // store handle
+    void init_parent_job_internal(std::shared_ptr<CoroutineContext::Element> parent_element) {
+        // We need to cast Element to Job
+        if (parent_element) {
+             // In C++ we can't easily dynamic_cast from Element to Job if they are related via multiple inheritance nicely
+             // But Job inherits Element.
+             // We need to check if Element Key is Job::Key?
+             // Actually parentContext.get(Job::Key) returns Element which IS a Job.
+             auto parent_job = std::dynamic_pointer_cast<Job>(parent_element);
+             if (parent_job) {
+                parent_job->start();
+                auto handle = parent_job->attach_child(std::static_pointer_cast<ChildJob>(shared_from_this()));
+             }
         }
     }
 };
