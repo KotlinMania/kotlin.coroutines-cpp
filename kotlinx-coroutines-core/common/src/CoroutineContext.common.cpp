@@ -5,6 +5,7 @@
 // TODO: @InternalCoroutinesApi, @PublishedApi - no C++ equivalents
 
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
 #include <string>
 #include <functional>
 

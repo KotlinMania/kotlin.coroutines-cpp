@@ -55,14 +55,6 @@ public:
             // handle_fatal_exception(std::current_exception(), nullptr);
         }
     }
-        
-        Result<T> result = take_state();
-        try {
-            delegate_ptr->resume_with(result);
-        } catch (...) {
-            // handle_fatal_exception(std::current_exception(), nullptr);
-        }
-    }
 };
 
 template<typename T>

@@ -15,10 +15,10 @@ set(CORE_SOURCES
     common/src/CancellableContinuation.cpp
     common/src/CancellableContinuationImpl.cpp
     common/src/CloseableCoroutineDispatcher.cpp
-    common/src/CompletableDeferred.cpp
 
-    common/src/CompletionHandler.common.cpp
-    common/src/CompletionState.cpp
+
+
+
     common/src/CoroutineContext.common.cpp
     common/src/CoroutineDispatcher.cpp
     common/src/CoroutineExceptionHandler.cpp
