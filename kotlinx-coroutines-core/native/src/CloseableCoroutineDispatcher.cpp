@@ -1,23 +1,21 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/native/src/CloseableCoroutineDispatcher.kt
-//
-// TODO: actual/expect keyword not directly translatable
-// TODO: AutoCloseable struct needs C++ equivalent (RAII or explicit close())
+/**
+ * @file CloseableCoroutineDispatcher.cpp
+ * @brief Native implementation of CloseableCoroutineDispatcher
+ *
+ * Transliterated from: kotlinx-coroutines-core/native/src/CloseableCoroutineDispatcher.kt
+ *
+ * This is the platform-specific (native) implementation of CloseableCoroutineDispatcher.
+ *
+ * Note: The class definition is in include/kotlinx/coroutines/CloseableCoroutineDispatcher.hpp
+ */
+
+#include "kotlinx/coroutines/CloseableCoroutineDispatcher.hpp"
 
 namespace kotlinx {
 namespace coroutines {
 
-// TODO: actual keyword - platform-specific implementation marker
-class CloseableCoroutineDispatcher : CoroutineDispatcher {
-public:
-    CloseableCoroutineDispatcher() = default;
-
-    // TODO: AutoCloseable equivalent - consider RAII or explicit close()
-    virtual void close() = 0;
-
-    virtual ~CloseableCoroutineDispatcher() = default;
-};
+// Platform-specific implementation details can go here
+// The class is defined in the header file as it's a template/virtual class
 
 } // namespace coroutines
 } // namespace kotlinx

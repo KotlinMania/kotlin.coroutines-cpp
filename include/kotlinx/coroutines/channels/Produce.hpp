@@ -74,7 +74,10 @@ std::shared_ptr<ReceiveChannel<E>> produce(
     // Scope + context
     // newCoroutineContext implementation?
     // Using simple merge for sketch
-    auto newContext = std::make_shared<CombinedContext>(scope->get_coroutine_context().get_shared(), context);
+    // TODO: Proper context combination
+    // scope->get_coroutine_context() returns shared_ptr<CoroutineContext>
+    auto scopeContext = scope->get_coroutine_context();
+    auto newContext = std::make_shared<CombinedContext>(scopeContext, context);
 
     // 3. Create Coroutine
     auto coroutine = std::make_shared<ProducerCoroutine<E>>(newContext, channel);

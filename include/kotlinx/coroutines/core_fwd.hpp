@@ -6,9 +6,9 @@ namespace kotlinx {
 namespace coroutines {
 
 // Forward Declarations
-struct CoroutineContext;
-struct CoroutineDispatcher;
-struct CoroutineScope;
+class CoroutineContext;
+class CoroutineDispatcher;
+class CoroutineScope;
 struct Job;
 struct JobSupport;
 struct ChildJob;

@@ -3,6 +3,7 @@
 #include <functional>
 #include <exception>
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include "kotlinx/coroutines/Unit.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/AbstractCoroutine.hpp"
 #include "kotlinx/coroutines/channels/BroadcastChannel.hpp"
@@ -21,7 +22,7 @@ public:
         std::shared_ptr<CoroutineContext> context, 
         BroadcastChannel<E>* channel, 
         bool active
-    ) : AbstractCoroutine<Unit>(*context, active), _channel(channel) {}
+    ) : AbstractCoroutine<Unit>(context, true, active), _channel(channel) {}
 
     virtual ~BroadcastCoroutine() = default;
 

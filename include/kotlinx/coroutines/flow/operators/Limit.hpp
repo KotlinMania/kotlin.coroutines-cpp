@@ -1,4 +1,11 @@
 #pragma once
+/**
+ * @file Limit.hpp
+ * @brief Flow operators that limit emissions: drop, dropWhile, take, takeWhile, transformWhile
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt
+ */
+
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
 #include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
@@ -10,16 +17,22 @@ namespace kotlinx {
 namespace coroutines {
 namespace flow {
 
+// Alias for the flow builder to avoid shadowing issues with parameters named 'upstream'
+template<typename T>
+inline std::shared_ptr<Flow<T>> make_flow(std::function<void(FlowCollector<T>*)> block) {
+    return flow<T>(block);
+}
+
 /**
  * Returns a flow that ignores first [count] elements.
  */
 template<typename T>
-std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> flow, int count) {
+std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
     if (count < 0) throw std::invalid_argument("Drop count should be non-negative");
-    
-    return flow<T>([flow, count](FlowCollector<T>* collector) {
+
+    return make_flow<T>([upstream, count](FlowCollector<T>* collector) {
         int skipped = 0;
-        flow->collect([&](T value) {
+        upstream->collect([&](T value) {
             if (skipped >= count) {
                 collector->emit(value);
             } else {
@@ -33,10 +46,10 @@ std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> flow, int count) {
  * Returns a flow containing all elements except first elements that satisfy the given predicate.
  */
 template<typename T, typename Predicate>
-std::shared_ptr<Flow<T>> dropWhile(std::shared_ptr<Flow<T>> flow, Predicate predicate) {
-    return flow<T>([flow, predicate](FlowCollector<T>* collector) {
+std::shared_ptr<Flow<T>> drop_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
+    return make_flow<T>([upstream, predicate](FlowCollector<T>* collector) {
         bool matched = false;
-        flow->collect([&](T value) {
+        upstream->collect([&](T value) {
             if (matched) {
                 collector->emit(value);
             } else if (!predicate(value)) {
@@ -51,15 +64,15 @@ std::shared_ptr<Flow<T>> dropWhile(std::shared_ptr<Flow<T>> flow, Predicate pred
  * Returns a flow that contains first [count] elements.
  */
 template<typename T>
-std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> flow, int count) {
+std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
     if (count <= 0) throw std::invalid_argument("Requested element count should be positive");
-    
-    return flow<T>([flow, count](FlowCollector<T>* collector) {
+
+    return make_flow<T>([upstream, count](FlowCollector<T>* collector) {
         int consumed = 0;
         // We use AbortFlowException logic if we need to stop upstream
         // But since we control upstream somewhat via lambda, we can't easily "stop" without exception.
         // Assuming AbortFlowException is defined and functional.
-        
+
         class TakeCollector : public FlowCollector<T> {
             FlowCollector<T>* down;
             int limit;
@@ -76,10 +89,10 @@ std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> flow, int count) {
                 }
             }
         };
-        
+
         try {
             TakeCollector tc(collector, count, consumed);
-            flow->collect(&tc);
+            upstream->collect(&tc);
         } catch (internal::AbortFlowException& e) {
             // e.checkOwnership(owner); implementation detail usage
             // simplified:
@@ -91,7 +104,7 @@ std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> flow, int count) {
  * Helper for collectWhile logic
  */
 template<typename T, typename Predicate>
-void collectWhile(std::shared_ptr<Flow<T>> flow, Predicate predicate) {
+void collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
      struct PredicateCollector : public FlowCollector<T> {
         Predicate pred;
         PredicateCollector(Predicate p) : pred(p) {}
@@ -101,10 +114,10 @@ void collectWhile(std::shared_ptr<Flow<T>> flow, Predicate predicate) {
             }
         }
     };
-    
+
     try {
         PredicateCollector collector(predicate);
-        flow->collect(&collector);
+        upstream->collect(&collector);
     } catch (internal::AbortFlowException& e) {
         // e.checkOwnership(&collector);
     }
@@ -114,9 +127,9 @@ void collectWhile(std::shared_ptr<Flow<T>> flow, Predicate predicate) {
  * Returns a flow that contains first elements satisfying the given [predicate].
  */
 template<typename T, typename Predicate>
-std::shared_ptr<Flow<T>> takeWhile(std::shared_ptr<Flow<T>> flow, Predicate predicate) {
-    return flow<T>([flow, predicate](FlowCollector<T>* collector) {
-        collectWhile(flow, [&](T value) -> bool {
+std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
+    return make_flow<T>([upstream, predicate](FlowCollector<T>* collector) {
+        collect_while(upstream, [&](T value) -> bool {
             if (predicate(value)) {
                 collector->emit(value);
                 return true;
@@ -131,10 +144,10 @@ std::shared_ptr<Flow<T>> takeWhile(std::shared_ptr<Flow<T>> flow, Predicate pred
  * Applies [transform] function to each value of the given flow while this function returns `true`.
  */
 template<typename T, typename R, typename Transform>
-std::shared_ptr<Flow<R>> transformWhile(std::shared_ptr<Flow<T>> flow, Transform transform) {
-    return flow<R>([flow, transform](FlowCollector<R>* collector) {
-        collectWhile(flow, [&](T value) -> bool {
-             return transform(collector, value);
+std::shared_ptr<Flow<R>> transform_while(std::shared_ptr<Flow<T>> upstream, Transform transform_fn) {
+    return make_flow<R>([upstream, transform_fn](FlowCollector<R>* collector) {
+        collect_while(upstream, [&](T value) -> bool {
+             return transform_fn(collector, value);
         });
     });
 }

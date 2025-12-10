@@ -1,5 +1,7 @@
 #pragma once
 #include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/context_impl.hpp"
+#include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include <functional>
 #include <memory>
@@ -60,13 +62,23 @@ std::shared_ptr<Flow<T>> flow_of(std::initializer_list<T> elements) {
 /**
  * flowScope builder
  */
+// Simple concrete CoroutineScope for flow builders
+class FlowCoroutineScope : public CoroutineScope {
+    std::shared_ptr<CoroutineContext> context_;
+public:
+    explicit FlowCoroutineScope(std::shared_ptr<CoroutineContext> ctx) : context_(ctx) {}
+    std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return context_; }
+};
+
 template <typename R>
 R flow_scope(std::function<R(CoroutineScope&)> block) {
-    // Implementation stub: just execute block 
+    // Implementation stub: just execute block
     // flowScope in Kotlin creates a scope that cancels when flow collector fails.
     // For now, direct execution.
-    // TODO: Scope isolation
-    CoroutineScope scope(std::make_shared<CombinedContext>(CoroutineContext(), std::make_shared<JobSupport>())); 
+    // TODO: Proper scope isolation with job cancellation
+    auto job = std::make_shared<JobSupport>(true);
+    auto ctx = std::make_shared<CombinedContext>(std::make_shared<CoroutineContext>(), job);
+    FlowCoroutineScope scope(ctx);
     return block(scope);
 }
 

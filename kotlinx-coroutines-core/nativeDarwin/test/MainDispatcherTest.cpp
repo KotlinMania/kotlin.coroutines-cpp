@@ -1,25 +1,27 @@
-package kotlinx.coroutines
+/**
+ * @file MainDispatcherTest.cpp
+ * @brief Darwin main dispatcher test implementation
+ *
+ * Transliterated from: kotlinx-coroutines-core/nativeDarwin/test/MainDispatcherTest.kt
+ *
+ * Tests for Darwin-specific main dispatcher behavior.
+ *
+ * TODO:
+ * - Implement MainDispatcherTest class extending MainDispatcherTestBase
+ * - Implement isMainThread check using CFRunLoopGetCurrent() == CFRunLoopGetMain()
+ * - Implement shouldSkipTesting for main thread case
+ * - Implement scheduleOnMainQueue using dispatch_async
+ */
 
-import kotlinx.coroutines.testing.*
-import kotlinx.cinterop.*
-import kotlinx.coroutines.testing.*
-import platform.CoreFoundation.*
-import platform.darwin.*
-import kotlin.coroutines.*
-import kotlin.test.*
+#include "kotlinx/coroutines/core_fwd.hpp"
 
-class MainDispatcherTest : MainDispatcherTestBase.WithRealTimeDelay() {
+namespace kotlinx {
+namespace coroutines {
+namespace test {
 
-    override fun isMainThread(): Boolean = CFRunLoopGetCurrent() == CFRunLoopGetMain()
+// TODO: Implement Darwin main dispatcher tests
+// This requires CoreFoundation and GCD integration
 
-    // skip if already on the main thread, run blocking doesn't really work well with that
-    override fun shouldSkipTesting(): Boolean = isMainThread()
-
-    override fun scheduleOnMainQueue(block: () -> Unit) {
-        autoreleasepool {
-            dispatch_async(dispatch_get_main_queue()) {
-                block()
-            }
-        }
-    }
-}
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

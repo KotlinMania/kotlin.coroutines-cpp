@@ -1,59 +1,59 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/SystemProps.common.kt
-//
-// TODO: This is a mechanical transliteration - semantics not fully implemented
-// TODO: @JvmName, @JvmMultifileClass annotations - JVM-specific
-// TODO: expect function needs platform-specific implementation
-// TODO: std::string* (nullable) needs std::optional<std::string> or char*
+/**
+ * @file SystemProps.common.cpp
+ * @brief System property access utilities
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/SystemProps.common.kt
+ *
+ * Note: System properties are primarily used in JVM tests.
+ * Other platforms typically use default values.
+ */
 
+#include "kotlinx/coroutines/core_fwd.hpp"
 #include <string>
 #include <optional>
 #include <stdexcept>
 #include <climits>
+#include <cstdlib>
 
 namespace kotlinx {
 namespace coroutines {
-namespace {
+namespace internal {
 
 /**
- * Gets the system property indicated by the specified [property name][propertyName],
- * or returns [defaultValue] if there is no property with that key.
+ * Gets the system property indicated by the specified property name,
+ * or returns nullopt if there is no property with that key.
  *
  * **Note: this function should be used in JVM tests only, other platforms use the default value.**
  */
-inline bool system_prop(const std::string& property_name, bool default_value) {
+std::optional<std::string> system_prop(const std::string& property_name) {
+    // On non-JVM platforms, return nullopt to use defaults
+    // Could check environment variables as a fallback
+    const char* env_value = std::getenv(property_name.c_str());
+    if (env_value != nullptr) {
+        return std::string(env_value);
+    }
+    return std::nullopt;
+}
+
+/**
+ * Gets the system property indicated by the specified property name,
+ * or returns defaultValue if there is no property with that key.
+ */
+bool system_prop_bool(const std::string& property_name, bool default_value) {
     std::optional<std::string> value = system_prop(property_name);
     if (!value.has_value()) return default_value;
-    // TODO: to_boolean() conversion
+
+    const std::string& str = value.value();
+    if (str == "true" || str == "1" || str == "yes") return true;
+    if (str == "false" || str == "0" || str == "no") return false;
     return default_value;
 }
 
 /**
- * Gets the system property indicated by the specified [property name][propertyName],
- * or returns [defaultValue] if there is no property with that key. It also checks that the result
- * is between [minValue] and [maxValue] (inclusively), throws [IllegalStateException] if it is not.
- *
- * **Note: this function should be used in JVM tests only, other platforms use the default value.**
+ * Gets the system property indicated by the specified property name,
+ * or returns defaultValue if there is no property with that key.
  */
-inline int system_prop(
-    const std::string& property_name,
-    int default_value,
-    int min_value = 1,
-    int max_value = INT_MAX
-) {
-    return static_cast<int>(system_prop(property_name, static_cast<long>(default_value),
-                                       static_cast<long>(min_value), static_cast<long>(max_value)));
-}
-
-/**
- * Gets the system property indicated by the specified [property name][propertyName],
- * or returns [defaultValue] if there is no property with that key. It also checks that the result
- * is between [minValue] and [maxValue] (inclusively), throws [IllegalStateException] if it is not.
- *
- * **Note: this function should be used in JVM tests only, other platforms use the default value.**
- */
-inline long system_prop(
+long system_prop_long(
     const std::string& property_name,
     long default_value,
     long min_value = 1,
@@ -62,8 +62,7 @@ inline long system_prop(
     std::optional<std::string> value = system_prop(property_name);
     if (!value.has_value()) return default_value;
 
-    // TODO: to_long_or_null() conversion
-    long parsed = default_value; // placeholder
+    long parsed = default_value;
     try {
         parsed = std::stol(value.value());
     } catch (...) {
@@ -79,24 +78,27 @@ inline long system_prop(
 }
 
 /**
- * Gets the system property indicated by the specified [property name][propertyName],
- * or returns [defaultValue] if there is no property with that key.
- *
- * **Note: this function should be used in JVM tests only, other platforms use the default value.**
+ * Gets the system property indicated by the specified property name,
+ * or returns defaultValue if there is no property with that key.
  */
-inline std::string system_prop(const std::string& property_name, const std::string& default_value) {
-    std::optional<std::string> value = system_prop(property_name);
-    return value.value_or(default_value);
+int system_prop_int(
+    const std::string& property_name,
+    int default_value,
+    int min_value = 1,
+    int max_value = INT_MAX
+) {
+    return static_cast<int>(system_prop_long(property_name, static_cast<long>(default_value),
+                                             static_cast<long>(min_value), static_cast<long>(max_value)));
 }
 
 /**
- * Gets the system property indicated by the specified [property name][propertyName],
- * or returns `nullptr` if there is no property with that key.
- *
- * **Note: this function should be used in JVM tests only, other platforms use the default value.**
+ * Gets the system property indicated by the specified property name,
+ * or returns defaultValue if there is no property with that key.
  */
-// TODO: expect function - needs platform-specific implementation
-std::optional<std::string> system_prop(const std::string& property_name);
+std::string system_prop_string(const std::string& property_name, const std::string& default_value) {
+    std::optional<std::string> value = system_prop(property_name);
+    return value.value_or(default_value);
+}
 
 } // namespace internal
 } // namespace coroutines

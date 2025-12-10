@@ -13,9 +13,11 @@ namespace coroutines {
 namespace flow {
 namespace internal {
 
-// Forward declarations
+// Forward declarations and using statements
 using kotlinx::coroutines::channels::Channel;
 using kotlinx::coroutines::channels::BufferOverflow;
+using kotlinx::coroutines::channels::ProducerScope;
+using kotlinx::coroutines::channels::ReceiveChannel;
 
 /**
  * Operators that can fuse with **downstream** [buffer] and [flowOn] operators implement this interface.
@@ -121,7 +123,7 @@ public:
     ChannelFlowOperatorImpl(Flow<T>* flow,
                             const CoroutineContext& context = CoroutineContext{},
                             int capacity = Channel<int>::OPTIONAL_CHANNEL,
-                            BufferOverflow on_overflow = BufferOverflow::kSuspend)
+                            BufferOverflow on_overflow = BufferOverflow::SUSPEND)
         : ChannelFlowOperator<T, T>(flow, context, capacity, on_overflow), flow_(flow) {}
 
 protected:

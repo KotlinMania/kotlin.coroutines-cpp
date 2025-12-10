@@ -1,4 +1,7 @@
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include <unordered_set>
+#include <atomic>
+#include <mutex>
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/Concurrent.common.kt
 //

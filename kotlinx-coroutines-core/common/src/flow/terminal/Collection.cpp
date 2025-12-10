@@ -1,16 +1,14 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++ (first-pass, syntax-only)
-// Original: kotlinx-coroutines-core/common/src/flow/terminal/Collection.kt
-//
-// TODO: Implement coroutine semantics (suspend functions)
-// TODO: Map Kotlin Flow types to C++ equivalents
-// TODO: Map Kotlin collections to C++ equivalents (List, Set, MutableCollection)
+/**
+ * @file Collection.cpp
+ * @brief Terminal flow operators for collecting to containers: toList, toSet, toCollection
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collection.kt
+ *
+ * Note: Template functions are in the header file. This file is for documentation
+ * and any non-template implementations.
+ */
 
-#pragma once
-
-// @file:JvmMultifileClass
-// @file:JvmName("FlowKt")
-
+#include "kotlinx/coroutines/flow/Flow.hpp"
 #include <vector>
 #include <unordered_set>
 
@@ -18,46 +16,10 @@ namespace kotlinx {
 namespace coroutines {
 namespace flow {
 
-// TODO: import kotlin.jvm.*
+// Template functions (toList, toSet, toCollection) are defined in headers
+// since they are templates and need to be visible at the point of use.
 
-/**
- * Collects given flow into a [destination]
- */
-template<typename T>
-std::vector<T> to_list(Flow<T> flow) {
-    std::vector<T> destination;
-    return to_collection(flow, destination);
-}
-
-template<typename T>
-std::vector<T> to_list(Flow<T> flow, std::vector<T> destination) {
-    return to_collection(flow, destination);
-}
-
-/**
- * Collects given flow into a [destination]
- */
-template<typename T>
-std::unordered_set<T> to_set(Flow<T> flow) {
-    std::unordered_set<T> destination; // LinkedHashSet equivalent
-    return to_collection(flow, destination);
-}
-
-template<typename T>
-std::unordered_set<T> to_set(Flow<T> flow, std::unordered_set<T> destination) {
-    return to_collection(flow, destination);
-}
-
-/**
- * Collects given flow into a [destination]
- */
-template<typename T, typename C>
-C to_collection(Flow<T> flow, C& destination) {
-    flow.collect([&](T value) {
-        destination.insert(destination.end(), value); // or destination.add(value)
-    });
-    return destination;
-}
+// See include/kotlinx/coroutines/flow/terminal/Collection.hpp for declarations.
 
 } // namespace flow
 } // namespace coroutines

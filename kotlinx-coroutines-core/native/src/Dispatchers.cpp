@@ -5,7 +5,7 @@
 
 #include "kotlinx/coroutines/Dispatchers.hpp"
 #include "kotlinx/coroutines/MainCoroutineDispatcher.hpp"
-#include "kotlinx/coroutines/internal/ThreadPoolDispatcher.hpp"
+#include "kotlinx/coroutines/MultithreadedDispatchers.hpp"
 #include <thread>
 #include <algorithm>
 #include <iostream>
@@ -13,16 +13,15 @@
 namespace kotlinx {
 namespace coroutines {
 
-using namespace kotlinx::coroutines::internal;
-
 // Internal helpers
 static CoroutineDispatcher& create_default_dispatcher_impl() {
-    static ThreadPoolDispatcher instance(std::max(2u, std::thread::hardware_concurrency()), "Dispatchers.Default");
+    static ExecutorCoroutineDispatcherImpl instance(
+        std::max(2u, std::thread::hardware_concurrency()), "Dispatchers.Default");
     return instance;
 }
 
 static CoroutineDispatcher& create_io_dispatcher_impl() {
-    static ThreadPoolDispatcher instance(64, "Dispatchers.IO");
+    static ExecutorCoroutineDispatcherImpl instance(64, "Dispatchers.IO");
     return instance;
 }
 

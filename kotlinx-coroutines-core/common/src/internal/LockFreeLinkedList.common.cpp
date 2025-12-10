@@ -82,3 +82,7 @@ bool LockFreeLinkedListHead::is_empty() const {
 }
 
 bool LockFreeLinkedListHead::remove() { return false; }
+
+} // namespace internal
+} // namespace coroutines
+} // namespace kotlinx

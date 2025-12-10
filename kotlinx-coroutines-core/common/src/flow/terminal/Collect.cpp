@@ -1,158 +1,46 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++ (first-pass, syntax-only)
-// Original: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt
-//
-// TODO: Implement coroutine semantics (suspend functions, launch, CoroutineScope)
-// TODO: Map Kotlin Flow types to C++ equivalents
-// TODO: Implement Job type
-// TODO: Implement mapLatest operator
-// TODO: Handle inline functions and crossinline
+/**
+ * @file Collect.cpp
+ * @brief Terminal flow operators: collect, launchIn, collectIndexed, collectLatest, emitAll
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt
+ *
+ * TODO:
+ * - Implement proper launchIn with Job return
+ * - Implement collectLatest with cancellation
+ */
 
-#pragma once
-
-// @file:JvmMultifileClass
-// @file:JvmName("FlowKt")
+#include "kotlinx/coroutines/flow/Flow.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/Job.hpp"
+#include <functional>
+#include <stdexcept>
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
 
-// TODO: import kotlinx.coroutines.*
-// TODO: import kotlinx.coroutines.flow.internal.*
-// TODO: import kotlin.jvm.*
-
 /**
- * Terminal flow operator that collects the given flow but ignores all emitted values.
- * If any exception occurs during collect or in the provided flow, this exception is rethrown from this method.
- *
- * It is a shorthand for `collect {}`.
- *
- * This operator is usually used with [onEach], [onCompletion] and [catch] operators to process all emitted values and
- * handle an exception that might occur in the upstream flow or during processing, for example:
- *
- * ```
- * flow
- *     .onEach { value -> process(value) }
- *     .catch { e -> handleException(e) }
- *     .collect() // trigger collection of the flow
- * ```
+ * A collector that ignores all values (for collect() with no action).
  */
 template<typename T>
-void collect(Flow<T> flow) {
-    flow.collect(NopCollector{});
-}
+struct NopCollector : FlowCollector<T> {
+    void emit(T) override {
+        // Do nothing
+    }
+};
 
 /**
- * Terminal flow operator that [launches][launch] the [collection][collect] of the given flow in the [scope].
- * It is a shorthand for `scope.launch { flow.collect() }`.
- *
- * This operator is usually used with [onEach], [onCompletion] and [catch] operators to process all emitted values
- * handle an exception that might occur in the upstream flow or during processing, for example:
- *
- * ```
- * flow
- *     .onEach { value -> updateUi(value) }
- *     .onCompletion { cause -> updateUi(if (cause == nullptr) "Done" else "Failed") }
- *     .catch { cause -> LOG.error("Exception: $cause") }
- *     .launchIn(uiScope)
- * ```
- *
- * In this example, note that the `job` returned by [launchIn] is not used, and the provided scope takes care of cancellation.
+ * Helper to check for index overflow.
  */
-template<typename T>
-Job launch_in(Flow<T> flow, CoroutineScope scope) {
-    return scope.launch([&flow]() {
-        collect(flow); // tail-call
-    });
+inline int check_index_overflow(int index) {
+    if (index < 0) {
+        throw std::overflow_error("Index overflow has happened");
+    }
+    return index;
 }
 
-/**
- * Terminal flow operator that collects the given flow with a provided [action] that takes the index of an element (zero-based) and the element.
- * If any exception occurs during collect or in the provided flow, this exception is rethrown from this method.
- *
- * See also [collect] and [withIndex].
- */
-template<typename T, typename Action>
-void collect_indexed(Flow<T> flow, Action action) {
-    struct IndexedCollector : FlowCollector<T> {
-        int index = 0;
-        Action action;
-
-        IndexedCollector(Action action_) : action(action_) {}
-
-        void emit(T value) /* override */ {
-            action(check_index_overflow(index++), value);
-        }
-    };
-
-    flow.collect(IndexedCollector{action});
-}
-
-/**
- * Terminal flow operator that collects the given flow with a provided [action].
- * The crucial difference from [collect] is that when the original flow emits a new value
- * then the [action] block for the previous value is cancelled.
- *
- * It can be demonstrated by the following example:
- *
- * ```
- * flow {
- *     emit(1)
- *     delay(50)
- *     emit(2)
- * }.collectLatest { value ->
- *     println("Collecting $value")
- *     delay(100) // Emulate work
- *     println("$value collected")
- * }
- * ```
- *
- * prints "Collecting 1, Collecting 2, 2 collected"
- */
-template<typename T, typename Action>
-void collect_latest(Flow<T> flow, Action action) {
-    /*
-     * Implementation note:
-     * buffer(0) is inserted here to fulfil user's expectations in sequential usages, e.g.:
-     * ```
-     * flowOf(1, 2, 3).collectLatest {
-     *     delay(1)
-     *     println(it) // Expect only 3 to be printed
-     * }
-     * ```
-     *
-     * It's not the case for intermediate operators which users mostly use for interactive UI,
-     * where performance of dispatch is more important.
-     */
-    collect(buffer(map_latest(flow, action), 0));
-}
-
-/**
- * Collects all the values from the given [flow] and emits them to the collector.
- * It is a shorthand for `flow.collect { value -> emit(value) }`.
- */
-template<typename T>
-void emit_all(FlowCollector<T> collector, Flow<T> flow) {
-    ensure_active(collector);
-    flow.collect(collector);
-}
-
-/** @suppress */
-// @Deprecated(level = DeprecationLevel.HIDDEN, message = "Backwards compatibility with JS and K/N")
-template<typename T, typename Action>
-void collect(Flow<T> flow, Action action) {
-    struct ActionCollector : FlowCollector<T> {
-        Action action;
-
-        ActionCollector(Action action_) : action(action_) {}
-
-        void emit(T value) /* override */ {
-            action(value);
-        }
-    };
-
-    flow.collect(ActionCollector{action});
-}
+// Note: Template functions are declared in headers.
+// The implementations here are for documentation and non-template helpers only.
 
 } // namespace flow
 } // namespace coroutines

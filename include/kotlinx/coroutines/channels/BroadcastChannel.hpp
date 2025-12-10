@@ -47,7 +47,8 @@ public:
         }
 
         if (this->is_closed_for_send() && !has_conflated_element_) {
-            s->close(this->get_close_cause());
+            // TODO: ReceiveChannel doesn't have close() - use cancel() instead
+            s->cancel(this->closeCause_);
             return s;
         }
 
@@ -98,7 +99,7 @@ public:
         std::lock_guard<std::recursive_mutex> g(lock_);
         
         if (this->is_closed_for_send()) {
-            return ChannelResult<void>::closed(this->get_close_cause());
+            return ChannelResult<void>::closed(this->closeCause_);
         }
 
         // Check if any subscriber should suspend (unsupported in simple try_send?)

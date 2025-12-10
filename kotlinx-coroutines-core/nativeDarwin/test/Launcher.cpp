@@ -1,18 +1,28 @@
-package kotlinx.coroutines
+/**
+ * @file Launcher.cpp
+ * @brief Darwin test launcher for running tests in background
+ *
+ * Transliterated from: kotlinx-coroutines-core/nativeDarwin/test/Launcher.kt
+ *
+ * Separate entry point for tests that runs in background thread
+ * while the main thread runs the CFRunLoop.
+ *
+ * TODO:
+ * - Implement mainBackground function that:
+ *   - Creates a worker thread
+ *   - Executes test launcher entry point
+ *   - Runs CFRunLoopRun on main thread
+ */
 
-import platform.CoreFoundation.*
-import kotlin.native.concurrent.*
-import kotlin.native.internal.test.*
-import kotlin.system.*
+#include "kotlinx/coroutines/core_fwd.hpp"
 
-// This is a separate entry point for tests in background
-fun mainBackground(args: Array<String>) {
-    val worker = Worker.start(name = "main-background")
-    worker.execute(TransferMode.SAFE, { args }) {
-        val result = testLauncherEntryPoint(it)
-        exitProcess(result)
-    }
-    CFRunLoopRun()
-    error("CFRunLoopRun should never return")
-}
+namespace kotlinx {
+namespace coroutines {
+namespace test {
 
+// TODO: Implement background test launcher
+// This requires Darwin Worker API and CFRunLoopRun
+
+} // namespace test
+} // namespace coroutines
+} // namespace kotlinx

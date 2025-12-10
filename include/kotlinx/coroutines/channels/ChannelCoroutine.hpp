@@ -1,5 +1,6 @@
 #pragma once
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include "kotlinx/coroutines/Unit.hpp"
 #include "kotlinx/coroutines/AbstractCoroutine.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 
@@ -18,7 +19,7 @@ public:
         std::shared_ptr<Channel<E>> channel,
         bool init_parent_job,
         bool active
-    ) : AbstractCoroutine<Unit>(*parent_context, init_parent_job, active), _channel(channel) {}
+    ) : AbstractCoroutine<Unit>(parent_context, init_parent_job, active), _channel(channel) {}
 
     virtual ~ChannelCoroutine() = default;
 

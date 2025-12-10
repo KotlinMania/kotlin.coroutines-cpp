@@ -13,11 +13,7 @@ namespace coroutines {
 namespace selects {
 
 // Template implementations are in the header.
-
-template<typename R>
-void SelectBuilder<R>::on_timeout(long time_millis, std::function<R()> block) {
-    // Stub
-}
+// Non-template helper functions can be added here.
 
 } // namespace selects
 } // namespace coroutines

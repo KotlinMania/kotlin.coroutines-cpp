@@ -1,39 +1,22 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/native/src/flow/internal/FlowExceptions.kt
-//
-// TODO: actual keyword - platform-specific implementation
-// TODO: CancellationException inheritance
+/**
+ * @file FlowExceptions.cpp
+ * @brief Native platform implementation of flow exceptions
+ *
+ * Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/FlowExceptions.kt
+ *
+ * Platform-specific (native) implementation of flow exception classes.
+ * The common implementation is in include/kotlinx/coroutines/flow/internal/FlowExceptions.hpp
+ */
+
+#include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
-namespace {
+namespace internal {
 
-// TODO: Remove imports, fully qualify or add includes:
-// import kotlinx.coroutines.*
-// import kotlinx.coroutines.flow.*
-
-// TODO: actual class
-class AbortFlowException : CancellationException {
-public:
-    void* owner;
-
-    AbortFlowException(void* owner)
-        : CancellationException("Flow was aborted, no more elements needed")
-        , owner(owner)
-    {
-    }
-};
-
-// TODO: actual class
-class ChildCancelledException : CancellationException {
-public:
-    ChildCancelledException()
-        : CancellationException("Child of the scoped flow was cancelled")
-    {
-    }
-};
+// Platform-specific implementation details can go here
+// The exception classes are defined in FlowExceptions.hpp
 
 } // namespace internal
 } // namespace flow

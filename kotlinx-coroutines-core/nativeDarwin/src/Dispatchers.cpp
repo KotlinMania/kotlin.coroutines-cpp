@@ -1,104 +1,38 @@
-@file:OptIn(BetaInteropApi::class)
+/**
+ * @file Dispatchers.cpp
+ * @brief Darwin platform-specific dispatcher implementations
+ *
+ * Transliterated from: kotlinx-coroutines-core/nativeDarwin/src/Dispatchers.kt
+ *
+ * Darwin (macOS/iOS) specific implementation of dispatchers using
+ * Grand Central Dispatch (GCD) and Core Foundation run loops.
+ *
+ * TODO:
+ * - Implement isMainThread() using CFRunLoopGetCurrent() == CFRunLoopGetMain()
+ * - Implement createMainDispatcher returning DarwinMainDispatcher
+ * - Implement createDefaultDispatcher using dispatch_get_global_queue
+ * - Implement DarwinGlobalQueueDispatcher using dispatch_async
+ * - Implement DarwinMainDispatcher with:
+ *   - immediate property
+ *   - isDispatchNeeded check for main thread
+ *   - dispatch using dispatch_get_main_queue
+ *   - scheduleResumeAfterDelay using CFRunLoopTimer
+ *   - invokeOnTimeout using CFRunLoopTimer
+ * - Implement Timer class using CFRunLoopTimer with:
+ *   - start method to schedule timer
+ *   - dispose method to cancel timer
+ * - Implement platformAutoreleasePool using autoreleasepool {}
+ */
 
-package kotlinx.coroutines
+#include "kotlinx/coroutines/core_fwd.hpp"
 
-import kotlinx.cinterop.*
-import platform.CoreFoundation.*
-import platform.darwin.*
-import kotlin.coroutines.*
-import kotlin.concurrent.*
-import kotlin.native.internal.NativePtr
+namespace kotlinx {
+namespace coroutines {
 
-internal fun isMainThread(): Boolean = CFRunLoopGetCurrent() == CFRunLoopGetMain()
+// TODO: Implement Darwin-specific dispatchers
+// This requires CoreFoundation and Grand Central Dispatch integration:
+// - #include <CoreFoundation/CoreFoundation.h>
+// - #include <dispatch/dispatch.h>
 
-internal actual fun createMainDispatcher(default: CoroutineDispatcher): MainCoroutineDispatcher = DarwinMainDispatcher(false)
-
-internal actual fun createDefaultDispatcher(): CoroutineDispatcher = DarwinGlobalQueueDispatcher
-
-private object DarwinGlobalQueueDispatcher : CoroutineDispatcher() {
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        autoreleasepool {
-            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT.convert(), 0u)) {
-                block.run()
-            }
-        }
-    }
-}
-
-private class DarwinMainDispatcher(
-    private val invokeImmediately: Boolean
-) : MainCoroutineDispatcher(), Delay {
-    
-    override val immediate: MainCoroutineDispatcher =
-        if (invokeImmediately) this else DarwinMainDispatcher(true)
-
-    override fun isDispatchNeeded(context: CoroutineContext): Boolean = !(invokeImmediately && isMainThread())
-
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        autoreleasepool {
-            dispatch_async(dispatch_get_main_queue()) {
-                block.run()
-            }
-        }
-    }
-    
-    override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        val timer = Timer()
-        val timerBlock: TimerBlock = {
-            timer.dispose()
-            continuation.resume(Unit)
-        }
-        timer.start(timeMillis, timerBlock)
-        continuation.disposeOnCancellation(timer)
-    }
-
-    override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle {
-        val timer = Timer()
-        val timerBlock: TimerBlock = {
-            timer.dispose()
-            block.run()
-        }
-        timer.start(timeMillis, timerBlock)
-        return timer
-    }
-
-    override fun toString(): String =
-        if (invokeImmediately) "Dispatchers.Main.immediate" else "Dispatchers.Main"
-}
-
-private typealias TimerBlock = (CFRunLoopTimerRef?) -> Unit
-
-private val TIMER_NEW = NativePtr.NULL
-private val TIMER_DISPOSED = NativePtr.NULL.plus(1)
-
-private class Timer : DisposableHandle {
-    private val ref = AtomicNativePtr(TIMER_NEW)
-
-    fun start(timeMillis: Long, timerBlock: TimerBlock) {
-        val fireDate = CFAbsoluteTimeGetCurrent() + timeMillis / 1000.0
-        val timer = CFRunLoopTimerCreateWithHandler(null, fireDate, 0.0, 0u, 0, timerBlock)
-        CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes)
-        if (!ref.compareAndSet(TIMER_NEW, timer.rawValue)) {
-            // dispose was already called concurrently
-            release(timer)
-        }
-    }
-
-    override fun dispose() {
-        while (true) {
-            val ptr = ref.value
-            if (ptr == TIMER_DISPOSED) return
-            if (ref.compareAndSet(ptr, TIMER_DISPOSED)) {
-                if (ptr != TIMER_NEW) release(interpretCPointer(ptr))
-                return
-            }
-        }
-    }
-
-    private fun release(timer: CFRunLoopTimerRef?) {
-        CFRunLoopRemoveTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes)
-        CFRelease(timer)
-    }
-}
-
-internal actual inline fun platformAutoreleasePool(crossinline block: () -> Unit): Unit = autoreleasepool { block() }
+} // namespace coroutines
+} // namespace kotlinx

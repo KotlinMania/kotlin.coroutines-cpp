@@ -12,10 +12,10 @@ namespace kotlinx {
 namespace coroutines {
 namespace flow {
 
-// Placeholder implementation
-std::shared_ptr<SharingStarted> SharingStarted::Eagerly() { return nullptr; }
-std::shared_ptr<SharingStarted> SharingStarted::Lazily() { return nullptr; }
-std::shared_ptr<SharingStarted> SharingStarted::WhileSubscribed(int64_t stopTimeoutMillis, int64_t replayExpirationMillis) { return nullptr; }
+// TODO: Implement actual SharingStarted strategies
+SharingStarted* SharingStarted::Eagerly() { return nullptr; }
+SharingStarted* SharingStarted::Lazily() { return nullptr; }
+SharingStarted* SharingStarted::WhileSubscribed(long long stop_timeout_millis, long long replay_expiration_millis) { return nullptr; }
 
 } // namespace flow
 } // namespace coroutines

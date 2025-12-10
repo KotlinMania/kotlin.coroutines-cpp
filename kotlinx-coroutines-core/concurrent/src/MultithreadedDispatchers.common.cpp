@@ -1,81 +1,99 @@
-#include <string>
-#include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/concurrent/src/MultithreadedDispatchers.common.kt
-//
-// TODO: Map @file:JvmMultifileClass and @file:JvmName annotations (JVM-specific, likely ignore in C++)
-// TODO: Implement CloseableCoroutineDispatcher interface
-// TODO: Handle 'expect fun' - declares platform-specific implementation
-// TODO: Implement @ExperimentalCoroutinesApi and @DelicateCoroutinesApi annotations as comments
-// TODO: Implement Job.cancel and Dispatchers.IO references
-// TODO: kotlin.jvm.* imports are JVM-specific, can be ignored
+/**
+ * @file MultithreadedDispatchers.common.cpp
+ * @brief Multi-threaded dispatcher factory functions
+ *
+ * Transliterated from: kotlinx-coroutines-core/concurrent/src/MultithreadedDispatchers.common.kt
+ *
+ * Factory functions for creating coroutine execution contexts using thread pools.
+ *
+ * NOTE: The resulting CloseableCoroutineDispatcher owns native resources (threads).
+ * Resources are reclaimed by CloseableCoroutineDispatcher::close().
+ */
 
-// @file:JvmMultifileClass
-// @file:JvmName("ThreadPoolDispatcherKt")
+#include "kotlinx/coroutines/MultithreadedDispatchers.hpp"
+#include <iostream>
+
 namespace kotlinx {
 namespace coroutines {
 
-/**
- * Creates a coroutine execution context using a single thread with built-in [yield] support.
- * **NOTE: The resulting [CloseableCoroutineDispatcher] owns native resources (its thread).
- * Resources are reclaimed by [CloseableCoroutineDispatcher.close].**
- *
- * If the resulting dispatcher is [closed][CloseableCoroutineDispatcher.close] and
- * attempt to submit a task is made, then:
- * - On the JVM, the [Job] of the affected task is [cancelled][Job.cancel] and the task is submitted to the
- *   [Dispatchers.IO], so that the affected coroutine can clean up its resources and promptly complete.
- * - On Native, the attempt to submit a task throws an exception.
- *
- * This is a **delicate** API. The result of this method is a closeable resource with the
- * associated native resources (threads or native workers). It should not be allocated in place,
- * should be closed at the end of its lifecycle, and has non-trivial memory and CPU footprint.
- * If you do not need a separate thread pool, but only have to limit effective parallelism of the dispatcher,
- * it is recommended to use [`Dispatchers.IO.limitedParallelism(1)`][CoroutineDispatcher.limitedParallelism]
- * or [`Dispatchers.Default.limitedParallelism(1)`][CoroutineDispatcher.limitedParallelism] instead.
- *
- * If you need a completely separate thread pool with scheduling policy that is based on the standard
- * JDK executors, use the following expression:
- * `Executors.newSingleThreadExecutor().asCoroutineDispatcher()`.
- * See `Executor.asCoroutineDispatcher` for details.
- *
- * @param name the base name of the created thread.
- */
-// @ExperimentalCoroutinesApi
-// @DelicateCoroutinesApi
-inline CloseableCoroutineDispatcher* new_single_thread_context(const std::string& name) {
+//
+// ExecutorCoroutineDispatcherImpl implementation
+//
+
+void ExecutorCoroutineDispatcherImpl::worker_loop() {
+    while (true) {
+        std::shared_ptr<Runnable> task;
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex_);
+            condition_.wait(lock, [this] { return closed_ || !task_queue_.empty(); });
+
+            if (closed_ && task_queue_.empty()) return;
+
+            if (!task_queue_.empty()) {
+                task = task_queue_.front();
+                task_queue_.pop_front();
+            }
+        }
+        if (task) {
+            try {
+                task->run();
+            } catch (const std::exception& e) {
+                std::cerr << "Exception in worker thread: " << e.what() << std::endl;
+            } catch (...) {
+                std::cerr << "Unknown exception in worker thread" << std::endl;
+            }
+        }
+    }
+}
+
+ExecutorCoroutineDispatcherImpl::ExecutorCoroutineDispatcherImpl(int n_threads, std::string name)
+    : name_(std::move(name)), n_threads_(n_threads), closed_(false) {
+    for (int i = 0; i < n_threads; ++i) {
+        workers_.emplace_back(&ExecutorCoroutineDispatcherImpl::worker_loop, this);
+    }
+}
+
+ExecutorCoroutineDispatcherImpl::~ExecutorCoroutineDispatcherImpl() {
+    close();
+    for (auto& t : workers_) {
+        if (t.joinable()) t.join();
+    }
+}
+
+std::string ExecutorCoroutineDispatcherImpl::to_string() const {
+    return name_;
+}
+
+void ExecutorCoroutineDispatcherImpl::dispatch(const CoroutineContext& /*context*/, std::shared_ptr<Runnable> block) const {
+    if (closed_) return;
+    {
+        auto self = const_cast<ExecutorCoroutineDispatcherImpl*>(this);
+        std::lock_guard<std::mutex> lock(self->queue_mutex_);
+        self->task_queue_.push_back(std::move(block));
+    }
+    auto self = const_cast<ExecutorCoroutineDispatcherImpl*>(this);
+    self->condition_.notify_one();
+}
+
+void ExecutorCoroutineDispatcherImpl::close() {
+    {
+        std::lock_guard<std::mutex> lock(queue_mutex_);
+        closed_ = true;
+    }
+    condition_.notify_all();
+}
+
+//
+// Factory functions
+//
+
+CloseableCoroutineDispatcher* new_single_thread_context(const std::string& name) {
     return new_fixed_thread_pool_context(1, name);
 }
 
-/**
- * Creates a coroutine execution context with the fixed-size thread-pool and built-in [yield] support.
- * **NOTE: The resulting [CoroutineDispatcher] owns native resources (its threads).
- * Resources are reclaimed by [CloseableCoroutineDispatcher.close].**
- *
- * If the resulting dispatcher is [closed][CloseableCoroutineDispatcher.close] and
- * attempt to submit a continuation task is made,
- * - On the JVM, the [Job] of the affected task is [cancelled][Job.cancel] and the task is submitted to the
- *   [Dispatchers.IO], so that the affected coroutine can clean up its resources and promptly complete.
- * - On Native, the attempt to submit a task throws an exception.
- *
- * This is a **delicate** API. The result of this method is a closeable resource with the
- * associated native resources (threads or native workers). It should not be allocated in place,
- * should be closed at the end of its lifecycle, and has non-trivial memory and CPU footprint.
- * If you do not need a separate thread pool, but only have to limit effective parallelism of the dispatcher,
- * it is recommended to use [`Dispatchers.IO.limitedParallelism(nThreads)`][CoroutineDispatcher.limitedParallelism]
- *  or [`Dispatchers.Default.limitedParallelism(nThreads)`][CoroutineDispatcher.limitedParallelism] instead.
- *
- * If you need a completely separate thread pool with scheduling policy that is based on the standard
- * JDK executors, use the following expression:
- * `Executors.newFixedThreadPool().asCoroutineDispatcher()`.
- * See `Executor.asCoroutineDispatcher` for details.
- *
- * @param nThreads the number of threads.
- * @param name the base name of the created threads.
- */
-// @ExperimentalCoroutinesApi
-// @DelicateCoroutinesApi
-// TODO: 'expect fun' means platform-specific implementation required
-CloseableCoroutineDispatcher* new_fixed_thread_pool_context(int n_threads, const std::string& name);
+CloseableCoroutineDispatcher* new_fixed_thread_pool_context(int n_threads, const std::string& name) {
+    return new ExecutorCoroutineDispatcherImpl(n_threads, name);
+}
 
 } // namespace coroutines
 } // namespace kotlinx

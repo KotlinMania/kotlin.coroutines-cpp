@@ -1,5 +1,6 @@
 #pragma once
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
+#include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -143,7 +144,7 @@ class AbstractFlow : public Flow<T> {
 public:
     void collect(FlowCollector<T>* collector) override {
         // Collect context (mocked for now as empty/default)
-        CoroutineContext safeContext; 
+        CoroutineContext safeContext;
         internal::SafeCollector<T> safeCollector(collector, safeContext);
         collect_safely(&safeCollector);
     }

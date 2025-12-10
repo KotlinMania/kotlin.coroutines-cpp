@@ -1,68 +1,24 @@
-#include <functional>
+/**
+ * @file Concurrent.cpp
+ * @brief Native platform implementation of concurrent utilities
+ *
+ * Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt
+ *
+ * Platform-specific (native) implementation of concurrency primitives.
+ * The common implementation is in kotlinx-coroutines-core/common/src/internal/Concurrent.common.cpp
+ */
+
 #include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/native/src/internal/Concurrent.kt
-//
-// TODO: actual typealias for platform types
-// TODO: actual inline function
-// TODO: kotlinx.atomicfu.locks API
-// TODO: kotlin.concurrent.Volatile annotation
-// TODO: kotlin.concurrent.AtomicReference
+#include <atomic>
+#include <unordered_set>
+#include <mutex>
 
 namespace kotlinx {
 namespace coroutines {
-namespace {
+namespace internal {
 
-// TODO: Remove imports, fully qualify or add includes:
-// import kotlinx.atomicfu.*
-// import kotlinx.cinterop.*
-// import kotlinx.atomicfu.locks.withLock as withLock2
-
-// TODO: actual typealias
-using ReentrantLock = kotlinx::atomicfu::locks::SynchronizedObject;
-
-// TODO: actual inline function
-template<typename T>
-inline T with_lock(ReentrantLock& lock, std::function<T()> action) {
-    // TODO: lock.withLock2(action)
-    return action();
-}
-
-// TODO: actual function
-template<typename E>
-std::unordered_set<E> identity_set(int expected_size) {
-    return std::unordered_set<E>();
-}
-
-// TODO: actual typealias
-// TODO: kotlin.concurrent.Volatile - use std::atomic or volatile
-using BenignDataRace = /* kotlin::concurrent::Volatile */ int; // placeholder
-
-// TODO: actual class
-template<typename V>
-class WorkaroundAtomicReference {
-private:
-    std::atomic<V> native_atomic;
-
-public:
-    WorkaroundAtomicReference(V value) : native_atomic(value) {}
-
-    V get() {
-        return native_atomic.load();
-    }
-
-    void set(V value) {
-        native_atomic.store(value);
-    }
-
-    V get_and_set(V value) {
-        return native_atomic.exchange(value);
-    }
-
-    bool compare_and_set(V expected, V value) {
-        return native_atomic.compare_exchange_strong(expected, value);
-    }
-};
+// Platform-specific implementation details can go here
+// The common concurrent utilities are defined in Concurrent.common.cpp
 
 } // namespace internal
 } // namespace coroutines

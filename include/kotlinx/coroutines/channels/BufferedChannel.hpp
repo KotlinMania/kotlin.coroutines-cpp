@@ -253,14 +253,13 @@ public:
              // We'll leave this unimplemented properly for now (sketch) or duplicate logic.
              // Duplication is safer for correctness.
              std::unique_lock<std::mutex> lock(mtx);
-             
-             // ... logic ...
-             // For sketch, just fail/wait
-             receivers_catching_.push_back(&cont); // Need separate queue or unified queue?
-             // Since ReceiveChannel interface separates E and ChannelResult<E>, 
+
+             // TODO: Implement receive_catching slow path
+             // Need separate queue for catching receivers or unified queue with type tag.
+             // Since ReceiveChannel interface separates E and ChannelResult<E>,
              // we technically need unified waiters that can handle providing E vs Result.
-             // But for now, let's just claim it's not implemented fully.
-             // Or better: implement it.
+             // For now, throw not implemented.
+             throw std::logic_error("receive_catching slow path not yet implemented");
         }));
     }
 

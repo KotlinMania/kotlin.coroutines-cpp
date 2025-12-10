@@ -1,9 +1,13 @@
 /**
  * @file MultithreadedDispatchers.cpp
- * @brief Implementation of MultithreadedDispatchers.
+ * @brief Native platform implementation of multi-threaded dispatchers
  *
- * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/MultithreadedDispatchers.hpp`.
+ * Transliterated from: kotlinx-coroutines-core/native/src/MultithreadedDispatchers.kt
+ *
+ * Platform-specific (native) implementation details for multi-threaded dispatchers.
+ * The main implementation is in kotlinx-coroutines-core/concurrent/src/MultithreadedDispatchers.common.cpp
+ *
+ * Note: The detailed API documentation is in include/kotlinx/coroutines/MultithreadedDispatchers.hpp
  */
 
 #include "kotlinx/coroutines/MultithreadedDispatchers.hpp"
@@ -11,10 +15,8 @@
 namespace kotlinx {
 namespace coroutines {
 
-CloseableCoroutineDispatcher* new_fixed_thread_pool_context(int n_threads, const std::string& name) {
-    // Stub implementation to clean file, real impl would need thread pool logic
-    return nullptr;
-}
+// Platform-specific implementation details can go here
+// The common implementation is in MultithreadedDispatchers.common.cpp
 
 } // namespace coroutines
 } // namespace kotlinx

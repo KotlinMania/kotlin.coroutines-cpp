@@ -1,20 +1,24 @@
+/**
+ * @file ThreadContext.cpp
+ * @brief Native platform implementation of thread context
+ *
+ * Transliterated from: kotlinx-coroutines-core/native/src/internal/ThreadContext.kt
+ *
+ * Platform-specific (native) implementation of thread-local context management.
+ *
+ * TODO:
+ * - Implement thread_context_elements for counting context elements
+ * - Implement thread context storage using thread_local
+ */
+
 #include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/native/src/internal/ThreadContext.kt
-//
-// TODO: actual keyword - platform-specific implementation
 
 namespace kotlinx {
 namespace coroutines {
-namespace {
+namespace internal {
 
-// TODO: Remove imports, fully qualify or add includes:
-// import kotlin.coroutines.*
-
-// TODO: actual function
-int thread_context_elements(CoroutineContext context) {
-    return 0;
-}
+// TODO: Implement thread context management
+// This requires thread-local storage and context element handling
 
 } // namespace internal
 } // namespace coroutines

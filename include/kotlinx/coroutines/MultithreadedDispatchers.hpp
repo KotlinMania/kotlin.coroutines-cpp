@@ -1,103 +1,103 @@
 #pragma once
-#include "kotlinx/coroutines/CoroutineDispatcher.hpp"
+
+/**
+ * @file MultithreadedDispatchers.hpp
+ * @brief Multi-threaded dispatcher declarations
+ *
+ * Transliterated from: kotlinx-coroutines-core/concurrent/src/MultithreadedDispatchers.common.kt
+ *
+ * Declarations for creating coroutine execution contexts using thread pools.
+ *
+ * NOTE: The resulting CloseableCoroutineDispatcher owns native resources (threads).
+ * Resources are reclaimed by CloseableCoroutineDispatcher::close().
+ */
+
+#include "kotlinx/coroutines/CloseableCoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/Runnable.hpp"
 #include <string>
 #include <vector>
 #include <thread>
-#include <queue>
+#include <deque>
 #include <mutex>
 #include <condition_variable>
-#include <iostream>
 #include <atomic>
 
 namespace kotlinx {
 namespace coroutines {
 
-class CloseableCoroutineDispatcher : public CoroutineDispatcher {
-public:
-    virtual void close() = 0;
-};
-
-// Artisan implementation of a ThreadPool
+/**
+ * Implementation of a thread pool-based coroutine dispatcher.
+ *
+ * This dispatcher maintains a fixed-size pool of worker threads that
+ * execute submitted tasks. Tasks are queued and executed in FIFO order
+ * by available workers.
+ */
 class ExecutorCoroutineDispatcherImpl : public CloseableCoroutineDispatcher {
-    std::string name_;
-    int nThreads_;
-    std::vector<std::thread> workers_;
-    std::deque<std::shared_ptr<Runnable>> taskQueue_;
-    std::mutex queueMutex_;
-    std::condition_variable condition_;
-    std::atomic<bool> closed_;
-
-    void worker_loop() {
-        while (true) {
-            std::shared_ptr<Runnable> task;
-            {
-                std::unique_lock<std::mutex> lock(queueMutex_);
-                condition_.wait(lock, [this] { return closed_ || !taskQueue_.empty(); });
-                
-                if (closed_ && taskQueue_.empty()) return;
-                
-                if (!taskQueue_.empty()) {
-                    task = taskQueue_.front();
-                    taskQueue_.pop_front();
-                }
-            }
-            if (task) {
-                try {
-                    task->run();
-                } catch (const std::exception& e) {
-                    std::cerr << "Exception in worker thread: " << e.what() << std::endl;
-                } catch (...) {
-                    std::cerr << "Unknown exception in worker thread" << std::endl;
-                }
-            }
-        }
-    }
-
 public:
-    ExecutorCoroutineDispatcherImpl(int nThreads, std::string name) 
-        : name_(name), nThreads_(nThreads), closed_(false) {
-        for (int i = 0; i < nThreads; ++i) {
-            workers_.emplace_back(&ExecutorCoroutineDispatcherImpl::worker_loop, this);
-        }
-    }
+    /**
+     * Creates a new dispatcher with the specified number of threads.
+     *
+     * @param n_threads the number of worker threads to create
+     * @param name the name of this dispatcher (used in to_string())
+     */
+    ExecutorCoroutineDispatcherImpl(int n_threads, std::string name);
 
-    ~ExecutorCoroutineDispatcherImpl() {
-        close();
-        for (auto& t : workers_) {
-            if (t.joinable()) t.join();
-        }
-    }
+    /**
+     * Destructor. Closes the dispatcher and joins all worker threads.
+     */
+    ~ExecutorCoroutineDispatcherImpl() override;
 
-    std::string to_string() const override {
-        return name_;
-    }
+    // Non-copyable, non-movable
+    ExecutorCoroutineDispatcherImpl(const ExecutorCoroutineDispatcherImpl&) = delete;
+    ExecutorCoroutineDispatcherImpl& operator=(const ExecutorCoroutineDispatcherImpl&) = delete;
 
-    void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override {
-        if (closed_) return; // Reject or thread?
-        {
-            // Mutable access needed for mutex/queue
-            auto self = const_cast<ExecutorCoroutineDispatcherImpl*>(this);
-            std::lock_guard<std::mutex> lock(self->queueMutex_);
-            self->taskQueue_.push_back(block);
-        }
-        // Notify one worker
-        auto self = const_cast<ExecutorCoroutineDispatcherImpl*>(this);
-        self->condition_.notify_one();
-    }
+    /**
+     * Returns the name of this dispatcher.
+     */
+    std::string to_string() const override;
 
-    void close() override {
-        {
-            std::lock_guard<std::mutex> lock(queueMutex_);
-            closed_ = true;
-        }
-        condition_.notify_all();
-    }
+    /**
+     * Dispatches a task for execution on one of the worker threads.
+     *
+     * @param context the coroutine context (unused)
+     * @param block the task to execute
+     */
+    void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override;
+
+    /**
+     * Closes this dispatcher, preventing new tasks from being submitted
+     * and signaling all worker threads to complete.
+     */
+    void close() override;
+
+private:
+    void worker_loop();
+
+    std::string name_;
+    int n_threads_;
+    std::vector<std::thread> workers_;
+    std::deque<std::shared_ptr<Runnable>> task_queue_;
+    mutable std::mutex queue_mutex_;
+    mutable std::condition_variable condition_;
+    std::atomic<bool> closed_;
 };
 
-inline CloseableCoroutineDispatcher* new_fixed_thread_pool_context(int n_threads, const std::string& name) {
-    return new ExecutorCoroutineDispatcherImpl(n_threads, name);
-}
+/**
+ * Creates a coroutine execution context with a single thread and built-in yield support.
+ *
+ * @param name the base name of the created thread.
+ * @return a CloseableCoroutineDispatcher with a single thread
+ */
+CloseableCoroutineDispatcher* new_single_thread_context(const std::string& name);
+
+/**
+ * Creates a coroutine execution context with the fixed-size thread-pool and built-in yield support.
+ *
+ * @param n_threads the number of threads.
+ * @param name the base name of the created threads.
+ * @return a CloseableCoroutineDispatcher with the specified number of threads
+ */
+CloseableCoroutineDispatcher* new_fixed_thread_pool_context(int n_threads, const std::string& name);
 
 } // namespace coroutines
 } // namespace kotlinx

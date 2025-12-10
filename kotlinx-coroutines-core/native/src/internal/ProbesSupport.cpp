@@ -1,32 +1,25 @@
+/**
+ * @file ProbesSupport.cpp
+ * @brief Native platform implementation of probes support
+ *
+ * Transliterated from: kotlinx-coroutines-core/native/src/internal/ProbesSupport.kt
+ *
+ * Platform-specific (native) implementation of coroutine probes for debugging.
+ * These are typically no-ops on native platforms (probes are mainly for JVM debugging).
+ *
+ * TODO:
+ * - Implement probeCoroutineCreated hook
+ * - Implement probeCoroutineResumed hook
+ */
+
 #include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/native/src/internal/ProbesSupport.kt
-//
-// TODO: actual keyword - platform-specific implementation
-// TODO: @Suppress annotation
-// TODO: inline functions
-// TODO: Continuation interface
 
 namespace kotlinx {
 namespace coroutines {
-namespace {
+namespace internal {
 
-// TODO: Remove imports, fully qualify or add includes:
-// import kotlin.coroutines.*
-
-// TODO: @Suppress("NOTHING_TO_INLINE")
-// TODO: actual inline function
-template<typename T>
-inline Continuation<T>* probe_coroutine_created(Continuation<T>* completion) {
-    return completion;
-}
-
-// TODO: @Suppress("NOTHING_TO_INLINE")
-// TODO: actual inline function
-template<typename T>
-inline void probe_coroutine_resumed(Continuation<T>* completion) {
-    // Empty implementation
-}
+// On native platforms, probe functions are typically no-ops
+// Probe support is mainly used for JVM debugging tooling
 
 } // namespace internal
 } // namespace coroutines
