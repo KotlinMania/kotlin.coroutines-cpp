@@ -1,36 +1,29 @@
 /**
  * @file Job.cpp
- * @brief Implementation of Job.
+ * @brief Implementation of Job factory and related functions.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Job.kt
  *
  * NOTE: The detailed API documentation, KDocs, and class definitions are located
  * in the companion header file: `include/kotlinx/coroutines/Job.hpp`.
  */
 
-#include <kotlinx/coroutines/Job.hpp>
+#include "kotlinx/coroutines/Job.hpp"
+#include "kotlinx/coroutines/CompletableJob.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
 #include <stdexcept>
 
 namespace kotlinx {
 namespace coroutines {
 
-// Define the static key instance
-// CoroutineContext::KeyTyped<Job> Job::key_instance; // Defined inline in header
+// -------------------- Factory function implementation --------------------
 
-std::shared_ptr<struct Job> Job(std::shared_ptr<struct Job> parent) {
+/**
+ * Creates a job object in an active state.
+ * See Job.hpp for full documentation.
+ */
+std::shared_ptr<CompletableJob> make_job(std::shared_ptr<struct Job> parent) {
     return JobImpl::create(parent);
-}
-
-void Job::cancel_and_join() {
-    cancel();
-    join();
-}
-
-void Job::ensure_active() {
-     if (!is_active()) {
-          std::exception_ptr ex = get_cancellation_exception();
-          if (ex) std::rethrow_exception(ex);
-          throw std::runtime_error("Job cancelled but no exception cause");
-     }
 }
 
 } // namespace coroutines

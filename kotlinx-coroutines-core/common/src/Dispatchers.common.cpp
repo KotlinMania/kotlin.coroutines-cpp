@@ -1,6 +1,8 @@
 /**
  * @file Dispatchers.common.cpp
  * @brief Implementation of Dispatchers (Common).
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Dispatchers.common.kt
  */
 
 #include "kotlinx/coroutines/Dispatchers.hpp"
@@ -15,6 +17,11 @@
 #include <memory>
 #include <iostream>
 
+#if __APPLE__
+#include <dispatch/dispatch.h>
+#include <pthread.h>
+#endif
+
 namespace kotlinx {
 namespace coroutines {
 
@@ -28,33 +35,34 @@ namespace {
 
     class ThreadPoolDispatcher : public CoroutineDispatcher {
     public:
-        ThreadPoolDispatcher(int threads, std::string name) : name(name), stop_flag(false) {
+        ThreadPoolDispatcher(int threads, std::string name) : name_(name), stop_flag_(false) {
             for (int i = 0; i < threads; ++i) {
-                workers.emplace_back([this] { worker_loop(); });
+                workers_.emplace_back([this] { worker_loop(); });
             }
         }
 
         ~ThreadPoolDispatcher() {
             {
-                std::unique_lock<std::mutex> lock(queue_mutex);
-                stop_flag = true;
+                std::unique_lock<std::mutex> lock(queue_mutex_);
+                stop_flag_ = true;
             }
-            cv.notify_all();
-            for (auto& t : workers) {
+            cv_.notify_all();
+            for (auto& t : workers_) {
                 if (t.joinable()) t.join();
             }
         }
 
-        void dispatch(CoroutineContext* context, std::shared_ptr<Runnable> block) override {
+        void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override {
+            auto* self = const_cast<ThreadPoolDispatcher*>(this);
             {
-                std::unique_lock<std::mutex> lock(queue_mutex);
-                tasks.push(block);
+                std::unique_lock<std::mutex> lock(self->queue_mutex_);
+                self->tasks_.push(block);
             }
-            cv.notify_one();
+            self->cv_.notify_one();
         }
 
         std::string to_string() const override {
-            return "Dispatchers." + name;
+            return "Dispatchers." + name_;
         }
 
     private:
@@ -62,15 +70,15 @@ namespace {
             while (true) {
                 std::shared_ptr<Runnable> task;
                 {
-                    std::unique_lock<std::mutex> lock(queue_mutex);
-                    cv.wait(lock, [this] { return stop_flag || !tasks.empty(); });
-                    
-                    if (stop_flag && tasks.empty()) return;
-                    
-                    task = tasks.front();
-                    tasks.pop();
+                    std::unique_lock<std::mutex> lock(queue_mutex_);
+                    cv_.wait(lock, [this] { return stop_flag_ || !tasks_.empty(); });
+
+                    if (stop_flag_ && tasks_.empty()) return;
+
+                    task = tasks_.front();
+                    tasks_.pop();
                 }
-                
+
                 try {
                     task->run();
                 } catch (...) {
@@ -80,12 +88,12 @@ namespace {
             }
         }
 
-        std::vector<std::thread> workers;
-        std::queue<std::shared_ptr<Runnable>> tasks;
-        std::mutex queue_mutex;
-        std::condition_variable cv;
-        bool stop_flag;
-        std::string name;
+        std::vector<std::thread> workers_;
+        mutable std::queue<std::shared_ptr<Runnable>> tasks_;
+        mutable std::mutex queue_mutex_;
+        mutable std::condition_variable cv_;
+        bool stop_flag_;
+        std::string name_;
     };
 
     // ------------------------------------------------------------------
@@ -94,31 +102,28 @@ namespace {
     class UnconfinedDispatcher : public CoroutineDispatcher {
     public:
         // Unconfined runs immediately in the current thread (no dispatch)
-        void dispatch(CoroutineContext* context, std::shared_ptr<Runnable> block) override {
+        void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override {
              // In pure C++ transliteration, 'Unconfined' is tricky because we can't always just run()
-             // without risking stack overflow or re-entrancy issues. 
+             // without risking stack overflow or re-entrancy issues.
              // However, the contract is "executes in current thread".
-             block->run(); 
+             block->run();
         }
 
-        bool is_dispatch_needed(CoroutineContext* context) override {
+        bool is_dispatch_needed(const CoroutineContext& context) const override {
             return false;
         }
-        
+
         std::string to_string() const override { return "Dispatchers.Unconfined"; }
     };
 
+#if __APPLE__
     // ------------------------------------------------------------------
     // MacOS/GCD Main Dispatcher Implementation
     // ------------------------------------------------------------------
-    #include <dispatch/dispatch.h>
-
     class GcdMainDispatcher : public MainCoroutineDispatcher {
     public:
-        void dispatch(CoroutineContext* context, std::shared_ptr<Runnable> block) override {
+        void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override {
             dispatch_async(dispatch_get_main_queue(), ^{
-                // Wrap weak ptr or strong ptr?
-                // For now, capture shared_ptr by value to keep it alive during execution
                 try {
                     block->run();
                 } catch (...) {
@@ -126,27 +131,35 @@ namespace {
                 }
             });
         }
-        
+
         std::string to_string() const override { return "Dispatchers.Main[GCD]"; }
-        
-        MainCoroutineDispatcher* get_immediate() override { 
+
+        MainCoroutineDispatcher& get_immediate() override {
              // GCD doesn't easily support "isCurrentThread" check without referencing specific key.
-             // If we are on main thread, run immediately?
-             if (pthread_main_np()) {
-                 // We are on main thread. But we need a separate "Immediate" dispatcher object 
-                 // to conform to the API which might return a different dispatcher.
-                 // For simplified implementation, we can return 'this' but strict immediate dispatch 
-                 // requires distinct logic in 'dispatch'.
-                 return this;
-             }
-             return this;
+             // For simplified implementation, we return *this.
+             return *this;
         }
-        
-        // TODO: is_dispatch_needed logic using pthread_main_np()
-        bool is_dispatch_needed(CoroutineContext* context) override {
-            return !pthread_main_np();
+
+        bool is_dispatch_needed(const CoroutineContext& context) const override {
+            return pthread_main_np() == 0;
         }
     };
+#else
+    // Stub for non-Apple platforms
+    class StubMainDispatcher : public MainCoroutineDispatcher {
+    public:
+        void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override {
+            // No main dispatcher available - just run in current thread
+            block->run();
+        }
+
+        std::string to_string() const override { return "Dispatchers.Main[Stub]"; }
+
+        MainCoroutineDispatcher& get_immediate() override {
+             return *this;
+        }
+    };
+#endif
 
 } // anonymous namespace
 
@@ -160,7 +173,7 @@ CoroutineDispatcher& Dispatchers::get_default() {
 }
 
 CoroutineDispatcher& Dispatchers::get_io() {
-    // IO usually has more threads. 
+    // IO usually has more threads.
     static ThreadPoolDispatcher instance(std::max((int)std::thread::hardware_concurrency() * 2, 64), "IO");
     return instance;
 }
@@ -171,7 +184,11 @@ CoroutineDispatcher& Dispatchers::get_unconfined() {
 }
 
 MainCoroutineDispatcher& Dispatchers::get_main() {
+#if __APPLE__
     static GcdMainDispatcher instance;
+#else
+    static StubMainDispatcher instance;
+#endif
     return instance;
 }
 

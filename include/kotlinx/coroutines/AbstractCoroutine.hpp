@@ -38,7 +38,7 @@ public:
         // We can just store parent_context and construct CombinedContext on demand or in start()?
         
         if (init_parent_job) {
-             init_parent_job_internal(parent_context->get(Job::typeKey));
+             init_parent_job_internal(parent_context->get(Job::type_key));
         }
     }
 

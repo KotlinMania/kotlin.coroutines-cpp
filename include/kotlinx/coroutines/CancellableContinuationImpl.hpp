@@ -111,7 +111,7 @@ struct Waiter {};
         auto ctx = get_context();
         if (!ctx) return;
         
-        auto job_element = ctx->get(Job::typeKey);
+        auto job_element = ctx->get(Job::type_key);
         auto job = std::dynamic_pointer_cast<struct Job>(job_element);
         if (job) {
              // Kotlin: parentHandle = parent.invokeOnCompletion(onCancelling = true, handler = ChildContinuation(this))
@@ -369,7 +369,7 @@ public:
         auto ctx = get_context();
         if (!ctx) return;
         
-        auto job_element = ctx->get(Job::typeKey);
+        auto job_element = ctx->get(Job::type_key);
         auto job = std::dynamic_pointer_cast<struct Job>(job_element);
         if (job) {
              auto new_handle = job->invoke_on_completion(true, true, [self = this->weak_from_this()](std::exception_ptr cause){

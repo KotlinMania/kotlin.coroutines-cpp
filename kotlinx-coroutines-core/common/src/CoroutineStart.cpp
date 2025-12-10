@@ -2,7 +2,9 @@
  * @file CoroutineStart.cpp
  * @brief Implementation of CoroutineStart helper functions.
  *
- * NOTE: The enum definition is in `include/kotlinx/coroutines/CoroutineStart.hpp`.
+ * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt
+ *
+ * NOTE: The enum definition and helper functions are in `include/kotlinx/coroutines/CoroutineStart.hpp`.
  */
 
 #include "kotlinx/coroutines/CoroutineStart.hpp"
@@ -10,9 +12,7 @@
 namespace kotlinx {
 namespace coroutines {
 
-bool is_lazy(CoroutineStart start) {
-    return start == CoroutineStart::LAZY;
-}
+// All implementation is inline in the header
 
 } // namespace coroutines
 } // namespace kotlinx

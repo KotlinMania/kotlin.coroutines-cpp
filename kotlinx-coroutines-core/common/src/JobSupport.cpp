@@ -74,8 +74,10 @@ void Finishing::addExceptionLocked(std::exception_ptr exception) {
 }
 
 // JobSupport methods
-std::shared_ptr<DisposableHandle> JobSupport::attach_child(std::shared_ptr<ChildJob> child) {
-    return std::make_shared<NoOpDisposableHandle>();
+std::shared_ptr<ChildHandle> JobSupport::attach_child(std::shared_ptr<ChildJob> child) {
+    // TODO: Implement proper child attachment with ChildHandleNode
+    // For now, return a non-owning pointer to the NonDisposableHandle singleton
+    return std::shared_ptr<ChildHandle>(&NonDisposableHandle::instance(), [](ChildHandle*){});
 }
 
 std::shared_ptr<DisposableHandle> JobSupport::invoke_on_completion(bool on_cancelling, bool invoke_immediately, std::function<void(std::exception_ptr)> handler) {

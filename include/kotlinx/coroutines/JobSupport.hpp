@@ -252,7 +252,7 @@ public:
     void join() override;
 
     std::vector<std::shared_ptr<struct Job>> get_children() const override;
-    std::shared_ptr<DisposableHandle> attach_child(std::shared_ptr<ChildJob> child) override;
+    std::shared_ptr<ChildHandle> attach_child(std::shared_ptr<ChildJob> child) override;
 
     // Low-level Notification
     std::shared_ptr<DisposableHandle> invoke_on_completion(std::function<void(std::exception_ptr)> handler) override {
@@ -260,8 +260,20 @@ public:
     }
     std::shared_ptr<DisposableHandle> invoke_on_completion(bool on_cancelling, bool invoke_immediately, std::function<void(std::exception_ptr)> handler) override;
     
-    // ParentJob overrides
-    bool child_cancelled(std::exception_ptr cause) override {
+    // ParentJob override
+    std::exception_ptr get_child_job_cancellation_cause() override {
+        return get_cancellation_exception();
+    }
+
+    /**
+     * Child was cancelled with a cause.
+     * In this method parent decides whether it cancels itself (e.g. on a critical failure)
+     * and whether it handles the exception of the child.
+     * It is overridden in supervisor implementations to completely ignore any child cancellation.
+     * Returns true if exception is handled, false otherwise (then caller is responsible for handling an exception)
+     */
+    virtual bool child_cancelled(std::exception_ptr cause) {
+        // TODO: Check if cause is CancellationException
         cancel_internal(cause);
         return true;
     }
