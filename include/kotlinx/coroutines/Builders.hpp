@@ -4,7 +4,9 @@
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Deferred.hpp"
 #include "kotlinx/coroutines/AbstractCoroutine.hpp"
+#include "kotlinx/coroutines/EventLoop.hpp"
 #include <functional>
+#include <thread>
 
 namespace kotlinx {
 namespace coroutines {
@@ -144,13 +146,74 @@ enum class CoroutineStart {
         return T();
     }
 
+    // BlockingCoroutine implementation
+    template<typename T>
+    class BlockingCoroutine : public AbstractCoroutine<T> {
+        std::shared_ptr<EventLoop> eventLoop;
+        std::thread::id blockedThreadId;
+    public:
+        BlockingCoroutine(CoroutineContext parentContext, std::shared_ptr<EventLoop> eventLoop)
+            : AbstractCoroutine<T>(parentContext, true, true),
+              eventLoop(eventLoop),
+              blockedThreadId(std::this_thread::get_id()) {}
+
+        void on_completed(T value) override {
+             // If we are on the same thread, we are good?
+             // We need to signal the event loop to stop if it's blocking
+             if (auto blockingLoop = std::dynamic_pointer_cast<BlockingEventLoop>(eventLoop)) {
+                 blockingLoop->shutdown();
+             }
+        }
+        
+        void on_cancelled(std::exception_ptr cause, bool handled) override {
+             if (auto blockingLoop = std::dynamic_pointer_cast<BlockingEventLoop>(eventLoop)) {
+                 blockingLoop->shutdown();
+             }
+        }
+        
+        T joinBlocking() {
+            // In a real implementation this would verify thread IDs and use the loop
+            if (auto blockingLoop = std::dynamic_pointer_cast<BlockingEventLoop>(eventLoop)) {
+                blockingLoop->run();
+            }
+            return static_cast<T>(this->get_completed_internal()); // Access protected result
+        }
+    };
+
     template<typename T>
     T run_blocking(
         CoroutineContext context,
         std::function<T(CoroutineScope*)> block
     ) {
-         // Placeholder
-         return T();
+         // 1. Create BlockingEventLoop
+         auto currentThread = std::make_shared<std::thread>([](){}); // Dummy handle or capture current logic
+         // Actually we are ON the current thread.
+         // BlockingEventLoop takes a thread handle to know which thread it owns? 
+         // For now just pass null or dummy.
+         auto eventLoop = std::make_shared<BlockingEventLoop>(nullptr);
+         
+         // 2. Set as current
+         auto oldLoop = ThreadLocalEventLoop::current_or_null();
+         ThreadLocalEventLoop::set_event_loop(eventLoop);
+         
+         try {
+             // 3. Create Coroutine
+             // Context + dispatcher
+             auto newContext = context + CoroutineContext(eventLoop); 
+             auto coroutine = std::make_shared<BlockingCoroutine<T>>(newContext, eventLoop);
+             
+             // 4. Start
+             coroutine->start(CoroutineStart::DEFAULT, coroutine, block);
+             
+             // 5. Block/Join
+             T result = coroutine->joinBlocking();
+             
+             ThreadLocalEventLoop::set_event_loop(oldLoop);
+             return result;
+         } catch (...) {
+             ThreadLocalEventLoop::set_event_loop(oldLoop);
+             throw;
+         }
     }
 
 

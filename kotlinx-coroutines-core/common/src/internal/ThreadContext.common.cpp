@@ -1,20 +1,30 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/ThreadContext.common.kt
-//
-// TODO: This is a mechanical transliteration - semantics not fully implemented
-// TODO: expect function needs platform-specific implementation
-// TODO: CoroutineContext needs C++ equivalent
+#include "kotlinx/coroutines/internal/ThreadContext.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
 
 namespace kotlinx {
 namespace coroutines {
-namespace {
+namespace internal {
 
-// Forward declaration
-class CoroutineContext;
+Symbol NO_THREAD_ELEMENTS("NO_THREAD_ELEMENTS");
 
-// TODO: expect function - needs platform-specific implementation
-void* thread_context_elements(CoroutineContext* context);
+// TODO: full implementation of thread context switching.
+// Currently stubs that do nothing, as ThreadContextElement logic needs full porting.
+
+void* update_thread_context(const CoroutineContext& context, void* count_or_element) {
+    if (count_or_element == &NO_THREAD_ELEMENTS) return &NO_THREAD_ELEMENTS;
+    // Real implementation requires iterating context elements and calling updateThreadContext on them.
+    return &NO_THREAD_ELEMENTS; 
+}
+
+void restore_thread_context(const CoroutineContext& context, void* old_state) {
+    if (old_state == &NO_THREAD_ELEMENTS) return;
+    // Real implementation requires restoring.
+}
+
+void* thread_context_elements(const CoroutineContext& context) {
+    // Should fold context to count ThreadContextElements
+    return &NO_THREAD_ELEMENTS;
+}
 
 } // namespace internal
 } // namespace coroutines

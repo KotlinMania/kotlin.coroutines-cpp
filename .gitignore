@@ -21,3 +21,8 @@ include/kotlinx/coroutines/sync/Mutex.hpp
 test_dispatchers
 test_job
 test_cancellation
+cpp_files.txt
+.gitignore
+kotlin_files.txt
+unported_files.txt
+hpp_files.txt

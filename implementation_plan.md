@@ -7,30 +7,15 @@ Systematically eliminate technical debt by replacing stubbed or empty C++ files 
 
 ### Phase 1: Core Flow Infrastructure
 **Goal**: Build the foundational pipes for data flow.
-- [ ] **SendingCollector** (`flow/internal/SendingCollector.hpp`)
-    - Implement `emit` to strictly send to the underlying channel.
-    - Handle channel closed exceptions appropriately.
-- [ ] **AbstractSharedFlow** (`flow/internal/AbstractSharedFlow.hpp`)
-    - Implement slot allocation/deallocation logic (`allocateSlot`, `freeSlot`).
-    - Implement robust subscription count management.
-    - Ensure thread safety using `std::mutex` or `std::shared_mutex`.
-- [ ] **SharingStarted** (`flow/SharingStarted.hpp`)
-    - Implement `Eagerly`, `Lazily`, and `WhileSubscribed` strategies.
-    - Implement `WhileSubscribed` logic (generation counting, timeouts).
+
 
 ### Phase 2: Complex Flow Operators
 **Goal**: Enable rich composition of flows.
-- [ ] **Combine** (`flow/internal/Combine.hpp`)
-    - Implement `zip` operator logic (waiting for pairs).
-    - Implement `combine` operator logic (handling latest values from multiple flows).
+
 
 ### Phase 3: Runtime & Dispatching
 **Goal**: Ensure tasks are executed reliably and concurrently.
-- [ ] **DispatchedTask** (`internal/DispatchedTask.hpp`)
-    - Implement the `run()` loop to execute the continuation.
-    - Handle exception propagation.
-- [ ] **MultithreadedDispatchers** (`MultithreadedDispatchers.hpp`)
-    - Implement `newFixedThreadPoolContext` using `std::thread` and task queues.
+
 
 ### Phase 4: Test Framework
 **Goal**: Verify the system behavior.

@@ -12,49 +12,73 @@ namespace kotlinx {
 namespace coroutines {
 namespace internal {
 
+LockFreeLinkedListNode::LockFreeLinkedListNode() : next(this), prev(this), removed(false) {}
+
 bool LockFreeLinkedListNode::is_removed() const {
-    return false; // Stub
+    return removed.load(std::memory_order_acquire);
 }
 
 LockFreeLinkedListNode* LockFreeLinkedListNode::next_node() const {
-    return next;
+    return next.load(std::memory_order_acquire);
 }
 
 LockFreeLinkedListNode* LockFreeLinkedListNode::prev_node() const {
-    return prev;
+    return prev.load(std::memory_order_acquire);
 }
 
 bool LockFreeLinkedListNode::add_last(LockFreeLinkedListNode* node) {
-    // Stub simple linking
-    if (this->next == nullptr) {
-        this->next = node;
-        node->prev = this;
-        return true;
+    while (true) {
+        LockFreeLinkedListNode* prev_ptr = prev.load(std::memory_order_acquire);
+        LockFreeLinkedListNode* expected = this;
+        // Naive CAS for illustration of intent:
+        // In real impl, we'd check prev->next == this etc.
+        // For this port stage:
+        if (prev_ptr->next.compare_exchange_strong(expected, node)) {
+            node->prev.store(prev_ptr, std::memory_order_release);
+            node->next.store(this, std::memory_order_release);
+            prev.store(node, std::memory_order_release);
+            return true;
+        }
+        // In highly concurrent env, backing off or strictly adhering to LF/WaitFree algo (M. Michael) is required
+        // yield();
     }
-    return false;
 }
 
 bool LockFreeLinkedListNode::add_one_if_empty(LockFreeLinkedListNode* node) {
-    if (this->next == nullptr) {
-        add_last(node);
-        return true;
+    LockFreeLinkedListNode* n = next.load(std::memory_order_acquire);
+    if (n == this) {
+        node->next.store(this, std::memory_order_release);
+        node->prev.store(this, std::memory_order_release);
+        if (next.compare_exchange_strong(n, node)) {
+            prev.store(node, std::memory_order_release);
+            return true;
+        }
     }
     return false;
 }
 
 bool LockFreeLinkedListNode::remove() {
-    // Stub unlinking
+    if (is_removed()) return false;
+    LockFreeLinkedListNode* p = prev.load();
+    LockFreeLinkedListNode* n = next.load();
+    // Simplified removal logic
+    p->next.store(n);
+    n->prev.store(p);
+    removed.store(true, std::memory_order_release);
     return true;
 }
 
 void LockFreeLinkedListNode::close(int forbidden_elements_bit) {
-    // Stub
+    // Implementation deferred
 }
+
+void LockFreeLinkedListNode::help_remove() {}
+void LockFreeLinkedListNode::remove_help_needed(LockFreeLinkedListNode* node) {}
+
+LockFreeLinkedListHead::LockFreeLinkedListHead() : LockFreeLinkedListNode() {}
 
 bool LockFreeLinkedListHead::is_empty() const {
-    return next == this || next == nullptr;
+    return next_node() == this;
 }
 
-} // namespace internal
-} // namespace coroutines
-} // namespace kotlinx
+bool LockFreeLinkedListHead::remove() { return false; }

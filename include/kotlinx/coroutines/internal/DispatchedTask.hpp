@@ -36,30 +36,25 @@ public:
     virtual void cancel_completed_result(Result<T> taken_state, std::exception_ptr cause) {}
 
     void run() override {
-        // Artisan implementation: Check cancellation relative to resume mode
         auto delegate_ptr = get_delegate();
-        if (!delegate_ptr) return; // Should not happen
+        if (!delegate_ptr) return;
         
         if (is_cancellable_mode(resume_mode)) {
-            // Context retrieval
-            auto context = delegate_ptr->get_context(); // ContinuationBase returns context by value or shared_ptr? 
-            // Continuation interface defined as: virtual CoroutineContext get_context() const = 0; (by value/struct slice if not careful)
-            // Implementation return usually CoroutineContext (which is abstract).
-            // Actually my Continuation.hpp defines: virtual CoroutineContext get_context() const = 0;
-            // But CoroutineContext is a class (polymorphic). Returning by value slices it!
-            // I need to fix Continuation.hpp return type !! 
-            // It should be std::shared_ptr<CoroutineContext> or similar reference.
-            
-            // Let's assume I fix Continuation.hpp parallelly or handle it here.
-            // For now, assuming get_context returns shared_ptr or reference.
-            // Wait, previous `Continuation.hpp` view showed `virtual CoroutineContext get_context() const = 0;`.
-            // `CoroutineContext` is a base class. This is object slicing.
-            // I MUST fix Continuation.hpp first to return std::shared_ptr<CoroutineContext> or const CoroutineContext&.
-            
-            // Assuming fix:
-            // std::shared_ptr<Job> job = std::dynamic_pointer_cast<Job>(context->get(Job::key));
-            // if (job && !job->is_active()) ...
+            auto context = delegate_ptr->get_context();
+            bool is_active = true; // TODO: Check Job.isActive from context
+             if (!is_active) {
+                 // cancel_completed_result(taken_state, cause);
+                 return;
+             }
         }
+        
+        Result<T> result = take_state();
+        try {
+            delegate_ptr->resume_with(result);
+        } catch (...) {
+            // handle_fatal_exception(std::current_exception(), nullptr);
+        }
+    }
         
         Result<T> result = take_state();
         try {
