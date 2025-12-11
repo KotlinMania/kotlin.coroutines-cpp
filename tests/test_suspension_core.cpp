@@ -1,4 +1,4 @@
-#include "include/kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <iostream>
 
 int main() {

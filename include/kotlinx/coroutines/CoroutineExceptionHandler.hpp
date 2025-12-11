@@ -1,6 +1,7 @@
 #pragma once
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include <exception>
+#include <iostream>
 
 namespace kotlinx {
 namespace coroutines {
@@ -29,7 +30,32 @@ public:
 };
 
 // Global helper for handling uncaught exceptions in coroutines
-void handle_coroutine_exception(CoroutineContext& context, std::exception_ptr exception);
+// Kotlin lines 18-32: handleCoroutineException
+inline void handle_coroutine_exception(CoroutineContext& context, std::exception_ptr exception) {
+    if (!exception) return;
+
+    // Line 21-25: Invoke an exception handler from the context if present
+    try {
+        auto element = context.get(CoroutineExceptionHandler::typeKey);
+        if (auto handler = std::dynamic_pointer_cast<CoroutineExceptionHandler>(element)) {
+            handler->handle_exception(context, exception);
+            return;
+        }
+    } catch (...) {
+        // Line 26-28: If handler throws, handle both exceptions
+        // For now, just fall through to global handler
+    }
+
+    // Line 31: handleUncaughtCoroutineException - fallback to platform handler
+    // In C++ we just print to stderr (like Native platform behavior)
+    try {
+        std::rethrow_exception(exception);
+    } catch (const std::exception& e) {
+        std::cerr << "Uncaught coroutine exception: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "Uncaught coroutine exception: unknown" << std::endl;
+    }
+}
 
 } // namespace coroutines
 } // namespace kotlinx

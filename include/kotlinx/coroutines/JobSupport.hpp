@@ -180,19 +180,19 @@ protected:
      * Called when the job starts cancelling.
      * @param cause The cancellation cause (may be null for normal cancellation)
      */
-    virtual void on_cancelling(std::exception_ptr cause) {}
+    virtual void on_cancelling(std::exception_ptr cause) { (void)cause; }
 
     /**
      * Called when the job completes (either normally or exceptionally).
      * @param state The final state (result value or CompletedExceptionally)
      */
-    virtual void on_completion_internal(JobState* state) {}
+    virtual void on_completion_internal(JobState* state) { (void)state; }
 
     /**
      * Called after the job has fully completed and all handlers have been invoked.
      * @param state The final state
      */
-    virtual void after_completion(JobState* state) {}
+    virtual void after_completion(JobState* state) { (void)state; }
 
     /**
      * Handles exceptions thrown by completion handlers.

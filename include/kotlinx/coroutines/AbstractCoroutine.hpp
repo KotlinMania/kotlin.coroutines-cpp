@@ -126,7 +126,7 @@ public:
      * 
      * @param value The result value of the coroutine
      */
-    virtual void on_completed(T value) {}
+    virtual void on_completed(T /*value*/) {}
 
     /**
      * @brief Called when the coroutine is cancelled or fails with an exception.
@@ -137,7 +137,7 @@ public:
      * @param cause The exception that caused cancellation
      * @param handled Whether the exception was handled by exception handlers
      */
-    virtual void on_cancelled(std::exception_ptr cause, bool handled) {}
+    virtual void on_cancelled(std::exception_ptr /*cause*/, bool /*handled*/) {}
 
     /**
      * @brief Returns the message for cancellation exceptions.
@@ -147,7 +147,7 @@ public:
      * 
      * @return The cancellation message string
      */
-    virtual std::string cancellation_exception_message() {
+    virtual std::string cancellation_exception_message() const {
         return "AbstractCoroutine was cancelled";
     }
     
@@ -207,22 +207,10 @@ public:
         handle_coroutine_exception(*get_context(), exception);
     }
     
-    // ===== API COMPLETENESS AUDIT =====
-    // Kotlin API from kotlinx-coroutines-core.api line 1-13:
-    // ✓ <init>(CoroutineContext, Boolean, Boolean) → AbstractCoroutine(parent_context, init_parent_job, active)
-    // ✓ protected fun afterResume(state: Any?) → after_resume(JobState* state)
-    // ✓ protected fun cancellationExceptionMessage() → cancellation_exception_message()
-    // ✓ public final fun getContext() → get_context()
-    // ✓ public fun getCoroutineContext() → get_coroutine_context()
-    // ✓ public fun isActive() → is_active()
-    // ✓ protected fun onCancelled(cause: Throwable, handled: Boolean) → on_cancelled(cause, handled)
-    // ✓ protected fun onCompleted(value: T) → on_completed(value)
-    // ✓ protected final fun onCompletionInternal(state: Any?) → on_completion_internal(JobState* state)
-    // ✓ public final fun resumeWith(result: Result<T>) → resume_with(result)
-    // ✓ public final fun start(start: CoroutineStart, receiver: R, block: suspend R.() -> T)
+
     //       → template<typename R> void start(CoroutineStart, R, std::function<T(R)>)
 
-    std::string name_string() {
+    std::string name_string() const {
         // TODO: Implement coroutine name extraction from context
         // Kotlin: val coroutineName = context.coroutineName ?: return super.nameString()
         //         return "\"$coroutineName\":${super.nameString()}"

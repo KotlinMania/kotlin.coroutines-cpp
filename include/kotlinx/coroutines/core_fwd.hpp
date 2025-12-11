@@ -8,9 +8,9 @@ namespace coroutines {
 // Forward Declarations
 class CoroutineContext;
 class CoroutineDispatcher;
-class CoroutineScope;
+struct CoroutineScope;
 struct Job;
-struct JobSupport;
+class JobSupport;
 struct ChildJob;
 struct ParentJob;
 template <typename T> class AbstractCoroutine;

@@ -14,10 +14,10 @@
 namespace kotlinx {
 namespace coroutines {
 
-class CoroutineContext;
-class CoroutineScope;
-class CoroutineStart;
-class Job;
+struct CoroutineContext;
+struct CoroutineScope;
+struct CoroutineStart;
+struct Job;
 template<typename T> class Deferred;
 
 /**

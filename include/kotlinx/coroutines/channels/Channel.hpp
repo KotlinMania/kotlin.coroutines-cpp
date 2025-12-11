@@ -245,6 +245,15 @@ struct SendChannel {
      * @param handler Function to call on channel closure.
      */
     virtual void invoke_on_close(std::function<void(std::exception_ptr)> handler) = 0;
+
+    /**
+     * Select clause that becomes selected when sending an element to this channel.
+     * Mirrors Kotlin's `SendChannel.onSend`.
+     *
+     * NOTE: Returns a shared_ptr because SelectClause2 is abstract; callers
+     *       should keep the returned clause alive for the duration of select.
+     */
+    virtual std::shared_ptr<selects::SelectClause2<E, SendChannel<E>>> on_send() = 0;
 };
 
 template <typename E>
@@ -259,6 +268,15 @@ struct ReceiveChannel {
     virtual std::shared_ptr<ChannelIterator<E>> iterator() = 0;
 
     virtual void cancel(std::exception_ptr cause = nullptr) = 0;
+
+    /**
+     * Select clause that becomes selected when an element is available to receive.
+     * Mirrors Kotlin's `ReceiveChannel.onReceive`.
+     *
+     * NOTE: Returns a shared_ptr because SelectClause1 is abstract; callers
+     *       should keep the returned clause alive for the duration of select.
+     */
+    virtual std::shared_ptr<selects::SelectClause1<E>> on_receive() = 0;
 };
 
 template <typename E>
@@ -271,10 +289,6 @@ struct Channel : public SendChannel<E>, public ReceiveChannel<E> {
     static constexpr const char* DEFAULT_BUFFER_PROPERTY_NAME = "kotlinx.coroutines.channels.defaultBuffer";
 
     static int getDefaultBufferCapacity() { return 64; }
-
-    // Select clause support
-    virtual SelectClause1<E> on_send() = 0;
-    virtual SelectClause0<E> on_receive() = 0;
 };
 
 /**

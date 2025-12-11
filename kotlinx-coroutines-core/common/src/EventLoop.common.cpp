@@ -64,8 +64,8 @@ void EventLoop::decrement_use_count(bool unconfined) {
 
 void EventLoop::shutdown() {}
 
-void EventLoop::dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const {
-    // Implement default dispatch or leave to subclasses
+void EventLoop::dispatch(const CoroutineContext& /*context*/, std::shared_ptr<Runnable> /*block*/) const {
+    // TODO: implement event-loop dispatch
 }
 
 // ThreadLocalEventLoop Implementation

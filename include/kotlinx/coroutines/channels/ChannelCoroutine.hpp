@@ -56,6 +56,14 @@ public:
     ChannelAwaiter<ChannelResult<E>> receive_with_timeout(long timeout_millis) override { 
         return _channel->receive_with_timeout(timeout_millis); 
     }
+
+    std::shared_ptr<selects::SelectClause2<E, SendChannel<E>>> on_send() override {
+        return _channel->on_send();
+    }
+
+    std::shared_ptr<selects::SelectClause1<E>> on_receive() override {
+        return _channel->on_receive();
+    }
     
     std::shared_ptr<ChannelIterator<E>> iterator() override { return _channel->iterator(); }
 

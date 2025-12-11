@@ -90,7 +90,7 @@ public:
     virtual ~CancellableContinuation() = default;
 
     // Inherited from Continuation
-    virtual std::shared_ptr<CoroutineContext> get_context() const = 0;
+    std::shared_ptr<CoroutineContext> get_context() const override = 0;
 
     /**
      * Returns `true` when this continuation is active -- it was created,
@@ -197,7 +197,7 @@ class CancellableContinuation<void> : public Continuation<void> {
 public:
     virtual ~CancellableContinuation() = default;
 
-    virtual std::shared_ptr<CoroutineContext> get_context() const = 0;
+    std::shared_ptr<CoroutineContext> get_context() const override = 0;
     virtual bool is_active() const = 0;
     virtual bool is_completed() const = 0;
     virtual bool is_cancelled() const = 0;
@@ -228,9 +228,9 @@ public:
     
     template<typename R>
     void* try_resume(
-        R value, // Should be ignored or void?
-        void* idempotent,
-        std::function<void(Throwable, R, std::shared_ptr<CoroutineContext>)> on_cancellation
+        [[maybe_unused]] R value,
+        [[maybe_unused]] void* idempotent,
+        [[maybe_unused]] std::function<void(Throwable, R, std::shared_ptr<CoroutineContext>)> on_cancellation
     ) {
          return nullptr; 
     }

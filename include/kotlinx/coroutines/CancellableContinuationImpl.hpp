@@ -10,6 +10,7 @@
 #include "kotlinx/coroutines/Waiter.hpp"
 #include "kotlinx/coroutines/DisposableHandle.hpp"
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
+#include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
 #include <atomic>
 #include <mutex>
 #include <memory>
@@ -17,12 +18,13 @@
 #include <functional>
 #include <exception>
 #include <iostream>
+#include <type_traits>
 
 namespace kotlinx {
 namespace coroutines {
 
 // Forward declarations
-struct JobNode; 
+class JobNode; 
 
 // constants from CancellableContinuationImpl.kt
 static constexpr int UNDECIDED = 0;
@@ -143,6 +145,13 @@ struct CancelledContinuation : public CompletedExceptionally, public State {
     std::string to_string() const override { return "CancelledContinuation"; }
 };
 
+// Completed exceptionally (non-cancellation) as State
+struct CompletedExceptionState : public CompletedExceptionally, public State {
+    explicit CompletedExceptionState(std::exception_ptr cause, bool handled = false)
+        : CompletedExceptionally(cause, handled) {}
+    std::string to_string() const override { return "CompletedException"; }
+};
+
 /**
  * @brief Implementation of CancellableContinuation.
  *
@@ -154,18 +163,26 @@ class CancellableContinuationImpl : public DispatchedTask<T>,
                                     public Waiter,
                                     public std::enable_shared_from_this<CancellableContinuationImpl<T>> {
 private:
+    static_assert(!std::is_void_v<T>, "Use void specialization");
     std::shared_ptr<Continuation<T>> delegate;
-    
-    // _decisionAndIndex
+
+    // _decisionAndIndex - Kotlin line 69
     std::atomic<int> decision_and_index_;
-    
-    // _state
+
+    // _state - Kotlin line 80
+    // In Kotlin this is atomic<Any?> with GC. In C++ we use raw pointers
+    // and must manually manage memory for dynamically allocated states.
     std::atomic<State*> state_;
-    
-    // _parentHandle
-    std::atomic<std::shared_ptr<DisposableHandle>> parent_handle_;
-    
-    // Context cache
+
+    // Prevent use-after-free: holds ownership of dynamically allocated states
+    // When we CAS a new state in, we store the old owned_state_ here before
+    // replacing it, so the previous state stays alive until replaced.
+    std::shared_ptr<State> owned_state_;
+
+    // _parentHandle - Kotlin line 101 (simplified to non-atomic for now)
+    std::shared_ptr<DisposableHandle> parent_handle_;
+
+    // Context cache - Kotlin line 38: context = delegate.context
     std::shared_ptr<CoroutineContext> context_;
 
 public:
@@ -234,84 +251,104 @@ public:
         // now check our state _after_ registering
         if (is_completed()) {
             handle->dispose();
-            parent_handle_.store(non_disposable_handle(), std::memory_order_release);
+            parent_handle_ = non_disposable_handle();
         }
     }
     
     // State machine helpers
     // private inline fun decisionAndIndex(decision: Int, index: Int)
     
+    // takeState - Kotlin line 165: just returns state
+    // Combined with getSuccessfulResult (lines 605-609) and getExceptionalResult (lines 613-614)
+    // C++ returns Result<T> directly for simplicity
     Result<T> take_state() override {
         State* s = state_.load(std::memory_order_acquire);
+
+        // CompletedContinuation<T> -> success with result
         if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(s)) {
             return Result<T>::success(cc->result);
         }
-        if (auto* cc = dynamic_cast<CancelledContinuation*>(s)) {
-            return Result<T>::failure(cc->cause);
+
+        // CancelledContinuation -> failure with cause
+        if (auto* cancelled = dynamic_cast<CancelledContinuation*>(s)) {
+            return Result<T>::failure(cancelled->cause);
         }
-        throw std::runtime_error("Invalid state in take_state");
+
+        // CompletedExceptionally (non-cancellation) -> failure with cause
+        if (auto* ex = dynamic_cast<CompletedExceptionally*>(s)) {
+            return Result<T>::failure(ex->cause);
+        }
+
+        // NotCompleted states should not reach here
+        throw std::runtime_error("take_state called on non-completed continuation");
     }
     
-    // cancelCompletedResult
-    void cancel_completed_result(void* taken_state, std::exception_ptr cause) override {
-        State* state = static_cast<State*>(taken_state);
-        // Loop logic from Kotlin source
-        // For simplicity reusing strict typing, but transliterating logic:
+    // cancelCompletedResult (used by DispatchedTask cancellation)
+    void cancel_completed_result(Result<T> /*taken_state*/, std::exception_ptr cause) override {
         while (true) {
-             State* current = state_.load(std::memory_order_acquire);
-             if (dynamic_cast<NotCompleted*>(current)) {
-                 throw std::runtime_error("Not completed");
-             }
-             if (dynamic_cast<CompletedExceptionally*>(current)) return; // Already completed exceptionally
-             
-             if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(current)) {
-                  if (cc->is_cancelled()) throw std::runtime_error("Must be called at most once");
-                  
-                  // Copy and update
-                  auto* update = new CompletedContinuation<T>(
-                      cc->result, cc->cancel_handler, cc->on_cancellation, cc->idempotent_resume, cause);
-                      
-                  if (state_.compare_exchange_strong(current, update, std::memory_order_acq_rel)) {
-                      // invoke handlers
-                       // cc->invokeHandlers(this, cause) - need to implement
-                       if (cc->cancel_handler) call_cancel_handler(cc->cancel_handler, cause);
-                       if (cc->on_cancellation) call_on_cancellation(cc->on_cancellation, cause, cc->result);
-                       return;
-                  }
-                  delete update;
-             }
+            State* state = state_.load(std::memory_order_acquire);
+            if (dynamic_cast<NotCompleted*>(state)) {
+                throw std::runtime_error("Not completed");
+            }
+            if (dynamic_cast<CompletedExceptionally*>(state)) return; // already exceptional
+            if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(state)) {
+                if (cc->is_cancelled()) throw std::runtime_error("Must be called at most once");
+                auto* update = new CompletedContinuation<T>(
+                    cc->result, cc->cancel_handler, cc->on_cancellation, cc->idempotent_resume, cause);
+                if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    if (cc->cancel_handler) call_cancel_handler(cc->cancel_handler, cause);
+                    if constexpr (std::is_void_v<T>) {
+                        if (cc->on_cancellation) cc->on_cancellation(cause, context_);
+                    } else {
+                        if (cc->on_cancellation) call_on_cancellation(cc->on_cancellation, cause, cc->result);
+                    }
+                    return;
+                }
+                delete update;
+            } else {
+                return;
+            }
         }
     }
     
+    // cancel - Kotlin lines 201-217
     bool cancel(std::exception_ptr cause = nullptr) override {
         while (true) {
             State* state = state_.load(std::memory_order_acquire);
-            if (!dynamic_cast<NotCompleted*>(state)) return false; // false if already complete or cancelling
-            
-            // Active -- update to final state
+            // line 203: if (state !is NotCompleted) return false
+            if (!dynamic_cast<NotCompleted*>(state)) return false;
+
+            // line 205: val update = CancelledContinuation(this, cause, handled = state is CancelHandler || state is Segment<*>)
             bool handled = dynamic_cast<CancelHandler*>(state) != nullptr;
+            // Note: Segment check omitted - not implemented yet
             auto* update = new CancelledContinuation(cause, handled);
-            
+
+            // Save handler BEFORE CAS - owned_state_ holds the CancelHandler if state is one
+            // In C++ we need to grab ownership before the CAS invalidates our ability to use it
+            std::shared_ptr<CancelHandler> handler_to_call;
+            if (handled) {
+                handler_to_call = std::dynamic_pointer_cast<CancelHandler>(owned_state_);
+            }
+
+            // line 206: if (!_state.compareAndSet(state, update)) return@loop
             if (!state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
                 delete update;
-                continue; // retry
+                continue;
             }
-            
-            // Invoke cancel handler if present
-            if (auto* handler = dynamic_cast<CancelHandler*>(state)) {
-                call_cancel_handler(std::shared_ptr<CancelHandler>(handler, [](CancelHandler*){}), cause); 
-                // Note: Memory management of state needs care. In Kotlin GC handles it.
-                // Here we are raw pointers via atomic. 
-                // For this transliteration, assuming we leak or need a GC strategy. 
-                // User said "Faithful transliteration" implies matching logic, but memory safety is implicit requirement of C++.
-                // We will use raw pointers for State* atoms as per Kotlin, but we need to manage deletion if we are swapping them out.
-                // However, Kotlin objects are GC'd. C++ ones must be deleted.
-                // If we swap out 'state', we effectively own the old 'state' if no one else references it.
-                // In this CAS loop, we just replaced 'state' (Active or Handler) with CancelledContinuation.
+            // CAS succeeded - take ownership of new state
+            owned_state_.reset(update);
+
+            // lines 208-211: Invoke cancel handler if it was present
+            // Kotlin: (state as? CancelHandler)?.let { callCancelHandler(it, cause) }
+            if (handler_to_call) {
+                call_cancel_handler(handler_to_call, cause);
             }
-            
+            // Segment case omitted
+
+            // line 213: detachChildIfNonReusable()
             detach_child_if_non_reusable();
-            dispatch_resume(this->resume_mode); 
+            // line 214: dispatchResume(resumeMode)
+            dispatch_resume(this->resume_mode);
             return true;
         }
     }
@@ -326,20 +363,25 @@ public:
         try {
             handler->invoke(cause);
         } catch (...) {
-            handle_coroutine_exception(context_, 
-                std::make_exception_ptr(std::runtime_error("Exception in invokeOnCancellation handler")));
+            if (context_) {
+                handle_coroutine_exception(*context_,
+                    std::make_exception_ptr(std::runtime_error("Exception in invokeOnCancellation handler")));
+            }
         }
     }
-    
+
+    template<typename U=T, typename std::enable_if<!std::is_void_v<U>, int>::type = 0>
     void call_on_cancellation(
-        std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation,
-        std::exception_ptr cause, 
-        T value) {
+        std::function<void(std::exception_ptr, U, std::shared_ptr<CoroutineContext>)> on_cancellation,
+        std::exception_ptr cause,
+        U value) {
         try {
             on_cancellation(cause, value, context_);
         } catch (...) {
-            handle_coroutine_exception(context_, 
-                std::make_exception_ptr(std::runtime_error("Exception in resume onCancellation handler")));
+            if (context_) {
+                handle_coroutine_exception(*context_,
+                    std::make_exception_ptr(std::runtime_error("Exception in resume onCancellation handler")));
+            }
         }
     }
     
@@ -383,15 +425,18 @@ public:
         }
     }
     
-    // getResult implementation logic
+    // getResult implementation logic - Kotlin lines 290-337
     void* get_result() {
-        // boolean isReusable = isReusable(); 
+        std::cerr << "[get_result] entering" << std::endl;
+        // boolean isReusable = isReusable();
         if (try_suspend()) {
-            if (parent_handle_.load() == nullptr) {
+            std::cerr << "[get_result] suspended, installing parent handle" << std::endl;
+            if (parent_handle_ == nullptr) {
                 install_parent_handle();
             }
+            std::cerr << "[get_result] returning COROUTINE_SUSPENDED" << std::endl;
             // if (isReusable) releaseClaimedReusableContinuation();
-            return (void*)intrinsics::COROUTINE_SUSPENDED;
+            return intrinsics::get_COROUTINE_SUSPENDED();
         }
         
         // otherwise, onCompletionInternal was already invoked & invoked tryResume
@@ -402,9 +447,10 @@ public:
             std::rethrow_exception(ex->cause);
         }
         
-        // Check cancellable mode
-        if (ResumeMode::is_cancellable_mode(this->resume_mode)) {
-             auto job = context_->get(Job::type_key); // TODO: strict typing
+        // Check cancellable mode - Kotlin lines 328-334
+        if (is_cancellable_mode(this->resume_mode) && context_) {
+            auto job_element = context_->get(Job::type_key);
+            // TODO: if job != null && !job.isActive, cancel and throw
         }
         
         return get_successful_result(state);
@@ -412,24 +458,26 @@ public:
     
     void* get_successful_result(State* state) {
         if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(state)) {
-            return new T(cc->result); // Allocate for void* return convention
+            if constexpr (std::is_void_v<T>) {
+                (void)cc;
+                return nullptr;
+            } else {
+                return new T(cc->result); // allocate per ABI convention
+            }
         }
-        // This fails if T is not compatible with State (which it isn't).
-        // In Kotlin "else -> state as T". 
-        // In C++, we need to strictly extract T.
-        // If state is not CompletedContinuation, it's impossible in this branch unless logic error.
         throw std::logic_error("Invalid state for result");
     }
     
-    // installParentHandle
+    // installParentHandle - Kotlin lines 339-345
     std::shared_ptr<DisposableHandle> install_parent_handle() {
+        if (!context_) return nullptr; // No context, no parent
         auto job_element = context_->get(Job::type_key);
         // auto job = dynamic_pointer_cast<Job>(job_element);
         // if (!job) return nullptr;
-        
+
         // val handle = parent.invokeOnCompletion(handler = ChildContinuation(this))
         // _parentHandle.compareAndSet(null, handle)
-        return nullptr; // Placeholder for now to compile
+        return nullptr; // TODO: implement parent job registration
     }
     
     void detach_child_if_non_reusable() {
@@ -438,59 +486,131 @@ public:
     }
     
     void detach_child() {
-        auto handle = parent_handle_.load(std::memory_order_acquire);
+        auto handle = parent_handle_;
         if (!handle) return;
         handle->dispose();
-        parent_handle_.store(non_disposable_handle(), std::memory_order_release);
+        parent_handle_ = non_disposable_handle();
     }
     
-    // resumeImpl
-    void resume_impl(T proposed_update, int resume_mode, 
-                     std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation = nullptr) {
+    // tryResume + completeResume (Kotlin parity)
+    void* try_resume(T value, void* idempotent = nullptr) override {
+        return try_resume(value, idempotent, nullptr);
+    }
+
+    // tryResumeImpl - Kotlin lines 529-553
+    void* try_resume(
+        T value,
+        void* idempotent,
+        std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation
+    ) {
+        while (true) {
+            State* state = state_.load(std::memory_order_acquire);
+
+            if (auto* nc = dynamic_cast<NotCompleted*>(state)) {
+                State* update = resumed_state(nc, value, this->resume_mode, on_cancellation, idempotent);
+                if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    detach_child_if_non_reusable();
+                    return const_cast<void*>(RESUME_TOKEN);
+                }
+                delete update;
+                continue;
+            }
+
+            // Kotlin lines 542-549: idempotent resume check for CompletedContinuation
+            if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(state)) {
+                if (idempotent != nullptr && cc->idempotent_resume == idempotent) {
+                    // assert state.result == value
+                    return const_cast<void*>(RESUME_TOKEN);
+                }
+                return nullptr; // different token or non-idempotent
+            }
+
+            // CancelledContinuation or other completed state
+            return nullptr;
+        }
+    }
+
+    void* try_resume_with_exception(std::exception_ptr exception) override {
         while (true) {
             State* state = state_.load(std::memory_order_acquire);
             if (dynamic_cast<NotCompleted*>(state)) {
-                 State* update = nullptr;
-                 // resumedState logic
-                 if (on_cancellation != nullptr || dynamic_cast<CancelHandler*>(state) != nullptr) {
-                      update = new CompletedContinuation<T>(proposed_update, 
-                                                            std::shared_ptr<CancelHandler>(dynamic_cast<CancelHandler*>(state)), // TODO: sharing ownership?
-                                                            on_cancellation);
-                 } else {
-                     // In Kotlin: proposedUpdate. In C++: Need to wrap in State?
-                     // Kotlin: _state.value = proposedUpdate.
-                     // But _state is atomic<Any?>. 
-                     // Here _state is atomic<State*>. T is not a State*.
-                     // We MUST wrap it in CompletedContinuation<T> even for simple case in C++ type system,
-                     // OR make T inherit from State (impossible for int).
-                     update = new CompletedContinuation<T>(proposed_update);
-                 }
-                 
-                 if (!state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
-                     delete update; 
-                     continue;
-                 }
-                 
-                 detach_child_if_non_reusable();
-                 dispatch_resume(resume_mode);
-                 return;
+                auto* update = new CompletedExceptionState(exception, false);
+                if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    return const_cast<void*>(RESUME_TOKEN);
+                }
+                delete update;
+                continue;
             }
-            
-            if (auto* cc = dynamic_cast<CancelledContinuation*>(state)) {
-                // Ignore resume if cancelled
-                 if (cc->make_resumed()) {
-                     if (on_cancellation) on_cancellation(cc->cause, proposed_update, context_);
-                     return;
-                 }
+            if (dynamic_cast<CancelledContinuation*>(state)) return nullptr;
+            return nullptr;
+        }
+    }
+
+    // completeResume - Kotlin lines 589-592
+    void complete_resume(void* token) override {
+        if (token != RESUME_TOKEN) return;
+        // Note: detachChildIfNonReusable is called in tryResumeImpl, not here
+        dispatch_resume(this->resume_mode);
+    }
+
+    // resumedState - determines what to store as the new state
+    // Kotlin lines 473-491
+    State* resumed_state(
+        NotCompleted* state,
+        T proposed_update,
+        int resume_mode,
+        std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation,
+        void* idempotent
+    ) {
+        // proposedUpdate is CompletedExceptionally -> return it directly
+        // (handled separately via resume_impl_exception)
+
+        // !resumeMode.isCancellableMode && idempotent == null -> proposedUpdate
+        // But C++ can't store raw T in State*, so we always use CompletedContinuation
+
+        // onCancellation != null || state is CancelHandler || idempotent != null -> CompletedContinuation
+        auto* ch = dynamic_cast<CancelHandler*>(state);
+        return new CompletedContinuation<T>(
+            proposed_update,
+            ch ? std::shared_ptr<CancelHandler>(ch, [](CancelHandler*){}) : nullptr,
+            on_cancellation,
+            idempotent
+        );
+    }
+
+    // resumeImpl - Kotlin lines 493-523
+    void resume_impl(T proposed_update, int resume_mode,
+                     std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation = nullptr) {
+        while (true) {
+            State* state = state_.load(std::memory_order_acquire);
+
+            if (auto* nc = dynamic_cast<NotCompleted*>(state)) {
+                State* update = resumed_state(nc, proposed_update, resume_mode, on_cancellation, nullptr);
+                if (!state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    delete update;
+                    continue; // retry on CAS failure
+                }
+                detach_child_if_non_reusable();
+                dispatch_resume(resume_mode);
+                return;
             }
-            
+
+            if (auto* cancelled = dynamic_cast<CancelledContinuation*>(state)) {
+                if (cancelled->make_resumed()) {
+                    if (on_cancellation) {
+                        call_on_cancellation(on_cancellation, cancelled->cause, proposed_update);
+                    }
+                    return;
+                }
+            }
+
             throw std::logic_error("Already resumed");
         }
     }
     
     // Waiter overrides
     void invoke_on_cancellation(void* segment, int index) override {
-        // TODO: Update decision_and_index with index logic
+        (void)segment; (void)index; // TODO: Update decision_and_index with segment/index logic
     }
     
     // CancellableContinuation overrides
@@ -505,34 +625,67 @@ public:
          invoke_on_cancellation_impl(std::make_shared<UserSuppliedCancelHandler>(handler));
     }
     
+    // invokeOnCancellationImpl - Kotlin lines 400-461
     void invoke_on_cancellation_impl(std::shared_ptr<CancelHandler> handler) {
         while (true) {
-             State* state = state_.load(std::memory_order_acquire);
-             if (dynamic_cast<Active*>(state)) {
-                  if (state_.compare_exchange_strong(state, handler.get(), std::memory_order_acq_rel)) {
-                      // We stored a raw pointer to a shared_ptr managed object? DANGEROUS.
-                      // C++ divergence: We need to keep the handler alive.
-                      // For this exercise, assuming leakage or manual management to satisfy "Faithful Transliteration" logic structure.
-                      // Ideally state_ should be atomic<shared_ptr<State>>.
-                      return;
-                  }
-             } else if (dynamic_cast<CancelHandler*>(state)) {
-                 throw std::runtime_error("Multiple handlers prohibited");
-             } else if (dynamic_cast<CompletedExceptionally*>(state)) {
-                 // Call handler
-                 // ...
-                 return;
-             }
-             // ...
-             // Completed logic
-             return; 
+            State* state = state_.load(std::memory_order_acquire);
+
+            // Active -> store handler as the new state
+            if (dynamic_cast<Active*>(state)) {
+                if (state_.compare_exchange_strong(state, handler.get(), std::memory_order_acq_rel)) {
+                    // Keep handler alive - it's now the state
+                    owned_state_ = handler;
+                    return;
+                }
+                continue; // retry on CAS failure
+            }
+
+            // Already has a handler -> error
+            if (dynamic_cast<CancelHandler*>(state)) {
+                throw std::runtime_error("Multiple handlers prohibited");
+            }
+
+            // CompletedExceptionally (includes CancelledContinuation)
+            if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
+                if (!ex->make_handled()) {
+                    throw std::runtime_error("Multiple handlers prohibited");
+                }
+                // Call handler only if cancelled (not just exceptionally completed)
+                if (dynamic_cast<CancelledContinuation*>(state)) {
+                    call_cancel_handler(handler, ex->cause);
+                }
+                return;
+            }
+
+            // CompletedContinuation -> copy with handler
+            if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(state)) {
+                if (cc->cancel_handler) {
+                    throw std::runtime_error("Multiple handlers prohibited");
+                }
+                if (cc->is_cancelled()) {
+                    call_cancel_handler(handler, cc->cancel_cause);
+                    return;
+                }
+                auto* update = new CompletedContinuation<T>(
+                    cc->result, handler, cc->on_cancellation, cc->idempotent_resume, cc->cancel_cause);
+                if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    owned_state_.reset(update);
+                    return;
+                }
+                delete update;
+                continue;
+            }
+
+            // else: raw completed value - wrap in CompletedContinuation with handler
+            // (C++ doesn't support raw values in state, so this shouldn't happen)
+            return;
         }
     }
     
     // Dispatch
     void dispatch_resume(int mode) {
         if (try_resume()) return; // completed before getResult invocation
-        dispatch(mode);
+        dispatch(this, mode);
     }
     
     // resumeWith
@@ -543,58 +696,350 @@ public:
              resume_impl_exception(result.exception_or_null(), this->resume_mode);
     }
     
-    void resume_impl_exception(std::exception_ptr exception, int mode) {
-        while (true) {
-             State* state = state_.load(std::memory_order_acquire);
-             if (dynamic_cast<NotCompleted*>(state)) {
-                  auto* update = new CompletedContinuation<T>(
-                      T(), nullptr, nullptr, nullptr, exception); // Storing exception in CompletedContinuation to represent failure result
-                  // But wait, Kotlin uses CancelledContinuation for cancellations, but CompletedExceptionally/Result.failure for failures?
-                  // Kotlin: resumedState handles exceptions.
-                  // For failure result that is NOT cancellation:
-                  // It wraps it in CompletedExceptionally.
-                  
-                  if (!state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
-                      delete update; continue;
-                  }
-                  detach_child_if_non_reusable();
-                  dispatch_resume(mode);
-                  return;
-             }
-             // ...
-             throw std::logic_error("Already resumed");
-        }
+    void resume_impl_exception(std::exception_ptr exception, int /*mode*/) {
+        void* token = try_resume_with_exception(exception);
+        if (!token) throw std::logic_error("Already resumed");
+        complete_resume(token);
     }
 
-    // Required overrides from DispatchedTask
-    std::shared_ptr<Continuation<T>> get_delegate() /*override already defined*/ { return delegate; }
-    void cancel_completed_result(void* taken_state, std::exception_ptr cause) /*override defined*/;
-    
-    // ...
+    void resume_undispatched(CoroutineDispatcher* /*dispatcher*/, T value) override {
+        // Resume directly without dispatch
+        resume_impl(value, MODE_UNDISPATCHED);
+    }
+
+    void resume_undispatched_with_exception(CoroutineDispatcher* /*dispatcher*/, std::exception_ptr exception) override {
+        // Resume with exception directly without dispatch
+        resume_impl_exception(exception, MODE_UNDISPATCHED);
+    }
+
 };
 
-// ChildContinuation
-template <typename T>
-struct ChildContinuation : public JobNode {
-    std::weak_ptr<CancellableContinuationImpl<T>> child;
-    
-    ChildContinuation(std::shared_ptr<CancellableContinuationImpl<T>> c) : child(c) {}
-    
-    bool get_on_cancelling() const override { return true; }
-    
-    void invoke(std::exception_ptr cause) override {
-        if (auto c = child.lock()) {
-             c->parent_cancelled(cause);
+// ------------------------------------------------------------------
+// Specialization for void
+// ------------------------------------------------------------------
+template <>
+class CancellableContinuationImpl<void> : public DispatchedTask<void>,
+                                           public CancellableContinuation<void>,
+                                           public Waiter,
+                                           public std::enable_shared_from_this<CancellableContinuationImpl<void>> {
+private:
+    std::shared_ptr<Continuation<void>> delegate;
+    std::atomic<int> decision_and_index_;
+    std::atomic<State*> state_;
+    std::shared_ptr<State> owned_state_; // Prevents use-after-free of dynamically allocated states
+    std::shared_ptr<DisposableHandle> parent_handle_;
+    std::shared_ptr<CoroutineContext> context_;
+
+public:
+    CancellableContinuationImpl(std::shared_ptr<Continuation<void>> delegate_, int resume_mode_)
+        : DispatchedTask<void>(resume_mode_), delegate(delegate_) {
+        context_ = delegate->get_context();
+        state_.store(&Active::instance, std::memory_order_relaxed);
+        decision_and_index_.store(decision_and_index(UNDECIDED, NO_INDEX), std::memory_order_relaxed);
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override { return context_; }
+    std::shared_ptr<Continuation<void>> get_delegate() override { return delegate; }
+
+    // ---- Decision machine ----
+    bool try_suspend() {
+        while (true) {
+            int cur = decision_and_index_.load(std::memory_order_acquire);
+            int decision = get_decision(cur);
+            int index = get_index(cur);
+            switch (decision) {
+                case UNDECIDED:
+                    if (decision_and_index_.compare_exchange_strong(cur, decision_and_index(SUSPENDED, index)))
+                        return true;
+                    break;
+                case RESUMED:
+                    return false;
+                default:
+                    throw std::logic_error("Already suspended");
+            }
         }
     }
-    std::string to_string() const override { return "ChildContinuation"; }
+
+    bool try_resume_decision() {
+        while (true) {
+            int cur = decision_and_index_.load(std::memory_order_acquire);
+            int decision = get_decision(cur);
+            int index = get_index(cur);
+            switch (decision) {
+                case UNDECIDED:
+                    if (decision_and_index_.compare_exchange_strong(cur, decision_and_index(RESUMED, index)))
+                        return true;
+                    break;
+                case SUSPENDED:
+                    return false;
+                default:
+                    throw std::logic_error("Already resumed");
+            }
+        }
+    }
+
+    // ---- Cancellation ----
+    void cancel_completed_result(Result<void> /*taken_state*/, std::exception_ptr cause) override {
+        while (true) {
+            State* state = state_.load(std::memory_order_acquire);
+            if (dynamic_cast<NotCompleted*>(state)) throw std::runtime_error("Not completed");
+            if (dynamic_cast<CompletedExceptionally*>(state)) return;
+            if (auto* cc = dynamic_cast<CompletedContinuation<void>*>(state)) {
+                if (cc->is_cancelled()) throw std::runtime_error("Must be called at most once");
+                auto* update = new CompletedContinuation<void>(cc->cancel_handler, cc->on_cancellation, cc->idempotent_resume, cause);
+                if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    if (cc->cancel_handler) call_cancel_handler(cc->cancel_handler, cause);
+                    if (cc->on_cancellation) cc->on_cancellation(cause, context_);
+                    return;
+                }
+                delete update;
+            } else {
+                return;
+            }
+        }
+    }
+
+    bool cancel(std::exception_ptr cause = nullptr) override {
+        while (true) {
+            State* state = state_.load(std::memory_order_acquire);
+            if (!dynamic_cast<NotCompleted*>(state)) return false;
+            bool handled = dynamic_cast<CancelHandler*>(state) != nullptr;
+            auto* update = new CancelledContinuation(cause, handled);
+
+            // Save handler BEFORE CAS - owned_state_ holds the CancelHandler if state is one
+            std::shared_ptr<CancelHandler> handler_to_call;
+            if (handled) {
+                handler_to_call = std::dynamic_pointer_cast<CancelHandler>(owned_state_);
+            }
+
+            if (!state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                delete update;
+                continue;
+            }
+            // CAS succeeded - take ownership of new state
+            owned_state_.reset(update);
+
+            if (handler_to_call) {
+                call_cancel_handler(handler_to_call, cause);
+            }
+            detach_child_if_non_reusable();
+            dispatch_resume(this->resume_mode);
+            return true;
+        }
+    }
+
+    void parent_cancelled(std::exception_ptr cause) {
+        if (cancel(cause)) return;
+        detach_child_if_non_reusable();
+    }
+
+    void call_cancel_handler(std::shared_ptr<CancelHandler> handler, std::exception_ptr cause) {
+        try { handler->invoke(cause); }
+        catch (...) {
+            // Swallow exceptions from cancellation handler to mirror Kotlin's behavior
+        }
+    }
+
+    // ---- Parent handle ----
+    std::shared_ptr<DisposableHandle> install_parent_handle() {
+        return nullptr;
+    }
+
+    void init_cancellability() override {
+        install_parent_handle();
+    }
+
+    void detach_child_if_non_reusable() { detach_child(); }
+
+    void detach_child() {
+        auto handle = parent_handle_;
+        if (!handle) return;
+        handle->dispose();
+        parent_handle_ = non_disposable_handle();
+    }
+
+    // ---- tryResume / completeResume ----
+    void* try_resume(void* idempotent = nullptr) override {
+        while (true) {
+            State* state = state_.load(std::memory_order_acquire);
+            if (dynamic_cast<NotCompleted*>(state)) {
+                auto* ch = dynamic_cast<CancelHandler*>(state);
+                auto* update = new CompletedContinuation<void>(
+                    ch ? std::shared_ptr<CancelHandler>(ch, [](CancelHandler*){}) : nullptr,
+                    nullptr,
+                    idempotent);
+                if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    return const_cast<void*>(RESUME_TOKEN);
+                }
+                delete update;
+                continue;
+            }
+            if (dynamic_cast<CancelledContinuation*>(state)) return nullptr;
+            return nullptr;
+        }
+    }
+
+    void* try_resume_with_exception(std::exception_ptr exception) override {
+        while (true) {
+            State* state = state_.load(std::memory_order_acquire);
+            if (dynamic_cast<NotCompleted*>(state)) {
+                auto* update = new CompletedExceptionState(exception, false);
+                if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    return const_cast<void*>(RESUME_TOKEN);
+                }
+                delete update;
+                continue;
+            }
+            if (dynamic_cast<CancelledContinuation*>(state)) return nullptr;
+            return nullptr;
+        }
+    }
+
+    void complete_resume(void* token) override {
+        if (token != RESUME_TOKEN) return;
+        detach_child_if_non_reusable();
+        dispatch_resume(this->resume_mode);
+    }
+
+    // ---- resume / resume_with ----
+    void resume(std::function<void(std::exception_ptr)> on_cancellation) override {
+        void* token = try_resume(nullptr);
+        if (!token) throw std::logic_error("Already resumed");
+        (void)on_cancellation; // TODO: store on_cancellation for void specialization
+        complete_resume(token);
+    }
+
+    void resume_undispatched(CoroutineDispatcher* dispatcher) override {
+        (void)dispatcher; // TODO: use dispatcher undispatched fast-path
+        resume(nullptr);
+    }
+
+    void resume_undispatched_with_exception(CoroutineDispatcher* dispatcher, std::exception_ptr exception) override {
+        (void)dispatcher; // TODO: use dispatcher undispatched fast-path
+        auto token = try_resume_with_exception(exception);
+        if (!token) throw std::logic_error("Already resumed");
+        complete_resume(token);
+    }
+
+    void resume_with(Result<void> result) override {
+        if (result.is_success()) {
+            resume(nullptr);
+        } else {
+            auto token = try_resume_with_exception(result.exception_or_null());
+            if (!token) throw std::logic_error("Already resumed");
+            complete_resume(token);
+        }
+    }
+
+    // ---- Waiter ----
+    void invoke_on_cancellation(void* /*segment*/, int /*index*/) override {}
+
+    // ---- invoke_on_cancellation ----
+    void invoke_on_cancellation(std::function<void(std::exception_ptr)> handler) override {
+        invoke_on_cancellation_impl(std::make_shared<UserSuppliedCancelHandler>(handler));
+    }
+
+    void invoke_on_cancellation_impl(std::shared_ptr<CancelHandler> handler) {
+        while (true) {
+            State* state = state_.load(std::memory_order_acquire);
+            if (dynamic_cast<Active*>(state)) {
+                if (state_.compare_exchange_strong(state, handler.get(), std::memory_order_acq_rel)) {
+                    // Keep handler alive - it's now the state
+                    owned_state_ = handler;
+                    return;
+                }
+            } else if (dynamic_cast<CancelHandler*>(state)) {
+                throw std::runtime_error("Multiple handlers prohibited");
+            } else if (auto* cc = dynamic_cast<CancelledContinuation*>(state)) {
+                call_cancel_handler(handler, cc->cause);
+                return;
+            } else if (dynamic_cast<CompletedContinuation<void>*>(state)) {
+                return;
+            }
+        }
+    }
+
+    // ---- state helpers ----
+    bool is_active() const override { return dynamic_cast<NotCompleted*>(state_.load(std::memory_order_acquire)); }
+    bool is_completed() const override { return !is_active(); }
+    bool is_cancelled() const override { return dynamic_cast<CancelledContinuation*>(state_.load(std::memory_order_acquire)); }
+
+    Result<void> take_state() override {
+        State* st = state_.load(std::memory_order_acquire);
+        if (auto* ex = dynamic_cast<CompletedExceptionally*>(st)) {
+            return Result<void>::failure(ex->cause);
+        }
+        return Result<void>::success();
+    }
+
+    // ---- Get result ----
+    void* get_result() {
+        if (try_suspend()) {
+            if (parent_handle_ == nullptr) install_parent_handle();
+            return intrinsics::get_COROUTINE_SUSPENDED();
+        }
+        State* state = state_.load(std::memory_order_acquire);
+        if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
+            std::rethrow_exception(ex->cause);
+        }
+        return nullptr;
+    }
+
+    // ---- dispatch ----
+    void dispatch_resume(int mode) {
+        if (try_resume_decision()) return;
+        dispatch(this, mode);
+    }
 };
 
 
 // suspend_cancellable_coroutine implementation
 template <typename T>
-void* suspend_cancellable_coroutine(
+inline void* suspend_cancellable_coroutine(
     std::function<void(CancellableContinuation<T>&)> block,
+    Continuation<void*>* continuation
+) {
+    /*
+     * Kotlin equivalent:
+     *   suspend fun <T> suspendCancellableCoroutine(
+     *       block: (CancellableContinuation<T>) -> Unit
+     *   ): T
+     *
+     * We adapt the Kotlin/Native calling convention by taking a
+     * Continuation<void*>* and returning either COROUTINE_SUSPENDED or
+     * a pointer to the produced value.
+     */
+
+    // Adapter that turns Continuation<T> into Continuation<void*>
+    class ContinuationAdapter : public Continuation<T> {
+        Continuation<void*>* outer_;
+    public:
+        explicit ContinuationAdapter(Continuation<void*>* outer) : outer_(outer) {}
+
+        std::shared_ptr<CoroutineContext> get_context() const override {
+            return outer_->get_context();
+        }
+
+        void resume_with(Result<T> result) override {
+            if (result.is_success()) {
+                // Allocate result on heap to comply with void* return convention
+                T* value_ptr = new T(result.get_or_throw());
+                outer_->resume_with(Result<void*>::success(static_cast<void*>(value_ptr)));
+            } else {
+                outer_->resume_with(Result<void*>::failure(result.exception_or_null()));
+            }
+        }
+    };
+
+    auto adapter = std::make_shared<ContinuationAdapter>(continuation);
+    auto impl = std::make_shared<CancellableContinuationImpl<T>>(adapter, 1);
+    impl->init_cancellability();
+
+    // Execute user block with the cancellable continuation
+    block(*impl);
+
+    // get_result() handles the suspend vs resume fast-path
+    return impl->get_result();
 }
 
 // Void Specialization for suspend_cancellable_coroutine
@@ -626,7 +1071,7 @@ inline void* suspend_cancellable_coroutine<void>(
     block(*impl);
 
     if (impl->try_suspend()) {
-        return COROUTINE_SUSPENDED;
+        return intrinsics::get_COROUTINE_SUSPENDED();
     }
     
     // Void result
@@ -636,4 +1081,3 @@ inline void* suspend_cancellable_coroutine<void>(
 
 } // namespace coroutines
 } // namespace kotlinx
-

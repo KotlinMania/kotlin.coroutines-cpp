@@ -197,7 +197,7 @@ public:
          *
          * Workaround: Use try_receive() in a polling loop
          */
-        return ChannelAwaiter<ChannelResult<E>>(true /* needs_suspend */, nullptr);
+        return ChannelAwaiter<ChannelResult<E>>(true /* needs_suspend */);
     }
 
     ChannelResult<E> try_receive() override {
@@ -273,6 +273,15 @@ public:
          *
          * Workaround: Use while loop with try_receive() manually
          */
+        return nullptr;
+    }
+
+    // Select clause stubs (returning nullptr keeps API consistent without concrete impl yet)
+    std::shared_ptr<selects::SelectClause2<E, SendChannel<E>>> on_send() override {
+        return nullptr;
+    }
+
+    std::shared_ptr<selects::SelectClause1<E>> on_receive() override {
         return nullptr;
     }
 

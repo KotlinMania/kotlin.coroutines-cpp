@@ -1,5 +1,6 @@
 #include <string>
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include "kotlinx/coroutines/selects/Select.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestCoroutineScheduler
 // Original package: kotlinx.coroutines.test
 //
@@ -272,14 +273,14 @@ public:
     /**
      * Consumes the knowledge that a dispatch event happened recently.
      */
-    SelectClause1<void>* on_dispatch_event() const {
+    std::shared_ptr<selects::SelectClause1<void>> on_dispatch_event() const {
         return dispatch_events_->on_receive();
     }
 
     /**
      * Consumes the knowledge that a foreground work dispatch event happened recently.
      */
-    SelectClause1<void>* on_dispatch_event_foreground() const {
+    std::shared_ptr<selects::SelectClause1<void>> on_dispatch_event_foreground() const {
         return dispatch_events_foreground_->on_receive();
     }
 

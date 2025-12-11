@@ -1,5 +1,6 @@
 #pragma once
 #include <exception>
+#include <iostream>
 #include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Job.hpp"
@@ -57,11 +58,33 @@ public:
     }
 };
 
+// Resume the delegate continuation directly with the task's state
+template<typename T>
+void resume(DispatchedTask<T>* task, bool undispatched) {
+    std::cerr << "[dispatch] resume called" << std::endl;
+    auto delegate = task->get_delegate();
+    if (!delegate) {
+        std::cerr << "[dispatch] delegate is null!" << std::endl;
+        return;
+    }
+    std::cerr << "[dispatch] got delegate, calling take_state" << std::endl;
+
+    Result<T> state = task->take_state();
+    std::cerr << "[dispatch] take_state returned, is_success=" << state.is_success() << std::endl;
+    // In Kotlin this goes through getExceptionalResult/getSuccessfulResult
+    // For now, pass the result directly
+    delegate->resume_with(state);
+    std::cerr << "[dispatch] resume_with called on delegate" << std::endl;
+    (void)undispatched; // TODO: handle undispatched mode via DispatchedContinuation
+}
+
 template<typename T>
 void dispatch(DispatchedTask<T>* task, int mode) {
-    // Helper to dispatch mechanism if needed
-    // In Kotlin: dispatcher.dispatch(context, task)
-    // Here we assume task is already dispatched or this method creates the dispatch.
+    // Simplified dispatch - in Kotlin this checks if dispatcher.isDispatchNeeded
+    // and either dispatches through the dispatcher or resumes directly.
+    // For now, we just resume directly (equivalent to undispatched/unconfined behavior)
+    bool undispatched = (mode == MODE_UNDISPATCHED);
+    resume(task, undispatched);
 }
 
 } // namespace coroutines

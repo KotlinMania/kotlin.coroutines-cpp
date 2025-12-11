@@ -391,7 +391,7 @@ public:
 
     std::shared_ptr<Job> get_parent() const override { return nullptr; }
     void dispose() override {}
-    bool child_cancelled(std::exception_ptr cause) override { return false; }
+    bool child_cancelled(std::exception_ptr) override { return false; }
     std::string to_string() const { return "NonDisposableHandle"; }
 
 private:
