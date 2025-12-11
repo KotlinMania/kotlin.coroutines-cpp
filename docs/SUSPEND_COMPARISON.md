@@ -98,7 +98,7 @@ void* invoke_suspend(Result<void*> result) override {
         do {
             this->_label = 1;
             void* _tmp_result = dummy(this);
-            if (kotlin::coroutines::intrinsics::is_coroutine_suspended(_tmp_result)) {
+            if (kotlinx::coroutines::intrinsics::is_coroutine_suspended(_tmp_result)) {
                 return COROUTINE_SUSPENDED;
             }
             tmp = _tmp_result;
@@ -111,7 +111,7 @@ void* invoke_suspend(Result<void*> result) override {
         do {
             this->_label = 2;
             void* _tmp_result = dummy(this);
-            if (kotlin::coroutines::intrinsics::is_coroutine_suspended(_tmp_result)) {
+            if (kotlinx::coroutines::intrinsics::is_coroutine_suspended(_tmp_result)) {
                 return COROUTINE_SUSPENDED;
             }
             tmp = _tmp_result;
