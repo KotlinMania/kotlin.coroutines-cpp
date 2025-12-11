@@ -1,9 +1,10 @@
-#include "include/kotlinx/coroutines/CancellableContinuationImpl.hpp"
-#include "include/kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <iostream>
 #include <memory>
 
 using namespace kotlinx::coroutines;
+using namespace kotlinx::coroutines::intrinsics;
 
 int main() {
     std::cout << "Testing suspension infrastructure fixes..." << std::endl;
@@ -19,7 +20,7 @@ int main() {
     class TestContinuation : public Continuation<int> {
     public:
         std::shared_ptr<CoroutineContext> get_context() const override { 
-            return std::make_shared<CoroutineContext>(); 
+            return nullptr; // Empty context for testing
         }
         
         void resume_with(Result<int> result) override {
@@ -49,7 +50,13 @@ int main() {
     // Test 4: Test suspend_cancellable_coroutine function
     std::cout << "\nTesting suspend_cancellable_coroutine..." << std::endl;
     
-    auto outer_continuation = std::make_shared<TestContinuation>();
+    class OuterContinuation : public Continuation<void*> {
+    public:
+        std::shared_ptr<CoroutineContext> get_context() const override { return nullptr; }
+        void resume_with(Result<void*> /*result*/) override {}
+    };
+
+    auto outer_continuation = std::make_shared<OuterContinuation>();
     
     void* result = suspend_cancellable_coroutine<int>(
         [](CancellableContinuation<int>& cont) {

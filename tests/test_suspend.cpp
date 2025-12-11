@@ -7,19 +7,20 @@
  * - label field tracks suspension points
  * - ContinuationImpl is the base class
  *
- * NOTE: IntelliJ IDEA may report false syntax errors in this file due to macro-based
- * state machine generation. The code compiles correctly with g++/clang.
- * See IDE_ERROR_INVESTIGATION.md for details.
+ * This test previously used SUSPEND_* macros to generate state machines.
+ * It now uses explicit switch/label logic plus Kotlin-aligned `suspend(...)`
+ * call markers for readability and to match the DSL direction.
  */
 
 // noinspection CppDFAUnreachableCode
 // noinspection CppDFAUnusedValue
 // noinspection CppNoDiscardExpression
 
-#include "kotlinx/coroutines/SuspendMacros.hpp"
+#include "kotlinx/coroutines/SuspendMacros.hpp" // provides SuspendLambda base
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/Result.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include <iostream>
 #include <cassert>
 #include <memory>
@@ -30,6 +31,7 @@ using kotlinx::coroutines::Continuation;
 using kotlinx::coroutines::EmptyCoroutineContext;
 using kotlinx::coroutines::CoroutineContext;
 using kotlinx::coroutines::intrinsics::is_coroutine_suspended;
+using kotlinx::coroutines::dsl::suspend;
 using kotlinx::coroutines::Result;
 
 // A simple suspend function that returns a value
@@ -41,14 +43,15 @@ class GetValueSuspendFn : public SuspendLambda<int> {
 public:
     using SuspendLambda::SuspendLambda;
 
-    // NOLINT - IDE cannot parse suspend macros
     void* invoke_suspend(Result<void*> result) override {
-        SUSPEND_BEGIN(1) // NOLINT
-
-        // No suspension, just return the value
-        SUSPEND_RETURN(42);
-
-        SUSPEND_END // NOLINT
+        (void)result;
+        switch (this->_label) {
+        case 0:
+            // No suspension, just return the value
+            return reinterpret_cast<void*>(static_cast<intptr_t>(42));
+        default:
+            return nullptr;
+        }
     }
 };
 
@@ -65,31 +68,36 @@ class ExampleSuspendFn : public SuspendLambda<int> {
 public:
     using SuspendLambda::SuspendLambda;
 
-    // NOLINT - IDE cannot parse suspend macros
     void* invoke_suspend(Result<void*> result) override {
-        void* tmp = nullptr;
-        int x;
-        std::shared_ptr<GetValueSuspendFn> get_value_fn;
+        switch (this->_label) {
+        case 0: {
+            // val x = getValue() - this is a suspend call
+            auto get_value_fn = std::make_shared<GetValueSuspendFn>(
+                std::dynamic_pointer_cast<Continuation<void*>>(shared_from_this())
+            );
 
-        SUSPEND_BEGIN(2) // NOLINT
+            this->_label = 1;
+            void* tmp = suspend(get_value_fn->invoke_suspend(Result<void*>::success(nullptr)));
+            if (is_coroutine_suspended(tmp)) return COROUTINE_SUSPENDED;
 
-        // val x = getValue() - this is a suspend call
-        get_value_fn = std::make_shared<GetValueSuspendFn>( // NOLINT
-            std::dynamic_pointer_cast<Continuation<void*>>(shared_from_this())
-        );
-        SUSPEND_CALL(1, get_value_fn->invoke_suspend(Result<void*>::success(nullptr)), tmp) // NOLINT
+            int x = static_cast<int>(reinterpret_cast<intptr_t>(tmp));
+            saved_x = x; // spill
 
-        // After SUSPEND_CALL:
-        // - If no suspension: tmp contains the direct result
-        // - If resumed from suspension: result parameter contains the value
-        // The macro fall-through means we arrive here in both cases, but the value source differs
-        x = static_cast<int>(reinterpret_cast<intptr_t>(tmp));
-        saved_x = x;
-
-        // return x + 1
-        SUSPEND_RETURN(saved_x + 1);
-
-        SUSPEND_END // NOLINT
+            // return x + 1
+            return reinterpret_cast<void*>(static_cast<intptr_t>(saved_x + 1));
+        }
+        case 1: {
+            // Resume path: result holds resumed value from getValue()
+            if (result.is_failure()) {
+                std::rethrow_exception(result.exception_or_null());
+            }
+            int x = static_cast<int>(reinterpret_cast<intptr_t>(result.get_or_throw()));
+            saved_x = x;
+            return reinterpret_cast<void*>(static_cast<intptr_t>(saved_x + 1));
+        }
+        default:
+            return nullptr;
+        }
     }
 };
 
@@ -178,28 +186,24 @@ public:
         }
     }
 
-    // NOLINT - IDE cannot parse suspend macros
     void* invoke_suspend(Result<void*> result) override {
-        SUSPEND_BEGIN(2) // NOLINT
-
-        // State 0: Initial - simulate suspending
-        this->_label = 1;
-        return COROUTINE_SUSPENDED;  // Actually suspend
-
-        SUSPEND_POINT(1) // NOLINT
-        // State 1: Resumed after suspension
-        // result contains the value we were resumed with
-        if (result.is_failure()) {
-            std::rethrow_exception(result.exception_or_null());
+        switch (this->_label) {
+        case 0:
+            // State 0: Initial - simulate suspending
+            this->_label = 1;
+            return COROUTINE_SUSPENDED;  // Actually suspend
+        case 1:
+            // State 1: Resumed after suspension
+            if (result.is_failure()) {
+                std::rethrow_exception(result.exception_or_null());
+            }
+            {
+                int resumed_value = static_cast<int>(reinterpret_cast<intptr_t>(result.get_or_throw()));
+                return reinterpret_cast<void*>(static_cast<intptr_t>(resumed_value + 1));
+            }
+        default:
+            return nullptr;
         }
-
-        // Return the value we got + 1
-        {
-            int resumed_value = static_cast<int>(reinterpret_cast<intptr_t>(result.get_or_throw()));
-            SUSPEND_RETURN(resumed_value + 1);
-        }
-
-        SUSPEND_END // NOLINT
     }
 };
 

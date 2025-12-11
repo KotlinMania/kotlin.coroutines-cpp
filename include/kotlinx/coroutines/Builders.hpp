@@ -198,8 +198,18 @@ namespace coroutines {
 
     // Transliterated from Builders.common.kt: suspend fun <T> withContext(context: CoroutineContext, block: suspend CoroutineScope.() -> T): T
     //
-    // This is a suspend function. In C++, it must be called using the SUSPEND_CALL macro
-    // from within an invoke_suspend() method. The caller's state machine handles suspension.
+    // This is a suspend function. In C++, it must be called from within a suspend
+    // state machine.
+    //
+    // Preferred Kotlin‑aligned DSL:
+    //   [[suspend]] void* foo(Continuation<void*>* c) {
+    //       auto r = suspend(with_context(ctx, block, c));
+    //       ...
+    //   }
+    // The Clang suspend plugin rewrites the DSL into a Kotlin‑Native‑shape state machine.
+    //
+    // Manual state machines may still call this directly and propagate
+    // COROUTINE_SUSPENDED explicitly.
     //
     // Implementation pattern from NativeSuspendFunctionLowering.kt:
     // - State machine with label field tracks suspension points

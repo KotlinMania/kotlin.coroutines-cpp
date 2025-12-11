@@ -9,15 +9,23 @@ using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::intrinsics;
 
 // Mock continuation for testing
-class MockContinuation : public Continuation<int> {
+// suspend_cancellable_coroutine follows Kotlin/Native ABI and expects Continuation<void*>.
+class MockContinuation : public Continuation<void*> {
 public:
     int result_value = 0;
     std::exception_ptr exception_ptr;
     bool resumed = false;
     
-    void resume_with(Result<int> result) override {
+    void resume_with(Result<void*> result) override {
         if (result.is_success()) {
-            result_value = result.get_or_throw();
+            void* raw = result.get_or_throw();
+            if (raw) {
+                auto* p = static_cast<int*>(raw);
+                result_value = *p;
+                delete p;
+            } else {
+                result_value = 0;
+            }
         } else {
             exception_ptr = result.exception_or_null();
         }
@@ -69,11 +77,14 @@ void test_cancellable_continuation_suspension() {
         mock_continuation.get()
     );
     
-    // Should not be suspended since we resumed immediately
+    // Should not be suspended since we resumed immediately.
+    // In Kotlin semantics, the value is returned directly; the outer continuation
+    // may or may not be resumed in this fast path.
     assert(result != COROUTINE_SUSPENDED);
-    assert(mock_continuation->resumed == true);
-    assert(mock_continuation->result_value == 42);
-    std::cout << "✓ Synchronous completion works correctly" << std::endl;
+    auto* direct_ptr = static_cast<int*>(result);
+    assert(direct_ptr && *direct_ptr == 42);
+    delete direct_ptr;
+    std::cout << "✓ Synchronous completion returns directly" << std::endl;
     
     // Test asynchronous completion (suspension)
     mock_continuation->resumed = false;
