@@ -1,5 +1,5 @@
 #pragma once
-#include "kotlinx/coroutines/CancellableContinuation.hpp"
+#include "../CancellableContinuation.hpp"
 #include "BufferOverflow.hpp"
 #include <memory>
 #include <exception>
@@ -147,18 +147,18 @@ public:
 
 template <typename T>
 struct ChannelAwaiter {
-    std::optional<T> fast_val;
+    std::unique_ptr<T> fast_val;
     bool suspended_ = false;
 
     // Fast path constructor - immediate value
-    ChannelAwaiter(T val) : fast_val(std::move(val)), suspended_(false) {}
+    ChannelAwaiter(T val) : fast_val(std::make_unique<T>(std::move(val))), suspended_(false) {}
 
     // Slow path constructor - needs suspension (placeholder)
     // TODO: NEEDS SUSPEND instead of suspendvariable - refer to Channel.kt
-    ChannelAwaiter(bool needs_suspend , std::function<void(CancellableContinuation<T>&)> /*block*/)
-       : suspended_(true) {}
+    ChannelAwaiter(bool needs_suspend /*, std::function<void(CancellableContinuation<T>&)> block*/)
+       : suspended_(needs_suspend) {}
 
-    bool has_value() const { return fast_val.has_value(); }
+    bool has_value() const { return fast_val != nullptr; }
     bool needs_suspend() const { return suspended_; }
 
     T get_or_throw() const {
