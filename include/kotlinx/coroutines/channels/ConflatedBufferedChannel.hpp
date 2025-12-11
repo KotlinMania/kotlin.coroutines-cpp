@@ -13,12 +13,12 @@ namespace channels {
 template <typename E>
 class ConflatedBufferedChannel : public BufferedChannel<E> {
 public:
-    BufferOverflow onBufferOverflow;
+    BufferOverflow on_buffer_overflow;
 
-    ConflatedBufferedChannel(int capacity, BufferOverflow onBufferOverflow = BufferOverflow::DROP_OLDEST,
+    ConflatedBufferedChannel(int capacity, BufferOverflow on_buffer_overflow = BufferOverflow::DROP_OLDEST,
                              OnUndeliveredElement<E> onUndeliveredElement = nullptr)
-        : BufferedChannel<E>(capacity, onUndeliveredElement), onBufferOverflow(onBufferOverflow) {
-        if (onBufferOverflow == BufferOverflow::SUSPEND) {
+        : BufferedChannel<E>(capacity, onUndeliveredElement), on_buffer_overflow(on_buffer_overflow) {
+        if (on_buffer_overflow == BufferOverflow::SUSPEND) {
             throw std::invalid_argument("ConflatedBufferedChannel does not support SUSPEND strategy");
         }
     }
@@ -38,7 +38,7 @@ public:
     ChannelResult<void> try_send(E element) override {
         std::unique_lock<std::mutex> lock(this->mtx);
         if (this->closed_) {
-              return ChannelResult<void>::closed(this->closeCause_);
+              return ChannelResult<void>::closed(this->close_cause_);
         }
 
         // 1. Check waiting receivers
@@ -54,11 +54,11 @@ public:
         int cap = this->capacity_;
 
         if (cap != Channel<E>::UNLIMITED && static_cast<int>(buffer.size()) >= cap) {
-            if (onBufferOverflow == BufferOverflow::DROP_LATEST) {
+            if (on_buffer_overflow == BufferOverflow::DROP_LATEST) {
                 // Drop this element
                 return ChannelResult<void>::success();
             }
-            if (onBufferOverflow == BufferOverflow::DROP_OLDEST) {
+            if (on_buffer_overflow == BufferOverflow::DROP_OLDEST) {
                 // Drop oldest
                 if (!buffer.empty()) {
                     buffer.pop_front();
