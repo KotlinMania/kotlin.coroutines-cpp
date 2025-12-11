@@ -29,8 +29,8 @@ template<typename S>
 class AbstractSharedFlow {
 protected:
     std::vector<S*>* slots_ = nullptr; // array of slots
-    int nCollectors_ = 0; // number of allocated slots
-    int nextIndex_ = 0; // oracle for next free slot
+    int n_collectors_ = 0; // number of allocated slots
+    int next_index_ = 0; // oracle for next free slot
     std::recursive_mutex mutex_; // Lock for state synchronization
 
     virtual S* create_slot() = 0;
@@ -54,7 +54,7 @@ public:
         if (!current_slots) {
             slots_ = create_slot_array(2);
             current_slots = slots_;
-        } else if (nCollectors_ >= static_cast<int>(current_slots->size())) {
+        } else if (n_collectors_ >= static_cast<int>(current_slots->size())) {
             // Expand
             auto new_slots = create_slot_array(2 * current_slots->size());
             std::copy(current_slots->begin(), current_slots->end(), new_slots->begin());
@@ -63,7 +63,7 @@ public:
             current_slots = slots_;
         }
 
-        int index = nextIndex_;
+        int index = next_index_;
         S* found_slot = nullptr;
         while (true) {
             if (static_cast<size_t>(index) >= current_slots->size()) index = 0;
@@ -82,8 +82,8 @@ public:
             if (index >= static_cast<int>(current_slots->size())) index = 0;
         }
         
-        nextIndex_ = index + 1;
-        nCollectors_++;
+        next_index_ = index + 1;
+        n_collectors_++;
         return found_slot;
     }
 
@@ -91,8 +91,8 @@ public:
         std::vector<ContinuationBase*> resumes;
         {
             std::lock_guard<std::recursive_mutex> lock(mutex_);
-            nCollectors_--;
-            if (nCollectors_ == 0) nextIndex_ = 0;
+            n_collectors_--;
+            if (n_collectors_ == 0) next_index_ = 0;
             
             resumes = slot->free_locked(this);
         }
@@ -108,13 +108,13 @@ public:
 
     int get_subscription_count() const {
          std::lock_guard<std::recursive_mutex> lock(const_cast<std::recursive_mutex&>(mutex_));
-         return nCollectors_;
+         return n_collectors_;
     }
     
 protected:
     void for_each_slot_locked(std::function<void(S*)> block) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
-        if (nCollectors_ == 0 || !slots_) return;
+        if (n_collectors_ == 0 || !slots_) return;
         for (auto slot : *slots_) {
             if (slot) block(slot);
         }
