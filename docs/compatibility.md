@@ -1,1 +1,0 @@
-The documentation has been moved to the [topics/compatibility.md](topics/compatibility.md).
