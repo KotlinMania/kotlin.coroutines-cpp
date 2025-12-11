@@ -30,25 +30,7 @@ template<typename T> class Continuation;
 
 // --------------- core job interfaces ---------------
 
-// ===== API COMPLETENESS AUDIT =====
-// Kotlin API from kotlinx-coroutines-core.api:
-// ✓ field Key → static const Key type_key
-// ✓ fun attachChild(child: ChildJob): ChildHandle → attach_child(child)
-// ✓ fun cancel() → cancel()
-// ✓ fun cancel(cause: Throwable?): Boolean → cancel(cause) - NOTE: Kotlin returns Boolean, we return void
-// ✓ fun cancel(cause: CancellationException?) → cancel(cause)
-// ✓ fun getCancellationException(): CancellationException → get_cancellation_exception()
-// ✓ fun getChildren(): Sequence<Job> → get_children()
-// ✓ fun getParent(): Job? → get_parent()
-// ✓ fun invokeOnCompletion(handler: CompletionHandler): DisposableHandle → invoke_on_completion(handler)
-// ✓ fun invokeOnCompletion(onCancelling: Boolean, invokeImmediately: Boolean, handler: CompletionHandler)
-//       → invoke_on_completion(on_cancelling, invoke_immediately, handler)
-// ✓ fun isActive(): Boolean → is_active()
-// ✓ fun isCancelled(): Boolean → is_cancelled()
-// ✓ fun isCompleted(): Boolean → is_completed()
-// ✓ suspend fun join() → join(Continuation<void*>*) + join_blocking()
-// ✓ fun start(): Boolean → start()
-//
+
 // TODO: Complete these two
 // - fun getOnJoin(): SelectClause0 - Requires select{} expression support
 // - fun plus(other: Job): Job - Combines two jobs

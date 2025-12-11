@@ -6,7 +6,7 @@
 namespace kotlinx {
 namespace coroutines {
 
-// NOTE: T should be Unit for coroutines that don't return a value, NOT void.
+// TODO: NOTE: T should be Unit for coroutines that don't return a value, NOT void.
 template<typename T>
 void* to_state(Result<T> result) {
     if (result.is_success()) {
@@ -16,7 +16,7 @@ void* to_state(Result<T> result) {
     }
 }
 
-// NOTE: T should be Unit for coroutines that don't return a value, NOT void.
+// TODO: NOTE: T should be Unit for coroutines that don't return a value, NOT void.
 template<typename T>
 Result<T> recover_result(void* state, Continuation<T>* u_cont) {
     if (auto* completed_exceptionally = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(state))) {

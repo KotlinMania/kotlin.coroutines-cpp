@@ -42,6 +42,7 @@ namespace coroutines {
  * Workaround: Use delay(1) for a minimal suspension point
  */
 void yield_coroutine() {
+    // TODO: Look for LLVM code or other in kotlin source code tmp/kotlin
     std::this_thread::yield();
 }
 

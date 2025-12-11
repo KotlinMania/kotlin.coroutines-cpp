@@ -139,8 +139,9 @@ struct ChannelAwaiter {
     ChannelAwaiter(T val) : fast_val(std::move(val)), suspended_(false) {}
 
     // Slow path constructor - needs suspension (placeholder)
-    ChannelAwaiter(bool /*needs_suspend*/, std::function<void(CancellableContinuation<T>&)> /*block*/)
-        : suspended_(true) {}
+    // TODO: NEEDS SUSPEND instead of suspendvariable - refer to Channel.kt
+    ChannelAwaiter(bool needs_suspend , std::function<void(CancellableContinuation<T>&)> /*block*/)
+       : suspended_(true) {}
 
     bool has_value() const { return fast_val.has_value(); }
     bool needs_suspend() const { return suspended_; }

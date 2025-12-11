@@ -9,7 +9,7 @@
 // TODO: Unit return type - translate to void
 
 // Forward declarations
-namespace kotlin {
+namespace kotlinx {
 namespace coroutines {
 template<typename T>
 class Continuation;
