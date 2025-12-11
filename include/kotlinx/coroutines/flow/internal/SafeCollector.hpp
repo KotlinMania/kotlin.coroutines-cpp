@@ -21,8 +21,8 @@ public:
 protected:
     void check_context(const CoroutineContext& currentContext);
     
-    CoroutineContext collectContext_;
-    int collectContextSize_;
+    CoroutineContext collect_context_;
+    int collect_context_size_;
 };
 
 /**
