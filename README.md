@@ -151,26 +151,30 @@ kotlin.coroutines-cpp/
 
 ```bash
 mkdir build && cd build
-cmake -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=0 ..
+cmake ..
 make
 ```
 
 ### With Kotlin Native Integration
 
+When linking with Kotlin Native (for GC bridge coordination):
+
 ```bash
 mkdir build && cd build
-cmake -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=1 ..
+cmake -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=ON ..
 make
 ```
 
 ### Running Tests
 
 ```bash
-# Build and run test executables
-./test_job
-./test_channel
-./test_dispatchers
-./test_suspend
+# After building, test binaries are in build/bin/
+./build/bin/test_job
+./build/bin/test_dispatchers
+./build/bin/test_suspend
+
+# Or use CTest
+cd build && ctest
 ```
 
 ## Usage Examples

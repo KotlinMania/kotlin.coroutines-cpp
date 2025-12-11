@@ -39,12 +39,10 @@ enable_testing()
 # Add compile options
 add_compile_options(-Wall -Wextra -Wpedantic)
 
-# Kotlin Native GC Bridge configuration
-option(KOTLIN_NATIVE_RUNTIME_AVAILABLE "Build with Kotlin Native runtime support" OFF)
+# Kotlin Native runtime detection (for GC bridge weak-linking)
+option(KOTLIN_NATIVE_RUNTIME_AVAILABLE "Link with Kotlin Native runtime for GC coordination" OFF)
 if(KOTLIN_NATIVE_RUNTIME_AVAILABLE)
     add_compile_definitions(KOTLIN_NATIVE_RUNTIME_AVAILABLE=1)
-else()
-    add_compile_definitions(KOTLIN_NATIVE_RUNTIME_AVAILABLE=0)
 endif()
 
 # Include directories
