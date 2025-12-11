@@ -1,5 +1,6 @@
 #pragma once
 #include "../CancellableContinuation.hpp"
+#include "../selects/Select.hpp"
 #include "BufferOverflow.hpp"
 #include <memory>
 #include <exception>
@@ -270,6 +271,10 @@ struct Channel : public SendChannel<E>, public ReceiveChannel<E> {
     static constexpr const char* DEFAULT_BUFFER_PROPERTY_NAME = "kotlinx.coroutines.channels.defaultBuffer";
 
     static int getDefaultBufferCapacity() { return 64; }
+
+    // Select clause support
+    virtual SelectClause1<E> on_send() = 0;
+    virtual SelectClause0<E> on_receive() = 0;
 };
 
 /**
