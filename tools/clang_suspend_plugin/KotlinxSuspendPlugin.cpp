@@ -17,18 +17,24 @@ using namespace clang;
 
 namespace {
 
-static constexpr const char* kSuspendAnnot = "kotlinx_suspend";
-static constexpr const char* kSuspendCallAnnot = "kotlinx_suspend_call";
+// Kotlin-aligned tokens:
+//  - "suspend" marks a suspend function (attribute) and a suspend point (statement annotate or wrapper call).
+// Legacy spellings are still accepted for compatibility with earlier iterations.
+static constexpr const char* kSuspendAnnot = "suspend";
+static constexpr const char* kLegacySuspendAnnot = "kotlinx_suspend";
+static constexpr const char* kSuspendCallAnnot = "suspend";
+static constexpr const char* kLegacySuspendCallAnnot = "kotlinx_suspend_call";
 
 // -----------------------------------------------------------------------------
 // Attribute registration
 // -----------------------------------------------------------------------------
-// Provides [[kotlinx::suspend]] for FunctionDecls. We lower this to an implicit
+// Provides [[suspend]] / [[kotlinx::suspend]] for FunctionDecls. We lower this to an implicit
 // AnnotateAttr so the rest of the plugin can share detection logic with
-// [[clang::annotate("kotlinx_suspend")]].
+// [[clang::annotate("kotlinx_suspend")]] (legacy) and the Kotlin‑aligned "suspend".
 class KotlinxSuspendAttrInfo : public ParsedAttrInfo {
 public:
     KotlinxSuspendAttrInfo() {
+        Spellings.push_back({ParsedAttr::AS_CXX11, "suspend"});
         Spellings.push_back({ParsedAttr::AS_CXX11, "kotlinx::suspend"});
     }
 
@@ -46,7 +52,7 @@ public:
 };
 
 static ParsedAttrInfoRegistry::Add<KotlinxSuspendAttrInfo>
-    SuspendReg("kotlinx_suspend", "Mark a function as Kotlin‑style suspend");
+    SuspendReg("suspend", "Mark a function as Kotlin‑style suspend");
 
 // NOTE: Statement attribute registration for [[kotlinx::suspend_call]] is
 // deferred. Phase‑1 accepts either:
@@ -54,8 +60,8 @@ static ParsedAttrInfoRegistry::Add<KotlinxSuspendAttrInfo>
 //   - a call to kx::suspend_call(...)
 
 // Phase-0 / Phase-1 scaffold:
-// - Detect suspend functions via [[kotlinx::suspend]] or [[clang::annotate("kotlinx_suspend")]]
-// - Detect suspend points via [[clang::annotate("kotlinx_suspend_call")]] or kx::suspend_call(...)
+// - Detect suspend functions via [[suspend]]/[[kotlinx::suspend]] or [[clang::annotate("kotlinx_suspend")]]
+// - Detect suspend points via [[clang::annotate("suspend")]]/[[clang::annotate("kotlinx_suspend_call")]] or suspend(...)
 // - Emit a generated .kx.cpp sidecar containing a Kotlin‑Native‑shape state machine
 class KotlinxSuspendVisitor : public RecursiveASTVisitor<KotlinxSuspendVisitor> {
 public:
@@ -66,7 +72,7 @@ public:
         if (!fd || !fd->hasBody())
             return true;
 
-        if (hasAnnotate(fd, kSuspendAnnot)) {
+        if (hasAnnotate(fd, kSuspendAnnot) || hasAnnotate(fd, kLegacySuspendAnnot)) {
             auto id = diags_.getCustomDiagID(DiagnosticsEngine::Remark,
                                             "kotlinx-suspend: found suspend function '%0'");
             diags_.Report(fd->getLocation(), id) << fd->getNameAsString();
@@ -82,7 +88,8 @@ public:
 
         for (const Attr* a : stmt->getAttrs()) {
             if (const auto* ann = dyn_cast<AnnotateAttr>(a)) {
-                if (ann->getAnnotation() == kSuspendCallAnnot) {
+                if (ann->getAnnotation() == kSuspendCallAnnot ||
+                    ann->getAnnotation() == kLegacySuspendCallAnnot) {
                     auto id = diags_.getCustomDiagID(DiagnosticsEngine::Remark,
                                                     "kotlinx-suspend: suspend point in '%0'");
                     diags_.Report(stmt->getBeginLoc(), id)
@@ -96,7 +103,7 @@ public:
     bool TraverseFunctionDecl(FunctionDecl* fd) {
         // Track current suspend function while traversing its body.
         FunctionDecl* prev = currentSuspend_;
-        if (fd && hasAnnotate(fd, kSuspendAnnot))
+        if (fd && (hasAnnotate(fd, kSuspendAnnot) || hasAnnotate(fd, kLegacySuspendAnnot)))
             currentSuspend_ = fd;
         bool res = RecursiveASTVisitor::TraverseFunctionDecl(fd);
         currentSuspend_ = prev;
@@ -143,21 +150,23 @@ private:
     static bool isSuspendCallStmt(const Stmt* st) {
         if (!st) return false;
 
-        // Attribute-based form: [[clang::annotate("kotlinx_suspend_call")]]
+        // Attribute-based form: [[clang::annotate("suspend")]] (preferred) or legacy "kotlinx_suspend_call"
         if (const auto* attributed = dyn_cast<AttributedStmt>(st)) {
             for (const Attr* a : attributed->getAttrs()) {
                 if (const auto* ann = dyn_cast<AnnotateAttr>(a)) {
-                    if (ann->getAnnotation() == kSuspendCallAnnot) return true;
+                    if (ann->getAnnotation() == kSuspendCallAnnot ||
+                        ann->getAnnotation() == kLegacySuspendCallAnnot)
+                        return true;
                 }
             }
         }
 
-        // Call-wrapper form: kx::suspend_call(...)
+        // Call-wrapper form: suspend(...) (preferred) or legacy suspend_call(...)
         if (const auto* exprStmt = dyn_cast<Expr>(st)) {
             if (const auto* call = dyn_cast<CallExpr>(exprStmt)) {
                 if (const FunctionDecl* callee = call->getDirectCallee()) {
                     StringRef nm = callee->getName();
-                    if (nm == "suspend_call") return true;
+                    if (nm == "suspend" || nm == "suspend_call") return true;
                 }
             }
         }

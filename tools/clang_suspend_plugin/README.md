@@ -3,8 +3,8 @@
 This is the **Phase‑1** Clang plugin scaffold for the C++ suspend DSL.
 
 Current behavior:
-- Detects suspend functions annotated with `[[kotlinx::suspend]]` (registered by the plugin) or `[[clang::annotate("kotlinx_suspend")]]`.
-- Detects suspend points via `[[clang::annotate("kotlinx_suspend_call")]]` on a statement, or a call to `kx::suspend_call(...)`.
+- Detects suspend functions annotated with `[[suspend]]` / `[[kotlinx::suspend]]` (registered by the plugin) or legacy `[[clang::annotate("kotlinx_suspend")]]`.
+- Detects suspend points via `[[clang::annotate("suspend")]]` / legacy `[[clang::annotate("kotlinx_suspend_call")]]`, or the Kotlin‑aligned wrapper call `suspend(expr)`.
 - Emits a generated sidecar translation unit (`.kx.cpp`) containing a Kotlin‑Native‑shape state machine.
   The original translation unit is not modified yet.
 
@@ -30,14 +30,15 @@ clang++ -fsyntax-only \
   path/to/file.cpp
 ```
 
-Example annotations:
+Example Kotlin‑aligned DSL:
 
 ```cpp
-[[kotlinx::suspend]]
+using namespace kotlinx::coroutines::dsl;
+
+[[suspend]]
 void* my_suspend_fn(std::shared_ptr<Continuation<void*>> completion) {
     int x = 1;
-    [[clang::annotate("kotlinx_suspend_call")]]
-    foo_suspend(completion);
+    suspend(foo_suspend(completion)); // suspension point
     return nullptr;
 }
 ```
