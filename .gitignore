@@ -133,3 +133,5 @@ Desktop.ini
 /conanbuildinfo.*
 /conaninfo.txt
 /graph_info.json
+/include/kotlinx/coroutines/sync/Mutex.hpp
+/kotlinx-coroutines-core/build/kotlinx-coroutines-core-config-version.cmake
