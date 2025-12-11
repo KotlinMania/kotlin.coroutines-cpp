@@ -101,45 +101,56 @@ public:
         return (void*)COMPLETING_ALREADY;
     }
 
-    virtual void after_resume(std::any state) {
-        // after_completion(state); as per kotlin
+    virtual void after_resume(void* state) {
+        // In Kotlin: protected open fun afterResume(state: Any?): Unit = afterCompletion(state)
+        // afterCompletion is from JobSupport and is a no-op by default
+        // We just call on_completion_internal directly
+        on_completion_internal(state);
     }
     
-    virtual void after_completion(void* state) override {
-        if (auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<CompletedExceptionally*>(state))) { 
-             // if (ex) on_cancelled...
+    virtual void on_completion_internal(void* state) override {
+        if (state == nullptr) {
+            // Completed with null/Unit
+            if constexpr (std::is_void_v<T>) {
+                on_completed(/* void - no value */);
+            } else {
+                on_completed(*static_cast<T*>(state));
+            }
+        } else {
+            auto* ex = static_cast<CompletedExceptionally*>(state);
+            if (ex && ex->cause) {
+                on_cancelled(ex->cause, ex->handled);
+            } else if constexpr (!std::is_void_v<T>) {
+                on_completed(*static_cast<T*>(state));
+            }
         }
     }
     
-    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
-    // public final override fun getContext(): CoroutineContext
-    // Already present as get_context() inherited from Continuation
+    void handle_on_completion_exception(std::exception_ptr exception) override {
+        handle_coroutine_exception(*get_context(), exception);
+    }
     
-    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
-    // public fun getCoroutineContext(): CoroutineContext
-    // Already present as get_coroutine_context() inherited from CoroutineScope
-    
-    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
-    // public fun isActive(): Boolean  
-    // Already present as is_active() inherited from Job
-    
-    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
-    // public final fun resumeWith(result: Result<T>): Unit
-    // Already present as resume_with() inherited from Continuation
-    
-    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
-    // protected final fun onCompletionInternal(state: Any?): Unit
-    // This is called when coroutine completes and passes the state to on_completed or on_cancelled.
-    // Should be: protected void on_completion_internal(void* state);
-    // Currently we have after_completion which is similar but not exact match.
-    
-    // TODO: MISSING API - kotlinx.coroutines.AbstractCoroutine
-    // public final fun start(start: CoroutineStart, receiver: R, block: suspend R.() -> T)
-    // Starts this coroutine with the given code block and start strategy.
-    // Already present as template<typename R> void start(CoroutineStart, R, std::function<T(R)>)
-    // BUT: Signature doesn't match exactly - Kotlin has suspend lambda, we have function
+    // ===== API COMPLETENESS AUDIT =====
+    // Kotlin API from kotlinx-coroutines-core.api line 1-13:
+    // ✓ <init>(CoroutineContext, Boolean, Boolean) → AbstractCoroutine(parent_context, init_parent_job, active)
+    // TODO: MISSING API: protected fun afterResume(state: Any?)  
+    //       We have: virtual void after_resume(std::any state) - CORRECT
+    // ✓ protected fun cancellationExceptionMessage() → cancellation_exception_message()
+    // ✓ public final fun getContext() → get_context()
+    // ✓ public fun getCoroutineContext() → get_coroutine_context()
+    // ✓ public fun isActive() → is_active()
+    // ✓ protected fun onCancelled(cause: Throwable, handled: Boolean) → on_cancelled(cause, handled)
+    // ✓ protected fun onCompleted(value: T) → on_completed(value)
+    // TODO: MISSING API: protected final fun onCompletionInternal(state: Any?)
+    //       We have: virtual void on_completion_internal(void* state) - WRONG NAME, should be on_completion_internal
+    // ✓ public final fun resumeWith(result: Result<T>) → resume_with(result)
+    // TODO: MISSING API: public final fun start(start: CoroutineStart, receiver: R, block: suspend R.() -> T)
+    //       We have: template<typename R> void start(...) but signature doesn't match exactly
     
     std::string name_string() {
+        // TODO: Implement coroutine name extraction from context
+        // val coroutineName = context.coroutineName ?: return super.nameString()
+        // return "\"$coroutineName\":${super.nameString()}"
         return "AbstractCoroutine";
     }
 
