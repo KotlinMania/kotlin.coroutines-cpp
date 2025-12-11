@@ -29,6 +29,27 @@ class JobNode;
 
 // --------------- core job interfaces ---------------
 
+// ===== API COMPLETENESS AUDIT =====
+// Kotlin API from kotlinx-coroutines-core.api:
+// ✓ field Key → static const Key type_key
+// ✓ fun attachChild(child: ChildJob): ChildHandle → attach_child(child)
+// ✓ fun cancel() → cancel()  
+// ✓ fun cancel(cause: Throwable?): Boolean → cancel(cause) - NOTE: Kotlin returns Boolean, we return void
+// ✓ fun cancel(cause: CancellationException?) → cancel(cause)
+// ✓ fun getCancellationException(): CancellationException → get_cancellation_exception()
+// ✓ fun getChildren(): Sequence<Job> → get_children()
+// TODO: MISSING API: fun getOnJoin(): SelectClause0 - Returns selector for join()
+// ✓ fun getParent(): Job? → get_parent()
+// ✓ fun invokeOnCompletion(handler: CompletionHandler): DisposableHandle → invoke_on_completion(handler)
+// ✓ fun invokeOnCompletion(onCancelling: Boolean, invokeImmediately: Boolean, handler: CompletionHandler)
+//       → invoke_on_completion(on_cancelling, invoke_immediately, handler)
+// ✓ fun isActive(): Boolean → is_active()
+// ✓ fun isCancelled(): Boolean → is_cancelled()
+// ✓ fun isCompleted(): Boolean → is_completed()
+// ✓ fun join(Continuation): Object → join() - NOTE: we don't use Continuation parameter
+// TODO: MISSING API: fun plus(other: Job): Job - Combines two jobs
+// ✓ fun start(): Boolean → start()
+
 /**
  * A background job.
  * Conceptually, a job is a cancellable thing with a lifecycle that
@@ -290,17 +311,14 @@ struct Job : public virtual CoroutineContext::Element {
         bool invoke_immediately,
         std::function<void(std::exception_ptr)> handler) = 0;
 
-    // TODO: MISSING API - kotlinx.coroutines.Job
-    // public abstract fun getOnJoin(): SelectClause0
-    // Returns a select clause that selects when this job is complete. This clause never fails,
-    // even if the job completes exceptionally.
-    // Translation: virtual SelectClause0 get_on_join() const = 0;
+    // TODO: MISSING API - Job.plus operator (Job.kt:383)
+    // Combines two jobs. Returns leftmost if it's CompletableJob, otherwise rightmost.
+    // virtual std::shared_ptr<Job> plus(std::shared_ptr<Job> other) = 0;
     
-    // TODO: MISSING API - kotlinx.coroutines.Job  
-    // public abstract fun plus(Job): Job
-    // Returns a job that is a combination of this job and the specified job. The resulting job
-    // completes when both jobs complete or when any of them fails.
-    // Translation: virtual std::shared_ptr<Job> plus(std::shared_ptr<Job> other) = 0;
+    // TODO: MISSING API - select support (Job.kt:294)
+    // Clause for select expression of join suspending function that selects when the job is complete.
+    // This clause never fails, even if the job completes exceptionally.
+    // virtual SelectClause0 get_on_join() const = 0;
 
     // Key override
     CoroutineContext::Key* key() const override { return type_key; }
@@ -534,10 +552,9 @@ inline void context_cancel_children(const CoroutineContext& ctx, std::exception_
  */
 std::shared_ptr<CompletableJob> make_job(std::shared_ptr<struct Job> parent = nullptr);
 
-// Alias for Kotlin-style Job() factory
-inline std::shared_ptr<CompletableJob> Job(std::shared_ptr<struct Job> parent = nullptr) {
-    return make_job(parent);
-}
+// NOTE: Cannot use Job() as function name because it shadows the Job struct.
+// Use make_job() instead. In Kotlin, Job() is a factory function, but C++
+// doesn't allow a function to have the same name as a type in the same scope.
 
 } // namespace coroutines
 } // namespace kotlinx

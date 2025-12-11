@@ -125,11 +125,11 @@ struct Waiter {};
              
              {
                  std::lock_guard<std::mutex> lock(parent_handle_mutex_);
-                 parentHandle_ = new_handle;
+                 parent_handle_ = new_handle;
                  // If already completed, dispose immediately
                  if (is_completed()) {
                      new_handle->dispose();
-                     parentHandle_ = nullptr;
+                     parent_handle_ = nullptr;
                  }
              }
         }
@@ -286,14 +286,14 @@ private:
    
    std::atomic<State*> state_; // Typed!
     
-    std::shared_ptr<DisposableHandle> parentHandle_;
+    std::shared_ptr<DisposableHandle> parent_handle_;
     std::mutex parent_handle_mutex_;
 
     void detach_child() {
         std::lock_guard<std::mutex> lock(parent_handle_mutex_);
-        if (parentHandle_) {
-            parentHandle_->dispose();
-            parentHandle_ = nullptr;
+        if (parent_handle_) {
+            parent_handle_->dispose();
+            parent_handle_ = nullptr;
         }
     }
 
@@ -379,10 +379,10 @@ public:
              });
              {
                  std::lock_guard<std::mutex> lock(parent_handle_mutex_);
-                 parentHandle_ = new_handle;
+                 parent_handle_ = new_handle;
                  if (is_completed()) {
                      new_handle->dispose();
-                     parentHandle_ = nullptr;
+                     parent_handle_ = nullptr;
                  }
              }
         }
@@ -512,14 +512,14 @@ private:
    
    std::atomic<State*> state_;
     
-    std::shared_ptr<DisposableHandle> parentHandle_;
+    std::shared_ptr<DisposableHandle> parent_handle_;
     std::mutex parent_handle_mutex_;
 
     void detach_child() {
         std::lock_guard<std::mutex> lock(parent_handle_mutex_);
-        if (parentHandle_) {
-            parentHandle_->dispose();
-            parentHandle_ = nullptr;
+        if (parent_handle_) {
+            parent_handle_->dispose();
+            parent_handle_ = nullptr;
         }
     }
 

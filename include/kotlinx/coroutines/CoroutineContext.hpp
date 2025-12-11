@@ -34,7 +34,7 @@ public:
     template <typename R>
     R fold(R initial, std::function<R(R, std::shared_ptr<Element>)> operation) const;
 
-    std::shared_ptr<CoroutineContext> minusKey(Key* key) const;
+    std::shared_ptr<CoroutineContext> minus_key(Key* key) const;
 };
 
 struct CoroutineContext::Element : public CoroutineContext {

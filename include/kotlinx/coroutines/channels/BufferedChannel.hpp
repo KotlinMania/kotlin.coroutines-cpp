@@ -18,7 +18,7 @@ template <typename E>
 class BufferedChannel : public Channel<E> {
 public:
     BufferedChannel(int capacity, OnUndeliveredElement<E> onUndeliveredElement = nullptr)
-        : capacity_(capacity), onUndeliveredElement_(onUndeliveredElement), closed_(false) {
+        : capacity_(capacity), on_undelivered_element_(onUndeliveredElement), closed_(false) {
         if (capacity < 0 && capacity != Channel<E>::UNLIMITED) {
             throw std::invalid_argument("Invalid channel capacity: " + std::to_string(capacity));
         }
@@ -36,7 +36,7 @@ public:
 
     ChannelResult<void> try_send(E element) override {
         std::unique_lock<std::mutex> lock(mtx);
-        if (closed_) return ChannelResult<void>::closed(closeCause_);
+        if (closed_) return ChannelResult<void>::closed(close_cause_);
 
         // 1. Check if there are waiting receivers
         while (!receivers_.empty()) {
@@ -76,7 +76,7 @@ public:
 
              if (closed_) {
                  lock.unlock();
-                 auto exc = closeCause_ ? closeCause_ : std::make_exception_ptr(ClosedSendChannelException("Channel closed"));
+                 auto exc = close_cause_ ? close_cause_ : std::make_exception_ptr(ClosedSendChannelException("Channel closed"));
                  cont.resume_with_exception(exc);
                  return;
              }
@@ -121,7 +121,7 @@ public:
             if (closed_) return false;
             
             closed_ = true;
-            closeCause_ = cause;
+            close_cause_ = cause;
 
             for (auto& s : senders_) pendingSenders.push_back(s.cont);
             senders_.clear();
@@ -140,7 +140,7 @@ public:
              cont->resume_with_exception(exc);
         }
 
-        for (auto& handler : closeHandlers_) {
+        for (auto& handler : close_handlers_) {
             try { handler(cause); } catch (...) {}
         }
         
@@ -150,9 +150,9 @@ public:
     void invoke_on_close(std::function<void(std::exception_ptr)> handler) override {
         std::lock_guard<std::mutex> lock(mtx);
         if (closed_) {
-             try { handler(closeCause_); } catch (...) {}
+             try { handler(close_cause_); } catch (...) {}
         } else {
-            closeHandlers_.push_back(handler);
+            close_handlers_.push_back(handler);
         }
     }
 
@@ -205,7 +205,7 @@ public:
             
             if (closed_) {
                  lock.unlock();
-                 cont.resume_with_exception(closeCause_ ? closeCause_ : std::make_exception_ptr(ClosedReceiveChannelException()));
+                 cont.resume_with_exception(close_cause_ ? close_cause_ : std::make_exception_ptr(ClosedReceiveChannelException()));
                  return;
             }
             
@@ -282,7 +282,7 @@ public:
             return ChannelResult<E>::success(std::move(el));
         }
         
-        if (closed_) return ChannelResult<E>::closed(closeCause_);
+        if (closed_) return ChannelResult<E>::closed(close_cause_);
         
         while (!senders_.empty()) {
             auto& sender = senders_.front();
@@ -322,9 +322,9 @@ protected:
     // receive_catching is left as Todo in sketch.
     
     int capacity_;
-    OnUndeliveredElement<E> onUndeliveredElement_;
+    OnUndeliveredElement<E> on_undelivered_element_;
     bool closed_;
-    std::exception_ptr closeCause_;
+    std::exception_ptr close_cause_;
     
     mutable std::mutex mtx;
     std::deque<E> buffer_;
@@ -332,7 +332,7 @@ protected:
     std::deque<CancellableContinuation<E>*> receivers_;
     // Missing receivers_catching_ queue for strict correctness
     
-    std::vector<std::function<void(std::exception_ptr)>> closeHandlers_;
+    std::vector<std::function<void(std::exception_ptr)>> close_handlers_;
 };
 
 } // channels

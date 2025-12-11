@@ -75,19 +75,19 @@ public:
     FunctionalContinuation(
         std::shared_ptr<CoroutineContext> context,
         std::function<void(Result<T>)> resume_withFn
-    ) : context_(std::move(context)), resume_withFn_(std::move(resume_withFn)) {}
+    ) : context_(std::move(context)), resume_with_fn_(std::move(resume_withFn)) {}
 
     std::shared_ptr<CoroutineContext> get_context() const override {
         return context_;
     }
 
     void resume_with(Result<T> result) override {
-        resume_withFn_(std::move(result));
+        resume_with_fn_(std::move(result));
     }
 
 private:
     std::shared_ptr<CoroutineContext> context_;
-    std::function<void(Result<T>)> resume_withFn_;
+    std::function<void(Result<T>)> resume_with_fn_;
 };
 
 /**

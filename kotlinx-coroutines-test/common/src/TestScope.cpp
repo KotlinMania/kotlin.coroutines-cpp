@@ -1,5 +1,6 @@
 #include <string>
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include "kotlinx/coroutines/Unit.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestScope
 // Original package: kotlinx.coroutines.test
 //
@@ -256,7 +257,7 @@ CoroutineContext with_delay_skipping(const CoroutineContext& context) {
     return context + dispatcher + &dispatcher->scheduler();
 }
 
-class TestScopeImpl : AbstractCoroutine<void>, TestScope {
+class TestScopeImpl : AbstractCoroutine<Unit>, TestScope {
 private:
     bool entered_;
     bool finished_;
@@ -266,7 +267,7 @@ private:
 
 public:
     TestScopeImpl(const CoroutineContext& context)
-        : AbstractCoroutine<void>(context, true, true),
+        : AbstractCoroutine<Unit>(context, true, true),
           entered_(false),
           finished_(false) {
 

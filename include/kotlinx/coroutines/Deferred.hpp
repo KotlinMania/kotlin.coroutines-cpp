@@ -73,7 +73,9 @@ public:
      * It selects with the deferred value when the [Deferred] completes.
      * If [Deferred] completes with an exception, the whole the [select] invocation fails with the same exception.
      */
-    // virtual SelectClause1<T>& get_on_await() = 0; // TODO: Select support
+    // TODO: MISSING API - Deferred.onAwait (Deferred.kt:104)
+    // Requires full select{} expression support - deferred until select implementation
+    // virtual SelectClause1<T>& get_on_await() = 0;
 
     /**
      * Returns *completed* result or throws [IllegalStateException] if this deferred value has not

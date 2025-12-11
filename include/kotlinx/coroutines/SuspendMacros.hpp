@@ -19,12 +19,12 @@
 
 #pragma once
 
-#include "kotlin/coroutines/intrinsics/Intrinsics.hpp"
-#include "kotlin/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include <cstdint>
 
-namespace kotlin {
+namespace kotlinx {
 namespace coroutines {
 
 /*
@@ -42,12 +42,12 @@ namespace coroutines {
  */
 
 #if defined(__GNUC__) || defined(__clang__)
-#define KOTLIN_SUSPEND_USE_COMPUTED_GOTO 1
+#define KOTLINX_SUSPEND_USE_COMPUTED_GOTO 1
 #else
-#define KOTLIN_SUSPEND_USE_COMPUTED_GOTO 0
+#define KOTLINX_SUSPEND_USE_COMPUTED_GOTO 0
 #endif
 
-#if KOTLIN_SUSPEND_USE_COMPUTED_GOTO
+#if KOTLINX_SUSPEND_USE_COMPUTED_GOTO
 
 /**
  * SUSPEND_BEGIN - Start a suspend function body
@@ -85,7 +85,7 @@ namespace coroutines {
     do {                                                                       \
         this->_label = (n);                                                    \
         void* _tmp_result = (call_expr);                                       \
-        if (::kotlin::coroutines::intrinsics::is_coroutine_suspended(_tmp_result)) { \
+        if (::kotlinx::coroutines::intrinsics::is_coroutine_suspended(_tmp_result)) { \
             return COROUTINE_SUSPENDED;                                        \
         }                                                                      \
         result_var = _tmp_result;                                              \
@@ -154,7 +154,7 @@ namespace coroutines {
     do {                                                                       \
         this->_label = (n);                                                    \
         void* _tmp_result = (call_expr);                                       \
-        if (::kotlin::coroutines::intrinsics::is_coroutine_suspended(_tmp_result)) { \
+        if (::kotlinx::coroutines::intrinsics::is_coroutine_suspended(_tmp_result)) { \
             return COROUTINE_SUSPENDED;                                        \
         }                                                                      \
         result_var = _tmp_result;                                              \
@@ -181,7 +181,7 @@ namespace coroutines {
     }                                                                          \
     return nullptr;
 
-#endif // KOTLIN_SUSPEND_USE_COMPUTED_GOTO
+#endif // KOTLINX_SUSPEND_USE_COMPUTED_GOTO
 
 /*
  * =============================================================================
@@ -267,7 +267,7 @@ public:
 };
 
 } // namespace coroutines
-} // namespace kotlin
+} // namespace kotlinx
 
 /*
  * =============================================================================

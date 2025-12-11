@@ -46,9 +46,9 @@ public:
              
              parent->start();
              auto handle = parent->attach_child(std::static_pointer_cast<ChildJob>(this->shared_from_this()));
-             // ignore handle for now or store it? JobSupport stores parentHandle_
-             // JobSupport has parentHandle_ protected member.
-             // But parentHandle_ is atomic<DisposableHandle*>.
+             // ignore handle for now or store it? JobSupport stores parent_handle_
+             // JobSupport has parent_handle_ protected member.
+             // But parent_handle_ is atomic<DisposableHandle*>.
              // Using attach_child returns shared_ptr which manages lifetime?
              // Need to adapt state_? 
         }
@@ -58,18 +58,35 @@ public:
         return true;
     }
 
+    // Transliterated from Deferred.kt: override fun getCompleted(): T = getCompletedInternal() as T
     T get_completed() const override {
-        // stub
-        return T();
-    }
-     
-    std::exception_ptr get_completion_exception_or_null() const override {
-        return nullptr; // stub
+        void* state = this->state_.load();
+        if (auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(state))) {
+            std::rethrow_exception(ex->cause);
+        }
+        if (!this->is_completed()) {
+            throw std::logic_error("This deferred value has not completed yet");
+        }
+        return *static_cast<T*>(state);
     }
 
+    // Transliterated from JobSupport.kt: getCompletionExceptionOrNull
+    std::exception_ptr get_completion_exception_or_null() const override {
+        void* state = this->state_.load();
+        if (!this->is_completed()) {
+            throw std::logic_error("This deferred value has not completed yet");
+        }
+        if (auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(state))) {
+            return ex->cause;
+        }
+        return nullptr;
+    }
+
+    // Transliterated from Deferred.kt: override suspend fun await(): T = awaitInternal() as T
+    // NOTE: This is a blocking implementation since C++ doesn't have suspend
     T await() override {
-        // stub
-        return T();
+        this->join(); // Block until completed
+        return get_completed();
     }
 
     // SelectClause1<T>& get_on_await() override { ... }

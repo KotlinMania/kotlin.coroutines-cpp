@@ -12,7 +12,7 @@ namespace test {
 
 class TestDispatcher : public CoroutineDispatcher, public Delay {
 public:
-    TestDispatcher() : currentTime_(0) {}
+    TestDispatcher() : current_time_(0) {}
     
     virtual ~TestDispatcher() = default;
 
@@ -61,14 +61,14 @@ public:
         }
     }
 
-    long long get_current_time() const { return currentTime_; }
+    long long get_current_time() const { return current_time_; }
 
     static std::shared_ptr<TestDispatcher> create() { return std::make_shared<TestDispatcher>(); }
 
 private:
     std::deque<std::shared_ptr<Runnable>> queue_;
     mutable std::mutex mutex_;
-    long long currentTime_;
+    long long current_time_;
 };
 
 } // namespace test

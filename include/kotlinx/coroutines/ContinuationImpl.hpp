@@ -13,17 +13,15 @@
 #include <string>
 
 #include "kotlinx/coroutines/Continuation.hpp"
-#include "kotlin/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
-namespace kotlin {
+namespace kotlinx {
 namespace coroutines {
 
 // Forward declarations
 class BaseContinuationImpl;
 class ContinuationImpl;
 class RestrictedContinuationImpl;
-
-// Types are already imported via kotlinx/coroutines/Continuation.hpp which exports to kotlin::coroutines
 
 // Type alias for Any? equivalent - we use void* for type-erased values
 using AnyResult = Result<void*>;
@@ -58,10 +56,10 @@ public:
      *
      * The loop unrolls recursion to make saner stack traces on resume.
      *
-     * Transliterated from: public final override fun resume_with(result: Result<Any?>)
+     * Transliterated from: public final override fun resumeWith(result: Result<Any?>)
      */
     void resume_with(Result<void*> result) override final {
-        // This loop unrolls recursion in current.resume_with(param)
+        // This loop unrolls recursion in current.resumeWith(param)
         BaseContinuationImpl* current = this;
         Result<void*> param = std::move(result);
 
@@ -108,7 +106,7 @@ public:
      *
      * This is overridden by compiler-generated coroutine classes.
      *
-     * Transliterated from: protected abstract fun invoke_suspend(result: Result<Any?>): Any?
+     * Transliterated from: protected abstract fun invokeSuspend(result: Result<Any?>): Any?
      */
     virtual void* invoke_suspend(Result<void*> result) = 0;
 
@@ -255,18 +253,6 @@ public:
         throw std::runtime_error("This continuation is already complete");
     }
 };
-
-} // namespace coroutines
-} // namespace kotlin
-
-// Re-export to kotlinx::coroutines
-namespace kotlinx {
-namespace coroutines {
-
-using BaseContinuationImpl = ::kotlin::coroutines::BaseContinuationImpl;
-using ContinuationImpl = ::kotlin::coroutines::ContinuationImpl;
-using RestrictedContinuationImpl = ::kotlin::coroutines::RestrictedContinuationImpl;
-using CompletedContinuation = ::kotlin::coroutines::CompletedContinuation;
 
 } // namespace coroutines
 } // namespace kotlinx

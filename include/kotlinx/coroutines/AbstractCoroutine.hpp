@@ -75,22 +75,20 @@ public:
         return "AbstractCoroutine was cancelled";
     }
     
+    // NOTE: T should be Unit for coroutines that don't return a value, NOT void.
+    // Using void as T is not supported and will cause compilation errors.
     void resume_with(Result<T> result) override {
         void* state;
         if (result.is_success()) {
-            if constexpr (std::is_void_v<T>) {
-                state = nullptr; // Unit
-            } else {
-                state = new T(result.get_or_throw()); 
-            }
+            state = new T(result.get_or_throw());
         } else {
             state = new CompletedExceptionally(result.exception_or_null());
         }
-        
+
         void* final_state = make_completing_once(state);
-        
+
         if (final_state == (void*)COMPLETING_WAITING_CHILDREN) return;
-        
+
         after_resume(final_state);
     }
     
@@ -108,21 +106,20 @@ public:
         on_completion_internal(state);
     }
     
-    virtual void on_completion_internal(void* state) override {
+    // NOTE: T should be Unit for coroutines that don't return a value, NOT void.
+    void on_completion_internal(void* state) override {
         if (state == nullptr) {
-            // Completed with null/Unit
-            if constexpr (std::is_void_v<T>) {
-                on_completed(/* void - no value */);
-            } else {
-                on_completed(*static_cast<T*>(state));
-            }
+            // Should not happen - state should always be valid T* or CompletedExceptionally*
+            return;
+        }
+
+        // Try to cast to CompletedExceptionally first
+        auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(state));
+        if (ex && ex->cause) {
+            on_cancelled(ex->cause, ex->handled);
         } else {
-            auto* ex = static_cast<CompletedExceptionally*>(state);
-            if (ex && ex->cause) {
-                on_cancelled(ex->cause, ex->handled);
-            } else if constexpr (!std::is_void_v<T>) {
-                on_completed(*static_cast<T*>(state));
-            }
+            // It's a successful completion with value
+            on_completed(*static_cast<T*>(state));
         }
     }
     

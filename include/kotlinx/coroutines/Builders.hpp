@@ -53,6 +53,10 @@ namespace coroutines {
         }
     };
 
+    /**
+     * DeferredCoroutine - internal implementation of Deferred
+     * Transliterated from Builders.common.kt lines 94-101
+     */
     template<typename T>
     class DeferredCoroutine : public AbstractCoroutine<T>, public Deferred<T> {
     private:
@@ -65,19 +69,30 @@ namespace coroutines {
               parent_context_ref(parentContext),
               active_flag(active) {}
 
+        /**
+         * Returns completed value or throws if completed exceptionally
+         * Transliterated from: override fun getCompleted(): T = getCompletedInternal() as T
+         */
         T get_completed() const override {
-             // TODO: implement
-            return T();
+            return this->get_completed_internal();
         }
         
         std::exception_ptr get_completion_exception_or_null() const override {
-            // TODO: implement
+            auto state = this->state;
+            if (auto* ex = dynamic_cast<CompletedExceptionally*>(state.get())) {
+                return ex->cause;
+            }
             return nullptr;
         }
 
+        /**
+         * Suspends until completion and returns result
+         * Transliterated from: override suspend fun await(): T = awaitInternal() as T
+         * 
+         * NOTE: In C++ we can't have true suspend functions, so this blocks
+         */
         T await() override {
-             // TODO: implement
-            return T(); 
+            return this->await_internal();
         }
         
          // Job overrides from Deferred
@@ -151,41 +166,83 @@ namespace coroutines {
         return coroutine;
     }
 
+    // Transliterated from Builders.common.kt: suspend fun <T> withContext(context: CoroutineContext, block: suspend CoroutineScope.() -> T): T
+    //
+    // This is a suspend function. In C++, it must be called using the SUSPEND_CALL macro
+    // from within an invoke_suspend() method. The caller's state machine handles suspension.
+    //
+    // Implementation pattern from NativeSuspendFunctionLowering.kt:
+    // - State machine with label field tracks suspension points
+    // - invokeSuspend() is the state machine method
+    // - ContinuationImpl is the base class
+    //
+    // @param context The context to switch to
+    // @param block The suspend block to execute
+    // @param continuation The continuation to resume (passed by state machine)
+    // @return Result or COROUTINE_SUSPENDED
     template<typename T>
-    T with_context(
+    void* with_context(
         std::shared_ptr<CoroutineContext> context,
-        std::function<T(CoroutineScope*)> block
+        std::function<void*(CoroutineScope*, kotlin::coroutines::Continuation<void*>*)> block,
+        kotlin::coroutines::Continuation<void*>* continuation
     ) {
-        // Placeholder
-        return T();
+        if (!context) {
+            throw std::invalid_argument("withContext requires a non-null context");
+        }
+
+        // Create a scope with the given context
+        class WithContextScope : public CoroutineScope {
+            std::shared_ptr<CoroutineContext> ctx_;
+        public:
+            explicit WithContextScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(ctx) {}
+            std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
+        };
+
+        WithContextScope scope(context);
+
+        // Execute the block, passing the continuation for proper suspend handling
+        // The block itself may suspend, returning COROUTINE_SUSPENDED
+        return block(&scope, continuation);
     }
 
     // BlockingCoroutine implementation
+    // Transliterated from Builders.kt: private class BlockingCoroutine<T>
     template<typename T>
     class BlockingCoroutine : public AbstractCoroutine<T> {
-        std::shared_ptr<EventLoop> eventLoop;
+        std::shared_ptr<EventLoop> event_loop_;
+        T result_;
+        std::exception_ptr exception_;
+        bool completed_ = false;
+
     public:
-        BlockingCoroutine(std::shared_ptr<CoroutineContext> parentContext, std::shared_ptr<EventLoop> eventLoop)
-            : AbstractCoroutine<T>(parentContext, true, true),
-              eventLoop(eventLoop) {}
+        BlockingCoroutine(std::shared_ptr<CoroutineContext> parent_context, std::shared_ptr<EventLoop> event_loop)
+            : AbstractCoroutine<T>(parent_context, true, true),
+              event_loop_(event_loop) {}
 
         void on_completed(T value) override {
-             if (auto blockingLoop = std::dynamic_pointer_cast<BlockingEventLoop>(eventLoop)) {
-                 blockingLoop->shutdown();
-             }
-        }
-        
-        void on_cancelled(std::exception_ptr cause, bool handled) override {
-             if (auto blockingLoop = std::dynamic_pointer_cast<BlockingEventLoop>(eventLoop)) {
-                 blockingLoop->shutdown();
-             }
-        }
-        
-        T joinBlocking() {
-            if (auto blockingLoop = std::dynamic_pointer_cast<BlockingEventLoop>(eventLoop)) {
-                blockingLoop->run();
+            result_ = std::move(value);
+            completed_ = true;
+            if (auto blocking_loop = std::dynamic_pointer_cast<BlockingEventLoop>(event_loop_)) {
+                blocking_loop->shutdown();
             }
-            return T(); // Stub
+        }
+
+        void on_cancelled(std::exception_ptr cause, bool handled) override {
+            exception_ = cause;
+            completed_ = true;
+            if (auto blocking_loop = std::dynamic_pointer_cast<BlockingEventLoop>(event_loop_)) {
+                blocking_loop->shutdown();
+            }
+        }
+
+        T join_blocking() {
+            if (auto blocking_loop = std::dynamic_pointer_cast<BlockingEventLoop>(event_loop_)) {
+                blocking_loop->run();
+            }
+            if (exception_) {
+                std::rethrow_exception(exception_);
+            }
+            return std::move(result_);
         }
     };
 
@@ -206,7 +263,7 @@ namespace coroutines {
              
              coroutine->start(CoroutineStart::DEFAULT, coroutine.get(), block);
              
-             T result = coroutine->joinBlocking();
+             T result = coroutine->join_blocking();
              
              ThreadLocalEventLoop::set_event_loop(oldLoop);
              return result;

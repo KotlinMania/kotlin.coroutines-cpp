@@ -9,7 +9,7 @@ std::shared_ptr<CoroutineContext> CoroutineContext::operator+(std::shared_ptr<Co
     return other; // Stub
 }
 
-std::shared_ptr<CoroutineContext> CoroutineContext::minusKey(Key* key) const {
+std::shared_ptr<CoroutineContext> CoroutineContext::minus_key(Key* key) const {
     return nullptr; // Stub
 }
 

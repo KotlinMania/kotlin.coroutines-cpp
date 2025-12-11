@@ -65,24 +65,13 @@
  * See StacklessBuilders.hpp for the CO_* macros that generate this pattern.
  */
 
-// Kotlin coroutine runtime (transliterated from kotlin.coroutines)
-#include "kotlin/coroutines/intrinsics/Intrinsics.hpp"
+// Coroutine runtime
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
-#include "kotlin/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 
 // kotlinx.coroutines library
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Deferred.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
-
-namespace kotlinx {
-namespace coroutines {
-
-// Re-export key types from kotlin::coroutines for convenience
-// Note: COROUTINE_SUSPENDED is a macro, use is_coroutine_suspended() function
-using ::kotlin::coroutines::intrinsics::is_coroutine_suspended;
-using ::kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED;
-
-} // namespace coroutines
-} // namespace kotlinx

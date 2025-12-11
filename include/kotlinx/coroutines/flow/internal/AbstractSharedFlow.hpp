@@ -25,7 +25,8 @@ public:
     virtual std::vector<ContinuationBase*> free_locked(F* flow) = 0;
 };
 
-template<typename S>
+// S = Slot type, F = Flow type (the derived class itself)
+template<typename S, typename F>
 class AbstractSharedFlow {
 protected:
     std::vector<S*>* slots_ = nullptr; // array of slots
@@ -35,6 +36,9 @@ protected:
 
     virtual S* create_slot() = 0;
     virtual std::vector<S*>* create_slot_array(int size) = 0;
+
+    // Derived class must implement this to return itself as F*
+    virtual F* as_flow() = 0;
 
 public:
     virtual ~AbstractSharedFlow() {
@@ -74,7 +78,7 @@ public:
                 (*current_slots)[index] = found_slot;
             }
             
-            if (found_slot->allocate_locked(this)) {
+            if (found_slot->allocate_locked(as_flow())) {
                  break;
             }
             
@@ -94,7 +98,7 @@ public:
             n_collectors_--;
             if (n_collectors_ == 0) next_index_ = 0;
             
-            resumes = slot->free_locked(this);
+            resumes = slot->free_locked(as_flow());
         }
         
         // Resume outside lock

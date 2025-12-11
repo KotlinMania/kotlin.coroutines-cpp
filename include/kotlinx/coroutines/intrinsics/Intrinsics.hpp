@@ -9,7 +9,7 @@
 
 #include <cstdint>
 
-namespace kotlin {
+namespace kotlinx {
 namespace coroutines {
 namespace intrinsics {
 
@@ -46,7 +46,7 @@ inline void* get_COROUTINE_SUSPENDED() {
 /**
  * Macro for convenience - matches Kotlin's COROUTINE_SUSPENDED constant.
  */
-#define COROUTINE_SUSPENDED (::kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED())
+#define COROUTINE_SUSPENDED (::kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED())
 
 /**
  * Check if a result value indicates suspension.
@@ -60,4 +60,4 @@ inline bool is_coroutine_suspended(void* result) {
 
 } // namespace intrinsics
 } // namespace coroutines
-} // namespace kotlin
+} // namespace kotlinx

@@ -38,7 +38,7 @@ void test_default() {
     public:
         // No elements, stub pure virtuals if any (get, fold, etc are defined in base or declared?)
         // CoroutineContext declares: virtual std::shared_ptr<Element> get(Key* key) const { return nullptr; } (defined inline in header)
-        // Others? operator+, fold, minusKey declared but not defined.
+        // Others? operator+, fold, minus_key declared but not defined.
         // We assume we link against CoroutineContext.cpp which defines them?
         // Actually CoroutineContext.cpp defines them. So we inherit them.
     };

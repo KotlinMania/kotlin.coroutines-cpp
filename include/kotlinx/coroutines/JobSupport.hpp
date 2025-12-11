@@ -70,8 +70,9 @@ public:
     NodeList* get_list() const override { return const_cast<NodeList*>(this); }
 
     std::string to_string() const;
-    
-    void notify_completion(std::exception_ptr cause) {} // Stub
+
+    // Transliterated from JobSupport.kt:355-358
+    void notify_completion(std::exception_ptr cause);
 };
 
 // --------------------------------------------------------------------------
@@ -88,7 +89,8 @@ public:
     bool is_active() const override { return true; }
     NodeList* get_list() const override { return nullptr; }
 
-    void dispose() override {} // Implemented below JobSupport if needed
+    // Transliterated from JobSupport.kt:1475
+    void dispose() override;
 
     std::string to_string() const;
     
@@ -99,10 +101,10 @@ public:
 // Empty State
 // --------------------------------------------------------------------------
 class Empty : public Incomplete {
-    bool isActive_;
+    bool is_active_;
 public:
-    explicit Empty(bool isActive) : isActive_(isActive) {}
-    bool is_active() const override { return isActive_; }
+    explicit Empty(bool is_active) : is_active_(is_active) {}
+    bool is_active() const override { return is_active_; }
     NodeList* get_list() const override { return nullptr; }
     std::string to_string() const;
 };
@@ -134,9 +136,9 @@ public:
     std::atomic<void*> exceptionsHolder; // null | exception_ptr | vector<exception_ptr> | SEALED
     std::recursive_mutex mutex;
 
-    Finishing(NodeList* list, bool isCompleting, std::exception_ptr rootCause)
-        : list(list), isCompleting(isCompleting), exceptionsHolder(nullptr) {
-            if (rootCause) _rootCause.store(new std::exception_ptr(rootCause));
+    Finishing(NodeList* list, bool is_completing, std::exception_ptr root_cause)
+        : list(list), isCompleting(is_completing), exceptionsHolder(nullptr) {
+            if (root_cause) _rootCause.store(new std::exception_ptr(root_cause));
             else _rootCause.store(nullptr);
         }
         
@@ -157,7 +159,7 @@ public:
     // Inline implementation acceptable for inner helper
     std::vector<std::exception_ptr> seal_locked(std::exception_ptr proposed_exception);
 
-    void addExceptionLocked(std::exception_ptr exception);
+    void add_exception_locked(std::exception_ptr exception);
     
 private:
     bool is_vector(void* ptr) {
@@ -168,12 +170,18 @@ private:
 
 class ChildHandleNode : public JobNode, public ChildHandle {
 public:
-     ChildJob* childJob;
-     ChildHandleNode(ChildJob* child) : childJob(child) {}
-     
+     ChildJob* child_job;
+     ChildHandleNode(ChildJob* child) : child_job(child) {}
+
      bool get_on_cancelling() const override { return true; }
-     void invoke(std::exception_ptr cause) override {} 
-     bool child_cancelled(std::exception_ptr cause) override { return false; } 
+     // Transliterated from JobSupport.kt:1580
+     void invoke(std::exception_ptr cause) override;
+     // Transliterated from JobSupport.kt:1581
+     bool child_cancelled(std::exception_ptr cause) override;
+     // Transliterated from JobSupport.kt:1578
+     std::shared_ptr<Job> get_parent() const override;
+     // Transliterated from JobSupport.kt:1575
+     void dispose() override;
 };
 
 class InvokeOnCompletion : public JobNode {
@@ -190,10 +198,27 @@ class InvokeOnCancelling : public JobNode {
 public:
      InvokeOnCancelling(std::function<void(std::exception_ptr)> handler) : handler(handler), invoked(false) {}
      bool get_on_cancelling() const override { return true; }
-     void invoke(std::exception_ptr cause) override { 
+     void invoke(std::exception_ptr cause) override {
          bool expected = false;
          if (invoked.compare_exchange_strong(expected, true)) handler(cause);
      }
+};
+
+// Used by parent waiting for child completion
+// Transliterated from JobSupport.kt ChildCompletion inner class
+class ChildCompletion : public JobNode {
+public:
+    JobSupport* parent;
+    Finishing* state;
+    ChildHandleNode* child;
+    void* proposed_update;
+
+    ChildCompletion(JobSupport* parent, Finishing* state, ChildHandleNode* child, void* proposed_update)
+        : parent(parent), state(state), child(child), proposed_update(proposed_update) {}
+
+    bool get_on_cancelling() const override { return false; }
+    // Transliterated from JobSupport.kt:1267-1269
+    void invoke(std::exception_ptr cause) override;
 };
 
 
@@ -202,6 +227,7 @@ public:
 // --------------------------------------------------------------------------
 class JobSupport : public ParentJob, public ChildJob, public std::enable_shared_from_this<JobSupport> {
     friend class JobNode;
+    friend class ChildHandleNode;
 // ...
     // ChildJob override
     void parent_cancelled(ParentJob* parent) override {
@@ -219,10 +245,10 @@ public:
 protected:
     std::atomic<void*> state_;
     std::shared_ptr<Job> parent_; 
-    std::atomic<DisposableHandle*> parentHandle_;
+    std::atomic<DisposableHandle*> parent_handle_;
 
 public:
-    JobSupport(bool active) : parentHandle_(nullptr) {
+    JobSupport(bool active) : parent_handle_(nullptr) {
         state_.store(active ? (void*)&_empty_active : (void*)&_empty_new);
     }
     
@@ -241,11 +267,11 @@ public:
 
     bool is_active() const override;
     bool is_completed() const override;
-    bool is_cancelled() const override { return false; }
+    // Transliterated from JobSupport.kt:181-184
+    bool is_cancelled() const override;
     
-    std::exception_ptr get_cancellation_exception() override {
-        return std::make_exception_ptr(std::runtime_error("Job was cancelled"));
-    }
+    // Transliterated from JobSupport.kt:412-419
+    std::exception_ptr get_cancellation_exception() override;
 
     bool start() override;
     void cancel(std::exception_ptr cause = nullptr) override { cancel_internal(cause); }
@@ -271,12 +297,13 @@ public:
      * and whether it handles the exception of the child.
      * It is overridden in supervisor implementations to completely ignore any child cancellation.
      * Returns true if exception is handled, false otherwise (then caller is responsible for handling an exception)
+     *
+     * Invariant: never returns false for instances of CancellationException, otherwise such exception
+     * may leak to the CoroutineExceptionHandler.
+     *
+     * Transliterated from JobSupport.kt:680-683
      */
-    virtual bool child_cancelled(std::exception_ptr cause) {
-        // TODO: Check if cause is CancellationException
-        cancel_internal(cause);
-        return true;
-    }
+    virtual bool child_cancelled(std::exception_ptr cause);
 
     // Helper methods
     std::exception_ptr create_cause_exception(std::exception_ptr cause);
@@ -296,7 +323,14 @@ public:
     void notify_cancelling(NodeList* list, std::exception_ptr cause);
     
     int start_internal(void* state);
+    // Transliterated from JobSupport.kt:410
     virtual void on_start() {}
+
+    // Transliterated from JobSupport.kt:651
+    virtual std::string cancellation_exception_message() { return "Job was cancelled"; }
+
+    // Transliterated from JobSupport.kt:689
+    bool cancel_coroutine(std::exception_ptr cause);
     
     void cancel_internal(std::exception_ptr cause);
     virtual void on_cancelling(std::exception_ptr cause) {}
@@ -306,27 +340,58 @@ public:
     void* try_make_completing(void* state, void* proposed_update);
     void* try_make_completing_slow_path(Incomplete* state, void* proposed_update);
     
-    virtual void after_completion(void* finalState) {}
-    bool try_finalize_simple_state(Incomplete* state, std::exception_ptr update) { return false; } 
+    virtual void on_completion_internal(void* final_state) {}
+    virtual void after_completion(void* state) {}
     virtual void handle_on_completion_exception(std::exception_ptr exception) { std::rethrow_exception(exception); }
 
-    std::shared_ptr<DisposableHandle> invoke_on_completion_internal(bool invoke_immediately, JobNode* node) {
-         // Keep this template/logic here if it uses lambda or move to CPP if non-template
-         // It was using lambda in try_put_node_into_list
-         // Moving to CPP requires try_put_node_into_list to accept std::function
-         return nullptr; // Stub for now, implementation in CPP if moved?
-         // Actually I kept implementation in CPP in previous step? 
-         // No, I didn't write invoke_on_completion_internal in CPP! 
-         // I missed it.
-         // I will leave it as STUB here or inline it if short.
-         // The original was inline.
-         return std::make_shared<NoOpDisposableHandle>();
-    }
+    // State finalization methods (transliterated from JobSupport.kt)
+    void* finalize_finishing_state(Finishing* state, void* proposed_update);
+    std::exception_ptr get_final_root_cause(Finishing* state, const std::vector<std::exception_ptr>& exceptions);
+    void add_suppressed_exceptions(std::exception_ptr root_cause, const std::vector<std::exception_ptr>& exceptions);
+    bool try_finalize_simple_state(Incomplete* state, void* update);
+    void complete_state_finalization(Incomplete* state, void* update);
+
+    // Parent-child relationship
+    void init_parent_job(std::shared_ptr<Job> parent);
+
+    // Completion handler registration
+    std::shared_ptr<DisposableHandle> invoke_on_completion_internal(bool invoke_immediately, JobNode* node);
+
+    // Child waiting methods
+    bool try_wait_for_child(Finishing* state, ChildHandleNode* child, void* proposed_update);
+    void continue_completing(Finishing* state, ChildHandleNode* last_child, void* proposed_update);
+    ChildHandleNode* next_child(internal::LockFreeLinkedListNode* node);
+
+    // One-shot completion (throws on repeat)
+    void* make_completing_once(void* proposed_update);
+
+    // Cancel and complete atomically
+    void* cancel_make_completing(void* cause);
+
+    // Full cancel implementation
+    bool cancel_impl(void* cause);
+
+    // State properties
+    virtual bool get_on_cancel_complete() const { return false; }
+    virtual bool get_is_scoped_coroutine() const { return false; }
+    virtual bool get_handles_exception() const { return true; }
+
+    // State query helpers
+    bool is_completed_exceptionally() const;
+    std::exception_ptr get_completion_exception_or_null() const;
+    void* get_completed_internal() const;
+    std::exception_ptr get_completion_cause() const;
+    bool get_completion_cause_handled() const;
+
+    // Debug helpers
+    std::string to_debug_string() const;
+    virtual std::string name_string() const;
+    std::string state_string(void* state) const;
     
 protected:
     bool try_put_node_into_list(JobNode* node, std::function<bool(Incomplete*, NodeList*)> try_add);
-    void remove_node(JobNode* node) { node->remove(); }
-    virtual void on_completion_internal(void* finalState) {}
+    // Transliterated from JobSupport.kt:619-636
+    void remove_node(JobNode* node);
     
     template<typename Predicate>
     void notify_handlers(NodeList* list, std::exception_ptr cause, Predicate predicate) {
@@ -345,87 +410,9 @@ protected:
         if (exception) handle_on_completion_exception(exception);
     }
 
-    // TODO: MISSING API - kotlinx.coroutines.JobSupport
-    // Many methods from Kotlin's JobSupport are missing or need review:
-    //
-    // public final fun attachChild(child: ChildJob): ChildHandle
-    //   - Present as attach_child()
-    //
-    // protected final fun awaitInternal(continuation: Continuation<T>): Any?
-    //   - Missing: Suspend function to wait for completion
-    //   - Translation: protected Awaitable<T> await_internal();
-    //
-    // public fun cancel(cause: CancellationException = null)
-    //   - Present as cancel(exception_ptr)
-    //
-    // public final fun cancelCoroutine(cause: Throwable): Boolean
-    //   - Missing: Cancel with a specific cause, returns true if cancelled
-    //   - Translation: bool cancel_coroutine(std::exception_ptr cause);
-    //
-    // public fun cancelInternal(cause: Throwable)
-    //   - Missing: Internal cancellation without children notification
-    //   - Translation: void cancel_internal(std::exception_ptr cause);
-    //
-    // public fun getChildJobCancellationCause(): CancellationException
-    //   - Missing: Get the exception to use for child cancellation
-    //   - Translation: std::exception_ptr get_child_job_cancellation_cause();
-    //
-    // protected final fun getCompletionCause(): Throwable?
-    //   - Missing: Get the exception that completed this job
-    //   - Translation: protected std::exception_ptr get_completion_cause();
-    //
-    // protected final fun getCompletionCauseHandled(): Boolean
-    //   - Missing: Check if completion cause was handled
-    //   - Translation: protected bool get_completion_cause_handled();
-    //
-    // public final fun getCompletionExceptionOrNull(): Throwable?
-    //   - Missing: Get completion exception if failed, null otherwise
-    //   - Translation: std::exception_ptr get_completion_exception_or_null();
-    //
-    // protected final fun getOnAwaitInternal(): SelectClause1<T>
-    //   - Missing: Select clause for awaiting with a value
-    //   - Translation: protected SelectClause1<T> get_on_await_internal();
-    //
-    // public final fun getOnJoin(): SelectClause0
-    //   - Present in Job interface but implementation missing here
-    //
-    // protected fun handleJobException(exception: Throwable): Boolean
-    //   - Present as handle_job_exception()
-    //
-    // protected final fun initParentJob(parent: Job?)
-    //   - Missing: Initialize parent-child relationship
-    //   - Translation: protected void init_parent_job(std::shared_ptr<Job> parent);
-    //
-    // public fun isActive(): Boolean
-    //   - Present as is_active()
-    //
-    // public final fun isCancelled(): Boolean
-    //   - Present as is_cancelled()
-    //
-    // public final fun isCompleted(): Boolean  
-    //   - Present as is_completed()
-    //
-    // public final fun join(continuation: Continuation<Unit>): Any?
-    //   - Present as join() but not as suspend function
-    //
-    // protected fun onCancelling(cause: Throwable?)
-    //   - Present as on_cancelling()
-    //
-    // public fun parentCancelled(parentJob: ParentJob)
-    //   - Present as parent_cancelled()
-    //
-    // public fun plus(other: Job): Job
-    //   - Missing: Combine two jobs
-    //   - Translation: std::shared_ptr<Job> plus(std::shared_ptr<Job> other);
-    //
-    // public final fun start(): Boolean
-    //   - Present as start()
-    //
-    // public final fun toCancellationException(cause: Throwable?, message: String?): CancellationException
-    //   - Missing: Convert throwable to CancellationException
-    //   - Translation: std::exception_ptr to_cancellation_exception(
-    //                     std::exception_ptr cause = nullptr, 
-    //                     std::string message = "");
+    // NOTE: suspend functions (join, awaitInternal) use blocking in C++ for now.
+    // Kotlin Native uses LLVM indirectbr for suspend point resume - see SUSPEND_COMPARISON.md
+    // Select support (onJoin, onAwaitInternal) deferred until select{} implementation.
 };
 
 } // namespace coroutines

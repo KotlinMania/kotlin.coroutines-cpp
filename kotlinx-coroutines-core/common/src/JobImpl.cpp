@@ -26,7 +26,7 @@ void JobImpl::init_parent_job(std::shared_ptr<Job> parent) {
     parent_ = parent;
     parent->start();
     parent_handle_keeper_ = parent->attach_child(shared_from_this());
-    parentHandle_.store(parent_handle_keeper_.get());
+    parent_handle_.store(parent_handle_keeper_.get());
 }
 
 bool JobImpl::complete() {

@@ -48,7 +48,7 @@ public:
      // Re-use ContinuationInterceptor key or define its own? 
      // Kotlin: Key : AbstractCoroutineContextKey<ContinuationInterceptor, CoroutineDispatcher>(ContinuationInterceptor)
      // essentially it uses ContinuationInterceptor::key.
-    
+
     CoroutineDispatcher();
     virtual ~CoroutineDispatcher() = default;
 
@@ -74,20 +74,6 @@ public:
     virtual std::shared_ptr<CoroutineDispatcher> limited_parallelism(int parallelism, const std::string& name = "");
 
     virtual std::string to_string() const;
-
-    // TODO: MISSING API - kotlinx.coroutines.CoroutineDispatcher
-    // public fun get(key: CoroutineContext.Key<*>): CoroutineContext.Element?
-    // Inherited from CoroutineContext.Element - should be present via AbstractCoroutineContextElement
-    //
-    // public final fun interceptContinuation(continuation: Continuation<T>): Continuation<T>
-    // Already present as intercept_continuation()
-    //
-    // public fun minusKey(key: CoroutineContext.Key<*>): CoroutineContext
-    // Missing: Remove this dispatcher from context
-    // Translation: virtual std::shared_ptr<CoroutineContext> minus_key(Key* key) const;
-    //
-    // public final fun releaseInterceptedContinuation(continuation: Continuation<*>)
-    // Already present as release_intercepted_continuation()
 };
 
 } // namespace coroutines
