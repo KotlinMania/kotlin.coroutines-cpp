@@ -56,6 +56,14 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
     add_subdirectory(tests)
 endif()
 
+# -----------------------------------------------------------------------------
+# Optional compiler tooling (Clang suspend DSL plugin)
+# -----------------------------------------------------------------------------
+option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build Clang suspend DSL plugin (Apple-focused)" OFF)
+if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
+    add_subdirectory(tools/clang_suspend_plugin)
+endif()
+
 # Install headers
 install(DIRECTORY include/
     DESTINATION include
