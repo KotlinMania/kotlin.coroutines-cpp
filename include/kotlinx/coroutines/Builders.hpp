@@ -1,6 +1,7 @@
 #pragma once
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Deferred.hpp"
 #include "kotlinx/coroutines/AbstractCoroutine.hpp"
@@ -147,11 +148,9 @@ namespace coroutines {
     // ------------------------------------------------------------------
 
     // Stub for empty context
+    // Use shared EmptyCoroutineContext
     inline std::shared_ptr<CoroutineContext> empty_context() {
-        class EmptyContext : public CoroutineContext {
-            // implementation
-        };
-        return std::make_shared<EmptyContext>();
+        return EmptyCoroutineContext::instance();
     }
 
     inline std::shared_ptr<struct Job> launch(

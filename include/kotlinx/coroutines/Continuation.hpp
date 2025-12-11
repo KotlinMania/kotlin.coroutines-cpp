@@ -107,17 +107,7 @@ std::shared_ptr<Continuation<T>> make_continuation(
 /**
  * Empty coroutine context singleton.
  */
-class EmptyCoroutineContext : public CoroutineContext {
-public:
-    static std::shared_ptr<EmptyCoroutineContext> instance() {
-        static auto instance_ = std::make_shared<EmptyCoroutineContext>();
-        return instance_;
-    }
-
-    std::shared_ptr<Element> get(Key* /*key*/) const override {
-        return nullptr;
-    }
-};
+// EmptyCoroutineContext moved to context_impl.hpp
 
 } // namespace coroutines
 } // namespace kotlinx

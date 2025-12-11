@@ -14,6 +14,9 @@
 
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/Result.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -45,6 +48,11 @@ public:
      */
     std::shared_ptr<Continuation<void*>> completion;
 
+    /**
+     * Constructs a BaseContinuationImpl with the given completion continuation.
+     * 
+     * @param completion_ The continuation to call when this coroutine completes
+     */
     explicit BaseContinuationImpl(std::shared_ptr<Continuation<void*>> completion_)
         : completion(std::move(completion_)) {}
 
@@ -189,10 +197,18 @@ public:
         : BaseContinuationImpl(completion),
           context_(completion ? completion->get_context() : nullptr) {}
 
+/**
+     * Gets the coroutine context for this continuation.
+     * 
+     * @return The coroutine context, inherited from the completion continuation
+     *         or EmptyCoroutineContext if no completion exists
+     */
     std::shared_ptr<CoroutineContext> get_context() const override {
-        if (!context_) {
-            throw std::runtime_error("Context is null");
+        if (completion) {
+            return completion->get_context();
         }
+        return EmptyCoroutineContext::instance();
+    }
         return context_;
     }
 

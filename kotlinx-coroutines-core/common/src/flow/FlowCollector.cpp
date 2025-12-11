@@ -1,4 +1,5 @@
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
 // Transliterated from Kotlin to C++ (first pass - syntax/language translation only)
 // Original: kotlinx-coroutines-core/common/src/flow/FlowCollector.kt
 //
@@ -39,7 +40,7 @@ public:
      * Collects the value emitted by the upstream.
      * This method is not thread-safe and should not be invoked concurrently.
      */
-    virtual void emit(T value) = 0; // TODO: suspend
+    virtual void* emit(T value, Continuation<void*>* continuation) = 0; // TODO: suspend
 };
 
 }}} // namespace kotlinx::coroutines::flow

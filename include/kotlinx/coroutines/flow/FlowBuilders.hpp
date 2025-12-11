@@ -16,13 +16,13 @@ namespace flow {
  * Creates a flow from the given suspendable block.
  */
 template <typename T>
-std::shared_ptr<Flow<T>> flow(std::function<void(FlowCollector<T>*)> block) {
+std::shared_ptr<Flow<T>> flow(std::function<void*(FlowCollector<T>*, Continuation<void*>*)> block) {
     class CallbackFlow : public AbstractFlow<T> {
-        std::function<void(FlowCollector<T>*)> block_;
+        std::function<void*(FlowCollector<T>*, Continuation<void*>*)> block_;
     public:
-        CallbackFlow(std::function<void(FlowCollector<T>*)> b) : block_(b) {}
-        void collect_safely(FlowCollector<T>* collector) override {
-             block_(collector);
+        CallbackFlow(std::function<void*(FlowCollector<T>*, Continuation<void*>*)> b) : block_(b) {}
+        void* collect_safely(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
+             return block_(collector, continuation);
         }
     };
     return std::make_shared<CallbackFlow>(block);
@@ -33,8 +33,8 @@ std::shared_ptr<Flow<T>> flow(std::function<void(FlowCollector<T>*)> block) {
  */
 template <typename T>
 std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
-    return flow<T>([func](FlowCollector<T>* collector) {
-        collector->emit(func());
+    return flow<T>([func](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+        return collector->emit(func(), cont);
     });
 }
 
@@ -43,10 +43,12 @@ std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
  */
 template <typename T>
 std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
-    return flow<T>([iterable](FlowCollector<T>* collector) {
+    return flow<T>([iterable](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+        // TODO: Implement state machine for suspending loop
         for (const auto& value : iterable) {
-            collector->emit(value);
+            collector->emit(value, cont);
         }
+        return nullptr;
     });
 }
 
@@ -87,10 +89,11 @@ R flow_scope(std::function<R(CoroutineScope&)> block) {
  */
 template <typename R>
 std::shared_ptr<Flow<R>> scoped_flow(std::function<void(CoroutineScope&, FlowCollector<R>*)> block) {
-     return flow<R>([block](FlowCollector<R>* collector) {
+     return flow<R>([block](FlowCollector<R>* collector, Continuation<void*>* cont) -> void* {
          flow_scope<void>([&](CoroutineScope& scope){
              block(scope, collector);
          });
+         return nullptr;
      });
 }
 

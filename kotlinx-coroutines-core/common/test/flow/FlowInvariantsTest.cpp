@@ -39,15 +39,16 @@ private:
     }
 
     template<typename T>
-    Flow<T> abstract_flow(std::function<void(FlowCollector<T>&)> block) {
+    Flow<T> abstract_flow(std::function<void(FlowCollector<T>*)> block) {
         // object : AbstractFlow<T>()
         struct FlowImpl : public AbstractFlow<T> {
-            std::function<void(FlowCollector<T>&)> block_;
+            std::function<void(FlowCollector<T>*)> block_;
 
-            FlowImpl(std::function<void(FlowCollector<T>&)> b) : block_(b) {}
+            FlowImpl(std::function<void(FlowCollector<T>*)> b) : block_(b) {}
 
-            void collect_safely(FlowCollector<T>& collector) /* suspend */ override {
+            void* collect_safely(FlowCollector<T>* collector, Continuation<void*>* cont) override {
                 block_(collector);
+                return nullptr;
             }
         };
         return FlowImpl(block);

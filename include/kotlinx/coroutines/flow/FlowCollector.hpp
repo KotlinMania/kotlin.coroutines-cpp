@@ -1,5 +1,7 @@
 #pragma once
 
+#include "kotlinx/coroutines/Continuation.hpp"
+
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
@@ -11,9 +13,9 @@ struct FlowCollector {
     /**
      * Collects the value emitted by the upstream.
      * This method is a suspending function in Kotlin. 
-     * In C++, implementations must handle suspension if using C++20 coroutines or a custom runtime.
+     * In C++, we use the standard suspend signature returning void* (state/result).
      */
-    virtual void emit(T value) = 0;
+    virtual void* emit(T value, Continuation<void*>* continuation) = 0;
 };
 
 } // namespace flow

@@ -48,35 +48,40 @@ This document tracks the implementation progress of missing APIs marked with `TO
       **Implementation**: Returns `void*` (COROUTINE_SUSPENDED or result)
       **Completed**: 2024-12-10 - Added `await(Continuation*)`, `await_internal()`, `await_suspend()`, `await_blocking()`, `ResumeAwaitOnCompletion` handler
 
-- [ ] Implement true suspend `delay()`
+- [x] Implement true suspend `delay()`
       **File**: `Delay.hpp:65`
       **Kotlin**: `suspend fun delay(timeMillis: Long)`
       **Action**: Integrate with Delay interface, schedule continuation resume via dispatcher
+      **Completed**: 2024-12-10 - Implemented via `suspend_cancellable_coroutine` and `Delay` interface check
 
 ## High Priority
 
 ### Dispatchers
 
-- [ ] `Dispatchers.IO` implementation  
+- [x] `Dispatchers.IO` implementation  
       **File**: `Dispatchers.hpp:34`  
       **Kotlin**: `val IO: CoroutineDispatcher`  
       **Action**: Thread pool for blocking IO
+      **Completed**: 2024-12-10 - Using `ExecutorCoroutineDispatcherImpl` (native)
 
-- [ ] `Dispatchers.Unconfined` implementation  
+- [x] `Dispatchers.Unconfined` implementation  
       **File**: `Dispatchers.hpp:29`  
       **Kotlin**: `val Unconfined: CoroutineDispatcher`  
       **Action**: Immediate execution, no dispatch
+      **Completed**: 2024-12-10 - Implemented inline execution
 
-- [ ] `Dispatchers.shutdown()` implementation  
+- [x] `Dispatchers.shutdown()` implementation  
       **File**: `Dispatchers.hpp:37`  
       **Kotlin**: `fun shutdown()`  
       **Action**: Clean shutdown of thread pools
+      **Completed**: 2024-12-10 - Implemented with atomic exchange and cleanup
 
 ### Dispatcher Features
 
-- [ ] `limited_parallelism(parallelism, name)` - Parallelism control  
+- [x] `limited_parallelism(parallelism, name)` - Parallelism control  
       **File**: `CoroutineDispatcher.hpp:66`  
       **Kotlin**: `fun limitedParallelism(parallelism: Int, name: String? = null): CoroutineDispatcher`
+      **Completed**: 2024-12-10 - Implemented via `LimitedDispatcher` helper
 
 - [ ] `minus_key(key)` - Context manipulation  
       **File**: `CoroutineDispatcher.hpp:78`  

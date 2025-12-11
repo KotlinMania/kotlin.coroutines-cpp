@@ -8,9 +8,25 @@
 #include "kotlinx/coroutines/Continuation.hpp"
 #include <string>
 #include <functional>
+#include "kotlinx/coroutines/context_impl.hpp"
 
 namespace kotlinx {
 namespace coroutines {
+
+std::shared_ptr<CoroutineContext> CoroutineContext::operator+(std::shared_ptr<CoroutineContext> other) const {
+    if (!other) return std::const_pointer_cast<CoroutineContext>(shared_from_this());
+    
+    return other->fold<std::shared_ptr<CoroutineContext>>(
+        std::const_pointer_cast<CoroutineContext>(shared_from_this()), 
+        [](std::shared_ptr<CoroutineContext> acc, std::shared_ptr<Element> element) {
+            auto removed = acc->minus_key(element->key());
+            if (!removed) {
+                return std::static_pointer_cast<CoroutineContext>(element); 
+            }
+            return std::static_pointer_cast<CoroutineContext>(std::make_shared<CombinedContext>(removed, element));
+        }
+    );
+}
 
 // TODO: import kotlin.coroutines.* - use custom coroutine types
 

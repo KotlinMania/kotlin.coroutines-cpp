@@ -353,35 +353,8 @@ public:
  * - Proper SelectClause registration with selectable objects
  */
 template<typename R, typename BuilderFunc>
-R select(BuilderFunc&& builder) {
-    void* resultPtr = suspend_cancellable_coroutine<R>([&](CancellableContinuation<R>& cont_ref) {
-        // We need shared_ptr to pass to SelectImplementation.
-        // But cont_ref is reference. CancellableContinuationImpl passes itself dereferenced.
-        // We can get shared_ptr from it using shared_from_this() if we can dynamic_cast.
-        // But CancellableContinuation interface doesn't enforce enable_shared_from_this?
-        // CancellableContinuationImpl DOES inherit enable_shared_from_this.
-        // So we can try dynamic_cast.
-        
-        // This is a bit tricky. suspend_cancellable_coroutine signature in C++ stub passes reference.
-        // We need to ensure we can get shared_ptr.
-        // PROPOSAL: Change signature or assume implementation details.
-        
-        // Let's assume we can obtain shared_ptr.
-        // auto cont = std::dynamic_pointer_cast<CancellableContinuation<R>>(
-        //      static_cast<CancellableContinuationImpl<R>*>(&cont_ref)->shared_from_this()
-        // );
-        // This is unsafe.
-        
-        // Alternative: Pass generic lambda to suspend_cancellable_coroutine that accepts shared_ptr?
-        // No, signature is fixed in CancellableContinuationImpl.hpp.
-        
-        // Let's rely on standard shared_from_this from interface if possible?
-        // CancellableContinuation inherits Continuation -> CoroutineContext? No.
-        
-        // Hack for now: use undocumented internal access or assume user knows.
-        // Or better: Fix CancellableContinuationImpl.hpp to pass shared_ptr?
-        // Passing reference is safer for lifetime usually if managed by caller.
-        
+void* select(BuilderFunc&& builder, Continuation<void*>* continuation) {
+    return suspend_cancellable_coroutine<R>([&](CancellableContinuation<R>& cont_ref) {
         // Since we are inside the library, we can assume cont_ref is CancellableContinuationImpl.
         auto* impl_ptr = dynamic_cast<CancellableContinuationImpl<R>*>(&cont_ref);
         auto cont = std::static_pointer_cast<CancellableContinuation<R>>(impl_ptr->shared_from_this());
@@ -393,20 +366,7 @@ R select(BuilderFunc&& builder) {
         // After registration, check if already selected (fast path)
         impl->resume_if_waiting();
         impl->start_selecting_if_needed();
-    });
-    
-    // Result is void* pointing to new R (if completed) or COROUTINE_SUSPENDED
-    if (resultPtr == COROUTINE_SUSPENDED) {
-        // This select function cannot suspend - it must complete immediately
-        // This indicates a programming error or unsupported suspension scenario
-        throw std::runtime_error("Select expression attempted to suspend - not supported in this context");
-    }
-    
-    // Low-level: resultPtr is R*.
-    R* typedPtr = static_cast<R*>(resultPtr);
-    R val = *typedPtr;
-    delete typedPtr;
-    return val;
+    }, continuation);
 }
 
 } // namespace selects

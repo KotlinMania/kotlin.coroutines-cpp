@@ -12,6 +12,7 @@
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <exception>
 
 namespace kotlinx {
@@ -32,13 +33,13 @@ using namespace kotlinx::coroutines::channels;
  * See consume_each() on ReceiveChannel.
  */
 template<typename T>
-void emit_all(FlowCollector<T>* collector, ReceiveChannel<T>* channel) {
+void* emit_all(FlowCollector<T>* collector, ReceiveChannel<T>* channel, Continuation<void*>* cont) {
     // TODO: Implement suspend function semantics
-    emit_all_impl(collector, channel, true);
+    return emit_all_impl(collector, channel, true, cont);
 }
 
 template<typename T>
-void emit_all_impl(FlowCollector<T>* collector, ReceiveChannel<T>* channel, bool consume) {
+void* emit_all_impl(FlowCollector<T>* collector, ReceiveChannel<T>* channel, bool consume, Continuation<void*>* cont) {
     // TODO: Implement suspend function semantics
     // collector->ensure_active();
     std::exception_ptr cause = nullptr;
@@ -50,7 +51,8 @@ void emit_all_impl(FlowCollector<T>* collector, ReceiveChannel<T>* channel, bool
             auto result = channel->try_receive();
             if (result.is_closed()) break;
             if (result.is_success()) {
-                collector->emit(result.get_or_throw());
+                void* res = collector->emit(result.get_or_throw(), cont);
+                if (res == COROUTINE_SUSPENDED) return res;
             }
             // If failure (empty), we'd normally suspend - for now just break
             break;
@@ -62,6 +64,7 @@ void emit_all_impl(FlowCollector<T>* collector, ReceiveChannel<T>* channel, bool
     if (consume) {
         channel->cancel(cause);
     }
+    return nullptr;
 }
 
 /**
@@ -91,8 +94,9 @@ std::shared_ptr<Flow<T>> consume_as_flow(ReceiveChannel<T>* channel) {
 }
 
 // Explicit template instantiations for common types
-template void emit_all<int>(FlowCollector<int>*, ReceiveChannel<int>*);
-template void emit_all_impl<int>(FlowCollector<int>*, ReceiveChannel<int>*, bool);
+// Explicit template instantiations for common types
+template void* emit_all<int>(FlowCollector<int>*, ReceiveChannel<int>*, Continuation<void*>*);
+template void* emit_all_impl<int>(FlowCollector<int>*, ReceiveChannel<int>*, bool, Continuation<void*>*);
 
 } // namespace flow
 } // namespace coroutines

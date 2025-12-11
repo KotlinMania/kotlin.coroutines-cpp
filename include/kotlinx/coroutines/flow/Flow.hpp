@@ -107,7 +107,7 @@ struct Flow {
      * All default flow implementations ensure context preservation and exception transparency properties on a best-effort basis
      * and throw [IllegalStateException] if a violation was detected.
      */
-    virtual void collect(FlowCollector<T>* collector) = 0;
+    virtual void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) = 0;
 };
 
 /**
@@ -142,11 +142,11 @@ struct Flow {
 template<typename T>
 class AbstractFlow : public Flow<T> {
 public:
-    void collect(FlowCollector<T>* collector) override {
+    void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
         // Collect context (mocked for now as empty/default)
-        CoroutineContext safeContext;
-        internal::SafeCollector<T> safeCollector(collector, safeContext);
-        collect_safely(&safeCollector);
+        // TODO: Properly implement context preservation with SafeCollector
+        // Current stub just delegates
+        return collect_safely(collector, continuation);
     }
 
     /**
@@ -162,7 +162,7 @@ public:
      *
      * @throws IllegalStateException if any of the invariants are violated.
      */
-    virtual void collect_safely(FlowCollector<T>* collector) = 0;
+    virtual void* collect_safely(FlowCollector<T>* collector, Continuation<void*>* continuation) = 0;
 };
 
 } // namespace flow

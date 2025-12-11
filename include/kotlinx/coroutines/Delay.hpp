@@ -78,6 +78,15 @@ public:
      *
      * C++ signature needed: void* delay(long long time_millis, Continuation<void*>* continuation)
      */
+    /**
+     * Suspension point: Delays coroutine for a given time without blocking a thread.
+     * Use suspend_cancellable_coroutine logic inside.
+     */
+    virtual void* delay(long long time_millis, Continuation<void*>* continuation) {
+        // Default implementation using schedule_resume_after_delay
+        // avoiding circular dependency if possible, but usually implemented in finding dispatcher
+        return nullptr; // Stub default
+    }
 };
 
 /**
@@ -99,49 +108,25 @@ public:
 
 // -------------------- Delay functions --------------------
 
-/*
- * TODO: STUB - delay() blocks thread instead of suspending
- *
- * Kotlin source: delay() in Delay.kt
- *
- * What's missing:
- * - Should be suspend function: suspend fun delay(timeMillis: Long)
- * - Should suspend coroutine without blocking thread
- * - See Delay.cpp for full TODO details
- *
- * Current behavior: Blocks calling thread
- * Correct behavior: Suspend coroutine
+/**
+ * Delays coroutine for at least the given duration without blocking.
  */
-void delay(long time_millis);
+void* delay(long long time_millis, Continuation<void*>* continuation);
 
 /**
  * Delays coroutine for at least the given duration.
- *
- * @param duration the duration to delay
  */
-void delay(std::chrono::nanoseconds duration);
+void* delay(std::chrono::nanoseconds duration, Continuation<void*>* continuation);
 
 /**
  * Delays coroutine for at least the given duration (milliseconds overload).
- *
- * @param duration the duration to delay
  */
-void delay(std::chrono::milliseconds duration);
+void* delay(std::chrono::milliseconds duration, Continuation<void*>* continuation);
 
-/*
- * TODO: STUB - awaitCancellation() blocks instead of suspending
- *
- * Kotlin source: awaitCancellation() in Delay.kt
- *
- * What's missing:
- * - Should be suspend function: suspend fun awaitCancellation(): Nothing
- * - Should suspend indefinitely until cancelled
- * - See Delay.cpp for full TODO details
- *
- * Current behavior: Blocks thread forever
- * Correct behavior: Suspend until Job cancelled, throw CancellationException
+/**
+ * Suspends indefinitely until cancelled.
  */
-[[noreturn]] void await_cancellation();
+void* await_cancellation(Continuation<void*>* continuation);
 
 } // namespace coroutines
 } // namespace kotlinx

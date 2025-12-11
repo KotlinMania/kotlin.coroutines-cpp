@@ -9,20 +9,44 @@
 #include <thread>
 #include <algorithm>
 #include <iostream>
+#include <atomic>
 
 namespace kotlinx {
 namespace coroutines {
 
 // Internal helpers
+static std::atomic<ExecutorCoroutineDispatcherImpl*> default_dispatcher_ptr{nullptr};
+static std::atomic<ExecutorCoroutineDispatcherImpl*> io_dispatcher_ptr{nullptr};
+
 static CoroutineDispatcher& create_default_dispatcher_impl() {
-    static ExecutorCoroutineDispatcherImpl instance(
-        std::max(2u, std::thread::hardware_concurrency()), "Dispatchers.Default");
-    return instance;
+    ExecutorCoroutineDispatcherImpl* ptr = default_dispatcher_ptr.load();
+    if (ptr == nullptr) {
+        auto* new_dispatcher = new ExecutorCoroutineDispatcherImpl(
+            std::max(2u, std::thread::hardware_concurrency()), "Dispatchers.Default");
+        ExecutorCoroutineDispatcherImpl* expected = nullptr;
+        if (default_dispatcher_ptr.compare_exchange_strong(expected, new_dispatcher)) {
+            ptr = new_dispatcher;
+        } else {
+            delete new_dispatcher; // lost race
+            ptr = expected;
+        }
+    }
+    return *ptr;
 }
 
 static CoroutineDispatcher& create_io_dispatcher_impl() {
-    static ExecutorCoroutineDispatcherImpl instance(64, "Dispatchers.IO");
-    return instance;
+    ExecutorCoroutineDispatcherImpl* ptr = io_dispatcher_ptr.load();
+    if (ptr == nullptr) {
+        auto* new_dispatcher = new ExecutorCoroutineDispatcherImpl(64, "Dispatchers.IO");
+        ExecutorCoroutineDispatcherImpl* expected = nullptr;
+        if (io_dispatcher_ptr.compare_exchange_strong(expected, new_dispatcher)) {
+            ptr = new_dispatcher;
+        } else {
+            delete new_dispatcher; // lost race
+            ptr = expected;
+        }
+    }
+    return *ptr;
 }
 
 static MainCoroutineDispatcher& create_main_dispatcher_impl() {
@@ -47,6 +71,10 @@ static MainCoroutineDispatcher& create_main_dispatcher_impl() {
         MainCoroutineDispatcher& get_immediate() override { return *this; }
         
         std::string to_string() const override { return "Dispatchers.Main[Default]"; }
+
+        std::shared_ptr<CoroutineDispatcher> limited_parallelism(int parallelism, const std::string& name) override {
+             return delegate.limited_parallelism(parallelism, name);
+        }
     } instance(create_default_dispatcher_impl());
     
     return instance;
@@ -81,6 +109,17 @@ CoroutineDispatcher& Dispatchers::get_unconfined() {
     return create_unconfined_dispatcher_impl();
 }
 
+void Dispatchers::shutdown() {
+    if (auto* ptr = default_dispatcher_ptr.exchange(nullptr)) {
+        ptr->close();
+        delete ptr;
+    }
+    if (auto* ptr = io_dispatcher_ptr.exchange(nullptr)) {
+        ptr->close();
+        delete ptr;
+    }
+}
+
 // MainCoroutineDispatcher base implementation
 std::string MainCoroutineDispatcher::to_string() const {
     return to_string_internal_impl();
@@ -91,9 +130,7 @@ std::string MainCoroutineDispatcher::to_string_internal_impl() const {
 }
 
 std::shared_ptr<CoroutineDispatcher> MainCoroutineDispatcher::limited_parallelism(int parallelism, const std::string& name) {
-    // Basic implementation that ignores parallelism limit for now in base
-    // In real implementation it should wrap into LimitedDispatcher 
-    return nullptr; 
+     return CoroutineDispatcher::limited_parallelism(parallelism, name);
 }
 
 } // namespace coroutines

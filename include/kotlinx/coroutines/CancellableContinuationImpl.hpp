@@ -317,15 +317,18 @@ struct CoroutineStackFrame {};
         return result;
     }
 
+// Publicly exposed for suspend_cancellable_coroutine
+    bool try_suspend() {
+        Decision expected = Decision::UNDECIDED;
+        return decision_.compare_exchange_strong(expected, Decision::SUSPENDED, std::memory_order_acq_rel);
+    }
+    
+    // Note: get_result is already public
+
 private:
    enum class Decision { UNDECIDED, SUSPENDED, RESUMED };
    std::atomic<Decision> decision_;
-
-   bool try_suspend() {
-       Decision expected = Decision::UNDECIDED;
-       return decision_.compare_exchange_strong(expected, Decision::SUSPENDED, std::memory_order_acq_rel);
-   }
-
+   
    bool try_resume_decision() {
        Decision expected = Decision::UNDECIDED;
        return decision_.compare_exchange_strong(expected, Decision::RESUMED, std::memory_order_acq_rel);
@@ -582,15 +585,18 @@ public:
         throw std::runtime_error("Invalid state in get_result");
     }
 
+// Publicly exposed for suspend_cancellable_coroutine
+    bool try_suspend() {
+        Decision expected = Decision::UNDECIDED;
+        return decision_.compare_exchange_strong(expected, Decision::SUSPENDED, std::memory_order_acq_rel);
+    }
+    
+    // Note: get_result is already public
+
 private:
    enum class Decision { UNDECIDED, SUSPENDED, RESUMED };
    std::atomic<Decision> decision_;
-
-   bool try_suspend() {
-       Decision expected = Decision::UNDECIDED;
-       return decision_.compare_exchange_strong(expected, Decision::SUSPENDED, std::memory_order_acq_rel);
-   }
-
+   
    bool try_resume_decision() {
        Decision expected = Decision::UNDECIDED;
        return decision_.compare_exchange_strong(expected, Decision::RESUMED, std::memory_order_acq_rel);
@@ -676,6 +682,43 @@ void* suspend_cancellable_coroutine(
     // If not suspended, get the result
     T res = impl->get_result();
     return reinterpret_cast<void*>(new T(res));
+}
+
+// Void Specialization for suspend_cancellable_coroutine
+template <>
+inline void* suspend_cancellable_coroutine<void>(
+    std::function<void(CancellableContinuation<void>&)> block,
+    Continuation<void*>* continuation
+) {
+    // Adapter wraps generic Continuation<void*> as Continuation<void>
+    class ContinuationAdapter : public Continuation<void> {
+        Continuation<void*>* outer_;
+    public:
+        explicit ContinuationAdapter(Continuation<void*>* outer) : outer_(outer) {}
+        std::shared_ptr<CoroutineContext> get_context() const override { return outer_->get_context(); }
+        void resume_with(Result<void> result) override {
+            if (result.is_success()) {
+                // Return nullptr as void "value"
+                outer_->resume_with(Result<void*>::success(nullptr));
+            } else {
+                outer_->resume_with(Result<void*>::failure(result.exception_or_null()));
+            }
+        }
+    };
+
+    auto adapter = std::make_shared<ContinuationAdapter>(continuation);
+    auto impl = std::make_shared<CancellableContinuationImpl<void>>(adapter, 1);
+    impl->init_cancellability();
+
+    block(*impl);
+
+    if (impl->try_suspend()) {
+        return COROUTINE_SUSPENDED;
+    }
+    
+    // Void result
+    impl->get_result();
+    return nullptr;
 }
 
 } // namespace coroutines
