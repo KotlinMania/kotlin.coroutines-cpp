@@ -1,4 +1,11 @@
-# IDE
+# =============================================================================
+# kotlinx.coroutines-cpp .gitignore
+# =============================================================================
+
+# =============================================================================
+# IDE and Editor Files
+# =============================================================================
+# JetBrains IDEs (CLion, IntelliJ)
 **/.idea/*
 !/.idea/icon.png
 !/.idea/vcs.xml
@@ -7,32 +14,77 @@
 !/.idea/codeStyles
 !/.idea/dictionaries
 *.iml
+
+# Visual Studio Code
 .vscode/
+*.code-workspace
 
-# Build systems
-.gradle
-.gradletasknamecache
-build/
-out/
-target/
-local.properties
-benchmarks.jar
-/kotlin-js-store
-/.kotlin
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
 
-# Build artifacts
+# Visual Studio
+*.sln
+*.vcxproj*
+.vs/
+
+# =============================================================================
+# Build Directories (CMake out-of-source builds)
+# =============================================================================
+# Primary build directory
+/build/
+
+# Alternative build directory names
+/cmake-build-*/
+/out/
+/target/
+
+# =============================================================================
+# Build Artifacts (catch strays outside build/)
+# =============================================================================
+# Object files
 *.o
-*.a
-*.so
-*.dylib
+*.obj
 
-# Test binaries (built from tests/*.cpp)
+# Static libraries
+*.a
+*.lib
+
+# Shared libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Executables (platform-specific)
+*.exe
+*.out
+
+# Test binaries (anywhere in project)
 test_*
 !tests/*.cpp
+!tests/**/*.cpp
 
-# Temporary files
+# =============================================================================
+# Gradle/Kotlin Build System (from upstream kotlinx.coroutines)
+# =============================================================================
+.gradle/
+.gradletasknamecache
+local.properties
+benchmarks.jar
+/kotlin-js-store/
+/.kotlin/
+
+# =============================================================================
+# Temporary and Generated Files
+# =============================================================================
+# Temporary directories
 /tmp/
-*.txt.bak
+*.tmp
+*.temp
+*.bak
+*~
 
 # Generated file lists (development tools)
 cpp_files.txt
@@ -41,5 +93,43 @@ kotlin.files.txt
 unported_files.txt
 hpp_files.txt
 
-# Reference Kotlin source (not part of C++ build)
-kotlin_JobSupport.kt
+# Reference files (not part of C++ build)
+*.kt
+!tmp/**/*.kt
+
+# CMake generated
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+compile_commands.json
+
+# =============================================================================
+# OS Generated Files
+# =============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory
+
+# =============================================================================
+# Package Manager Files
+# =============================================================================
+# vcpkg
+/vcpkg_installed/
+
+# Conan
+/conanbuildinfo.*
+/conaninfo.txt
+/graph_info.json
