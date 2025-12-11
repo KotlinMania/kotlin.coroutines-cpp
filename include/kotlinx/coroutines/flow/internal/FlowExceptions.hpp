@@ -17,7 +17,7 @@ public:
         : std::runtime_error("Flow was aborted, this exception should not be seen")
         , owner(owner_) {}
 
-    void checkOwnership(void* other) {
+    void check_ownership(void* other) {
         if (owner != other) {
             throw *this;
         }
