@@ -25,7 +25,7 @@ public:
         explicit KeyTyped(const char* name = nullptr) : Key(name) {}
     };
 
-    virtual std::shared_ptr<Element> get(Key* key) const { return nullptr; }
+    virtual std::shared_ptr<Element> get(Key* /*key*/) const { return nullptr; }
     
     // Operator + for context composition
     // Typically implemented via fold or CombinedContext

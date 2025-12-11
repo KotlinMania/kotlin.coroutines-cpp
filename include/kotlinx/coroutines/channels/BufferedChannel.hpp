@@ -65,9 +65,27 @@ public:
              throw ClosedSendChannelException("Channel was closed");
         }
 
-        // Slow path: would need to suspend
-        // TODO: Implement proper Kotlin-style suspension
-        // For now, return an awaiter that indicates suspension is needed
+        /*
+         * TODO: STUB - Channel send suspension not implemented
+         *
+         * Kotlin source: BufferedChannel.send() in BufferedChannel.kt
+         *
+         * What's missing:
+         * - Should suspend using suspend_cancellable_coroutine pattern:
+         *   return suspendCancellableCoroutine { cont ->
+         *       // Add to senders queue
+         *       // Register cancellation handler to remove from queue
+         *       // Resume when receiver takes the element
+         *   }
+         * - Requires proper Continuation<void*>* parameter (Kotlin-style suspend)
+         * - Need senders queue to track waiting senders
+         *
+         * Current behavior: Returns "needs_suspend" flag but doesn't actually suspend
+         *   Caller must handle this by polling or using try_send()
+         * Correct behavior: Suspend coroutine until buffer has space or receiver ready
+         *
+         * Workaround: Use try_send() in a loop with delay, or use unlimited buffer
+         */
         return ChannelAwaiter<void>(true /* needs_suspend */);
     }
 
@@ -117,9 +135,27 @@ public:
              throw ClosedReceiveChannelException("Channel closed");
         }
 
-        // Slow path: would need to suspend
-        // TODO: Implement proper Kotlin-style suspension
-        // For now, return an awaiter that indicates suspension is needed
+        /*
+         * TODO: STUB - Channel receive suspension not implemented
+         *
+         * Kotlin source: BufferedChannel.receive() in BufferedChannel.kt
+         *
+         * What's missing:
+         * - Should suspend using suspend_cancellable_coroutine pattern:
+         *   return suspendCancellableCoroutine { cont ->
+         *       // Add to receivers queue
+         *       // Register cancellation handler to remove from queue
+         *       // Resume with value when sender provides element
+         *   }
+         * - Requires proper Continuation<void*>* parameter (Kotlin-style suspend)
+         * - Need receivers queue to track waiting receivers
+         *
+         * Current behavior: Returns "needs_suspend" flag but doesn't actually suspend
+         *   Caller must handle this by polling or using try_receive()
+         * Correct behavior: Suspend coroutine until element available
+         *
+         * Workaround: Use try_receive() in a loop with delay
+         */
         return ChannelAwaiter<E>(true /* needs_suspend */, nullptr);
     }
 
@@ -129,8 +165,22 @@ public:
             return ChannelAwaiter<ChannelResult<E>>(std::move(result));
         }
 
-        // Slow path: would need to suspend
-        // TODO: Implement proper Kotlin-style suspension
+        /*
+         * TODO: STUB - Channel receiveCatching suspension not implemented
+         *
+         * Kotlin source: BufferedChannel.receiveCatching() in BufferedChannel.kt
+         *
+         * What's missing:
+         * - Should suspend like receive() but wrap result in ChannelResult
+         * - On success: ChannelResult.success(value)
+         * - On close: ChannelResult.closed(cause) without throwing
+         * - Requires same suspension infrastructure as receive()
+         *
+         * Current behavior: Returns "needs_suspend" flag but doesn't actually suspend
+         * Correct behavior: Suspend until element available, return ChannelResult wrapper
+         *
+         * Workaround: Use try_receive() in a polling loop
+         */
         return ChannelAwaiter<ChannelResult<E>>(true /* needs_suspend */, nullptr);
     }
 
@@ -149,11 +199,53 @@ public:
     }
 
     ChannelAwaiter<ChannelResult<E>> receive_with_timeout(long /*timeout*/) override {
-        // TODO: Implement timeout
+        /*
+         * TODO: STUB - Channel receive with timeout not implemented
+         *
+         * Kotlin source: Not a direct Kotlin API - this is a convenience extension
+         *
+         * What's missing:
+         * - Should use withTimeout {} wrapper around receive()
+         * - Requires: kotlinx.coroutines.withTimeout() implementation
+         * - Requires: TimeoutCancellationException handling
+         * - On timeout: return ChannelResult.closed() or throw
+         *
+         * Current behavior: Always returns failure immediately
+         * Correct behavior: Wait up to timeout ms, then return result or timeout
+         *
+         * Dependencies:
+         * - withTimeout() coroutine builder
+         * - Delay/timer infrastructure
+         * - receive() suspension working properly
+         *
+         * Workaround: Implement timeout externally with a timer and try_receive() polling
+         */
         return ChannelAwaiter<ChannelResult<E>>(ChannelResult<E>::failure());
     }
 
     std::shared_ptr<ChannelIterator<E>> iterator() override {
+        /*
+         * TODO: STUB - Channel iterator not implemented
+         *
+         * Kotlin source: BufferedChannel.iterator() in BufferedChannel.kt
+         *
+         * What's missing:
+         * - Should return a ChannelIterator that supports:
+         *   - hasNext(): suspend function returning bool
+         *   - next(): returns cached element from hasNext()
+         * - hasNext() calls receive() internally, caches result
+         * - Iterator enables for-each loops: for (item in channel) { ... }
+         *
+         * Current behavior: Returns nullptr - iteration not supported
+         * Correct behavior: Return working ChannelIterator instance
+         *
+         * Dependencies:
+         * - ChannelIterator class implementation
+         * - receive() suspension working properly
+         * - State machine for hasNext()/next() coordination
+         *
+         * Workaround: Use while loop with try_receive() manually
+         */
         return nullptr;
     }
 

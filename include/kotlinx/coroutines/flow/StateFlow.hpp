@@ -118,19 +118,36 @@ public:
 
     /**
      * Collects values from this state flow.
-     *
-     * This function never completes normally. It collects the current value immediately
-     * and then waits for and collects subsequent updates.
-     *
-     * TODO: Implement proper infinite collection
      */
     void collect(FlowCollector<T>* collector) override {
+        /*
+         * TODO: STUB - StateFlow collect does not wait for updates
+         *
+         * Kotlin source: StateFlow.collect() in StateFlow.kt
+         *
+         * What's missing:
+         * - Should be a suspend function: suspend fun collect(collector: FlowCollector<T>): Nothing
+         * - After emitting current value, should suspend waiting for updates
+         * - Should never complete normally (StateFlow is hot)
+         * - Should use distinctUntilChanged semantics (don't emit if value unchanged)
+         * - Requires: condition variable or suspension mechanism to wait for set_value() calls
+         *
+         * Current behavior: Emits current value once then returns immediately
+         * Correct behavior: Emit current value, then suspend indefinitely,
+         *   resuming each time value changes, never completing normally
+         *
+         * Dependencies:
+         * - Kotlin-style suspension (Continuation<void*>* parameter)
+         * - Value change notification from set_value()
+         * - Proper cancellation support
+         *
+         * Workaround: External polling loop calling value() and comparing
+         */
         std::unique_lock<std::mutex> lock(mutex_);
         T last_emitted = value_;
         lock.unlock();
         collector->emit(last_emitted);
-        // TODO: Wait for updates and continue collecting
-        // For now, just emit current value once
+        // Returns immediately - should suspend and wait for updates
     }
 
     void collect(std::function<void(T)> action) override {

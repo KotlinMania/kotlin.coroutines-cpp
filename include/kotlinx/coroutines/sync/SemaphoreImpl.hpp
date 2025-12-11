@@ -25,7 +25,34 @@ public:
     }
 
     void acquire() override {
-        // Simple spin-wait stub for now, TODO: implement true suspension
+        /*
+         * TODO: STUB - Semaphore acquire uses busy-wait instead of suspension
+         *
+         * Kotlin source: Semaphore.acquire() in Semaphore.kt
+         *
+         * What's missing:
+         * - Should be a suspend function: suspend fun acquire()
+         * - When no permits available, should suspend using suspendCancellableCoroutine
+         * - Resume when release() is called and permits become available
+         * - Requires: waiters queue to track suspended acquirers
+         * - Requires: proper Continuation<void*>* parameter (Kotlin-style suspend)
+         * - Should support fairness (FIFO ordering of waiters)
+         *
+         * Current behavior: Busy-waits (spins) with yield() until permit available
+         *   - Burns CPU cycles
+         *   - Not coroutine-friendly (blocks the thread)
+         * Correct behavior: Suspend coroutine, allowing other coroutines to run
+         *
+         * Dependencies:
+         * - suspendCancellableCoroutine integration
+         * - Waiters queue (similar to channel senders/receivers queues)
+         * - Atomic state management for lock-free acquire/release coordination
+         *
+         * Impact: High - current implementation blocks thread instead of suspending
+         *
+         * Workaround: Use in non-coroutine context where blocking is acceptable,
+         *   or use try_acquire() with manual retry logic
+         */
         int expected;
         do {
             expected = available.load();

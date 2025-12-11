@@ -183,6 +183,29 @@ public:
     
     // Core logic called by select()
     R do_select() {
+        /*
+         * TODO: STUB - Select suspension not fully implemented
+         *
+         * Kotlin source: SelectImplementation in Select.kt
+         *
+         * What's missing:
+         * - Full state machine for select expression:
+         *   1. REGISTRATION: Register all clauses with their selectable objects
+         *   2. If any clause immediately ready, transition to SELECTED
+         *   3. If none ready, transition to WAITING and suspend
+         *   4. When a clause becomes ready, try_select() is called
+         *   5. First successful try_select() wins, resume continuation
+         * - Proper integration with suspendCancellableCoroutine
+         * - Cancellation handling (dispose all non-selected clauses)
+         *
+         * Current behavior: Throws if no clause selected during registration
+         * Correct behavior: Suspend waiting for a clause to become ready
+         *
+         * Dependencies:
+         * - Kotlin-style suspension (Continuation<void*>* parameter)
+         * - Channel/Job/etc integration calling try_select() when ready
+         * - Proper clause disposal on completion/cancellation
+         */
         // 1. Check if already selected during registration
         {
             std::lock_guard<std::recursive_mutex> lock(mutex);
@@ -194,21 +217,8 @@ public:
             }
             state = WAITING;
         }
-        
-        // 2. Suspend (simulation)
-        // If we are here, no clause was selected immediately.
-        // But in our 'try_select', we didn't resume continuation because we didn't know if we were suspended yet?
-        // Actually, 'try_select' returned true. The caller of 'try_select' (e.g. Channel) knows it won.
-        // It should then resume the continuation.
-        // But wait, 'continuation' was passed in constructor.
-        
-        // Real logic: 
-        // We suspend logic is handled by 'select' wrapper creating CancellableContinuation.
-        // This class is just the state machine.
-        // Using suspendCancellableCoroutine, we get 'cont'.
-        
-        // Return dummy? No, 'select' function returns R.
-        // See implementation below.
+
+        // Cannot suspend properly - throw error
         throw std::runtime_error("Do not call do_select directly, use select() wrapper");
     }
     
@@ -281,26 +291,63 @@ public:
     }
     
     void on_timeout(long long timeMillis, std::function<R()> block) {
-        // TODO: Register strict timeout clause
+        /*
+         * TODO: STUB - Select onTimeout not implemented
+         *
+         * Kotlin source: SelectBuilder.onTimeout() in Select.kt
+         *
+         * What's missing:
+         * - Should register a timeout clause that triggers after timeMillis
+         * - If no other clause is selected within timeout, execute block
+         * - Requires: timer/delay infrastructure integration
+         * - Requires: scheduling timeout cancellation when another clause wins
+         *
+         * Current behavior: Does nothing - timeout clause is ignored
+         * Correct behavior: Start timer, if expires before other clauses, select timeout
+         *
+         * Dependencies:
+         * - Delay/timer infrastructure (similar to delay() suspend function)
+         * - Integration with SelectImplementation state machine
+         * - DisposableHandle for timer cancellation
+         *
+         * Workaround: Use external timeout wrapper around select{}
+         */
+        (void)timeMillis;
+        (void)block;
     }
 };
 
+/*
+ * TODO: STUB - select() expression partially implemented
+ *
+ * Kotlin source: select() in Select.kt
+ *
+ * What's missing:
+ * - suspendCancellableCoroutine is not properly integrated
+ * - After registration, should check if any clause was immediately selected
+ * - If selected: resume immediately with result (fast path)
+ * - If not selected: suspend and wait for try_select() call from clause
+ * - Proper cancellation propagation to all registered clauses
+ *
+ * Current behavior: Calls suspendCancellableCoroutine but doesn't handle
+ *   the result properly - relies on clause registration side effects
+ * Correct behavior: Full select state machine with proper fast/slow paths
+ *
+ * Dependencies:
+ * - Working suspendCancellableCoroutine<R>()
+ * - Channel/Job onReceive/onJoin/onSend clause implementations
+ * - Proper SelectClause registration with selectable objects
+ */
 template<typename R, typename BuilderFunc>
 R select(BuilderFunc&& builder) {
     return suspendCancellableCoroutine<R>([&](std::shared_ptr<CancellableContinuation<R>> cont) {
         auto impl = std::make_shared<SelectImplementation<R>>(cont);
         SelectBuilder<R> b(impl);
         builder(b);
-        
-        // After builder, we might be selected already?
-        // impl->check_immediate();
-        // impl check logic:
-        // if (impl->try_select_immediate()) { ... }
-        // For simpler logic, we let registrations happen. If any registration calls trySelect synchronously,
-        // it updates state to SELECTED.
-        // Then we check:
-        // impl->resume_if_selected_immediate();
-        // implementation detail...
+
+        // After registration, check if already selected (fast path)
+        // If not, the coroutine will suspend until a clause calls try_select()
+        impl->resume_if_waiting();
     });
 }
 

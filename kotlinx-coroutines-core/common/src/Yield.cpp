@@ -13,14 +13,35 @@
 namespace kotlinx {
 namespace coroutines {
 
+/*
+ * TODO: STUB - yield_coroutine() yields thread instead of suspending coroutine
+ *
+ * Kotlin source: yield() in Yield.kt
+ *
+ * What's missing:
+ * - Should be a suspend function: suspend fun yield()
+ * - Should check for cancellation first: context.ensureActive()
+ * - Should get dispatcher from context and call dispatch()
+ * - Suspend coroutine and re-enqueue it to dispatcher's queue
+ * - This allows other coroutines on same dispatcher to run
+ *
+ * Current behavior: Calls std::this_thread::yield()
+ *   - Only yields to OS scheduler, not to other coroutines
+ *   - Other coroutines on same thread don't get a chance to run
+ *   - No cancellation check
+ * Correct behavior: Suspend current coroutine, dispatch it back to queue,
+ *   allowing other coroutines to run first (cooperative scheduling)
+ *
+ * Dependencies:
+ * - Kotlin-style suspension (Continuation<void*>* parameter)
+ * - CoroutineDispatcher.dispatch() integration
+ * - ensureActive() for cancellation check
+ *
+ * Impact: Medium - cooperative yielding doesn't work, but OS yields still help
+ *
+ * Workaround: Use delay(1) for a minimal suspension point
+ */
 void yield_coroutine() {
-    // In a true coroutine implementation, this would:
-    // 1. Check if there's a dispatcher in the context
-    // 2. Schedule the current coroutine for later execution
-    // 3. Suspend to allow other coroutines to run
-    //
-    // In this simplified C++ transliteration, we just yield the current thread's
-    // time slice to give other threads a chance to run.
     std::this_thread::yield();
 }
 

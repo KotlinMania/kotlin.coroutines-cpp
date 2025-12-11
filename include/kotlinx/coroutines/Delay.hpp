@@ -62,14 +62,22 @@ public:
         std::shared_ptr<Runnable> block,
         const CoroutineContext& context) = 0;
 
-    // TODO: MISSING API - kotlinx.coroutines.Delay
-    // public abstract suspend fun delay(timeMillis: Long): Unit
-    // Delays coroutine for a given time without blocking a thread and resumes it after a specified time.
-    // This is a suspending function. If the Job of the current coroutine is cancelled while this
-    // suspending function is waiting, this function immediately resumes with CancellationException.
-    // Translation: This should be a co-routine suspending function that integrates with our
-    // suspend mechanism. Current delay() implementations are blocking.
-    // Signature (when suspend macros ready): Awaitable<void> delay(long long time_millis);
+    /*
+     * TODO: MISSING API - Delay.delay() suspend function
+     *
+     * Kotlin source: Delay.delay() in Delay.kt (internal interface method)
+     *
+     * What's missing:
+     * - Kotlin signature: public abstract suspend fun delay(timeMillis: Long): Unit
+     * - This is the Delay interface's method that dispatchers implement
+     * - Should integrate with scheduleResumeAfterDelay()
+     * - Enables dispatcher-specific delay implementations
+     *
+     * Current status: Not defined in interface
+     * Correct status: Define as suspend function that dispatchers override
+     *
+     * C++ signature needed: void* delay(long long time_millis, Continuation<void*>* continuation)
+     */
 };
 
 /**
@@ -91,15 +99,18 @@ public:
 
 // -------------------- Delay functions --------------------
 
-/**
- * Delays coroutine for at least the given time without blocking a thread and
- * resumes it after a specified time. If the given time is non-positive, this
- * function returns immediately.
+/*
+ * TODO: STUB - delay() blocks thread instead of suspending
  *
- * NOTE: In this C++ transliteration, delay is implemented as a blocking sleep.
- * In true Kotlin coroutines, this is a suspending function that doesn't block threads.
+ * Kotlin source: delay() in Delay.kt
  *
- * @param time_millis time in milliseconds
+ * What's missing:
+ * - Should be suspend function: suspend fun delay(timeMillis: Long)
+ * - Should suspend coroutine without blocking thread
+ * - See Delay.cpp for full TODO details
+ *
+ * Current behavior: Blocks calling thread
+ * Correct behavior: Suspend coroutine
  */
 void delay(long time_millis);
 
@@ -117,14 +128,18 @@ void delay(std::chrono::nanoseconds duration);
  */
 void delay(std::chrono::milliseconds duration);
 
-/**
- * Suspends until cancellation, in which case it will throw a CancellationException.
+/*
+ * TODO: STUB - awaitCancellation() blocks instead of suspending
  *
- * This function never returns normally - it either suspends forever or throws
- * when cancelled.
+ * Kotlin source: awaitCancellation() in Delay.kt
  *
- * NOTE: In this C++ transliteration, this blocks indefinitely since there's
- * no cancellation mechanism outside of true coroutines.
+ * What's missing:
+ * - Should be suspend function: suspend fun awaitCancellation(): Nothing
+ * - Should suspend indefinitely until cancelled
+ * - See Delay.cpp for full TODO details
+ *
+ * Current behavior: Blocks thread forever
+ * Correct behavior: Suspend until Job cancelled, throw CancellationException
  */
 [[noreturn]] void await_cancellation();
 

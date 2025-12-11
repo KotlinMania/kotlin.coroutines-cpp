@@ -204,11 +204,30 @@ public:
      */
     std::shared_ptr<Continuation<void*>> intercepted() {
         if (!intercepted_) {
-            // TODO: Check context for ContinuationInterceptor and intercept
-            // For now, return this (no interception)
+            /*
+             * TODO: STUB - Continuation interception not implemented
+             *
+             * Kotlin source: ContinuationImpl.intercepted() in ContinuationImpl.kt
+             *
+             * What's missing:
+             * - Should get ContinuationInterceptor from context:
+             *   val interceptor = context[ContinuationInterceptor]
+             * - If interceptor exists, call: interceptor.interceptContinuation(this)
+             * - This wraps the continuation in a DispatchedContinuation for proper
+             *   thread/dispatcher handling
+             *
+             * Current behavior: Returns self without interception - all coroutines
+             *   run on the calling thread regardless of dispatcher in context
+             * Correct behavior: Wrap in DispatchedContinuation that dispatches
+             *   resume calls through the context's dispatcher
+             *
+             * Dependencies:
+             * - ContinuationInterceptor interface implementation
+             * - DispatchedContinuation class
+             * - CoroutineDispatcher.interceptContinuation()
+             */
             intercepted_ = std::dynamic_pointer_cast<Continuation<void*>>(shared_from_this());
             if (!intercepted_) {
-                // Fallback - create a wrapper that delegates to this
                 intercepted_ = std::shared_ptr<Continuation<void*>>(
                     shared_from_this(),
                     static_cast<Continuation<void*>*>(this)
@@ -222,10 +241,23 @@ protected:
     void release_intercepted() override {
         auto intercepted = intercepted_;
         if (intercepted && intercepted.get() != this) {
-            // TODO: Release via ContinuationInterceptor
-            // context_[ContinuationInterceptor]?.releaseInterceptedContinuation(intercepted)
+            /*
+             * TODO: STUB - Intercepted continuation release not implemented
+             *
+             * Kotlin source: ContinuationImpl.releaseIntercepted() in ContinuationImpl.kt
+             *
+             * What's missing:
+             * - Should call: context[ContinuationInterceptor]?.releaseInterceptedContinuation(intercepted)
+             * - This allows the dispatcher to clean up any resources associated with
+             *   the intercepted continuation (e.g., remove from dispatch queue)
+             *
+             * Current behavior: Just nullifies the pointer without notifying dispatcher
+             * Correct behavior: Notify interceptor to release resources, then nullify
+             *
+             * Impact: Minor - may cause resource leaks in dispatchers that track continuations
+             */
         }
-        intercepted_ = nullptr;  // Mark as completed
+        intercepted_ = nullptr;
     }
 
 private:

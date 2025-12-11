@@ -80,9 +80,26 @@ struct Waiter {};
     }
 
     void resume(T value, std::function<void(std::exception_ptr)> on_cancellation) override {
-        // Keep alive during resumption
+        /*
+         * TODO: STUB - on_cancellation callback not implemented
+         *
+         * Kotlin source: CancellableContinuationImpl.resume(value, onCancellation)
+         *
+         * What's missing:
+         * - The on_cancellation callback should be stored and invoked if:
+         *   a) The continuation is cancelled before resumption completes
+         *   b) The resume races with cancellation
+         * - Used by resources that need cleanup on cancellation (e.g., file handles)
+         *
+         * Current behavior: on_cancellation is ignored - resources may leak on cancellation
+         * Correct behavior: Store callback, invoke on cancellation with the cause
+         *
+         * Example use case:
+         *   cont.resume(fd, [fd](auto cause) { close(fd); });
+         *   // If cancelled, fd should be closed
+         */
+        (void)on_cancellation;
         auto self = this->shared_from_this();
-        // TODO: Handle on_cancellation
         void* token = try_resume(value);
         if (token) {
             complete_resume(token);

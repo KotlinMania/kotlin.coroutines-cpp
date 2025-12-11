@@ -68,10 +68,29 @@ public:
 
     /**
      * Emits a value to this shared flow, suspending if the buffer is full.
-     *
-     * TODO: Implement proper suspension
      */
     void emit(T value) {
+        /*
+         * TODO: STUB - SharedFlow emit suspension not implemented
+         *
+         * Kotlin source: MutableSharedFlow.emit() in SharedFlow.kt
+         *
+         * What's missing:
+         * - Should be a suspend function: suspend fun emit(value: T)
+         * - When buffer is full and onBufferOverflow == SUSPEND:
+         *   - Should suspend using suspendCancellableCoroutine
+         *   - Resume when a collector consumes a value, freeing buffer space
+         * - Requires: emitters queue to track waiting emitters
+         * - Requires: proper Continuation<void*>* parameter (Kotlin-style suspend)
+         *
+         * Current behavior: Always succeeds immediately by dropping oldest values
+         * Correct behavior: Suspend when buffer full (if SUSPEND overflow policy)
+         *
+         * Dependencies:
+         * - BufferOverflow policy support (currently hardcoded to DROP_OLDEST behavior)
+         * - suspendCancellableCoroutine integration
+         * - Emitters queue for backpressure
+         */
         std::lock_guard<std::mutex> lock(mutex_);
         // Add to replay cache
         replay_cache_.push_back(value);
@@ -88,13 +107,32 @@ public:
      * @return true if the value was emitted, false if the buffer is full
      */
     bool try_emit(T value) {
+        /*
+         * TODO: STUB - SharedFlow tryEmit buffer overflow not implemented
+         *
+         * Kotlin source: MutableSharedFlow.tryEmit() in SharedFlow.kt
+         *
+         * What's missing:
+         * - Should check BufferOverflow policy:
+         *   - SUSPEND: return false when buffer is full (caller should use emit() instead)
+         *   - DROP_OLDEST: drop oldest and return true (current behavior)
+         *   - DROP_LATEST: drop this value and return true
+         * - Currently always drops oldest and returns true
+         *
+         * Current behavior: Always succeeds by dropping oldest values
+         * Correct behavior: Respect BufferOverflow policy, return false for SUSPEND when full
+         *
+         * Dependencies:
+         * - BufferOverflow enum (should be a constructor parameter)
+         * - Proper buffer size checking before deciding action
+         */
         std::lock_guard<std::mutex> lock(mutex_);
         replay_cache_.push_back(value);
         while (static_cast<int>(replay_cache_.size()) > replay_ + extra_buffer_capacity_) {
             replay_cache_.pop_front();
         }
         cv_.notify_all();
-        return true; // TODO: Implement proper buffer overflow handling
+        return true;
     }
 
     /**
@@ -116,10 +154,23 @@ public:
 
     /**
      * The number of active subscribers (collectors).
-     *
-     * TODO: Implement proper subscription counting
      */
     int subscription_count() const {
+        /*
+         * TODO: PARTIAL - SharedFlow subscriptionCount is basic
+         *
+         * Kotlin source: MutableSharedFlow.subscriptionCount in SharedFlow.kt
+         *
+         * What's partially missing:
+         * - In Kotlin, subscriptionCount is a StateFlow<Int> that can be collected
+         * - Should allow observing subscription count changes reactively
+         * - Current implementation only provides snapshot value
+         *
+         * Current behavior: Returns atomic int snapshot
+         * Correct behavior: Return StateFlow<int> for reactive observation
+         *
+         * Impact: Low - snapshot is sufficient for most use cases
+         */
         return subscription_count_.load();
     }
 
@@ -127,8 +178,30 @@ public:
      * Collects values from this shared flow.
      */
     void collect(FlowCollector<T>* collector) override {
+        /*
+         * TODO: STUB - SharedFlow collect does not wait for new values
+         *
+         * Kotlin source: SharedFlow.collect() in SharedFlow.kt
+         *
+         * What's missing:
+         * - Should be a suspend function: suspend fun collect(collector: FlowCollector<T>)
+         * - After emitting replay cache, should suspend waiting for new values
+         * - Should never complete normally (SharedFlow is hot, runs forever)
+         * - Requires: condition variable wait or suspension mechanism
+         * - Requires: proper coordination with emit() to wake up collectors
+         *
+         * Current behavior: Emits replay cache then returns immediately
+         * Correct behavior: Emit replay cache, then suspend indefinitely waiting for
+         *   new values, resuming each time emit() is called
+         *
+         * Dependencies:
+         * - Kotlin-style suspension (Continuation<void*>* parameter)
+         * - Collector registration/tracking in emit()
+         * - Proper cleanup on collector cancellation
+         *
+         * Workaround: External polling loop calling collect() repeatedly
+         */
         subscription_count_++;
-        // TODO: Implement proper collection with replay and waiting for new values
         std::unique_lock<std::mutex> lock(mutex_);
         // First emit replay cache
         for (const auto& value : replay_cache_) {
