@@ -6,7 +6,15 @@
  * - invokeSuspend is the state machine method
  * - label field tracks suspension points
  * - ContinuationImpl is the base class
+ *
+ * NOTE: IntelliJ IDEA may report false syntax errors in this file due to macro-based
+ * state machine generation. The code compiles correctly with g++/clang.
+ * See IDE_ERROR_INVESTIGATION.md for details.
  */
+
+// noinspection CppDFAUnreachableCode
+// noinspection CppDFAUnusedValue
+// noinspection CppNoDiscardExpression
 
 #include "kotlinx/coroutines/SuspendMacros.hpp"
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
@@ -33,13 +41,14 @@ class GetValueSuspendFn : public SuspendLambda<int> {
 public:
     using SuspendLambda::SuspendLambda;
 
+    // NOLINT - IDE cannot parse suspend macros
     void* invoke_suspend(Result<void*> result) override {
-        SUSPEND_BEGIN(1)
+        SUSPEND_BEGIN(1) // NOLINT
 
         // No suspension, just return the value
         SUSPEND_RETURN(42);
 
-        SUSPEND_END
+        SUSPEND_END // NOLINT
     }
 };
 
@@ -56,18 +65,19 @@ class ExampleSuspendFn : public SuspendLambda<int> {
 public:
     using SuspendLambda::SuspendLambda;
 
+    // NOLINT - IDE cannot parse suspend macros
     void* invoke_suspend(Result<void*> result) override {
         void* tmp = nullptr;
         int x;
         std::shared_ptr<GetValueSuspendFn> get_value_fn;
 
-        SUSPEND_BEGIN(2)
+        SUSPEND_BEGIN(2) // NOLINT
 
         // val x = getValue() - this is a suspend call
-        get_value_fn = std::make_shared<GetValueSuspendFn>(
+        get_value_fn = std::make_shared<GetValueSuspendFn>( // NOLINT
             std::dynamic_pointer_cast<Continuation<void*>>(shared_from_this())
         );
-        SUSPEND_CALL(1, get_value_fn->invoke_suspend(Result<void*>::success(nullptr)), tmp)
+        SUSPEND_CALL(1, get_value_fn->invoke_suspend(Result<void*>::success(nullptr)), tmp) // NOLINT
 
         // After SUSPEND_CALL:
         // - If no suspension: tmp contains the direct result
@@ -79,7 +89,7 @@ public:
         // return x + 1
         SUSPEND_RETURN(saved_x + 1);
 
-        SUSPEND_END
+        SUSPEND_END // NOLINT
     }
 };
 
@@ -168,14 +178,15 @@ public:
         }
     }
 
+    // NOLINT - IDE cannot parse suspend macros
     void* invoke_suspend(Result<void*> result) override {
-        SUSPEND_BEGIN(2)
+        SUSPEND_BEGIN(2) // NOLINT
 
         // State 0: Initial - simulate suspending
         this->_label = 1;
         return COROUTINE_SUSPENDED;  // Actually suspend
 
-        SUSPEND_POINT(1)
+        SUSPEND_POINT(1) // NOLINT
         // State 1: Resumed after suspension
         // result contains the value we were resumed with
         if (result.is_failure()) {
@@ -188,7 +199,7 @@ public:
             SUSPEND_RETURN(resumed_value + 1);
         }
 
-        SUSPEND_END
+        SUSPEND_END // NOLINT
     }
 };
 

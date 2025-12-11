@@ -24,19 +24,21 @@ namespace debug {
 
 // TODO: @JvmName("probeCoroutineResumed")
 // TODO: -> anonymous namespace or comment
-inline void probe_coroutine_resumed_no_op(kotlin::coroutines::Continuation<void>* frame) {
+inline void probe_coroutine_resumed_no_op(kotlinx::coroutines::Continuation<void>* frame) {
+    (void)frame;
     // Unit in Kotlin -> void in C++, do nothing
 }
 
 // TODO: @JvmName("probeCoroutineSuspended")
-inline void probe_coroutine_suspended_no_op(kotlin::coroutines::Continuation<void>* frame) {
+inline void probe_coroutine_suspended_no_op(kotlinx::coroutines::Continuation<void>* frame) {
+    (void)frame;
     // Unit in Kotlin -> void in C++, do nothing
 }
 
 // TODO: @JvmName("probeCoroutineCreated")
 template<typename T>
-inline kotlin::coroutines::Continuation<T>* probe_coroutine_created_no_op(
-    kotlin::coroutines::Continuation<T>* completion
+inline kotlinx::coroutines::Continuation<T>* probe_coroutine_created_no_op(
+    kotlinx::coroutines::Continuation<T>* completion
 ) {
     return completion;
 }

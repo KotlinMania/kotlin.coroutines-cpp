@@ -27,3 +27,4 @@ kotlin_files.txt
 unported_files.txt
 hpp_files.txt
 /libtest_gc_bridge.a
+/IDE_ERROR_INVESTIGATION.md

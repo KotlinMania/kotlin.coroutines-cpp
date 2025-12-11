@@ -11,8 +11,6 @@ namespace coroutines {
  * Concrete job implementation.
  */
 class JobImpl : public JobSupport, public CompletableJob {
-    std::shared_ptr<DisposableHandle> parent_handle_keeper_;
-
 public:
     explicit JobImpl(std::shared_ptr<Job> parent);
     

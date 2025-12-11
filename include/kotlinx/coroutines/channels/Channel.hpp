@@ -124,27 +124,30 @@ public:
 };
 
 // --- Awaiter Infrastructure ---
+// TODO: Rewrite to use Kotlin-style coroutines (Continuation<void*>*) instead of C++20 coroutines.
+// The suspend functions should follow the pattern:
+//   void* send(E element, Continuation<void*>* continuation);
+//   void* receive(Continuation<void*>* continuation);
+// For now, using placeholder that compiles but doesn't support actual suspension.
 
 template <typename T>
 struct ChannelAwaiter {
     std::optional<T> fast_val;
-    std::optional<SuspendingCancellableCoroutine<T>> slow_awaiter;
+    bool suspended_ = false;
 
-    // Constructors
-    ChannelAwaiter(T val) : fast_val(std::move(val)) {}
-    ChannelAwaiter(SuspendingCancellableCoroutine<T> awaiter) : slow_awaiter(std::move(awaiter)) {}
+    // Fast path constructor - immediate value
+    ChannelAwaiter(T val) : fast_val(std::move(val)), suspended_(false) {}
 
-    // Awaitable interface
-    bool await_ready() { return fast_val.has_value(); }
+    // Slow path constructor - needs suspension (placeholder)
+    ChannelAwaiter(bool /*needs_suspend*/, std::function<void(CancellableContinuation<T>&)> /*block*/)
+        : suspended_(true) {}
 
-    void await_suspend(std::coroutine_handle<> h) {
-        if (!fast_val && slow_awaiter) slow_awaiter->await_suspend(h);
-    }
+    bool has_value() const { return fast_val.has_value(); }
+    bool needs_suspend() const { return suspended_; }
 
-    T await_resume() {
-        if (fast_val) return std::move(*fast_val);
-        if (slow_awaiter) return slow_awaiter->await_resume();
-        throw std::runtime_error("ChannelAwaiter invalid state");
+    T get_or_throw() const {
+        if (fast_val) return *fast_val;
+        throw std::runtime_error("ChannelAwaiter: no value available - suspension required");
     }
 };
 
@@ -152,20 +155,13 @@ struct ChannelAwaiter {
 template <>
 struct ChannelAwaiter<void> {
     bool ready;
-    std::optional<SuspendingCancellableCoroutine<void>> slow_awaiter;
+    bool suspended_ = false;
 
-    ChannelAwaiter() : ready(true) {} // Default constructor means immediate success
-    ChannelAwaiter(SuspendingCancellableCoroutine<void> awaiter) : ready(false), slow_awaiter(std::move(awaiter)) {}
+    ChannelAwaiter() : ready(true), suspended_(false) {}
+    ChannelAwaiter(bool needs_suspend) : ready(!needs_suspend), suspended_(needs_suspend) {}
 
-    bool await_ready() { return ready; }
-
-    void await_suspend(std::coroutine_handle<> h) {
-        if (!ready && slow_awaiter) slow_awaiter->await_suspend(h);
-    }
-
-    void await_resume() {
-        if (!ready && slow_awaiter) slow_awaiter->await_resume();
-    }
+    bool has_value() const { return ready; }
+    bool needs_suspend() const { return suspended_; }
 };
 
 template <typename E>

@@ -1,4 +1,5 @@
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/NonCancellable.kt
 //
@@ -94,8 +95,12 @@ public:
      * @suppress **This an API and should not be used from general code.**
      */
     // @Deprecated(level = DeprecationLevel.WARNING, message = message)
-    // TODO: suspend function - coroutine semantics not implemented
-    void join() {
+    // Kotlin: suspend fun join(): Nothing = throw UnsupportedOperationException("...")
+    void* join(kotlinx::coroutines::Continuation<void*>* /*continuation*/) {
+        throw std::logic_error("This job is always active");
+    }
+
+    void join_blocking() {
         throw std::logic_error("This job is always active");
     }
 

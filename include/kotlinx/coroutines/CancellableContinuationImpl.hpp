@@ -1,10 +1,11 @@
 #pragma once
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
-#include "kotlinx/coroutines/CancellableContinuation.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/DispatchedContinuation.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <atomic>
 #include <mutex>
 #include <memory>
@@ -536,44 +537,55 @@ private:
 
 
 // ------------------------------------------------------------------
-// SuspendingCancellableCoroutine Implementation
+// suspend_cancellable_coroutine Implementation
 // ------------------------------------------------------------------
+// Following Kotlin Native compilation pattern (NativeSuspendFunctionLowering.kt)
+// This is a suspend function - takes Continuation<void*>* and returns void*
 
-// Adapter for coroutine_handle to Continuation<T>
+/**
+ * Implementation of suspend_cancellable_coroutine following Kotlin's pattern.
+ *
+ * @param block The block to execute with the CancellableContinuation
+ * @param continuation The continuation from the caller's state machine
+ * @return COROUTINE_SUSPENDED if suspended, or result pointer if completed immediately
+ */
 template <typename T>
-struct HandleContinuation : public Continuation<T> {
-    std::coroutine_handle<> handle;
-    std::shared_ptr<CoroutineContext> context; // Captured context?
-    
-    HandleContinuation(std::coroutine_handle<> h) : handle(h) {
-         // In a real implementation we should extract context from handle via promise?
-         // Or empty context if raw.
-         // Coroutine traits?
-         // For now use Empty stub or TODO
-         // We need context to be non-null usually.
-         // Let's create an empty context stub or use a global one.
+void* suspend_cancellable_coroutine(
+    std::function<void(CancellableContinuation<T>&)> block,
+    Continuation<void*>* continuation
+) {
+    // Create a continuation adapter that wraps the caller's continuation
+    class ContinuationAdapter : public Continuation<T> {
+        Continuation<void*>* outer_;
+    public:
+        explicit ContinuationAdapter(Continuation<void*>* outer) : outer_(outer) {}
+        std::shared_ptr<CoroutineContext> get_context() const override { return outer_->get_context(); }
+        void resume_with(Result<T> result) override {
+            if (result.is_success()) {
+                // Allocate result on heap for void* transport
+                auto* value = new T(result.get_or_throw());
+                outer_->resume_with(Result<void*>::success(reinterpret_cast<void*>(value)));
+            } else {
+                outer_->resume_with(Result<void*>::failure(result.exception_or_null()));
+            }
+        }
+    };
+
+    auto adapter = std::make_shared<ContinuationAdapter>(continuation);
+    auto impl = std::make_shared<CancellableContinuationImpl<T>>(adapter, 1); // MODE_CANCELLABLE
+    impl->init_cancellability();
+
+    // Execute the block - it may resume synchronously or asynchronously
+    block(*impl);
+
+    // Check if already completed synchronously
+    if (impl->is_completed()) {
+        // Return result directly (fast path)
+        return reinterpret_cast<void*>(new T(impl->get_result()));
     }
-    
-    std::shared_ptr<CoroutineContext> get_context() const override { return nullptr; } 
-    
-    void resume_with(Result<T> result) override {
-        // Resume handle
-        handle.resume();
-    }
-};
 
-template <typename T>
-void SuspendingCancellableCoroutine<T>::await_suspend(std::coroutine_handle<> h) {
-   auto delegate_ptr = std::shared_ptr<Continuation<T>>(std::make_shared<HandleContinuation<T>>(h));
-   impl = std::shared_ptr<CancellableContinuationImpl<T>>(new CancellableContinuationImpl<T>(delegate_ptr, 1)); // MODE_CANCELLABLE
-   impl->init_cancellability();
-   block(*impl);
-}
-
-template <typename T>
-T SuspendingCancellableCoroutine<T>::await_resume() {
-   if (!impl) throw std::runtime_error("Implementation missing");
-   return impl->get_result();
+    // Suspended - will be resumed via the continuation
+    return COROUTINE_SUSPENDED;
 }
 
 } // namespace coroutines

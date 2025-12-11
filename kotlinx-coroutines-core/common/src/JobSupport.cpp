@@ -1,927 +1,1310 @@
+/**
+ * @file JobSupport.cpp
+ * @brief Implementation of JobSupport and all internal helper classes
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt
+ *
+ * All internal state machine classes are defined here, not exposed in headers.
+ */
+
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
-#include <cassert>
+#include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/Result.hpp"
+#include "kotlinx/coroutines/internal/LockFreeLinkedList.hpp"
+#include <atomic>
+#include <mutex>
 #include <thread>
-#include <iostream>
 #include <vector>
-#include <memory>
+#include <cassert>
 
 namespace kotlinx {
 namespace coroutines {
 
-// --------------------------------------------------------------------------
-// JobSupport Implementation
-// --------------------------------------------------------------------------
+// ============================================================================
+// Internal Constants (private in Kotlin)
+// ============================================================================
 
-// Incomplete implementations
-std::string NodeList::to_string() const { return "NodeList"; }
-std::string JobNode::to_string() const { return "JobNode"; }
-std::string Empty::to_string() const { return std::string("Empty{") + (is_active_ ? "Active" : "New") + "}"; }
-std::string InactiveNodeList::to_string() const { return "InactiveNodeList"; }
-std::string Symbol::to_string() const { return name; }
+namespace {
 
-// Finishing implementations
-std::exception_ptr Finishing::root_cause() const {
-    void* ptr = _rootCause.load();
-    return ptr ? *static_cast<std::exception_ptr*>(ptr) : nullptr;
-}
+struct Symbol {
+    const char* name;
+    std::string to_string() const { return name; }
+};
 
-std::vector<std::exception_ptr> Finishing::seal_locked(std::exception_ptr proposed_exception) {
-    std::vector<std::exception_ptr> list;
-    void* eh = exceptionsHolder.load();
-    if (eh == nullptr) {
-        list = {};
-    } else if (eh == SEALED) {
-        return {}; 
-    } else if (is_vector(eh)) {
-        list = *static_cast<std::vector<std::exception_ptr>*>(eh);
-    } else {
-        list = {}; 
-        list.push_back(*static_cast<std::exception_ptr*>(eh));
-    }
-    
-    std::exception_ptr root = root_cause();
-    if (root) list.insert(list.begin(), root);
-    if (proposed_exception && proposed_exception != root) list.push_back(proposed_exception);
-    
-    exceptionsHolder.store(SEALED);
-    return list;
-}
+Symbol COMPLETING_ALREADY_SYMBOL{"COMPLETING_ALREADY"};
+Symbol COMPLETING_WAITING_CHILDREN_SYMBOL{"COMPLETING_WAITING_CHILDREN"};
+Symbol COMPLETING_RETRY_SYMBOL{"COMPLETING_RETRY"};
+Symbol TOO_LATE_TO_CANCEL_SYMBOL{"TOO_LATE_TO_CANCEL"};
+Symbol SEALED_SYMBOL{"SEALED"};
 
-void Finishing::add_exception_locked(std::exception_ptr exception) {
-    std::exception_ptr root = root_cause();
-    if (!root) {
-        _rootCause.store(new std::exception_ptr(exception));
-        return;
-    }
-    if (exception == root) return;
-    
-    void* eh = exceptionsHolder.load();
-    if (eh == nullptr) {
-        exceptionsHolder.store(new std::exception_ptr(exception)); 
-    } else if (is_vector(eh)) {
-        static_cast<std::vector<std::exception_ptr>*>(eh)->push_back(exception);
-    } else if (eh == SEALED) {
-         // error
-    } else {
-        std::exception_ptr current = *static_cast<std::exception_ptr*>(eh);
-        if (current == exception) return;
-        auto* vec = new std::vector<std::exception_ptr>();
-        vec->reserve(4);
-        vec->push_back(current);
-        vec->push_back(exception);
-        exceptionsHolder.store(vec);
-    }
-}
+// Typed sentinel pointers
+JobState* const COMPLETING_ALREADY = reinterpret_cast<JobState*>(&COMPLETING_ALREADY_SYMBOL);
+JobState* const COMPLETING_WAITING_CHILDREN = reinterpret_cast<JobState*>(&COMPLETING_WAITING_CHILDREN_SYMBOL);
+JobState* const COMPLETING_RETRY = reinterpret_cast<JobState*>(&COMPLETING_RETRY_SYMBOL);
+JobState* const TOO_LATE_TO_CANCEL = reinterpret_cast<JobState*>(&TOO_LATE_TO_CANCEL_SYMBOL);
+JobState* const SEALED = reinterpret_cast<JobState*>(&SEALED_SYMBOL);
 
-// JobSupport methods
-// Transliterated from JobSupport.kt attachChild (lines 1011-1083)
-std::shared_ptr<ChildHandle> JobSupport::attach_child(std::shared_ptr<ChildJob> child) {
-    auto* node = new ChildHandleNode(child.get());
-    node->job = this;
+constexpr int RETRY = -1;
+constexpr int FALSE = 0;
+constexpr int TRUE = 1;
 
-    bool added = try_put_node_into_list(node, [&](Incomplete* state, NodeList* list) -> bool {
-        // First, try to add child along with cancellation handlers
-        bool added_before_cancellation = list->add_last(node);
-        if (added_before_cancellation) {
-            return true; // Child added before cancellation/completion
+constexpr int LIST_ON_COMPLETION_PERMISSION = 1;
+constexpr int LIST_CHILD_PERMISSION = 2;
+constexpr int LIST_CANCELLATION_PERMISSION = 4;
+
+} // anonymous namespace
+
+// ============================================================================
+// Internal State Classes (private/internal in Kotlin)
+// ============================================================================
+
+/**
+ * Marker interface for incomplete job states.
+ * Transliterated from: internal interface Incomplete
+ */
+class Incomplete : public JobState {
+public:
+    virtual bool is_active() const = 0;
+    virtual class NodeList* get_list() const = 0;
+    virtual ~Incomplete() = default;
+};
+
+/**
+ * Empty state - either New (inactive) or Active.
+ * Transliterated from: private class Empty
+ */
+class Empty : public Incomplete {
+    bool is_active_;
+public:
+    explicit Empty(bool active) : is_active_(active) {}
+    bool is_active() const override { return is_active_; }
+    NodeList* get_list() const override { return nullptr; }
+};
+
+// Static instances
+static Empty EMPTY_NEW(false);
+static Empty EMPTY_ACTIVE(true);
+
+/**
+ * Node in the linked list of completion handlers.
+ * Transliterated from: internal abstract class JobNode
+ */
+class JobNode : public Incomplete,
+                public internal::LockFreeLinkedListNode,
+                public DisposableHandle {
+public:
+    JobSupport* job = nullptr;
+
+    virtual bool get_on_cancelling() const = 0;
+    virtual void invoke(std::exception_ptr cause) = 0;
+
+    bool is_active() const override { return true; }
+    NodeList* get_list() const override { return nullptr; }
+
+    void dispose() override;
+};
+
+/**
+ * List of job nodes (handlers).
+ * Transliterated from: internal class NodeList
+ */
+class NodeList : public Incomplete, public internal::LockFreeLinkedListHead {
+public:
+    bool is_active() const override { return true; }
+    NodeList* get_list() const override { return const_cast<NodeList*>(this); }
+
+    void notify_completion(std::exception_ptr cause);
+};
+
+/**
+ * Inactive state with a list of handlers waiting to be activated.
+ * Transliterated from: private class InactiveNodeList
+ */
+class InactiveNodeList : public Incomplete {
+    NodeList* list_;
+public:
+    explicit InactiveNodeList(NodeList* list) : list_(list) {}
+    bool is_active() const override { return false; }
+    NodeList* get_list() const override { return list_; }
+};
+
+/**
+ * State during job completion/cancellation.
+ * Transliterated from: private class Finishing
+ */
+class Finishing : public Incomplete {
+public:
+    NodeList* list;
+    std::atomic<bool> is_completing{false};
+    std::atomic<std::exception_ptr*> root_cause_{nullptr};
+    std::atomic<void*> exceptions_holder{nullptr}; // null | exception_ptr* | vector* | SEALED
+    std::recursive_mutex mutex;
+
+    Finishing(NodeList* list, bool completing, std::exception_ptr root_cause)
+        : list(list) {
+        is_completing.store(completing);
+        if (root_cause) {
+            root_cause_.store(new std::exception_ptr(root_cause));
         }
+    }
 
-        // Cancellation or completion already happened
-        // Try adding just for completion tracking
-        bool added_before_completion = list->add_last(node);
+    ~Finishing() {
+        auto* root = root_cause_.load();
+        if (root) delete root;
+        // TODO: Clean up exceptions_holder
+    }
 
-        // Check why we couldn't add before cancellation
-        void* latest_state = state_.load();
-        std::exception_ptr root_cause = nullptr;
-        if (auto* finishing = dynamic_cast<Finishing*>(static_cast<JobState*>(latest_state))) {
-            root_cause = finishing->root_cause();
-        } else if (!dynamic_cast<Incomplete*>(static_cast<JobState*>(latest_state))) {
-            auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(latest_state));
-            root_cause = ex ? ex->cause : nullptr;
+    bool is_active() const override { return root_cause_.load() == nullptr; }
+    NodeList* get_list() const override { return list; }
+
+    bool is_cancelling() const { return root_cause_.load() != nullptr; }
+    bool is_sealed() const { return exceptions_holder.load() == &SEALED_SYMBOL; }
+
+    std::exception_ptr get_root_cause() const {
+        auto* ptr = root_cause_.load();
+        return ptr ? *ptr : nullptr;
+    }
+
+    void set_root_cause(std::exception_ptr cause) {
+        auto* old = root_cause_.exchange(new std::exception_ptr(cause));
+        if (old) delete old;
+    }
+
+    std::vector<std::exception_ptr> seal_locked(std::exception_ptr proposed);
+    void add_exception_locked(std::exception_ptr exception);
+};
+
+// ============================================================================
+// Handler Node Types (private in Kotlin)
+// ============================================================================
+
+class InvokeOnCompletion : public JobNode {
+    std::function<void(std::exception_ptr)> handler_;
+public:
+    explicit InvokeOnCompletion(std::function<void(std::exception_ptr)> h) : handler_(std::move(h)) {}
+    bool get_on_cancelling() const override { return false; }
+    void invoke(std::exception_ptr cause) override { handler_(cause); }
+};
+
+class InvokeOnCancelling : public JobNode {
+    std::function<void(std::exception_ptr)> handler_;
+    std::atomic<bool> invoked_{false};
+public:
+    explicit InvokeOnCancelling(std::function<void(std::exception_ptr)> h) : handler_(std::move(h)) {}
+    bool get_on_cancelling() const override { return true; }
+    void invoke(std::exception_ptr cause) override {
+        bool expected = false;
+        if (invoked_.compare_exchange_strong(expected, true)) {
+            handler_(cause);
         }
+    }
+};
 
-        // Must cancel child if parent was already cancelled
-        node->invoke(root_cause);
+class ChildHandleNode : public JobNode, public ChildHandle {
+public:
+    ChildJob* child_job;
 
-        if (added_before_completion) {
-            return true;
+    explicit ChildHandleNode(ChildJob* child) : child_job(child) {}
+
+    bool get_on_cancelling() const override { return true; }
+
+    void invoke(std::exception_ptr cause) override {
+        if (child_job && job) {
+            child_job->parent_cancelled(dynamic_cast<ParentJob*>(job));
+        }
+    }
+
+    bool child_cancelled(std::exception_ptr cause) override {
+        return job ? job->child_cancelled(cause) : false;
+    }
+
+    std::shared_ptr<Job> get_parent() const override {
+        return job ? std::dynamic_pointer_cast<Job>(job->shared_from_this()) : nullptr;
+    }
+
+    void dispose() override {
+        JobNode::dispose();
+    }
+};
+
+class ChildCompletion : public JobNode {
+public:
+    JobSupport* parent;
+    Finishing* state;
+    ChildHandleNode* child;
+    JobState* proposed_update;
+
+    ChildCompletion(JobSupport* p, Finishing* s, ChildHandleNode* c, JobState* u)
+        : parent(p), state(s), child(c), proposed_update(u) {}
+
+    bool get_on_cancelling() const override { return false; }
+    void invoke(std::exception_ptr cause) override;
+};
+
+/**
+ * ResumeOnCompletion - resumes a continuation when job completes
+ * Transliterated from: private class ResumeOnCompletion in JobSupport.kt
+ * Used by join() - resumes with Unit (nullptr)
+ */
+class ResumeOnCompletion : public JobNode {
+    Continuation<void*>* continuation_;
+public:
+    explicit ResumeOnCompletion(Continuation<void*>* cont) : continuation_(cont) {}
+    bool get_on_cancelling() const override { return false; }
+    void invoke(std::exception_ptr cause) override {
+        // Resume with Unit (nullptr) - join() returns Unit
+        continuation_->resume_with(Result<void*>::success(nullptr));
+    }
+};
+
+/**
+ * ResumeAwaitOnCompletion - resumes a continuation with the deferred result
+ * Transliterated from: private class ResumeAwaitOnCompletion<T> in JobSupport.kt
+ * Used by await() - resumes with result value or exception
+ */
+class ResumeAwaitOnCompletion : public JobNode {
+    Continuation<void*>* continuation_;
+public:
+    explicit ResumeAwaitOnCompletion(Continuation<void*>* cont) : continuation_(cont) {}
+    bool get_on_cancelling() const override { return false; }
+    void invoke(std::exception_ptr cause) override {
+        // Get the final state from the job
+        auto* state = job->get_state_for_await();
+        if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
+            // Resume with the exception
+            continuation_->resume_with(Result<void*>::failure(ex->cause));
         } else {
-            // Couldn't add, return NonDisposableHandle
-            return false;
+            // Resume with the result value (type-erased as void*)
+            continuation_->resume_with(Result<void*>::success(state));
         }
-    });
+    }
+};
 
-    if (added) {
-        return std::shared_ptr<ChildHandle>(node, [](ChildHandle* h) {
-            // Custom deleter - node is managed by the list
-        });
+// ============================================================================
+// JobSupport::Impl - Private Implementation
+// ============================================================================
+
+class JobSupport::Impl {
+public:
+    std::atomic<JobState*> state;
+    std::shared_ptr<Job> parent;
+    std::atomic<DisposableHandle*> parent_handle{nullptr};
+
+    explicit Impl(bool active) {
+        state.store(active ? static_cast<JobState*>(&EMPTY_ACTIVE)
+                           : static_cast<JobState*>(&EMPTY_NEW));
     }
 
-    // Final state reached, invoke handler and return NonDisposable
-    void* s = state_.load();
-    auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(s));
-    node->invoke(ex ? ex->cause : nullptr);
-    delete node;
-    return std::shared_ptr<ChildHandle>(&NonDisposableHandle::instance(), [](ChildHandle*){});
-}
-
-std::shared_ptr<DisposableHandle> JobSupport::invoke_on_completion(bool on_cancelling, bool invoke_immediately, std::function<void(std::exception_ptr)> handler) {
-    JobNode* node;
-    if (on_cancelling) {
-        node = new InvokeOnCancelling(handler);
-    } else {
-        node = new InvokeOnCompletion(handler);
+    // State query helpers
+    bool is_active() const {
+        auto* s = state.load(std::memory_order_acquire);
+        if (auto* incomplete = dynamic_cast<Incomplete*>(s)) {
+            return incomplete->is_active();
+        }
+        return false;
     }
-    return invoke_on_completion_internal(invoke_immediately, node); 
-}
 
-std::exception_ptr JobSupport::create_cause_exception(std::exception_ptr cause) {
-     if (!cause) return default_cancellation_exception();
-     return cause;
-}
+    bool is_completed() const {
+        auto* s = state.load(std::memory_order_acquire);
+        return dynamic_cast<Incomplete*>(s) == nullptr;
+    }
 
-std::exception_ptr JobSupport::default_cancellation_exception(const char* message) {
-    return std::make_exception_ptr(std::runtime_error(message ? message : "Job was cancelled"));
+    bool is_cancelled() const {
+        auto* s = state.load(std::memory_order_acquire);
+        if (dynamic_cast<CompletedExceptionally*>(s)) return true;
+        if (auto* finishing = dynamic_cast<Finishing*>(s)) {
+            return finishing->is_cancelling();
+        }
+        return false;
+    }
+
+    // State transition helpers
+    int start_internal(JobSupport* job);
+    JobState* make_cancelling(JobSupport* job, std::exception_ptr cause);
+    bool try_make_cancelling(JobSupport* job, Incomplete* state, std::exception_ptr root_cause);
+    NodeList* get_or_promote_cancelling_list(Incomplete* state);
+    void promote_empty_to_node_list(Empty* empty);
+    void promote_single_to_node_list(JobNode* node);
+
+    void notify_cancelling(JobSupport* job, NodeList* list, std::exception_ptr cause);
+    bool cancel_parent(std::exception_ptr cause);
+
+    bool try_put_node_into_list(JobSupport* job, JobNode* node,
+                                std::function<bool(Incomplete*, NodeList*)> try_add);
+    void remove_node(JobNode* node);
+
+    // Completion
+    bool make_completing(JobSupport* job, JobState* proposed);
+    JobState* try_make_completing(JobSupport* job, JobState* state, JobState* proposed);
+    JobState* try_make_completing_slow_path(JobSupport* job, Incomplete* state, JobState* proposed);
+    JobState* finalize_finishing_state(JobSupport* job, Finishing* state, JobState* proposed);
+
+    std::exception_ptr get_final_root_cause(Finishing* state, const std::vector<std::exception_ptr>& exceptions);
+    bool try_finalize_simple_state(JobSupport* job, Incomplete* state, JobState* update);
+    void complete_state_finalization(JobSupport* job, Incomplete* state, JobState* update);
+
+    // Child iteration
+    ChildHandleNode* next_child(internal::LockFreeLinkedListNode* node);
+    bool try_wait_for_child(JobSupport* job, Finishing* state, ChildHandleNode* child, JobState* proposed);
+    void continue_completing(JobSupport* job, Finishing* state, ChildHandleNode* last_child, JobState* proposed);
+
+    std::exception_ptr create_cause_exception(std::exception_ptr cause);
+    std::exception_ptr default_cancellation_exception(const char* message);
+};
+
+// ============================================================================
+// JobSupport Public Methods
+// ============================================================================
+
+JobSupport::JobSupport(bool active) : impl_(std::make_unique<Impl>(active)) {}
+
+JobSupport::~JobSupport() = default;
+
+std::shared_ptr<Job> JobSupport::get_parent() const {
+    return impl_->parent;
 }
 
 bool JobSupport::is_active() const {
-    void* s = state_.load(std::memory_order_acquire);
-    if (!s) return false;
-    JobState* js = static_cast<JobState*>(s);
-    if (auto* i = dynamic_cast<Incomplete*>(js)) {
-         return i->is_active();
-    }
-    return false;
+    return impl_->is_active();
 }
 
 bool JobSupport::is_completed() const {
-    void* s = state_.load(std::memory_order_acquire);
-    JobState* js = static_cast<JobState*>(s); 
-    return dynamic_cast<Incomplete*>(js) == nullptr;
+    return impl_->is_completed();
 }
 
-// Kotlin: private fun startInternal(state: Any?): Int
-int JobSupport::start_internal(void* state) {
-    if (state == &_empty_new) { // state is Empty
-         if (static_cast<Empty*>(state)->is_active()) return FALSE; // already active
-         // transition to EMPTY_ACTIVE
-         if (!state_.compare_exchange_strong(state, (void*)&_empty_active)) return RETRY;
-         on_start();
-         return TRUE;
+bool JobSupport::is_cancelled() const {
+    return impl_->is_cancelled();
+}
+
+std::exception_ptr JobSupport::get_cancellation_exception() {
+    auto* s = impl_->state.load(std::memory_order_acquire);
+
+    if (auto* finishing = dynamic_cast<Finishing*>(s)) {
+        auto root = finishing->get_root_cause();
+        if (root) return root;
+        throw std::logic_error("Job is still new or active: " + to_debug_string());
     }
-    if (auto* inl = dynamic_cast<InactiveNodeList*>(static_cast<Incomplete*>(state))) {
-        // transition to list (active state)
-        if (!state_.compare_exchange_strong(state, inl->get_list())) return RETRY;
-        on_start();
-        return TRUE;
+    if (dynamic_cast<Incomplete*>(s)) {
+        throw std::logic_error("Job is still new or active: " + to_debug_string());
     }
-    return FALSE; // not a new state
+    if (auto* ex = dynamic_cast<CompletedExceptionally*>(s)) {
+        return ex->cause;
+    }
+    return std::make_exception_ptr(CancellationException(
+        cancellation_exception_message() + " has completed normally"));
 }
 
 bool JobSupport::start() {
     while (true) {
-        void* state = state_.load(std::memory_order_acquire);
-        int res = start_internal(state);
-        if (res == FALSE) return false;
-        if (res == TRUE) return true;
+        auto* state = impl_->state.load(std::memory_order_acquire);
+        int result = impl_->start_internal(this);
+        if (result == FALSE) return false;
+        if (result == TRUE) return true;
+        // RETRY - loop again
     }
 }
 
-// FIX: Signature takes std::exception_ptr to match header
-void* JobSupport::make_cancelling(std::exception_ptr cause) {
-    std::exception_ptr cause_exception_cache = nullptr;
-    while(true) {
-        void* state = state_.load(std::memory_order_acquire);
-        if (auto* finishing = dynamic_cast<Finishing*>(static_cast<Incomplete*>(state))) {
-            std::lock_guard<std::recursive_mutex> lock(finishing->mutex);
-            if (finishing->is_sealed()) return TOO_LATE_TO_CANCEL;
-            
-            bool was_cancelling = finishing->is_cancelling();
-            if (cause || !was_cancelling) {
-                if (!cause_exception_cache) cause_exception_cache = create_cause_exception(cause); 
-                finishing->add_exception_locked(cause_exception_cache);
-            }
-            
-            if (finishing->root_cause() && !was_cancelling) {
-                 notify_cancelling(finishing->list, finishing->root_cause());
-            }
-            return COMPLETING_ALREADY;
-        } 
-        else if (auto* incomplete = dynamic_cast<Incomplete*>(static_cast<Incomplete*>(state))) {
-            if (!cause_exception_cache) cause_exception_cache = create_cause_exception(cause);
-            if (incomplete->is_active()) {
-                if (try_make_cancelling(incomplete, cause_exception_cache)) return COMPLETING_ALREADY;
-            } else {
-                // non-active state starts completing
-                if (make_completing(cause_exception_cache)) return COMPLETING_ALREADY; 
-                return COMPLETING_ALREADY;
-            }
-        } else {
-             // Completed (Final) state
-            return TOO_LATE_TO_CANCEL;
+void JobSupport::cancel(std::exception_ptr cause) {
+    impl_->make_cancelling(this, cause ? cause : impl_->default_cancellation_exception(nullptr));
+}
+
+void* JobSupport::join(Continuation<void*>* continuation) {
+    // Transliterated from: public final override suspend fun join()
+    // Fast path: already complete
+    if (!join_internal()) {
+        // Job is complete - return immediately without suspending
+        // TODO: Check coroutineContext.ensureActive() for cancellation
+        return nullptr;  // Unit
+    }
+
+    // Slow path: need to suspend and wait
+    return join_suspend(continuation);
+}
+
+bool JobSupport::join_internal() {
+    // Transliterated from: private fun joinInternal(): Boolean
+    // Returns true if we need to wait (job is incomplete)
+    // Returns false if job is already complete
+    while (true) {
+        auto* s = impl_->state.load(std::memory_order_acquire);
+
+        // If not incomplete, job is done - no need to wait
+        if (!dynamic_cast<Incomplete*>(s)) {
+            return false;
         }
+
+        // Try to start if in New state
+        int start_result = impl_->start_internal(this);
+        if (start_result >= 0) {
+            return true;  // Need to wait
+        }
+        // RETRY - loop again
     }
 }
 
-bool JobSupport::try_make_cancelling(Incomplete* state, std::exception_ptr root_cause) {
-    NodeList* list = get_or_promote_cancelling_list(state);
-    if (!list) return false;
-    
-    auto* cancelling = new Finishing(list, false, root_cause);
-    void* expected = state;
-    if (!state_.compare_exchange_strong(expected, (void*)cancelling)) {
-        delete cancelling;
-        return false;
+void* JobSupport::join_suspend(Continuation<void*>* continuation) {
+    // Transliterated from: private suspend fun joinSuspend()
+    // Register a completion handler that resumes the continuation
+    auto* node = new ResumeOnCompletion(continuation);
+    node->job = this;
+
+    // Add the node to the completion handler list
+    bool added = impl_->try_put_node_into_list(this, node,
+        [node](Incomplete* state, NodeList* list) -> bool {
+            return list->add_last(node);
+        });
+
+    if (!added) {
+        // Job completed while we were setting up - resume immediately
+        delete node;
+        return nullptr;  // Unit - already complete
     }
-    notify_cancelling(list, root_cause);
-    return true;
+
+    // TODO: cont.disposeOnCancellation(handle) for proper cancellation support
+    return COROUTINE_SUSPENDED;
 }
 
-NodeList* JobSupport::get_or_promote_cancelling_list(Incomplete* state) {
-    NodeList* list = state->get_list();
-    if (list) return list;
-    
-    if (dynamic_cast<Empty*>(state)) {
-        // we can allocate new empty list
-        return new NodeList();
-    } 
-    if (auto* job_node = dynamic_cast<JobNode*>(state)) {
-        promote_single_to_node_list(job_node);
-        return nullptr; // retry
-    }
-    return nullptr; // error
-}
-
-void JobSupport::promote_single_to_node_list(JobNode* state) {
-     NodeList* list = new NodeList();
-     if (state->add_one_if_empty(list)) {
-         void* expected = state;
-         if (state_.compare_exchange_strong(expected, (void*)list)) {
-             return;
-         }
-     }
-}
-
-void JobSupport::promote_empty_to_node_list(Empty* empty) {
-    NodeList* list = new NodeList();
-    if (empty->is_active()) {
-         void* expected = empty;
-         if (!state_.compare_exchange_strong(expected, list)) {
-             delete list;
-         }
-    } else {
-         auto* inactive = new InactiveNodeList(list);
-         void* expected = empty;
-         if (!state_.compare_exchange_strong(expected, (void*)inactive)) {
-             delete inactive;
-             delete list;
-         }
-    }
-}
-
-void JobSupport::notify_cancelling(NodeList* list, std::exception_ptr cause) {
-    on_cancelling(cause);
-    notify_handlers(list, cause, [](JobNode* node){ return node->get_on_cancelling(); });
-    cancel_parent(cause);
-}
-
-// FIX: Added implementation
-bool JobSupport::cancel_parent(std::exception_ptr cause) {
-     DisposableHandle* h = parent_handle_.load(std::memory_order_relaxed);
-     if (h) {
-          if (auto* ch = dynamic_cast<ChildHandle*>(h)) {
-              return ch->child_cancelled(cause);
-          }
-     }
-     return false;
-}
-
-std::vector<std::shared_ptr<struct Job>> JobSupport::get_children() const {
-    std::vector<std::shared_ptr<struct Job>> children;
-    // Implementation is tricky without shared_from_this logic on children
-    // Leaving as stub returning empty for now to fix build.
-    return children;
-}
-
-void JobSupport::cancel_internal(std::exception_ptr cause) {
-    make_cancelling(cause ? cause : default_cancellation_exception());
-}
-
-void JobSupport::join() {
-    while(!is_completed()) {
+void JobSupport::join_blocking() {
+    // Blocking version for non-coroutine contexts
+    while (!is_completed()) {
         std::this_thread::yield();
     }
 }
 
-// Wrapper to handle exception_ptr to void* conversion if needed
-// Or simply we expect callers to handle it. 
-// In make_cancelling, we cache exception.
-// Here we just fix the "Completing" step.
-bool JobSupport::make_completing(void* proposed_update) {
-    while(true) { 
-         void* state = state_.load(std::memory_order_acquire);
-         void* final_state = try_make_completing(state, proposed_update);
-         
-         if (final_state == COMPLETING_ALREADY) return false;
-         if (final_state == COMPLETING_WAITING_CHILDREN) return true;
-         if (final_state == COMPLETING_RETRY) continue;
-         
-         on_completion_internal(final_state);
-         return true;
-    }
+// ============================================================================
+// await implementation (for Deferred)
+// Transliterated from: protected suspend fun awaitInternal(): Any?
+// ============================================================================
+
+JobState* JobSupport::get_state_for_await() const {
+    // Return the raw state - caller must check for CompletedExceptionally
+    return impl_->state.load(std::memory_order_acquire);
 }
 
-// Overload for exception
-bool JobSupport::make_completing(std::exception_ptr ex) {
-     // We need to wrap this exception into something that fits void* or handle it specially.
-     // For now, let's create a CompletedExceptionally wrapper?
-     // Or just pass it if we can cast. cannot cast exception_ptr to void*.
-     // We need a heap object.
-     return make_completing((void*)new std::exception_ptr(ex)); // LEAK! usage in try_make_completing needs to know it's a pointer.
-}
-
-void* JobSupport::try_make_completing(void* state, void* proposed_update) {
-     if (!dynamic_cast<Incomplete*>(static_cast<Incomplete*>(state))) return COMPLETING_ALREADY;
-     
-     // proposed_update is usually exception or result. 
-     // We assume it's exception_ptr for now if not valid type.
-     // In Kotlin it checks: proposedUpdate !is CompletedExceptionally
-     
-     // FIX: Check if exception. We assume proposed_update IS void* pointing to exception if error.
-     // But wait, make_completing is called with exception_ptr from make_cancelling.
-     // But exception_ptr is not void*.
-     // We need to wrap it if we pass it as void*.
-     // For now, assume it's NOT an exception unless strictly typed.
-     // This part is fragile. 
-     
-     bool is_exception = (proposed_update != nullptr); // Simplified assumption
-     
-     if ((dynamic_cast<Empty*>(static_cast<Incomplete*>(state)) || dynamic_cast<JobNode*>(static_cast<Incomplete*>(state))) && 
-         !dynamic_cast<ChildHandleNode*>(static_cast<Incomplete*>(state)) && !is_exception) {
-             
-         if (try_finalize_simple_state(static_cast<Incomplete*>(state), nullptr)) { 
-             return state; 
-         }
-         return COMPLETING_RETRY;
-     }
-     
-     return try_make_completing_slow_path(static_cast<Incomplete*>(state), proposed_update);
-}
-
-void* JobSupport::try_make_completing_slow_path(Incomplete* state, void* proposed_update) {
-    NodeList* list = get_or_promote_cancelling_list(state);
-    if (!list) return COMPLETING_RETRY;
-    
-    Finishing* finishing = dynamic_cast<Finishing*>(state);
-    
-    if (!finishing) {
-        finishing = new Finishing(list, false, nullptr);
-        void* expected = state;
-        if (!state_.compare_exchange_strong(expected, (void*)finishing)) {
-             delete finishing; 
-             return COMPLETING_RETRY;
-        }
-    }
-    return COMPLETING_WAITING_CHILDREN; 
-}
-
-bool JobSupport::try_put_node_into_list(JobNode* node, std::function<bool(Incomplete*, NodeList*)> try_add) {
+void* JobSupport::await_internal(Continuation<void*>* continuation) {
+    // Transliterated from: protected suspend fun awaitInternal(): Any?
+    // Fast path: check state (avoid extra object creation)
     while (true) {
-        void* state = state_.load(std::memory_order_acquire);
+        auto* s = impl_->state.load(std::memory_order_acquire);
 
-        if (state == &_empty_active || state == &_empty_new) {
-             promote_empty_to_node_list(static_cast<Empty*>(state));
-             continue;
-        }
-
-        JobState* js = static_cast<JobState*>(state);
-        if (auto* incomplete = dynamic_cast<Incomplete*>(js)) {
-            NodeList* list = incomplete->get_list();
-            if (!list) {
-                if (auto* jn = dynamic_cast<JobNode*>(js)) {
-                    promote_single_to_node_list(jn);
-                    continue;
-                }
-                if (dynamic_cast<Empty*>(js)) {
-                     promote_empty_to_node_list(static_cast<Empty*>(js));
-                     continue;
-                }
-            } else {
-                if (try_add(incomplete, list)) return true;
-                return false;
+        // If not incomplete, job is done - return result immediately
+        if (!dynamic_cast<Incomplete*>(s)) {
+            if (auto* ex = dynamic_cast<CompletedExceptionally*>(s)) {
+                // Throw the exception
+                std::rethrow_exception(ex->cause);
             }
-        } else {
-            return false;
+            // Return the result (type-erased as void*)
+            return s;
         }
-    }
-}
 
-// --------------------------------------------------------------------------
-// State Finalization Methods (transliterated from JobSupport.kt)
-// --------------------------------------------------------------------------
-
-// Transliterated from JobSupport.kt finalizeFinishingState (lines 191-235)
-void* JobSupport::finalize_finishing_state(Finishing* state, void* proposed_update) {
-    // Note: proposed state can be Incomplete (e.g. handle from invokeOnCompletion)
-    // Consistency checks
-    assert(state_.load() == state);
-    assert(!state->is_sealed());
-    assert(state->isCompleting.load());
-
-    auto* proposed_ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(proposed_update));
-    std::exception_ptr proposed_exception = proposed_ex ? proposed_ex->cause : nullptr;
-
-    // Create the final exception and seal the state
-    bool was_cancelling;
-    std::exception_ptr final_exception;
-    {
-        std::lock_guard<std::recursive_mutex> lock(state->mutex);
-        was_cancelling = state->is_cancelling();
-        std::vector<std::exception_ptr> exceptions = state->seal_locked(proposed_exception);
-        final_exception = get_final_root_cause(state, exceptions);
-        if (final_exception) {
-            add_suppressed_exceptions(final_exception, exceptions);
+        // Try to start if in New state
+        int start_result = impl_->start_internal(this);
+        if (start_result >= 0) {
+            break;  // Need to suspend and wait
         }
+        // RETRY - loop again
     }
 
-    // Create the final state object
-    void* final_state;
-    if (!final_exception) {
-        // was not cancelled (no exception) -> use proposed update value
-        final_state = proposed_update;
-    } else if (final_exception == proposed_exception) {
-        // small optimization when we can use proposedUpdate object as-is on cancellation
-        final_state = proposed_update;
-    } else {
-        // cancelled job final state
-        final_state = new CompletedExceptionally(final_exception);
-    }
-
-    // Now handle the final exception
-    if (final_exception) {
-        bool handled = cancel_parent(final_exception) || handle_job_exception(final_exception);
-        if (handled) {
-            auto* ex_state = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(final_state));
-            if (ex_state) ex_state->make_handled();
-        }
-    }
-
-    // Process state updates before actual state change
-    if (!was_cancelling) on_cancelling(final_exception);
-    on_completion_internal(final_state);
-
-    // CAS to completed state -> must succeed
-    void* expected = state;
-    bool cas_success = state_.compare_exchange_strong(expected, final_state);
-    assert(cas_success);
-
-    // Process all post-completion actions
-    complete_state_finalization(state, final_state);
-    return final_state;
+    // Slow path: suspend and wait
+    return await_suspend(continuation);
 }
 
-// Transliterated from JobSupport.kt getFinalRootCause (lines 237-260)
-std::exception_ptr JobSupport::get_final_root_cause(Finishing* state, const std::vector<std::exception_ptr>& exceptions) {
-    // A case of no exceptions
-    if (exceptions.empty()) {
-        // materialize cancellation exception if it was not materialized yet
-        if (state->is_cancelling()) return default_cancellation_exception();
-        return nullptr;
-    }
-
-    // 1) If we have non-CancellationException, use it as root cause
-    // 2) Otherwise just return the first exception
-    // Note: In C++ we can't easily check if exception is CancellationException without rethrow
-    // For now, just return the first exception
-    return exceptions[0];
-}
-
-// Transliterated from JobSupport.kt addSuppressedExceptions (lines 262-278)
-void JobSupport::add_suppressed_exceptions(std::exception_ptr root_cause, const std::vector<std::exception_ptr>& exceptions) {
-    // C++ doesn't have built-in suppressed exceptions like Java/Kotlin
-    // We could store them in a custom exception type, but for now we skip this
-    // The primary exception is already captured in root_cause
-}
-
-// Transliterated from JobSupport.kt tryFinalizeSimpleState (lines 282-290)
-bool JobSupport::try_finalize_simple_state(Incomplete* state, void* update) {
-    // Only for simple states without lists where children can add
-    // update should not be CompletedExceptionally (only for normal completion)
-    void* expected = state;
-    if (!state_.compare_exchange_strong(expected, update)) return false;
-    on_cancelling(nullptr); // simple state is not a failure
-    on_completion_internal(update);
-    complete_state_finalization(state, update);
-    return true;
-}
-
-// Transliterated from JobSupport.kt completeStateFinalization (lines 293-318)
-void JobSupport::complete_state_finalization(Incomplete* state, void* update) {
-    // 1) Unregister from parent job
-    DisposableHandle* ph = parent_handle_.load();
-    if (ph) {
-        ph->dispose();
-        parent_handle_.store(&NonDisposableHandle::instance());
-    }
-
-    auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(update));
-    std::exception_ptr cause = ex ? ex->cause : nullptr;
-
-    // 2) Invoke completion handlers
-    if (auto* job_node = dynamic_cast<JobNode*>(state)) {
-        // SINGLE/SINGLE+ state -- one completion handler
-        try {
-            job_node->invoke(cause);
-        } catch (...) {
-            handle_on_completion_exception(std::current_exception());
-        }
-    } else if (NodeList* list = state->get_list()) {
-        list->notify_completion(cause);
-    }
-}
-
-// Transliterated from JobSupport.kt initParentJob (lines 141-155)
-void JobSupport::init_parent_job(std::shared_ptr<Job> parent) {
-    assert(parent_handle_.load() == nullptr);
-    if (!parent) {
-        parent_handle_.store(&NonDisposableHandle::instance());
-        return;
-    }
-    parent->start(); // make sure the parent is started
-    auto handle = parent->attach_child(std::dynamic_pointer_cast<ChildJob>(shared_from_this()));
-    // Store raw pointer (we need to manage lifetime carefully)
-    parent_handle_.store(handle.get());
-    // Check state after registering
-    if (is_completed()) {
-        handle->dispose();
-        parent_handle_.store(&NonDisposableHandle::instance());
-    }
-}
-
-// Transliterated from JobSupport.kt invokeOnCompletionInternal (lines 461-519)
-std::shared_ptr<DisposableHandle> JobSupport::invoke_on_completion_internal(bool invoke_immediately, JobNode* node) {
+void* JobSupport::await_suspend(Continuation<void*>* continuation) {
+    // Transliterated from: private suspend fun awaitSuspend(): Any?
+    // Register a completion handler that resumes with the result
+    auto* node = new ResumeAwaitOnCompletion(continuation);
     node->job = this;
-    bool added = try_put_node_into_list(node, [&](Incomplete* state, NodeList* list) -> bool {
-        if (node->get_on_cancelling()) {
-            // Check if already cancelling
-            auto* finishing = dynamic_cast<Finishing*>(state);
-            std::exception_ptr root_cause = finishing ? finishing->root_cause() : nullptr;
-            if (!root_cause) {
-                // No root cause yet, add to list
-                return list->add_last(node);
-            } else {
-                // Already cancelling, invoke immediately if requested
-                if (invoke_immediately) node->invoke(root_cause);
-                return false; // Don't add to list
-            }
-        } else {
-            // Non-cancelling handler, just add to list
+
+    // Add the node to the completion handler list
+    bool added = impl_->try_put_node_into_list(this, node,
+        [node](Incomplete* state, NodeList* list) -> bool {
             return list->add_last(node);
+        });
+
+    if (!added) {
+        // Job completed while we were setting up - return result immediately
+        delete node;
+        auto* s = impl_->state.load(std::memory_order_acquire);
+        if (auto* ex = dynamic_cast<CompletedExceptionally*>(s)) {
+            std::rethrow_exception(ex->cause);
         }
-    });
+        return s;  // Return the result
+    }
+
+    // TODO: cont.disposeOnCancellation(handle) for proper cancellation support
+    return COROUTINE_SUSPENDED;
+}
+
+JobState* JobSupport::await_internal_blocking() {
+    // Blocking version for non-coroutine contexts
+    while (!is_completed()) {
+        std::this_thread::yield();
+    }
+    auto* s = impl_->state.load(std::memory_order_acquire);
+    if (auto* ex = dynamic_cast<CompletedExceptionally*>(s)) {
+        std::rethrow_exception(ex->cause);
+    }
+    return s;
+}
+
+std::vector<std::shared_ptr<Job>> JobSupport::get_children() const {
+    std::vector<std::shared_ptr<Job>> result;
+    auto* s = impl_->state.load(std::memory_order_acquire);
+    if (auto* incomplete = dynamic_cast<Incomplete*>(s)) {
+        if (auto* list = incomplete->get_list()) {
+            list->for_each([&](internal::LockFreeLinkedListNode* node) {
+                if (auto* child_node = dynamic_cast<ChildHandleNode*>(node)) {
+                    if (auto* child_job_ptr = dynamic_cast<Job*>(child_node->child_job)) {
+                        // Can't easily get shared_ptr here without more infrastructure
+                    }
+                }
+            });
+        }
+    }
+    return result;
+}
+
+std::shared_ptr<ChildHandle> JobSupport::attach_child(std::shared_ptr<ChildJob> child) {
+    auto* node = new ChildHandleNode(child.get());
+    node->job = this;
+
+    bool added = impl_->try_put_node_into_list(this, node,
+        [node](Incomplete* state, NodeList* list) -> bool {
+            return list->add_last(node);
+        });
+
+    if (added) {
+        return std::shared_ptr<ChildHandle>(node, [](ChildHandle*) {
+            // Node lifetime managed by list
+        });
+    }
+
+    // Already completed
+    auto* s = impl_->state.load();
+    auto* ex = dynamic_cast<CompletedExceptionally*>(s);
+    node->invoke(ex ? ex->cause : nullptr);
+    delete node;
+    // Return a non-disposable ChildHandle (cast the NonDisposableHandle)
+    return std::shared_ptr<ChildHandle>(nullptr);
+}
+
+std::shared_ptr<DisposableHandle> JobSupport::invoke_on_completion(
+    std::function<void(std::exception_ptr)> handler) {
+    return invoke_on_completion(false, true, std::move(handler));
+}
+
+std::shared_ptr<DisposableHandle> JobSupport::invoke_on_completion(
+    bool on_cancelling,
+    bool invoke_immediately,
+    std::function<void(std::exception_ptr)> handler) {
+
+    JobNode* node = on_cancelling
+        ? static_cast<JobNode*>(new InvokeOnCancelling(std::move(handler)))
+        : static_cast<JobNode*>(new InvokeOnCompletion(std::move(handler)));
+    node->job = this;
+
+    bool added = impl_->try_put_node_into_list(this, node,
+        [on_cancelling, invoke_immediately, node](Incomplete* state, NodeList* list) -> bool {
+            if (on_cancelling) {
+                auto* finishing = dynamic_cast<Finishing*>(state);
+                auto root_cause = finishing ? finishing->get_root_cause() : nullptr;
+                if (root_cause) {
+                    if (invoke_immediately) node->invoke(root_cause);
+                    return false;
+                }
+            }
+            return list->add_last(node);
+        });
 
     if (added) {
         return std::shared_ptr<DisposableHandle>(node, [](DisposableHandle*) {});
     }
 
-    // State is final, invoke immediately if requested
     if (invoke_immediately) {
-        void* s = state_.load();
-        auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(s));
+        auto* s = impl_->state.load();
+        auto* ex = dynamic_cast<CompletedExceptionally*>(s);
         node->invoke(ex ? ex->cause : nullptr);
     }
+    delete node;
     return non_disposable_handle();
 }
 
-// Transliterated from JobSupport.kt tryWaitForChild (lines 954-962)
-bool JobSupport::try_wait_for_child(Finishing* state, ChildHandleNode* child, void* proposed_update) {
-    auto* completion = new ChildCompletion(this, state, child, proposed_update);
-    auto handle = child->child_job->invoke_on_completion(false, false, [completion](std::exception_ptr cause) {
-        completion->invoke(cause);
-    });
-    if (handle.get() != &NonDisposableHandle::instance()) {
-        return true; // child is not complete and we've started waiting
-    }
-    ChildHandleNode* next = next_child(child);
-    if (!next) return false;
-    return try_wait_for_child(state, next, proposed_update);
+CoroutineContext::Key* JobSupport::key() const {
+    return Job::type_key;
 }
 
-// Transliterated from JobSupport.kt continueCompleting (lines 965-988)
-void JobSupport::continue_completing(Finishing* state, ChildHandleNode* last_child, void* proposed_update) {
-    assert(state_.load() == state);
-    // Find next child to wait for
-    ChildHandleNode* wait_child = next_child(last_child);
-    if (wait_child && try_wait_for_child(state, wait_child, proposed_update)) {
-        return; // waiting for next child
-    }
-    // No more children to await, close list for new children
-    state->list->close(LIST_CHILD_PERMISSION);
-    // Check if any children sneaked in
-    ChildHandleNode* wait_child_again = next_child(last_child);
-    if (wait_child_again && try_wait_for_child(state, wait_child_again, proposed_update)) {
-        return;
-    }
-    // No more children, finalize
-    void* final_state = finalize_finishing_state(state, proposed_update);
-    after_completion(final_state);
-}
-
-// Transliterated from JobSupport.kt nextChild extension (lines 990-999)
-ChildHandleNode* JobSupport::next_child(internal::LockFreeLinkedListNode* node) {
-    internal::LockFreeLinkedListNode* cur = node;
-    while (cur->is_removed()) cur = cur->prev_node(); // rollback to prev non-removed
-    while (true) {
-        cur = cur->next_node();
-        if (!cur || dynamic_cast<NodeList*>(cur)) return nullptr; // reached end
-        if (cur->is_removed()) continue;
-        if (auto* child = dynamic_cast<ChildHandleNode*>(cur)) return child;
-    }
-}
-
-// Transliterated from JobSupport.kt makeCompletingOnce (lines 857-870)
-void* JobSupport::make_completing_once(void* proposed_update) {
-    while (true) {
-        void* state = state_.load(std::memory_order_acquire);
-        void* final_state = try_make_completing(state, proposed_update);
-        if (final_state == COMPLETING_ALREADY) {
-            throw std::logic_error("Job is already complete or completing");
-        }
-        if (final_state == COMPLETING_RETRY) continue;
-        return final_state; // COMPLETING_WAITING_CHILDREN or final state
-    }
-}
-
-// Transliterated from JobSupport.kt cancelMakeCompleting (lines 720-730)
-void* JobSupport::cancel_make_completing(void* cause) {
-    while (true) {
-        void* state = state_.load(std::memory_order_acquire);
-        if (!dynamic_cast<Incomplete*>(static_cast<JobState*>(state))) {
-            return COMPLETING_ALREADY;
-        }
-        auto* finishing = dynamic_cast<Finishing*>(static_cast<JobState*>(state));
-        if (finishing && finishing->isCompleting.load()) {
-            return COMPLETING_ALREADY;
-        }
-        std::exception_ptr cause_ex = create_cause_exception(cause ? *static_cast<std::exception_ptr*>(cause) : nullptr);
-        auto* proposed_update = new CompletedExceptionally(cause_ex);
-        void* final_state = try_make_completing(state, proposed_update);
-        if (final_state != COMPLETING_RETRY) return final_state;
-    }
-}
-
-// Transliterated from JobSupport.kt cancelImpl (lines 693-713)
-bool JobSupport::cancel_impl(void* cause) {
-    void* final_state = COMPLETING_ALREADY;
-    if (get_on_cancel_complete()) {
-        final_state = cancel_make_completing(cause);
-        if (final_state == COMPLETING_WAITING_CHILDREN) return true;
-    }
-    if (final_state == COMPLETING_ALREADY) {
-        final_state = make_cancelling(cause ? *static_cast<std::exception_ptr*>(cause) : nullptr);
-    }
-    if (final_state == COMPLETING_ALREADY) return true;
-    if (final_state == COMPLETING_WAITING_CHILDREN) return true;
-    if (final_state == TOO_LATE_TO_CANCEL) return false;
-    after_completion(final_state);
-    return true;
-}
-
-// --------------------------------------------------------------------------
-// State Query Helpers
-// --------------------------------------------------------------------------
-
-bool JobSupport::is_completed_exceptionally() const {
-    void* s = state_.load(std::memory_order_acquire);
-    return dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(s)) != nullptr;
-}
-
-std::exception_ptr JobSupport::get_completion_exception_or_null() const {
-    void* s = state_.load(std::memory_order_acquire);
-    if (dynamic_cast<Incomplete*>(static_cast<JobState*>(s))) {
-        throw std::logic_error("This job has not completed yet");
-    }
-    auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(s));
-    return ex ? ex->cause : nullptr;
-}
-
-void* JobSupport::get_completed_internal() const {
-    void* s = state_.load(std::memory_order_acquire);
-    if (dynamic_cast<Incomplete*>(static_cast<JobState*>(s))) {
-        throw std::logic_error("This job has not completed yet");
-    }
-    auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(s));
-    if (ex) std::rethrow_exception(ex->cause);
-    return s;
-}
-
-std::exception_ptr JobSupport::get_completion_cause() const {
-    void* s = state_.load(std::memory_order_acquire);
-    if (auto* finishing = dynamic_cast<Finishing*>(static_cast<JobState*>(s))) {
-        std::exception_ptr root = finishing->root_cause();
-        if (!root) throw std::logic_error("Job is still new or active");
-        return root;
-    }
-    if (dynamic_cast<Incomplete*>(static_cast<JobState*>(s))) {
-        throw std::logic_error("Job is still new or active");
-    }
-    auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(s));
-    return ex ? ex->cause : nullptr;
-}
-
-bool JobSupport::get_completion_cause_handled() const {
-    void* s = state_.load(std::memory_order_acquire);
-    auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(s));
-    return ex && ex->handled.load();
-}
-
-// --------------------------------------------------------------------------
-// Debug Helpers
-// --------------------------------------------------------------------------
-
-std::string JobSupport::to_debug_string() const {
-    return name_string() + "{" + state_string(state_.load()) + "}";
-}
-
-std::string JobSupport::name_string() const {
-    return "JobSupport";
-}
-
-std::string JobSupport::state_string(void* state) const {
-    if (auto* finishing = dynamic_cast<Finishing*>(static_cast<JobState*>(state))) {
-        if (finishing->is_cancelling()) return "Cancelling";
-        if (finishing->isCompleting.load()) return "Completing";
-        return "Active";
-    }
-    if (auto* incomplete = dynamic_cast<Incomplete*>(static_cast<JobState*>(state))) {
-        return incomplete->is_active() ? "Active" : "New";
-    }
-    if (dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(state))) {
-        return "Cancelled";
-    }
-    return "Completed";
-}
-
-// Transliterated from JobSupport.kt:355-358
-// private fun NodeList.notifyCompletion(cause: Throwable?) {
-//     close(LIST_ON_COMPLETION_PERMISSION)
-//     notifyHandlers(this, cause) { true }
-// }
-void NodeList::notify_completion(std::exception_ptr cause) {
-    close(LIST_ON_COMPLETION_PERMISSION);
-    // Transliterated from JobSupport.kt:360-370 - notifyHandlers inline
-    std::exception_ptr exception = nullptr;
-    for_each([&](internal::LockFreeLinkedListNode* node_raw) {
-        if (auto* node = dynamic_cast<JobNode*>(node_raw)) {
-            try {
-                node->invoke(cause);
-            } catch (...) {
-                // exception?.apply { addSuppressed(ex) } ?: run { exception = ... }
-                if (!exception) {
-                    exception = std::current_exception();
-                }
-                // C++ doesn't have addSuppressed, first exception wins
-            }
-        }
-    });
-    // if (exception != null) throw exception
-    if (exception) {
-        std::rethrow_exception(exception);
-    }
-}
-
-// Transliterated from JobSupport.kt:1475
-// override fun dispose() = job.removeNode(this)
-void JobNode::dispose() {
-    if (job) job->remove_node(this);
-}
-
-// ChildHandleNode methods
-// Transliterated from JobSupport.kt:1580
-// override fun invoke(cause: Throwable?) = childJob.parentCancelled(job)
-void ChildHandleNode::invoke(std::exception_ptr cause) {
-    if (child_job) child_job->parent_cancelled(dynamic_cast<ParentJob*>(job));
-}
-
-// Transliterated from JobSupport.kt:1581
-// override fun childCancelled(cause: Throwable): Boolean = job.childCancelled(cause)
-bool ChildHandleNode::child_cancelled(std::exception_ptr cause) {
-    if (job) return job->child_cancelled(cause);
-    return false;
-}
-
-// Transliterated from JobSupport.kt:1578 - override val parent: Job get() = job
-std::shared_ptr<Job> ChildHandleNode::get_parent() const {
-    if (job) {
-        return std::dynamic_pointer_cast<Job>(job->shared_from_this());
+std::shared_ptr<CoroutineContext::Element> JobSupport::get(CoroutineContext::Key* k) const {
+    if (k == Job::type_key) {
+        return std::const_pointer_cast<CoroutineContext::Element>(
+            std::static_pointer_cast<const CoroutineContext::Element>(
+                const_cast<JobSupport*>(this)->shared_from_this()));
     }
     return nullptr;
 }
 
-// Transliterated from JobSupport.kt:1575 - override fun dispose() = job.removeNode(this)
-void ChildHandleNode::dispose() {
-    if (job) job->remove_node(this);
+std::exception_ptr JobSupport::get_child_job_cancellation_cause() {
+    return get_cancellation_exception();
 }
 
-// ChildCompletion::invoke - must be out-of-line since JobSupport isn't complete at declaration
-void ChildCompletion::invoke(std::exception_ptr cause) {
-    parent->continue_completing(state, child, proposed_update);
+void JobSupport::parent_cancelled(ParentJob* parent) {
+    cancel(impl_->default_cancellation_exception("Parent cancelled"));
 }
 
-// Transliterated from JobSupport.kt:181-184
-bool JobSupport::is_cancelled() const {
-    void* state = state_.load(std::memory_order_acquire);
-    if (!state) return false;
-    JobState* js = static_cast<JobState*>(state);
-    // return state is CompletedExceptionally || (state is Finishing && state.isCancelling)
-    if (dynamic_cast<CompletedExceptionally*>(js)) return true;
-    if (auto* finishing = dynamic_cast<Finishing*>(js)) {
-        return finishing->is_cancelling();
-    }
-    return false;
+void JobSupport::handle_on_completion_exception(std::exception_ptr exception) {
+    std::rethrow_exception(exception);
 }
 
-// Transliterated from JobSupport.kt:412-419
-std::exception_ptr JobSupport::get_cancellation_exception() {
-    void* state = state_.load(std::memory_order_acquire);
-    JobState* js = static_cast<JobState*>(state);
-
-    if (auto* finishing = dynamic_cast<Finishing*>(js)) {
-        // is Finishing -> state.rootCause?.toCancellationException("$classSimpleName is cancelling")
-        //     ?: error("Job is still new or active: $this")
-        std::exception_ptr root = finishing->root_cause();
-        if (root) return root;
-        throw std::logic_error("Job is still new or active: " + to_debug_string());
-    }
-    if (dynamic_cast<Incomplete*>(js)) {
-        // is Incomplete -> error("Job is still new or active: $this")
-        throw std::logic_error("Job is still new or active: " + to_debug_string());
-    }
-    if (auto* completed_ex = dynamic_cast<CompletedExceptionally*>(js)) {
-        // is CompletedExceptionally -> state.cause.toCancellationException()
-        return completed_ex->cause;
-    }
-    // else -> JobCancellationException("$classSimpleName has completed normally", null, this)
-    return std::make_exception_ptr(std::runtime_error(
-        name_string() + " has completed normally"));
+std::string JobSupport::cancellation_exception_message() const {
+    return "Job was cancelled";
 }
 
-// Transliterated from JobSupport.kt:680-683
 bool JobSupport::child_cancelled(std::exception_ptr cause) {
-    // if (cause is CancellationException) return true
-    // In C++ we check by attempting to rethrow and catch
+    // Check if it's a CancellationException
     if (cause) {
         try {
             std::rethrow_exception(cause);
         } catch (const CancellationException&) {
             return true;
         } catch (...) {
-            // Not a CancellationException, continue
+            // Not a CancellationException
         }
     }
-    // return cancelImpl(cause) && handlesException
-    bool result = cancel_impl(cause ? &cause : nullptr);
-    return result && get_handles_exception();
+
+    // Cancel this job and return whether we handle exceptions
+    impl_->make_cancelling(this, cause);
+    return get_handles_exception();
 }
 
-// Transliterated from JobSupport.kt:689
 bool JobSupport::cancel_coroutine(std::exception_ptr cause) {
-    // public fun cancelCoroutine(cause: Throwable?): Boolean = cancelImpl(cause)
-    return cancel_impl(cause ? &cause : nullptr);
+    // Transliterated from: public fun cancelCoroutine(cause: Throwable?): Boolean
+    // This is essentially the same as cancel() but returns whether cancellation was initiated
+    auto result = impl_->make_cancelling(this, cause ? cause : impl_->default_cancellation_exception(nullptr));
+    return result != TOO_LATE_TO_CANCEL;
 }
 
-// Transliterated from JobSupport.kt:619-636
-void JobSupport::remove_node(JobNode* node) {
-    // loopOnState { state ->
-    while (true) {
-        void* state = state_.load(std::memory_order_acquire);
-        JobState* js = static_cast<JobState*>(state);
-
-        // when (state) {
-        if (auto* state_as_job_node = dynamic_cast<JobNode*>(js)) {
-            // is JobNode -> {
-            //     if (state !== node) return // different node -> already removed
-            if (state_as_job_node != node) return;
-            //     if (_state.compareAndSet(state, EMPTY_ACTIVE)) return
-            if (state_.compare_exchange_strong(state, (void*)&_empty_active)) return;
-            // }
-            continue; // CAS failed, retry
+std::exception_ptr JobSupport::get_completion_cause() const {
+    // Transliterated from: protected val completionCause: Throwable?
+    // Returns the cause that signals the completion of this job.
+    // Returns null if this job completed normally.
+    // Throws if job has not completed nor is being cancelled yet.
+    auto* s = impl_->state.load(std::memory_order_acquire);
+    if (auto* finishing = dynamic_cast<Finishing*>(s)) {
+        auto root = finishing->get_root_cause();
+        if (!root) {
+            throw std::logic_error("Job is still new or active: " + to_debug_string());
         }
-        if (auto* incomplete = dynamic_cast<Incomplete*>(js)) {
-            // is Incomplete -> {
-            //     if (state.list != null) node.remove()
-            //     return
-            // }
-            if (incomplete->get_list() != nullptr) {
+        return root;
+    }
+    if (dynamic_cast<Incomplete*>(s)) {
+        throw std::logic_error("Job is still new or active: " + to_debug_string());
+    }
+    if (auto* ex = dynamic_cast<CompletedExceptionally*>(s)) {
+        return ex->cause;
+    }
+    // Normal completion - no cause
+    return nullptr;
+}
+
+bool JobSupport::get_completion_cause_handled() const {
+    // Transliterated from: protected val completionCauseHandled: Boolean
+    auto* s = impl_->state.load(std::memory_order_acquire);
+    if (auto* ex = dynamic_cast<CompletedExceptionally*>(s)) {
+        return ex->handled;
+    }
+    return false;
+}
+
+bool JobSupport::is_completed_exceptionally() const {
+    // Transliterated from: val isCompletedExceptionally: Boolean
+    auto* s = impl_->state.load(std::memory_order_acquire);
+    return dynamic_cast<CompletedExceptionally*>(s) != nullptr;
+}
+
+std::exception_ptr JobSupport::get_completion_exception_or_null() const {
+    // Transliterated from: fun getCompletionExceptionOrNull(): Throwable?
+    auto* s = impl_->state.load(std::memory_order_acquire);
+    if (dynamic_cast<Incomplete*>(s)) {
+        throw std::logic_error("This job has not completed yet");
+    }
+    if (auto* ex = dynamic_cast<CompletedExceptionally*>(s)) {
+        return ex->cause;
+    }
+    return nullptr;
+}
+
+void JobSupport::init_parent_job(std::shared_ptr<Job> parent) {
+    assert(impl_->parent_handle.load() == nullptr);
+    if (!parent) {
+        impl_->parent_handle.store(&NonDisposableHandle::instance());
+        return;
+    }
+    impl_->parent = parent;
+    parent->start();
+    auto handle = parent->attach_child(std::dynamic_pointer_cast<ChildJob>(shared_from_this()));
+    impl_->parent_handle.store(handle.get());
+
+    if (is_completed()) {
+        handle->dispose();
+        impl_->parent_handle.store(&NonDisposableHandle::instance());
+    }
+}
+
+bool JobSupport::make_completing(JobState* proposed_state) {
+    return impl_->make_completing(this, proposed_state);
+}
+
+JobSupport::CompletingResult JobSupport::make_completing_once(JobState* proposed_state) {
+    while (true) {
+        auto* s = impl_->state.load(std::memory_order_acquire);
+        auto* final_state = impl_->try_make_completing(this, s, proposed_state);
+
+        if (final_state == COMPLETING_ALREADY) return CompletingResult::ALREADY_COMPLETING;
+        if (final_state == COMPLETING_WAITING_CHILDREN) return CompletingResult::COMPLETING;
+        if (final_state == COMPLETING_RETRY) continue;
+
+        on_completion_internal(final_state);
+        return CompletingResult::COMPLETED;
+    }
+}
+
+JobState* JobSupport::get_completed_internal() const {
+    auto* s = impl_->state.load(std::memory_order_acquire);
+    if (dynamic_cast<Incomplete*>(s)) {
+        throw std::logic_error("This job has not completed yet");
+    }
+    if (auto* ex = dynamic_cast<CompletedExceptionally*>(s)) {
+        std::rethrow_exception(ex->cause);
+    }
+    return s;
+}
+
+std::string JobSupport::to_debug_string() const {
+    return name_string() + "{" + state_string() + "}";
+}
+
+std::string JobSupport::name_string() const {
+    return "JobSupport";
+}
+
+std::string JobSupport::state_string() const {
+    auto* s = impl_->state.load();
+    if (auto* finishing = dynamic_cast<Finishing*>(s)) {
+        if (finishing->is_cancelling()) return "Cancelling";
+        if (finishing->is_completing.load()) return "Completing";
+        return "Active";
+    }
+    if (auto* incomplete = dynamic_cast<Incomplete*>(s)) {
+        return incomplete->is_active() ? "Active" : "New";
+    }
+    if (dynamic_cast<CompletedExceptionally*>(s)) {
+        return "Cancelled";
+    }
+    return "Completed";
+}
+
+// ============================================================================
+// JobSupport::Impl Private Methods
+// ============================================================================
+
+int JobSupport::Impl::start_internal(JobSupport* job) {
+    auto* s = state.load(std::memory_order_acquire);
+
+    if (s == &EMPTY_NEW) {
+        auto* expected = s;
+        if (state.compare_exchange_strong(expected, static_cast<JobState*>(&EMPTY_ACTIVE))) {
+            job->on_start();
+            return TRUE;
+        }
+        return RETRY;
+    }
+
+    if (auto* inactive_list = dynamic_cast<InactiveNodeList*>(s)) {
+        auto* expected = s;
+        if (state.compare_exchange_strong(expected, inactive_list->get_list())) {
+            job->on_start();
+            return TRUE;
+        }
+        return RETRY;
+    }
+
+    return FALSE; // Already active or completed
+}
+
+JobState* JobSupport::Impl::make_cancelling(JobSupport* job, std::exception_ptr cause) {
+    std::exception_ptr cause_cache;
+
+    while (true) {
+        auto* s = state.load(std::memory_order_acquire);
+
+        if (auto* finishing = dynamic_cast<Finishing*>(s)) {
+            std::lock_guard<std::recursive_mutex> lock(finishing->mutex);
+            if (finishing->is_sealed()) return TOO_LATE_TO_CANCEL;
+
+            bool was_cancelling = finishing->is_cancelling();
+            if (cause || !was_cancelling) {
+                if (!cause_cache) cause_cache = create_cause_exception(cause);
+                finishing->add_exception_locked(cause_cache);
+            }
+
+            auto root = finishing->get_root_cause();
+            if (root && !was_cancelling) {
+                notify_cancelling(job, finishing->list, root);
+            }
+            return COMPLETING_ALREADY;
+        }
+
+        if (auto* incomplete = dynamic_cast<Incomplete*>(s)) {
+            if (!cause_cache) cause_cache = create_cause_exception(cause);
+            if (incomplete->is_active()) {
+                if (try_make_cancelling(job, incomplete, cause_cache)) {
+                    return COMPLETING_ALREADY;
+                }
+            } else {
+                // Start completing from inactive state
+                if (job->make_completing(new CompletedExceptionally(cause_cache))) {
+                    return COMPLETING_ALREADY;
+                }
+            }
+            continue; // Retry
+        }
+
+        // Already completed
+        return TOO_LATE_TO_CANCEL;
+    }
+}
+
+bool JobSupport::Impl::try_make_cancelling(JobSupport* job, Incomplete* s, std::exception_ptr root_cause) {
+    auto* list = get_or_promote_cancelling_list(s);
+    if (!list) return false;
+
+    auto* finishing = new Finishing(list, false, root_cause);
+    auto* expected = static_cast<JobState*>(s);
+    if (!state.compare_exchange_strong(expected, finishing)) {
+        delete finishing;
+        return false;
+    }
+
+    notify_cancelling(job, list, root_cause);
+    return true;
+}
+
+NodeList* JobSupport::Impl::get_or_promote_cancelling_list(Incomplete* s) {
+    if (auto* list = s->get_list()) {
+        return list;
+    }
+
+    if (dynamic_cast<Empty*>(s)) {
+        return new NodeList();
+    }
+
+    if (auto* node = dynamic_cast<JobNode*>(s)) {
+        promote_single_to_node_list(node);
+        return nullptr; // Retry
+    }
+
+    return nullptr;
+}
+
+void JobSupport::Impl::promote_empty_to_node_list(Empty* empty) {
+    auto* list = new NodeList();
+    if (empty->is_active()) {
+        auto* expected = static_cast<JobState*>(empty);
+        if (!state.compare_exchange_strong(expected, list)) {
+            delete list;
+        }
+    } else {
+        auto* inactive = new InactiveNodeList(list);
+        auto* expected = static_cast<JobState*>(empty);
+        if (!state.compare_exchange_strong(expected, inactive)) {
+            delete inactive;
+            delete list;
+        }
+    }
+}
+
+void JobSupport::Impl::promote_single_to_node_list(JobNode* node) {
+    auto* list = new NodeList();
+    if (node->add_one_if_empty(list)) {
+        auto* expected = static_cast<JobState*>(node);
+        if (state.compare_exchange_strong(expected, list)) {
+            return;
+        }
+    }
+    delete list;
+}
+
+void JobSupport::Impl::notify_cancelling(JobSupport* job, NodeList* list, std::exception_ptr cause) {
+    job->on_cancelling(cause);
+
+    std::exception_ptr handler_exception;
+    list->for_each([&](internal::LockFreeLinkedListNode* raw_node) {
+        if (auto* node = dynamic_cast<JobNode*>(raw_node)) {
+            if (node->get_on_cancelling()) {
+                try {
+                    node->invoke(cause);
+                } catch (...) {
+                    if (!handler_exception) handler_exception = std::current_exception();
+                }
+            }
+        }
+    });
+
+    cancel_parent(cause);
+
+    if (handler_exception) {
+        job->handle_on_completion_exception(handler_exception);
+    }
+}
+
+bool JobSupport::Impl::cancel_parent(std::exception_ptr cause) {
+    auto* handle = parent_handle.load(std::memory_order_relaxed);
+    if (handle) {
+        if (auto* child_handle = dynamic_cast<ChildHandle*>(handle)) {
+            return child_handle->child_cancelled(cause);
+        }
+    }
+    return false;
+}
+
+bool JobSupport::Impl::try_put_node_into_list(JobSupport* job, JobNode* node,
+                                               std::function<bool(Incomplete*, NodeList*)> try_add) {
+    while (true) {
+        auto* s = state.load(std::memory_order_acquire);
+
+        if (s == &EMPTY_ACTIVE || s == &EMPTY_NEW) {
+            promote_empty_to_node_list(static_cast<Empty*>(s));
+            continue;
+        }
+
+        if (auto* incomplete = dynamic_cast<Incomplete*>(s)) {
+            auto* list = incomplete->get_list();
+            if (!list) {
+                if (auto* job_node = dynamic_cast<JobNode*>(s)) {
+                    promote_single_to_node_list(job_node);
+                    continue;
+                }
+                if (auto* empty = dynamic_cast<Empty*>(s)) {
+                    promote_empty_to_node_list(empty);
+                    continue;
+                }
+            } else {
+                return try_add(incomplete, list);
+            }
+        } else {
+            return false; // Completed
+        }
+    }
+}
+
+void JobSupport::Impl::remove_node(JobNode* node) {
+    while (true) {
+        auto* s = state.load(std::memory_order_acquire);
+
+        if (auto* state_node = dynamic_cast<JobNode*>(s)) {
+            if (state_node != node) return;
+            auto* expected = s;
+            if (state.compare_exchange_strong(expected, static_cast<JobState*>(&EMPTY_ACTIVE))) {
+                return;
+            }
+            continue;
+        }
+
+        if (auto* incomplete = dynamic_cast<Incomplete*>(s)) {
+            if (incomplete->get_list()) {
                 node->remove();
             }
             return;
         }
-        // else -> return // it is complete and does not have any completion handlers
+
+        return; // Completed
+    }
+}
+
+bool JobSupport::Impl::make_completing(JobSupport* job, JobState* proposed) {
+    while (true) {
+        auto* s = state.load(std::memory_order_acquire);
+        auto* final_state = try_make_completing(job, s, proposed);
+
+        if (final_state == COMPLETING_ALREADY) return false;
+        if (final_state == COMPLETING_WAITING_CHILDREN) return true;
+        if (final_state == COMPLETING_RETRY) continue;
+
+        job->on_completion_internal(final_state);
+        return true;
+    }
+}
+
+JobState* JobSupport::Impl::try_make_completing(JobSupport* job, JobState* s, JobState* proposed) {
+    auto* incomplete = dynamic_cast<Incomplete*>(s);
+    if (!incomplete) return COMPLETING_ALREADY;
+
+    bool is_proposed_exception = dynamic_cast<CompletedExceptionally*>(proposed) != nullptr;
+
+    // Fast path for simple states
+    if ((dynamic_cast<Empty*>(s) || (dynamic_cast<JobNode*>(s) && !dynamic_cast<ChildHandleNode*>(s)))
+        && !is_proposed_exception) {
+        if (try_finalize_simple_state(job, incomplete, proposed)) {
+            return s;
+        }
+        return COMPLETING_RETRY;
+    }
+
+    return try_make_completing_slow_path(job, incomplete, proposed);
+}
+
+JobState* JobSupport::Impl::try_make_completing_slow_path(JobSupport* job, Incomplete* s, JobState* proposed) {
+    auto* list = get_or_promote_cancelling_list(s);
+    if (!list) return COMPLETING_RETRY;
+
+    auto* finishing = dynamic_cast<Finishing*>(s);
+    if (!finishing) {
+        finishing = new Finishing(list, false, nullptr);
+        auto* expected = static_cast<JobState*>(s);
+        if (!state.compare_exchange_strong(expected, finishing)) {
+            delete finishing;
+            return COMPLETING_RETRY;
+        }
+    }
+
+    {
+        std::lock_guard<std::recursive_mutex> lock(finishing->mutex);
+        if (finishing->is_completing.load()) return COMPLETING_ALREADY;
+        finishing->is_completing.store(true);
+
+        if (auto* ex = dynamic_cast<CompletedExceptionally*>(proposed)) {
+            finishing->add_exception_locked(ex->cause);
+        }
+    }
+
+    // Check for children
+    auto* first_child = next_child(list);
+    if (first_child && try_wait_for_child(job, finishing, first_child, proposed)) {
+        return COMPLETING_WAITING_CHILDREN;
+    }
+
+    return finalize_finishing_state(job, finishing, proposed);
+}
+
+JobState* JobSupport::Impl::finalize_finishing_state(JobSupport* job, Finishing* finishing, JobState* proposed) {
+    auto* proposed_ex = dynamic_cast<CompletedExceptionally*>(proposed);
+    std::exception_ptr proposed_exception = proposed_ex ? proposed_ex->cause : nullptr;
+
+    bool was_cancelling;
+    std::exception_ptr final_exception;
+    {
+        std::lock_guard<std::recursive_mutex> lock(finishing->mutex);
+        was_cancelling = finishing->is_cancelling();
+        auto exceptions = finishing->seal_locked(proposed_exception);
+        final_exception = get_final_root_cause(finishing, exceptions);
+    }
+
+    JobState* final_state;
+    if (!final_exception) {
+        final_state = proposed;
+    } else if (final_exception == proposed_exception) {
+        final_state = proposed;
+    } else {
+        final_state = new CompletedExceptionally(final_exception);
+    }
+
+    if (final_exception) {
+        bool handled = cancel_parent(final_exception) || job->handle_job_exception(final_exception);
+        if (handled) {
+            if (auto* ex_state = dynamic_cast<CompletedExceptionally*>(final_state)) {
+                ex_state->make_handled();
+            }
+        }
+    }
+
+    if (!was_cancelling) job->on_cancelling(final_exception);
+    job->on_completion_internal(final_state);
+
+    auto* expected = static_cast<JobState*>(finishing);
+    bool cas_ok = state.compare_exchange_strong(expected, final_state);
+    assert(cas_ok);
+
+    complete_state_finalization(job, finishing, final_state);
+    return final_state;
+}
+
+std::exception_ptr JobSupport::Impl::get_final_root_cause(Finishing* finishing,
+                                                          const std::vector<std::exception_ptr>& exceptions) {
+    if (exceptions.empty()) {
+        if (finishing->is_cancelling()) {
+            return default_cancellation_exception(nullptr);
+        }
+        return nullptr;
+    }
+    return exceptions[0];
+}
+
+bool JobSupport::Impl::try_finalize_simple_state(JobSupport* job, Incomplete* s, JobState* update) {
+    auto* expected = static_cast<JobState*>(s);
+    if (!state.compare_exchange_strong(expected, update)) {
+        return false;
+    }
+    job->on_cancelling(nullptr);
+    job->on_completion_internal(update);
+    complete_state_finalization(job, s, update);
+    return true;
+}
+
+void JobSupport::Impl::complete_state_finalization(JobSupport* job, Incomplete* s, JobState* update) {
+    auto* handle = parent_handle.load();
+    if (handle) {
+        handle->dispose();
+        parent_handle.store(&NonDisposableHandle::instance());
+    }
+
+    auto* ex = dynamic_cast<CompletedExceptionally*>(update);
+    std::exception_ptr cause = ex ? ex->cause : nullptr;
+
+    if (auto* node = dynamic_cast<JobNode*>(s)) {
+        try {
+            node->invoke(cause);
+        } catch (...) {
+            job->handle_on_completion_exception(std::current_exception());
+        }
+    } else if (auto* list = s->get_list()) {
+        list->notify_completion(cause);
+    }
+
+    job->after_completion(update);
+}
+
+ChildHandleNode* JobSupport::Impl::next_child(internal::LockFreeLinkedListNode* node) {
+    auto* cur = node;
+    while (cur->is_removed()) {
+        cur = cur->prev_node();
+    }
+    while (true) {
+        cur = cur->next_node();
+        if (!cur || dynamic_cast<NodeList*>(cur)) return nullptr;
+        if (cur->is_removed()) continue;
+        if (auto* child = dynamic_cast<ChildHandleNode*>(cur)) return child;
+    }
+}
+
+bool JobSupport::Impl::try_wait_for_child(JobSupport* job, Finishing* finishing,
+                                           ChildHandleNode* child, JobState* proposed) {
+    auto* completion = new ChildCompletion(job, finishing, child, proposed);
+    auto handle = child->child_job->invoke_on_completion(false, false,
+        [completion](std::exception_ptr cause) {
+            completion->invoke(cause);
+        });
+
+    if (handle.get() != &NonDisposableHandle::instance()) {
+        return true;
+    }
+
+    delete completion;
+    auto* next = next_child(child);
+    if (!next) return false;
+    return try_wait_for_child(job, finishing, next, proposed);
+}
+
+void JobSupport::Impl::continue_completing(JobSupport* job, Finishing* finishing,
+                                            ChildHandleNode* last_child, JobState* proposed) {
+    auto* wait_child = next_child(last_child);
+    if (wait_child && try_wait_for_child(job, finishing, wait_child, proposed)) {
         return;
     }
+
+    finishing->list->close(LIST_CHILD_PERMISSION);
+
+    auto* wait_child_again = next_child(last_child);
+    if (wait_child_again && try_wait_for_child(job, finishing, wait_child_again, proposed)) {
+        return;
+    }
+
+    auto* final_state = finalize_finishing_state(job, finishing, proposed);
+    job->after_completion(final_state);
+}
+
+std::exception_ptr JobSupport::Impl::create_cause_exception(std::exception_ptr cause) {
+    if (!cause) return default_cancellation_exception(nullptr);
+    return cause;
+}
+
+std::exception_ptr JobSupport::Impl::default_cancellation_exception(const char* message) {
+    return std::make_exception_ptr(CancellationException(message ? message : "Job was cancelled"));
+}
+
+// ============================================================================
+// Finishing Methods
+// ============================================================================
+
+std::vector<std::exception_ptr> Finishing::seal_locked(std::exception_ptr proposed) {
+    std::vector<std::exception_ptr> result;
+    auto* eh = exceptions_holder.load();
+
+    if (eh == nullptr) {
+        // No exceptions yet
+    } else if (eh == &SEALED_SYMBOL) {
+        return result;
+    } else {
+        // eh is exception_ptr* or vector*
+        // Simplified: assume single exception
+        result.push_back(*static_cast<std::exception_ptr*>(eh));
+    }
+
+    auto root = get_root_cause();
+    if (root) result.insert(result.begin(), root);
+    if (proposed && proposed != root) result.push_back(proposed);
+
+    exceptions_holder.store(&SEALED_SYMBOL);
+    return result;
+}
+
+void Finishing::add_exception_locked(std::exception_ptr exception) {
+    auto root = get_root_cause();
+    if (!root) {
+        set_root_cause(exception);
+        return;
+    }
+    // Store additional exceptions (simplified)
+    auto* eh = exceptions_holder.load();
+    if (eh == nullptr) {
+        exceptions_holder.store(new std::exception_ptr(exception));
+    }
+}
+
+// ============================================================================
+// Other Internal Class Methods
+// ============================================================================
+
+void JobNode::dispose() {
+    if (job) {
+        job->impl_->remove_node(this);
+    }
+}
+
+void NodeList::notify_completion(std::exception_ptr cause) {
+    close(LIST_ON_COMPLETION_PERMISSION);
+
+    std::exception_ptr handler_exception;
+    for_each([&](internal::LockFreeLinkedListNode* raw_node) {
+        if (auto* node = dynamic_cast<JobNode*>(raw_node)) {
+            try {
+                node->invoke(cause);
+            } catch (...) {
+                if (!handler_exception) {
+                    handler_exception = std::current_exception();
+                }
+            }
+        }
+    });
+
+    if (handler_exception) {
+        std::rethrow_exception(handler_exception);
+    }
+}
+
+void ChildCompletion::invoke(std::exception_ptr cause) {
+    parent->impl_->continue_completing(parent, state, child, proposed_update);
 }
 
 } // namespace coroutines

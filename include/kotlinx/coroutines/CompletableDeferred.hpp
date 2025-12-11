@@ -83,10 +83,13 @@ public:
     }
 
     // Transliterated from Deferred.kt: override suspend fun await(): T = awaitInternal() as T
-    // NOTE: This is a blocking implementation since C++ doesn't have suspend
-    T await() override {
-        this->join(); // Block until completed
-        return get_completed();
+    void* await(Continuation<void*>* continuation) override {
+        return this->await_internal(continuation);
+    }
+
+    T await_blocking() override {
+        auto* state = this->await_internal_blocking();
+        return *reinterpret_cast<T*>(state);
     }
 
     // SelectClause1<T>& get_on_await() override { ... }
@@ -110,7 +113,8 @@ public:
      std::shared_ptr<Job> get_parent() const override { return JobSupport::get_parent(); }
      std::vector<std::shared_ptr<Job>> get_children() const override { return JobSupport::get_children(); }
      std::shared_ptr<DisposableHandle> attach_child(std::shared_ptr<ChildJob> child) override { return JobSupport::attach_child(child); }
-     void join() override { JobSupport::join(); }
+     void* join(Continuation<void*>* continuation) override { return JobSupport::join(continuation); }
+     void join_blocking() override { JobSupport::join_blocking(); }
      std::shared_ptr<DisposableHandle> invoke_on_completion(std::function<void(std::exception_ptr)> handler) override { return JobSupport::invoke_on_completion(handler); }
      std::shared_ptr<DisposableHandle> invoke_on_completion(bool on_cancelling, bool invoke_immediately, std::function<void(std::exception_ptr)> handler) override { return JobSupport::invoke_on_completion(on_cancelling, invoke_immediately, handler); }
      CoroutineContext::Key* key() const override { return JobSupport::key(); }

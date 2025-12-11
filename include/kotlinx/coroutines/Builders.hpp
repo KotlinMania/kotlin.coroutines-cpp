@@ -88,13 +88,16 @@ namespace coroutines {
         /**
          * Suspends until completion and returns result
          * Transliterated from: override suspend fun await(): T = awaitInternal() as T
-         * 
-         * NOTE: In C++ we can't have true suspend functions, so this blocks
          */
-        T await() override {
-            return this->await_internal();
+        void* await(Continuation<void*>* continuation) override {
+            return AbstractCoroutine<T>::await_internal(continuation);
         }
-        
+
+        T await_blocking() override {
+            auto* state = AbstractCoroutine<T>::await_internal_blocking();
+            return *reinterpret_cast<T*>(state);
+        }
+
          // Job overrides from Deferred
          bool is_active() const override { return AbstractCoroutine<T>::is_active(); }
          bool is_completed() const override { return AbstractCoroutine<T>::is_completed(); }
@@ -105,7 +108,8 @@ namespace coroutines {
          std::shared_ptr<struct Job> get_parent() const override { return AbstractCoroutine<T>::get_parent(); }
          std::vector<std::shared_ptr<struct Job>> get_children() const override { return AbstractCoroutine<T>::get_children(); }
          std::shared_ptr<DisposableHandle> attach_child(std::shared_ptr<ChildJob> child) override { return AbstractCoroutine<T>::attach_child(child); }
-         void join() override { AbstractCoroutine<T>::join(); }
+         void* join(Continuation<void*>* continuation) override { return AbstractCoroutine<T>::join(continuation); }
+         void join_blocking() override { AbstractCoroutine<T>::join_blocking(); }
          std::shared_ptr<DisposableHandle> invoke_on_completion(std::function<void(std::exception_ptr)> handler) override { return AbstractCoroutine<T>::invoke_on_completion(handler); }
          std::shared_ptr<DisposableHandle> invoke_on_completion(bool on_cancelling, bool invoke_immediately, std::function<void(std::exception_ptr)> handler) override { return AbstractCoroutine<T>::invoke_on_completion(on_cancelling, invoke_immediately, handler); }
          CoroutineContext::Key* key() const override { return AbstractCoroutine<T>::key(); }
@@ -183,8 +187,8 @@ namespace coroutines {
     template<typename T>
     void* with_context(
         std::shared_ptr<CoroutineContext> context,
-        std::function<void*(CoroutineScope*, kotlin::coroutines::Continuation<void*>*)> block,
-        kotlin::coroutines::Continuation<void*>* continuation
+        std::function<void*(CoroutineScope*, Continuation<void*>*)> block,
+        Continuation<void*>* continuation
     ) {
         if (!context) {
             throw std::invalid_argument("withContext requires a non-null context");

@@ -2,7 +2,6 @@
 #include <string>
 #include <functional>
 #include <memory>
-#include <coroutine>
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/DisposableHandle.hpp"
@@ -276,30 +275,41 @@ public:
 /**
  * Suspends the coroutine like [suspendCoroutine], but providing a [CancellableContinuation] to
  * the [block].
+ *
+ * In Kotlin, this is: suspend fun <T> suspendCancellableCoroutine(block: (CancellableContinuation<T>) -> Unit): T
+ *
+ * In C++, this is implemented as a suspend function that takes a Continuation<void*>* parameter
+ * following the Kotlin Native compilation pattern.
  */
 // Forward declaration
 template <typename T>
 class CancellableContinuationImpl;
 
-template <typename T>
-class SuspendingCancellableCoroutine {
-public:
-    std::function<void(CancellableContinuation<T>&)> block;
-    std::shared_ptr<CancellableContinuationImpl<T>> impl;
-
-    SuspendingCancellableCoroutine(std::function<void(CancellableContinuation<T>&)> b) : block(b) {}
-
-    bool await_ready() { return false; }
-
-    void await_suspend(std::coroutine_handle<> h);
-
-    T await_resume();
-};
-
+/**
+ * suspend_cancellable_coroutine - suspend function following Kotlin's pattern
+ *
+ * @param block The block to execute with the CancellableContinuation
+ * @param continuation The continuation for resumption (from caller's state machine)
+ * @return void* - either COROUTINE_SUSPENDED or the result pointer
+ *
+ * Usage in invoke_suspend():
+ *   case 0:
+ *       _label = 1;
+ *       result = suspend_cancellable_coroutine<int>([](auto& cont) {
+ *           // Register callbacks, etc.
+ *           cont.resume(42);
+ *       }, this);
+ *       if (result == COROUTINE_SUSPENDED) return COROUTINE_SUSPENDED;
+ *       [[fallthrough]];
+ *   case 1:
+ *       value = *reinterpret_cast<int*>(result);
+ *       // continue...
+ */
 template<typename T>
-auto suspend_cancellable_coroutine(std::function<void(CancellableContinuation<T>&)> block) {
-    return SuspendingCancellableCoroutine<T>(block);
-}
+void* suspend_cancellable_coroutine(
+    std::function<void(CancellableContinuation<T>&)> block,
+    Continuation<void*>* continuation
+);
 
 void dispose_on_cancellation(CancellableContinuation<void>& cont, DisposableHandle* handle);
 

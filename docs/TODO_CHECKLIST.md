@@ -36,20 +36,22 @@ This document tracks the implementation progress of missing APIs marked with `TO
 
 ### Suspend Functions
 
-- [ ] Convert `Job::join()` to suspend  
-      **File**: `Job.hpp:254`  
-      **Kotlin**: `suspend fun join()`  
-      **Action**: Return coroutine type, use SUSPEND macros
+- [x] Convert `Job::join()` to suspend
+      **File**: `Job.hpp:278`, `JobSupport.cpp:390-451`
+      **Kotlin**: `suspend fun join()`
+      **Implementation**: Returns `void*` (COROUTINE_SUSPENDED or nullptr)
+      **Completed**: 2024-12-10 - Added `join(Continuation*)`, `join_internal()`, `join_suspend()`, `join_blocking()`, `ResumeOnCompletion` handler
 
-- [ ] Convert `Deferred::await()` to suspend  
-      **File**: `Deferred.hpp:30-40`  
-      **Kotlin**: `suspend fun await(): T`  
-      **Action**: Return `Task<T>` or equivalent
+- [x] Convert `Deferred::await()` to suspend
+      **File**: `Deferred.hpp:72`, `JobSupport.cpp:487-550`
+      **Kotlin**: `suspend fun await(): T`
+      **Implementation**: Returns `void*` (COROUTINE_SUSPENDED or result)
+      **Completed**: 2024-12-10 - Added `await(Continuation*)`, `await_internal()`, `await_suspend()`, `await_blocking()`, `ResumeAwaitOnCompletion` handler
 
-- [ ] Implement true suspend `delay()`  
-      **File**: `Delay.hpp:65`  
-      **Kotlin**: `suspend fun delay(timeMillis: Long)`  
-      **Action**: Integrate with Delay interface, not block threads
+- [ ] Implement true suspend `delay()`
+      **File**: `Delay.hpp:65`
+      **Kotlin**: `suspend fun delay(timeMillis: Long)`
+      **Action**: Integrate with Delay interface, schedule continuation resume via dispatcher
 
 ## High Priority
 
@@ -146,12 +148,12 @@ Last updated: 2024-12-10
 
 **Statistics**:
 - Total TODOs: 23
-- Implemented: 0
+- Implemented: 2
 - In Progress: 0
-- Remaining: 23
+- Remaining: 21
 
 **Priority Breakdown**:
-- Critical: 8 TODOs
+- Critical: 6 TODOs (was 8)
 - High: 6 TODOs
 - Medium: 7 TODOs
 - Low: 2 TODOs

@@ -26,6 +26,7 @@ struct ChildHandle;
 struct CompletableJob;
 class JobSupport;
 class JobNode;
+template<typename T> class Continuation;
 
 // --------------- core job interfaces ---------------
 
@@ -33,12 +34,11 @@ class JobNode;
 // Kotlin API from kotlinx-coroutines-core.api:
 // ✓ field Key → static const Key type_key
 // ✓ fun attachChild(child: ChildJob): ChildHandle → attach_child(child)
-// ✓ fun cancel() → cancel()  
+// ✓ fun cancel() → cancel()
 // ✓ fun cancel(cause: Throwable?): Boolean → cancel(cause) - NOTE: Kotlin returns Boolean, we return void
 // ✓ fun cancel(cause: CancellationException?) → cancel(cause)
 // ✓ fun getCancellationException(): CancellationException → get_cancellation_exception()
 // ✓ fun getChildren(): Sequence<Job> → get_children()
-// TODO: MISSING API: fun getOnJoin(): SelectClause0 - Returns selector for join()
 // ✓ fun getParent(): Job? → get_parent()
 // ✓ fun invokeOnCompletion(handler: CompletionHandler): DisposableHandle → invoke_on_completion(handler)
 // ✓ fun invokeOnCompletion(onCancelling: Boolean, invokeImmediately: Boolean, handler: CompletionHandler)
@@ -46,9 +46,12 @@ class JobNode;
 // ✓ fun isActive(): Boolean → is_active()
 // ✓ fun isCancelled(): Boolean → is_cancelled()
 // ✓ fun isCompleted(): Boolean → is_completed()
-// ✓ fun join(Continuation): Object → join() - NOTE: we don't use Continuation parameter
-// TODO: MISSING API: fun plus(other: Job): Job - Combines two jobs
+// ✓ suspend fun join() → join(Continuation<void*>*) + join_blocking()
 // ✓ fun start(): Boolean → start()
+//
+// TODO: Complete these two
+// - fun getOnJoin(): SelectClause0 - Requires select{} expression support
+// - fun plus(other: Job): Job - Combines two jobs
 
 /**
  * A background job.
@@ -271,8 +274,17 @@ struct Job : public virtual CoroutineContext::Element {
      * Use is_completed() to check for a completion of this job without waiting.
      *
      * There is cancel_and_join() function that combines an invocation of cancel() and join().
+     *
+     * @param continuation The continuation to resume when job completes
+     * @return COROUTINE_SUSPENDED if suspended, nullptr if completed immediately
      */
-    virtual void join() = 0;
+    virtual void* join(Continuation<void*>* continuation) = 0;
+
+    /**
+     * Blocking version of join() for non-coroutine contexts.
+     * Spins until the job completes.
+     */
+    virtual void join_blocking() = 0;
 
     // ------------ low-level state-notification ------------
 
@@ -310,15 +322,6 @@ struct Job : public virtual CoroutineContext::Element {
         bool on_cancelling,
         bool invoke_immediately,
         std::function<void(std::exception_ptr)> handler) = 0;
-
-    // TODO: MISSING API - Job.plus operator (Job.kt:383)
-    // Combines two jobs. Returns leftmost if it's CompletableJob, otherwise rightmost.
-    // virtual std::shared_ptr<Job> plus(std::shared_ptr<Job> other) = 0;
-    
-    // TODO: MISSING API - select support (Job.kt:294)
-    // Clause for select expression of join suspending function that selects when the job is complete.
-    // This clause never fails, even if the job completes exceptionally.
-    // virtual SelectClause0 get_on_join() const = 0;
 
     // Key override
     CoroutineContext::Key* key() const override { return type_key; }
@@ -422,9 +425,9 @@ inline std::shared_ptr<DisposableHandle> non_disposable_handle() {
  *
  * This is a shortcut for the invocation of cancel() followed by join().
  */
-inline void cancel_and_join(Job& job) {
+inline void cancel_and_join_blocking(Job& job) {
     job.cancel();
-    job.join();
+    job.join_blocking();
 }
 
 /**

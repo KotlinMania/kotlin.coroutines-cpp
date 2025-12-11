@@ -395,6 +395,149 @@ We do need:
 - Dispatchers (for scheduling resumption)
 - Structured concurrency (Job hierarchy)
 
+## IDE Support and Error Suppression
+
+### The IDE Parser Challenge
+
+IntelliJ IDEA and CLion use static analysis that runs **before** C++ preprocessing. This means the IDE parser sees unexpanded macros like `SUSPEND_BEGIN` and `SUSPEND_END`, not the actual C++ code they generate. This causes false positive syntax errors.
+
+**Example of IDE Confusion:**
+
+```cpp
+void* invoke_suspend(Result<void*> result) override {
+    SUSPEND_BEGIN(1)              // ❌ IDE Error: "Missing ';'"
+    
+    SUSPEND_RETURN(42);           // ✅ No error (looks like a complete statement)
+    
+    SUSPEND_END                    // ❌ IDE Error: "Missing ';'"
+}
+```
+
+**Why This Happens:**
+
+- `SUSPEND_BEGIN(1)` expands to `switch (this->_label) { case 0:` (no semicolon needed)
+- `SUSPEND_RETURN(42);` expands to `return reinterpret_cast<...>(42);` (semicolon is correct)
+- `SUSPEND_END` expands to `} return nullptr;` (no semicolon needed)
+
+The IDE doesn't see these expansions, so it guesses wrong about what needs semicolons.
+
+### Suppression Pattern for Suspend Functions
+
+To silence these false positives, add suppression comments:
+
+```cpp
+class ExampleSuspendFn : public SuspendLambda<int> {
+public:
+    using SuspendLambda::SuspendLambda;
+
+    // NOLINT - IDE cannot parse suspend macros
+    void* invoke_suspend(Result<void*> result) override {
+        void* tmp;
+        
+        SUSPEND_BEGIN(2) // NOLINT
+        
+        // State machine code here
+        auto fn = std::make_shared<GetValueFn>( // NOLINT
+            std::dynamic_pointer_cast<Continuation<void*>>(shared_from_this())
+        );
+        SUSPEND_CALL(1, fn->invoke_suspend(...), tmp) // NOLINT
+        
+        SUSPEND_RETURN(result_value);
+        
+        SUSPEND_END // NOLINT
+    }
+};
+```
+
+### File-Level Suppressions
+
+For files with multiple suspend functions, add file-level suppressions:
+
+```cpp
+/**
+ * NOTE: IntelliJ IDEA may report false syntax errors in this file due to macro-based
+ * state machine generation. The code compiles correctly with g++/clang.
+ */
+
+// noinspection CppDFAUnreachableCode
+// noinspection CppDFAUnusedValue
+// noinspection CppNoDiscardExpression
+
+#include "kotlinx/coroutines/SuspendMacros.hpp"
+// ... rest of includes
+```
+
+### When to Add Suppressions
+
+Add `// NOLINT` comments on:
+
+1. **Function declarations** using suspend macros:
+   ```cpp
+   // NOLINT - IDE cannot parse suspend macros
+   void* invoke_suspend(Result<void*> result) override {
+   ```
+
+2. **Macro invocations** that confuse the IDE:
+   ```cpp
+   SUSPEND_BEGIN(n) // NOLINT
+   SUSPEND_END // NOLINT
+   SUSPEND_CALL(n, ..., tmp) // NOLINT
+   SUSPEND_POINT(n) // NOLINT
+   ```
+
+3. **Template expressions** inside macro contexts:
+   ```cpp
+   auto fn = std::make_shared<SomeFn>( // NOLINT
+       std::dynamic_pointer_cast<Continuation<void*>>(...)
+   );
+   ```
+
+### Verification
+
+The code is correct if it compiles:
+
+```bash
+# Should compile without errors
+$ g++ -std=c++17 -Wall -Wextra -I include your_file.cpp -o test
+
+# Should have only legitimate warnings (unused parameters, etc.)
+# NOT syntax errors about missing semicolons
+```
+
+### Why Not Use Pragma Suppressions?
+
+You might think to use:
+```cpp
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+// code
+#pragma clang diagnostic pop
+```
+
+**This doesn't work** because:
+- IntelliJ's parser runs before preprocessing
+- Pragmas are preprocessor directives
+- IDE never sees them during static analysis
+
+Only **comments** work for IDE suppression (`// NOLINT`, `// noinspection`).
+
+### Alternative: Trust the Compiler
+
+You can also simply ignore IDE warnings and trust the compiler. The errors are purely cosmetic - they don't affect:
+- Compilation success
+- Runtime behavior
+- Code correctness
+- Performance
+
+The compiler (g++/clang) is the source of truth, not the IDE's static analyzer.
+
+### See Also
+
+For detailed investigation of these false positives, see:
+- `IDE_ERROR_INVESTIGATION.md` - Root cause analysis and preprocessor output
+- `SUPPRESSION_SUMMARY.md` - Complete suppression guide
+- `test_suspend.cpp` - Example of properly suppressed suspend functions
+
 ## GC Suspension When Calling C++ from Kotlin
 
 **The Critical Discovery** (IrToBitcode.kt lines 2686-2694):

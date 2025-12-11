@@ -43,7 +43,7 @@ public:
                 }).id_scoped().collect([](int value) -> /* suspend */ void {
                     expect(4);
                     assert_equals(1, value);
-                    kotlin::coroutines::coroutine_context.cancel();
+                    kotlinx::coroutines::coroutine_context.cancel();
                     expect(5);
                 });
                 expect_unreached();
@@ -71,7 +71,7 @@ public:
                 flow([](FlowCollector<int>& collector) -> /* suspend */ void {
                     expect(2);
                     collector.emit(1);
-                    kotlin::coroutines::coroutine_context.cancel();
+                    kotlinx::coroutines::coroutine_context.cancel();
                     expect(3);
                 }).id_scoped().collect([](int value) -> /* suspend */ void {
                     finish(4);

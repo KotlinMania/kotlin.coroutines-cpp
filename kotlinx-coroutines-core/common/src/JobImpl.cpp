@@ -4,6 +4,7 @@
  */
 
 #include "kotlinx/coroutines/JobImpl.hpp"
+#include "kotlinx/coroutines/CompletedExceptionally.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -19,14 +20,8 @@ std::shared_ptr<JobImpl> JobImpl::create(std::shared_ptr<Job> parent) {
 }
 
 void JobImpl::init_parent_job(std::shared_ptr<Job> parent) {
-    if (!parent) {
-         parent_ = nullptr;
-         return;
-    }
-    parent_ = parent;
-    parent->start();
-    parent_handle_keeper_ = parent->attach_child(shared_from_this());
-    parent_handle_.store(parent_handle_keeper_.get());
+    // Delegate to JobSupport's protected init_parent_job
+    JobSupport::init_parent_job(parent);
 }
 
 bool JobImpl::complete() {
@@ -34,7 +29,7 @@ bool JobImpl::complete() {
 }
 
 bool JobImpl::complete_exceptionally(std::exception_ptr exception) {
-    return make_completing(exception);
+    return make_completing(new CompletedExceptionally(exception));
 }
 
 } // namespace coroutines

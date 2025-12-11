@@ -6,8 +6,6 @@
 namespace kotlinx {
 namespace coroutines {
 
-template<typename T> class SelectClause1; // Forward decl
-
 /**
  * Deferred value is a non-blocking cancellable future &mdash; it is a [Job] with a result.
  *
@@ -65,17 +63,17 @@ public:
      *
      * There is a **prompt cancellation guarantee**: even if this function is ready to return the result, but was cancelled
      * while suspended, [CancellationException] will be thrown. See [suspendCancellableCoroutine] for low-level details.
+     *
+     * @param continuation The continuation to resume with the result
+     * @return COROUTINE_SUSPENDED if suspended, or the type-erased result pointer if complete
      */
-    virtual T await() = 0;
+    virtual void* await(Continuation<void*>* continuation) = 0;
 
     /**
-     * Clause using the [await] suspending function as a [select] clause.
-     * It selects with the deferred value when the [Deferred] completes.
-     * If [Deferred] completes with an exception, the whole the [select] invocation fails with the same exception.
+     * Blocking version of await() for non-coroutine contexts.
+     * Spins until the deferred completes and returns the result.
      */
-    // TODO: MISSING API - Deferred.onAwait (Deferred.kt:104)
-    // Requires full select{} expression support - deferred until select implementation
-    // virtual SelectClause1<T>& get_on_await() = 0;
+    virtual T await_blocking() = 0;
 
     /**
      * Returns *completed* result or throws [IllegalStateException] if this deferred value has not

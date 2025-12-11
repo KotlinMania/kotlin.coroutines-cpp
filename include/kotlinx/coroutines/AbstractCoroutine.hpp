@@ -50,10 +50,11 @@ public:
     std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
         // Return fully constructed context (parent + this)
         // This is safe to call after construction
-        auto self = std::const_pointer_cast<AbstractCoroutine<T>>(std::static_pointer_cast<const AbstractCoroutine<T>>(shared_from_this()));
-        
+        // Note: shared_from_this() returns shared_ptr<JobSupport>, we need to cast
+        auto self_job = const_cast<AbstractCoroutine<T>*>(this)->JobSupport::shared_from_this();
+
         // Cast self to Element
-        auto self_element = std::static_pointer_cast<CoroutineContext::Element>(self);
+        auto self_element = std::static_pointer_cast<CoroutineContext::Element>(self_job);
 
         return std::make_shared<CombinedContext>(parent_context, self_element);
     }
@@ -78,48 +79,42 @@ public:
     // NOTE: T should be Unit for coroutines that don't return a value, NOT void.
     // Using void as T is not supported and will cause compilation errors.
     void resume_with(Result<T> result) override {
-        void* state;
+        JobState* state;
         if (result.is_success()) {
-            state = new T(result.get_or_throw());
+            state = reinterpret_cast<JobState*>(new T(result.get_or_throw()));
         } else {
             state = new CompletedExceptionally(result.exception_or_null());
         }
 
-        void* final_state = make_completing_once(state);
+        auto completing_result = JobSupport::make_completing_once(state);
 
-        if (final_state == (void*)COMPLETING_WAITING_CHILDREN) return;
+        if (completing_result == CompletingResult::COMPLETING) return;
 
-        after_resume(final_state);
-    }
-    
-    void* make_completing_once(void* proposed_update) {
-        if (make_completing(proposed_update)) {
-            return nullptr;
-        }
-        return (void*)COMPLETING_ALREADY;
+        after_resume(state);
     }
 
-    virtual void after_resume(void* state) {
+    virtual void after_resume(JobState* state) {
         // In Kotlin: protected open fun afterResume(state: Any?): Unit = afterCompletion(state)
         // afterCompletion is from JobSupport and is a no-op by default
         // We just call on_completion_internal directly
         on_completion_internal(state);
     }
-    
+
     // NOTE: T should be Unit for coroutines that don't return a value, NOT void.
-    void on_completion_internal(void* state) override {
+    void on_completion_internal(JobState* state) override {
         if (state == nullptr) {
             // Should not happen - state should always be valid T* or CompletedExceptionally*
             return;
         }
 
         // Try to cast to CompletedExceptionally first
-        auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(state));
+        auto* ex = dynamic_cast<CompletedExceptionally*>(state);
         if (ex && ex->cause) {
             on_cancelled(ex->cause, ex->handled);
         } else {
             // It's a successful completion with value
-            on_completed(*static_cast<T*>(state));
+            // State was stored via reinterpret_cast<JobState*>(new T(...))
+            on_completed(*reinterpret_cast<T*>(state));
         }
     }
     
@@ -130,30 +125,28 @@ public:
     // ===== API COMPLETENESS AUDIT =====
     // Kotlin API from kotlinx-coroutines-core.api line 1-13:
     // ✓ <init>(CoroutineContext, Boolean, Boolean) → AbstractCoroutine(parent_context, init_parent_job, active)
-    // TODO: MISSING API: protected fun afterResume(state: Any?)  
-    //       We have: virtual void after_resume(std::any state) - CORRECT
+    // ✓ protected fun afterResume(state: Any?) → after_resume(JobState* state)
     // ✓ protected fun cancellationExceptionMessage() → cancellation_exception_message()
     // ✓ public final fun getContext() → get_context()
     // ✓ public fun getCoroutineContext() → get_coroutine_context()
     // ✓ public fun isActive() → is_active()
     // ✓ protected fun onCancelled(cause: Throwable, handled: Boolean) → on_cancelled(cause, handled)
     // ✓ protected fun onCompleted(value: T) → on_completed(value)
-    // TODO: MISSING API: protected final fun onCompletionInternal(state: Any?)
-    //       We have: virtual void on_completion_internal(void* state) - WRONG NAME, should be on_completion_internal
+    // ✓ protected final fun onCompletionInternal(state: Any?) → on_completion_internal(JobState* state)
     // ✓ public final fun resumeWith(result: Result<T>) → resume_with(result)
-    // TODO: MISSING API: public final fun start(start: CoroutineStart, receiver: R, block: suspend R.() -> T)
-    //       We have: template<typename R> void start(...) but signature doesn't match exactly
-    
+    // ✓ public final fun start(start: CoroutineStart, receiver: R, block: suspend R.() -> T)
+    //       → template<typename R> void start(CoroutineStart, R, std::function<T(R)>)
+
     std::string name_string() {
         // TODO: Implement coroutine name extraction from context
-        // val coroutineName = context.coroutineName ?: return super.nameString()
-        // return "\"$coroutineName\":${super.nameString()}"
+        // Kotlin: val coroutineName = context.coroutineName ?: return super.nameString()
+        //         return "\"$coroutineName\":${super.nameString()}"
         return "AbstractCoroutine";
     }
 
     template <typename R>
     void start(CoroutineStart start_strategy, R receiver, std::function<T(R)> block) {
-        invoke(start_strategy, block, receiver, this->shared_from_this());
+        invoke(start_strategy, block, receiver, JobSupport::shared_from_this());
     }
 
     // Helper for parent init
@@ -167,7 +160,7 @@ public:
              auto parent_job = std::dynamic_pointer_cast<Job>(parent_element);
              if (parent_job) {
                 parent_job->start();
-                auto handle = parent_job->attach_child(std::static_pointer_cast<ChildJob>(shared_from_this()));
+                auto handle = parent_job->attach_child(std::dynamic_pointer_cast<ChildJob>(JobSupport::shared_from_this()));
              }
         }
     }

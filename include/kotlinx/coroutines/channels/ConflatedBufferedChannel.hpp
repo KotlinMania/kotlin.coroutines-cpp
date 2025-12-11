@@ -41,15 +41,6 @@ public:
               return ChannelResult<void>::closed(this->close_cause_);
         }
 
-        // 1. Check waiting receivers
-        while (!this->receivers_.empty()) {
-             auto* receiver = this->receivers_.front();
-             this->receivers_.pop_front();
-             if (receiver->try_resume(element)) {
-                 return ChannelResult<void>::success();
-             }
-        }
-
         auto& buffer = this->buffer_;
         int cap = this->capacity_;
 

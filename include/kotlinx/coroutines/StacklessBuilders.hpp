@@ -175,8 +175,18 @@ public:
         return std::make_shared<NoOpDisposableHandle>();
     }
 
-    void join() override {
-        // Blocking join - wait for completion
+    void* join(Continuation<void*>* continuation) override {
+        // Fast path - already complete
+        if (is_completed() || is_cancelled()) {
+            return nullptr;  // Unit
+        }
+        // For now, block (TODO: proper suspend with ResumeOnCompletion)
+        std::unique_lock<std::mutex> lock(mutex_);
+        cv_.wait(lock, [this] { return is_completed() || is_cancelled(); });
+        return nullptr;  // Unit
+    }
+
+    void join_blocking() override {
         std::unique_lock<std::mutex> lock(mutex_);
         cv_.wait(lock, [this] { return is_completed() || is_cancelled(); });
     }
@@ -265,8 +275,18 @@ public:
         return nullptr;
     }
 
-    T await() override {
-        // Blocking await
+    void* await(Continuation<void*>* continuation) override {
+        // Fast path - already complete
+        if (coro_ && coro_->is_complete()) {
+            return reinterpret_cast<void*>(new T(get_completed()));
+        }
+        // For now, block (TODO: proper suspend with ResumeAwaitOnCompletion)
+        std::unique_lock<std::mutex> lock(mutex_);
+        cv_.wait(lock, [this] { return coro_ && coro_->is_complete(); });
+        return reinterpret_cast<void*>(new T(get_completed()));
+    }
+
+    T await_blocking() override {
         std::unique_lock<std::mutex> lock(mutex_);
         cv_.wait(lock, [this] { return coro_ && coro_->is_complete(); });
         return get_completed();
@@ -311,7 +331,18 @@ public:
         return std::make_shared<NoOpDisposableHandle>();
     }
 
-    void join() override {
+    void* join(Continuation<void*>* continuation) override {
+        // Fast path - already complete
+        if (is_completed() || is_cancelled()) {
+            return nullptr;  // Unit
+        }
+        // For now, block (TODO: proper suspend with ResumeOnCompletion)
+        std::unique_lock<std::mutex> lock(mutex_);
+        cv_.wait(lock, [this] { return is_completed() || is_cancelled(); });
+        return nullptr;  // Unit
+    }
+
+    void join_blocking() override {
         std::unique_lock<std::mutex> lock(mutex_);
         cv_.wait(lock, [this] { return is_completed() || is_cancelled(); });
     }
