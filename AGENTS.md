@@ -198,5 +198,80 @@
 
 ---
 
+### Systematic Approach for Remaining Files (Syntax Cleanup)
+
+Use this as the canonical checklist when cleaning residual Kotlin syntax from `.cpp` files. Cross‑reference `docs/SYNTAX_CLEANUP_STATUS.md` for live counts and priority files.
+
+1) Files with Kotlin `fun` keyword
+- Replace `fun name(params): Ret` with C++ `Ret name(params)`.
+- Replace `override fun` with C++ method declarations that end with `override`.
+- Replace `suspend fun` with the Continuation ABI now, then migrate via the plugin:
+  - `void* name(args..., Continuation<void*>* cont)`
+  - Add `// TODO(suspend-plugin): migrate to plugin-generated state machine`.
+- Parameters: `param: Type` → `Type param`. If Kotlin used default args, add C++ overloads or tag `// TODO(port): defaults parity`.
+
+2) Files with `when` expressions
+- Use `switch` for integral/enum subjects; otherwise use `if-else` chains.
+- Assignment form: `auto x = when (y) { ... }` → `auto x = /*init*/;` then assign in each branch.
+- Subjectless form: `when { c1 -> ..., c2 -> ..., else -> ... }` → ordered `if/else if/else`.
+- Type checks: `is T` → `if (auto* p = dynamic_cast<T*>(expr)) { ... }`.
+- Membership/range: `in range`/`!in` → explicit bound checks or helper; add `// TODO(port): range helper` if a utility is desired.
+- If Kotlin was exhaustive (sealed types), ensure coverage or add `// TODO(semantics): exhaustiveness parity`.
+
+3) Kotlin operators to replace
+- Elvis `a ?: b` → `a != nullptr ? a : b` (or explicit null checks for non-pointer types).
+- Safe call `obj?.prop` / `obj?.call()` → `if (obj) obj->prop/call();`.
+- Non-null assertion `x!!` → assert or explicit check; add `// TODO(semantics): non-null assertion parity` if behavior matters.
+- Ranges:
+  - `a..b` (inclusive) → `for (int i = a; i <= b; ++i)`.
+  - `a until b` → `i < b` upper bound.
+  - `a downTo b step s` → `for (int i = a; i >= b; i -= s)`.
+- Equality vs identity: Kotlin `==` (structural) vs `===` (reference). Use `operator==` vs pointer identity accordingly; add `// TODO(semantics): equality vs identity` when unclear.
+
+4) Control-flow and statement syntax
+- Kotlin `if condition { ... }` (no parentheses) → C++ `if (condition) { ... }`.
+- Kotlin `for (x in collection)` → C++ `for (auto& x : collection)` or index loop as needed.
+- Labeled returns `return@label` → restructure with flags/helper functions; add `// TODO(port): labeled return rewrite` if non-trivial.
+
+5) Inheritance and type declarations
+- Kotlin `class Foo : Bar` → C++ `class Foo : public Bar`.
+- Multiple supertypes: mark interfaces as `public` bases; ensure virtual destructor on bases. Add `// TODO(port): multiple inheritance parity` if ambiguous.
+
+6) Grep helpers
+```
+# Kotlin function syntax
+grep -R "\bfun\s\+[a-zA-Z_]" --include='*.cpp' kotlinx-coroutines-core/
+
+# Kotlin parameter syntax
+grep -R ":\s\+[A-Z][a-zA-Z_]*\)" --include='*.cpp' kotlinx-coroutines-core/
+
+# when expressions
+grep -R "\bwhen\s*(" --include='*.cpp' kotlinx-coroutines-core/
+
+# if without parentheses (heuristic)
+grep -R "^\s*if\s+[^ (]" --include='*.cpp' kotlinx-coroutines-core/
+
+# Missing public inheritance
+grep -R "\bclass\s\+[A-Za-z_][A-Za-z0-9_]*\s*:\s*[A-Z]" --include='*.cpp' kotlinx-coroutines-core/
+
+# Elvis and safe-call operators
+grep -R "\?:\|\?\." --include='*.cpp' kotlinx-coroutines-core/
+```
+
+7) Priority order
+- Core coroutine files (Job, Continuation, Dispatcher, Delay, etc.).
+- Flow implementation files (SharedFlow, StateFlow).
+- Channel implementation files.
+- Tests (lower priority).
+- Build/configuration translation (Gradle → CMake notes).
+
+8) Cross-references and rules
+- Methods in C++ are `snake_case`; classes remain `CamelCase`.
+- Keep public interfaces in headers; move implementations/private helpers to `.cpp`.
+- Suspend signatures must use the Continuation ABI today; tag with `TODO(suspend-plugin)` for migration per `docs/cpp_port/docking_ring.md`.
+- Insert specific, categorized TODOs for any gap; remove resolved TODOs in edited regions.
+
+---
+
 ### Final note
 Transliteration first, helpers second. Keep it mechanical and reversible. Call out every mismatch explicitly with a `TODO` so we can schedule semantic work once the Clang suspend plugin lands.
