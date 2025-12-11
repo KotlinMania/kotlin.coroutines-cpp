@@ -94,18 +94,44 @@ struct Flow {
     /**
      * Accepts the given [collector] and [emits][FlowCollector.emit] values into it.
      *
-     * This method can be used along with SAM-conversion of [FlowCollector]:
+     * This is a terminal operator that triggers the execution of the flow. The flow
+     * starts emitting values into the collector and completes normally or with an exception.
+     *
+     * @param collector The collector that receives emitted values
+     * @param continuation The continuation for suspension support
+     * @return Pointer to suspension state/result (Kotlin-style suspend function)
+     *
+     * @note **CURRENT LIMITATION**: This method signature is designed for suspension but
+     *       the current implementation does not properly suspend. The emit() calls in
+     *       collectors are not suspending, breaking backpressure guarantees.
+     *
+     * @note **INTENDED BEHAVIOR**: Should be a suspending function that can pause when
+     *       downstream is not ready to receive values, providing proper backpressure.
+     *
+     * ### Usage Example
      * ```cpp
-     * myFlow.collect([](auto value) { std::cout << "Collected " << value << std::endl; });
+     * try {
+     *     flow->collect([](auto value) { 
+     *         std::cout << "Received " << value << std::endl; 
+     *     }, continuation);
+     * } catch (const std::exception& e) {
+     *     std::cout << "Flow exception: " << e.what() << std::endl;
+     * }
      * ```
      *
-     * ### Method inheritance
+     * ### Thread Safety
+     * Flow collection is sequential by default. All emissions happen in the same
+     * coroutine context unless explicitly modified by operators like buffer() or
+     * flatMapMerge(). Concurrent collection of the same flow is not supported.
      *
+     * ### Backpressure
+     * In the intended design, this method provides backpressure by suspending
+     * when the collector cannot keep up. Currently, backpressure is broken due
+     * to non-suspending emit() implementations.
+     *
+     * ### Method inheritance
      * To ensure the context preservation property, it is not recommended implementing this method directly.
      * Instead, [AbstractFlow] can be used as the base type to properly ensure flow's properties.
-     *
-     * All default flow implementations ensure context preservation and exception transparency properties on a best-effort basis
-     * and throw [IllegalStateException] if a violation was detected.
      */
     virtual void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) = 0;
 };
@@ -150,15 +176,30 @@ public:
     }
 
     /**
-     * Accepts the given [collector] and [emits][FlowCollector.emit] values into it.
+     * Accepts the given collector and emits values into it safely.
      *
+     * This method is called by the default collect() implementation after ensuring
+     * context preservation. Implementations should focus solely on emitting values.
+     *
+     * @param collector The collector that receives emitted values
+     * @param continuation The continuation for suspension support
+     * @return Pointer to suspension state/result
+     *
+     * @note **CURRENT LIMITATION**: Context preservation is not fully implemented.
+     *       The current stub implementation just delegates to this method without
+     *       proper context tracking or SafeCollector wrapping.
+     *
+     * ### Implementation Constraints
      * A valid implementation of this method has the following constraints:
      * 1) It should not change the coroutine context when emitting values.
-     *    The emission should happen in the context of the [collect] call.
-     *    Please refer to the top-level [Flow] documentation for more details.
-     * 2) It should serialize calls to [emit][FlowCollector.emit] as [FlowCollector] implementations are not
+     *    The emission should happen in the context of the collect() call.
+     *    Please refer to the top-level Flow documentation for more details.
+     * 2) It should serialize calls to emit() as FlowCollector implementations are not
      *    thread-safe by default.
-     *    To automatically serialize emissions [channelFlow] builder can be used instead of [flow]
+     *    To automatically serialize emissions, channelFlow builder can be used instead of flow.
+     *
+     * @note **INTENDED BEHAVIOR**: Should be wrapped with SafeCollector to ensure
+     *       context preservation and exception transparency automatically.
      *
      * @throws IllegalStateException if any of the invariants are violated.
      */

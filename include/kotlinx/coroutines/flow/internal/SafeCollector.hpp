@@ -15,39 +15,67 @@ namespace internal {
  */
 class SafeCollectorBase {
 public:
-    SafeCollectorBase(CoroutineContext collectContext);
+    SafeCollectorBase(std::shared_ptr<CoroutineContext> collectContext);
     virtual ~SafeCollectorBase() = default;
 
 protected:
     void check_context(const CoroutineContext& currentContext);
     
-    CoroutineContext collect_context_;
+    std::shared_ptr<CoroutineContext> collect_context_;
     int collect_context_size_;
 };
 
 /**
- * SafeCollector that ensures flow invariants.
+ * SafeCollector that ensures flow invariants and context preservation.
+ *
+ * This wrapper collector ensures that emissions happen in the correct context
+ * and provides exception transparency guarantees. It wraps a downstream collector
+ * and validates context before forwarding emissions.
+ *
+ * @note **CURRENT LIMITATION**: The emit() method signature is incorrect - it
+ *       should return void* and accept a Continuation parameter for suspension.
+ *       The current implementation cannot provide proper backpressure.
+ *
+ * @note **INTENDED BEHAVIOR**: Should validate context on each emission and
+ *       properly suspend when downstream cannot keep up, ensuring flow invariants.
  */
 template <typename T>
 class SafeCollector : public FlowCollector<T>, public SafeCollectorBase {
 public:
-    SafeCollector(FlowCollector<T>* downstream, CoroutineContext collectContext)
+    /**
+     * Creates a SafeCollector wrapping the given downstream collector.
+     *
+     * @param downstream The collector to wrap and protect
+     * @param collectContext The context in which collection started
+     */
+    SafeCollector(FlowCollector<T>* downstream, std::shared_ptr<CoroutineContext> collectContext)
         : SafeCollectorBase(collectContext), downstream_(downstream) {}
 
+    /**
+     * Emits a value after validating the execution context.
+     *
+     * This method ensures that the emission happens in the same context
+     * as the original collect() call, preserving flow invariants.
+     *
+     * @param value The value to emit
+     *
+     * @note **BROKEN SEMANTICS**: This method should be suspending and return
+     *       void* with a Continuation parameter. The current void return breaks
+     *       backpressure guarantees.
+     *
+     * @note **MISSING VALIDATION**: Context validation is not implemented due
+     *       to lack of currentCoroutineContext() access. The check_context()
+     *       call is stubbed out.
+     *
+     * @throws IllegalStateException if context validation fails (not implemented)
+     */
     virtual void emit(T value) override {
-        // Get current context (simplified: in C++ we often pass context explicitly or use thread local)
-        // Ideally we grab it from `currentCoroutineContext()`.
-        // For now, let's assume we can get it or we are called from a suspending function that has it.
-        // BUT emit is not suspending in our current C++ interface (void emit).
-        // This is a major issue identified in the audit: emit SHOULD be suspending/awaitable.
-        
-        // Assuming we fix suspension later, we still valid context here.
+        // TODO: Implement proper context validation
         // auto current = currentCoroutineContext();
         // check_context(current); 
         
-        // Since we don't have global context access easily without arguments, 
-        // and our audit showed emit is void, we stub the actual check call site
-        // but Provide the logic in Base.
+        // TODO: Fix method signature to support suspension
+        // Should be: virtual void* emit(T value, Continuation<void*>* continuation) override
         
         downstream_->emit(value);
     }

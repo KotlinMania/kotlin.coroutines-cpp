@@ -13,11 +13,22 @@ namespace channels {
 /**
  * The buffered channel implementation.
  *
- * TODO: This implementation needs to be rewritten to use Kotlin-style coroutines
- * (Continuation<void*>* pattern) instead of C++20 coroutines.
+ * BufferedChannel provides a channel with a configurable buffer capacity that
+ * allows producers and consumers to operate asynchronously. Elements sent to
+ * the channel are stored in the buffer until received by consumers.
  *
- * For now, send() and receive() that would suspend throw an exception.
- * Use try_send() and try_receive() for non-suspending operations.
+ * Buffer capacity determines the behavior:
+ * - RENDEZVOUS (0): No buffer, sender and receiver must meet
+ * - UNLIMITED: Infinite buffer, sender never suspends
+ * - CONFLATED (-1): Buffer size 1, new element replaces existing
+ * - Positive N: Fixed buffer of size N
+ * TODO: Implement Kotlin-style coroutines (Continuation<void*>* pattern)
+ * @note This implementation needs to be rewritten to use Kotlin-style coroutines
+ *       (Continuation<void*>* pattern) instead of C++20 coroutines.
+ *       For now, send() and receive() that would suspend return a needs_suspend flag.
+ *       Use try_send() and try_receive() for non-suspending operations.
+ *
+ * @tparam E The type of elements in the channel.
  */
 template <typename E>
 class BufferedChannel : public Channel<E> {

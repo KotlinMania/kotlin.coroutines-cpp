@@ -67,9 +67,7 @@ public:
     void on_worker_complete() {
         // Check queue for more work
         std::shared_ptr<Runnable> next_block;
-        CoroutineContext next_context; // This is tricky, CoroutineContext is abstract base usually handled via shared_ptr
-        // But here we stored it by value? No, context is likely implicitly handling shared data.
-        // wait, CoroutineContext is a class. 
+        // next_context removed as it was trying to instantiate abstract class
         
         {
             std::lock_guard<std::mutex> g(lock);

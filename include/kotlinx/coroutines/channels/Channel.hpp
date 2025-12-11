@@ -21,9 +21,17 @@ using OnUndeliveredElement = std::function<void(const E&, std::exception_ptr)>;
 
 /**
  * Indicates an attempt to send to a channel that was closed for sending.
+ * 
+ * This exception is thrown when attempting to send an element to a channel
+ * that has been closed. The channel may have been closed normally or due
+ * to an error condition.
  */
 class ClosedSendChannelException : public std::runtime_error {
 public:
+    /**
+     * Constructs a ClosedSendChannelException with the specified message.
+     * @param message The error message describing the closure.
+     */
     explicit ClosedSendChannelException(const std::string& message = "Channel was closed");
 };
 
@@ -37,6 +45,13 @@ public:
 
 /**
  * A discriminated union representing a channel operation result.
+ * 
+ * ChannelResult provides a type-safe way to handle the three possible outcomes
+ * of channel operations: success with a value, failure (no immediate result),
+ * or closed channel. This is particularly useful for non-blocking operations
+ * like try_send() and try_receive().
+ * 
+ * @tparam T The type of value contained in a successful result.
  */
 template <typename T>
 class ChannelResult {
@@ -172,13 +187,62 @@ struct ChannelIterator {
     virtual ~ChannelIterator() = default;
 };
 
+/**
+ * Interface for the sending side of a channel.
+ * 
+ * SendChannel provides operations to send elements to a channel, check if the
+ * channel is closed for sending, and close the channel. It supports both
+ * suspending and non-suspending send operations.
+ * 
+ * @tparam E The type of elements that can be sent through this channel.
+ */
 template <typename E>
 struct SendChannel {
     virtual ~SendChannel() = default;
+    
+    /**
+     * Checks if this channel is closed for sending.
+     * When true, no more elements can be sent and send operations will fail.
+     * @return true if the channel is closed for sending.
+     */
     virtual bool is_closed_for_send() const = 0;
+    
+    /**
+     * Sends an element to the channel, suspending if the channel is full.
+     * This is a suspending function that will resume when the element is sent
+     * or the channel is closed.
+     * 
+     * @param element The element to send.
+     * @return ChannelAwaiter that handles the suspension semantics.
+     * @throws ClosedSendChannelException if the channel is closed.
+     */
     virtual ChannelAwaiter<void> send(E element) = 0; // suspend
+    
+    /**
+     * Attempts to send an element without suspending.
+     * This is a non-blocking operation that immediately returns the result.
+     * 
+     * @param element The element to send.
+     * @return ChannelResult indicating success, failure, or closed state.
+     */
     virtual ChannelResult<void> try_send(E element) = 0;
+    
+    /**
+     * Closes the channel for sending.
+     * After closing, no more elements can be sent, but existing elements
+     * in the buffer can still be received.
+     * 
+     * @param cause Optional exception that caused the closure.
+     * @return true if this call closed the channel, false if already closed.
+     */
     virtual bool close(std::exception_ptr cause = nullptr) = 0;
+    
+    /**
+     * Registers a handler to be called when the channel is closed.
+     * The handler is called immediately if the channel is already closed.
+     * 
+     * @param handler Function to call on channel closure.
+     */
     virtual void invoke_on_close(std::function<void(std::exception_ptr)> handler) = 0;
 };
 

@@ -31,3 +31,4 @@ test_suspension_core
 test_suspension_infrastructure
 .gitignore
 test_suspension_simple
+test_context

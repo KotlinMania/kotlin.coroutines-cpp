@@ -27,25 +27,62 @@ using OnCancellationConstructor = std::function<void(void*)>;
 
 /**
  * Common interface for all select clauses.
+ * 
+ * Select clauses represent individual operations that can be selected in a select expression.
+ * Each clause encapsulates the logic for registration with a selectable object (like a channel)
+ * and processing of the result when selected.
+ * 
+ * @note This is an internal interface used by the select implementation.
+ *       Users typically work with SelectClause0, SelectClause1, and SelectClause2.
  */
 class SelectClause {
 public:
     virtual ~SelectClause() = default;
+    
+    /**
+     * Returns the underlying clause object that identifies this clause to selectable objects.
+     * @return Pointer to the clause-specific object.
+     */
     virtual void* get_clause_object() const = 0;
+    
+    /**
+     * Returns the registration function for this clause.
+     * The registration function is called during select registration to register
+     * this clause with its associated selectable object.
+     * @return Function that registers the clause with a selectable object.
+     */
     virtual RegistrationFunction get_reg_func() const = 0;
+    
+    /**
+     * Returns the result processing function for this clause.
+     * This function transforms the raw result from the selectable object
+     * into the final result type for the select expression.
+     * @return Function that processes the clause result.
+     */
     virtual ProcessResultFunction get_process_res_func() const = 0;
 };
 
 /**
- * Clause for [select] expression of [SelectBuilder] without additional parameters.
+ * Clause for select expression without additional parameters.
+ * 
+ * This clause type is used for select operations that don't require parameters,
+ * such as selecting on a channel's receive operation without additional context.
+ * 
+ * @see SelectBuilder::invoke() for usage examples.
  */
 class SelectClause0 : public SelectClause {
 public:
-    // Implementation details handles by template subclasses usually
+    // Implementation details handled by template subclasses usually
 };
 
 /**
- * Clause for [select] expression of [SelectBuilder] with one parameter of type [P].
+ * Clause for select expression with one parameter of type P.
+ * 
+ * This clause type is used for select operations that require one parameter,
+ * such as selecting on a channel's send operation with the element to send.
+ * 
+ * @tparam P The parameter type for the clause.
+ * @see SelectBuilder::invoke() for usage examples.
  */
 template <typename P>
 class SelectClause1 : public SelectClause {
@@ -101,16 +138,53 @@ public:
 };
 
 /**
- * Instance of select operation.
+ * Instance of a select operation.
+ * 
+ * A SelectInstance represents a single select expression execution and manages
+ * the state machine for clause registration, selection, and completion.
+ * It coordinates between multiple selectable objects to determine which clause
+ * completes first.
+ * 
+ * @tparam R The result type of the select expression.
  */
 template <typename R>
 class SelectInstance : public Waiter {
 public:
     virtual ~SelectInstance() = default;
 
+    /**
+     * Attempts to select the specified clause with the given result.
+     * This is called by selectable objects when they become ready.
+     * 
+     * @param clauseObject The clause object that is ready.
+     * @param result The result value from the selectable object.
+     * @return true if this clause was successfully selected, false if another
+     *         clause was already selected or the select is completed.
+     */
     virtual bool try_select(void* clauseObject, void* result) = 0;
+    
+    /**
+     * Registers a disposable handle that will be disposed when the select completes.
+     * This is used for cleanup of non-selected clauses.
+     * 
+     * @param handle The disposable handle to clean up on completion.
+     */
     virtual void dispose_on_completion(std::shared_ptr<DisposableHandle> handle) = 0;
+    
+    /**
+     * Called when a clause is selected during the registration phase.
+     * This is an optimization for clauses that are immediately ready.
+     * 
+     * @param internalResult The result from the immediately ready clause.
+     */
     virtual void select_in_registration_phase(void* internalResult) = 0;
+    
+    /**
+     * Returns the continuation associated with this select operation.
+     * The continuation is resumed when a clause is selected.
+     * 
+     * @return The cancellable continuation for this select.
+     */
     virtual std::shared_ptr<CancellableContinuation<R>> get_continuation() = 0;
 };
 

@@ -24,7 +24,23 @@ inline std::shared_ptr<Flow<T>> make_flow(std::function<void(FlowCollector<T>*)>
 }
 
 /**
- * Returns a flow that ignores first [count] elements.
+ * Returns a flow that ignores first count elements.
+ *
+ * This operator transforms the upstream flow by skipping the specified number
+ * of elements from the beginning, then passing through all remaining elements.
+ *
+ * @param upstream The flow to transform
+ * @param count The number of elements to skip (must be non-negative)
+ * @return A new flow that skips the first count elements
+ *
+ * @note **CURRENT LIMITATION**: The collect() call inside this operator does not
+ *       properly handle suspension, which may break backpressure in complex flows.
+ *
+ * @throws std::invalid_argument if count is negative
+ *
+ * ### Thread Safety
+ * This operator is thread-safe as long as the upstream flow is thread-safe.
+ * The skipping logic is stateless and does not introduce additional concurrency concerns.
  */
 template<typename T>
 std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
@@ -44,6 +60,21 @@ std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
 
 /**
  * Returns a flow containing all elements except first elements that satisfy the given predicate.
+ *
+ * This operator skips elements from the beginning of the flow while the predicate
+ * returns true, then emits all remaining elements (including the first one that
+ * doesn't satisfy the predicate).
+ *
+ * @param upstream The flow to transform
+ * @param predicate The predicate function to test elements
+ * @return A new flow that skips elements while predicate is true
+ *
+ * @note **CURRENT LIMITATION**: The collect() call inside this operator does not
+ *       properly handle suspension, which may break backpressure in complex flows.
+ *
+ * ### Thread Safety
+ * This operator is thread-safe as long as the upstream flow is thread-safe.
+ * The predicate is called sequentially for each element during collection.
  */
 template<typename T, typename Predicate>
 std::shared_ptr<Flow<T>> drop_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
@@ -61,7 +92,24 @@ std::shared_ptr<Flow<T>> drop_while(std::shared_ptr<Flow<T>> upstream, Predicate
 }
 
 /**
- * Returns a flow that contains first [count] elements.
+ * Returns a flow that contains first count elements.
+ *
+ * This operator transforms the upstream flow by emitting only the specified
+ * number of elements from the beginning, then cancelling the upstream flow.
+ *
+ * @param upstream The flow to transform
+ * @param count The number of elements to take (must be positive)
+ * @return A new flow that emits only the first count elements
+ *
+ * @note **CURRENT LIMITATION**: Uses AbortFlowException to stop upstream flow,
+ *       which is not the most efficient approach. The collect() call does not
+ *       properly handle suspension, which may break backpressure.
+ *
+ * @throws std::invalid_argument if count is not positive
+ *
+ * ### Thread Safety
+ * This operator is thread-safe as long as the upstream flow is thread-safe.
+ * The cancellation mechanism ensures no further emissions after the limit.
  */
 template<typename T>
 std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
@@ -101,7 +149,16 @@ std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
 }
 
 /**
- * Helper for collectWhile logic
+ * Helper for collectWhile logic.
+ *
+ * This internal function collects elements from the upstream flow while the
+ * predicate returns true, throwing AbortFlowException when the predicate fails.
+ *
+ * @param upstream The flow to collect from
+ * @param predicate The predicate function to test elements
+ *
+ * @note **CURRENT LIMITATION**: This is a helper function that uses exceptions
+ *       for flow control, which is not optimal for performance.
  */
 template<typename T, typename Predicate>
 void collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
@@ -124,7 +181,21 @@ void collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
 }
 
 /**
- * Returns a flow that contains first elements satisfying the given [predicate].
+ * Returns a flow that contains first elements satisfying the given predicate.
+ *
+ * This operator emits elements from the upstream flow while the predicate
+ * returns true, then cancels the upstream flow when the predicate fails.
+ *
+ * @param upstream The flow to transform
+ * @param predicate The predicate function to test elements
+ * @return A new flow that emits elements while predicate is true
+ *
+ * @note **CURRENT LIMITATION**: Uses AbortFlowException for flow control and
+ *       does not properly handle suspension, which may break backpressure.
+ *
+ * ### Thread Safety
+ * This operator is thread-safe as long as the upstream flow is thread-safe.
+ * The predicate is called sequentially for each element during collection.
  */
 template<typename T, typename Predicate>
 std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
@@ -141,7 +212,26 @@ std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate
 }
 
 /**
- * Applies [transform] function to each value of the given flow while this function returns `true`.
+ * Applies transform function to each value of the given flow while this function returns true.
+ *
+ * This operator transforms each element using the provided function and continues
+ * processing as long as the transform function returns true. It allows for
+ * complex transformations with early termination.
+ *
+ * @param upstream The flow to transform
+ * @param transform_fn The transformation function that returns true to continue
+ * @return A new flow with transformed elements
+ *
+ * @tparam T The input element type
+ * @tparam R The output element type
+ * @tparam Transform The transform function type
+ *
+ * @note **CURRENT LIMITATION**: Does not properly handle suspension, which may
+ *       break backpressure in complex flows.
+ *
+ * ### Thread Safety
+ * This operator is thread-safe as long as the upstream flow is thread-safe.
+ * The transform function is called sequentially for each element.
  */
 template<typename T, typename R, typename Transform>
 std::shared_ptr<Flow<R>> transform_while(std::shared_ptr<Flow<T>> upstream, Transform transform_fn) {

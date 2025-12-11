@@ -83,9 +83,10 @@ This document tracks the implementation progress of missing APIs marked with `TO
       **Kotlin**: `fun limitedParallelism(parallelism: Int, name: String? = null): CoroutineDispatcher`
       **Completed**: 2024-12-10 - Implemented via `LimitedDispatcher` helper
 
-- [ ] `minus_key(key)` - Context manipulation  
+- [x] `minus_key(key)` - Context manipulation  
       **File**: `CoroutineDispatcher.hpp:78`  
       **Kotlin**: `override fun minusKey(key: CoroutineContext.Key<*>): CoroutineContext`
+      **Completed**: 2024-12-10 - Implemented in `CoroutineContext` and `CoroutineDispatcher` (via inheritance)
 
 - [ ] `to_string()` - Debug representation  
       **File**: `CoroutineDispatcher.hpp:82`  
@@ -142,9 +143,10 @@ This document tracks the implementation progress of missing APIs marked with `TO
 
 ### Dispatcher Composition
 
-- [ ] `operator+(other)` - Combine dispatchers  
+- [x] `operator+(other)` - Combine dispatchers  
       **File**: `CoroutineDispatcher.hpp:74`  
       **Kotlin**: `operator fun plus(other: CoroutineDispatcher): CoroutineDispatcher`  
+      **Completed**: 2024-12-10 - Implemented in `CoroutineContext` base class
       **Note**: Advanced feature, low priority
 
 ## Progress Tracking

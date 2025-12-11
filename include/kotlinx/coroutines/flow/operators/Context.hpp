@@ -31,7 +31,7 @@ Flow<T>* conflate(Flow<T>* flow) {
  * Changes the context where this flow is executed.
  */
 template<typename T>
-Flow<T>* flowOn(Flow<T>* flow, CoroutineContext context) {
+Flow<T>* flowOn(Flow<T>* flow, std::shared_ptr<CoroutineContext> context) {
     // TODO: Implement flowOn (ChannelFlow operator)
     return flow;
 }

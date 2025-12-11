@@ -26,13 +26,46 @@ namespace internal {
 }
 
 /**
- * Base class for Job implementations.
+ * @brief Base class for Job implementations providing core lifecycle management.
  *
- * This class provides the core job lifecycle management including:
+ * JobSupport is the foundational implementation class for all job types in
+ * kotlinx.coroutines-cpp. It provides the complete state machine, parent-child
+ * relationship management, and cancellation infrastructure.
+ *
+ * === Core Responsibilities ===
  * - State transitions (New -> Active -> Completing -> Completed/Cancelled)
- * - Parent-child relationships
- * - Completion handlers
- * - Cancellation propagation
+ * - Parent-child relationship establishment and management
+ * - Completion handler registration and invocation
+ * - Cancellation propagation through hierarchies
+ * - Thread-safe atomic state operations
+ * - Memory management for job hierarchies
+ *
+ * === State Machine Implementation ===
+ * The internal state machine uses atomic operations to ensure thread safety
+ * while maintaining performance. States are represented as specialized
+ * objects that encapsulate state-specific behavior and data.
+ *
+ * === Parent-Child Management ===
+ * - Automatically handles child attachment/detachment
+ * - Ensures parent waits for all children before completing
+ * - Propagates cancellation from parent to children
+ * - Handles child failure notification to parent
+ *
+ * === Completion Infrastructure ===
+ * - Supports completion handlers that are invoked on job completion
+ * - Handlers can be configured for different completion scenarios
+ * - Automatic cleanup of handler resources
+ * - Exception handling for completion handler failures
+ *
+ * === Cancellation Semantics ===
+ * - Distinguishes between normal cancellation and failure
+ * - Preserves cancellation cause for debugging and error handling
+ * - Supports cancellation with custom exceptions
+ * - Handles cancellation propagation in both directions
+ *
+ * @note This class is designed to be extended by specific job implementations.
+ *       Direct usage is typically through factory functions or coroutine builders.
+ *       All public methods are thread-safe and can be called concurrently.
  *
  * Transliterated from: public open class JobSupport
  */

@@ -26,6 +26,41 @@ namespace flow {
  * which is _cold_ and is started separately for each collector.
  *
  * **SharedFlow is a highly-configurable generalization of StateFlow.**
+ *
+ * @note **CURRENT LIMITATIONS**: 
+ *       - emit() and collect() are not suspending functions, breaking backpressure
+ *       - collect() does not wait for new values after replay cache is consumed
+ *       - Buffer overflow policies are not properly implemented
+ *       - subscriptionCount is not reactive (returns snapshot instead of StateFlow)
+ *
+ * @note **INTENDED BEHAVIOR**: 
+ *       - emit() should suspend when buffer is full (depending on overflow policy)
+ *       - collect() should suspend indefinitely, emitting new values as they arrive
+ *       - Should support configurable BufferOverflow (SUSPEND, DROP_OLDEST, DROP_LATEST)
+ *       - subscriptionCount should return StateFlow<int> for reactive observation
+ *
+ * ### Thread Safety
+ * SharedFlow is designed for concurrent access. Multiple collectors can subscribe
+ * and multiple emitters can emit values simultaneously. All operations are
+ * thread-safe through mutex protection.
+ *
+ * ### Backpressure
+ * In the intended design, SharedFlow provides backpressure through configurable
+ * buffer policies. Currently, backpressure is broken due to non-suspending emit().
+ *
+ * ### Usage Example
+ * ```cpp
+ * auto sharedFlow = std::make_shared<MutableSharedFlow<int>>(1, 10); // replay=1, buffer=10
+ * 
+ * // Emit values (should suspend when full, but currently doesn't)
+ * sharedFlow->emit(42);
+ * sharedFlow->emit(43);
+ * 
+ * // Collect values (should wait for new values, but currently returns after replay)
+ * sharedFlow->collect([](int value) {
+ *     std::cout << "Received: " << value << std::endl;
+ * });
+ * ```
  */
 template<typename T>
 struct SharedFlow : public Flow<T> {

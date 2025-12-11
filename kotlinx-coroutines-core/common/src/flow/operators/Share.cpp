@@ -38,13 +38,13 @@ struct SharingConfig {
     std::shared_ptr<Flow<T>> upstream;
     int extra_buffer_capacity;
     BufferOverflow on_buffer_overflow;
-    CoroutineContext context;
+    std::shared_ptr<CoroutineContext> context;
 
     SharingConfig(
         std::shared_ptr<Flow<T>> upstream_,
         int extra_buffer_capacity_,
         BufferOverflow on_buffer_overflow_,
-        const CoroutineContext& context_
+        std::shared_ptr<CoroutineContext> context_
     ) : upstream(upstream_),
         extra_buffer_capacity(extra_buffer_capacity_),
         on_buffer_overflow(on_buffer_overflow_),

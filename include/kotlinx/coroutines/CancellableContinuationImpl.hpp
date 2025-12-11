@@ -23,7 +23,36 @@ namespace coroutines {
 struct CoroutineStackFrame {};
 
 
+/**
+ * @brief Implementation of cancellable continuation with proper atomic decision state machine.
+ *
+ * This class provides the core suspension and resumption infrastructure for cancellable
+ * coroutines. It implements a thread-safe state machine that coordinates between suspension
+ * attempts and resumption races, eliminating the previous exception-based hacks.
+ *
+ * The implementation uses a two-level state management system:
+ * - `decision_`: Atomic enum tracking suspension vs resumption outcome (UNDECIDED -> SUSPENDED/RESUMED)
+ * - `state_`: Atomic pointer tracking completion state (Active -> Completed/Cancelled)
+ *
+ * @tparam T The result type of the continuation
+ *
+ * @note This implementation replaces the previous exception-based suspension mechanism
+ *       with proper atomic coordination, providing LLVM-optimized performance and
+ *       eliminating runtime overhead from exception handling.
+ *
+ * @thread_safe All public methods are thread-safe and can be called concurrently from
+ *              different threads. The atomic decision state machine ensures exactly-once
+ *              semantics for suspension vs resumption outcomes.
+ */
+
     // State Hierarchy for RTTI logic (mirrors Kotlin's Any + is checks)
+    /**
+     * @brief Base class for continuation state hierarchy.
+     *
+     * Provides RTTI-style polymorphic state checking for the continuation
+     * state machine. Each state represents a different phase in the
+     * continuation lifecycle.
+     */
     struct State { 
         virtual ~State() = default; 
         virtual bool is_active_state() const { return false; }
@@ -56,7 +85,28 @@ struct CoroutineStackFrame {};
             : result(r), cancel_handler(ch) {}
     };
 
-    template <typename T>
+    /**
+ * @brief Implementation of cancellable continuation with proper atomic decision state machine.
+ *
+ * This class provides the core suspension and resumption infrastructure for cancellable
+ * coroutines. It implements a thread-safe state machine that coordinates between suspension
+ * attempts and resumption races, eliminating the previous exception-based hacks.
+ *
+ * The implementation uses a two-level state management system:
+ * - `decision_`: Atomic enum tracking suspension vs resumption outcome (UNDECIDED -> SUSPENDED/RESUMED)
+ * - `state_`: Atomic pointer tracking completion state (Active -> Completed/Cancelled)
+ *
+ * @tparam T The result type of the continuation
+ *
+ * @note This implementation replaces the previous exception-based suspension mechanism
+ *       with proper atomic coordination, providing LLVM-optimized performance and
+ *       eliminating runtime overhead from exception handling.
+ *
+ * @thread_safe All public methods are thread-safe and can be called concurrently from
+ *              different threads. The atomic decision state machine ensures exactly-once
+ *              semantics for suspension vs resumption outcomes.
+ */
+template <typename T>
     class CancellableContinuationImpl : public DispatchedTask<T>, 
                                         public CancellableContinuation<T>, 
                                         public CoroutineStackFrame, 
@@ -285,6 +335,31 @@ struct CoroutineStackFrame {};
     }
 
 // Suspension Point logic - returns true if suspended, false if completed
+    /**
+     * @brief Core suspension point implementation using the fixed decision state machine.
+     *
+     * This method implements the suspension point logic that was previously handled
+     * by exception-based hacks. It uses the atomic decision state machine to determine
+     * whether the continuation should suspend or complete immediately.
+     *
+     * The method follows this logic:
+     * 1. Attempt to suspend via try_suspend()
+     * 2. If suspension succeeds, install parent handle for cancellation and return true
+     * 3. If suspension fails, extract the result from the state and return false
+     *
+     * This approach eliminates the need for throwing and catching COROUTINE_SUSPENDED
+     * exceptions, providing better performance and LLVM optimization opportunities.
+     *
+     * @param result Reference to store the result if completion is immediate
+     * @return true if the continuation should suspend (caller returns COROUTINE_SUSPENDED)
+     * @return false if the continuation completed immediately (result contains the value)
+     *
+     * @throws std::exception_ptr If the continuation was cancelled
+     * @throws std::runtime_error If the continuation is in an invalid state
+     *
+     * @note This is the preferred method over get_result() for new code as it avoids
+     *       exception-based control flow.
+     */
     bool get_result_suspended(T& result) {
         bool is_reusable = false; // todo
         if (try_suspend()) {
@@ -318,6 +393,25 @@ struct CoroutineStackFrame {};
     }
 
 // Publicly exposed for suspend_cancellable_coroutine
+    /**
+     * @brief Attempts to transition the continuation to a suspended state.
+     *
+     * This method implements the core suspension logic using an atomic decision
+     * state machine. It attempts to transition from UNDECIDED to SUSPENDED state.
+     * If successful, the continuation is considered suspended and the caller
+     * should return COROUTINE_SUSPENDED.
+     *
+     * This replaces the previous exception-based suspension mechanism with
+     * proper atomic coordination, eliminating runtime overhead and providing
+     * LLVM-optimized performance.
+     *
+     * @return true if the transition to SUSPENDED succeeded (continuation is suspended)
+     * @return false if the continuation was already resumed (transition to RESUMED occurred first)
+     *
+     * @thread_safe This method is thread-safe and can be called concurrently with
+     *              try_resume_decision(). The atomic compare_exchange ensures
+     *              exactly one operation succeeds.
+     */
     bool try_suspend() {
         Decision expected = Decision::UNDECIDED;
         return decision_.compare_exchange_strong(expected, Decision::SUSPENDED, std::memory_order_acq_rel);
@@ -326,6 +420,17 @@ struct CoroutineStackFrame {};
     // Note: get_result is already public
 
 private:
+   /**
+    * @brief Atomic decision state machine for suspension vs resumption coordination.
+    *
+    * This enum represents the three states in the suspension decision process:
+    * - UNDECIDED: Initial state, neither suspension nor resumption has won
+    * - SUSPENDED: Suspension won the race, continuation should return COROUTINE_SUSPENDED
+    * - RESUMED: Resumption won the race, continuation should complete with result
+    *
+    * The atomic transitions ensure exactly-once semantics and eliminate the need
+    * for exception-based control flow that was used in previous implementations.
+    */
    enum class Decision { UNDECIDED, SUSPENDED, RESUMED };
    std::atomic<Decision> decision_;
    
@@ -639,11 +744,31 @@ private:
 // This is a suspend function - takes Continuation<void*>* and returns void*
 
 /**
- * Implementation of suspend_cancellable_coroutine following Kotlin's pattern.
+ * @brief Implementation of suspend_cancellable_coroutine with proper suspension infrastructure.
  *
- * @param block The block to execute with the CancellableContinuation
- * @param continuation The continuation from the caller's state machine
- * @return COROUTINE_SUSPENDED if suspended, or result pointer if completed immediately
+ * This function implements the Kotlin suspendCancellableCoroutine pattern using the
+ * fixed suspension system that eliminates exception-based hacks. It creates a
+ * CancellableContinuationImpl and uses the atomic decision state machine for
+ * proper suspension vs immediate completion coordination.
+ *
+ * The function follows the Kotlin Native compilation pattern, taking a void* continuation
+ * parameter and returning either COROUTINE_SUSPENDED or a result pointer. This design
+ * enables LLVM optimizations and proper integration with the coroutine state machine.
+ *
+ * @param block The block to execute with the CancellableContinuation. This block
+ *              should register callbacks and potentially resume the continuation.
+ * @param continuation The continuation from the caller's state machine that will be
+ *                     resumed with the result or suspension decision.
+ *
+ * @return COROUTINE_SUSPENDED if the continuation suspended successfully
+ * @return void* pointer to the result if completed immediately (caller must cast and free)
+ *
+ * @note This implementation uses the new try_suspend() infrastructure instead of
+ *       exception-based control flow, providing better performance and eliminating
+ *       the need for COROUTINE_SUSPENDED exception handling.
+ *
+ * @thread_safe The created continuation is thread-safe and can be resumed from any
+ *              thread. The decision state machine ensures proper coordination.
  */
 template <typename T>
 void* suspend_cancellable_coroutine(

@@ -153,7 +153,7 @@ struct CoroutineContext::Element : public CoroutineContext {
      */
     std::shared_ptr<Element> get(Key* k) const override {
         if (this->key() == k) {
-             return std::dynamic_pointer_cast<Element>(std::const_pointer_cast<CoroutineContext::Element>(shared_from_this()));
+             return std::dynamic_pointer_cast<Element>(std::const_pointer_cast<CoroutineContext>(shared_from_this()));
         }
         return nullptr;
     }
@@ -164,7 +164,7 @@ struct CoroutineContext::Element : public CoroutineContext {
      * @param callback Function called with this element
      */
     void for_each(std::function<void(std::shared_ptr<Element>)> callback) const override {
-        callback(std::dynamic_pointer_cast<Element>(std::const_pointer_cast<CoroutineContext::Element>(shared_from_this())));
+        callback(std::dynamic_pointer_cast<Element>(std::const_pointer_cast<CoroutineContext>(shared_from_this())));
     }
 
     /**

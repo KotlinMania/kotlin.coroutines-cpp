@@ -15,7 +15,7 @@ class ScopeCoroutine : public AbstractCoroutine<T> {
 public:
     std::shared_ptr<Continuation<T>> u_cont; // unintercepted continuation
 
-    ScopeCoroutine(CoroutineContext context, std::shared_ptr<Continuation<T>> uCont)
+    ScopeCoroutine(std::shared_ptr<CoroutineContext> context, std::shared_ptr<Continuation<T>> uCont)
         : AbstractCoroutine<T>(context, true, true), u_cont(uCont) {}
 
     bool is_scoped_coroutine() const override { return true; }
