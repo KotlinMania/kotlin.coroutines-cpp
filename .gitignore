@@ -1,3 +1,4 @@
+# IDE
 **/.idea/*
 !/.idea/icon.png
 !/.idea/vcs.xml
@@ -6,29 +7,39 @@
 !/.idea/codeStyles
 !/.idea/dictionaries
 *.iml
+.vscode/
+
+# Build systems
 .gradle
 .gradletasknamecache
-build
-out
-target
+build/
+out/
+target/
 local.properties
 benchmarks.jar
 /kotlin-js-store
 /.kotlin
-/tmp/
-include/kotlinx/coroutines/sync/Mutex.hpp
+
+# Build artifacts
 *.o
-test_dispatchers
-test_job
-test_cancellation
+*.a
+*.so
+*.dylib
+
+# Test binaries (built from tests/*.cpp)
+test_*
+!tests/*.cpp
+
+# Temporary files
+/tmp/
+*.txt.bak
+
+# Generated file lists (development tools)
 cpp_files.txt
-.gitignore
 kotlin_files.txt
+kotlin.files.txt
 unported_files.txt
 hpp_files.txt
-/libtest_gc_bridge.a
-test_suspension_core
-test_suspension_infrastructure
-.gitignore
-test_suspension_simple
-test_context
+
+# Reference Kotlin source (not part of C++ build)
+kotlin_JobSupport.kt

@@ -4,7 +4,7 @@
 [![Apache License 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg)](https://github.com/KotlinMania/kotlin.coroutines-cpp)
 [![Based on kotlinx.coroutines](https://img.shields.io/badge/based%20on-kotlinx.coroutines%201.10-orange.svg)](https://github.com/Kotlin/kotlinx.coroutines)
-[![Implementation](https://img.shields.io/badge/implementation-66%25-yellow.svg)](COMPREHENSIVE_AUDIT_REPORT.md)
+[![Implementation](https://img.shields.io/badge/implementation-66%25-yellow.svg)](docs/COMPREHENSIVE_AUDIT_REPORT.md)
 
 A faithful C++ port of [kotlinx.coroutines](https://github.com/Kotlin/kotlinx.coroutines), designed to create a semantically aligned bridge between Kotlin's coroutine runtime and C++ applications. This enables seamless interoperability with Kotlin/Native's garbage collector while providing standalone C++ coroutine functionality.
 
@@ -251,8 +251,9 @@ extern "C" void process_data(const char* data) {
 
 ## Documentation
 
-- [Comprehensive Audit Report](COMPREHENSIVE_AUDIT_REPORT.md) - Detailed implementation analysis
-- [Kotlin GC Bridge Specification](docs/KOTLIN_NATIVE_GC_SPECIFICATION.md) - GC integration details
+- [Comprehensive Audit Report](docs/COMPREHENSIVE_AUDIT_REPORT.md) - Detailed implementation analysis
+- [Kotlin GC Bridge Implementation](docs/KOTLIN_GC_BRIDGE_IMPLEMENTATION.md) - GC bridge summary
+- [Kotlin GC Bridge Specification](docs/KOTLIN_NATIVE_GC_SPECIFICATION.md) - Technical specification
 - [Coroutines Guide](docs/coroutines-guide.md) - Usage patterns and best practices
 - [API Reference](docs/) - Component documentation
 
