@@ -34,7 +34,7 @@ class LimitedDispatcher : public CoroutineDispatcher {
     
     struct Task {
         std::shared_ptr<Runnable> block;
-        CoroutineContext context; // copy for safety
+        std::shared_ptr<const CoroutineContext> context;
     };
     
     mutable std::mutex lock;
@@ -52,12 +52,15 @@ public:
                 running_workers++;
                 // Dispatch directly to the underlying dispatcher
                 // wrapper to decrement on completion
-                auto worker = std::make_shared<Worker>(const_cast<LimitedDispatcher*>(this)->shared_from_this(), block);
+                // Dispatch directly to the underlying dispatcher
+                // wrapper to decrement on completion
+                auto self = std::dynamic_pointer_cast<LimitedDispatcher>(const_cast<LimitedDispatcher*>(this)->shared_from_this());
+                auto worker = std::make_shared<Worker>(self, block);
                 dispatcher->dispatch(context, worker);
                 return;
             }
             // Queue it
-            queue.push({block, context}); // This is copying context, might be expensive, but safe
+            queue.push({block, context.shared_from_this()}); // Capture context safely
         }
     }
     
@@ -82,8 +85,13 @@ public:
             
             // Re-dispatch:
             // running_workers stays same (we took one out, put one in)
-            auto worker = std::make_shared<Worker>(shared_from_this(), next_block);
-            dispatcher->dispatch(task.context, worker);
+            // Re-dispatch:
+            // running_workers stays same (we took one out, put one in)
+            // Re-dispatch:
+            // running_workers stays same (we took one out, put one in)
+            auto self = std::dynamic_pointer_cast<LimitedDispatcher>(shared_from_this());
+            auto worker = std::make_shared<Worker>(self, next_block);
+            dispatcher->dispatch(*task.context, worker);
         }
     }
     
@@ -138,7 +146,7 @@ void CoroutineDispatcher::release_intercepted_continuation(std::shared_ptr<Conti
 
 std::shared_ptr<CoroutineDispatcher> CoroutineDispatcher::limited_parallelism(int parallelism, const std::string& name) {
     if (parallelism <= 0) throw std::invalid_argument("Parallelism must be positive");
-    return std::make_shared<LimitedDispatcher>(shared_from_this(), parallelism, name);
+    return std::make_shared<LimitedDispatcher>(std::dynamic_pointer_cast<CoroutineDispatcher>(shared_from_this()), parallelism, name);
 }
 
 std::string CoroutineDispatcher::to_string() const {

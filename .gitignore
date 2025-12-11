@@ -27,3 +27,7 @@ kotlin_files.txt
 unported_files.txt
 hpp_files.txt
 /libtest_gc_bridge.a
+test_suspension_core
+test_suspension_infrastructure
+.gitignore
+test_suspension_simple

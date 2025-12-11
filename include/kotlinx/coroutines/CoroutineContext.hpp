@@ -6,7 +6,7 @@
 namespace kotlinx {
 namespace coroutines {
 
-class CoroutineContext {
+class CoroutineContext : public std::enable_shared_from_this<CoroutineContext> {
 public:
     virtual ~CoroutineContext() = default;
 

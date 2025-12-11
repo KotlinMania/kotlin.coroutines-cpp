@@ -60,7 +60,7 @@ private:
 // Implement CoroutineDispatcher::intercept_continuation here
 template <typename T>
 std::shared_ptr<Continuation<T>> CoroutineDispatcher::intercept_continuation(std::shared_ptr<Continuation<T>> continuation) {
-    return std::make_shared<DispatchedContinuation<T>>(shared_from_this(), continuation);
+    return std::make_shared<DispatchedContinuation<T>>(std::dynamic_pointer_cast<CoroutineDispatcher>(shared_from_this()), continuation);
 }
 
 } // namespace coroutines

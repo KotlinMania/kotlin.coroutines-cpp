@@ -31,9 +31,17 @@ template<typename T> class Continuation;
 // --------------- core job interfaces ---------------
 
 
-// TODO: Complete these two
 // - fun getOnJoin(): SelectClause0 - Requires select{} expression support
-// - fun plus(other: Job): Job - Combines two jobs
+
+/**
+ * Combines two jobs.
+ * This operator preserves the right-most job as per CoroutineContext composition rules.
+ * If right is null, returns left.
+ */
+inline std::shared_ptr<Job> operator+(std::shared_ptr<Job> left, std::shared_ptr<Job> right) {
+    if (!right) return left;
+    return right;
+}
 
 /**
  * A background job.

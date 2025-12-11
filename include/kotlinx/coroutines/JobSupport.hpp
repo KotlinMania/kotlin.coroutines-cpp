@@ -37,8 +37,7 @@ namespace internal {
  * Transliterated from: public open class JobSupport
  */
 class JobSupport : public ParentJob,
-                   public ChildJob,
-                   public std::enable_shared_from_this<JobSupport> {
+                   public ChildJob {
 public:
     /**
      * Creates a new JobSupport.

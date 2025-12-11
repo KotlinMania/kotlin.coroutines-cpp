@@ -41,8 +41,7 @@ namespace coroutines {
  *   4 tasks in parallel, reusing the existing IO dispatcher threads.
  */
 class CoroutineDispatcher : public AbstractCoroutineContextElement, 
-                            public ContinuationInterceptor,
-                            public std::enable_shared_from_this<CoroutineDispatcher> {
+                            public ContinuationInterceptor {
 public:
     static constexpr const char* keyStr = "ContinuationInterceptor"; // Dispatcher IS the interceptor
      // Re-use ContinuationInterceptor key or define its own? 
