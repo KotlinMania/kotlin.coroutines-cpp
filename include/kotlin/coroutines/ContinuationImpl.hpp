@@ -86,7 +86,7 @@ public:
             }
 
             // Release intercepted continuation (state machine instance is terminating)
-            current->releaseIntercepted();
+            current->release_intercepted();
 
             // Check if completion is also a BaseContinuationImpl (unroll recursion)
             auto* base_completion = dynamic_cast<BaseContinuationImpl*>(completion_ptr);
@@ -116,9 +116,9 @@ public:
      * Release the intercepted continuation.
      * Overridden in ContinuationImpl.
      *
-     * Transliterated from: protected open fun releaseIntercepted()
+     * Transliterated from ContinuationImpl.kt: protected open fun releaseIntercepted()
      */
-    virtual void releaseIntercepted() {
+    virtual void release_intercepted() {
         // Does nothing here, overridden in ContinuationImpl
     }
 
@@ -221,7 +221,7 @@ public:
     }
 
 protected:
-    void releaseIntercepted() override {
+    void release_intercepted() override {
         auto intercepted = intercepted_;
         if (intercepted && intercepted.get() != this) {
             // TODO: Release via ContinuationInterceptor
