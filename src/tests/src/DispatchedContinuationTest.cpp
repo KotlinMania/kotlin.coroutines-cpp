@@ -18,7 +18,7 @@
  */
         class DispatchedContinuationTest : public TestBase {
         private:
-            DispatchedContinuationTest::Continuation<std::string> *cont{};
+            DispatchedContinuationTest::template Continuation<std::string> *cont{};
 
         public:
             // TODO: @Test
@@ -45,7 +45,7 @@
             }
 
             // TODO: @Test
-            void test_cancel_then_resume_unconfined() {
+            static void test_cancel_then_resume_unconfined() {
                 // TODO: runTest {
                 expect(1);
                 // TODO: launch(Dispatchers.Unconfined) {
@@ -66,7 +66,7 @@
             }
 
             // TODO: @Test
-            void test_resume_then_cancel() {
+            static void test_resume_then_cancel() {
                 // TODO: runTest {
                 expect(1);
                 // TODO: const auto job = launch(start = CoroutineStart.UNDISPATCHED) {

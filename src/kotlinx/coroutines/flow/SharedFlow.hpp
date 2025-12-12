@@ -42,10 +42,12 @@ class SharedFlowSlot;
  * @note The SharedFlow interface is not stable for inheritance in 3rd party libraries.
  *       Use the MutableSharedFlow(...) constructor function to create an implementation.
  */
+
+    // TODO: Clangd: Redefinition of 'SharedFlow'
 template<typename T>
 class SharedFlow : public Flow<T> {
 public:
-    virtual ~SharedFlow() = default;
+    ~SharedFlow() override = default;
 
     /**
      * A snapshot of the replay cache.
