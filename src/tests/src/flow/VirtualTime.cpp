@@ -14,6 +14,9 @@
 #include <memory>
 #include <cstdint>
 #include <limits>
+
+#include "kotlinx/coroutines/CancellableContinuation.hpp"
+#include "kotlinx/coroutines/Dispatchers.hpp"
 // TODO: #include proper headers
 
 namespace kotlinx {
@@ -127,18 +130,18 @@ namespace kotlinx {
                 return task;
             }
 
-            void schedule_resume_after_delay(int64_t time_millis,
+            static void schedule_resume_after_delay(int64_t time_millis,
                                              CancellableContinuation<void> &continuation) override {
                 auto *block = new /* Runnable */ auto([&continuation]() {
                     continuation.resume_undispatched(/* Unit */ {});
                 });
-                TimedTask *task = new TimedTask(block, deadline(time_millis), this);
+                auto task = new TimedTask(block, deadline(time_millis), this);
                 heap_.push_back(task);
                 continuation.invoke_on_cancellation([task](auto) { task->dispose(); });
             }
 
         private:
-            int64_t deadline(int64_t time_millis) {
+            [[nodiscard]] int64_t deadline(int64_t time_millis) const {
                 return (time_millis == std::numeric_limits<int64_t>::max())
                            ? std::numeric_limits<int64_t>::max()
                            : current_time_ + time_millis;

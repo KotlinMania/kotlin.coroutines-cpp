@@ -43,7 +43,7 @@ namespace coroutines {
 class CoroutineDispatcher : public AbstractCoroutineContextElement, 
                             public ContinuationInterceptor {
 public:
-    static constexpr const char* key_str = "ContinuationInterceptor"; // Dispatcher IS the interceptor
+    static constexpr auto key_str = "ContinuationInterceptor"; // Dispatcher IS the interceptor
      // Re-use ContinuationInterceptor key or define its own? 
      // Kotlin: Key : AbstractCoroutineContextKey<ContinuationInterceptor, CoroutineDispatcher>(ContinuationInterceptor)
      // essentially it uses ContinuationInterceptor::key.

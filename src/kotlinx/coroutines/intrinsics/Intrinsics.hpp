@@ -39,7 +39,7 @@ enum class CoroutineSingletons {
  */
 inline void* get_COROUTINE_SUSPENDED() {
     // Static marker - the address itself is the unique identifier
-    static CoroutineSingletons marker = CoroutineSingletons::COROUTINE_SUSPENDED;
+    static auto marker = CoroutineSingletons::COROUTINE_SUSPENDED;
     return &marker;
 }
 

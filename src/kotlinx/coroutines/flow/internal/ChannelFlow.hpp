@@ -52,7 +52,7 @@ public:
 
     Flow<T>* fuse(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_overflow) override;
 
-    void collect(FlowCollector<T>* collector) override;
+    virtual void collect(FlowCollector<T>* collector) override;
 
     int produce_capacity() const;
 

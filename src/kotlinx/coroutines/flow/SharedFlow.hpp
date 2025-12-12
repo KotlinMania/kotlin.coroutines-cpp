@@ -24,6 +24,7 @@ namespace kotlinx::coroutines::flow {
 
 // Forward declarations
 template<typename T> class SharedFlowImpl;
+template<typename T> class StateFlow;
 class SharedFlowSlot;
 
 /**
@@ -747,7 +748,7 @@ public:
             std::numeric_limits<int>::max(),
             channels::BufferOverflow::DROP_OLDEST)
     {
-        this->try_emit(initial_value);
+        this->SharedFlowImpl<int>::try_emit(initial_value);
     }
 
     /**

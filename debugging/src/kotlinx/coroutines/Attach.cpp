@@ -10,54 +10,50 @@
 #include <functional>
 #include <string>
 
-namespace kotlinx {
-namespace coroutines {
-namespace debug {
+namespace kotlinx::coroutines::debug {
 
-// This class is used reflectively from kotlinx-coroutines-core when this module is present in the classpath.
-// It is a substitute for service loading.
-class ByteBuddyDynamicAttach {
-public:
-    // TODO: Function1<Boolean, Unit> -> std::function<void(bool)> approximation
-    void operator()(bool value) {
-        if (value) {
-            attach();
-        } else {
-            detach();
+    // This class is used reflectively from kotlinx-coroutines-core when this module is present in the classpath.
+    // It is a substitute for service loading.
+    class ByteBuddyDynamicAttach {
+    public:
+        // TODO: Function1<Boolean, Unit> -> std::function<void(bool)> approximation
+        void operator()(bool value) {
+            if (value) {
+                attach();
+            } else {
+                detach();
+            }
         }
-    }
 
-private:
-    void attach() {
-        // TODO: ByteBuddyAgent.install - Java agent installation, no C++ equivalent
-        // ByteBuddyAgent.install(ByteBuddyAgent.AttachmentProvider.ForEmulatedAttachment.INSTANCE)
+    private:
+        void attach() {
+            // TODO: ByteBuddyAgent.install - Java agent installation, no C++ equivalent
+            // ByteBuddyAgent.install(ByteBuddyAgent.AttachmentProvider.ForEmulatedAttachment.INSTANCE)
 
-        // TODO: Class.forName - Java reflection for class loading
-        // const auto cl = Class.forName("kotlin.coroutines.jvm.internal.DebugProbesKt");
-        // const auto cl2 = Class.forName("kotlinx.coroutines.debug.internal.DebugProbesKt");
+            // TODO: Class.forName - Java reflection for class loading
+            // const auto cl = Class.forName("kotlin.coroutines.jvm.internal.DebugProbesKt");
+            // const auto cl2 = Class.forName("kotlinx.coroutines.debug.internal.DebugProbesKt");
 
-        // TODO: ByteBuddy class redefinition - Java bytecode manipulation
-        // ByteBuddy()
-        //     .redefine(cl2)
-        //     .name(cl.name)
-        //     .make()
-        //     .load(cl.classLoader, ClassReloadingStrategy.fromInstalledAgent())
-    }
+            // TODO: ByteBuddy class redefinition - Java bytecode manipulation
+            // ByteBuddy()
+            //     .redefine(cl2)
+            //     .name(cl.name)
+            //     .make()
+            //     .load(cl.classLoader, ClassReloadingStrategy.fromInstalledAgent())
+        }
 
-    void detach() {
-        // TODO: Class.forName - Java reflection for class loading
-        // const auto cl = Class.forName("kotlin.coroutines.jvm.internal.DebugProbesKt");
-        // const auto cl2 = Class.forName("kotlinx.coroutines.debug.NoOpProbesKt");
+        void detach() {
+            // TODO: Class.forName - Java reflection for class loading
+            // const auto cl = Class.forName("kotlin.coroutines.jvm.internal.DebugProbesKt");
+            // const auto cl2 = Class.forName("kotlinx.coroutines.debug.NoOpProbesKt");
 
-        // TODO: ByteBuddy class redefinition - Java bytecode manipulation
-        // ByteBuddy()
-        //     .redefine(cl2)
-        //     .name(cl.name)
-        //     .make()
-        //     .load(cl.classLoader, ClassReloadingStrategy.fromInstalledAgent())
-    }
-};
+            // TODO: ByteBuddy class redefinition - Java bytecode manipulation
+            // ByteBuddy()
+            //     .redefine(cl2)
+            //     .name(cl.name)
+            //     .make()
+            //     .load(cl.classLoader, ClassReloadingStrategy.fromInstalledAgent())
+        }
+    };
 
-} // namespace debug
-} // namespace coroutines
-} // namespace kotlinx
+}

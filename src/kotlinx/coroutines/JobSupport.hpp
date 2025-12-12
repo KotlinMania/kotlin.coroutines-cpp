@@ -222,7 +222,7 @@ public:
      * Throws if not yet completed.
      * Transliterated from: fun getCompletionExceptionOrNull(): Throwable?
      */
-    std::exception_ptr get_completion_exception_or_null() const;
+    virtual std::exception_ptr get_completion_exception_or_null() const;
 
 protected:
     /**
@@ -289,7 +289,7 @@ protected:
      * Initializes the parent-child relationship.
      * Call this from subclass constructors after shared_from_this() is available.
      */
-    void init_parent_job(std::shared_ptr<Job> parent);
+    virtual void init_parent_job(std::shared_ptr<Job> parent);
 
     /**
      * Result codes for make_completing_once

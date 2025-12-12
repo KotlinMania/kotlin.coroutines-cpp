@@ -78,7 +78,7 @@ public:
         DispatchedTask<T>(MODE_UNINITIALIZED),
         dispatcher(std::move(dispatcher_)),
         continuation(std::move(continuation_)) {
-        auto ctx = get_context();
+        auto ctx = DispatchedContinuation<T>::get_context();
         count_or_element = ctx ? thread_context_elements(*ctx) : nullptr;
     }
 

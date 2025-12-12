@@ -29,11 +29,10 @@ namespace kotlinx {
             bool LockFreeLinkedListNode::add_last(LockFreeLinkedListNode *node) {
                 while (true) {
                     LockFreeLinkedListNode * prev_ptr = prev.load(std::memory_order_acquire);
-                    LockFreeLinkedListNode * expected = this;
                     // Naive CAS for illustration of intent:
                     // In real impl, we'd check prev->next == this etc.
                     // For this port stage:
-                    if (prev_ptr->next.compare_exchange_strong(expected, node)) {
+                    if (auto expected = this; prev_ptr->next.compare_exchange_strong(expected, node)) {
                         node->prev.store(prev_ptr, std::memory_order_release);
                         node->next.store(this, std::memory_order_release);
                         prev.store(node, std::memory_order_release);

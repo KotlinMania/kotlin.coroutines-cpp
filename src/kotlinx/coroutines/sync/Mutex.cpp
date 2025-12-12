@@ -16,8 +16,8 @@ namespace kotlinx {
             };
 
             // Symbol-like markers
-            void *kNoOwner = reinterpret_cast<void *>(0x100);
-            void *kOnLockAlreadyLockedByOwner = reinterpret_cast<void *>(0x101);
+            auto kNoOwner = reinterpret_cast<void *>(0x100);
+            auto kOnLockAlreadyLockedByOwner = reinterpret_cast<void *>(0x101);
 
             constexpr int kTryLockSuccess = 0;
             constexpr int kTryLockFailed = 1;

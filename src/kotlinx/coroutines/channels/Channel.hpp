@@ -288,7 +288,7 @@ struct Channel : public SendChannel<E>, public ReceiveChannel<E> {
     static constexpr int CONFLATED = -1;
     static constexpr int BUFFERED = -2;
     static constexpr int OPTIONAL_CHANNEL = -3;
-    static constexpr const char* DEFAULT_BUFFER_PROPERTY_NAME = "kotlinx.coroutines.channels.defaultBuffer";
+    static constexpr auto DEFAULT_BUFFER_PROPERTY_NAME = "kotlinx.coroutines.channels.defaultBuffer";
 
     static int getDefaultBufferCapacity() { return 64; }
 };

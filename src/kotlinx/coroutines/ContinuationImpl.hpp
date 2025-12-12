@@ -60,7 +60,7 @@ public:
         // probeCoroutineResumed(this); // TODO: Implement debug probes
 
         // This loop unrolls recursion in current.resumeWith(param) to make saner and shorter stack traces on resume
-        BaseContinuationImpl* current = this;
+        auto current = this;
         Result<void*> param = std::move(result);
 
         while (true) {

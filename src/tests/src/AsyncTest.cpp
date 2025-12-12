@@ -7,8 +7,14 @@
 
 // @file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED", "UNREACHABLE_CODE", "USELESS_IS_CHECK") // KT-21913
 
-namespace kotlinx {
-    namespace coroutines {
+#include "kotlinx/coroutines/Builders.hpp"
+#include "kotlinx/coroutines/CoroutineStart.hpp"
+#include "kotlinx/coroutines/Dispatchers.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
+#include "kotlinx/coroutines/test/TestBuilders.hpp"
+
+
+    namespace kotlinx::coroutines {
         // TODO: import kotlinx.coroutines.testing.*
         // TODO: import kotlin.test.*
 
@@ -17,7 +23,7 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_simple() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     auto d = async([this]() {
                         expect(3);
@@ -87,7 +93,7 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_lost_exception() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     auto deferred = async(Job(), [this]() {
                         expect(2);
@@ -103,7 +109,7 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_parallel_decomposition_caught_exception() {
-                run_test([this]() {
+                test::run_test([this]() {
                     auto deferred = async(NonCancellable, [this]() {
                         auto decomposed = async(NonCancellable, [this]() {
                             throw TestException();
@@ -122,7 +128,7 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_parallel_decomposition_caught_exception_with_inherited_parent() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     auto deferred = async(NonCancellable, [this]() {
                         expect(2);
@@ -363,5 +369,4 @@ namespace kotlinx {
                 });
             }
         };
-    } // namespace coroutines
-} // namespace kotlinx
+    } // namespace kotlinx::coroutines

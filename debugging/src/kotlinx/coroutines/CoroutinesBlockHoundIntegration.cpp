@@ -52,7 +52,7 @@ private:
     }
 
     // Allows blocking inside kotlinx.coroutines.JobSupport.
-    void allow_blocking_calls_in_job_support(/* TODO: BlockHound.Builder& */) {
+    static void allow_blocking_calls_in_job_support(/* TODO: BlockHound.Builder& */) {
         std::vector<std::string> methods = {
             "finalizeFinishingState", "invokeOnCompletion", "makeCancelling", "tryMakeCompleting"
         };
@@ -62,7 +62,7 @@ private:
     }
 
     // Allow blocking calls inside kotlinx.coroutines.debug.internal.DebugProbesImpl.
-    void allow_blocking_calls_in_debug_probes(/* TODO: BlockHound.Builder& */) {
+    static void allow_blocking_calls_in_debug_probes(/* TODO: BlockHound.Builder& */) {
         std::vector<std::string> methods = {
             "install", "uninstall", "hierarchyTostd::string", "dumpCoroutinesInfo", "dumpDebuggerInfo",
             "dumpCoroutinesSynchronized", "updateRunningState", "updateState"
@@ -97,7 +97,7 @@ private:
     }
 
     // Allows blocking inside the implementation of kotlinx.coroutines.flow.SharedFlow.
-    void allow_blocking_calls_inside_shared_flow(/* TODO: BlockHound.Builder& */) {
+    static void allow_blocking_calls_inside_shared_flow(/* TODO: BlockHound.Builder& */) {
         std::vector<std::string> methods = {
             "emitSuspend", "awaitValue", "getReplayCache", "tryEmit", "cancelEmitter",
             "tryTakeValue", "resetReplayCache"
@@ -118,7 +118,7 @@ private:
     }
 
     // Allows blocking inside kotlinx.coroutines.channels.BroadcastChannel.
-    void allow_blocking_calls_in_broadcast_channels(/* TODO: BlockHound.Builder& */) {
+    static void allow_blocking_calls_in_broadcast_channels(/* TODO: BlockHound.Builder& */) {
         std::vector<std::string> methods = {
             "openSubscription", "removeSubscriber", "send", "trySend", "registerSelectForSend",
             "close", "cancelImpl", "isClosedForSend", "value", "valueOrNull"
@@ -127,7 +127,7 @@ private:
             // TODO: allow_blocking_calls_inside("kotlinx.coroutines.channels.BroadcastChannelImpl", method);
         }
 
-        std::vector<std::string> methods2 = {"cancelImpl"};
+        const std::vector<std::string> methods2 = {"cancelImpl"};
         for (const auto& method : methods2) {
             // TODO: allow_blocking_calls_inside("kotlinx.coroutines.channels.BroadcastChannelImpl$SubscriberConflated", method);
         }
@@ -138,8 +138,8 @@ private:
     }
 
     // Allows blocking inside kotlinx.coroutines.channels.ConflatedBufferedChannel.
-    void allow_blocking_calls_in_conflated_channels(/* TODO: BlockHound.Builder& */) {
-        std::vector<std::string> methods = {
+    static void allow_blocking_calls_in_conflated_channels(/* TODO: BlockHound.Builder& */) {
+        const std::vector<std::string> methods = {
             "receive", "receiveCatching", "tryReceive", "registerSelectForReceive",
             "send", "trySend", "sendBroadcast", "registerSelectForSend",
             "close", "cancelImpl", "isClosedForSend", "isClosedForReceive", "isEmpty"

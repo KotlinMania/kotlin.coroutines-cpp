@@ -57,7 +57,7 @@ namespace kotlinx {
         }
 
         ExecutorCoroutineDispatcherImpl::~ExecutorCoroutineDispatcherImpl() {
-            close();
+            ExecutorCoroutineDispatcherImpl::close();
             for (auto &t: workers_) {
                 if (t.joinable()) t.join();
             }

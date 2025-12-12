@@ -55,7 +55,7 @@ public:
         }
     }
 
-    virtual ~BufferedChannel() {
+    ~BufferedChannel() override {
         close(std::make_exception_ptr(std::runtime_error("Channel destroyed")));
     }
 

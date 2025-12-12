@@ -143,7 +143,7 @@ public:
      *
      * Note: Implementation moved to end of file after SubscriptionCountStateFlow is defined
      */
-    StateFlow<int>* get_subscription_count();
+    virtual StateFlow<int>* get_subscription_count();
 
 protected:
     /**

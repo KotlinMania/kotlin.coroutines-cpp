@@ -25,7 +25,7 @@ namespace kotlinx {
 
             // TODO: Implement as singleton or namespace
             namespace {
-                struct BlackHoleImpl {
+                struct [[maybe_unused]] BlackHoleImpl {
                     // @Volatile
                     // TODO: Use std::atomic or other thread-safe mechanism
                     int sink = 1;

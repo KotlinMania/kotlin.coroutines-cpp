@@ -4,8 +4,10 @@
 // TODO: Implement Continuation type
 // TODO: Map test framework annotations to C++ test framework
 
-namespace kotlinx {
-    namespace coroutines {
+#include <string>
+
+
+    namespace kotlinx::coroutines {
         // TODO: import kotlinx.coroutines.testing.*
         // TODO: import kotlin.coroutines.*
         // TODO: import kotlin.test.*
@@ -16,11 +18,11 @@ namespace kotlinx {
  */
         class DispatchedContinuationTest : public TestBase {
         private:
-            Continuation<std::string> *cont;
+            DispatchedContinuationTest::Continuation<std::string> *cont{};
 
         public:
             // TODO: @Test
-            void test_cancel_then_resume() {
+            static void test_cancel_then_resume() {
                 // TODO: runTest {
                 expect(1);
                 // TODO: launch(start = CoroutineStart.UNDISPATCHED) {
@@ -87,5 +89,4 @@ namespace kotlinx {
                 // TODO: }
             }
         };
-    } // namespace coroutines
-} // namespace kotlinx
+    } // namespace kotlinx::coroutines

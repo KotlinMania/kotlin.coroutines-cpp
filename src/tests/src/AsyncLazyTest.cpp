@@ -7,6 +7,10 @@
 
 // @file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-21913
 
+#include "kotlinx/coroutines/Builders.hpp"
+#include "kotlinx/coroutines/CoroutineStart.hpp"
+#include "kotlinx/coroutines/test/TestBuilders.hpp"
+
 namespace kotlinx {
     namespace coroutines {
         // TODO: import kotlinx.coroutines.testing.*
@@ -17,7 +21,7 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_simple() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     auto d = async(CoroutineStart::kLazy, [this]() {
                         expect(3);
@@ -36,11 +40,11 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_lazy_defer_and_yield() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     auto d = async(CoroutineStart::kLazy, [this]() {
                         expect(3);
-                        yield(); // this has not effect, because parent coroutine is waiting
+                        std::this_thread::yield(); // this has not effect, because parent coroutine is waiting
                         expect(4);
                         return 42;
                     });
@@ -57,7 +61,7 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_lazy_defer_and_yield2() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     auto d = async(CoroutineStart::kLazy, [this]() {
                         expect(7);

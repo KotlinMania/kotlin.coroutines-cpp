@@ -7,8 +7,8 @@
 
 // @Suppress("DEPRECATION") // cancel(cause)
 
-namespace kotlinx {
-    namespace coroutines {
+
+    namespace kotlinx::coroutines {
         // TODO: import kotlinx.coroutines.testing.*
         // TODO: import kotlin.coroutines.*
         // TODO: import kotlin.test.*
@@ -116,5 +116,4 @@ namespace kotlinx {
                 });
             }
         };
-    } // namespace coroutines
-} // namespace kotlinx
+    } // namespace kotlinx::coroutines

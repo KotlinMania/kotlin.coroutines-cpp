@@ -39,20 +39,20 @@ namespace kotlinx {
             Symbol SEALED_SYMBOL{"SEALED"};
 
             // Typed sentinel pointers
-            JobState *const COMPLETING_ALREADY = reinterpret_cast<JobState *>(&COMPLETING_ALREADY_SYMBOL);
-            JobState *const COMPLETING_WAITING_CHILDREN = reinterpret_cast<JobState *>(&
+            const auto COMPLETING_ALREADY = reinterpret_cast<JobState *>(&COMPLETING_ALREADY_SYMBOL);
+            const auto COMPLETING_WAITING_CHILDREN = reinterpret_cast<JobState *>(&
                 COMPLETING_WAITING_CHILDREN_SYMBOL);
-            JobState *const COMPLETING_RETRY = reinterpret_cast<JobState *>(&COMPLETING_RETRY_SYMBOL);
-            JobState *const TOO_LATE_TO_CANCEL = reinterpret_cast<JobState *>(&TOO_LATE_TO_CANCEL_SYMBOL);
-            JobState *const SEALED = reinterpret_cast<JobState *>(&SEALED_SYMBOL);
+            const auto COMPLETING_RETRY = reinterpret_cast<JobState *>(&COMPLETING_RETRY_SYMBOL);
+            const auto TOO_LATE_TO_CANCEL = reinterpret_cast<JobState *>(&TOO_LATE_TO_CANCEL_SYMBOL);
+            const auto SEALED = reinterpret_cast<JobState *>(&SEALED_SYMBOL); // TODO: Find out why SEALED is unused
 
             constexpr int RETRY = -1;
             constexpr int FALSE = 0;
             constexpr int TRUE = 1;
 
-            constexpr int LIST_ON_COMPLETION_PERMISSION = 1;
+            constexpr int LIST_ON_COMPLETION_PERMISSION = 1; // TODO: Find out why this is unused
             constexpr int LIST_CHILD_PERMISSION = 2;
-            constexpr int LIST_CANCELLATION_PERMISSION = 4;
+            constexpr int LIST_CANCELLATION_PERMISSION = 4; // TODO: Find out why this is unused
         } // anonymous namespace
 
         // ============================================================================

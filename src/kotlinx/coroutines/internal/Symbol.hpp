@@ -22,7 +22,7 @@ public:
 
     template<typename T>
     T unbox(void* value) const {
-        if (value == (void*)this) {
+        if (value == static_cast<const void*>(this)) {
             return static_cast<T>(nullptr);
         } else {
             return static_cast<T>(value);

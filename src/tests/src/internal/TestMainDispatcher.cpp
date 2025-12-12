@@ -154,7 +154,7 @@ namespace kotlinx {
 
                         T value() {
                             // TODO: Kotlin Throwable("reader location") for stack traces
-                            void *reader_location = reinterpret_cast<void *>(1); // placeholder
+                            auto reader_location = reinterpret_cast<void *>(1); // placeholder
                             reader_.store(reader_location);
                             readers_.fetch_add(1);
 

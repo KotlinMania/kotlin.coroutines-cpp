@@ -73,7 +73,7 @@ namespace kotlinx {
         thread_local EventLoop *ThreadLocalEventLoop::event_loop = nullptr;
 
         std::shared_ptr<EventLoop> ThreadLocalEventLoop::get_event_loop() {
-            static thread_local std::shared_ptr<EventLoop> loop = std::make_shared<EventLoop>(); // Simple default loop
+            thread_local auto loop = std::make_shared<EventLoop>(); // Simple default loop
             if (event_loop) return std::shared_ptr<EventLoop>(std::shared_ptr<void>(), event_loop);
             // Non-owning reference wrapper if raw pointer set?
             return loop;

@@ -8,6 +8,11 @@
 // TODO: Implement expect/finish/expectUnreached test utilities
 // TODO: Handle @Suppress annotation
 
+#include <future>
+
+#include "kotlinx/coroutines/CoroutineStart.hpp"
+#include "kotlinx/coroutines/channels/Channel.hpp"
+
 namespace kotlinx {
     namespace coroutines {
         // TODO: import kotlinx.coroutines.testing.*
@@ -23,8 +28,8 @@ namespace kotlinx {
                 runBlocking([&]() {
                     // TODO: suspend function
                     expect(1);
-                    auto channel = Channel<int>();
-                    auto job = launch(CoroutineStart::kUndispatched, [&]() {
+                    auto channel = channels::Channel<int>();
+                    auto job = std::launch(CoroutineStart::kUndispatched, [&]() {
                         // TODO: suspend function
                         expect(2);
                         channel.send(42); // suspends
@@ -33,7 +38,7 @@ namespace kotlinx {
                     expect(3);
                     assertEquals(42, channel.receive()); // will schedule sender for further execution
                     job.cancel(); // cancel the job next
-                    yield(); // now yield
+                    std::this_thread::yield(); // now yield
                     finish(4);
                 });
             }
@@ -158,7 +163,7 @@ namespace kotlinx {
 
             // @Test
             // TODO: Convert test annotation
-            void test_select_job_join_cancellable() {
+            static void test_select_job_join_cancellable() {
                 runBlocking([&]() {
                     // TODO: suspend function
                     expect(1);
@@ -191,7 +196,7 @@ namespace kotlinx {
                         }
                     });
                     expect(3); // continues to execute when the job suspends
-                    yield(); // to jobToJoin & canceller
+                    std::this_thread::yield(); // to jobToJoin & canceller
                     expect(6);
                 });
             }

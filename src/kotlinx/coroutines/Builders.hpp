@@ -66,7 +66,7 @@ namespace coroutines {
             return this->get_completed_internal();
         }
         
-        std::exception_ptr get_completion_exception_or_null() const override {
+        [[nodiscard]] std::exception_ptr get_completion_exception_or_null() const override {
             auto state = this->state;
             if (auto* ex = dynamic_cast<CompletedExceptionally*>(state.get())) {
                 return ex->cause;

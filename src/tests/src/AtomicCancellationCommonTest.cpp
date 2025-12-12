@@ -5,6 +5,11 @@
 // TODO: Handle suspend functions and coroutine context
 // TODO: Handle nullable types appropriately
 
+#include "kotlinx/coroutines/Builders.hpp"
+#include "kotlinx/coroutines/Dispatchers.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
+#include "kotlinx/coroutines/test/TestBuilders.hpp"
+
 namespace kotlinx {
     namespace coroutines {
         // TODO: import kotlinx.coroutines.testing.*
@@ -17,7 +22,7 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_cancellable_launch() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     auto job = launch([this]() {
                         expect_unreached(); // will get cancelled before start
@@ -31,7 +36,7 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_atomic_launch() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     auto job = launch(CoroutineStart::kAtomic, [this]() {
                         finish(4); // will execute even after it was cancelled
@@ -45,7 +50,7 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_undispatched_launch() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     assert_fails_with<CancellationException>([this]() {
                         with_context(Job(), [this]() {
@@ -64,14 +69,14 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_undispatched_launch_with_unconfined_context() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     assert_fails_with<CancellationException>([this]() {
                         with_context(Dispatchers::Unconfined + Job(), [this]() {
                             cancel();
                             launch(CoroutineStart::kUndispatched, [this]() {
                                 expect(2);
-                                yield();
+                                std::this_thread::yield();
                                 expect_unreached();
                             });
                         });
@@ -83,7 +88,7 @@ namespace kotlinx {
             // @Test
             // TODO: Translate @Test annotation
             void test_deferred_await_cancellable() {
-                run_test([this]() {
+                test::run_test([this]() {
                     expect(1);
                     auto deferred = async([this]() {
                         // deferred, not yet complete

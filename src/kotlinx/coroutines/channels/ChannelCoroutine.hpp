@@ -78,7 +78,7 @@ public:
         AbstractCoroutine<Unit>::cancel(cause);
     }
 
-    std::shared_ptr<Channel<E>> get_channel() { return _channel; }
+    virtual std::shared_ptr<Channel<E>> get_channel() { return _channel; }
 };
 
 } // namespace channels

@@ -91,7 +91,7 @@ public:
      * @return true if this invocation marked the exception as handled,
      *         false if it was already handled
      */
-    bool make_handled() {
+    virtual bool make_handled() {
         bool expected = false;
         return handled.compare_exchange_strong(expected, true);
     }

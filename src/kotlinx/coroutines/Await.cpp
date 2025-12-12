@@ -13,14 +13,13 @@
 #include <vector>
 #include <initializer_list>
 
-namespace kotlinx {
-    namespace coroutines {
-        // Forward declarations to avoid complex includes
-        class Job;
-        template<typename T>
-        class Deferred;
+namespace kotlinx::coroutines {
+    // Forward declarations to avoid complex includes
+    class Job;
+    template<typename T>
+    class Deferred;
 
-        /**
+    /**
  * Awaits for completion of given deferred values without blocking a thread and resumes normally with the list of values
  * when all deferred computations are complete or resumes with the first thrown exception if any of computations
  * complete exceptionally including cancellation.
@@ -33,23 +32,23 @@ namespace kotlinx {
  * There is a **prompt cancellation guarantee**: even if this function is ready to return the result, but was cancelled
  * while suspended, [CancellationException] will be thrown. See [suspendCancellableCoroutine] for low-level details.
  */
-        template<typename T>
-        std::vector<T> await_all(std::initializer_list<Deferred<T> *> deferreds) {
-            std::vector<T> results;
-            results.reserve(deferreds.size());
+    template<typename T>
+    std::vector<T> await_all(std::initializer_list<Deferred<T> *> deferreds) {
+        std::vector<T> results;
+        results.reserve(deferreds.size());
 
-            for (auto *deferred: deferreds) {
-                if (deferred) {
-                    // In a real implementation, this would be await() which suspends
-                    // For now, we'll assume they complete synchronously for testing
-                    results.push_back(deferred->await());
-                }
+        for (auto *deferred: deferreds) {
+            if (deferred) {
+                // In a real implementation, this would be await() which suspends
+                // For now, we'll assume they complete synchronously for testing
+                results.push_back(deferred->await());
             }
-
-            return results;
         }
 
-        /**
+        return results;
+    }
+
+    /**
  * Awaits for completion of given deferred values without blocking a thread and resumes normally with the list of values
  * when all deferred computations are complete or resumes with the first thrown exception if any of computations
  * complete exceptionally including cancellation.
@@ -62,24 +61,23 @@ namespace kotlinx {
  * There is a **prompt cancellation guarantee**: even if this function is ready to return the result, but was cancelled
  * while suspended, [CancellationException] will be thrown. See [suspendCancellableCoroutine] for low-level details.
  */
-        template<typename T>
-        std::vector<T> await_all(const std::vector<Deferred<T> *> &collection) {
-            std::vector<T> results;
-            results.reserve(collection.size());
+    template<typename T>
+    std::vector<T> await_all(const std::vector<Deferred<T> *> &collection) {
+        std::vector<T> results;
+        results.reserve(collection.size());
 
-            for (auto *deferred: collection) {
-                if (deferred) {
-                    // In a real implementation, this would be await() which suspends
-                    // For now, we'll assume they complete synchronously for testing
-                    results.push_back(deferred->await());
-                }
+        for (auto *deferred: collection) {
+            if (deferred) {
+                // In a real implementation, this would be await() which suspends
+                // For now, we'll assume they complete synchronously for testing
+                results.push_back(deferred->await());
             }
-
-            return results;
         }
 
-        // TODO: Implement join_all functions when Job class is fully available
+        return results;
+    }
 
-        // Template instantiations will happen when functions are used
-    } // namespace coroutines
-} // namespace kotlinx
+    // TODO: Implement join_all functions when Job class is fully available
+
+    // Template instantiations will happen when functions are used
+}
