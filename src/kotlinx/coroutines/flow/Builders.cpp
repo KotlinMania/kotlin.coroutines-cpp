@@ -20,7 +20,6 @@
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
-#include "kotlinx/coroutines/flow/internal/UnsafeFlow.hpp"
 
 namespace kotlinx::coroutines::flow {
 

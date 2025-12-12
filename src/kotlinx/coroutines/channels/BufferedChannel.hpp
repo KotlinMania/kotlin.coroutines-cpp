@@ -8,14 +8,12 @@
 // - kotlinx.coroutines.selects.*
 // - kotlinx.coroutines.selects.TrySelectDetailedResult.*
 #include "kotlinx/coroutines/channels/Channel.hpp"
-#include "kotlinx/coroutines/channels/ChannelResult.hpp"
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
 #include "kotlinx/coroutines/internal/Concurrent.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
-#include "kotlinx/coroutines/selects/SelectClause.hpp"
 #include <deque>
 #include <mutex>
 #include <functional>

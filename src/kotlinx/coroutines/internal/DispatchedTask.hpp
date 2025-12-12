@@ -1,6 +1,12 @@
 #pragma once
+/**
+ * @file DispatchedTask.hpp
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt
+ */
+
 #include <exception>
-#include <iostream>
+#include <memory>
 #include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Job.hpp"
@@ -9,83 +15,95 @@
 namespace kotlinx {
 namespace coroutines {
 
-constexpr int MODE_ATOMIC = 0;
-constexpr int MODE_CANCELLABLE = 1;
-constexpr int MODE_CANCELLABLE_REUSABLE = 2;
-constexpr int MODE_UNDISPATCHED = 4;
-constexpr int MODE_UNINITIALIZED = -1;
+/**
+ * Non-cancellable dispatch mode.
+ *
+ * **DO NOT CHANGE THE CONSTANT VALUE** — matches Kotlin's MODE_ATOMIC.
+ */
+static constexpr int MODE_ATOMIC = 0;
+
+/**
+ * Cancellable dispatch mode for suspend_cancellable_coroutine.
+ *
+ * **DO NOT CHANGE THE CONSTANT VALUE** — matches Kotlin's MODE_CANCELLABLE.
+ */
+static constexpr int MODE_CANCELLABLE = 1;
+
+/** Cancellable + reusable mode. */
+static constexpr int MODE_CANCELLABLE_REUSABLE = 2;
+
+/** Undispatched mode. */
+static constexpr int MODE_UNDISPATCHED = 4;
+
+/** Initial mode for DispatchedContinuation, should never be dispatched. */
+static constexpr int MODE_UNINITIALIZED = -1;
 
 inline bool is_cancellable_mode(int mode) {
     return mode == MODE_CANCELLABLE || mode == MODE_CANCELLABLE_REUSABLE;
 }
 
-// SchedulerTask alias for Runnable to match Kotlin hierarchy
+inline bool is_reusable_mode(int mode) {
+    return mode == MODE_CANCELLABLE_REUSABLE;
+}
+
+/**
+ * A Runnable optimized for dispatcher queues.
+ *
+ * Kotlin source: internal expect abstract class SchedulerTask : Runnable
+ */
 class SchedulerTask : public Runnable {
 public:
     virtual ~SchedulerTask() = default;
 };
 
+/**
+ * Internal dispatched task wrapper.
+ *
+ * This is a direct transliteration of Kotlin's DispatchedTask<T>. The Kotlin
+ * `takeState(): Any?` is represented here as a Result<T> bridge.
+ */
 template<typename T>
 class DispatchedTask : public SchedulerTask {
 public:
     int resume_mode;
 
-    explicit DispatchedTask(int mode) : resume_mode(mode) {}
+    explicit DispatchedTask(int resume_mode) : resume_mode(resume_mode) {}
+    virtual ~DispatchedTask() = default;
 
+    // Kotlin: internal abstract val delegate: Continuation<T>
     virtual std::shared_ptr<Continuation<T>> get_delegate() = 0;
-    virtual Result<T> take_state() = 0;
-    virtual void cancel_completed_result(Result<T> taken_state, std::exception_ptr cause) {}
 
-    void run() override {
-        auto delegate_ptr = get_delegate();
-        if (!delegate_ptr) return;
-        
-        if (is_cancellable_mode(resume_mode)) {
-            auto context = delegate_ptr->get_context();
-            bool is_active = true; // TODO: Check Job.isActive from context
-             if (!is_active) {
-                 // cancel_completed_result(taken_state, cause);
-                 return;
-             }
-        }
-        
-        Result<T> result = take_state();
-        try {
-            delegate_ptr->resume_with(result);
-        } catch (...) {
-            // handle_fatal_exception(std::current_exception(), nullptr);
-        }
+    // Kotlin: internal abstract fun takeState(): Any?
+    virtual Result<T> take_state() = 0;
+
+    // Kotlin: internal open fun cancelCompletedResult(...)
+    virtual void cancel_completed_result(Result<T> /*taken_state*/, std::exception_ptr /*cause*/) {}
+
+    // Kotlin: internal open fun <T> getSuccessfulResult(state: Any?): T
+    template<typename R>
+    R get_successful_result(const Result<T>& state) {
+        return static_cast<R>(state.get_or_throw());
     }
+
+    // Kotlin: internal open fun getExceptionalResult(state: Any?): Throwable?
+    std::exception_ptr get_exceptional_result(const Result<T>& state) {
+        return state.exception_or_null();
+    }
+
+    // Kotlin: final override fun run()
+    void run() override;
+
+    // Kotlin: internal fun handleFatalException(exception: Throwable)
+    void handle_fatal_exception(std::exception_ptr exception);
 };
 
-// Resume the delegate continuation directly with the task's state
+// Kotlin: internal fun <T> DispatchedTask<T>.dispatch(mode: Int)
 template<typename T>
-void resume(DispatchedTask<T>* task, bool undispatched) {
-    std::cerr << "[dispatch] resume called" << std::endl;
-    auto delegate = task->get_delegate();
-    if (!delegate) {
-        std::cerr << "[dispatch] delegate is null!" << std::endl;
-        return;
-    }
-    std::cerr << "[dispatch] got delegate, calling take_state" << std::endl;
+void dispatch(DispatchedTask<T>* task, int mode);
 
-    Result<T> state = task->take_state();
-    std::cerr << "[dispatch] take_state returned, is_success=" << state.is_success() << std::endl;
-    // In Kotlin this goes through getExceptionalResult/getSuccessfulResult
-    // For now, pass the result directly
-    delegate->resume_with(state);
-    std::cerr << "[dispatch] resume_with called on delegate" << std::endl;
-    (void)undispatched; // TODO: handle undispatched mode via DispatchedContinuation
-}
-
+// Kotlin: internal fun <T> DispatchedTask<T>.resume(delegate: Continuation<T>, undispatched: Boolean)
 template<typename T>
-void dispatch(DispatchedTask<T>* task, int mode) {
-    // Simplified dispatch - in Kotlin this checks if dispatcher.isDispatchNeeded
-    // and either dispatches through the dispatcher or resumes directly.
-    // For now, we just resume directly (equivalent to undispatched/unconfined behavior)
-    bool undispatched = (mode == MODE_UNDISPATCHED);
-    resume(task, undispatched);
-}
+void resume(DispatchedTask<T>* task, std::shared_ptr<Continuation<T>> delegate, bool undispatched);
 
 } // namespace coroutines
 } // namespace kotlinx

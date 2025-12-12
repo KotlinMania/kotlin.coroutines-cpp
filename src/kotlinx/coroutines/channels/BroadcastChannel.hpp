@@ -14,11 +14,10 @@
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
-#include "kotlinx/coroutines/CancellationException.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
 #include "kotlinx/coroutines/internal/Concurrent.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
-#include "kotlinx/coroutines/selects/SelectClause.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <vector>
 #include <mutex>
