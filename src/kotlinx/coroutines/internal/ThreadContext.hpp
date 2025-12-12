@@ -1,5 +1,4 @@
 #pragma once
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp" // For NO_THREAD_ELEMENTS
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 

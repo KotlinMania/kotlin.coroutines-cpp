@@ -9,7 +9,6 @@
 #include <stdexcept>
 #include <string>
 #include <exception>
-#include "core_fwd.hpp"
 
 namespace kotlinx {
 namespace coroutines {

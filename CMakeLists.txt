@@ -77,6 +77,53 @@ install(DIRECTORY include/
     FILES_MATCHING PATTERN "*.hpp"
 )
 
+# -----------------------------------------------------------------------------
+# Lint targets (don't require compilation)
+# -----------------------------------------------------------------------------
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_FOUND)
+    add_custom_target(lint
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/lint_codebase.py
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running lint analysis..."
+    )
+    add_custom_target(lint-summary
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/lint_codebase.py --summary
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running lint summary..."
+    )
+    add_custom_target(lint-json
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/lint_codebase.py --json
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running lint (JSON output)..."
+    )
+    add_custom_target(analyze-imports
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/extract_import_mismatches.py
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Analyzing import mismatches..."
+    )
+    add_custom_target(analyze-packages
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/analyze_packages.py
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Analyzing package/namespace alignment..."
+    )
+    add_custom_target(analyze-symbols
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/analyze_symbols.py
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Analyzing symbol definitions..."
+    )
+    add_custom_target(analyze-duplicates
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/analyze_symbols.py --duplicates
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Finding duplicate symbol definitions..."
+    )
+    add_custom_target(analyze-stubs
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/analyze_symbols.py --stubs
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Finding stub implementations..."
+    )
+endif()
+
 # Print build configuration
 message(STATUS "")
 message(STATUS "=== kotlinx.coroutines-cpp Build Configuration ===")

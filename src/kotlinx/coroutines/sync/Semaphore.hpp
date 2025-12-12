@@ -1,5 +1,4 @@
 #pragma once
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <atomic>
 #include <functional>
 #include <memory>

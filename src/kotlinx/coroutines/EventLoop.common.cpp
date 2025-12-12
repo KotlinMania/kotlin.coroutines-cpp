@@ -36,7 +36,7 @@ namespace kotlinx {
 
         bool EventLoop::should_be_processed_from_context() const { return false; }
 
-        void EventLoop::dispatch_unconfined(std::shared_ptr<DispatchedTask> task) {
+        void EventLoop::dispatch_unconfined(std::shared_ptr<SchedulerTask> task) {
             unconfined_queue.push_back(task);
         }
 

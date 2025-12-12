@@ -60,34 +60,21 @@ public:
     virtual std::shared_ptr<DisposableHandle> invoke_on_timeout(
         long long time_millis,
         std::shared_ptr<Runnable> block,
-        const CoroutineContext& context) = 0;
+        const CoroutineContext& context);
 
-    /*
-     * TODO: MISSING API - Delay.delay() suspend function
-     *
-     * Kotlin source: Delay.delay() in Delay.kt (internal interface method)
-     *
-     * What's missing:
-     * - Kotlin signature: public abstract suspend fun delay(timeMillis: Long): Unit
-     * - This is the Delay interface's method that dispatchers implement
-     * - Should integrate with scheduleResumeAfterDelay()
-     * - Enables dispatcher-specific delay implementations
-     *
-     * Current status: Not defined in interface
-     * Correct status: Define as suspend function that dispatchers override
-     *
-     * C++ signature needed: void* delay(long long time_millis, Continuation<void*>* continuation)
-     */
     /**
      * Suspension point: Delays coroutine for a given time without blocking a thread.
      * Use suspend_cancellable_coroutine logic inside.
      */
-    virtual void* delay(long long time_millis, Continuation<void*>* continuation) {
-        // Default implementation using schedule_resume_after_delay
-        // avoiding circular dependency if possible, but usually implemented in finding dispatcher
-        return nullptr; // Stub default
-    }
+    virtual void* delay(long long time_millis, Continuation<void*>* continuation);
 };
+
+/**
+ * Internal DefaultDelay instance (platform-specific).
+ *
+ * Kotlin source: internal expect val DefaultDelay: Delay
+ */
+Delay& get_default_delay();
 
 /**
  * Enhanced Delay interface that provides additional diagnostics for withTimeout.

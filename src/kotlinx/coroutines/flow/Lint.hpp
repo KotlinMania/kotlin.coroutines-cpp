@@ -9,7 +9,6 @@
  * that don't make sense for those types.
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include <vector>

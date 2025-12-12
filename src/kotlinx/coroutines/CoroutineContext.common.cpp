@@ -51,11 +51,9 @@ namespace kotlinx {
 
         // Declaration only
 
-        // TODO: @PublishedApi - no C++ equivalent (for inline functions)
-        // TODO: @Suppress("PropertyName") - no C++ equivalent
-        // TODO: expect auto - platform-specific, visibility
-        // TODO: DefaultDelay needs platform-specific implementation
-        // Delay* DefaultDelay; // Declaration only
+        // @PublishedApi / @Suppress("PropertyName") have no C++ equivalents.
+        // DefaultDelay is platform-specific; see native/CoroutineContext.cpp:get_default_delay.
+        // TODO(port): add DefaultDelay actuals for other platforms if needed.
 
         // countOrElement -- pre-cached value for ThreadContext.kt
         // TODO: expect inline fun - platform-specific inline function
@@ -73,7 +71,7 @@ namespace kotlinx {
 
         // TODO: expect fun - platform-specific
         // TODO: Extension on Continuation<*>
-        std::string to_debug_string(Continuation<void> * continuation); // Declaration only
+        std::string to_debug_string(Continuation<void> *continuation); // Declaration only
 
         /**
  * Extension property on CoroutineContext to extract the coroutine name.

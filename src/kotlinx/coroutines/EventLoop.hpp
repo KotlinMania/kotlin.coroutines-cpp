@@ -1,6 +1,6 @@
 #pragma once
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
+#include "kotlinx/coroutines/internal/DispatchedTask.hpp"
 #include <deque>
 #include <memory>
 #include <atomic>
@@ -12,10 +12,8 @@
 namespace kotlinx {
 namespace coroutines {
 
-class DispatchedTask : public Runnable {
-public:
-    virtual void run() override = 0;
-};
+// DispatchedTask is defined as a template in internal/DispatchedTask.hpp
+// Use SchedulerTask for type-erased storage in queues
 
 /**
  * Extended by [CoroutineDispatcher] implementations that have event loop inside and can
@@ -24,7 +22,7 @@ public:
 struct EventLoop : CoroutineDispatcher {
     long long use_count = 0;
     bool shared = false;
-    std::deque<std::shared_ptr<DispatchedTask>> unconfined_queue;
+    std::deque<std::shared_ptr<SchedulerTask>> unconfined_queue;
 
     virtual ~EventLoop() = default;
 
@@ -34,7 +32,7 @@ struct EventLoop : CoroutineDispatcher {
 
     bool process_unconfined_event();
     virtual bool should_be_processed_from_context() const;
-    void dispatch_unconfined(std::shared_ptr<DispatchedTask> task);
+    void dispatch_unconfined(std::shared_ptr<SchedulerTask> task);
 
     bool is_active() const;
     bool is_unconfined_loop_active() const;

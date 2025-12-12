@@ -17,9 +17,26 @@
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <thread>
 #include <chrono>
+#include <limits>
 
 namespace kotlinx {
     namespace coroutines {
+        std::shared_ptr<DisposableHandle> Delay::invoke_on_timeout(
+            long long time_millis,
+            std::shared_ptr<Runnable> block,
+            const CoroutineContext& context) {
+            return get_default_delay().invoke_on_timeout(time_millis, block, context);
+        }
+
+        void* Delay::delay(long long time_millis, Continuation<void*>* continuation) {
+            if (time_millis <= 0) return nullptr;
+            return suspend_cancellable_coroutine<void>(
+                [this, time_millis](CancellableContinuation<void>& cont) {
+                    schedule_resume_after_delay(time_millis, cont);
+                },
+                continuation);
+        }
+
         void *delay(long long time_millis, Continuation<void *> *continuation) {
             if (time_millis <= 0) return nullptr; // Return immediately
 
@@ -36,30 +53,13 @@ namespace kotlinx {
                 }
 
                 if (delay_impl) {
-                    delay_impl->schedule_resume_after_delay(time_millis, cont);
+                    if (time_millis < std::numeric_limits<long long>::max()) {
+                        delay_impl->schedule_resume_after_delay(time_millis, cont);
+                    }
                 } else {
-                    // TODO: Fallback to DefaultDelay or separate thread
-                    // For now, spawn a thread to sleep (inefficient but non-blocking for the caller thread if async)
-                    // But wait, if we spawn a thread, we must ensure safety.
-                    // Better: use system timer.
-                    // For this iteration, let's just use a detached thread for fallback.
-                    // WARNING: This is resource heavy.
-                    std::thread([time_millis, &cont]() {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(time_millis));
-                        // Need to resume cont. But cont is reference to stack variable?
-                        // NO! suspend_cancellable_coroutine logic keeps 'cont' alive (it's the CancellableContinuationImpl shared_ptr)
-                        // But the lambda receives 'CancellableContinuation&'.
-                        // We need to capture shared_ptr to it.
-                        // We can't easily get shared_ptr from reference in generic lambda without dynamic_cast/shared_from_this tricks.
-                        // Fortunately, standard pattern:
-                        // We need to cast 'cont' to 'CancellableContinuationImpl<void>*' and call shared_from_this().
-                        // Or better, update suspend_cancellable_coroutine to pass shared_ptr? No, stick to ref.
-
-                        // Unsafe fallback skipped for now to avoid crashes.
-                        // If no Delay dispatcher, we just resume immediately for safety in this stub?
-                        // Or throws.
-                        cont.resume(nullptr);
-                    }).detach();
+                    if (time_millis < std::numeric_limits<long long>::max()) {
+                        get_default_delay().schedule_resume_after_delay(time_millis, cont);
+                    }
                 }
             }, continuation);
         }
