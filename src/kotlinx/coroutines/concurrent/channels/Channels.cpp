@@ -13,7 +13,6 @@
  * - Handle thread interruption on JVM-equivalent platforms
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 
 namespace kotlinx {

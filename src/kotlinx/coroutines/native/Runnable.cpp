@@ -1,5 +1,4 @@
 #include <functional>
-#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/Runnable.kt
 //

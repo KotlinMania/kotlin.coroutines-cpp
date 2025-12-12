@@ -8,7 +8,6 @@
  * The common implementation is in kotlinx-coroutines-core/common/src/SchedulerTask.common.cpp
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/Runnable.hpp"
 
 namespace kotlinx {

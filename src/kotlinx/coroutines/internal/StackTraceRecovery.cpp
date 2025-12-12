@@ -13,7 +13,6 @@
  * - Consider integration with native stack trace facilities
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <exception>
 
 namespace kotlinx {

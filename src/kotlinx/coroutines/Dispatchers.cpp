@@ -8,4 +8,8 @@
  * This file is kept for source set structure compatibility but contains no definitions.
  */
 
+namespace kotlinx::coroutines {
+
 // Implementations are in native/src/Dispatchers.cpp
+
+} // namespace kotlinx::coroutines

@@ -1,7 +1,6 @@
 #include <string>
 #include <functional>
 #include <sstream>
-#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/Debug.kt
 //

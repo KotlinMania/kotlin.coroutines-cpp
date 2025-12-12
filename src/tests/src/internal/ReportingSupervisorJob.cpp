@@ -1,4 +1,3 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.internal.ReportingSupervisorJob
 // Original package: kotlinx.coroutines.test.internal
 //

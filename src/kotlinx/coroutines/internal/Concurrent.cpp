@@ -8,7 +8,6 @@
  * The common implementation is in kotlinx-coroutines-core/common/src/internal/Concurrent.common.cpp
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <atomic>
 #include <unordered_set>
 #include <mutex>

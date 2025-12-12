@@ -1,4 +1,3 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <unordered_set>
 #include <atomic>
 #include <mutex>

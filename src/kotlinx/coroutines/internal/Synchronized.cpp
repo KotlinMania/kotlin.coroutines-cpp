@@ -11,7 +11,6 @@
  * - Implement synchronized block pattern
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <mutex>
 
 namespace kotlinx {

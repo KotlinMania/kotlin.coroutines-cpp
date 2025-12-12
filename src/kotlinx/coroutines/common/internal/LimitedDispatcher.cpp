@@ -14,7 +14,6 @@
  * - Implement Delay interface support
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include <atomic>
 #include <string>

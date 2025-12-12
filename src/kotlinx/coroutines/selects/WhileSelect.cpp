@@ -13,7 +13,6 @@
  * - Integrate with coroutine infrastructure for proper suspension
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
 
 namespace kotlinx {

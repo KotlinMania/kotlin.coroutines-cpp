@@ -13,7 +13,6 @@
  * - Implement dispatcherFailure for handling dispatcher exceptions
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"

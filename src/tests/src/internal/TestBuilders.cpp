@@ -12,7 +12,6 @@ namespace kotlinx {
         namespace test {
             // package kotlinx.coroutines.test
             // import kotlinx.coroutines.*
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <functional>
 #include <optional>
 #include <string>

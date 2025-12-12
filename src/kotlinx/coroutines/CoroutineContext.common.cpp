@@ -4,9 +4,9 @@
 // TODO: expect functions - platform-specific implementations needed
 // TODO: @InternalCoroutinesApi, @PublishedApi - no C++ equivalents
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/CoroutineName.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
 #include <string>
 #include <functional>
 #include "kotlinx/coroutines/context_impl.hpp"

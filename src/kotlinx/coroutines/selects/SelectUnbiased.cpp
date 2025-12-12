@@ -17,7 +17,6 @@
  * - Integrate with coroutine infrastructure
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
 
 namespace kotlinx {

@@ -20,34 +20,14 @@ namespace coroutines {
     // Helper Classes (Internal)
     // ------------------------------------------------------------------
 
+    // Forward declarations - implementations in Builders.common.cpp
     class StandaloneCoroutine : public AbstractCoroutine<Unit> {
     private:
         std::shared_ptr<CoroutineContext> parent_context_ref;
-        bool active_flag;
 
     public:
-        StandaloneCoroutine(std::shared_ptr<CoroutineContext> parentContext, bool active)
-            : AbstractCoroutine<Unit>(parentContext, true, active),
-              parent_context_ref(parentContext),
-              active_flag(active) {}
-
-        bool handle_job_exception(std::exception_ptr exception) override {
-            /*
-             * TODO: STUB - Exception handling not implemented
-             *
-             * Kotlin source: StandaloneCoroutine.handleJobException() in Builders.common.kt
-             *
-             * What's missing:
-             * - Should call handleCoroutineException(context, exception) to propagate
-             *   the exception to the CoroutineExceptionHandler in the context
-             * - handleCoroutineException() needs to be implemented first
-             *
-             * Current behavior: Silently swallows exception and returns true (handled)
-             * Correct behavior: Propagate to CoroutineExceptionHandler, then return true
-             */
-            (void)exception;
-            return true;
-        }
+        StandaloneCoroutine(std::shared_ptr<CoroutineContext> parentContext, bool active);
+        bool handle_job_exception(std::exception_ptr exception) override;
     };
 
     class LazyStandaloneCoroutine : public StandaloneCoroutine {
@@ -58,27 +38,8 @@ namespace coroutines {
         LazyStandaloneCoroutine(
             std::shared_ptr<CoroutineContext> parentContext,
             std::function<void(CoroutineScope*)> block_param
-        ) : StandaloneCoroutine(parentContext, false),
-            block(block_param) {}
-
-        void on_start() override {
-            /*
-             * TODO: STUB - Lazy coroutine startup not implemented
-             *
-             * Kotlin source: LazyStandaloneCoroutine.onStart() in Builders.common.kt
-             *
-             * What's missing:
-             * - Should call: continuation.startCoroutineCancellable(this)
-             * - startCoroutineCancellable() wraps the block in a CancellableContinuation
-             *   and dispatches it through the coroutine's dispatcher
-             * - Requires: CancellableContinuationImpl, DispatchedContinuation integration
-             *
-             * Current behavior: Does nothing - lazy coroutine never actually starts
-             * Correct behavior: Start the coroutine block with cancellation support
-             *
-             * Workaround: Use CoroutineStart::DEFAULT instead of LAZY for now
-             */
-        }
+        );
+        void on_start() override;
     };
 
     /**

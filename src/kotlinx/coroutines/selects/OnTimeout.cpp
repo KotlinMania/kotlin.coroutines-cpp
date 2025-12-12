@@ -13,7 +13,6 @@
  * - Integrate with SelectBuilder
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <functional>
 
 namespace kotlinx {

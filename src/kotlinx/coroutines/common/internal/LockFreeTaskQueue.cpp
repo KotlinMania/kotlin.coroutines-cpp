@@ -1,4 +1,3 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/LockFreeTaskQueue.kt
 //
@@ -127,16 +126,16 @@ namespace kotlinx {
 
                 // Note: it is not atomic w.r.t. remove operation (remove can transiently fail when isEmpty is false)
                 bool is_empty() const {
-                    long state = _state.load();
-                    int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
-                    int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+                    const long state = _state.load();
+                    const int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+                    const int tail = static_cast<int>((state & kTailMask) >> kTailShift);
                     return head == tail;
                 }
 
                 int size() const {
-                    long state = _state.load();
-                    int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
-                    int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+                    const long state = _state.load();
+                    const int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+                    const int tail = static_cast<int>((state & kTailMask) >> kTailShift);
                     return (tail - head) & kMaxCapacityMask;
                 }
 
@@ -158,9 +157,9 @@ namespace kotlinx {
                             return add_fail_reason(state); // cannot add
                         }
 
-                        int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
-                        int tail = static_cast<int>((state & kTailMask) >> kTailShift);
-                        int mask = this->mask_; // manually move instance field to local for performance
+                        const int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+                        const int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+                        const int mask = this->mask_; // manually move instance field to local for performance
 
                         // If queue is Single-Consumer then there could be one element beyond head that we cannot overwrite,
                         // so we check for full queue with an extra margin of one element

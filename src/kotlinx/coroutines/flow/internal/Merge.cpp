@@ -2,7 +2,6 @@
 // To keep the project building while C++ port is in progress, we disable its body.
 
 #include <string>
-#include "kotlinx/coroutines/core_fwd.hpp"
 
 namespace kotlinx {
     namespace coroutines {

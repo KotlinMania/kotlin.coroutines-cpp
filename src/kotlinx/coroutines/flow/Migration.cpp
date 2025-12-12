@@ -1,4 +1,3 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first pass - syntax/language translation only)
 // Original: kotlinx-coroutines-core/common/src/flow/Migration.kt
 //
@@ -9,6 +8,8 @@
 // @file:JvmMultifileClass
 // @file:JvmName("FlowKt")
 // @file:Suppress("unused", "DeprecatedCallableAddReplaceWith", "UNUSED_PARAMETER")
+
+#include <stdexcept>
 
 namespace kotlinx {
     namespace coroutines {

@@ -1,9 +1,10 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/internal/LocalAtomics.kt
 //
 // TODO: actual keyword - platform-specific implementation
 // TODO: kotlinx.atomicfu atomic primitives
+
+#include <atomic>
 
 namespace kotlinx {
     namespace coroutines {

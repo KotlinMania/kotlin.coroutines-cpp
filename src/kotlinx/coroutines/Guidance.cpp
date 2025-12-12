@@ -1,5 +1,4 @@
 #include <functional>
-#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Guidance.kt
 //

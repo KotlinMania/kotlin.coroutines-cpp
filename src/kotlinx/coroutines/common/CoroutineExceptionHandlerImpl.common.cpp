@@ -8,7 +8,11 @@
 
 #include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
 
+namespace kotlinx::coroutines {
+
 // NOTE:
 // `handle_coroutine_exception(...)` is defined inline in the public header.
 // This common/internal TU is kept for source parity only and must not emit
 // another out-of-line definition.
+
+} // namespace kotlinx::coroutines

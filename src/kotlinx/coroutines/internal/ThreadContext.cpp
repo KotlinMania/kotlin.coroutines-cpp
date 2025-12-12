@@ -11,8 +11,6 @@
  * - Implement thread context storage using thread_local
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
-
 namespace kotlinx {
     namespace coroutines {
         namespace internal {

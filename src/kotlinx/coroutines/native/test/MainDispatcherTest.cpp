@@ -13,8 +13,6 @@
  * - Implement scheduleOnMainQueue using dispatch_async
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
-
 namespace kotlinx {
     namespace coroutines {
         namespace test {

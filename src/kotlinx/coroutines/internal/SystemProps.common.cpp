@@ -8,7 +8,6 @@
  * Other platforms typically use default values.
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <string>
 #include <optional>
 #include <stdexcept>

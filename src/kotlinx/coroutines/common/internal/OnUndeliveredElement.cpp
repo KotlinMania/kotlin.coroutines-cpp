@@ -9,7 +9,6 @@
  * - Implement handleCoroutineException integration
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <functional>
 #include <exception>
 #include <string>

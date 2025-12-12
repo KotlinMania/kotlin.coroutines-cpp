@@ -12,7 +12,6 @@
  * - Implement Symbol types (UNDEFINED, REUSABLE_CLAIMED)
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include <atomic>
 #include <functional>

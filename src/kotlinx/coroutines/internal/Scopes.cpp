@@ -7,3 +7,9 @@
  */
 
 #include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
+
+namespace kotlinx::coroutines::internal {
+
+// Template implementations in header
+
+} // namespace kotlinx::coroutines::internal

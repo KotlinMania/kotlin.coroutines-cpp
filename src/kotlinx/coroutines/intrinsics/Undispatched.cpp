@@ -14,7 +14,6 @@
  * - Implement probeCoroutineCreated/probeCoroutineResumed for debugging support
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"

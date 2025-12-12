@@ -1,5 +1,4 @@
 #include <string>
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestCoroutineScheduler
 // Original package: kotlinx.coroutines.test

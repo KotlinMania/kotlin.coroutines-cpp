@@ -1,4 +1,3 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 // Transliterated from Kotlin to C++ (first pass - syntax/language translation only)
 // Original: kotlinx-coroutines-core/common/src/flow/FlowCollector.kt

@@ -1,6 +1,5 @@
 #include <string>
 #include <optional>
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/sync/Mutex.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
 #include "kotlinx/coroutines/sync/SemaphoreImpl.hpp" // Use generic impl

@@ -12,7 +12,6 @@
  * - Implement DiagnosticCoroutineContextException
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
 #include <vector>
 

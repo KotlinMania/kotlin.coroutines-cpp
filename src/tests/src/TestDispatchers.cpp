@@ -1,4 +1,3 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++ - kotlinx.coroutines.test.TestDispatchers
 // Original package: kotlinx.coroutines.test
 //

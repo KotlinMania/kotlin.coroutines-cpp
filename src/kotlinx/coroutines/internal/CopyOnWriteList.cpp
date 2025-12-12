@@ -13,7 +13,6 @@
  * - Implement MutableIterator and MutableListIterator
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <atomic>
 #include <vector>
 

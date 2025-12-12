@@ -12,8 +12,6 @@
  * - Implement common_thread_local factory function
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
-
 namespace kotlinx {
     namespace coroutines {
         namespace internal {

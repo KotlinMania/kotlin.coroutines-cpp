@@ -26,7 +26,6 @@
  * - Implement describeRemoveFirst for atomic multi-step operations
  */
 
-#include "kotlinx/coroutines/core_fwd.hpp"
 #include <atomic>
 #include <string>
 

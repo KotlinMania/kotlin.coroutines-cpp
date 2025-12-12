@@ -1,4 +1,3 @@
-#include "kotlinx/coroutines/core_fwd.hpp"
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/internal/ProbesSupport.common.kt
 //
