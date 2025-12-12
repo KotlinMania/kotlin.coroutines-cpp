@@ -10,7 +10,7 @@ Your current method:
 
 - mechanical transliteration of kotlinx.coroutines and Kotlin coroutine runtime pieces,
 - plus direct study of kotlinc/Kotlin‑Native suspend lowering to reproduce the state machine exactly,
-- plus a first‑cut C++ macro approach (SUSPEND_*, CO_*) that approximates the IR Kotlin emits.
+- plus early C++ prototypes that have since been replaced by the suspend DSL + Clang plugin approach.
 
 You now want to go a step further:
 
@@ -253,19 +253,16 @@ This is the substrate your DSL lowering should target.
 
 Kotlin/Native: uses block‑address label + indirectbr.
 
-Your current approximation:
-include/kotlinx/coroutines/SuspendMacros.hpp
+C++ port (canonical authoring surface):
 
-- _label is an int in your continuation classes.
-- Entry uses switch (this->_label); each SUSPEND_POINT(n) is a case n:.
-- SUSPEND_CALL sets label to n, calls callee, propagates marker, then case n: to resume.
+- `src/kotlinx/coroutines/dsl/Suspend.hpp` provides `suspend(expr)` (a runtime identity helper used only as a marker).
+- `src/kotlinx/coroutines/tools/clang_suspend_plugin/` rewrites `[[suspend]]` functions with `suspend(...)` points into a
+  `ContinuationImpl`-derived state machine that propagates `COROUTINE_SUSPENDED`.
 
-This matches Kotlin’s higher‑level semantics but differs in representation:
+Representation note:
 
-- Kotlin: _label : void* storing blockAddress(resumeN)
-- You: _label : int storing ordinal state number
-
-Your macro relies on LLVM optimizing switch into a jump table. That works in practice, but the plugin can get you closer to Kotlin’s exact IR.
+- Kotlin/Native stores a **block address** label (`void*`) for `indirectbr`.
+- The current plugin emits an **int** `_label` with a `switch` dispatch (correct semantics, not identical IR shape).
 
 ———
 
@@ -305,34 +302,11 @@ You need an authoring syntax that is:
 - C++‑parsable before plugin rewrite (so the compiler can build an AST).
 - Unambiguous for discovering suspend points.
 
-Two realistic patterns:
+Canonical pattern (single API):
 
-Pattern A: Attribute‑driven
-
-[[kotlinx::suspend]]
-auto foo(int x) -> kx::Any {
-auto y = bar(x);                 // normal
-auto z = [[kotlinx::suspend_call]] baz(y);  // suspend point
-return z;
-}
-
-- Pros: minimal macro noise, easy for Clang/GCC to detect.
-- Cons: you need custom attributes; plugin must register them.
-
-Pattern B: Macro DSL
-
-KX_SUSPEND auto foo(int x) {
-KX_BEGIN();
-auto y = bar(x);
-auto z = KX_AWAIT(baz(y));
-KX_RETURN(z);
-KX_END();
-}
-
-- Pros: even without plugin it can lower via macros (fallback).
-- Cons: more boilerplate, but familiar to coroutine DSL users.
-
-Given your “scoped to this project” requirement, I’d choose Pattern A with Pattern B as fallback.
+- Mark suspend functions with `[[suspend]]`.
+- Mark suspension points with `suspend(expr)`.
+- Do not introduce additional markers/macros in new code; keep authoring uniform so the plugin can stay mechanical.
 
 ### 4.3 Compiler choice: why Clang plugin first
 

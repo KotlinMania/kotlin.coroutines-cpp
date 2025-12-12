@@ -1,5 +1,6 @@
 #pragma once
 #include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/Job.hpp"
 #include <memory>
 
 namespace kotlinx {
@@ -40,6 +41,14 @@ struct CoroutineScope {
      * Context is encapsulated by the scope and used for implementation of coroutine builders that are extensions on the scope.
      */
     virtual std::shared_ptr<CoroutineContext> get_coroutine_context() const = 0;
+
+    /**
+     * Returns the [Job] of this scope's context.
+     * This is a shorthand for `get_coroutine_context()->get(Job::type_key)`.
+     */
+    std::shared_ptr<Job> get_job() const {
+        return context_job(*get_coroutine_context());
+    }
 };
 
 // GlobalScope definition 

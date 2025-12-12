@@ -23,8 +23,8 @@ namespace kotlinx::coroutines::flow::internal {
 
         void collect(FlowCollector<R>* collector) override {
             // Create channels to decouple producers from consumer
-            auto c1 = channels::createChannel<T1>(channels::Channel<T1>::BUFFERED);
-            auto c2 = channels::createChannel<T2>(channels::Channel<T2>::BUFFERED);
+            auto c1 = channels::create_channel<T1>(channels::Channel<T1>::BUFFERED);
+            auto c2 = channels::create_channel<T2>(channels::Channel<T2>::BUFFERED);
 
             // Threads for concurrent collection
             // TODO: Use CoroutineScope.launch when available

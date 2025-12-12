@@ -177,7 +177,7 @@ Long‑term direction: a compiler plugin that emits computed‑goto dispatch so 
   ```cpp
   auto y = suspend(bar(x, cont));
   ```
-- Legacy suspend markers (`suspend_call(...)`, `[[clang::annotate("kotlinx_suspend_call")]]`) are supported only for migration.
+  Use `suspend(expr)` as the single canonical suspension marker in C++ source.
 
 ### 6.3 Plugin responsibilities
 For each `[[suspend]]` function:
@@ -273,4 +273,3 @@ We consider this port “docked” when:
 - All suspend functions lower through the plugin to K/N‑parity state machines.
 - LLVM IR from clang matches Kotlin/Native patterns (blockaddress + indirectbr + spill fields).
 - Prompt cancellation, dispatcher fairness, and select semantics pass parity tests.
-

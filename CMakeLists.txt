@@ -63,6 +63,7 @@ set(KOTLINX_COROUTINES_SRC_DIR "kotlinx/coroutines" CACHE STRING
 
 # Add subdirectories
 add_subdirectory(src)
+add_subdirectory(debugging)
 
 # Add test directory
 # Add test directory

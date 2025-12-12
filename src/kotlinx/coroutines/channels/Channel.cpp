@@ -16,7 +16,7 @@ namespace kotlinx {
             }
 
             namespace detail {
-                int getDefaultBufferCapacityImpl() {
+                int get_default_buffer_capacity_impl() {
                     // TODO: Read implementation from system property/environment variable if needed
                     // For now hardcoded 64
                     return 64;

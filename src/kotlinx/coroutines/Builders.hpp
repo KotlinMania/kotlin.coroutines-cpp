@@ -159,6 +159,7 @@ namespace coroutines {
     }
 
     // Transliterated from Builders.common.kt: suspend fun <T> withContext(context: CoroutineContext, block: suspend CoroutineScope.() -> T): T
+    // C++: [[suspend]] void* with_context(context, block, completion)
     //
     // This is a suspend function. In C++, it must be called from within a suspend
     // state machine.
@@ -175,14 +176,13 @@ namespace coroutines {
     //
     // Implementation pattern from NativeSuspendFunctionLowering.kt:
     // - State machine with label field tracks suspension points
-    // - invokeSuspend() is the state machine method
+    // - invoke_suspend() is the state machine method
     // - ContinuationImpl is the base class
     //
     // @param context The context to switch to
     // @param block The suspend block to execute
     // @param continuation The continuation to resume (passed by state machine)
     // @return Result or COROUTINE_SUSPENDED
-    // Transliterated from Builders.common.kt: suspend fun <T> withContext(context: CoroutineContext, block: suspend CoroutineScope.() -> T): T
     // Implemented as a suspend function that handles context switching logic.
 
     template<typename T, typename Block>
@@ -195,7 +195,7 @@ namespace coroutines {
         using namespace kotlinx::coroutines::dsl;
 
         if (!context) {
-            throw std::invalid_argument("withContext requires a non-null context");
+            throw std::invalid_argument("with_context requires a non-null context");
         }
 
         // TODO: Implement full context switching logic (check dispatcher)
@@ -217,7 +217,7 @@ namespace coroutines {
     }
 
     /**
-     * coroutineScope builder.
+     * coroutine_scope builder.
      * Creates a CoroutineScope and calls the specified suspend block with this scope.
      * The provided scope inherits its coroutineContext from the outer scope, but overrides
      * the Job context element to ensure that it cancels all children when the scope is cancelled.
@@ -235,7 +235,7 @@ namespace coroutines {
          // For now, we reuse the caller's context and just create a scope wrapper.
          // This does NOT wait for children launched in this scope!
          
-         if (!completion) throw std::invalid_argument("coroutineScope requires non-null completion");
+         if (!completion) throw std::invalid_argument("coroutine_scope requires non-null completion");
          
          class SimpleScope : public CoroutineScope {
              std::shared_ptr<CoroutineContext> ctx_;
@@ -249,7 +249,7 @@ namespace coroutines {
     }
 
      /**
-     * supervisorScope builder.
+     * supervisor_scope builder.
      * Creates a CoroutineScope with SupervisorJob and calls the specified suspend block with this scope.
      * The children failure does not cause this scope to fail and does not affect other children.
      */
@@ -262,9 +262,9 @@ namespace coroutines {
          using namespace kotlinx::coroutines::dsl;
          
          // TODO: Use SupervisorCoroutine.
-         // Currently stubbed similarly to coroutineScope.
+         // Currently stubbed similarly to coroutine_scope.
          
-         if (!completion) throw std::invalid_argument("supervisorScope requires non-null completion");
+         if (!completion) throw std::invalid_argument("supervisor_scope requires non-null completion");
          
          class SimpleScope : public CoroutineScope {
              std::shared_ptr<CoroutineContext> ctx_;
@@ -276,27 +276,6 @@ namespace coroutines {
          // TODO: Add SupervisorJob to context
          SimpleScope scope(completion->get_context());
          return suspend(block(&scope, completion));
-    }
-
-     // Legacy snake_case version
-    template<typename T>
-    [[deprecated("Use with_context instead")]]
-    void* with_context(
-        std::shared_ptr<CoroutineContext> context,
-        std::function<void*(CoroutineScope*, Continuation<void*>*)> block,
-        Continuation<void*>* continuation
-    ) {
-        // Adapt to new implementation if possible, or keep as is?
-        // Reuse logic but careful with types.
-        if (!context) throw std::invalid_argument("with_context requires a non-null context");
-        class WithContextScope : public CoroutineScope {
-            std::shared_ptr<CoroutineContext> ctx_;
-        public:
-            explicit WithContextScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(ctx) {}
-            std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
-        };
-        WithContextScope scope(context);
-        return block(&scope, continuation);
     }
 
     // BlockingCoroutine implementation

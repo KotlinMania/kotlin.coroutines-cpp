@@ -1,3 +1,4 @@
+#include <vector>
 #include "clang/AST/AST.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/RecursiveASTVisitor.h"

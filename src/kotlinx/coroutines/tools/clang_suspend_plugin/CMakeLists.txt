@@ -29,20 +29,31 @@ if(NOT KOTLINX_SUSPEND_PLUGIN_SKIP)
         ${CLANG_INCLUDE_DIRS}
     )
 
-    target_compile_definitions(KotlinxSuspendPlugin PRIVATE
-        ${LLVM_DEFINITIONS}
-    )
-
     llvm_map_components_to_libnames(LLVM_LIBS support)
 
+    # Reliance on imported targets for include directories
+    # target_link_libraries handles the dependencies.
+
+    target_compile_definitions(KotlinxSuspendPlugin PUBLIC
+        ${LLVM_DEFINITIONS}
+        "-D__STDC_CONSTANT_MACROS"
+        "-D__STDC_FORMAT_MACROS"
+        "-D__STDC_LIMIT_MACROS"
+    )
+
+    if (LLVM_LINK_LLVM_DYLIB)
+        target_compile_definitions(KotlinxSuspendPlugin PUBLIC "LLVM_LINK_LLVM_DYLIB")
+    endif()
+
     target_link_libraries(KotlinxSuspendPlugin PRIVATE
-        ${LLVM_LIBS}
         clangAST
         clangBasic
         clangFrontend
-        clangSerialization
+        clangLex
         clangSema
+        clangSerialization
         clangTooling
+        LLVMSupport
     )
 
     set_target_properties(KotlinxSuspendPlugin PROPERTIES

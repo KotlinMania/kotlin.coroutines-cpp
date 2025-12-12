@@ -42,6 +42,11 @@ list(FILTER CORE_SOURCES EXCLUDE REGEX "/integration/")
 # Create the core library
 add_library(kotlinx-coroutines-core ${CORE_SOURCES})
 
+if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
+    target_compile_options(kotlinx-coroutines-core PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
+    add_dependencies(kotlinx-coroutines-core KotlinxSuspendPlugin)
+endif()
+
 # Set include directories for this target
 # Headers are now co-located with sources in src/kotlinx/coroutines/
 target_include_directories(kotlinx-coroutines-core

@@ -290,17 +290,17 @@ struct Channel : public SendChannel<E>, public ReceiveChannel<E> {
     static constexpr int OPTIONAL_CHANNEL = -3;
     static constexpr auto DEFAULT_BUFFER_PROPERTY_NAME = "kotlinx.coroutines.channels.defaultBuffer";
 
-    static int getDefaultBufferCapacity() { return 64; }
+    static int get_default_buffer_capacity() { return 64; }
 };
 
 /**
  * Creates a channel with the specified capacity.
  */
 template <typename E>
-std::shared_ptr<Channel<E>> createChannel(
+std::shared_ptr<Channel<E>> create_channel(
     int capacity = Channel<E>::RENDEZVOUS,
-    BufferOverflow onBufferOverflow = BufferOverflow::SUSPEND,
-    OnUndeliveredElement<E> onUndeliveredElement = nullptr
+    BufferOverflow on_buffer_overflow = BufferOverflow::SUSPEND,
+    OnUndeliveredElement<E> on_undelivered_element = nullptr
 );
 
 } // namespace channels
