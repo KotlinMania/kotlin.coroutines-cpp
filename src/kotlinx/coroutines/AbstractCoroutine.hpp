@@ -230,7 +230,7 @@ namespace kotlinx::coroutines {
 
         template <typename R>
         void start(CoroutineStart start_strategy, R receiver, std::function<T(R)> block) {
-            invoke(start_strategy, block, receiver, JobSupport::shared_from_this());
+            invoke(start_strategy, block, receiver, std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
         }
 
         // Helper for parent init

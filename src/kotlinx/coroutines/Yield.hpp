@@ -8,7 +8,8 @@
  * Provides the yield_coroutine() function (named yield_coroutine to avoid conflict
  * with C++ keyword 'yield' in C++20).
  */
-
+#include <memory>
+#include "kotlinx/coroutines/Continuation.hpp"
 namespace kotlinx {
 namespace coroutines {
 
@@ -28,7 +29,14 @@ namespace coroutines {
  *
  * NOTE: Named yield_coroutine to avoid conflict with C++20's yield keyword.
  */
+[[deprecated("Use yield(completion) instead")]]
 void yield_coroutine();
+
+[[suspend]]
+void* yield(std::shared_ptr<Continuation<void*>> completion);
+
+[[suspend]]
+void yield();
 
 } // namespace coroutines
 } // namespace kotlinx

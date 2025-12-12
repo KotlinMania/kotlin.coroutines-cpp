@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(kotlinx-coroutines-cpp VERSION 1.0.0 LANGUAGES CXX)
+project(kotlinx-coroutines-cpp VERSION 1.0.0 LANGUAGES CXX C)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -45,6 +45,12 @@ if(KOTLIN_NATIVE_RUNTIME_AVAILABLE)
     add_compile_definitions(KOTLIN_NATIVE_RUNTIME_AVAILABLE=1)
 endif()
 
+# Stackless Coroutine Support (Experimental/Legacy)
+option(KOTLINX_ENABLE_STACKLESS "Enable stackless coroutine implementation" OFF)
+if(KOTLINX_ENABLE_STACKLESS)
+    add_compile_definitions(KOTLINX_ENABLE_STACKLESS=1)
+endif()
+
 # -----------------------------------------------------------------------------
 # Source layout root
 #
@@ -59,14 +65,17 @@ set(KOTLINX_COROUTINES_SRC_DIR "kotlinx/coroutines" CACHE STRING
 add_subdirectory(src)
 
 # Add test directory
+# Add test directory
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
     add_subdirectory(tests)
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/tests")
+    add_subdirectory(src/tests)
 endif()
 
 # -----------------------------------------------------------------------------
 # Optional compiler tooling (Clang suspend DSL plugin)
 # -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build Clang suspend DSL plugin (Apple-focused)" OFF)
+option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build Clang suspend DSL plugin (Apple-focused)" ON)
 if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     add_subdirectory(src/kotlinx/coroutines/tools/clang_suspend_plugin)
 endif()

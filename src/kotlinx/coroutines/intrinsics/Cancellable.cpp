@@ -27,9 +27,18 @@
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
 
+#include "kotlinx/coroutines/intrinsics/Cancellable.hpp"
+
 namespace kotlinx::coroutines::intrinsics {
 
-// TODO: Implement cancellable coroutine start functions
-// These are intrinsic functions that deal with coroutine creation and interception
+void dispatcher_failure(std::shared_ptr<Continuation<void*>> completion, std::exception_ptr e) {
+    // 1) Resume the coroutine with an exception
+    completion->resume_with(Result<void*>::failure(e));
+    
+    // 2) Rethrow the exception immediately or ensure it crashes
+    // In C++, rethrowing from a function called in catch block might be tricky if not handled.
+    // Kotlin rethrows to crash the caller.
+    std::rethrow_exception(e);
+}
 
 } // namespace kotlinx::coroutines::intrinsics

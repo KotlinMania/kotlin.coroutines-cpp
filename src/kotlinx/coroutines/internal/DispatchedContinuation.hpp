@@ -236,7 +236,7 @@ public:
         auto context = get_context();
         if (context && safe_is_dispatch_needed(*dispatcher, *context)) {
             state_ = state;
-            resume_mode = MODE_ATOMIC;
+            this->resume_mode = MODE_ATOMIC;
             safe_dispatch(*dispatcher, *context, this->shared_from_this());
         } else {
             execute_unconfined(state, MODE_ATOMIC, false, [this, result = std::move(result), context]() mutable {
@@ -254,7 +254,7 @@ public:
         auto context = get_context();
         if (context && safe_is_dispatch_needed(*dispatcher, *context)) {
             state_ = state;
-            resume_mode = MODE_CANCELLABLE;
+            this->resume_mode = MODE_CANCELLABLE;
             safe_dispatch(*dispatcher, *context, this->shared_from_this());
         } else {
             execute_unconfined(state, MODE_CANCELLABLE, false, [this, result = std::move(result), state]() mutable {
@@ -275,7 +275,7 @@ public:
         }
         if (job && !job->is_active()) {
             auto cause = job->get_cancellation_exception();
-            cancel_completed_result(state, cause);
+            this->cancel_completed_result(state, cause);
             this->resume_with(Result<T>::failure(cause));
             return true;
         }
@@ -291,9 +291,18 @@ public:
     }
 
     // Kotlin: internal fun dispatchYield(context: CoroutineContext, value: T)
-    void dispatch_yield(const CoroutineContext& context, T value) {
+    // Kotlin: internal fun dispatchYield(context: CoroutineContext, value: T)
+    template<typename U = T>
+    std::enable_if_t<!std::is_void_v<U>> dispatch_yield(const CoroutineContext& context, U value) {
         state_ = Result<T>::success(std::move(value));
-        resume_mode = MODE_CANCELLABLE;
+        this->resume_mode = MODE_CANCELLABLE;
+        dispatcher->dispatch_yield(context, this->shared_from_this());
+    }
+
+    template<typename U = T>
+    std::enable_if_t<std::is_void_v<U>> dispatch_yield(const CoroutineContext& context) {
+        state_ = Result<T>::success();
+        this->resume_mode = MODE_CANCELLABLE;
         dispatcher->dispatch_yield(context, this->shared_from_this());
     }
 
@@ -344,7 +353,7 @@ public:
         if (do_yield && event_loop->is_unconfined_queue_empty()) return false;
         if (event_loop->is_unconfined_loop_active()) {
             state_ = cont_state;
-            resume_mode = mode;
+            this->resume_mode = mode;
             auto self = this->shared_from_this();
             event_loop->dispatch_unconfined(
                 std::shared_ptr<SchedulerTask>(self, static_cast<SchedulerTask*>(self.get())));
@@ -359,7 +368,7 @@ public:
             }
             event_loop->decrement_use_count(true);
         } catch (...) {
-            handle_fatal_exception(std::current_exception());
+            this->handle_fatal_exception(std::current_exception());
             event_loop->decrement_use_count(true);
         }
         return false;

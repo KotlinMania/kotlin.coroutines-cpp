@@ -8,10 +8,14 @@
 
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/DisposableHandle.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <vector>
 #include <mutex>
 #include <memory>
@@ -43,7 +47,6 @@ class SharedFlowSlot;
  *       Use the MutableSharedFlow(...) constructor function to create an implementation.
  */
 
-    // TODO: Clangd: Redefinition of 'SharedFlow'
 template<typename T>
 class SharedFlow : public Flow<T> {
 public:
@@ -132,7 +135,7 @@ std::shared_ptr<MutableSharedFlow<T>> make_mutable_shared_flow(
 } // namespace kotlinx::coroutines::flow
 
 // Include StateFlow AFTER SharedFlow is defined (StateFlow : public SharedFlow<T>)
-#include "kotlinx/coroutines/flow/StateFlow.hpp"
+// #include "kotlinx/coroutines/flow/StateFlow.hpp" // Removed circular include
 
 // Include AbstractSharedFlow so SharedFlowImpl can inherit from it
 #include "kotlinx/coroutines/flow/internal/AbstractSharedFlow.hpp"
@@ -212,19 +215,17 @@ private:
     long long get_queue_end_index() const { return get_head() + buffer_size_ + queue_size_; }
 
     // Helper class for suspended emitters
-    class Emitter {
+    class Emitter : public ::kotlinx::coroutines::DisposableHandle {
     public:
         SharedFlowImpl<T>* flow;
         long long index;
-        T value;
+        void* value;
         Continuation<Unit>* cont;
 
-        Emitter(SharedFlowImpl<T>* f, long long idx, T val, Continuation<Unit>* c)
+        Emitter(SharedFlowImpl<T>* f, long long idx, void* val, Continuation<Unit>* c)
             : flow(f), index(idx), value(val), cont(c) {}
 
-        void dispose() {
-            flow->cancel_emitter(this);
-        }
+        void dispose() override { flow->cancel_emitter(this); }
     };
 
     // Buffer access helpers
@@ -279,7 +280,7 @@ public:
      * Kotlin: override val replayCache: List<T>
      */
     std::vector<T> get_replay_cache() const override {
-        // TODO(semantics): Need synchronized block
+        std::lock_guard<std::recursive_mutex> lock(this->mutex());
         int replay_size = get_replay_size();
         if (replay_size == 0) return {};
 
@@ -299,27 +300,39 @@ public:
      * @note This is a suspend function - returns void* (COROUTINE_SUSPENDED or result)
      */
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
-        // TODO(suspend-plugin): Full implementation with proper suspension
-        // For now, simplified non-suspending version
+        using namespace ::kotlinx::coroutines::dsl;
+
         SharedFlowSlot* slot = this->allocate_slot();
+        try {
+            // Kotlin: if (collector is SubscribedFlowCollector) collector.onSubscription()
+            // NOTE: SubscribedFlowCollector is defined in Share.kt and will be ported there.
 
-        // TODO(port): try/finally block
-        // TODO(port): SubscribedFlowCollector check
-        // TODO(port): Get Job from currentCoroutineContext()
-
-        while (true) {
-            void* new_value = try_take_value(slot);
-            if (new_value != get_no_value()) {
-                // TODO(port): collectorJob?.ensureActive()
-                collector->emit(*static_cast<T*>(new_value), continuation);
-            } else {
-                // TODO(suspend-plugin): awaitValue(slot) - suspend here
-                break; // Exit for now (should suspend)
+            auto ctx = continuation->get_context();
+            std::shared_ptr<Job> collector_job = nullptr;
+            if (ctx) {
+                auto job_element = ctx->get(Job::type_key);
+                collector_job = std::dynamic_pointer_cast<Job>(job_element);
             }
-        }
 
+            while (true) {
+                void* new_value = nullptr;
+                while (true) {
+                    new_value = try_take_value(slot);
+                    if (new_value != get_no_value()) break;
+                    auto awaited = suspend(await_value(slot, continuation));
+                    if (awaited == COROUTINE_SUSPENDED) return COROUTINE_SUSPENDED;
+                }
+
+                if (collector_job) ensure_active(*collector_job);
+                auto emitted = suspend(collector->emit(*static_cast<T*>(new_value), continuation));
+                if (emitted == COROUTINE_SUSPENDED) return COROUTINE_SUSPENDED;
+            }
+        } catch (...) {
+            this->free_slot(slot);
+            throw;
+        }
         this->free_slot(slot);
-        return nullptr; // TODO(suspend-plugin): Should return COROUTINE_SUSPENDED or result
+        return nullptr;
     }
 
     /**
@@ -330,7 +343,7 @@ public:
         bool emitted = false;
 
         {
-            // TODO(semantics): synchronized(this)
+            std::lock_guard<std::recursive_mutex> lock(this->mutex());
             if (try_emit_locked(value)) {
                 resumes = find_slots_to_resume_locked(resumes);
                 emitted = true;
@@ -349,16 +362,15 @@ public:
      * @note This is inherited from FlowCollector<T>, which has the suspend signature
      */
     void* emit(T value, Continuation<void*>* continuation) override {
-        if (try_emit(value)) return nullptr; // fast-path, completed synchronously
-        // TODO(suspend-plugin): emitSuspend(value) - suspend here
-        return nullptr; // TODO(suspend-plugin): Should return COROUTINE_SUSPENDED
+        if (try_emit(value)) return nullptr; // fast-path
+        return emit_suspend(value, continuation);
     }
 
     /**
      * Kotlin: override fun resetReplayCache()
      */
     void reset_replay_cache() override {
-        // TODO(semantics): synchronized(this)
+        std::lock_guard<std::recursive_mutex> lock(this->mutex());
         update_buffer_locked(
             get_buffer_end_index(),
             min_collector_index_,
@@ -404,13 +416,9 @@ public:
         assert(old_index >= min_collector_index_);
         if (old_index > min_collector_index_) return internal::EMPTY_RESUMES;
 
-        // Compute new minimal index
         long long head = get_head();
         long long new_min_collector_index = head + buffer_size_;
-
-        if (buffer_capacity_ == 0 && queue_size_ > 0) {
-            new_min_collector_index++;
-        }
+        if (buffer_capacity_ == 0 && queue_size_ > 0) new_min_collector_index++;
 
         this->for_each_slot_locked([&](SharedFlowSlot* slot) {
             if (slot->index >= 0 && slot->index < new_min_collector_index) {
@@ -421,13 +429,50 @@ public:
         assert(new_min_collector_index >= min_collector_index_);
         if (new_min_collector_index <= min_collector_index_) return internal::EMPTY_RESUMES;
 
-        // TODO(port): Implement full emitter resume logic from lines 550-603
         long long new_buffer_end_index = get_buffer_end_index();
-        long long new_replay_index = std::max(replay_index_, new_buffer_end_index - std::min(replay_, static_cast<int>(new_buffer_end_index - new_min_collector_index)));
+        int max_resume_count = 0;
+        if (this->get_n_collectors() > 0) {
+            int new_buffer_size0 = static_cast<int>(new_buffer_end_index - new_min_collector_index);
+            max_resume_count = std::min(queue_size_, buffer_capacity_ - new_buffer_size0);
+        } else {
+            max_resume_count = queue_size_;
+        }
 
-        update_buffer_locked(new_replay_index, new_min_collector_index, new_buffer_end_index, get_queue_end_index());
+        std::vector<Continuation<Unit>*> resumes = internal::EMPTY_RESUMES;
+        long long new_queue_end_index = new_buffer_end_index + queue_size_;
+        if (max_resume_count > 0) {
+            resumes = std::vector<Continuation<Unit>*>(max_resume_count, nullptr);
+            int resume_count = 0;
+            for (long long cur_emitter_index = new_buffer_end_index; cur_emitter_index < new_queue_end_index; ++cur_emitter_index) {
+                void* emitter_item = get_buffer_at(cur_emitter_index);
+                if (emitter_item != get_no_value()) {
+                    auto* emitter = static_cast<Emitter*>(emitter_item);
+                    resumes[resume_count++] = emitter->cont;
+                    set_buffer_at(cur_emitter_index, get_no_value());
+                    set_buffer_at(new_buffer_end_index, emitter->value);
+                    new_buffer_end_index++;
+                    if (resume_count >= max_resume_count) break;
+                }
+            }
+        }
 
-        return internal::EMPTY_RESUMES; // TODO(port): Return actual resumes
+        int new_buffer_size1 = static_cast<int>(new_buffer_end_index - head);
+        if (this->get_n_collectors() == 0) new_min_collector_index = new_buffer_end_index;
+
+        long long new_replay_index = std::max(
+            replay_index_,
+            new_buffer_end_index - std::min<long long>(replay_, new_buffer_size1)
+        );
+
+        if (buffer_capacity_ == 0 && new_replay_index < new_queue_end_index && get_buffer_at(new_replay_index) == get_no_value()) {
+            new_buffer_end_index++;
+            new_replay_index++;
+        }
+
+        update_buffer_locked(new_replay_index, new_min_collector_index, new_buffer_end_index, new_queue_end_index);
+        cleanup_tail_locked();
+        if (!resumes.empty()) resumes = find_slots_to_resume_locked(resumes);
+        return resumes;
     }
 
 private:
@@ -592,7 +637,7 @@ private:
         void* value = nullptr;
 
         {
-            // TODO(semantics): synchronized(this)
+            std::lock_guard<std::recursive_mutex> lock(this->mutex());
             long long index = try_peek_locked(slot);
             if (index < 0) {
                 value = get_no_value();
@@ -628,7 +673,11 @@ private:
      */
     void* get_peeked_value_locked_at(long long index) const {
         void* item = get_buffer_at(index);
-        // TODO(port): Check if item is Emitter class
+        if (item == get_no_value()) return item;
+        if (index >= get_buffer_end_index()) {
+            auto* emitter = static_cast<Emitter*>(item);
+            return emitter->value;
+        }
         return item;
     }
 
@@ -658,7 +707,7 @@ private:
      * Kotlin: private fun cancelEmitter(emitter: Emitter)
      */
     void cancel_emitter(Emitter* emitter) {
-        // TODO(semantics): synchronized(this)
+        std::lock_guard<std::recursive_mutex> lock(this->mutex());
         if (emitter->index < get_head()) return;
         if (!buffer_) return;
 
@@ -680,6 +729,61 @@ private:
             queue_size_--;
             set_buffer_at(get_head() + get_total_size(), nullptr);
         }
+    }
+
+    /**
+     * Kotlin: private suspend fun awaitValue(slot: SharedFlowSlot): Unit
+     */
+    void* await_value(SharedFlowSlot* slot, Continuation<void*>* continuation) {
+        return suspend_cancellable_coroutine<Unit>(
+            [this, slot](CancellableContinuation<Unit>& cont) {
+                std::lock_guard<std::recursive_mutex> lock(this->mutex());
+                long long index = try_peek_locked(slot);
+                if (index < 0) {
+                    slot->cont = static_cast<Continuation<Unit>*>(&cont);
+                } else {
+                    cont.resume_with(Result<Unit>::success(Unit{}));
+                    return;
+                }
+                slot->cont = static_cast<Continuation<Unit>*>(&cont);
+            },
+            continuation);
+    }
+
+    /**
+     * Kotlin: private suspend fun emitSuspend(value: T)
+     */
+    void* emit_suspend(T value, Continuation<void*>* continuation) {
+        return suspend_cancellable_coroutine<Unit>(
+            [this, value](CancellableContinuation<Unit>& cont) mutable {
+                std::vector<Continuation<Unit>*> resumes = internal::EMPTY_RESUMES;
+                Emitter* emitter = nullptr;
+
+                {
+                    std::lock_guard<std::recursive_mutex> lock(this->mutex());
+                    if (try_emit_locked(value)) {
+                        cont.resume_with(Result<Unit>::success(Unit{}));
+                        resumes = find_slots_to_resume_locked(resumes);
+                    } else {
+                        auto* boxed_value = new T(value);
+                        emitter = new Emitter(this, get_head() + get_total_size(), boxed_value, static_cast<Continuation<Unit>*>(&cont));
+                        enqueue_locked(emitter);
+                        queue_size_++;
+                        if (buffer_capacity_ == 0) {
+                            resumes = find_slots_to_resume_locked(resumes);
+                        }
+                    }
+                }
+
+                if (emitter) {
+                    dispose_on_cancellation(cont, emitter);
+                }
+
+                for (auto r : resumes) {
+                    if (r) r->resume_with(Result<Unit>::success(Unit{}));
+                }
+            },
+            continuation);
     }
 };
 
@@ -725,174 +829,4 @@ std::shared_ptr<MutableSharedFlow<T>> make_mutable_shared_flow(
 
 } // namespace kotlinx::coroutines::flow
 
-// SubscriptionCountStateFlow must be defined here (not in AbstractSharedFlow.hpp)
-// because it inherits from SharedFlowImpl<int>, which must be fully defined first.
-// In Kotlin, this class is in AbstractSharedFlow.kt, but C++ requires stricter ordering.
-namespace kotlinx::coroutines::flow::internal {
-
-/**
- * StateFlow that represents the number of subscriptions.
- *
- * Kotlin source: AbstractSharedFlow.kt lines 118-129
- *
- * Kotlin: @OptIn(ExperimentalForInheritanceCoroutinesApi::class)
- * private class SubscriptionCountStateFlow(initialValue: Int) : StateFlow<Int>,
- *     SharedFlowImpl<Int>(1, Int.MAX_VALUE, BufferOverflow.DROP_OLDEST)
- */
-class SubscriptionCountStateFlow
-    : public StateFlow<int>,
-      public ::kotlinx::coroutines::flow::SharedFlowImpl<int>
-{
-public:
-    explicit SubscriptionCountStateFlow(int initial_value)
-        : ::kotlinx::coroutines::flow::SharedFlowImpl<int>(
-            1,
-            std::numeric_limits<int>::max(),
-            channels::BufferOverflow::DROP_OLDEST)
-    {
-        this->SharedFlowImpl<int>::try_emit(initial_value);
-    }
-
-    /**
-     * Kotlin: override val value: Int get() = synchronized(this) { lastReplayedLocked }
-     */
-    int value() const override {
-        // TODO(semantics): Need synchronized(this)
-        return this->get_last_replayed_locked();
-    }
-
-    /**
-     * Kotlin: fun increment(delta: Int) = synchronized(this) { tryEmit(lastReplayedLocked + delta) }
-     */
-    void increment(int delta) {
-        // TODO(semantics): Need synchronized(this)
-        int current = this->get_last_replayed_locked();
-        this->try_emit(current + delta);
-    }
-
-    // Flow interface methods - explicitly forward to SharedFlowImpl implementations
-    std::vector<int> get_replay_cache() const override {
-        return SharedFlowImpl<int>::get_replay_cache();
-    }
-
-    void* collect(FlowCollector<int>* collector, Continuation<void*>* continuation) override {
-        return SharedFlowImpl<int>::collect(collector, continuation);
-    }
-};
-
-} // namespace kotlinx::coroutines::flow::internal
-
-// AbstractSharedFlow template method implementations
-// These are here (not in AbstractSharedFlow.hpp) because they need SubscriptionCountStateFlow to be complete
-
-namespace kotlinx::coroutines::flow::internal {
-
-template<typename S, typename F>
-inline StateFlow<int>* AbstractSharedFlow<S, F>::get_subscription_count() {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    if (!subscription_count_) {
-        subscription_count_ = new SubscriptionCountStateFlow(n_collectors_);
-    }
-    return static_cast<StateFlow<int>*>(subscription_count_);
-}
-
-/**
- * Allocates a slot for a new collector.
- *
- * Kotlin:
- * @Suppress("UNCHECKED_CAST")
- * protected fun allocateSlot(): S
- */
-template<typename S, typename F>
-inline S* AbstractSharedFlow<S, F>::allocate_slot() {
-    SubscriptionCountStateFlow* subscription_count_copy = nullptr;
-    S* slot = nullptr;
-
-    {
-        std::lock_guard<std::recursive_mutex> lock(mutex_);
-
-        // Get or create slots array
-        std::vector<S*>* current_slots = slots_;
-        if (!current_slots) {
-            slots_ = create_slot_array(2);
-            current_slots = slots_;
-        } else if (n_collectors_ >= static_cast<int>(current_slots->size())) {
-            // Expand array
-            auto* new_slots = create_slot_array(2 * current_slots->size());
-            for (size_t i = 0; i < current_slots->size(); ++i) {
-                (*new_slots)[i] = (*current_slots)[i];
-            }
-            delete slots_;
-            slots_ = new_slots;
-            current_slots = slots_;
-        }
-
-        // Find and allocate a free slot
-        int index = next_index_;
-        while (true) {
-            slot = (*current_slots)[index];
-            if (!slot) {
-                slot = create_slot();
-                (*current_slots)[index] = slot;
-            }
-            index++;
-            if (index >= static_cast<int>(current_slots->size())) index = 0;
-
-            // Try to allocate this slot
-            if (slot->allocate_locked(as_flow())) {
-                break;
-            }
-        }
-
-        next_index_ = index;
-        n_collectors_++;
-        subscription_count_copy = subscription_count_;
-    }
-
-    // Increment subscription count outside the lock
-    if (subscription_count_copy) {
-        subscription_count_copy->increment(1);
-    }
-
-    return slot;
-}
-
-/**
- * Frees a slot and resumes any waiting continuations.
- *
- * Kotlin:
- * @Suppress("UNCHECKED_CAST")
- * protected fun freeSlot(slot: S)
- */
-template<typename S, typename F>
-inline void AbstractSharedFlow<S, F>::free_slot(S* slot) {
-    SubscriptionCountStateFlow* subscription_count_copy = nullptr;
-    std::vector<Continuation<Unit>*> resumes;
-
-    {
-        std::lock_guard<std::recursive_mutex> lock(mutex_);
-        n_collectors_--;
-        subscription_count_copy = subscription_count_;
-
-        // Reset next index oracle if we have no more active collectors
-        if (n_collectors_ == 0) {
-            next_index_ = 0;
-        }
-
-        resumes = slot->free_locked(as_flow());
-    }
-
-    // Resume suspended coroutines outside the lock
-    for (auto cont : resumes) {
-        if (cont) {
-            cont->resume_with(Result<Unit>::success(Unit{}));
-        }
-    }
-
-    // Decrement subscription count outside the lock
-    if (subscription_count_copy) {
-        subscription_count_copy->increment(-1);
-    }
-}
-
-} // namespace kotlinx::coroutines::flow::internal
+// SubscriptionCountStateFlow and AbstractSharedFlow implementations moved to StateFlow.hpp

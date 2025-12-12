@@ -282,6 +282,18 @@ void* suspend_cancellable_coroutine(
     Continuation<void*>* continuation
 );
 
+/**
+ * Kotlin: (CancellableContinuation<*>).disposeOnCancellation(handle)
+ *
+ * Registers [handle] to be disposed when [cont] is cancelled.
+ */
+template<typename T>
+inline void dispose_on_cancellation(CancellableContinuation<T>& cont, DisposableHandle* handle) {
+    cont.invoke_on_cancellation([handle](std::exception_ptr) {
+        handle->dispose();
+    });
+}
+
 void dispose_on_cancellation(CancellableContinuation<void>& cont, DisposableHandle* handle);
 
 } // namespace coroutines

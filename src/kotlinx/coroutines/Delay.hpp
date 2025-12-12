@@ -13,6 +13,8 @@
 #include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/DisposableHandle.hpp"
 #include <memory>
+
+#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include <chrono>
 #include <string>
 
@@ -111,9 +113,42 @@ void* delay(std::chrono::nanoseconds duration, Continuation<void*>* continuation
 void* delay(std::chrono::milliseconds duration, Continuation<void*>* continuation);
 
 /**
- * Suspends indefinitely until cancelled.
+ * Suspends the coroutine until cancellation.
+ * @param continuation the continuation to suspend
+ * @return COROUTINE_SUSPENDED
  */
 void* await_cancellation(Continuation<void*>* continuation);
+
+// -----------------------------------------------------------------------------
+// Plugin-compatible Overloads (shared_ptr)
+// -----------------------------------------------------------------------------
+
+[[suspend]]
+void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> continuation);
+
+[[suspend]]
+void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void*>> continuation);
+
+[[suspend]]
+void* delay(std::chrono::milliseconds duration, std::shared_ptr<Continuation<void*>> continuation);
+
+[[suspend]]
+void* await_cancellation(std::shared_ptr<Continuation<void*>> continuation);
+
+// -----------------------------------------------------------------------------
+// Plugin Frontend Stubs (for use within [[suspend]] functions)
+// -----------------------------------------------------------------------------
+[[suspend]]
+void delay(long long time_millis);
+
+[[suspend]]
+void delay(std::chrono::nanoseconds duration);
+
+[[suspend]]
+void delay(std::chrono::milliseconds duration);
+
+[[suspend]]
+void await_cancellation();
 
 } // namespace coroutines
 } // namespace kotlinx

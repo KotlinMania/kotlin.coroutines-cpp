@@ -11,6 +11,7 @@
 #include <functional>
 #include <thread>
 #include <memory>
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -181,15 +182,25 @@ namespace coroutines {
     // @param block The suspend block to execute
     // @param continuation The continuation to resume (passed by state machine)
     // @return Result or COROUTINE_SUSPENDED
-    template<typename T>
+    // Transliterated from Builders.common.kt: suspend fun <T> withContext(context: CoroutineContext, block: suspend CoroutineScope.() -> T): T
+    // Implemented as a suspend function that handles context switching logic.
+
+    template<typename T, typename Block>
+    [[suspend]]
     void* with_context(
         std::shared_ptr<CoroutineContext> context,
-        std::function<void*(CoroutineScope*, Continuation<void*>*)> block,
-        Continuation<void*>* continuation
+        Block&& block,
+        std::shared_ptr<Continuation<void*>> completion
     ) {
+        using namespace kotlinx::coroutines::dsl;
+
         if (!context) {
             throw std::invalid_argument("withContext requires a non-null context");
         }
+
+        // TODO: Implement full context switching logic (check dispatcher)
+        // For now, we execute in the given context (assuming block handles it or just scope wrapping)
+        // This simplistically matches the previous stub but with correct ABI.
 
         // Create a scope with the given context
         class WithContextScope : public CoroutineScope {
@@ -198,11 +209,93 @@ namespace coroutines {
             explicit WithContextScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(ctx) {}
             std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
         };
-
         WithContextScope scope(context);
 
-        // Execute the block, passing the continuation for proper suspend handling
-        // The block itself may suspend, returning COROUTINE_SUSPENDED
+        // Execute the block.
+        // Block is expected to accept (CoroutineScope*, std::shared_ptr<Continuation<void*>>)
+        return suspend(block(&scope, completion));
+    }
+
+    /**
+     * coroutineScope builder.
+     * Creates a CoroutineScope and calls the specified suspend block with this scope.
+     * The provided scope inherits its coroutineContext from the outer scope, but overrides
+     * the Job context element to ensure that it cancels all children when the scope is cancelled.
+     * Use this function to manage the lifecycle of concurrent operations.
+     */
+    template<typename T, typename Block>
+    [[suspend]]
+    void* coroutine_scope(
+        Block&& block,
+        std::shared_ptr<Continuation<void*>> completion
+    ) {
+         using namespace kotlinx::coroutines::dsl;
+         
+         // TODO: Use internal::ScopeCoroutine to properly wait for children.
+         // For now, we reuse the caller's context and just create a scope wrapper.
+         // This does NOT wait for children launched in this scope!
+         
+         if (!completion) throw std::invalid_argument("coroutineScope requires non-null completion");
+         
+         class SimpleScope : public CoroutineScope {
+             std::shared_ptr<CoroutineContext> ctx_;
+         public:
+             explicit SimpleScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(ctx) {}
+             std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
+         };
+         
+         SimpleScope scope(completion->get_context());
+         return suspend(block(&scope, completion));
+    }
+
+     /**
+     * supervisorScope builder.
+     * Creates a CoroutineScope with SupervisorJob and calls the specified suspend block with this scope.
+     * The children failure does not cause this scope to fail and does not affect other children.
+     */
+    template<typename T, typename Block>
+    [[suspend]]
+    void* supervisor_scope(
+        Block&& block,
+        std::shared_ptr<Continuation<void*>> completion
+    ) {
+         using namespace kotlinx::coroutines::dsl;
+         
+         // TODO: Use SupervisorCoroutine.
+         // Currently stubbed similarly to coroutineScope.
+         
+         if (!completion) throw std::invalid_argument("supervisorScope requires non-null completion");
+         
+         class SimpleScope : public CoroutineScope {
+             std::shared_ptr<CoroutineContext> ctx_;
+         public:
+             explicit SimpleScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(ctx) {}
+             std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
+         };
+         
+         // TODO: Add SupervisorJob to context
+         SimpleScope scope(completion->get_context());
+         return suspend(block(&scope, completion));
+    }
+
+     // Legacy snake_case version
+    template<typename T>
+    [[deprecated("Use with_context instead")]]
+    void* with_context(
+        std::shared_ptr<CoroutineContext> context,
+        std::function<void*(CoroutineScope*, Continuation<void*>*)> block,
+        Continuation<void*>* continuation
+    ) {
+        // Adapt to new implementation if possible, or keep as is?
+        // Reuse logic but careful with types.
+        if (!context) throw std::invalid_argument("with_context requires a non-null context");
+        class WithContextScope : public CoroutineScope {
+            std::shared_ptr<CoroutineContext> ctx_;
+        public:
+            explicit WithContextScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(ctx) {}
+            std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
+        };
+        WithContextScope scope(context);
         return block(&scope, continuation);
     }
 

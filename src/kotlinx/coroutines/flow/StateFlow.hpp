@@ -169,3 +169,128 @@ private:
 } // namespace flow
 } // namespace coroutines
 } // namespace kotlinx
+
+// SubscriptionCountStateFlow and AbstractSharedFlow implementations moved from SharedFlow.hpp
+namespace kotlinx::coroutines::flow::internal {
+
+class SubscriptionCountStateFlow
+    : public StateFlow<int>,
+      public ::kotlinx::coroutines::flow::SharedFlowImpl<int>
+{
+public:
+    explicit SubscriptionCountStateFlow(int initial_value)
+        : ::kotlinx::coroutines::flow::SharedFlowImpl<int>(
+            1,
+            std::numeric_limits<int>::max(),
+            channels::BufferOverflow::DROP_OLDEST)
+    {
+        this->SharedFlowImpl<int>::try_emit(initial_value);
+    }
+
+    int value() const override {
+        std::lock_guard<std::recursive_mutex> lock(this->mutex());
+        return this->get_last_replayed_locked();
+    }
+
+    void increment(int delta) {
+        std::lock_guard<std::recursive_mutex> lock(this->mutex());
+        int current = this->get_last_replayed_locked();
+        this->try_emit(current + delta);
+    }
+
+    std::vector<int> get_replay_cache() const override {
+        return SharedFlowImpl<int>::get_replay_cache();
+    }
+
+    void* collect(FlowCollector<int>* collector, Continuation<void*>* continuation) override {
+        return SharedFlowImpl<int>::collect(collector, continuation);
+    }
+};
+
+template<typename S, typename F>
+inline StateFlow<int>* AbstractSharedFlow<S, F>::get_subscription_count() {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    if (!subscription_count_) {
+        subscription_count_ = new SubscriptionCountStateFlow(n_collectors_);
+    }
+    return static_cast<StateFlow<int>*>(subscription_count_);
+}
+
+template<typename S, typename F>
+inline S* AbstractSharedFlow<S, F>::allocate_slot() {
+    SubscriptionCountStateFlow* subscription_count_copy = nullptr;
+    S* slot = nullptr;
+
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        std::vector<S*>* current_slots = slots_;
+        if (!current_slots) {
+            slots_ = create_slot_array(2);
+            current_slots = slots_;
+        } else if (n_collectors_ >= static_cast<int>(current_slots->size())) {
+            auto* new_slots = create_slot_array(2 * current_slots->size());
+            for (size_t i = 0; i < current_slots->size(); ++i) {
+                (*new_slots)[i] = (*current_slots)[i];
+            }
+            delete slots_;
+            slots_ = new_slots;
+            current_slots = slots_;
+        }
+
+        int index = next_index_;
+        while (true) {
+            slot = (*current_slots)[index];
+            if (!slot) {
+                slot = create_slot();
+                (*current_slots)[index] = slot;
+            }
+            index++;
+            if (index >= static_cast<int>(current_slots->size())) index = 0;
+
+            if (slot->allocate_locked(as_flow())) {
+                break;
+            }
+        }
+
+        next_index_ = index;
+        n_collectors_++;
+        subscription_count_copy = subscription_count_;
+    }
+
+    if (subscription_count_copy) {
+        subscription_count_copy->increment(1);
+    }
+
+    return slot;
+}
+
+template<typename S, typename F>
+inline void AbstractSharedFlow<S, F>::free_slot(S* slot) {
+    SubscriptionCountStateFlow* subscription_count_copy = nullptr;
+    std::vector<Continuation<Unit>*> resumes;
+
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        n_collectors_--;
+        subscription_count_copy = subscription_count_;
+
+        if (n_collectors_ == 0) {
+            next_index_ = 0;
+        }
+
+        resumes = slot->free_locked(as_flow());
+    }
+
+    for (auto cont : resumes) {
+        if (cont) {
+            cont->resume_with(Result<Unit>::success(Unit{}));
+        }
+    }
+
+    if (subscription_count_copy) {
+        subscription_count_copy->increment(-1);
+    }
+}
+
+} // namespace kotlinx::coroutines::flow::internal

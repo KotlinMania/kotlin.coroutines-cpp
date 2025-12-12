@@ -1,5 +1,10 @@
 #pragma once
 
+#include "kotlinx/coroutines/CoroutineDispatcher.hpp"
+#include "kotlinx/coroutines/ContinuationInterceptor.hpp"
+#include <functional>
+#include <memory>
+
 namespace kotlinx {
 namespace coroutines {
 
@@ -40,11 +45,32 @@ inline bool is_lazy(CoroutineStart start) {
  */
 template <typename Block, typename Receiver, typename Completion>
 void invoke(CoroutineStart start, Block&& block, Receiver&& receiver, Completion&& completion) {
-    (void)start;
-    (void)block;
-    (void)receiver;
-    (void)completion;
-    // Stub - see TODO block above
+    if (start == CoroutineStart::DEFAULT) {
+        auto context = completion->get_context();
+        
+        std::shared_ptr<CoroutineDispatcher> dispatcher;
+        auto element = context->get(ContinuationInterceptor::type_key);
+        if (element) {
+             dispatcher = std::dynamic_pointer_cast<CoroutineDispatcher>(element);
+        }
+        
+        struct LambdaRunnable : Runnable {
+             std::function<void()> b;
+             LambdaRunnable(std::function<void()> f) : b(std::move(f)) {}
+             void run() override { b(); }
+        };
+        
+        // Capture block and receiver by value (assuming they are cheap/copyable functions/pointers)
+        auto runnable = std::make_shared<LambdaRunnable>([b = block, r = receiver]() {
+             b(r);
+        });
+        
+        if (dispatcher) {
+             dispatcher->dispatch(*context, runnable);
+        } else {
+             runnable->run();
+        }
+    }
 }
 
 } // namespace coroutines

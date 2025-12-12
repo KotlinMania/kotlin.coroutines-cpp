@@ -8,6 +8,14 @@
  */
 
 #include "kotlinx/coroutines/Yield.hpp"
+#include "kotlinx/coroutines/Yield.hpp"
+#include "kotlinx/coroutines/internal/DispatchedTaskDispatch.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/CoroutineDispatcher.hpp"
+#include "kotlinx/coroutines/ContinuationInterceptor.hpp"
+#include "kotlinx/coroutines/Runnable.hpp"
 #include <thread>
 
 namespace kotlinx {
@@ -41,8 +49,47 @@ namespace kotlinx {
  * Workaround: Use delay(1) for a minimal suspension point
  */
         void yield_coroutine() {
-            // TODO: Look for LLVM code or other in kotlin source code tmp/kotlin
-            std::this_thread::yield();
+             std::this_thread::yield();
         }
+
+        struct LambdaRunnable : public Runnable {
+            std::function<void()> block;
+            explicit LambdaRunnable(std::function<void()> b) : block(std::move(b)) {}
+            void run() override { block(); }
+        };
+
+        [[suspend]]
+        void* yield(std::shared_ptr<Continuation<void*>> completion) {
+            using namespace kotlinx::coroutines::dsl;
+            
+            suspend(suspend_cancellable_coroutine<void>([](CancellableContinuation<void>& cont) {
+                auto context = cont.get_context();
+                context_ensure_active(*context);
+
+                auto element = context->get(ContinuationInterceptor::type_key);
+                auto* dispatcher = element ? dynamic_cast<CoroutineDispatcher*>(element.get()) : nullptr;
+
+                if (dispatcher) {
+                     // We need to dispatch resumption.
+                     // Wrap resume in a Runnable.
+                     auto runnable = std::make_shared<LambdaRunnable>([&cont]() {
+                         cont.resume();
+                     });
+                     dispatcher->dispatch(*context, runnable);
+                } else {
+                     // No dispatcher, just resume (no-op yield or thread yield?)
+                     // If we are Unconfined, we just run.
+                     // But yield is supposed to check cancellation/give up time.
+                     // We checked cancellation.
+                     // Since we have no dispatcher, we can't really "yield to others" except OS.
+                     std::this_thread::yield();
+                     cont.resume();
+                }
+            }, completion.get()));
+            
+            return nullptr;
+        }
+
+        [[suspend]] void yield() {}
     } // namespace coroutines
 } // namespace kotlinx

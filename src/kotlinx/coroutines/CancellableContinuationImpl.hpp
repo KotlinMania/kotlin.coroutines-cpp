@@ -12,6 +12,7 @@
 #include "kotlinx/coroutines/CompletionHandler.hpp"
 #include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
+#include "kotlinx/coroutines/internal/DispatchedTask.hpp"
 #include <atomic>
 #include <mutex>
 #include <memory>
@@ -82,16 +83,16 @@ struct UserSuppliedCancelHandler : public CancelHandler {
 };
 
 // Completed with additional metadata
-// private data class CompletedContinuation<R>
+// private data class CompletedCancellableContinuationState<R>
 template <typename T>
-struct CompletedContinuation : public State {
+struct CompletedCancellableContinuationState : public State {
     T result;
     std::shared_ptr<CancelHandler> cancel_handler;
     std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation;
     void* idempotent_resume;
     std::exception_ptr cancel_cause;
 
-    CompletedContinuation(
+    CompletedCancellableContinuationState(
         T r, 
         std::shared_ptr<CancelHandler> ch = nullptr,
         std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> oc = nullptr,
@@ -101,18 +102,18 @@ struct CompletedContinuation : public State {
 
     bool is_cancelled() const { return cancel_cause != nullptr; }
     
-    std::string to_string() const override { return "CompletedContinuation"; }
+    std::string to_string() const override { return "CompletedCancellableContinuationState"; }
 };
 
-// Void specialization for CompletedContinuation to handle void results
+// Void specialization for CompletedCancellableContinuationState to handle void results
 template <>
-struct CompletedContinuation<void> : public State {
+struct CompletedCancellableContinuationState<void> : public State {
     std::shared_ptr<CancelHandler> cancel_handler;
     std::function<void(std::exception_ptr, std::shared_ptr<CoroutineContext>)> on_cancellation;
     void* idempotent_resume;
     std::exception_ptr cancel_cause;
 
-    CompletedContinuation(
+    CompletedCancellableContinuationState(
         std::shared_ptr<CancelHandler> ch = nullptr,
         std::function<void(std::exception_ptr, std::shared_ptr<CoroutineContext>)> oc = nullptr,
         void* idempotent = nullptr,
@@ -120,7 +121,7 @@ struct CompletedContinuation<void> : public State {
     ) : cancel_handler(ch), on_cancellation(oc), idempotent_resume(idempotent), cancel_cause(cause) {}
 
     bool is_cancelled() const { return cancel_cause != nullptr; }
-    std::string to_string() const override { return "CompletedContinuation"; }
+    std::string to_string() const override { return "CompletedCancellableContinuationState"; }
 };
 
 /**
@@ -298,8 +299,8 @@ public:
             return Result<T>::success(cwv->result);
         }
 
-        // CompletedContinuation<T> -> success with result
-        if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(s)) {
+        // CompletedCancellableContinuationState<T> -> success with result
+        if (auto* cc = dynamic_cast<CompletedCancellableContinuationState<T>*>(s)) {
             return Result<T>::success(cc->result);
         }
 
@@ -327,10 +328,10 @@ public:
             }
             if (dynamic_cast<CompletedExceptionally*>(state)) return; // already exceptional
 
-            // Handle CompletedWithValue - promote to CompletedContinuation with cancelCause
+            // Handle CompletedWithValue - promote to CompletedCancellableContinuationState with cancelCause
             // Kotlin lines 181-187: else branch for raw values
             if (auto* cwv = dynamic_cast<CompletedWithValue<T>*>(state)) {
-                auto* update = new CompletedContinuation<T>(
+                auto* update = new CompletedCancellableContinuationState<T>(
                     cwv->result, nullptr, nullptr, nullptr, cause);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
                     owned_state_.reset(update);
@@ -341,9 +342,9 @@ public:
                 continue;
             }
 
-            if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(state)) {
+            if (auto* cc = dynamic_cast<CompletedCancellableContinuationState<T>*>(state)) {
                 if (cc->is_cancelled()) throw std::runtime_error("Must be called at most once");
-                auto* update = new CompletedContinuation<T>(
+                auto* update = new CompletedCancellableContinuationState<T>(
                     cc->result, cc->cancel_handler, cc->on_cancellation, cc->idempotent_resume, cause);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
                     // Kotlin line 177: state.invokeHandlers(this, cause)
@@ -518,7 +519,7 @@ public:
     
     // Kotlin lines 605-609: getSuccessfulResult
     // when (state) {
-    //     is CompletedContinuation<*> -> state.result as T
+    //     is CompletedCancellableContinuationState<*> -> state.result as T
     //     else -> state as T  // Raw value case
     // }
     void* get_successful_result(State* state) {
@@ -532,7 +533,7 @@ public:
             }
         }
 
-        if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(state)) {
+        if (auto* cc = dynamic_cast<CompletedCancellableContinuationState<T>*>(state)) {
             if constexpr (std::is_void_v<T>) {
                 (void)cc;
                 return nullptr;
@@ -606,8 +607,8 @@ public:
                 continue;
             }
 
-            // Kotlin lines 542-549: idempotent resume check for CompletedContinuation
-            if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(state)) {
+            // Kotlin lines 542-549: idempotent resume check for CompletedCancellableContinuationState
+            if (auto* cc = dynamic_cast<CompletedCancellableContinuationState<T>*>(state)) {
                 if (idempotent != nullptr && cc->idempotent_resume == idempotent) {
                     // assert state.result == value
                     return const_cast<void*>(RESUME_TOKEN);
@@ -662,10 +663,10 @@ public:
         }
 
         // Lines 486-489: onCancellation != null || state is CancelHandler || idempotent != null
-        // -> CompletedContinuation (need to track handlers/metadata)
+        // -> CompletedCancellableContinuationState (need to track handlers/metadata)
         auto* ch = dynamic_cast<CancelHandler*>(state);
         if (on_cancellation != nullptr || ch != nullptr || idempotent != nullptr) {
-            return new CompletedContinuation<T>(
+            return new CompletedCancellableContinuationState<T>(
                 proposed_update,
                 ch ? std::shared_ptr<CancelHandler>(ch, [](CancelHandler*){}) : nullptr,
                 on_cancellation,
@@ -749,8 +750,8 @@ public:
                 return;
             }
 
-            // CompletedContinuation -> segment doesn't need to be called
-            if (dynamic_cast<CompletedContinuation<T>*>(state)) {
+            // CompletedCancellableContinuationState -> segment doesn't need to be called
+            if (dynamic_cast<CompletedCancellableContinuationState<T>*>(state)) {
                 return;  // Kotlin: if (handler is Segment<*>) return
             }
         }
@@ -809,8 +810,8 @@ public:
                 return;
             }
 
-            // CompletedContinuation -> copy with handler
-            if (auto* cc = dynamic_cast<CompletedContinuation<T>*>(state)) {
+            // CompletedCancellableContinuationState -> copy with handler
+            if (auto* cc = dynamic_cast<CompletedCancellableContinuationState<T>*>(state)) {
                 if (cc->cancel_handler) {
                     throw std::runtime_error("Multiple handlers prohibited");
                 }
@@ -818,7 +819,7 @@ public:
                     call_cancel_handler(handler, cc->cancel_cause);
                     return;
                 }
-                auto* update = new CompletedContinuation<T>(
+                auto* update = new CompletedCancellableContinuationState<T>(
                     cc->result, handler, cc->on_cancellation, cc->idempotent_resume, cc->cancel_cause);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
                     owned_state_.reset(update);
@@ -829,9 +830,9 @@ public:
             }
 
             // Kotlin lines 448-458: else branch - raw completed value
-            // CompletedWithValue -> wrap in CompletedContinuation with handler
+            // CompletedWithValue -> wrap in CompletedCancellableContinuationState with handler
             if (auto* cwv = dynamic_cast<CompletedWithValue<T>*>(state)) {
-                auto* update = new CompletedContinuation<T>(
+                auto* update = new CompletedCancellableContinuationState<T>(
                     cwv->result, handler, nullptr, nullptr, nullptr);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
                     owned_state_.reset(update);
@@ -977,9 +978,9 @@ public:
             if (dynamic_cast<NotCompleted*>(state)) throw std::runtime_error("Not completed");
             if (dynamic_cast<CompletedExceptionally*>(state)) return;
 
-            // Handle CompletedWithValue - promote to CompletedContinuation with cancelCause
+            // Handle CompletedWithValue - promote to CompletedCancellableContinuationState with cancelCause
             if (dynamic_cast<CompletedWithValue<void>*>(state)) {
-                auto* update = new CompletedContinuation<void>(nullptr, nullptr, nullptr, cause);
+                auto* update = new CompletedCancellableContinuationState<void>(nullptr, nullptr, nullptr, cause);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
                     owned_state_.reset(update);
                     return;
@@ -988,9 +989,9 @@ public:
                 continue;
             }
 
-            if (auto* cc = dynamic_cast<CompletedContinuation<void>*>(state)) {
+            if (auto* cc = dynamic_cast<CompletedCancellableContinuationState<void>*>(state)) {
                 if (cc->is_cancelled()) throw std::runtime_error("Must be called at most once");
-                auto* update = new CompletedContinuation<void>(cc->cancel_handler, cc->on_cancellation, cc->idempotent_resume, cause);
+                auto* update = new CompletedCancellableContinuationState<void>(cc->cancel_handler, cc->on_cancellation, cc->idempotent_resume, cause);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
                     if (cc->cancel_handler) call_cancel_handler(cc->cancel_handler, cause);
                     if (cc->on_cancellation) cc->on_cancellation(cause, context_);
@@ -1111,9 +1112,9 @@ public:
                     continue;
                 }
 
-                // Use CompletedContinuation when metadata needed
+                // Use CompletedCancellableContinuationState when metadata needed
                 if (ch != nullptr || idempotent != nullptr) {
-                    auto* update = new CompletedContinuation<void>(
+                    auto* update = new CompletedCancellableContinuationState<void>(
                         ch ? std::shared_ptr<CancelHandler>(ch, [](CancelHandler*){}) : nullptr,
                         nullptr,
                         idempotent);
@@ -1217,12 +1218,12 @@ public:
                 call_cancel_handler(handler, cc->cause);
                 return;
             }
-            if (dynamic_cast<CompletedContinuation<void>*>(state)) {
+            if (dynamic_cast<CompletedCancellableContinuationState<void>*>(state)) {
                 return;
             }
             // Kotlin lines 448-458: else branch - CompletedWithValue<void>
             if (dynamic_cast<CompletedWithValue<void>*>(state)) {
-                auto* update = new CompletedContinuation<void>(handler, nullptr, nullptr, nullptr);
+                auto* update = new CompletedCancellableContinuationState<void>(handler, nullptr, nullptr, nullptr);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
                     owned_state_.reset(update);
                     return;

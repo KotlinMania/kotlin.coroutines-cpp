@@ -15,6 +15,8 @@
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
+#include "kotlinx/coroutines/internal/DispatchedTaskDispatch.hpp"
 #include <thread>
 #include <chrono>
 #include <limits>
@@ -82,5 +84,52 @@ namespace kotlinx {
                 // suspend_cancellable_coroutine handles cancellation automatically if we don't resume.
             }, continuation);
         }
+    } // namespace coroutines
+} // namespace kotlinx
+
+// -----------------------------------------------------------------------------
+// Plugin-compatible Overloads (shared_ptr)
+// -----------------------------------------------------------------------------
+
+namespace kotlinx {
+    namespace coroutines {
+        // NOLINTBEGIN(readability-identifier-naming)
+
+        [[suspend]]
+        void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> continuation) {
+            using namespace kotlinx::coroutines::dsl;
+            suspend(delay(time_millis, continuation.get()));
+            return nullptr;
+        }
+
+        [[suspend]]
+        void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void*>> continuation) {
+            using namespace kotlinx::coroutines::dsl;
+            suspend(delay(duration, continuation.get()));
+            return nullptr;
+        }
+
+        [[suspend]]
+        void* delay(std::chrono::milliseconds duration, std::shared_ptr<Continuation<void*>> continuation) {
+             using namespace kotlinx::coroutines::dsl;
+             suspend(delay(duration, continuation.get()));
+             return nullptr;
+        }
+
+        [[suspend]]
+        void* await_cancellation(std::shared_ptr<Continuation<void*>> continuation) {
+             using namespace kotlinx::coroutines::dsl;
+             suspend(await_cancellation(continuation.get()));
+             return nullptr;
+        }
+
+        // NOLINTEND(readability-identifier-naming)
+
+        // Frontend Stubs
+        [[suspend]] void delay(long long) {}
+        [[suspend]] void delay(std::chrono::nanoseconds) {}
+        [[suspend]] void delay(std::chrono::milliseconds) {}
+        [[suspend]] void await_cancellation() {}
+
     } // namespace coroutines
 } // namespace kotlinx

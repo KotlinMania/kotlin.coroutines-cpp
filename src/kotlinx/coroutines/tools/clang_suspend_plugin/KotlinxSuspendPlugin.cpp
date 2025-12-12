@@ -6,7 +6,7 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Lex/Lexer.h"
-#include "clang/Sema/ParsedAttrInfo.h"
+#include "clang/Basic/ParsedAttrInfo.h"
 #include "clang/Sema/Sema.h"
 
 #include "llvm/Support/FileSystem.h"
@@ -29,8 +29,11 @@ static constexpr const char* kSuspendAnnot = "suspend";
 class KotlinxSuspendAttrInfo : public ParsedAttrInfo {
 public:
     KotlinxSuspendAttrInfo() {
-        Spellings.push_back({ParsedAttr::AS_CXX11, "suspend"});
-        Spellings.push_back({ParsedAttr::AS_CXX11, "kotlinx::suspend"});
+        static constexpr Spelling S[] = {
+            {ParsedAttr::AS_CXX11, "suspend"},
+            {ParsedAttr::AS_CXX11, "kotlinx::suspend"}
+        };
+        Spellings = S;
     }
 
     bool diagAppertainsToDecl(Sema& S, const ParsedAttr& Attr, const Decl* D) const override {
@@ -40,7 +43,9 @@ public:
     }
 
     AttrHandling handleDeclAttribute(Sema& S, Decl* D, const ParsedAttr& Attr) const override {
-        auto* ann = AnnotateAttr::CreateImplicit(S.Context, kSuspendAnnot, Attr.getRange());
+        // Adapt to newer Clang API for CreateImplicit
+        AttributeCommonInfo Info(Attr.getRange(), AttributeCommonInfo::UnknownAttribute, AttributeCommonInfo::Form::CXX11()); 
+        auto* ann = AnnotateAttr::CreateImplicit(S.Context, kSuspendAnnot, Info);
         D->addAttr(ann);
         return AttributeApplied;
     }
@@ -125,6 +130,7 @@ public:
         : visitor_(ctx, diags), outDir_(std::move(outDir)) {}
 
     void HandleTranslationUnit(ASTContext& ctx) override {
+        llvm::errs() << "DEBUG: HandleTranslationUnit\n";
         visitor_.TraverseDecl(ctx.getTranslationUnitDecl());
         emitSidecar(ctx);
     }
@@ -161,6 +167,7 @@ private:
     }
 
     void emitSidecar(ASTContext& ctx) {
+        llvm::errs() << "DEBUG: emitSidecar. SuspendFns: " << visitor_.suspendFunctions().size() << "\n";
         const auto& fns = visitor_.suspendFunctions();
         if (fns.empty()) return;
 
@@ -169,7 +176,14 @@ private:
         PrintingPolicy pp(lo);
 
         // Compute output file path per translation unit.
-        std::string tuName = sm.getFileEntryForID(sm.getMainFileID())->getName().str();
+        auto fileEntry = sm.getFileEntryForID(sm.getMainFileID());
+        if (!fileEntry) {
+             llvm::errs() << "DEBUG: No file entry for main file ID\n";
+             return;
+        }
+        std::string tuName = fileEntry->tryGetRealPathName().str();
+        llvm::errs() << "DEBUG: tuName: " << tuName << "\n";
+        
         llvm::SmallString<256> outPath(outDir_);
         llvm::sys::path::append(outPath, llvm::sys::path::filename(tuName));
         llvm::sys::path::replace_extension(outPath, ".kx.cpp");
@@ -194,7 +208,9 @@ private:
             if (!fd || !fd->hasBody()) continue;
 
             std::string fnName = fd->getNameAsString();
-            std::string coroName = "__kxs_coroutine_" + fnName;
+        // Append unique index to handle overloads
+        static int uniqueCounter = 0;
+        std::string coroName = "__kxs_coroutine_" + fnName + "_" + std::to_string(++uniqueCounter);
 
             // Build parameter list and capture list.
             std::string params;

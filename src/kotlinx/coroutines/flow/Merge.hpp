@@ -8,80 +8,51 @@
 
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
-#include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
-#include "kotlinx/coroutines/channels/BufferedChannel.hpp"
-#include <vector>
-#include <thread>
-#include <atomic>
-#include <functional>
+#include "kotlinx/coroutines/flow/internal/Merge.hpp"
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
 
-using kotlinx::coroutines::channels::BufferedChannel;
+
 using kotlinx::coroutines::channels::Channel;
+using kotlinx::coroutines::flow::internal::ChannelFlowMerge;
+using kotlinx::coroutines::flow::internal::ChannelLimitedFlowMerge;
+using kotlinx::coroutines::flow::internal::ChannelFlowTransformLatest;
 
 constexpr int DEFAULT_CONCURRENCY = 16;
-
-// Alias for the flow builder to avoid shadowing issues with parameters
-template<typename T>
-inline std::shared_ptr<Flow<T>> make_flow(std::function<void(FlowCollector<T>*)> block) {
-    return flow<T>(block);
-}
 
 /**
  * Merges the given flows into a single flow without preserving an order of elements.
  * All flows are merged concurrently, without limit on the number of simultaneously collected flows.
- *
- * TODO: Implement proper coroutine-based concurrent collection
  */
 template <typename T>
 std::shared_ptr<Flow<T>> merge(std::vector<std::shared_ptr<Flow<T>>> flows) {
-    // TODO: Implement proper merge using ChannelFlow and coroutine scope
-    // For now, collect sequentially as a simple fallback
-    return make_flow<T>([flows](FlowCollector<T>* collector) {
-        for (auto& f : flows) {
-            f->collect([collector](T value) {
-                collector->emit(value);
-            });
-        }
-    });
+    return std::make_shared<ChannelLimitedFlowMerge<T>>(flows);
 }
 
 /**
  * Flattens the given flow of flows into a single flow with a [concurrency] limit.
- *
- * TODO: Implement ChannelFlowMerge with proper concurrency limiting
  */
 template <typename T>
 std::shared_ptr<Flow<T>> flatten_merge(std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> upstream, int concurrency = DEFAULT_CONCURRENCY) {
-    // TODO: Implement ChannelFlowMerge with proper concurrency limiting
-    // For now, collect sequentially
-    return make_flow<T>([upstream](FlowCollector<T>* collector) {
-        upstream->collect([collector](std::shared_ptr<Flow<T>> inner) {
-            inner->collect([collector](T value) {
-                collector->emit(value);
-            });
-        });
-    });
+    if (concurrency < 0) {
+        throw std::invalid_argument("Concurrency must be non-negative"); // TODO(port): specific exception type
+    }
+    // TODO: optimization for concurrency == 1 (Serial), concurrency == 0 (throws?)
+    // Kotlin throws IllegalArgumentException if concurrency <= 0.
+    // If concurrency == 1, it returns generic flow that collects sequentially.
+    return std::make_shared<ChannelFlowMerge<T>>(upstream, concurrency);
 }
 
 /**
  * Returns a flow that produces element by [transform] function every time the original flow emits a value.
  * When the original flow emits a new value, the previous `transform` block is cancelled.
- *
- * TODO: Implement ChannelFlowTransformLatest with proper cancellation
  */
 template <typename T, typename R>
-std::shared_ptr<Flow<R>> transform_latest(std::shared_ptr<Flow<T>> upstream, std::function<void(FlowCollector<R>*, T)> transform_fn) {
-    // TODO: Implement ChannelFlowTransformLatest with proper cancellation
-    // For now, just transform without cancellation
-    return make_flow<R>([upstream, transform_fn](FlowCollector<R>* collector) {
-        upstream->collect([collector, transform_fn](T value) {
-            transform_fn(collector, value);
-        });
-    });
+std::shared_ptr<Flow<R>> transform_latest(std::shared_ptr<Flow<T>> upstream, 
+                                        std::function<void*(FlowCollector<R>*, T, Continuation<void*>*)> transform_fn) {
+    return std::make_shared<ChannelFlowTransformLatest<T, R>>(transform_fn, upstream);
 }
 
 /**
@@ -90,8 +61,12 @@ std::shared_ptr<Flow<R>> transform_latest(std::shared_ptr<Flow<T>> upstream, std
  */
 template <typename T, typename R>
 std::shared_ptr<Flow<R>> map_latest(std::shared_ptr<Flow<T>> upstream, std::function<R(T)> transform_fn) {
-    return transform_latest<T, R>(upstream, [transform_fn](FlowCollector<R>* collector, T value) {
-        collector->emit(transform_fn(value));
+    return transform_latest<T, R>(upstream, [transform_fn](FlowCollector<R>* collector, T value, Continuation<void*>* cont) -> void* {
+        // TODO(suspend): emit is suspendable.
+        // For now, assuming emit is synchronous or ignoring result.
+        // Ideally: return collector->emit(transform_fn(value), cont);
+        collector->emit(transform_fn(value), cont);
+        return nullptr;
     });
 }
 

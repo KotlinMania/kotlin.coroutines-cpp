@@ -103,6 +103,9 @@ protected:
     std::vector<S*>* get_slots() const { return slots_; }
     int get_n_collectors() const { return n_collectors_; }
 
+    // Expose the shared lock to derived classes to mirror Kotlin synchronized(this).
+    std::recursive_mutex& mutex() const { return mutex_; }
+
     /**
      * Creates a new slot instance.
      * Kotlin: protected abstract fun createSlot(): S
