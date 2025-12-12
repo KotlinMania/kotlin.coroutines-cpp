@@ -35,7 +35,7 @@ docs/                                # Documentation
   ├── audits/                        # Per-file audit status
   └── topics/                        # Translated Kotlin coroutines docs
 
-tools/clang_suspend_plugin/          # Clang plugin for suspend DSL (in development)
+tools/clang_suspend_plugin/          # Clang plugin for suspend DSL (operational - see docs/SUSPEND_IMPLEMENTATION.md)
 tests/                               # Test executables
 ```
 
@@ -100,28 +100,58 @@ Deliver a near 1:1 transliteration of Kotlin `kotlinx.coroutines` into C++. Prio
 
 ---
 
-## Suspend Function ABI
+## Suspend Function Implementation
 
-### Current Approach (Continuation ABI)
-Suspend functions lower to C-style entry points:
-```cpp
-void* fn(args..., Continuation<void*>* cont)
-```
-- Return either `intrinsics::COROUTINE_SUSPENDED` or a type-erased `void*` pointing to the result box
-- Use `is_coroutine_suspended(result)` to check suspension
-- Helper: `suspend_cancellable_coroutine<T>(block, cont)`
+### ⚠️ READ THIS FIRST: docs/SUSPEND_IMPLEMENTATION.md
 
-### Example Pattern
+**The complete, authoritative guide to suspend functions is in `docs/SUSPEND_IMPLEMENTATION.md`.**
+
+### Current Approach (Clang Plugin - Operational)
+
+Suspend functions use a **Kotlin-aligned DSL** that is processed by the Clang plugin at build time:
+
 ```cpp
-void* foo(Args..., Continuation<void*>* cont) {
-    void* r = suspend_cancellable_coroutine<int>([](auto& c){ /* ... */ }, cont);
-    if (is_coroutine_suspended(r)) return intrinsics::get_COROUTINE_SUSPENDED();
-    return r; // boxed result pointer or nullptr for Unit
+#include <kotlinx/coroutines/dsl/Suspend.hpp>
+using namespace kotlinx::coroutines::dsl;
+
+[[suspend]]
+void* my_function(Args..., std::shared_ptr<Continuation<void*>> completion) {
+    // Regular code
+    prepare_data();
+
+    // Suspend point - plugin detects this
+    suspend(async_operation(completion));
+
+    // Code continues after resumption
+    process_result();
+
+    return nullptr;  // Unit result
 }
 ```
 
-### Future Direction
-A Clang plugin (`tools/clang_suspend_plugin/`) will rewrite a minimal suspend DSL into Kotlin/Native-like state machines at build time. Tag migration points with `// TODO(suspend-plugin): migrate`.
+The plugin (`tools/clang_suspend_plugin/`) generates a `.kx.cpp` sidecar file containing:
+- Coroutine class extending `ContinuationImpl`
+- State machine with switch-based dispatch
+- Automatic parameter capture
+- Label management and suspension checks
+
+### ABI Convention
+
+All suspend functions follow this signature:
+```cpp
+void* function_name(/* args */, std::shared_ptr<Continuation<void*>> completion)
+```
+
+**Return values:**
+- `COROUTINE_SUSPENDED` - Function suspended, will resume later
+- `void*` - Boxed result or `nullptr` for Unit
+
+**Check suspension:**
+```cpp
+void* result = suspend_function(args, completion);
+if (is_coroutine_suspended(result)) return COROUTINE_SUSPENDED;
+// Process result if not suspended
+```
 
 ### Ownership
 - Non-void results are heap-allocated and returned as `void*`

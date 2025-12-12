@@ -141,11 +141,13 @@ public:
 
     /**
      * @brief Returns the message for cancellation exceptions.
-     * 
+     *
      * Override to provide custom cancellation messages.
      * Default returns "AbstractCoroutine was cancelled".
-     * 
+     *
      * @return The cancellation message string
+     *
+     * Transliterated from: protected open fun cancellationExceptionMessage(): String
      */
     virtual std::string cancellation_exception_message() const {
         return "AbstractCoroutine was cancelled";
@@ -210,11 +212,20 @@ public:
 
     //       → template<typename R> void start(CoroutineStart, R, std::function<T(R)>)
 
-    std::string name_string() const {
-        // TODO: Implement coroutine name extraction from context
-        // Kotlin: val coroutineName = context.coroutineName ?: return super.nameString()
-        //         return "\"$coroutineName\":${super.nameString()}"
-        return "AbstractCoroutine";
+    /**
+     * @brief Returns a string representation of this coroutine for debugging.
+     *
+     * If the context contains a CoroutineName, returns: "\"name\":<base_name>"
+     * Otherwise delegates to JobSupport::name_string()
+     *
+     * Transliterated from: internal override fun nameString(): String
+     */
+    std::string name_string() const override {
+        std::string name = coroutine_name(get_coroutine_context());
+        if (name.empty()) {
+            return JobSupport::name_string();
+        }
+        return "\"" + name + "\":" + JobSupport::name_string();
     }
 
     template <typename R>

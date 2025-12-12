@@ -6,6 +6,7 @@
 
 #include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/CoroutineName.hpp"
 #include <string>
 #include <functional>
 #include "kotlinx/coroutines/context_impl.hpp"
@@ -68,9 +69,28 @@ T with_continuation_context(Continuation<void>* continuation, void* count_or_ele
 // TODO: Extension on Continuation<*>
 std::string to_debug_string(Continuation<void>* continuation); // Declaration only
 
-// TODO: expect auto - platform-specific extension property
-// TODO: Extension on CoroutineContext
-// std::string* coroutineName(CoroutineContext context); // Returns nullable string pointer
+/**
+ * Extension property on CoroutineContext to extract the coroutine name.
+ *
+ * Transliterated from: internal actual val CoroutineContext.coroutineName: String?
+ *
+ * In Kotlin native, this returns null (not supported), but we implement it
+ * properly in C++ to support CoroutineName debugging.
+ *
+ * @param context The coroutine context to query
+ * @return The coroutine name if present, empty string otherwise
+ */
+std::string coroutine_name(const std::shared_ptr<CoroutineContext>& context) {
+    if (!context) return "";
+
+    auto element = context->get(CoroutineName::type_key);
+    if (!element) return "";
+
+    auto name_element = std::dynamic_pointer_cast<CoroutineName>(element);
+    if (!name_element) return "";
+
+    return name_element->name;
+}
 
 } // namespace coroutines
 } // namespace kotlinx

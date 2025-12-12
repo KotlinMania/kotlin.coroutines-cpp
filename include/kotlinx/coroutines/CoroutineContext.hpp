@@ -216,5 +216,15 @@ public:
     Key* key() const override { return key_; }
 };
 
+/**
+ * Extension function to extract the coroutine name from a context.
+ *
+ * Transliterated from: internal val CoroutineContext.coroutineName: String?
+ *
+ * @param context The coroutine context to query
+ * @return The coroutine name if present, empty string otherwise
+ */
+std::string coroutine_name(const std::shared_ptr<CoroutineContext>& context);
+
 } // namespace coroutines
 } // namespace kotlinx
