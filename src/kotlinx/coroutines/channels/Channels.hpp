@@ -14,12 +14,12 @@ namespace kotlinx {
 namespace coroutines {
 namespace channels {
 
-// Implementation of createChannel factory
+// Implementation of create_channel factory
 template <typename E>
-std::shared_ptr<Channel<E>> createChannel(
+std::shared_ptr<Channel<E>> create_channel(
     int capacity,
-    BufferOverflow onBufferOverflow,
-    OnUndeliveredElement<E> onUndeliveredElement
+    BufferOverflow on_buffer_overflow,
+    OnUndeliveredElement<E> on_undelivered_element
 ) {
     using namespace kotlinx::coroutines::channels; // For constants if needed, though they are in Channel<E>
     
@@ -28,32 +28,32 @@ std::shared_ptr<Channel<E>> createChannel(
     int CONFLATED = Channel<E>::CONFLATED;
     int UNLIMITED = Channel<E>::UNLIMITED;
     int BUFFERED = Channel<E>::BUFFERED;
-    int DEFAULT = Channel<E>::getDefaultBufferCapacity();
+    int DEFAULT = Channel<E>::get_default_buffer_capacity();
 
     if (capacity == RENDEZVOUS) {
-        if (onBufferOverflow == BufferOverflow::SUSPEND) {
-            return std::make_shared<BufferedChannel<E>>(RENDEZVOUS, onUndeliveredElement);
+        if (on_buffer_overflow == BufferOverflow::SUSPEND) {
+            return std::make_shared<BufferedChannel<E>>(RENDEZVOUS, on_undelivered_element);
         } else {
-            return std::make_shared<ConflatedBufferedChannel<E>>(1, onBufferOverflow, onUndeliveredElement);
+            return std::make_shared<ConflatedBufferedChannel<E>>(1, on_buffer_overflow, on_undelivered_element);
         }
     } else if (capacity == CONFLATED) {
-        if (onBufferOverflow != BufferOverflow::SUSPEND) {
-             throw std::invalid_argument("CONFLATED capacity cannot be used with non-default onBufferOverflow");
+        if (on_buffer_overflow != BufferOverflow::SUSPEND) {
+             throw std::invalid_argument("CONFLATED capacity cannot be used with non-default on_buffer_overflow");
         }
-        return std::make_shared<ConflatedBufferedChannel<E>>(1, BufferOverflow::DROP_OLDEST, onUndeliveredElement);
+        return std::make_shared<ConflatedBufferedChannel<E>>(1, BufferOverflow::DROP_OLDEST, on_undelivered_element);
     } else if (capacity == UNLIMITED) {
-        return std::make_shared<BufferedChannel<E>>(UNLIMITED, onUndeliveredElement);
+        return std::make_shared<BufferedChannel<E>>(UNLIMITED, on_undelivered_element);
     } else if (capacity == BUFFERED) {
-        if (onBufferOverflow == BufferOverflow::SUSPEND) {
-            return std::make_shared<BufferedChannel<E>>(DEFAULT, onUndeliveredElement);
+        if (on_buffer_overflow == BufferOverflow::SUSPEND) {
+            return std::make_shared<BufferedChannel<E>>(DEFAULT, on_undelivered_element);
         } else {
-            return std::make_shared<ConflatedBufferedChannel<E>>(1, onBufferOverflow, onUndeliveredElement);
+            return std::make_shared<ConflatedBufferedChannel<E>>(1, on_buffer_overflow, on_undelivered_element);
         }
     } else {
-        if (onBufferOverflow == BufferOverflow::SUSPEND) {
-            return std::make_shared<BufferedChannel<E>>(capacity, onUndeliveredElement);
+        if (on_buffer_overflow == BufferOverflow::SUSPEND) {
+            return std::make_shared<BufferedChannel<E>>(capacity, on_undelivered_element);
         } else {
-             return std::make_shared<ConflatedBufferedChannel<E>>(capacity, onBufferOverflow, onUndeliveredElement);
+             return std::make_shared<ConflatedBufferedChannel<E>>(capacity, on_buffer_overflow, on_undelivered_element);
         }
     }
 }

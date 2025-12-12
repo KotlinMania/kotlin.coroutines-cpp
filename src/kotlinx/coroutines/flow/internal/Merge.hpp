@@ -21,6 +21,11 @@ using kotlinx::coroutines::channels::Channel;
 using kotlinx::coroutines::channels::BufferOverflow;
 // using kotlinx::coroutines::channels::SendingCollector; // moved to flow/internal
 
+// Helper declarations
+std::string format_concurrency_props(int concurrency);
+void acquire_semaphore_permit(Job* job, kotlinx::coroutines::sync::Semaphore& semaphore);
+void release_semaphore_permit(kotlinx::coroutines::sync::Semaphore& semaphore);
+
 template <typename T, typename R>
 class ChannelFlowTransformLatest : public ChannelFlowOperator<T, R> {
 public:
@@ -129,12 +134,7 @@ private:
     int concurrency_;
 };
 
-// Helper declarations
-std::string format_concurrency_props(int concurrency);
-void acquire_semaphore_permit(Job* job, kotlinx::coroutines::sync::Semaphore& semaphore);
-void release_semaphore_permit(kotlinx::coroutines::sync::Semaphore& semaphore);
 
-// MakeCollector moved up
 
 template <typename T>
 class ChannelLimitedFlowMerge : public ChannelFlow<T> {
