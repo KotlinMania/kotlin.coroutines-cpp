@@ -28,8 +28,8 @@ public:
 
     void collect(FlowCollector<R>* collector) override {
         // ... (existing simplified thread logic, but using shared_ptr members)
-        auto c1 = channels::createChannel<T1>(channels::Channel<T1>::BUFFERED);
-        auto c2 = channels::createChannel<T2>(channels::Channel<T2>::BUFFERED);
+        auto c1 = channels::create_channel<T1>(channels::Channel<T1>::BUFFERED);
+        auto c2 = channels::create_channel<T2>(channels::Channel<T2>::BUFFERED);
 
         std::thread t1([&](){
             try {
@@ -95,4 +95,3 @@ std::shared_ptr<Flow<R>> combine(std::shared_ptr<Flow<T1>> flow1, std::shared_pt
 } // namespace flow
 } // namespace coroutines
 } // namespace kotlinx
-

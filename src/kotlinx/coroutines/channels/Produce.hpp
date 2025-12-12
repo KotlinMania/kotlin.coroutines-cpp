@@ -62,12 +62,12 @@ std::shared_ptr<ReceiveChannel<E>> produce(
     CoroutineScope* scope,
     std::shared_ptr<CoroutineContext> context, // defaulted in Kotlin
     int capacity = 0,
-    BufferOverflow onBufferOverflow = BufferOverflow::SUSPEND,
+    BufferOverflow on_buffer_overflow = BufferOverflow::SUSPEND,
     CoroutineStart start = CoroutineStart::DEFAULT,
     std::function<void(ProducerScope<E>*)> block = nullptr // should be suspend
 ) {
     // 1. Create Channel
-    auto channel = createChannel<E>(capacity, onBufferOverflow);
+    auto channel = create_channel<E>(capacity, on_buffer_overflow);
     
     // 2. Create Context
     // Scope + context
