@@ -16,9 +16,9 @@ public:
     // Key for CoroutineExceptionHandler in CoroutineContext
     struct KeyType : CoroutineContext::Key {};
     static inline KeyType key_instance;
-    static constexpr CoroutineContext::Key* typeKey = &key_instance;
+    static constexpr CoroutineContext::Key* type_key = &key_instance;
 
-    CoroutineContext::Key* key() const override { return typeKey; }
+    CoroutineContext::Key* key() const override { return type_key; }
 
     virtual ~CoroutineExceptionHandler() = default;
 
@@ -36,7 +36,7 @@ inline void handle_coroutine_exception(CoroutineContext& context, std::exception
 
     // Line 21-25: Invoke an exception handler from the context if present
     try {
-        auto element = context.get(CoroutineExceptionHandler::typeKey);
+        auto element = context.get(CoroutineExceptionHandler::type_key);
         if (auto handler = std::dynamic_pointer_cast<CoroutineExceptionHandler>(element)) {
             handler->handle_exception(context, exception);
             return;

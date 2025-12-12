@@ -1,14 +1,17 @@
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/common/src/Annotations.kt
 //
+// Kotlin imports:
+// - kotlinx.coroutines.flow.*
+//
 // TODO: Annotations are not directly translatable to C++
 // TODO: @MustBeDocumented, @Retention, @RequiresOptIn, @Target have no C++ equivalents
 // TODO: Consider using preprocessor macros or attributes for similar behavior
 // TODO: Annotation classes map to empty marker types or documentation comments
 
-namespace kotlinx {
-    namespace coroutines {
-        // TODO: import kotlinx.coroutines.flow.* - removed, use fully qualified names or add includes
+#include "kotlinx/coroutines/flow/Flow.hpp"
+
+namespace kotlinx::coroutines {
 
         /**
  * Marks declarations in the coroutines that are **delicate** &mdash;
@@ -100,5 +103,5 @@ namespace kotlinx {
         struct InternalForInheritanceCoroutinesApi {
             // Annotation marker type
         };
-    } // namespace coroutines
-} // namespace kotlinx
+
+} // namespace kotlinx::coroutines

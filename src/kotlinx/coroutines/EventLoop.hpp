@@ -67,7 +67,7 @@ struct BlockingEventLoop : public EventLoop {
     mutable std::condition_variable cv;
     bool quit = false;
 
-    BlockingEventLoop(std::shared_ptr<std::thread> t);
+    explicit BlockingEventLoop(std::shared_ptr<std::thread> t);
 
     void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override;
     long long process_next_event() override;

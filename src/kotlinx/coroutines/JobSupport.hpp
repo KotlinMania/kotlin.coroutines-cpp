@@ -12,6 +12,7 @@
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/DisposableHandle.hpp"
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
+#include "kotlinx/coroutines/internal/LockFreeLinkedList.hpp"
 #include <memory>
 #include <string>
 #include <functional>
@@ -24,6 +25,60 @@ namespace coroutines {
 namespace internal {
     class JobSupportState;
 }
+
+class NodeList;  // Forward declaration for Incomplete
+
+/**
+ * Marker interface for incomplete job states.
+ * Transliterated from: internal interface Incomplete (JobSupport.kt:1455)
+ */
+class Incomplete : public JobState {
+public:
+    virtual bool is_active() const = 0;
+    virtual NodeList* get_list() const = 0;
+    virtual ~Incomplete() = default;
+};
+
+/**
+ * List of job nodes (handlers).
+ * Transliterated from: internal class NodeList (JobSupport.kt:1453)
+ */
+class NodeList : public Incomplete, public internal::LockFreeLinkedListHead {
+public:
+    bool is_active() const override { return true; }
+    NodeList* get_list() const override { return const_cast<NodeList*>(this); }
+
+    void notify_completion(std::exception_ptr cause);
+};
+
+/**
+ * Node in the linked list of completion handlers.
+ * Transliterated from: internal abstract class JobNode (JobSupport.kt:1460)
+ */
+class JobNode : public Incomplete,
+                public internal::LockFreeLinkedListNode,
+                public DisposableHandle {
+public:
+    JobSupport* job = nullptr;
+
+    /**
+     * If false, invoke will be called once the job is cancelled or is complete.
+     * If true, invoke is invoked as soon as the job becomes _cancelling_ instead.
+     * Transliterated from: abstract val onCancelling: Boolean
+     */
+    virtual bool get_on_cancelling() const = 0;
+
+    /**
+     * Signals completion.
+     * Transliterated from: abstract fun invoke(cause: Throwable?)
+     */
+    virtual void invoke(std::exception_ptr cause) = 0;
+
+    bool is_active() const override { return true; }
+    NodeList* get_list() const override { return nullptr; }
+
+    void dispose() override;
+};
 
 /**
  * @brief Base class for Job implementations providing core lifecycle management.

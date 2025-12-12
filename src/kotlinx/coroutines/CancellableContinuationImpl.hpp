@@ -4,12 +4,12 @@
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
-#include "kotlinx/coroutines/DispatchedContinuation.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/Waiter.hpp"
 #include "kotlinx/coroutines/DisposableHandle.hpp"
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
+#include "kotlinx/coroutines/CompletionHandler.hpp"
 #include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
 #include <atomic>
@@ -18,14 +18,15 @@
 #include <string>
 #include <functional>
 #include <exception>
-#include <iostream>
 #include <type_traits>
 
 namespace kotlinx {
 namespace coroutines {
 
 // Forward declarations
-class JobNode; 
+class JobNode;
+template<typename T> class CancellableContinuationImpl;
+template<typename T> class ChildContinuation;
 
 // constants from CancellableContinuationImpl.kt
 static constexpr int UNDECIDED = 0;
@@ -209,6 +210,9 @@ private:
 
     // Context cache - Kotlin line 38: context = delegate.context
     std::shared_ptr<CoroutineContext> context_;
+
+    // For segment-based cancellation (channel operations)
+    void* segment_for_cancellation_ = nullptr;
 
 public:
     CancellableContinuationImpl(std::shared_ptr<Continuation<T>> delegate_, int resume_mode_)
@@ -474,15 +478,17 @@ public:
     
     // getResult implementation logic - Kotlin lines 290-337
     void* get_result() {
-        std::cerr << "[get_result] entering" << std::endl;
-        // boolean isReusable = isReusable();
+        // bool isReusable = is_reusable();
+        // trySuspend may fail either if 'block' has resumed/cancelled a continuation,
+        // or we got async cancellation from parent.
         if (try_suspend()) {
-            std::cerr << "[get_result] suspended, installing parent handle" << std::endl;
+            // We were neither resumed nor cancelled, time to suspend.
+            // But first we have to install parent cancellation handle (if we didn't yet),
+            // so CC could be properly resumed on parent cancellation.
             if (parent_handle_ == nullptr) {
                 install_parent_handle();
             }
-            std::cerr << "[get_result] returning COROUTINE_SUSPENDED" << std::endl;
-            // if (isReusable) releaseClaimedReusableContinuation();
+            // if (isReusable) release_claimed_reusable_continuation();
             return intrinsics::get_COROUTINE_SUSPENDED();
         }
         
@@ -539,14 +545,29 @@ public:
     
     // installParentHandle - Kotlin lines 339-345
     std::shared_ptr<DisposableHandle> install_parent_handle() {
-        if (!context_) return nullptr; // No context, no parent
+        if (!context_) return nullptr;
         auto job_element = context_->get(Job::type_key);
-        // auto job = dynamic_pointer_cast<Job>(job_element);
-        // if (!job) return nullptr;
+        auto parent = std::dynamic_pointer_cast<Job>(job_element);
+        if (!parent) return nullptr;  // don't do anything without a parent
+
+        // Create ChildContinuation and set its job pointer
+        auto child_handler = std::make_shared<ChildContinuation<T>>(this);
+        child_handler->job = dynamic_cast<JobSupport*>(parent.get());
 
         // val handle = parent.invokeOnCompletion(handler = ChildContinuation(this))
+        auto handle = parent->invoke_on_completion(
+            true,  // onCancelling = true
+            false, // invokeImmediately = false
+            [child_handler](std::exception_ptr cause) {
+                child_handler->invoke(cause);
+            }
+        );
+
         // _parentHandle.compareAndSet(null, handle)
-        return nullptr; // TODO: implement parent job registration
+        if (!parent_handle_) {
+            parent_handle_ = handle;
+        }
+        return handle;
     }
     
     void detach_child_if_non_reusable() {
@@ -686,9 +707,62 @@ public:
         }
     }
     
-    // Waiter overrides
+    // Waiter overrides - Kotlin lines 385-393
     void invoke_on_cancellation(void* segment, int index) override {
-        (void)segment; (void)index; // TODO: Update decision_and_index with segment/index logic
+        // _decisionAndIndex.update { ... decisionAndIndex(it.decision, index) }
+        while (true) {
+            int cur = decision_and_index_.load(std::memory_order_acquire);
+            if (get_index(cur) != NO_INDEX) {
+                throw std::logic_error("invokeOnCancellation should be called at most once");
+            }
+            int update = decision_and_index(get_decision(cur), index);
+            if (decision_and_index_.compare_exchange_strong(cur, update)) break;
+        }
+        // invokeOnCancellationImpl(segment)
+        // In Kotlin, Segment implements the same interface as CancelHandler for this purpose
+        // We wrap it in a handler that calls the segment's cancellation callback
+        invoke_on_cancellation_impl_segment(segment);
+    }
+
+    // Segment-based cancellation - Kotlin lines 400-427 (Segment branch)
+    void invoke_on_cancellation_impl_segment(void* segment) {
+        while (true) {
+            State* state = state_.load(std::memory_order_acquire);
+
+            // Active -> store segment marker (we use the segment pointer as state indicator)
+            if (dynamic_cast<Active*>(state)) {
+                // For segments, we store a marker indicating segment-based cancellation is pending
+                // The actual segment callback is called when cancellation occurs
+                segment_for_cancellation_ = segment;
+                return;
+            }
+
+            // CompletedExceptionally (includes CancelledContinuation)
+            if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
+                if (!ex->make_handled()) {
+                    throw std::runtime_error("Multiple handlers prohibited");
+                }
+                // Call segment cancellation only if cancelled
+                if (dynamic_cast<CancelledContinuation*>(state)) {
+                    call_segment_on_cancellation(segment, ex->cause);
+                }
+                return;
+            }
+
+            // CompletedContinuation -> segment doesn't need to be called
+            if (dynamic_cast<CompletedContinuation<T>*>(state)) {
+                return;  // Kotlin: if (handler is Segment<*>) return
+            }
+        }
+    }
+
+    // callSegmentOnCancellation - Kotlin lines 426, 582-590
+    void call_segment_on_cancellation(void* segment, std::exception_ptr cause) {
+        // In Kotlin this calls segment.onCancellation(index, cause, context)
+        // For now, segment operations are channel-specific and not fully implemented
+        (void)segment;
+        (void)cause;
+        // TODO(port): Implement when channel Segment type is available
     }
     
     // CancellableContinuation overrides
@@ -804,6 +878,28 @@ public:
 
 };
 
+/**
+ * Same as ChildHandleNode, but for cancellable continuation.
+ * Transliterated from: private class ChildContinuation (CancellableContinuationImpl.kt:691-700)
+ */
+template<typename T>
+class ChildContinuation : public JobNode {
+public:
+    CancellableContinuationImpl<T>* child;
+
+    explicit ChildContinuation(CancellableContinuationImpl<T>* c) : child(c) {}
+
+    // Kotlin: override val onCancelling get() = true
+    bool get_on_cancelling() const override { return true; }
+
+    // Kotlin: override fun invoke(cause: Throwable?)
+    void invoke(std::exception_ptr /*cause*/) override {
+        // child.parent_cancelled(child.get_continuation_cancellation_cause(job))
+        // job is the parent JobSupport* from JobNode base class
+        child->parent_cancelled(child->get_continuation_cancellation_cause(*static_cast<Job*>(job)));
+    }
+};
+
 // ------------------------------------------------------------------
 // Specialization for void
 // ------------------------------------------------------------------
@@ -819,6 +915,7 @@ private:
     std::shared_ptr<State> owned_state_; // Prevents use-after-free of dynamically allocated states
     std::shared_ptr<DisposableHandle> parent_handle_;
     std::shared_ptr<CoroutineContext> context_;
+    void* segment_for_cancellation_ = nullptr;  // For segment-based cancellation
 
 public:
     CancellableContinuationImpl(std::shared_ptr<Continuation<void>> delegate_, int resume_mode_)
@@ -830,6 +927,11 @@ public:
 
     std::shared_ptr<CoroutineContext> get_context() const override { return context_; }
     std::shared_ptr<Continuation<void>> get_delegate() override { return delegate; }
+
+    // getContinuationCancellationCause - Kotlin lines 579-581
+    std::exception_ptr get_continuation_cancellation_cause(Job& parent) {
+        return parent.get_cancellation_exception();
+    }
 
     // ---- Decision machine ----
     bool try_suspend() {
@@ -943,12 +1045,42 @@ public:
     }
 
     // ---- Parent handle ----
+    // installParentHandle - Kotlin lines 339-345
     std::shared_ptr<DisposableHandle> install_parent_handle() {
-        return nullptr;
+        if (!context_) return nullptr;
+        auto job_element = context_->get(Job::type_key);
+        auto parent = std::dynamic_pointer_cast<Job>(job_element);
+        if (!parent) return nullptr;  // don't do anything without a parent
+
+        // Create ChildContinuation and set its job pointer
+        auto child_handler = std::make_shared<ChildContinuation<void>>(this);
+        child_handler->job = dynamic_cast<JobSupport*>(parent.get());
+
+        // val handle = parent.invokeOnCompletion(handler = ChildContinuation(this))
+        auto handle = parent->invoke_on_completion(
+            true,  // onCancelling = true
+            false, // invokeImmediately = false
+            [child_handler](std::exception_ptr cause) {
+                child_handler->invoke(cause);
+            }
+        );
+
+        // _parentHandle.compareAndSet(null, handle)
+        if (!parent_handle_) {
+            parent_handle_ = handle;
+        }
+        return handle;
     }
 
     void init_cancellability() override {
-        install_parent_handle();
+        // Kotlin lines 120-136
+        auto handle = install_parent_handle();
+        if (!handle) return;  // fast path
+        // now check our state _after_ registering
+        if (is_completed()) {
+            handle->dispose();
+            parent_handle_ = non_disposable_handle();
+        }
     }
 
     void detach_child_if_non_reusable() { detach_child(); }

@@ -135,3 +135,4 @@ Desktop.ini
 /conaninfo.txt
 /graph_info.json
 /src/build/
+/src/kotlinx/coroutines/flow/internal/AbstractSharedFlow.hpp.backup

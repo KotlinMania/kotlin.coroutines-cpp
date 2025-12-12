@@ -33,7 +33,7 @@ private:
     std::shared_ptr<Job> parent_job;
 
 public:
-    CompletableDeferredImpl(std::shared_ptr<Job> parent)
+    explicit CompletableDeferredImpl(std::shared_ptr<Job> parent)
         : JobSupport(true), parent_job(parent) {
         if (parent) {
              // Cast Job to Element explicitly if needed, but Job inherits Element

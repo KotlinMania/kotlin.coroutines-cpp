@@ -11,7 +11,7 @@ extern Symbol NO_THREAD_ELEMENTS;
 
 /**
  * Updates the current thread context with elements from the given [context].
- * Returns the old state that should be passed to [restoreThreadContext].
+ * Returns the old state that should be passed to [restore_thread_context].
  */
 void* update_thread_context(const CoroutineContext& context, void* count_or_element);
 

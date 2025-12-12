@@ -7,8 +7,11 @@
 
 #include <exception>
 #include <memory>
+#include <string>
+#include <typeinfo>
 #include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 
@@ -104,6 +107,31 @@ void dispatch(DispatchedTask<T>* task, int mode);
 // Kotlin: internal fun <T> DispatchedTask<T>.resume(delegate: Continuation<T>, undispatched: Boolean)
 template<typename T>
 void resume(DispatchedTask<T>* task, std::shared_ptr<Continuation<T>> delegate, bool undispatched);
+
+namespace internal {
+
+/**
+ * Kotlin: internal class DispatchException(...)
+ */
+class DispatchException : public std::exception {
+public:
+    std::exception_ptr cause;
+
+    DispatchException(std::exception_ptr cause_, const CoroutineDispatcher* dispatcher, const CoroutineContext* context)
+        : cause(cause_) {
+        message_ = std::string("Coroutine dispatcher ") +
+            (dispatcher ? dispatcher->to_string() : "<null>") +
+            " threw an exception, context = " +
+            (context ? typeid(*context).name() : "<null>");
+    }
+
+    const char* what() const noexcept override { return message_.c_str(); }
+
+private:
+    std::string message_;
+};
+
+} // namespace internal
 
 } // namespace coroutines
 } // namespace kotlinx

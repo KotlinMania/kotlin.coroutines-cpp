@@ -14,51 +14,15 @@
 #include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
 #include "kotlinx/coroutines/EventLoop.hpp"
-#include "kotlinx/coroutines/DispatchedContinuation.hpp"
+#include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
 
 #include <functional>
 #include <cassert>
+#include <type_traits>
 #include <string>
 
 namespace kotlinx {
 namespace coroutines {
-
-/**
- * Kotlin: internal class DispatchException(...)
- */
-class DispatchException : public std::exception {
-public:
-    std::exception_ptr cause;
-
-    DispatchException(std::exception_ptr cause, const CoroutineDispatcher* dispatcher, const CoroutineContext* context)
-        : cause(cause) {
-        message_ = std::string("Coroutine dispatcher ") +
-            (dispatcher ? dispatcher->to_string() : "<null>") +
-            " threw an exception, context = " +
-            (context ? typeid(*context).name() : "<null>");
-    }
-
-    const char* what() const noexcept override { return message_.c_str(); }
-
-private:
-    std::string message_;
-};
-
-inline void safe_dispatch(const CoroutineDispatcher& dispatcher, const CoroutineContext& context, std::shared_ptr<Runnable> runnable) {
-    try {
-        dispatcher.dispatch(context, std::move(runnable));
-    } catch (...) {
-        throw DispatchException(std::current_exception(), &dispatcher, &context);
-    }
-}
-
-inline bool safe_is_dispatch_needed(const CoroutineDispatcher& dispatcher, const CoroutineContext& context) {
-    try {
-        return dispatcher.is_dispatch_needed(context);
-    } catch (...) {
-        throw DispatchException(std::current_exception(), &dispatcher, &context);
-    }
-}
 
 template<typename T>
 inline void resume_with_stack_trace(Continuation<T>& continuation, std::exception_ptr exception) {
@@ -86,7 +50,7 @@ void DispatchedTask<T>::run() {
     auto delegate = get_delegate();
     try {
         // Kotlin: val delegate = delegate as DispatchedContinuation<T>
-        auto dispatched_delegate = std::dynamic_pointer_cast<DispatchedContinuation<T>>(delegate);
+        auto dispatched_delegate = std::dynamic_pointer_cast<internal::DispatchedContinuation<T>>(delegate);
         auto continuation = dispatched_delegate ? dispatched_delegate->continuation : delegate;
         void* count_or_element = dispatched_delegate ? dispatched_delegate->count_or_element : nullptr;
 
@@ -112,12 +76,16 @@ void DispatchedTask<T>::run() {
                     if (exception) {
                         continuation->resume_with(Result<T>::failure(exception));
                     } else {
-                        continuation->resume_with(Result<T>::success(get_successful_result<T>(state)));
+                        if constexpr (std::is_void_v<T>) {
+                            continuation->resume_with(Result<void>::success());
+                        } else {
+                            continuation->resume_with(Result<T>::success(get_successful_result<T>(state)));
+                        }
                     }
                 }
                 return;
             });
-    } catch (const DispatchException& e) {
+    } catch (const internal::DispatchException& e) {
         if (delegate) {
             auto ctx = delegate->get_context();
             if (ctx) {
@@ -163,12 +131,12 @@ void dispatch(DispatchedTask<T>* task, int mode) {
     auto delegate = task->get_delegate();
     bool undispatched = (mode == MODE_UNDISPATCHED);
 
-    auto dispatched = std::dynamic_pointer_cast<DispatchedContinuation<T>>(delegate);
+    auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<T>>(delegate);
     if (!undispatched && dispatched && is_cancellable_mode(mode) == is_cancellable_mode(task->resume_mode)) {
         auto dispatcher = dispatched->dispatcher;
         auto context = dispatched->get_context();
-        if (dispatcher && context && safe_is_dispatch_needed(*dispatcher, *context)) {
-            safe_dispatch(*dispatcher, *context, std::shared_ptr<Runnable>(task, [](Runnable*){}));
+        if (dispatcher && context && internal::safe_is_dispatch_needed(*dispatcher, *context)) {
+            internal::safe_dispatch(*dispatcher, *context, std::shared_ptr<Runnable>(task, [](Runnable*){}));
         } else {
             resume_unconfined(task);
         }
@@ -182,12 +150,19 @@ void resume(DispatchedTask<T>* task, std::shared_ptr<Continuation<T>> delegate, 
     auto state = task->take_state();
     auto exception = task->get_exceptional_result(state);
 
-    Result<T> result = exception
-        ? Result<T>::failure(exception)
-        : Result<T>::success(task->template get_successful_result<T>(state));
+    Result<T> result;
+    if (exception) {
+        result = Result<T>::failure(exception);
+    } else {
+        if constexpr (std::is_void_v<T>) {
+            result = Result<void>::success();
+        } else {
+            result = Result<T>::success(task->template get_successful_result<T>(state));
+        }
+    }
 
     if (undispatched) {
-        if (auto dispatched = std::dynamic_pointer_cast<DispatchedContinuation<T>>(delegate)) {
+        if (auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<T>>(delegate)) {
             with_continuation_context<void, T>(
                 dispatched->continuation,
                 dispatched->count_or_element,

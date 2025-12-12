@@ -14,7 +14,7 @@ namespace coroutines {
  *
  * If `kotlinx-coroutines` is used, it is recommended to avoid [ContinuationInterceptor] instances that are not
  * [CoroutineDispatcher] implementations, as [CoroutineDispatcher] ensures that the
- * debugging facilities in the [newCoroutineContext] function work properly.
+ * debugging facilities in the [new_coroutine_context] function work properly.
  *
  * ## Predefined dispatchers
  *
@@ -34,16 +34,16 @@ namespace coroutines {
  *   When the coroutine is resumed, the thread from which it is resumed will run the coroutine code until the next
  *   suspension, and so on.
  *   **The `Unconfined` dispatcher should not normally be used in code**.
- * - Calling [limitedParallelism] on any dispatcher creates a view of the dispatcher that limits the parallelism
+ * - Calling [limited_parallelism] on any dispatcher creates a view of the dispatcher that limits the parallelism
  *   to the given value.
  *   This allows creating private thread pools without spawning new threads.
- *   For example, `Dispatchers::IO.limitedParallelism(4)` creates a dispatcher that allows running at most
+ *   For example, `Dispatchers::IO.limited_parallelism(4)` creates a dispatcher that allows running at most
  *   4 tasks in parallel, reusing the existing IO dispatcher threads.
  */
 class CoroutineDispatcher : public AbstractCoroutineContextElement, 
                             public ContinuationInterceptor {
 public:
-    static constexpr const char* keyStr = "ContinuationInterceptor"; // Dispatcher IS the interceptor
+    static constexpr const char* key_str = "ContinuationInterceptor"; // Dispatcher IS the interceptor
      // Re-use ContinuationInterceptor key or define its own? 
      // Kotlin: Key : AbstractCoroutineContextKey<ContinuationInterceptor, CoroutineDispatcher>(ContinuationInterceptor)
      // essentially it uses ContinuationInterceptor::key.
@@ -58,7 +58,7 @@ public:
     virtual void dispatch_yield(const CoroutineContext& context, std::shared_ptr<Runnable> block) const;
     
     // ContinuationInterceptor overrides
-    CoroutineContext::Key* key() const override { return ContinuationInterceptor::typeKey; }
+    CoroutineContext::Key* key() const override { return ContinuationInterceptor::type_key; }
 
     template <typename T>
     std::shared_ptr<Continuation<T>> intercept_continuation(std::shared_ptr<Continuation<T>> continuation);
@@ -78,4 +78,4 @@ public:
 } // namespace coroutines
 } // namespace kotlinx
 
-// Implementation of intercept_continuation moved to DispatchedContinuation.hpp to avoid circular dependency
+// Implementation of intercept_continuation moved to internal/DispatchedContinuation.hpp to avoid circular dependency

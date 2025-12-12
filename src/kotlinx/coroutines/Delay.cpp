@@ -47,7 +47,7 @@ namespace kotlinx {
                 // In Kotlin: context[ContinuationInterceptor] as? Delay
                 // In C++: dynamic_cast
                 Delay *delay_impl = nullptr;
-                auto element = context->get(ContinuationInterceptor::typeKey);
+                auto element = context->get(ContinuationInterceptor::type_key);
                 if (element) {
                     delay_impl = dynamic_cast<Delay *>(element.get());
                 }

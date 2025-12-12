@@ -11,11 +11,11 @@
       "kotlinx.coroutines.intrinsics."
     ],
     "classes": {
-      "kotlinx.coroutines.CoroutineStart.": [],
-      "kotlinx.coroutines.intrinsics.": [],
       "kotlinx.coroutines.internal": [
         "ScopeCoroutine"
-      ]
+      ],
+      "kotlinx.coroutines.CoroutineStart.": [],
+      "kotlinx.coroutines.intrinsics.": []
     }
   },
   {
@@ -57,10 +57,10 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": []
     }
   },
   {
@@ -126,9 +126,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -165,8 +165,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -192,11 +192,11 @@
       "kotlinx.coroutines.intrinsics."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.Channel.Factory": [
         "UNLIMITED",
         "CONFLATED"
       ],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.intrinsics.": []
     }
   },
@@ -214,16 +214,16 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.BufferOverflow.": [],
       "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.channels.Channel.Factory": [
         "BUFFERED",
-        "CHANNEL_DEFAULT_CAPACITY",
+        "CONFLATED",
         "UNLIMITED",
-        "CONFLATED"
+        "CHANNEL_DEFAULT_CAPACITY"
       ],
-      "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.channels.BufferOverflow.": []
     }
   },
   {
@@ -248,8 +248,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -263,8 +263,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": []
     }
   },
@@ -279,8 +279,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -295,8 +295,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -310,8 +310,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -330,13 +330,13 @@
       "kotlinx.coroutines.selects.TrySelectDetailedResult."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.ChannelResult.Companion.closed": [],
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.selects.TrySelectDetailedResult.": [],
       "kotlinx.coroutines.channels.ChannelResult.Companion.failure": [],
-      "kotlinx.coroutines.channels.ChannelResult.Companion.success": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.ChannelResult.Companion.closed": [],
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.channels.ChannelResult.Companion.success": [],
+      "kotlinx.coroutines.selects.TrySelectDetailedResult.": []
     }
   },
   {
@@ -349,8 +349,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -364,9 +364,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -390,15 +390,15 @@
     ],
     "classes": {
       "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.channels.Channel.Factory": [
         "BUFFERED"
       ],
-      "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.intrinsics.": [],
       "kotlinx.coroutines.flow.internal.unsafeFlow": [],
-      "kotlinx.coroutines.intrinsics.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -411,8 +411,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -425,8 +425,8 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -452,8 +452,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.internal.": []
     }
   },
   {
@@ -491,8 +491,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -507,8 +507,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -521,8 +521,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -538,16 +538,16 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.channels.Channel.Factory": [
         "BUFFERED",
         "RENDEZVOUS",
-        "CHANNEL_DEFAULT_CAPACITY",
+        "CONFLATED",
         "UNLIMITED",
-        "CONFLATED"
+        "CHANNEL_DEFAULT_CAPACITY"
       ],
-      "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -560,8 +560,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -575,8 +575,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -591,8 +591,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": []
     }
   },
@@ -622,10 +622,10 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": []
     }
   },
   {
@@ -639,8 +639,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -654,8 +654,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -670,9 +670,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": []
     }
   },
@@ -686,8 +686,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -708,9 +708,9 @@
     "classes": {
       "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -724,9 +724,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -753,8 +753,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -771,10 +771,10 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": []
     }
   },
   {
@@ -787,8 +787,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -801,8 +801,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -817,10 +817,10 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.flow.combine": [],
-      "kotlinx.coroutines.flow.combineTransform": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.combineTransform": []
     }
   },
   {
@@ -834,9 +834,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.exceptions.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.internal.": []
     }
   },
   {
@@ -898,9 +898,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.exceptions.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.internal.": []
     }
   },
   {
@@ -938,8 +938,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -952,8 +952,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -966,8 +966,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -983,10 +983,10 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.ChannelResult.Companion.success": [],
       "kotlinx.coroutines.channels.BufferOverflow.": [],
+      "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.selects.": []
+      "kotlinx.coroutines.channels.ChannelResult.Companion.success": []
     }
   },
   {
@@ -999,8 +999,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1013,8 +1013,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1030,13 +1030,13 @@
       "kotlinx.coroutines.flow.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.Channel.Factory": [
         "BUFFERED",
         "CONFLATED"
       ],
-      "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -1141,8 +1141,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.internal.": []
     }
   },
   {
@@ -1180,8 +1180,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1195,8 +1195,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -1230,10 +1230,10 @@
     ],
     "classes": {
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.flow.": [],
-      "kotlinx.coroutines.selects.": []
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -1361,8 +1361,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1375,8 +1375,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1389,8 +1389,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1418,8 +1418,8 @@
       "kotlinx.coroutines.internal.probeCoroutineResumed"
     ],
     "classes": {
-      "kotlinx.coroutines.internal.probeCoroutineCreated": [],
-      "kotlinx.coroutines.internal.probeCoroutineResumed": []
+      "kotlinx.coroutines.internal.probeCoroutineResumed": [],
+      "kotlinx.coroutines.internal.probeCoroutineCreated": []
     }
   },
   {
@@ -1434,8 +1434,8 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.internal.unsafeFlow": []
     }
   },
@@ -1463,8 +1463,8 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1490,8 +1490,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -1506,8 +1506,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -1524,11 +1524,11 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.CoroutineStart.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.CoroutineStart.": []
     }
   },
   {
@@ -1541,8 +1541,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1567,8 +1567,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1581,8 +1581,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -1595,8 +1595,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1609,8 +1609,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1623,8 +1623,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1665,8 +1665,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -1682,10 +1682,10 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.flow.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -1698,8 +1698,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1718,11 +1718,11 @@
     ],
     "classes": {
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.intrinsics.": [],
       "kotlinx.coroutines.flow.internal.unsafeFlow": [],
-      "kotlinx.coroutines.intrinsics.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -1753,10 +1753,10 @@
       "kotlinx.coroutines.testing.flow."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.flow.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -1771,10 +1771,10 @@
       "kotlinx.coroutines.testing.flow."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.flow.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -1787,8 +1787,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1802,8 +1802,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -1818,8 +1818,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -1833,8 +1833,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1935,8 +1935,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1963,8 +1963,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1992,10 +1992,10 @@
       "kotlinx.coroutines.flow.internal.unsafeFlow"
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.flow.flow": [],
-      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -2021,9 +2021,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.exceptions.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2061,8 +2061,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2163,8 +2163,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2179,8 +2179,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2201,13 +2201,13 @@
       "kotlinx.coroutines.sync."
     ],
     "classes": {
-      "kotlinx.coroutines.sync.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.flow.": [],
-      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.sync.": [],
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -2221,9 +2221,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.flow.merge": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2280,9 +2280,9 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2297,9 +2297,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.exceptions.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": []
     }
   },
@@ -2313,10 +2313,10 @@
       "kotlinx.coroutines."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines": [
         "DefaultDelay"
-      ]
+      ],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2368,10 +2368,10 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -2385,8 +2385,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2400,8 +2400,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2414,8 +2414,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2467,8 +2467,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2482,9 +2482,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.flow.": []
     }
   },
   {
@@ -2497,10 +2497,10 @@
       "kotlinx.coroutines.internal"
     ],
     "classes": {
-      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.internal": [
         "Symbol"
-      ]
+      ],
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -2514,8 +2514,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2541,8 +2541,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2555,8 +2555,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.exceptions.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.exceptions.": []
     }
   },
   {
@@ -2571,10 +2571,10 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": []
     }
   },
   {
@@ -2590,8 +2590,8 @@
       "kotlinx.coroutines.internal"
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.internal": [
         "ScopeCoroutine"
       ]
@@ -2607,8 +2607,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2622,8 +2622,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2638,8 +2638,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2668,9 +2668,9 @@
       "kotlinx.coroutines.selects.TrySelectDetailedResult."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.selects.TrySelectDetailedResult.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2684,8 +2684,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2699,8 +2699,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2715,8 +2715,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2730,8 +2730,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2744,8 +2744,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2759,8 +2759,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2776,8 +2776,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.sync.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.sync.": []
     }
   },
   {
@@ -2792,8 +2792,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.sync.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.sync.": []
     }
   },
   {
@@ -2818,8 +2818,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2833,8 +2833,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2848,8 +2848,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2862,8 +2862,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2877,8 +2877,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2894,9 +2894,9 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2910,9 +2910,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.exceptions.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2925,8 +2925,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2939,8 +2939,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2955,9 +2955,9 @@
       "kotlinx.coroutines.flow."
     ],
     "classes": {
+      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.flow.": []
     }
   },
   {
@@ -2972,8 +2972,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -2986,8 +2986,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3001,8 +3001,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -3017,8 +3017,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -3033,8 +3033,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -3051,10 +3051,10 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -3082,8 +3082,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -3098,8 +3098,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -3130,8 +3130,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3144,8 +3144,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3158,8 +3158,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3173,9 +3173,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.flow.": []
     }
   },
   {
@@ -3191,10 +3191,10 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -3207,8 +3207,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3222,8 +3222,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -3238,9 +3238,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.flow.": []
     }
   },
   {
@@ -3254,8 +3254,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -3309,8 +3309,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3323,8 +3323,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3338,9 +3338,9 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": []
     }
   },
   {
@@ -3355,8 +3355,8 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.selects.": []
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3369,8 +3369,8 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.selects.": []
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3387,12 +3387,12 @@
     ],
     "classes": {
       "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.channels.Channel.Factory": [
         "CONFLATED"
       ],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -3405,8 +3405,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3431,8 +3431,8 @@
       "kotlinx.coroutines.test.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.test.internal.": []
+      "kotlinx.coroutines.test.internal.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3445,8 +3445,8 @@
       "kotlinx.coroutines.test."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.test.": []
+      "kotlinx.coroutines.test.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3461,9 +3461,9 @@
       "kotlinx.coroutines.test.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.test.internal.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3478,9 +3478,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -3524,9 +3524,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -3539,8 +3539,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3556,10 +3556,10 @@
       "kotlinx.coroutines.flow.unsafeTransform"
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.unsafeTransform": [],
-      "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -3572,8 +3572,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3586,8 +3586,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3600,8 +3600,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3614,8 +3614,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3641,9 +3641,9 @@
       "kotlinx.coroutines.flow."
     ],
     "classes": {
+      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.flow.": []
     }
   },
   {
@@ -3656,8 +3656,8 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3682,8 +3682,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3831,8 +3831,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.flow.flow": [],
-      "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.flow.internal.": []
     }
   },
   {
@@ -3845,8 +3845,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   }
 ]

@@ -111,7 +111,7 @@ inline void resume(Continuation<void>& continuation) {
  * Resumes with an exception.
  */
 template<typename T>
-inline void resume_withException(Continuation<T>& continuation, std::exception_ptr exception) {
+inline void resume_with_exception(Continuation<T>& continuation, std::exception_ptr exception) {
     continuation.resume_with(Result<T>::failure(exception));
 }
 

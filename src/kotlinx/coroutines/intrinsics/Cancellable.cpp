@@ -23,7 +23,7 @@
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
-#include "kotlinx/coroutines/DispatchedContinuation.hpp"
+#include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
 

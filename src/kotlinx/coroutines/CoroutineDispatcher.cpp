@@ -12,7 +12,7 @@
  */
 
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
-#include "kotlinx/coroutines/DispatchedContinuation.hpp"
+#include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
 #include <mutex>
 #include <queue>
 #include <atomic>
@@ -122,7 +122,7 @@ namespace kotlinx {
 
         // CoroutineDispatcher implementation
 
-        CoroutineDispatcher::CoroutineDispatcher() : AbstractCoroutineContextElement(ContinuationInterceptor::typeKey) {
+        CoroutineDispatcher::CoroutineDispatcher() : AbstractCoroutineContextElement(ContinuationInterceptor::type_key) {
         }
 
         bool CoroutineDispatcher::is_dispatch_needed(const CoroutineContext &context) const {

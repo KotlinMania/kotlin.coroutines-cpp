@@ -56,25 +56,12 @@ namespace kotlinx {
         } // anonymous namespace
 
         // ============================================================================
-        // Internal State Classes (private/internal in Kotlin)
+        // Internal State Classes (private in Kotlin - not exposed in header)
         // ============================================================================
 
         /**
- * Marker interface for incomplete job states.
- * Transliterated from: internal interface Incomplete
- */
-        class Incomplete : public JobState {
-        public:
-            virtual bool is_active() const = 0;
-
-            virtual class NodeList *get_list() const = 0;
-
-            virtual ~Incomplete() = default;
-        };
-
-        /**
  * Empty state - either New (inactive) or Active.
- * Transliterated from: private class Empty
+ * Transliterated from: private class Empty (JobSupport.kt)
  */
         class Empty : public Incomplete {
             bool is_active_;
@@ -92,40 +79,8 @@ namespace kotlinx {
         static Empty EMPTY_ACTIVE(true);
 
         /**
- * Node in the linked list of completion handlers.
- * Transliterated from: internal abstract class JobNode
- */
-        class JobNode : public Incomplete,
-                        public internal::LockFreeLinkedListNode,
-                        public DisposableHandle {
-        public:
-            JobSupport *job = nullptr;
-
-            virtual bool get_on_cancelling() const = 0;
-
-            virtual void invoke(std::exception_ptr cause) = 0;
-
-            bool is_active() const override { return true; }
-            NodeList *get_list() const override { return nullptr; }
-
-            void dispose() override;
-        };
-
-        /**
- * List of job nodes (handlers).
- * Transliterated from: internal class NodeList
- */
-        class NodeList : public Incomplete, public internal::LockFreeLinkedListHead {
-        public:
-            bool is_active() const override { return true; }
-            NodeList *get_list() const override { return const_cast<NodeList *>(this); }
-
-            void notify_completion(std::exception_ptr cause);
-        };
-
-        /**
  * Inactive state with a list of handlers waiting to be activated.
- * Transliterated from: private class InactiveNodeList
+ * Transliterated from: private class InactiveNodeList (JobSupport.kt)
  */
         class InactiveNodeList : public Incomplete {
             NodeList *list_;
