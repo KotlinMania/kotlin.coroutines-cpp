@@ -41,9 +41,9 @@ public:
     static constexpr int CONFLATED = Channel<E>::CONFLATED;
     static constexpr int BUFFERED = Channel<E>::BUFFERED;
 
-    BroadcastChannel(int capacity) 
+    explicit BroadcastChannel(int capacity)
         : BufferedChannel<E>(Channel<E>::RENDEZVOUS), // BroadcastChannelImpl inits with RENDEZVOUS
-          capacity_(capacity) 
+          capacity_(capacity)
     {
         if (capacity == 0) throw std::invalid_argument("Unsupported 0 capacity for BroadcastChannel");
     }
@@ -181,7 +181,7 @@ protected:
     class SubscriberConflated : public ConflatedBufferedChannel<E> {
         BroadcastChannel* broadcast_;
     public:
-        SubscriberConflated(BroadcastChannel* b) 
+        explicit SubscriberConflated(BroadcastChannel* b)
             : ConflatedBufferedChannel<E>(1, BufferOverflow::DROP_OLDEST), broadcast_(b) {}
             
         void cancel(std::exception_ptr cause = nullptr) override {
