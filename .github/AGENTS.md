@@ -34,6 +34,7 @@
     - For internal-only generics, prefer concrete specializations or type-erasure.
 - Header preface block:
     - At top of each file, include a short comment with original Kotlin path and brief TODO bullets.
+- Prefer explicit `override` on overridden virtuals; some legacy headers may lack it and trigger warnings.
 
 ---
 
@@ -48,6 +49,25 @@
 - GC/interoperability notes:
     - Keep boundaries explicit. Do not assume automatic GC; prefer `std::shared_ptr`/`std::unique_ptr` for lifetimes.
     - When returning heap-allocated results via `void*`, add `TODO(abi-ownership): document/delete policy` if ownership is not yet defined.
+
+---
+
+### Build and testing workflow
+- Toolchain: CMake >= 3.16, C++20 compiler (clang++ on macOS), and Threads/pthreads.
+- Prefer out-of-source builds; artifacts land under `build/` (or another build dir).
+- Standard build:
+    ```bash
+    mkdir -p build && cd build
+    cmake .. -DCMAKE_BUILD_TYPE=Release
+    cmake --build . -- -j4
+    ```
+- Useful CMake options:
+    - `KOTLIN_NATIVE_RUNTIME_AVAILABLE=ON` only when Kotlin/Native runtime is present for GC bridge work.
+    - `KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=ON` to build the Apple-focused suspend DSL plugin in `tools/clang_suspend_plugin/`.
+- Tests are plain C++ executables registered via `tests/CMakeLists.txt` using `add_coroutine_test(<name>)`.
+- Run tests from a build dir with CTest; use `ctest -R <regex>` to run subsets (handy when other targets fail to compile).
+- The Kotlin/Native `tests/gc_bridge` suite is optional and requires K/N tooling; don’t enable K/N options unless that toolchain is available.
+- For faster iteration, build specific targets (library or a single test), e.g. `cmake --build build --target test_suspension_core`.
 
 ---
 
@@ -200,4 +220,3 @@
 
 ### Final note
 Transliteration first, helpers second. Keep it mechanical and reversible. Call out every mismatch explicitly with a `TODO` so we can schedule semantic work once the Clang suspend plugin lands.
-
