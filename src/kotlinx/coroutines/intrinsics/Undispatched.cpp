@@ -15,6 +15,13 @@
  */
 
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/Result.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
+#include "kotlinx/coroutines/CompletedExceptionally.hpp"
+#include "kotlinx/coroutines/internal/ThreadContext.hpp"
 
 namespace kotlinx {
     namespace coroutines {

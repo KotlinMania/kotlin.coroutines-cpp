@@ -2,6 +2,10 @@
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/channels/BufferedChannel.hpp"
 #include "kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
+#include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
+#include "kotlinx/coroutines/selects/Select.hpp"
 #include <functional>
 #include <vector>
 #include <exception>

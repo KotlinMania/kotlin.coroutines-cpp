@@ -4,8 +4,10 @@
 #include <mutex>
 #include <algorithm>
 #include <memory>
-#include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/flow/Flow.hpp"
 
 namespace kotlinx {
 namespace coroutines {

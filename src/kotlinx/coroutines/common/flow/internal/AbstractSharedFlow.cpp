@@ -11,6 +11,10 @@
  * - Synchronized slot allocation
  */
 
+#include "kotlinx/coroutines/flow/internal/AbstractSharedFlow.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include <vector>
 #include <memory>

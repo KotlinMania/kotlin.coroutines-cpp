@@ -14,6 +14,11 @@
  */
 
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/Result.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
 
 namespace kotlinx {
     namespace coroutines {

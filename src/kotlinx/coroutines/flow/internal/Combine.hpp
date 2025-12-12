@@ -1,4 +1,6 @@
 #pragma once
+#include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/internal/SendingCollector.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"

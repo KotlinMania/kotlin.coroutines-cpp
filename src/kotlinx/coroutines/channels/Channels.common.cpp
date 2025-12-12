@@ -1,4 +1,6 @@
 #include "kotlinx/coroutines/channels/Channels.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
 
 namespace kotlinx {
     namespace coroutines {

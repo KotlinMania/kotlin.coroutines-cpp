@@ -1,13 +1,15 @@
 #pragma once
 #include "kotlinx/coroutines/core_fwd.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/channels/ProducerScope.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/context_impl.hpp"
 #include <string>
 #include <memory>
-#include "kotlinx/coroutines/context_impl.hpp"
 
 namespace kotlinx {
 namespace coroutines {

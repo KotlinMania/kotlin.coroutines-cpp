@@ -12,7 +12,13 @@
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
+#include "kotlinx/coroutines/flow/internal/SendingCollector.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
 #include <exception>
 
 namespace kotlinx {
