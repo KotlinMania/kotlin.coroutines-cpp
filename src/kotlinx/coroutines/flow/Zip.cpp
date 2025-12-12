@@ -1,12 +1,12 @@
 /**
- * @file Delay.cpp
- * @brief Implementation of Delay operators (debounce, sample, timeout).
+ * @file Zip.cpp
+ * @brief Implementation of Zip operators.
  *
  * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/operators/Delay.hpp`.
+ * in the companion header file: `include/kotlinx/coroutines/flow/operators/Zip.hpp`.
  */
 
-#include "kotlinx/coroutines/flow/operators/Delay.hpp"
+#include "kotlinx/coroutines/flow/Zip.hpp"
 
 namespace kotlinx {
     namespace coroutines {

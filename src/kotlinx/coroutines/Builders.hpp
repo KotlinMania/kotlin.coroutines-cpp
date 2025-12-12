@@ -8,6 +8,12 @@
 #include "kotlinx/coroutines/EventLoop.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
+#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/DispatchedContinuation.hpp"
+#include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
+#include "kotlinx/coroutines/internal/DispatchedTask.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/selects/Select.hpp"
 #include <functional>
 #include <thread>
 #include <memory>

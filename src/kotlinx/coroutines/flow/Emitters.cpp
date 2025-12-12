@@ -1,12 +1,12 @@
 /**
- * @file Limit.cpp
- * @brief Implementation of Limit operators (take, drop, etc.).
+ * @file Emitters.cpp
+ * @brief Implementation of Emitter operators.
  *
  * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/operators/Limit.hpp`.
+ * in the companion header file: `include/kotlinx/coroutines/flow/operators/Emitters.hpp`.
  */
 
-#include "kotlinx/coroutines/flow/operators/Limit.hpp"
+#include "kotlinx/coroutines/flow/Emitters.hpp"
 
 namespace kotlinx {
     namespace coroutines {

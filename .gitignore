@@ -81,6 +81,8 @@ benchmarks.jar
 # =============================================================================
 # Temporary directories
 /tmp/
+__pycache__/
+*.pyc
 *.tmp
 *.temp
 *.bak

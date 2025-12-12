@@ -14,7 +14,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        namespace {
+        namespace internal {
             /*
  * Inline class that represents a mutable list, but does not allocate an underlying storage
  * for zero and one elements.

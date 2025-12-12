@@ -1,5 +1,5 @@
 #pragma once
-#include "../../include/kotlinx/coroutines/Job.hpp"
+#include "kotlinx/coroutines/Job.hpp"
 #include <future>
 #include <exception>
 

@@ -1,8 +1,12 @@
 #pragma once
 
 #include "kotlinx/coroutines/channels/BufferedChannel.hpp"
+#include "kotlinx/coroutines/channels/BufferOverflow.hpp"
 #include "kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/internal/Symbol.hpp"
+#include "kotlinx/coroutines/selects/Select.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <vector>
 #include <mutex>
 #include <algorithm>

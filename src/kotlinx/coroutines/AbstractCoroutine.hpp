@@ -12,6 +12,7 @@
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -149,7 +150,7 @@ public:
      *
      * Transliterated from: protected open fun cancellationExceptionMessage(): String
      */
-    virtual std::string cancellation_exception_message() const {
+    std::string cancellation_exception_message() const override {
         return "AbstractCoroutine was cancelled";
     }
     

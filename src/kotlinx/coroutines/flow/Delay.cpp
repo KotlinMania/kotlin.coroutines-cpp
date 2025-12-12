@@ -1,12 +1,12 @@
 /**
- * @file Errors.cpp
- * @brief Implementation of Error handling operators (catch, retry).
+ * @file Delay.cpp
+ * @brief Implementation of Delay operators (debounce, sample, timeout).
  *
  * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/operators/Errors.hpp`.
+ * in the companion header file: `include/kotlinx/coroutines/flow/operators/Delay.hpp`.
  */
 
-#include "kotlinx/coroutines/flow/operators/Errors.hpp"
+#include "kotlinx/coroutines/flow/Delay.hpp"
 
 namespace kotlinx {
     namespace coroutines {

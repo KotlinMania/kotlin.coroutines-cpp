@@ -508,4 +508,14 @@ The kotlinx.coroutines-cpp implementation demonstrates **strong engineering fund
 
 ---
 
+## RELATED AUDIT DOCUMENTS
+
+- **[NAMESPACE_STRUCTURE_AUDIT.md](NAMESPACE_STRUCTURE_AUDIT.md)** - Folder structure, namespace mapping, and Kotlin ↔ C++ package analysis
+- **[API_COMPLETENESS_AUDIT.md](API_COMPLETENESS_AUDIT.md)** - Per-class API coverage and missing method tracking
+- **[API_AUDIT.md](API_AUDIT.md)** - API design decisions and architectural patterns
+- **[TRANSLITERATION_STATUS.md](TRANSLITERATION_STATUS.md)** - Kotlin → C++ transliteration progress by file
+- **Block audits (01-11)** - Detailed per-block implementation analysis
+
+---
+
 *This comprehensive audit report serves as the definitive reference for the current state of kotlinx.coroutines-cpp implementation and provides the roadmap for achieving complete functional parity with the Kotlin version.*

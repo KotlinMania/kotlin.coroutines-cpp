@@ -12,7 +12,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        namespace {
+        namespace internal {
             // Forward declarations
             class MainCoroutineDispatcher;
             class Delay;

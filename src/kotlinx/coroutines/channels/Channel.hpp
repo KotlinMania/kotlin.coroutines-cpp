@@ -1,7 +1,9 @@
 #pragma once
-#include "../CancellableContinuation.hpp"
-#include "../selects/Select.hpp"
-#include "BufferOverflow.hpp"
+// Kotlin source: kotlinx-coroutines-core/common/src/channels/Channel.kt
+#include "kotlinx/coroutines/CancellableContinuation.hpp"
+#include "kotlinx/coroutines/selects/Select.hpp"
+#include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
 #include <memory>
 #include <exception>
 #include <functional>

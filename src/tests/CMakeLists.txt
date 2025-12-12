@@ -5,7 +5,10 @@
 function(add_coroutine_test TEST_NAME)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${TEST_NAME}.cpp")
         add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
-        target_include_directories(${TEST_NAME} PRIVATE ../../include)
+        target_include_directories(${TEST_NAME} PRIVATE
+            ${PROJECT_SOURCE_DIR}/include
+            ${PROJECT_SOURCE_DIR}/src/${KOTLINX_COROUTINES_SRC_DIR}
+        )
         # Link against core library so tests can exercise non-inline implementations.
         target_link_libraries(${TEST_NAME} PRIVATE pthread kotlinx-coroutines-core)
         add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})

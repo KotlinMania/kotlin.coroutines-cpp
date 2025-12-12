@@ -1,0 +1,3852 @@
+[
+  {
+    "file": "AbstractCoroutine",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.CoroutineStart.",
+      "kotlinx.coroutines.internal",
+      "kotlinx.coroutines.intrinsics."
+    ],
+    "classes": {
+      "kotlinx.coroutines.CoroutineStart.": [],
+      "kotlinx.coroutines.intrinsics.": [],
+      "kotlinx.coroutines.internal": [
+        "ScopeCoroutine"
+      ]
+    }
+  },
+  {
+    "file": "AbstractCoroutineTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AbstractCoroutineTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "AbstractDispatcherConcurrencyTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/AbstractDispatcherConcurrencyTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "AbstractSharedFlow",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/flow/internal/AbstractSharedFlow.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/AbstractSharedFlow.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Annotations",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Annotations.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.flow."
+    ],
+    "classes": {
+      "kotlinx.coroutines.flow.": []
+    }
+  },
+  {
+    "file": "AsyncLazyTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AsyncLazyTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "AsyncTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AsyncTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "AtomicCancellationCommonTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AtomicCancellationCommonTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.selects.",
+      "kotlinx.coroutines.sync.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.sync.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "AtomicCancellationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/AtomicCancellationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.selects.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "AwaitCancellationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AwaitCancellationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "AwaitTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AwaitTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "BasicOperationsTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/BasicOperationsTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "BooleanTerminationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/BooleanTerminationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Broadcast",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Broadcast.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.Channel.Factory",
+      "kotlinx.coroutines.intrinsics."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.Channel.Factory": [
+        "UNLIMITED",
+        "CONFLATED"
+      ],
+      "kotlinx.coroutines.intrinsics.": []
+    }
+  },
+  {
+    "file": "BroadcastChannel",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BroadcastChannel.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BroadcastChannel.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.BufferOverflow.",
+      "kotlinx.coroutines.channels.Channel.Factory",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.channels.BufferOverflow.": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.Channel.Factory": [
+        "BUFFERED",
+        "CHANNEL_DEFAULT_CAPACITY",
+        "UNLIMITED",
+        "CONFLATED"
+      ],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "BroadcastChannelFactoryTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/BroadcastChannelFactoryTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "BroadcastChannelSubStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/channels/BroadcastChannelSubStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "BroadcastTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/BroadcastTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.selects.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "BufferConflationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/BufferConflationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "BufferTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/BufferTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "BufferedBroadcastChannelTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/BufferedBroadcastChannelTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "BufferedChannel",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.ChannelResult.Companion.closed",
+      "kotlinx.coroutines.channels.ChannelResult.Companion.failure",
+      "kotlinx.coroutines.channels.ChannelResult.Companion.success",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.selects.",
+      "kotlinx.coroutines.selects.TrySelectDetailedResult."
+    ],
+    "classes": {
+      "kotlinx.coroutines.channels.ChannelResult.Companion.closed": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.TrySelectDetailedResult.": [],
+      "kotlinx.coroutines.channels.ChannelResult.Companion.failure": [],
+      "kotlinx.coroutines.channels.ChannelResult.Companion.success": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "BufferedChannelTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/BufferedChannelTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "BuilderContractsTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/BuilderContractsTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.selects.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Builders",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Builders.common.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Builders.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/Builders.concurrent.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Builders.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Builders.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.channels.Channel.Factory",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.flow.internal.unsafeFlow",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.intrinsics.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.Channel.Factory": [
+        "BUFFERED"
+      ],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.intrinsics.": []
+    }
+  },
+  {
+    "file": "BuildersTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/BuildersTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Cancellable",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "CancellableContinuation",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CancellableContinuation.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CancellableContinuation.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "CancellableContinuationHandlersTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CancellableContinuationHandlersTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CancellableContinuationImpl",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CancellableContinuationImpl.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CancellableContinuationImpl.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "CancellableResumeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CancellableResumeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CancellableTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/CancellableTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CancelledParentAttachTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CancelledParentAttachTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "CatchTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/CatchTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Channel",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channel.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channel.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.Channel.Factory",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.Channel.Factory": [
+        "BUFFERED",
+        "RENDEZVOUS",
+        "CHANNEL_DEFAULT_CAPACITY",
+        "UNLIMITED",
+        "CONFLATED"
+      ],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "ChannelBufferOverflowTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ChannelBufferOverflowTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ChannelBuildersFlowTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/channels/ChannelBuildersFlowTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "ChannelCancelUndeliveredElementStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/channels/ChannelCancelUndeliveredElementStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.selects.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ChannelCoroutine",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ChannelCoroutine.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ChannelCoroutine.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "ChannelFlow",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/ChannelFlow.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "ChannelFlowTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/channels/ChannelFlowTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "ChannelReceiveCatchingTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ChannelReceiveCatchingTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ChannelUndeliveredElementFailureTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ChannelUndeliveredElementFailureTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.selects.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ChannelUndeliveredElementTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ChannelUndeliveredElementTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Channels",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.common.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/channels/Channels.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.flow.internal.unsafeFlow",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+    }
+  },
+  {
+    "file": "ChunkedTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/ChunkedTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Collect",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Collect.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": []
+    }
+  },
+  {
+    "file": "CollectLatestTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/CollectLatestTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Combine",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Combine.hpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "CombineParametersTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/CombineParametersTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CombineStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/flow/CombineStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CombineTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/CombineTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.combine",
+      "kotlinx.coroutines.flow.combineTransform",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.combine": [],
+      "kotlinx.coroutines.flow.combineTransform": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CommonThreadLocalTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/CommonThreadLocalTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.exceptions.",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.exceptions.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CompletableDeferred",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CompletableDeferred.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.selects.": []
+    }
+  },
+  {
+    "file": "CompletableDeferredTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CompletableDeferredTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CompletableJobTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CompletableJobTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CompletionState",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CompletionState.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "ConcurrentExceptionsStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/ConcurrentExceptionsStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.exceptions.",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.exceptions.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ConcurrentLinkedList",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/ConcurrentLinkedList.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "ConcurrentTestUtilities",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/ConcurrentTestUtilities.common.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/test/ConcurrentTestUtilities.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "ConflateTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/ConflateTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ConflatedBroadcastChannelNotifyStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/channels/ConflatedBroadcastChannelNotifyStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ConflatedBroadcastChannelTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ConflatedBroadcastChannelTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ConflatedBufferedChannel",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ConflatedBufferedChannel.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.BufferOverflow.",
+      "kotlinx.coroutines.channels.ChannelResult.Companion.success",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.channels.ChannelResult.Companion.success": [],
+      "kotlinx.coroutines.channels.BufferOverflow.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.selects.": []
+    }
+  },
+  {
+    "file": "ConflatedChannelTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ConflatedChannelTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ConsumeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ConsumeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Context",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Context.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Context.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.channels.Channel.Factory",
+      "kotlinx.coroutines.flow.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.Channel.Factory": [
+        "BUFFERED",
+        "CONFLATED"
+      ],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "CoroutineContext",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineContext.common.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/CoroutineContext.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineContext.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "CoroutineDispatcher",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineDispatcher.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineDispatcher.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "CoroutineDispatcherOperatorFunInvokeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CoroutineDispatcherOperatorFunInvokeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CoroutineExceptionHandler",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineExceptionHandler.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineExceptionHandler.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "CoroutineExceptionHandlerImpl",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/CoroutineExceptionHandlerImpl.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/CoroutineExceptionHandlerImpl.common.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "CoroutineExceptionHandlerTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CoroutineExceptionHandlerTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CoroutineScope",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineScope.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineScope.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.intrinsics."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.intrinsics.": []
+    }
+  },
+  {
+    "file": "CoroutineScopeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CoroutineScopeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CoroutineStart",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.intrinsics."
+    ],
+    "classes": {
+      "kotlinx.coroutines.intrinsics.": []
+    }
+  },
+  {
+    "file": "CoroutinesTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CoroutinesTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "CountTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/CountTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "DebounceTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/DebounceTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Deferred",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Deferred.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Deferred.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.selects.": []
+    }
+  },
+  {
+    "file": "Delay",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Delay.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Delay.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Delay.hpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Delay.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.selects.": []
+    }
+  },
+  {
+    "file": "DelayDurationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/DelayDurationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "DelayExceptionTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/test/DelayExceptionTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "DelayTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/DelayTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Deprecated",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Deprecated.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "DispatchedContinuation",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/DispatchedContinuation.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/DispatchedContinuation.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "DispatchedContinuationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/DispatchedContinuationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "DispatchedTask",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/DispatchedTask.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/DispatchedTask.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "Dispatchers",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Dispatchers.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Dispatchers.common.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Dispatchers.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/Dispatchers.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Dispatchers.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "Distinct",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Distinct.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Distinct.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.flow.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.flow.internal.": []
+    }
+  },
+  {
+    "file": "DistinctUntilChangedTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/DistinctUntilChangedTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "DropTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/DropTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "DropWhileTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/DropWhileTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Emitters",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Emitters.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Emitters.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": []
+    }
+  },
+  {
+    "file": "EmptyContext",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/EmptyContext.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal.probeCoroutineCreated",
+      "kotlinx.coroutines.internal.probeCoroutineResumed"
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.probeCoroutineCreated": [],
+      "kotlinx.coroutines.internal.probeCoroutineResumed": []
+    }
+  },
+  {
+    "file": "Errors",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Errors.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Errors.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.internal.unsafeFlow",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+    }
+  },
+  {
+    "file": "EventLoop",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/EventLoop.common.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/EventLoop.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/EventLoop.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "ExceptionCollector",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/internal/ExceptionCollector.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "FailedJobTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/FailedJobTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FilterTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FilterTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "FilterTrivialTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FilterTrivialTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "FirstTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/FirstTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.CoroutineStart.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.CoroutineStart.": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlatMapBaseTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapBaseTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlatMapConcatTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapConcatTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "FlatMapLatestTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapLatestTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlatMapMergeBaseTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapMergeBaseTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlatMapMergeFastPathTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapMergeFastPathTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlatMapMergeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapMergeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlattenConcatTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlattenConcatTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlattenMergeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlattenMergeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "Flow",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": []
+    }
+  },
+  {
+    "file": "FlowCallbackTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/channels/FlowCallbackTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "FlowCancellationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/flow/FlowCancellationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlowContextOptimizationsTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlowContextOptimizationsTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlowCoroutine",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.flow.internal.unsafeFlow",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.intrinsics."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.intrinsics.": []
+    }
+  },
+  {
+    "file": "FlowExceptions",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowExceptions.common.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowExceptions.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": []
+    }
+  },
+  {
+    "file": "FlowInvariantsTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/FlowInvariantsTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing.",
+      "kotlinx.coroutines.testing.flow."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.flow.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlowOnTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlowOnTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing.",
+      "kotlinx.coroutines.testing.flow."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.flow.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FlowScopeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/internal/FlowScopeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "FoldTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/FoldTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "IdFlowTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/IdFlowTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "IndexedTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/IndexedTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "InlineList",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/InlineList.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.assert"
+    ],
+    "classes": {
+      "kotlinx.coroutines.assert": []
+    }
+  },
+  {
+    "file": "Job",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.selects.": []
+    }
+  },
+  {
+    "file": "JobExtensionsTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/JobExtensionsTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "JobStatesTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/JobStatesTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "JobStructuredJoinStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/JobStructuredJoinStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "JobSupport",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/JobSupport.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/JobSupport.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "JobTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/JobTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "LastTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/LastTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "LaunchFlow",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/LaunchFlow.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": []
+    }
+  },
+  {
+    "file": "LaunchInTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/LaunchInTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "LaunchLazyTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/LaunchLazyTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Limit",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.flow",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.flow.internal.unsafeFlow"
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.flow.flow": [],
+      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+    }
+  },
+  {
+    "file": "LimitedDispatcher",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/LimitedDispatcher.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "LimitedParallelismConcurrentTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/LimitedParallelismConcurrentTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.exceptions.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.exceptions.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "LimitedParallelismSharedTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/LimitedParallelismSharedTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Lint",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Lint.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Lint.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "LintTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/LintTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "LockFreeLinkedList",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/LockFreeLinkedList.common.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/internal/LockFreeLinkedList.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/LockFreeLinkedList.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "LockFreeTaskQueue",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/LockFreeTaskQueue.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "Logic",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Logic.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "MainCoroutineDispatcher",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/MainCoroutineDispatcher.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/MainCoroutineDispatcher.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "MainDispatcherFactory",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/MainDispatcherFactory.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "MainDispatcherTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/test/MainDispatcherTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "MainDispatcherTestBase",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/MainDispatcherTestBase.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "MapNotNullTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/MapNotNullTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "MapTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/MapTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Merge",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Merge.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Merge.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.flow.internal.unsafeFlow",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.sync."
+    ],
+    "classes": {
+      "kotlinx.coroutines.sync.": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+    }
+  },
+  {
+    "file": "MergeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/MergeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.merge",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.merge": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Migration",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Migration.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "MultithreadedDispatchers",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/MultithreadedDispatchers.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/MultithreadedDispatchers.common.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/MultithreadedDispatchers.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "MultithreadedDispatchersTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/test/MultithreadedDispatchersTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Mutex",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Mutex.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Mutex.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "MutexStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/sync/MutexStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.exceptions.",
+      "kotlinx.coroutines.selects.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.exceptions.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "NamedDispatcher",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/NamedDispatcher.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines",
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines": [
+        "DefaultDelay"
+      ]
+    }
+  },
+  {
+    "file": "NonCancellable",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/NonCancellable.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.selects.": []
+    }
+  },
+  {
+    "file": "NopCollector",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NopCollector.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NopCollector.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.flow."
+    ],
+    "classes": {
+      "kotlinx.coroutines.flow.": []
+    }
+  },
+  {
+    "file": "NullSurrogate",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NullSurrogate.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "OnCompletionTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/OnCompletionTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "OnEachTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/OnEachTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "OnEmptyTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/OnEmptyTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "OnStartTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/OnStartTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "OnTimeout",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "OnUndeliveredElement",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/OnUndeliveredElement.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "Produce",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": []
+    }
+  },
+  {
+    "file": "ProduceConsumeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ProduceConsumeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ProduceTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ProduceTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Reduce",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Reduce.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.internal"
+    ],
+    "classes": {
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.internal": [
+        "Symbol"
+      ]
+    }
+  },
+  {
+    "file": "ReduceTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/ReduceTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "ReportingSupervisorJob",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/internal/ReportingSupervisorJob.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "RetryTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/RetryTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "RunBlockingTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/RunBlockingTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.exceptions.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.exceptions.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "RunTestTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/RunTestTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SafeCollector",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.common.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.internal"
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.internal": [
+        "ScopeCoroutine"
+      ]
+    }
+  },
+  {
+    "file": "SafeFlowTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/SafeFlowTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SampleTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/SampleTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "ScanTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/ScanTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Scopes",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Scopes.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "Select",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.selects.TrySelectDetailedResult."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.selects.TrySelectDetailedResult.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "SelectBiasTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectBiasTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SelectBufferedChannelTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectBufferedChannelTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "SelectChannelStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/selects/SelectChannelStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "SelectDeferredTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectDeferredTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SelectJobTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectJobTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SelectLoopTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectLoopTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "SelectMutexStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/selects/SelectMutexStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.sync.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.sync.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SelectMutexTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectMutexTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.sync.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.sync.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SelectOld",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/SelectOld.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "SelectOldTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectOldTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SelectRendezvousChannelTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectRendezvousChannelTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "SelectTimeoutDurationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectTimeoutDurationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SelectTimeoutTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectTimeoutTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SelectUnlimitedChannelTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectUnlimitedChannelTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Semaphore",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Semaphore.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Semaphore.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "SemaphoreStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/sync/SemaphoreStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.exceptions.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.exceptions.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SemaphoreTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/sync/SemaphoreTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SendReceiveStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/SendReceiveStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SendingCollector",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SendingCollector.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SendingCollector.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Share",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Share.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "ShareInBufferTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/ShareInBufferTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ShareInConflationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/ShareInConflationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "ShareInFusionTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/ShareInFusionTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "ShareInTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/ShareInTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "SharedFlow",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/SharedFlow.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/SharedFlow.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "SharedFlowBaseline",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/benchmarks/SharedFlowBaseline.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": []
+    }
+  },
+  {
+    "file": "SharedFlowScenarioTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/SharedFlowScenarioTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "SharedFlowTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/SharedFlowTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "SharingStarted",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/SharingStarted.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/SharingStarted.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.internal"
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.internal": [
+        "IgnoreJreRequirement"
+      ]
+    }
+  },
+  {
+    "file": "SharingStartedTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/SharingStartedTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SharingStartedWhileSubscribedTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/SharingStartedWhileSubscribedTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "SingleTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/SingleTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "StandardTestDispatcherTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/StandardTestDispatcherTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "StateFlow",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/StateFlow.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/StateFlow.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "StateFlowCommonStressTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/flow/StateFlowCommonStressTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "StateFlowTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/StateFlowTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "StateFlowUpdateCommonTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/flow/StateFlowUpdateCommonTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "StateInTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/StateInTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Supervisor",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Supervisor.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Supervisor.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.intrinsics."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.intrinsics.": []
+    }
+  },
+  {
+    "file": "SupervisorTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/SupervisorTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Synchronized",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Synchronized.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Synchronized.common.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "TakeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TakeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "TakeWhileTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TakeWhileTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "TestBase",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestBase.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "TestBuilders",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestBuilders.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/internal/TestBuilders.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/test/TestBuilders.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": []
+    }
+  },
+  {
+    "file": "TestChannelKind",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/TestChannelKind.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": []
+    }
+  },
+  {
+    "file": "TestCoroutineScheduler",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestCoroutineScheduler.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.channels.Channel.Factory",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.channels.Channel.Factory": [
+        "CONFLATED"
+      ],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "TestCoroutineSchedulerTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestCoroutineSchedulerTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "TestDispatcher",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/test/TestDispatcher.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "TestDispatchers",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestDispatchers.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.test.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.test.internal.": []
+    }
+  },
+  {
+    "file": "TestMainDispatcher",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/internal/TestMainDispatcher.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.test."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.test.": []
+    }
+  },
+  {
+    "file": "TestScope",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestScope.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/test/TestScope.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.test.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.test.internal.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "TestScopeTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestScopeTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "ThreadSafeHeap",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ThreadSafeHeap.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ThreadSafeHeap.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "Timeout",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Timeout.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal.",
+      "kotlinx.coroutines.intrinsics.",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.intrinsics.": []
+    }
+  },
+  {
+    "file": "TimeoutTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TimeoutTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "ToCollectionTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/ToCollectionTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Transform",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Transform.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Transform.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.flow.internal.unsafeFlow",
+      "kotlinx.coroutines.flow.unsafeTransform"
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.unsafeTransform": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+    }
+  },
+  {
+    "file": "TransformLatestTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TransformLatestTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "TransformTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TransformTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "TransformWhileTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TransformWhileTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "TrySendBlockingTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/channels/TrySendBlockingTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "UnconfinedTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/UnconfinedTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "UnconfinedTestDispatcherTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/UnconfinedTestDispatcherTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.flow."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Undispatched",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Undispatched.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "UndispatchedResultTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/UndispatchedResultTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "UnlimitedChannelTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/UnlimitedChannelTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "VirtualTime",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/VirtualTime.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "Waiter",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Waiter.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Waiter.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal",
+      "kotlinx.coroutines.selects."
+    ],
+    "classes": {
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.internal": [
+        "Segment"
+      ]
+    }
+  },
+  {
+    "file": "WhileSelect",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/WhileSelect.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": []
+    }
+  },
+  {
+    "file": "WithContextTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/WithContextTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "WithTimeoutDurationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/WithTimeoutDurationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "WithTimeoutOrNullDurationTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/WithTimeoutOrNullDurationTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "WithTimeoutOrNullTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/WithTimeoutOrNullTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "WithTimeoutTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/WithTimeoutTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": []
+    }
+  },
+  {
+    "file": "WorkerTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/test/WorkerTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.channels.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
+    }
+  },
+  {
+    "file": "Yield",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Yield.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Yield.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.internal."
+    ],
+    "classes": {
+      "kotlinx.coroutines.internal.": []
+    }
+  },
+  {
+    "file": "Zip",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Zip.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Zip.hpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.flow.flow",
+      "kotlinx.coroutines.flow.internal.",
+      "kotlinx.coroutines.flow.internal.unsafeFlow"
+    ],
+    "classes": {
+      "kotlinx.coroutines.flow.flow": [],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+    }
+  },
+  {
+    "file": "ZipTest",
+    "cpp_files": [
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/ZipTest.cpp"
+    ],
+    "missing_imports": [
+      "kotlinx.coroutines.",
+      "kotlinx.coroutines.testing."
+    ],
+    "classes": {
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
+    }
+  }
+]

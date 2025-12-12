@@ -3,6 +3,12 @@
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
+#include "kotlinx/coroutines/flow/FlowCollector.hpp"
+#include "kotlinx/coroutines/flow/internal/FlowImpl.hpp"
+#include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
+#include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
+#include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/channels/ProducerScope.hpp"
 #include <functional>
 #include <memory>
 #include <vector>

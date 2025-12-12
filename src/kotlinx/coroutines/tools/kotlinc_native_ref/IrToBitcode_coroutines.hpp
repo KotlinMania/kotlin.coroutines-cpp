@@ -54,7 +54,7 @@ struct SuspendableExpressionScope {
     explicit SuspendableExpressionScope(std::vector<LLVMBasicBlockRef>& rp) : resumePoints(rp) {}
 
     int addResumePoint(LLVMBasicBlockRef bbLabel) {
-        int id = static_cast<int>(resumePoints.size());
+        const int id = static_cast<int>(resumePoints.size());
         resumePoints.push_back(bbLabel);
         return id;
     }

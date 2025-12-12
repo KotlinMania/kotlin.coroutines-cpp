@@ -7,7 +7,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        namespace {
+        namespace internal {
             // TODO: actual function
             std::string *system_prop(std::string property_name) {
                 return nullptr;

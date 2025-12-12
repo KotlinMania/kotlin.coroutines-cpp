@@ -17,7 +17,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        namespace {
+        namespace internal {
             // Forward declarations
             template<typename E>
             class LockFreeTaskQueueCore;

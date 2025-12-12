@@ -10,7 +10,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        namespace {
+        namespace internal {
             // Ignore JRE requirements for animal-sniffer, compileOnly dependency
             // TODO: @Target annotation - multiple targets
             // TODO: @OptionalExpectation - expect declaration

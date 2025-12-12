@@ -1,12 +1,12 @@
 /**
- * @file Zip.cpp
- * @brief Implementation of Zip operators.
+ * @file Transform.cpp
+ * @brief Implementation of Transform operators.
  *
  * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/operators/Zip.hpp`.
+ * in the companion header file: `include/kotlinx/coroutines/flow/operators/Transform.hpp`.
  */
 
-#include "kotlinx/coroutines/flow/operators/Zip.hpp"
+#include "kotlinx/coroutines/flow/Transform.hpp"
 
 namespace kotlinx {
     namespace coroutines {

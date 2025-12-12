@@ -1,8 +1,11 @@
 #pragma once
+// Kotlin source: kotlinx-coroutines-core/common/src/channels/ChannelCoroutine.kt
 #include "kotlinx/coroutines/core_fwd.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
 #include "kotlinx/coroutines/AbstractCoroutine.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
 
 namespace kotlinx {
 namespace coroutines {

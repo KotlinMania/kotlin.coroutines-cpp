@@ -10,6 +10,8 @@
 
 namespace kotlinx {
     namespace coroutines {
-        // Template implementations are in the header.
+        namespace internal {
+            // Template implementations are in the header.
+        } // namespace internal
     } // namespace coroutines
 } // namespace kotlinx

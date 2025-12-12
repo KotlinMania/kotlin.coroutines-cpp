@@ -1,6 +1,6 @@
 #pragma once
-#include "BufferedChannel.hpp"
-#include "BufferOverflow.hpp"
+#include "kotlinx/coroutines/channels/BufferedChannel.hpp"
+#include "kotlinx/coroutines/channels/BufferOverflow.hpp"
 
 namespace kotlinx {
 namespace coroutines {

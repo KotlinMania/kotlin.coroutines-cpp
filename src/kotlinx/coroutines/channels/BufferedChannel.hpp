@@ -1,6 +1,8 @@
 #pragma once
-#include "../../../channels/Channel.hpp"
+// Kotlin source: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt
+#include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
+#include "kotlinx/coroutines/selects/Select.hpp"
 #include <deque>
 #include <mutex>
 #include <functional>

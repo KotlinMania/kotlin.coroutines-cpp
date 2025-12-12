@@ -7,7 +7,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        namespace {
+        namespace internal {
             // TODO: Remove imports, fully qualify or add includes:
             // import kotlinx.atomicfu.*
 

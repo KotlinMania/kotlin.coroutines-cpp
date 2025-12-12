@@ -1,12 +1,12 @@
 /**
- * @file Emitters.cpp
- * @brief Implementation of Emitter operators.
+ * @file Distinct.cpp
+ * @brief Implementation of Distinct operators.
  *
  * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/operators/Emitters.hpp`.
+ * in the companion header file: `include/kotlinx/coroutines/flow/operators/Distinct.hpp`.
  */
 
-#include "kotlinx/coroutines/flow/operators/Emitters.hpp"
+#include "kotlinx/coroutines/flow/Distinct.hpp"
 
 namespace kotlinx {
     namespace coroutines {

@@ -7,6 +7,9 @@
  */
 
 #include "kotlinx/coroutines/channels/BroadcastChannel.hpp"
+#include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/internal/Symbol.hpp"
+#include "kotlinx/coroutines/selects/Select.hpp"
 
 namespace kotlinx {
     namespace coroutines {

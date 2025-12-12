@@ -6,7 +6,7 @@
  * in the companion header file: `include/kotlinx/coroutines/flow/operators/Lint.hpp`.
  */
 
-#include "kotlinx/coroutines/flow/operators/Lint.hpp"
+#include "kotlinx/coroutines/flow/Lint.hpp"
 
 namespace kotlinx {
     namespace coroutines {

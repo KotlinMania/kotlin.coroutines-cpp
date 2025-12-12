@@ -23,9 +23,17 @@ include/kotlinx/coroutines/          # Public API headers (.hpp)
   ├── channels/                      # Channel communication
   └── flow/                          # Flow (reactive) API
 
-kotlinx-coroutines-core/common/src/  # Implementation (.cpp)
-  ├── Job.cpp, Delay.cpp, etc.       # State machines and schedulers
-  └── ...
+src/kotlinx/coroutines/              # Implementation (.cpp)
+  ├── common/                        # Platform: common (maps to parent namespace)
+  │   ├── internal/                  # → kotlinx::coroutines::internal
+  │   └── flow/internal/             # → kotlinx::coroutines::flow::internal
+  ├── concurrent/                    # Platform: concurrent (maps to parent namespace)
+  ├── native/                        # Platform: native (maps to parent namespace)
+  ├── channels/                      # → kotlinx::coroutines::channels
+  ├── flow/                          # → kotlinx::coroutines::flow
+  ├── internal/                      # → kotlinx::coroutines::internal
+  ├── sync/                          # → kotlinx::coroutines::sync
+  └── test/                          # → kotlinx::coroutines::test
 
 tmp/kotlinx.coroutines/              # Kotlin source reference (DO NOT EDIT)
   └── **/*.kt                        # Ground truth for transliteration
@@ -33,11 +41,15 @@ tmp/kotlinx.coroutines/              # Kotlin source reference (DO NOT EDIT)
 docs/                                # Documentation
   ├── cpp_port/docking_ring.md       # Suspend/IR/LLVM plan and plugin design
   ├── audits/                        # Per-file audit status
+  │   ├── NAMESPACE_STRUCTURE_AUDIT.md  # Folder→namespace mapping reference
+  │   └── COMPREHENSIVE_AUDIT_REPORT.md # Overall implementation status
   └── topics/                        # Translated Kotlin coroutines docs
 
 tools/clang_suspend_plugin/          # Clang plugin for suspend DSL (operational - see docs/SUSPEND_IMPLEMENTATION.md)
 tests/                               # Test executables
 ```
+
+**Namespace Mapping:** Platform qualifier folders (`common/`, `native/`, `concurrent/`) map to their **parent** namespace, not a child namespace. For example, `src/kotlinx/coroutines/common/Job.cpp` uses `namespace kotlinx::coroutines`, not `kotlinx::coroutines::common`. See `docs/audits/NAMESPACE_STRUCTURE_AUDIT.md` for complete mapping.
 
 ---
 

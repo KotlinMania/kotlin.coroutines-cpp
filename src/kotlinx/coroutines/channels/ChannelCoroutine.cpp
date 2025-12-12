@@ -1,3 +1,4 @@
+// Kotlin source: kotlinx-coroutines-core/common/src/channels/ChannelCoroutine.kt
 #include "kotlinx/coroutines/channels/ChannelCoroutine.hpp"
 
 namespace kotlinx {

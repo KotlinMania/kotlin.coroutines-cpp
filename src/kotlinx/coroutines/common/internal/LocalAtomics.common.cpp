@@ -10,7 +10,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        namespace {
+        namespace internal {
             /*
  * These are atomics that are used as local variables
  * where atomicfu doesn't support its tranformations.

@@ -11,6 +11,7 @@
 #include "kotlinx/coroutines/DisposableHandle.hpp"
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
 #include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
+#include "kotlinx/coroutines/internal/Symbol.hpp"
 #include <atomic>
 #include <mutex>
 #include <memory>

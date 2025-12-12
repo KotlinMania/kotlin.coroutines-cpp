@@ -11,7 +11,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        namespace {
+        namespace internal {
             /**
  * @suppress **This an API and should not be used from general code.**
  */

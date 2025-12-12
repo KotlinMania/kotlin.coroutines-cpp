@@ -9,7 +9,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        namespace {
+        namespace internal {
             // Forward declaration
             template<typename T>
             class Continuation;

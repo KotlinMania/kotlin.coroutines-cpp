@@ -3,8 +3,13 @@
 #include <exception>
 #include "kotlinx/coroutines/Unit.hpp"
 #include "kotlinx/coroutines/AbstractCoroutine.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/channels/BroadcastChannel.hpp"
+#include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/channels/ProducerScope.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
 namespace kotlinx {
     namespace coroutines {

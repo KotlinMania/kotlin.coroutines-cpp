@@ -3,7 +3,7 @@
 namespace kotlinx {
  namespace coroutines {
   namespace flow {
-   namespace {
+   namespace internal {
     // import kotlinx.coroutines.internal.*// import kotlin.jvm.*
     /**
      * This value is used a a surrogate `nullptr` value when needed.

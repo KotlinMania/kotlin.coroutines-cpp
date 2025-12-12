@@ -1,12 +1,12 @@
 /**
- * @file Transform.cpp
- * @brief Implementation of Transform operators.
+ * @file Limit.cpp
+ * @brief Implementation of Limit operators (take, drop, etc.).
  *
  * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/operators/Transform.hpp`.
+ * in the companion header file: `include/kotlinx/coroutines/flow/operators/Limit.hpp`.
  */
 
-#include "kotlinx/coroutines/flow/operators/Transform.hpp"
+#include "kotlinx/coroutines/flow/Limit.hpp"
 
 namespace kotlinx {
     namespace coroutines {

@@ -45,11 +45,18 @@ if(KOTLIN_NATIVE_RUNTIME_AVAILABLE)
     add_compile_definitions(KOTLIN_NATIVE_RUNTIME_AVAILABLE=1)
 endif()
 
-# Include directories
-include_directories(src/kotlinx/coroutines)
+# -----------------------------------------------------------------------------
+# Source layout root
+#
+# The coroutine package tree is migrating from `src/kotlinx/coroutines/**`
+# to `src/kotlinx/coroutine/**`. Pass this down to src/CMakeLists.txt so we
+# don't have to touch build files during the move.
+# -----------------------------------------------------------------------------
+set(KOTLINX_COROUTINES_SRC_DIR "kotlinx/coroutines" CACHE STRING
+    "Coroutine sources root relative to src/ (kotlinx/coroutine or kotlinx/coroutines)")
 
 # Add subdirectories
-add_subdirectory(src/kotlinx/coroutines)
+add_subdirectory(src)
 
 # Add test directory
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests")

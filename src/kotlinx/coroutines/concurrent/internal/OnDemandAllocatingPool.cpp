@@ -15,7 +15,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        namespace {
+        namespace internal {
             // KT-25023
             // TODO: inline function with Nothing return type
             inline void loop(std::function<void()> block) {
