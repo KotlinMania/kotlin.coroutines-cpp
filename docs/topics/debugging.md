@@ -37,7 +37,7 @@ Stacktrace recovery tries to stitch asynchronous exception stacktrace with a sta
 not only information where an exception was thrown, but also where it was asynchronously rethrown or caught.
 
 It is easy to demonstrate with actual stacktraces of the same program that awaits asynchronous operation in `main` function 
-(runnable code is [here](../../kotlinx-coroutines-debug/test/RecoveryExample.kt)):
+(runnable code is [here](../../debugging/test/RecoveryExample.kt)):
 
 | Without recovery | With recovery |
 | - | - |
@@ -69,12 +69,12 @@ Exception copy logic is straightforward:
 
 ## Debug agent
 
-[kotlinx-coroutines-debug](../../kotlinx-coroutines-debug) module provides one of the most powerful debug capabilities in `kotlinx.coroutines`.
+[kotlinx-coroutines-debug](../../debugging) module provides one of the most powerful debug capabilities in `kotlinx.coroutines`.
 
 This is a separate module with a JVM agent that keeps track of all alive coroutines, introspects and dumps them similar to thread dump command,
 additionally enhancing stacktraces with information where coroutine was created.
 
-The full tutorial of how to use debug agent can be found in the corresponding [readme](../../kotlinx-coroutines-debug/README.md).
+The full tutorial of how to use debug agent can be found in the corresponding [readme](../../debugging/README.md).
 
 <!---
 Make an exception googlable

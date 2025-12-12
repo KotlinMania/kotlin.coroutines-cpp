@@ -14,8 +14,8 @@ To release a new `<version>` of `kotlinx-coroutines`:
 4. Search & replace `<old-version>` with `<version>` across the project files. Should replace in:
    * Docs
      * [`README.md`](README.md) (native, core, test, debug, modules)
-     * [`kotlinx-coroutines-debug/README.md`](kotlinx-coroutines-debug/README.md)
-     * [`kotlinx-coroutines-test/README.md`](kotlinx-coroutines-test/README.md)
+     * [`kotlinx-coroutines-debug/README.md`](debugging/README.md)
+     * [`kotlinx-coroutines-test/README.md`](src/tests/src/README.md)
      * [`coroutines-guide-ui.md`](ui/coroutines-guide-ui.md)
    * Properties
      * [`gradle.properties`](gradle.properties)

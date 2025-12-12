@@ -46,10 +46,10 @@ if(KOTLIN_NATIVE_RUNTIME_AVAILABLE)
 endif()
 
 # Include directories
-include_directories(include)
+include_directories(src/kotlinx/coroutines)
 
 # Add subdirectories
-add_subdirectory(kotlinx-coroutines-core)
+add_subdirectory(src/kotlinx/coroutines)
 
 # Add test directory
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
@@ -61,7 +61,7 @@ endif()
 # -----------------------------------------------------------------------------
 option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build Clang suspend DSL plugin (Apple-focused)" OFF)
 if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
-    add_subdirectory(tools/clang_suspend_plugin)
+    add_subdirectory(src/kotlinx/coroutines/tools/clang_suspend_plugin)
 endif()
 
 # Install headers
