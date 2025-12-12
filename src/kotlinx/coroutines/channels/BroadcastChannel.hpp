@@ -1,11 +1,24 @@
 #pragma once
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/BroadcastChannel.kt
+//
+// Kotlin imports:
+// - kotlinx.coroutines.*
+// - kotlinx.coroutines.channels.BufferOverflow.*
+// - kotlinx.coroutines.channels.Channel.Factory.{BUFFERED, CHANNEL_DEFAULT_CAPACITY, CONFLATED, UNLIMITED}
+// - kotlinx.coroutines.internal.*
+// - kotlinx.coroutines.selects.*
 
 #include "kotlinx/coroutines/channels/BufferedChannel.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
 #include "kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/Job.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/CancellationException.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
+#include "kotlinx/coroutines/internal/Concurrent.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
+#include "kotlinx/coroutines/selects/SelectClause.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <vector>
 #include <mutex>

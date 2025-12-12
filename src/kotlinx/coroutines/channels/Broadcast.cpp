@@ -1,3 +1,10 @@
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Broadcast.kt
+//
+// Kotlin imports:
+// - kotlinx.coroutines.*
+// - kotlinx.coroutines.channels.Channel.Factory.{CONFLATED, UNLIMITED}
+// - kotlinx.coroutines.intrinsics.*
+
 #include <memory>
 #include <functional>
 #include <exception>
@@ -6,14 +13,14 @@
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
+#include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
+#include "kotlinx/coroutines/Dispatchers.hpp"
 #include "kotlinx/coroutines/channels/BroadcastChannel.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/channels/ProducerScope.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
-namespace kotlinx {
-    namespace coroutines {
-        namespace channels {
+namespace kotlinx::coroutines::channels {
             template<typename E>
             class BroadcastCoroutine : public AbstractCoroutine<Unit>, public ProducerScope<E> {
             public:
@@ -66,6 +73,5 @@ namespace kotlinx {
 
                 // Stub overrides
             };
-        } // namespace channels
-    } // namespace coroutines
-} // namespace kotlinx
+
+} // namespace kotlinx::coroutines::channels

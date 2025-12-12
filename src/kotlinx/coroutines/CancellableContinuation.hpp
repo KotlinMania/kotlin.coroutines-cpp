@@ -1,4 +1,9 @@
 #pragma once
+// Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt
+//
+// Kotlin imports:
+// - kotlinx.coroutines.internal.*
+
 #include <string>
 #include <functional>
 #include <memory>
@@ -6,6 +11,8 @@
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/DisposableHandle.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/internal/Symbol.hpp"
+#include "kotlinx/coroutines/internal/Concurrent.hpp"
 
 namespace kotlinx {
 namespace coroutines {

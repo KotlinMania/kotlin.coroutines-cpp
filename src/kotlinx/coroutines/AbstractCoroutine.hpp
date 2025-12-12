@@ -13,7 +13,6 @@
 #include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
-#include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
 
 namespace kotlinx {
 namespace coroutines {
