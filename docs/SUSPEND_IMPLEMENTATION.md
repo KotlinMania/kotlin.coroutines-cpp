@@ -213,19 +213,15 @@ void* compute(int x, std::shared_ptr<Continuation<void*>> completion) {
 3. **`completion` parameter** - Always last parameter, type `std::shared_ptr<Continuation<void*>>`
 4. **Return `void*`** - Either marker, nullptr, or boxed pointer
 
-### Alternative Spellings (Supported)
+### Alternative Syntax
 
 ```cpp
-// Namespaced attribute
+// Namespaced attribute for functions (equivalent to [[suspend]])
 [[kotlinx::suspend]]
 void* foo(std::shared_ptr<Continuation<void*>> completion);
 
-// Legacy attribute (pre-2025)
-[[clang::annotate("kotlinx_suspend")]]
-void* foo(std::shared_ptr<Continuation<void*>> completion);
-
-// Legacy suspend point (pre-2025)
-[[clang::annotate("kotlinx_suspend_call")]]
+// Statement attribute for suspend points (alternative to suspend(...) wrapper)
+[[clang::annotate("suspend")]]
 bar(completion);
 ```
 
@@ -285,7 +281,7 @@ return reinterpret_cast<void*>(result);
        // ... code before first suspend point ...
        _label = 1;
        {
-           void* _tmp = suspend_call(completion);
+           void* _tmp = suspend(other_suspend_fn(completion));
            if (is_coroutine_suspended(_tmp)) return COROUTINE_SUSPENDED;
        }
        [[fallthrough]];
@@ -599,7 +595,7 @@ struct MyCoroutine : public ContinuationImpl {
             s_spill = s;
             _label = 1;
             {
-                void* _tmp = suspend_call(completion);
+                void* _tmp = suspend(other_suspend_fn(completion));
                 if (is_coroutine_suspended(_tmp)) return COROUTINE_SUSPENDED;
             }
             [[fallthrough]];

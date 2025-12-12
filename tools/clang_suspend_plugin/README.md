@@ -3,8 +3,8 @@
 This is the **Phase‑1** Clang plugin scaffold for the C++ suspend DSL.
 
 Current behavior:
-- Detects suspend functions annotated with `[[suspend]]` / `[[kotlinx::suspend]]` (registered by the plugin) or legacy `[[clang::annotate("kotlinx_suspend")]]`.
-- Detects suspend points via `[[clang::annotate("suspend")]]` / legacy `[[clang::annotate("kotlinx_suspend_call")]]`, or the Kotlin‑aligned wrapper call `suspend(expr)`.
+- Detects suspend functions annotated with `[[suspend]]` or `[[kotlinx::suspend]]` (registered by the plugin).
+- Detects suspend points via the Kotlin‑aligned wrapper call `suspend(expr)` or statement attribute `[[clang::annotate("suspend")]]`.
 - Emits a generated sidecar translation unit (`.kx.cpp`) containing a Kotlin‑Native‑shape state machine.
   The original translation unit is not modified yet.
 
@@ -45,6 +45,6 @@ void* my_suspend_fn(std::shared_ptr<Continuation<void*>> completion) {
 
 ## Next milestones
 
-1. Register statement attribute `[[kotlinx::suspend_call]]`.
-2. CFG liveness + automatic spill inference.
-3. In‑memory AST rewrite into Kotlin‑style state machine (computed‑goto on Clang).
+1. CFG liveness + automatic spill inference (Phase 2).
+2. In‑memory AST rewrite instead of sidecar generation (optional optimization).
+3. Computed‑goto dispatch for exact Kotlin/Native indirectbr parity (Phase 3).
