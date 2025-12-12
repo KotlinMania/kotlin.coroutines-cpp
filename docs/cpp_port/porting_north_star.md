@@ -76,7 +76,7 @@ Per file:
   - Examples: `minusKey` → `minus_key`, `dispatchYield` → `dispatch_yield`.
 - Enums:
   ```cpp
-  enum class Name { kPascalCaseEnumerators };
+  enum class Name { ENUMERATOR };
   ```
 - Namespaces mirror Kotlin packages:
   ```cpp

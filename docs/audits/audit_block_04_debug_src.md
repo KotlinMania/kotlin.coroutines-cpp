@@ -46,7 +46,7 @@ This audit analyzes the implementation status of the kotlinx-coroutines-debug mo
 
 #### ✅ Implemented:
 - Basic `CoroutineInfo` class structure (CoroutineInfo.cpp:50)
-- `State` enum with kCreated, kRunning, kSuspended (CoroutineInfo.cpp:39)
+- `State` enum with CREATED, RUNNING, SUSPENDED (CoroutineInfo.cpp:39)
 - Core method signatures (context, state, job, stack traces)
 - Constructor with DebugCoroutineInfo delegate
 - toString() method

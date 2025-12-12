@@ -3,7 +3,6 @@
 **Version:** 2.0
 **Last Updated:** December 11, 2025
 **Status:** Active Implementation Guide
-**Supersedes:** SUSPEND_COMPARISON.md (legacy macro documentation)
 
 ---
 
@@ -19,10 +18,9 @@ This document describes **how suspend functions work** in kotlinx.coroutines-cpp
 - **Sidecar Generation** - Plugin emits `.kx.cpp` files with state machines
 - **ContinuationImpl Runtime** - Full resume loop and suspension propagation
 
-**⚠️ Legacy Approach (Deprecated):**
-- **SuspendMacros.hpp** - Manual macro-based state machines (still supported for compatibility)
-- **SUSPEND_BEGIN/CALL/END** - Old explicit state machine macros
-- Documentation in old SUSPEND_COMPARISON.md is outdated
+**Future Direction:**
+- **Clang Extension** - Full `suspend` keyword support at the compiler level
+- **LLVM IR Generation** - Direct `indirectbr`/`blockaddress` emission matching Kotlin/Native
 
 ---
 
@@ -441,30 +439,10 @@ struct __kxs_coroutine_example : public ContinuationImpl {
 
 ---
 
-## Migration Guide
+## Writing New Suspend Functions
 
-### From Macros (Pre-2025) to Plugin (2025+)
+All new suspend code should use the plugin DSL approach:
 
-**Old Code (SuspendMacros.hpp):**
-```cpp
-class MySuspendFn : public SuspendLambda<int> {
-public:
-    void* invoke_suspend(Result<void*> result) override {
-        void* tmp;
-
-        SUSPEND_BEGIN(2)
-
-        SUSPEND_CALL(1, foo(this), tmp)
-        std::cout << "After foo" << std::endl;
-
-        SUSPEND_RETURN(42);
-
-        SUSPEND_END
-    }
-};
-```
-
-**New Code (Plugin DSL):**
 ```cpp
 [[suspend]]
 void* my_suspend_fn(std::shared_ptr<Continuation<void*>> completion) {
@@ -478,24 +456,7 @@ void* my_suspend_fn(std::shared_ptr<Continuation<void*>> completion) {
 // No manual state machine required - plugin generates it!
 ```
 
-### Migration Checklist
-
-- [ ] Replace `class XxxFn : public SuspendLambda<T>` with standalone function
-- [ ] Add `[[suspend]]` attribute to function declaration
-- [ ] Replace `SUSPEND_CALL(n, expr, tmp)` with `suspend(expr)`
-- [ ] Remove `SUSPEND_BEGIN`, `SUSPEND_END`, `SUSPEND_RETURN` macros
-- [ ] Add `completion` parameter as last parameter
-- [ ] Remove manual `_label` management
-- [ ] Update build to invoke plugin and compile `.kx.cpp` files
-
-### Backward Compatibility
-
-**SuspendMacros.hpp is still supported** for:
-- Legacy code that hasn't migrated yet
-- Platforms without Clang plugin support
-- Hand-tuned state machines needing fine control
-
-However, **new code should use the plugin DSL**.
+The plugin transforms this into a proper state machine class with `invoke_suspend()` containing the switch-based dispatch.
 
 ---
 
@@ -659,13 +620,10 @@ void* may_throw(std::shared_ptr<Continuation<void*>> completion) {
 - `tools/clang_suspend_plugin/README.md` - Plugin usage guide
 
 **Runtime:**
-- `include/kotlinx/coroutines/ContinuationImpl.hpp` - Base continuation classes
-- `include/kotlinx/coroutines/intrinsics/Intrinsics.hpp` - Suspension markers
-- `include/kotlinx/coroutines/dsl/Suspend.hpp` - DSL helpers
-- `include/kotlinx/coroutines/Result.hpp` - Result wrapper for exceptions
-
-**Legacy:**
-- `include/kotlinx/coroutines/SuspendMacros.hpp` - Old macro approach (deprecated)
+- `src/kotlinx/coroutines/ContinuationImpl.hpp` - Base continuation classes
+- `src/kotlinx/coroutines/intrinsics/Intrinsics.hpp` - Suspension markers
+- `src/kotlinx/coroutines/dsl/Suspend.hpp` - DSL helpers
+- `src/kotlinx/coroutines/Result.hpp` - Result wrapper for exceptions
 
 **Kotlin/Native Sources (Reference):**
 - `tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt`
@@ -689,14 +647,10 @@ void* may_throw(std::shared_ptr<Continuation<void*>> completion) {
 
 **Version 2.0 (December 2025):**
 - Complete rewrite reflecting plugin-based implementation
-- Deprecated macro-based approach documentation
+- Removed macro-based approach documentation
 - Added plugin usage instructions
 - Documented Kotlin/Native equivalence
 - Added migration guide from macros to plugin
-
-**Version 1.0 (Pre-2025):**
-- Original SUSPEND_COMPARISON.md documenting macro approach
-- Now superseded by this document
 
 ---
 

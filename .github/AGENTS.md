@@ -21,7 +21,7 @@
 - Classes/structs: `CamelCase`.
 - Methods/functions/properties: `snake_case` (transliterate Kotlin camelCase → snake_case).
     - Examples: `minusKey` → `minus_key`, `isDispatchNeeded` → `is_dispatch_needed`, `dispatchYield` → `dispatch_yield`, `limitedParallelism` → `limited_parallelism`.
-- Enums: `enum class Name { kPascalCaseEnumerators }`.
+- Enums: `enum class Name { ENUMERATOR }` (no leading `k` prefix).
 - Namespaces: nest to mirror Kotlin packages, e.g. `kotlinx::coroutines::channels`.
 - Public vs private split:
     - Put public interfaces, abstract bases, public constants, and forward declarations in `.hpp`.

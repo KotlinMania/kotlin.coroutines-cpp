@@ -100,13 +100,8 @@ public:
         // We need to construct a ChannelAwaiter that suspends if necessary.
         // Kotlin: send is suspend.
         // It iterates subscribers and calls send(element).
-        // Since we can't easily yield in a raw C++ loop without a proper coroutine type,
-        // we might return a simpler awaiter if we assume fast path, but strict fidelity requires suspension.
-        
-        // C++20 coroutine transformation:
-        // This function must be a coroutine if it uses co_await.
-        // But the interface is virtual ChannelAwaiter<void> send(E).
-        // We need to implement it manually or use a helper that returns ChannelAwaiter.
+        // This project does not use C++20 coroutines (`co_await`/`co_return`).
+        // Suspending behavior must be expressed via the Continuation ABI / ChannelAwaiter machinery.
         
         return suspend_send_logic(std::move(element));
     }
@@ -202,17 +197,11 @@ private:
     // This is where we implement the suspending loop.
     // NOTE: This uses a struct/lambda that returns ChannelAwaiter<void>
     // but simplified to just standard suspension logic?
-    // We cannot easily 'co_await' inside this method if we are not in a coroutine context that returns a Task.
-    // ChannelAwaiter is an Awaitable, not a Coroutine Return Object (Promise).
-    // We need a helper `Task` or `Coroutine` return type to write `co_await`.
-    // I will mock this for now as user requested "sketch". 
-    // Just iterating and try_send is the fast path sketch.
-    // The Suspended path requires a `Task` type we defined elsewhere (or need to).
+    // This project does not use C++20 coroutines (`co_await`/`co_return`).
+    // When this needs to suspend, it must do so via ChannelAwaiter/Continuation-style mechanics.
     
     ChannelAwaiter<void> suspend_send_logic(E element) {
         // Sketch: assume fast path for now OR blocking if we can't suspend.
-        // Ideally:
-        // co_await suspend_always{};
         
         // Let's implement the lock logic and loop
         std::vector<std::shared_ptr<SendChannel<E>>> subs;
@@ -231,9 +220,8 @@ private:
              }
         }
         
-        // Loop and send (simplified non-suspending for sketch, as we lack co_await infrastructure in this header)
+        // Loop and send (simplified non-suspending sketch)
         for (auto& s : subs) {
-            // Ideally: co_await s->send(element);
             // Sketch: try_send fallback
             s->try_send(element); 
         }

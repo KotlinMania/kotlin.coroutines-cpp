@@ -134,6 +134,11 @@ Desktop.ini
 /conanbuildinfo.*
 /conaninfo.txt
 /graph_info.json
+
+# =============================================================================
+# Large vendored toolchains (local experiments; do not commit)
+# =============================================================================
+/vendor/llvm-project/
 /src/build/
 /src/kotlinx/coroutines/flow/internal/AbstractSharedFlow.hpp.backup
 /*build*.txt

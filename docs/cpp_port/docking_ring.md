@@ -158,7 +158,7 @@ tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbr
 How we located it:
 
 - evaluateSuspendableExpression and evaluateSuspensionPoint were found by searching those function names (also referenced in your docs/
-  SUSPEND_COMPARISON.md).
+  SUSPEND_IMPLEMENTATION.md).
 - We opened the file around those line regions.
 
 The mirrored core:
@@ -389,10 +389,10 @@ Option 1: Use Clang CFG + dataflow
     - Captured by lambdas (if DSL allows).
     - this / captures.
 
-Option 2: Delegate to LLVM coroutine frame analysis
+Option 2: Do not use C++20 coroutines
 
-- Rewrite suspend function into a real co_await coroutine first, then let Clang/LLVM decide spills.
-- But you lose the Kotlin‑specific save/restore scheduling unless you instrument.
+- This project does not use C++20 coroutines (`co_await`/`co_return`).
+- Spill analysis must be driven by our own suspend DSL + lowering to keep Kotlin parity.
 
 Given your goal of Kotlin parity, start with Option 1.
 
@@ -571,7 +571,7 @@ Add a ctest or custom target:
     - spill fields count
     - marker propagation shape
 
-You already have the Kotlin IR snapshot in docs/SUSPEND_COMPARISON.md; turn it into an automated check.
+Capture a Kotlin/Native-generated LLVM IR snapshot and turn it into an automated check (e.g., store it under `docs/cpp_port/ir_snapshots/`).
 
 ———
 

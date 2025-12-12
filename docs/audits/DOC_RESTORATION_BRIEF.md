@@ -26,7 +26,7 @@ This is a C++ implementation of Kotlin coroutines, translating the original Kotl
 - **References**: Update any Kotlin-style references to C++ equivalents
 
 ### Key Architecture Patterns
-- **LLVM Integration**: Uses `SuspendMacros.hpp` for optimized state machines
+- **LLVM Integration**: Clang plugin generates state machines that optimize to `indirectbr`
 - **Memory Management**: `std::shared_ptr` for coroutine lifecycle
 - **Thread Safety**: Atomic operations for decision/state management
 - **Platform Abstraction**: Dispatcher pattern for different platforms

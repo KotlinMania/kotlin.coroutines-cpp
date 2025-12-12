@@ -27,7 +27,7 @@ namespace coroutines {
         std::shared_ptr<CoroutineContext> parent_context_ref;
 
     public:
-        StandaloneCoroutine(std::shared_ptr<CoroutineContext> parentContext, bool active);
+        StandaloneCoroutine(std::shared_ptr<CoroutineContext> parent_context, bool active);
         bool handle_job_exception(std::exception_ptr exception) override;
     };
 
@@ -37,7 +37,7 @@ namespace coroutines {
 
     public:
         LazyStandaloneCoroutine(
-            std::shared_ptr<CoroutineContext> parentContext,
+            std::shared_ptr<CoroutineContext> parent_context,
             std::function<void(CoroutineScope*)> block_param
         );
         void on_start() override;
@@ -54,9 +54,9 @@ namespace coroutines {
         bool active_flag;
 
     public:
-        DeferredCoroutine(std::shared_ptr<CoroutineContext> parentContext, bool active)
-            : AbstractCoroutine<T>(parentContext, true, active),
-              parent_context_ref(parentContext),
+        DeferredCoroutine(std::shared_ptr<CoroutineContext> parent_context, bool active)
+            : AbstractCoroutine<T>(parent_context, true, active),
+              parent_context_ref(std::move(parent_context)),
               active_flag(active) {}
 
         /**
@@ -165,8 +165,8 @@ namespace coroutines {
     // state machine.
     //
     // Preferred Kotlin‑aligned DSL:
-    //   [[suspend]] void* foo(Continuation<void*>* c) {
-    //       auto r = suspend(with_context(ctx, block, c));
+    //   [[suspend]] void* foo(std::shared_ptr<Continuation<void*>> completion) {
+    //       auto r = suspend(with_context(ctx, block, completion));
     //       ...
     //   }
     // The Clang suspend plugin rewrites the DSL into a Kotlin‑Native‑shape state machine.
@@ -197,6 +197,9 @@ namespace coroutines {
         if (!context) {
             throw std::invalid_argument("with_context requires a non-null context");
         }
+        if (!completion) {
+            throw std::invalid_argument("with_context requires non-null completion");
+        }
 
         // TODO: Implement full context switching logic (check dispatcher)
         // For now, we execute in the given context (assuming block handles it or just scope wrapping)
@@ -213,13 +216,15 @@ namespace coroutines {
 
         // Execute the block.
         // Block is expected to accept (CoroutineScope*, std::shared_ptr<Continuation<void*>>)
-        return suspend(block(&scope, completion));
+        // and return either a boxed result or COROUTINE_SUSPENDED.
+        auto result = suspend(block(&scope, completion));
+        return result;
     }
 
     /**
      * coroutine_scope builder.
      * Creates a CoroutineScope and calls the specified suspend block with this scope.
-     * The provided scope inherits its coroutineContext from the outer scope, but overrides
+     * The provided scope inherits its coroutine_context from the outer scope, but overrides
      * the Job context element to ensure that it cancels all children when the scope is cancelled.
      * Use this function to manage the lifecycle of concurrent operations.
      */
@@ -326,22 +331,22 @@ namespace coroutines {
     ) {
          if (!context) context = empty_context();
 
-         auto eventLoop = std::make_shared<BlockingEventLoop>(nullptr);
-         auto oldLoop = ThreadLocalEventLoop::current_or_null();
-         ThreadLocalEventLoop::set_event_loop(eventLoop);
+         auto event_loop = std::make_shared<BlockingEventLoop>(nullptr);
+         auto old_loop = ThreadLocalEventLoop::current_or_null();
+         ThreadLocalEventLoop::set_event_loop(event_loop);
          
          try {
-             auto newContext = context->operator+(eventLoop); 
-             auto coroutine = std::make_shared<BlockingCoroutine<T>>(newContext, eventLoop);
+             auto new_context = context->operator+(event_loop);
+             auto coroutine = std::make_shared<BlockingCoroutine<T>>(new_context, event_loop);
              
              coroutine->start(CoroutineStart::DEFAULT, coroutine.get(), block);
              
              T result = coroutine->join_blocking();
              
-             ThreadLocalEventLoop::set_event_loop(oldLoop);
+             ThreadLocalEventLoop::set_event_loop(old_loop);
              return result;
          } catch (...) {
-             ThreadLocalEventLoop::set_event_loop(oldLoop);
+             ThreadLocalEventLoop::set_event_loop(old_loop);
              throw;
          }
     }

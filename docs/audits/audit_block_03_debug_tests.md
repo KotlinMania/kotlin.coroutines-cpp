@@ -394,9 +394,9 @@ namespace DebugProbes {
 #### Implemented Components:
 ```cpp
 enum class State {
-    kCreated,
-    kRunning, 
-    kSuspended
+    CREATED,
+    RUNNING,
+    SUSPENDED
 };
 
 class CoroutineInfo {

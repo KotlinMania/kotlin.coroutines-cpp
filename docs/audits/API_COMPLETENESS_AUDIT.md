@@ -235,10 +235,10 @@ Many missing APIs are **suspend functions** in Kotlin:
 - `await_internal()`
 - `join()` (implemented but not as suspend)
 
-**Current Status**: We have a suspending mechanism (Protothreads-based) but haven't integrated it fully with the API.
+**Current Status**: Suspension is implemented via Clang plugin generating state machines that compile to efficient LLVM `indirectbr` instructions.
 
 **Action Items**:
-- Complete `kotlin/coroutines/SuspendMacros.hpp` integration
+- Complete Clang suspend plugin integration with all builder functions
 - Update builder functions to use suspend mechanism
 - Retrofit existing blocking APIs to use suspend patterns
 

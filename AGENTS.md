@@ -18,11 +18,13 @@
 ---
 
 ### Naming, style, and file layout rules
-- Classes/structs: `CamelCase`.
-- Methods/functions/properties: `snake_case` (transliterate Kotlin camelCase → snake_case).
-    - Examples: `minusKey` → `minus_key`, `isDispatchNeeded` → `is_dispatch_needed`, `dispatchYield` → `dispatch_yield`, `limitedParallelism` → `limited_parallelism`.
-- Enums: `enum class Name { kPascalCaseEnumerators }`.
-- Namespaces: nest to mirror Kotlin packages, e.g. `kotlinx::coroutines::channels`.
+- Classes/Structs: `CamelCase` (e.g., `JobSupport`, `TimeoutCoroutine`).
+- Methods/Variables: `snake_case` (e.g., `is_active`, `invoke_on_completion`).
+- Private Data Members: `snake_case_` with trailing underscore (e.g., `state_`, `parent_handle_`).
+- Enums: `CamelCase` for type, `ALL_CAPS` for values (no leading `k` prefix).
+- Namespaces: `snake_case` (e.g., `kotlinx::coroutines::internal`).
+- Constants: `ALL_CAPS` (no leading `k` prefix).
+- **Adherence**: Follow Google C++ Style Guide generally, but preserve `snake_case` for methods to match Kotlin lowering.
 - Public vs private split:
     - Put public interfaces, abstract bases, public constants, and forward declarations in `.hpp`.
     - Put implementations, helper classes, and non-public functions in `.cpp`.

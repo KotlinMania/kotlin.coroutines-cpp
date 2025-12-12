@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Last Updated:** December 10, 2025  
 **Author:** Sydney Bach  
-**Related Documents:** [SUSPEND_COMPARISON.md](SUSPEND_COMPARISON.md), [COMPREHENSIVE_AUDIT_REPORT.md](../COMPREHENSIVE_AUDIT_REPORT.md), [TODO_CHECKLIST.md](TODO_CHECKLIST.md)
+**Related Documents:** [SUSPEND_IMPLEMENTATION.md](SUSPEND_IMPLEMENTATION.md), [COMPREHENSIVE_AUDIT_REPORT.md](../COMPREHENSIVE_AUDIT_REPORT.md), [TODO_CHECKLIST.md](TODO_CHECKLIST.md)
 
 ---
 
@@ -14,10 +14,10 @@ The kotlinx.coroutines-cpp implementation demonstrates **strong engineering fund
 ### Key Findings
 
 **✅ Strengths:**
-- Excellent core suspend infrastructure (SuspendMacros.hpp, state machines)
+- Excellent core suspend infrastructure (ContinuationImpl, state machines)
 - Strong Job system and cancellation propagation
 - Proper memory safety with shared_ptr usage
-- Brilliant manual state machine → LLVM `indirectbr` compilation
+- State machine compilation → LLVM `indirectbr` optimization
 
 **⚠️ Critical Issues:**
 - Flow operations don't actually suspend (defeats purpose of reactive streams)
@@ -81,18 +81,18 @@ throw std::runtime_error("COROUTINE_SUSPENDED");
 ### What Surprisingly Works
 
 #### 1. Core Suspend Infrastructure - EXCELLENT
-**File:** `include/kotlinx/coroutines/SuspendMacros.hpp`
+**File:** `src/kotlinx/coroutines/ContinuationImpl.hpp`
 
-- Computed goto state machine generator is sophisticated and complete
+- State machine generation via Clang plugin
 - Compiles to efficient LLVM `indirectbr` instructions with -O2
-- Perfectly mirrors Kotlin's suspend function compilation pattern
+- Mirrors Kotlin's suspend function compilation pattern
 
 #### 2. Continuation and Resumption - SOLID
 **Files:** `include/kotlinx/coroutines/ContinuationImpl.hpp`, `test_cancellation.cpp`
 
 - Proper base continuation implementation with exception handling
 - Working suspend/resume with state machines
-- C++20 coroutine test infrastructure demonstrates functionality
+- C++20 build/test infrastructure demonstrates functionality
 
 #### 3. Job System and Cancellation - STRONG
 **Files:** `include/kotlinx/coroutines/Job.hpp`, `include/kotlinx/coroutines/JobSupport.hpp`
@@ -423,17 +423,17 @@ void* with_context(std::shared_ptr<CoroutineContext> context, F&& block, Continu
 
 ### LLVM Integration Approach
 
-#### Current Brilliance: Manual State Machines
-The existing manual state machines in `SuspendMacros.hpp` are actually brilliant:
+#### State Machine Pattern
+The Clang plugin generates state machines following this pattern:
 ```cpp
 switch (this->_label) {
 case 0:
     this->_label = 1;
-    void* _tmp_result = suspend_call();
-    if (is_coroutine_suspended(_tmp_result)) {
-        return COROUTINE_SUSPENDED;
+    {
+        void* _tmp = suspend_call(completion);
+        if (is_coroutine_suspended(_tmp)) return COROUTINE_SUSPENDED;
     }
-    result = _tmp_result;
+    [[fallthrough]];
 case 1:
     // Continue execution
 }
@@ -441,15 +441,15 @@ case 1:
 
 This compiles to efficient LLVM `indirectbr` instructions with -O2, exactly matching Kotlin Native's approach.
 
-#### Phase 1: Hybrid Suspension (Immediate)
-- Keep manual state machines for stability
-- Add LLVM `__builtin_coro_save`/`__builtin_coro_resume` intrinsics for performance-critical paths
-- Create hybrid suspension points for hot code paths
+#### Phase 1: Plugin-Generated State Machines (Current)
+- Clang plugin generates state machine code
+- Plugin emits `.kx.cpp` sidecar files
+- Standard switch-based dispatch, optimized by LLVM
 
-#### Phase 2: C++20 Bridge (Medium-term)
-- Maintain Kotlin semantics while using C++20 coroutines
-- Custom coroutine allocators for memory optimization
-- Gradual migration of non-critical paths
+#### Phase 2: Kotlin/Native-shaped Lowering (Medium-term)
+- Prefer computed-goto style dispatch where available (labels-as-values) for closer Kotlin/Native shape
+- Implement liveness-based spilling + save/restore scheduling parity
+- Expand plugin lowering coverage (try/finally, eval order, nested suspendable expressions)
 
 #### Phase 3: Full LLVM Integration (Long-term)
 - Custom LLVM optimization passes
@@ -592,7 +592,7 @@ ctest --output-on-failure
 5. **Document thoroughly** - API documentation and implementation comments
 
 ### Integration Best Practices
-1. **Build on existing infrastructure** - Use SuspendMacros.hpp, ContinuationImpl, etc.
+1. **Build on existing infrastructure** - Use ContinuationImpl, Clang plugin, etc.
 2. **Maintain semantic equivalence** - Follow Kotlin behavior exactly
 3. **Preserve architectural decisions** - Don't break existing patterns
 4. **Update documentation** - Keep API_AUDIT.md and TODO_CHECKLIST.md current

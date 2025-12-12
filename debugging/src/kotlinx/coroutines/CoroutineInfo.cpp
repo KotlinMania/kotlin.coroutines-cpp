@@ -12,9 +12,9 @@
 namespace kotlinx::coroutines::debug {
 
     enum class State {
-        kCreated,
-        kRunning,
-        kSuspended
+        CREATED,
+        RUNNING,
+        SUSPENDED
     };
 
     class CoroutineInfo {
@@ -68,17 +68,17 @@ namespace kotlinx::coroutines::debug {
         kotlinx::coroutines::internal::CoroutineStackFrame* last_observed_frame_;
 
         static State state_value_of(const std::string& state_str) {
-            if (state_str == "CREATED") return State::kCreated;
-            if (state_str == "RUNNING") return State::kRunning;
-            if (state_str == "SUSPENDED") return State::kSuspended;
-            return State::kCreated;
+            if (state_str == "CREATED") return State::CREATED;
+            if (state_str == "RUNNING") return State::RUNNING;
+            if (state_str == "SUSPENDED") return State::SUSPENDED;
+            return State::CREATED;
         }
 
         static std::string state_to_string(State state) {
             switch (state) {
-                case State::kCreated: return "CREATED";
-                case State::kRunning: return "RUNNING";
-                case State::kSuspended: return "SUSPENDED";
+                case State::CREATED: return "CREATED";
+                case State::RUNNING: return "RUNNING";
+                case State::SUSPENDED: return "SUSPENDED";
             }
             return "UNKNOWN";
         }

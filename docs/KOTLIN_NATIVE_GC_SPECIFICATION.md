@@ -455,9 +455,9 @@ fun main() {
 
 ### 10.1 Source Files
 
-- `include/kotlinx/coroutines/KotlinGCBridge.hpp` - API implementation
+- `src/kotlinx/coroutines/KotlinGCBridge.hpp` - API implementation
 - `tests/gc_bridge/` - Test suite
-- `docs/SUSPEND_COMPARISON.md` - Kotlin coroutine comparison
+- `docs/SUSPEND_IMPLEMENTATION.md` - Suspend implementation and compiler lowering notes
 
 ### 10.2 External References
 
