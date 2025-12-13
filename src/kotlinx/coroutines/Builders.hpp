@@ -64,12 +64,21 @@ namespace coroutines {
          * Transliterated from: override fun getCompleted(): T = getCompletedInternal() as T
          */
         T get_completed() const override {
-            return this->get_completed_internal();
+            auto* state = JobSupport::get_completed_internal();
+            // Check for exception first
+            if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
+                std::rethrow_exception(ex->cause);
+            }
+            // Extract value from CompletedValue wrapper
+            if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
+                return completed->value;
+            }
+            throw std::logic_error("Unexpected completion state");
         }
-        
+
         [[nodiscard]] std::exception_ptr get_completion_exception_or_null() const override {
-            auto state = this->state;
-            if (auto* ex = dynamic_cast<CompletedExceptionally*>(state.get())) {
+            auto* state = JobSupport::get_state_for_await();
+            if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
                 return ex->cause;
             }
             return nullptr;
@@ -85,15 +94,25 @@ namespace coroutines {
 
         T await_blocking() override {
             auto* state = AbstractCoroutine<T>::await_internal_blocking();
-            return *reinterpret_cast<T*>(state);
+            // Check for exception first
+            if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
+                std::rethrow_exception(ex->cause);
+            }
+            // Extract value from CompletedValue wrapper
+            if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
+                return completed->value;
+            }
+            throw std::logic_error("Unexpected await state");
         }
+
+         // Bring template start method into scope (avoids shadowing)
+         using AbstractCoroutine<T>::start;
 
          // Job overrides from Deferred
          bool is_active() const override { return AbstractCoroutine<T>::is_active(); }
          bool is_completed() const override { return AbstractCoroutine<T>::is_completed(); }
          bool is_cancelled() const override { return AbstractCoroutine<T>::is_cancelled(); }
          std::exception_ptr get_cancellation_exception() override { return AbstractCoroutine<T>::get_cancellation_exception(); }
-         bool start() override { return AbstractCoroutine<T>::start(); }
          void cancel(std::exception_ptr cause = nullptr) override { AbstractCoroutine<T>::cancel(cause); }
          std::shared_ptr<struct Job> get_parent() const override { return AbstractCoroutine<T>::get_parent(); }
          std::vector<std::shared_ptr<struct Job>> get_children() const override { return AbstractCoroutine<T>::get_children(); }
@@ -115,11 +134,12 @@ namespace coroutines {
         return EmptyCoroutineContext::instance();
     }
 
+    // Full launch with all parameters
     inline std::shared_ptr<struct Job> launch(
         CoroutineScope* scope,
-        std::shared_ptr<CoroutineContext> context = nullptr,
-        CoroutineStart start = CoroutineStart::DEFAULT,
-        std::function<void(CoroutineScope*)> block = nullptr
+        std::shared_ptr<CoroutineContext> context,
+        CoroutineStart start,
+        std::function<void(CoroutineScope*)> block
     ) {
         if (!context) context = empty_context();
         auto new_context = scope->get_coroutine_context()->operator+(context); 
@@ -141,21 +161,57 @@ namespace coroutines {
         return coroutine;
     }
 
+    // Overload: launch(scope, block) - no context, default start
+    inline std::shared_ptr<struct Job> launch(
+        CoroutineScope* scope,
+        std::function<void(CoroutineScope*)> block
+    ) {
+        return launch(scope, nullptr, CoroutineStart::DEFAULT, block);
+    }
+
+    // Overload: launch(scope, context, block) - no start parameter
+    inline std::shared_ptr<struct Job> launch(
+        CoroutineScope* scope,
+        std::shared_ptr<CoroutineContext> context,
+        std::function<void(CoroutineScope*)> block
+    ) {
+        return launch(scope, context, CoroutineStart::DEFAULT, block);
+    }
+
     template<typename T>
     std::shared_ptr<Deferred<T>> async(
         CoroutineScope* scope,
-        std::shared_ptr<CoroutineContext> context = nullptr,
-        CoroutineStart start = CoroutineStart::DEFAULT,
-        std::function<T(CoroutineScope*)> block = nullptr
+        std::shared_ptr<CoroutineContext> context,
+        CoroutineStart start,
+        std::function<T(CoroutineScope*)> block
     ) {
         if (!context) context = empty_context();
         auto new_context = scope->get_coroutine_context()->operator+(context);
 
         std::shared_ptr<DeferredCoroutine<T>> coroutine;
-        // implementation ...
         coroutine = std::make_shared<DeferredCoroutine<T>>(new_context, true);
-        coroutine->start(start, coroutine.get(), block);
+        // Cast to CoroutineScope* to match the block signature
+        coroutine->start(start, static_cast<CoroutineScope*>(coroutine.get()), block);
         return coroutine;
+    }
+
+    // Overload: async(scope, block) - no context, default start
+    template<typename T>
+    std::shared_ptr<Deferred<T>> async(
+        CoroutineScope* scope,
+        std::function<T(CoroutineScope*)> block
+    ) {
+        return async<T>(scope, nullptr, CoroutineStart::DEFAULT, block);
+    }
+
+    // Overload: async(scope, context, block) - no start
+    template<typename T>
+    std::shared_ptr<Deferred<T>> async(
+        CoroutineScope* scope,
+        std::shared_ptr<CoroutineContext> context,
+        std::function<T(CoroutineScope*)> block
+    ) {
+        return async<T>(scope, context, CoroutineStart::DEFAULT, block);
     }
 
     // Transliterated from Builders.common.kt: suspend fun <T> withContext(context: CoroutineContext, block: suspend CoroutineScope.() -> T): T
@@ -313,7 +369,12 @@ namespace coroutines {
             }
         }
 
-        T join_blocking() {
+        /**
+         * Blocks until completion and returns the result.
+         * This is NOT an override of Job::join_blocking() - it's a separate method
+         * that returns the result, matching Kotlin's BlockingCoroutine.joinBlocking(): T
+         */
+        T join_blocking_with_result() {
             if (auto blocking_loop = std::dynamic_pointer_cast<BlockingEventLoop>(event_loop_)) {
                 blocking_loop->run();
             }
@@ -339,9 +400,10 @@ namespace coroutines {
              auto new_context = context->operator+(event_loop);
              auto coroutine = std::make_shared<BlockingCoroutine<T>>(new_context, event_loop);
              
-             coroutine->start(CoroutineStart::DEFAULT, coroutine.get(), block);
-             
-             T result = coroutine->join_blocking();
+             // Cast to CoroutineScope* to match block signature - R must be consistent
+             coroutine->start(CoroutineStart::DEFAULT, static_cast<CoroutineScope*>(coroutine.get()), block);
+
+             T result = coroutine->join_blocking_with_result();
              
              ThreadLocalEventLoop::set_event_loop(old_loop);
              return result;

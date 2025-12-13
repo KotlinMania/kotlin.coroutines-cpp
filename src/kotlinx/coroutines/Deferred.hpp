@@ -76,6 +76,17 @@ public:
     virtual T await_blocking() = 0;
 
     /**
+     * Simple blocking await() that returns the result directly.
+     * This is a convenience wrapper around await_blocking() for use in tests
+     * and blocking code where the suspend semantics are not needed.
+     *
+     * Equivalent to Kotlin's runBlocking { deferred.await() }
+     */
+    T await() {
+        return await_blocking();
+    }
+
+    /**
      * Returns *completed* result or throws [IllegalStateException] if this deferred value has not
      * [completed][isCompleted] yet. It throws the corresponding exception if this deferred was [cancelled][isCancelled].
      *
