@@ -42,9 +42,11 @@ list(FILTER CORE_SOURCES EXCLUDE REGEX "/integration/")
 # Create the core library
 add_library(kotlinx-coroutines-core ${CORE_SOURCES})
 
-if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
+if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN AND TARGET KotlinxSuspendPlugin)
     target_compile_options(kotlinx-coroutines-core PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
     add_dependencies(kotlinx-coroutines-core KotlinxSuspendPlugin)
+elseif(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
+    message(WARNING "KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=ON but KotlinxSuspendPlugin target is unavailable; building without plugin.")
 endif()
 
 # Set include directories for this target
@@ -80,4 +82,3 @@ install(EXPORT kotlinx-coroutines-core-targets
     NAMESPACE kotlinx::
     DESTINATION lib/cmake/kotlinx-coroutines-core
 )
-

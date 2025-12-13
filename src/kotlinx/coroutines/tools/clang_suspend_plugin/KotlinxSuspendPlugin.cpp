@@ -196,6 +196,7 @@ private:
         os << "#include <memory>\n\n";
         os << "using namespace kotlinx::coroutines;\n";
         os << "using namespace kotlinx::coroutines::intrinsics;\n\n";
+        os << "extern \"C\" void __kxs_suspend_point(int id);\n\n";
 
         for (FunctionDecl* fd : fns) {
             if (!fd || !fd->hasBody()) continue;
@@ -297,7 +298,6 @@ private:
 
         // invoke_suspend with switch dispatch.
         os << "    void* invoke_suspend(Result<void*> result) override {\n";
-        os << "        (void)result;\n";
         os << "        switch (_label) {\n";
         os << "        case 0:\n";
 
@@ -324,11 +324,12 @@ private:
                     }
 
                     os << "            _label = " << stateId << ";\n";
+                    os << "            __kxs_suspend_point(" << stateId << ");\n";
                     os << "            {\n";
                     os << "                void* _tmp = " << callText << ";\n";
                     os << "                if (is_coroutine_suspended(_tmp)) return COROUTINE_SUSPENDED;\n";
                     os << "            }\n";
-                    os << "            [[fallthrough]];\n";
+                    os << "            goto __kxs_cont" << stateId << ";\n";
                     os << "        case " << stateId << ":\n";
 
                     // Emit restore code if using liveness analysis.
@@ -344,6 +345,8 @@ private:
                         }
                     }
 
+                    os << "            (void)result.get_or_throw();\n";
+                    os << "        __kxs_cont" << stateId << ":\n";
                     stateId++;
                 } else {
                     os << "            " << getStmtText(st, sm, lo) << "\n";
@@ -431,7 +434,7 @@ private:
 
         // invoke_suspend with computed goto dispatch.
         os << "    void* invoke_suspend(Result<void*> result) override {\n";
-        os << "        (void)result;\n\n";
+        os << "\n";
 
         // Entry dispatch - matches Kotlin's IrSuspendableExpression pattern.
         os << "        // Entry dispatch (Kotlin/Native indirectbr pattern)\n";
@@ -468,10 +471,12 @@ private:
 
                     // Store block address (becomes blockaddress in LLVM IR).
                     os << "        _label = &&__kxs_resume" << resumeId << ";\n";
+                    os << "        __kxs_suspend_point(" << resumeId << ");\n";
                     os << "        {\n";
                     os << "            void* _tmp = " << callText << ";\n";
                     os << "            if (is_coroutine_suspended(_tmp)) return COROUTINE_SUSPENDED;\n";
                     os << "        }\n";
+                    os << "        goto __kxs_cont" << resumeId << ";\n";
 
                     // Resume label.
                     os << "    __kxs_resume" << resumeId << ":\n";
@@ -483,6 +488,8 @@ private:
                                << " = " << vd->getNameAsString() << "_spill;\n";
                         }
                     }
+                    os << "        (void)result.get_or_throw();\n";
+                    os << "    __kxs_cont" << resumeId << ":\n";
 
                     resumeId++;
                 } else {
