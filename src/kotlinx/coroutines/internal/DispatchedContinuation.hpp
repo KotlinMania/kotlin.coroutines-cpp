@@ -87,12 +87,12 @@ public:
     }
 
     // Kotlin: override val callerFrame: CoroutineStackFrame? get() = continuation as? CoroutineStackFrame
-    CoroutineStackFrame* get_caller_frame() override {
+    CoroutineStackFrame* get_caller_frame() const override {
         return dynamic_cast<CoroutineStackFrame*>(continuation.get());
     }
 
     // Kotlin: override fun getStackTraceElement(): StackTraceElement? = null
-    StackTraceElement* get_stack_trace_element() override {
+    StackTraceElement* get_stack_trace_element() const override {
         return nullptr;
     }
 

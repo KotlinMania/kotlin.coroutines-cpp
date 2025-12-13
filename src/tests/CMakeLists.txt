@@ -3,8 +3,11 @@
 
 # Helper function to add a test executable
 function(add_coroutine_test TEST_NAME)
-    # Tests are currently located in src/suspend/
+    # Tests can be in src/suspend/ or src/ directly
     set(TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/suspend/${TEST_NAME}.cpp")
+    if(NOT EXISTS "${TEST_SOURCE}")
+        set(TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/${TEST_NAME}.cpp")
+    endif()
     if(EXISTS "${TEST_SOURCE}")
         add_executable(${TEST_NAME} ${TEST_SOURCE})
         target_include_directories(${TEST_NAME} PRIVATE
@@ -15,7 +18,7 @@ function(add_coroutine_test TEST_NAME)
         target_link_libraries(${TEST_NAME} PRIVATE pthread kotlinx-coroutines-core)
         add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
     else()
-        message(STATUS "Test source not found: ${TEST_SOURCE}")
+        message(STATUS "Test source not found: ${TEST_NAME}")
     endif()
 endfunction()
 
@@ -25,6 +28,9 @@ add_coroutine_test(test_cancellation)
 add_coroutine_test(test_dispatchers)
 add_coroutine_test(test_context)
 add_coroutine_test(test_suspend)
+
+# Transliterated Kotlin tests
+add_coroutine_test(AsyncTest)
 
 # Cancellable tests
 add_coroutine_test(test_cancellable)
@@ -40,13 +46,13 @@ add_coroutine_test(test_dsl)
 add_coroutine_test(test_plugin_canonical)
 add_coroutine_test(test_flow_merge_smoke)
 add_coroutine_test(test_channel_as_flow_smoke)
-if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
+if(TARGET test_plugin_canonical AND KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     target_compile_options(test_plugin_canonical PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
     add_dependencies(test_plugin_canonical KotlinxSuspendPlugin)
 endif()
 if(KOTLINX_ENABLE_STACKLESS)
     add_coroutine_test(test_stackless_plugin)
-    if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
+    if(TARGET test_stackless_plugin AND KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
         target_compile_options(test_stackless_plugin PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
         add_dependencies(test_stackless_plugin KotlinxSuspendPlugin)
     endif()

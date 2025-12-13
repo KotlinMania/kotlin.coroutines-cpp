@@ -97,7 +97,7 @@ namespace coroutines {
          void cancel(std::exception_ptr cause = nullptr) override { AbstractCoroutine<T>::cancel(cause); }
          std::shared_ptr<struct Job> get_parent() const override { return AbstractCoroutine<T>::get_parent(); }
          std::vector<std::shared_ptr<struct Job>> get_children() const override { return AbstractCoroutine<T>::get_children(); }
-         std::shared_ptr<DisposableHandle> attach_child(std::shared_ptr<ChildJob> child) override { return AbstractCoroutine<T>::attach_child(child); }
+         std::shared_ptr<ChildHandle> attach_child(std::shared_ptr<ChildJob> child) override { return AbstractCoroutine<T>::attach_child(child); }
          void* join(Continuation<void*>* continuation) override { return AbstractCoroutine<T>::join(continuation); }
          void join_blocking() override { AbstractCoroutine<T>::join_blocking(); }
          std::shared_ptr<DisposableHandle> invoke_on_completion(std::function<void(std::exception_ptr)> handler) override { return AbstractCoroutine<T>::invoke_on_completion(handler); }

@@ -112,7 +112,7 @@ public:
      void cancel(std::exception_ptr cause = nullptr) override { JobSupport::cancel(cause); }
      std::shared_ptr<Job> get_parent() const override { return JobSupport::get_parent(); }
      std::vector<std::shared_ptr<Job>> get_children() const override { return JobSupport::get_children(); }
-     std::shared_ptr<DisposableHandle> attach_child(std::shared_ptr<ChildJob> child) override { return JobSupport::attach_child(child); }
+     std::shared_ptr<ChildHandle> attach_child(std::shared_ptr<ChildJob> child) override { return JobSupport::attach_child(child); }
      void* join(Continuation<void*>* continuation) override { return JobSupport::join(continuation); }
      void join_blocking() override { JobSupport::join_blocking(); }
      std::shared_ptr<DisposableHandle> invoke_on_completion(std::function<void(std::exception_ptr)> handler) override { return JobSupport::invoke_on_completion(handler); }

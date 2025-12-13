@@ -17,7 +17,7 @@ target_link_libraries(kotlinx-coroutines-debug PUBLIC
     kotlinx-coroutines-core
 )
 
-if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
+if(TARGET KotlinxSuspendPlugin AND KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     target_compile_options(kotlinx-coroutines-debug PRIVATE
         -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>
     )

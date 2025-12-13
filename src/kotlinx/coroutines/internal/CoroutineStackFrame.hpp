@@ -28,8 +28,8 @@ class CoroutineStackFrame {
 public:
     virtual ~CoroutineStackFrame() = default;
 
-    virtual CoroutineStackFrame* get_caller_frame() = 0;
-    virtual StackTraceElement* get_stack_trace_element() = 0;
+    virtual CoroutineStackFrame* get_caller_frame() const = 0;
+    virtual StackTraceElement* get_stack_trace_element() const = 0;
 };
 
 } // namespace internal
