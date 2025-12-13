@@ -73,7 +73,8 @@ public:
         if (capacity_ == Channel<E>::UNLIMITED ||
            (static_cast<int>(buffer_.size()) < capacity_)) {
             buffer_.push_back(std::move(element));
-            try_resume_receivers(); // Resume any waiting receivers
+            // IMPORTANT: try_send already holds `mtx` — do not re-lock inside helpers.
+            try_resume_receivers_locked();
             return ChannelResult<void>::success();
         }
 
@@ -94,7 +95,6 @@ public:
         // Fast path - try to send immediately
         auto result = try_send(element);
         if (result.is_success()) {
-            try_resume_receivers(); // Try to resume any waiting receivers
             return ChannelAwaiter<void>(); // Ready
         }
 
@@ -219,7 +219,8 @@ public:
         if (!buffer_.empty()) {
             E el = std::move(buffer_.front());
             buffer_.pop_front();
-            try_resume_senders(); // Resume any waiting senders
+            // IMPORTANT: try_receive already holds `mtx` — do not re-lock inside helpers.
+            try_resume_senders_locked();
             return ChannelResult<E>::success(std::move(el));
         }
 
@@ -330,8 +331,7 @@ protected:
         receivers_queue_.push_back(receiver);
     }
 
-    void try_resume_senders() {
-        std::lock_guard<std::mutex> lock(mtx);
+    void try_resume_senders_locked() {
         while (!senders_queue_.empty() && (buffer_.size() < static_cast<size_t>(capacity_) || capacity_ == Channel<E>::UNLIMITED)) {
             auto sender = senders_queue_.front();
             senders_queue_.pop_front();
@@ -340,8 +340,7 @@ protected:
         }
     }
 
-    void try_resume_receivers() {
-        std::lock_guard<std::mutex> lock(mtx);
+    void try_resume_receivers_locked() {
         while (!receivers_queue_.empty() && !buffer_.empty()) {
             auto receiver = receivers_queue_.front();
             receivers_queue_.pop_front();

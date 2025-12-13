@@ -4,10 +4,13 @@
 #include <functional>
 #include <any>
 #include <typeinfo>
+#include <type_traits>
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
+#include "kotlinx/coroutines/CompletedValue.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/Unit.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
@@ -168,7 +171,9 @@ namespace kotlinx::coroutines {
         void resume_with(Result<T> result) override {
             JobState* state;
             if (result.is_success()) {
-                state = reinterpret_cast<JobState*>(new T(result.get_or_throw()));
+                // Kotlin JobSupport stores successful completion as a value (`Any?`), which can be `Unit` or `null`.
+                // In C++ we must wrap it into a `JobState`-derived object to safely use `dynamic_cast`.
+                state = new CompletedValue<T>(result.get_or_throw());
             } else {
                 state = new CompletedExceptionally(result.exception_or_null());
             }
@@ -176,8 +181,6 @@ namespace kotlinx::coroutines {
             auto completing_result = JobSupport::make_completing_once(state);
 
             if (completing_result == CompletingResult::COMPLETING) return;
-
-            after_resume(state);
         }
 
         virtual void after_resume(JobState* state) {
@@ -190,7 +193,10 @@ namespace kotlinx::coroutines {
         // NOTE: T should be Unit for coroutines that don't return a value, NOT void.
         void on_completion_internal(JobState* state) override {
             if (state == nullptr) {
-                // Should not happen - state should always be valid T* or CompletedExceptionally*
+                // Kotlin can complete with `null`. For Unit-returning coroutines, a null completion can be treated as Unit.
+                if constexpr (std::is_same_v<T, Unit>) {
+                    on_completed(Unit());
+                }
                 return;
             }
 
@@ -198,11 +204,16 @@ namespace kotlinx::coroutines {
             auto* ex = dynamic_cast<CompletedExceptionally*>(state);
             if (ex && ex->cause) {
                 on_cancelled(ex->cause, ex->handled);
-            } else {
-                // It's a successful completion with value
-                // State was stored via reinterpret_cast<JobState*>(new T(...))
-                on_completed(*reinterpret_cast<T*>(state));
+                return;
             }
+
+            if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
+                on_completed(std::move(completed->value));
+                return;
+            }
+
+            // Unknown completion state shape.
+            // TODO(semantics): Handle additional completion state wrappers from JobSupport (e.g., boxed values, idempotent results).
         }
 
         void handle_on_completion_exception(std::exception_ptr exception) override {

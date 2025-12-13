@@ -66,10 +66,14 @@
 - Useful CMake options:
     - `KOTLIN_NATIVE_RUNTIME_AVAILABLE=ON` only when Kotlin/Native runtime is present for GC bridge work.
     - `KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=ON` to build the Apple-focused suspend DSL plugin in `tools/clang_suspend_plugin/`.
-- Tests are plain C++ executables registered via `tests/CMakeLists.txt` using `add_coroutine_test(<name>)`.
-- Run tests from a build dir with CTest; use `ctest -R <regex>` to run subsets (handy when other targets fail to compile).
+- Outputs (as set in root `CMakeLists.txt`):
+    - Binaries: `build*/bin/`
+    - Libraries: `build*/lib/`
+- Tests are plain C++ executables registered via `src/tests/CMakeLists.txt` using `add_coroutine_test(<name>)`.
+- Run tests from a build dir with CTest; use `ctest -N` to list and `ctest -R <regex> --output-on-failure` to run subsets.
 - The Kotlin/Native `tests/gc_bridge` suite is optional and requires K/N tooling; don’t enable K/N options unless that toolchain is available.
 - For faster iteration, build specific targets (library or a single test), e.g. `cmake --build build --target test_suspension_core`.
+- macOS note: If Homebrew paths are missing, `ld` may warn about `/opt/homebrew/opt/curl/lib` search paths; it’s typically harmless for this repo.
 
 ---
 

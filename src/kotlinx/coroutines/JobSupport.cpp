@@ -767,8 +767,6 @@ namespace kotlinx {
                 if (final_state == COMPLETING_ALREADY) return CompletingResult::ALREADY_COMPLETING;
                 if (final_state == COMPLETING_WAITING_CHILDREN) return CompletingResult::COMPLETING;
                 if (final_state == COMPLETING_RETRY) continue;
-
-                on_completion_internal(final_state);
                 return CompletingResult::COMPLETED;
             }
         }
@@ -1034,8 +1032,6 @@ namespace kotlinx {
                 if (final_state == COMPLETING_ALREADY) return false;
                 if (final_state == COMPLETING_WAITING_CHILDREN) return true;
                 if (final_state == COMPLETING_RETRY) continue;
-
-                job->on_completion_internal(final_state);
                 return true;
             }
         }
