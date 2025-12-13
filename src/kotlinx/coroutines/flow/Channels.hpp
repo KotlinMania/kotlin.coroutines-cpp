@@ -14,6 +14,7 @@
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
@@ -49,6 +50,11 @@ namespace kotlinx::coroutines::flow {
         bool consume,
         Continuation<void*>* cont
     ) {
+        if (cont) {
+            auto ctx = cont->get_context();
+            if (ctx) context_ensure_active(*ctx);
+        }
+
         std::exception_ptr cause = nullptr;
         try {
             while (true) {

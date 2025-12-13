@@ -66,6 +66,8 @@ xcuserdata/
 test_*
 !tests/*.cpp
 !tests/**/*.cpp
+!src/tests/*.cpp
+!src/tests/**/*.cpp
 
 # =============================================================================
 # Gradle/Kotlin Build System (from upstream kotlinx.coroutines)

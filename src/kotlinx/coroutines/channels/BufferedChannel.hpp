@@ -335,6 +335,7 @@ protected:
         while (!senders_queue_.empty() && (buffer_.size() < static_cast<size_t>(capacity_) || capacity_ == Channel<E>::UNLIMITED)) {
             auto sender = senders_queue_.front();
             senders_queue_.pop_front();
+            (void)sender;
             // TODO: Resume sender with success
             // sender->resume();
         }
@@ -346,6 +347,8 @@ protected:
             receivers_queue_.pop_front();
             E element = std::move(buffer_.front());
             buffer_.pop_front();
+            (void)receiver;
+            (void)element;
             // TODO: Resume receiver with element
             // receiver->resume(element);
         }
