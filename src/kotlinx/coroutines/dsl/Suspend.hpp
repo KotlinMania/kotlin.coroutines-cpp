@@ -116,8 +116,14 @@ inline T suspend(T&& value) {
     goto *(c)->_label; \
     _kxs_start:
 
-// Store blockaddress, execute expr, check if suspended, provide resume point
-// __LINE__ creates the unique label for computed goto dispatch (indirectbr)
+// Store blockaddress, execute expr, check if suspended, provide resume point.
+//
+// This mirrors Kotlin/Native's suspension point behavior:
+// - If the call suspends, return COROUTINE_SUSPENDED.
+// - On resume, throw if `result` is exceptional (getOrThrow), then continue.
+//
+// NOTE: This macro expects the enclosing invoke_suspend signature to use the
+// parameter name `result` (Result<void*>), matching Kotlin's invokeSuspend contract.
 #define coroutine_yield(c, expr) \
     do { \
         (c)->_label = &&_KXS_LABEL(_kxs_resume_, __LINE__); \
@@ -127,7 +133,10 @@ inline T suspend(T&& value) {
             if (::kotlinx::coroutines::intrinsics::is_coroutine_suspended(_kxs_tmp)) \
                 return _kxs_tmp; \
         } \
-        _KXS_LABEL(_kxs_resume_, __LINE__):; \
+        goto _KXS_LABEL(_kxs_cont_, __LINE__); \
+        _KXS_LABEL(_kxs_resume_, __LINE__): \
+        (void)(result).get_or_throw(); \
+        _KXS_LABEL(_kxs_cont_, __LINE__):; \
     } while (0)
 
 // Suspension point that produces a value.
@@ -167,7 +176,10 @@ inline T suspend(T&& value) {
     switch ((c)->_label) { \
     case 0:
 
-// __LINE__ creates the unique case label for switch dispatch
+// __LINE__ creates the unique case label for switch dispatch.
+//
+// NOTE: This macro expects the enclosing invoke_suspend signature to use the
+// parameter name `result` (Result<void*>), matching Kotlin's invokeSuspend contract.
 #define coroutine_yield(c, expr) \
     do { \
         (c)->_label = __LINE__; \
@@ -177,7 +189,10 @@ inline T suspend(T&& value) {
             if (::kotlinx::coroutines::intrinsics::is_coroutine_suspended(_tmp)) \
                 return _tmp; \
         } \
-        case __LINE__:; \
+        goto _KXS_LABEL(_kxs_cont_, __LINE__); \
+        case __LINE__: \
+        (void)(result).get_or_throw(); \
+        _KXS_LABEL(_kxs_cont_, __LINE__):; \
     } while (0)
 
 // Value-producing suspension point (Duff's device fallback).
