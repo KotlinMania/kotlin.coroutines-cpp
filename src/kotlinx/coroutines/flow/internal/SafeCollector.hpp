@@ -32,12 +32,7 @@ protected:
  * and provides exception transparency guarantees. It wraps a downstream collector
  * and validates context before forwarding emissions.
  *
- * @note **CURRENT LIMITATION**: The emit() method signature is incorrect - it
- *       should return void* and accept a Continuation parameter for suspension.
- *       The current implementation cannot provide proper backpressure.
- *
- * @note **INTENDED BEHAVIOR**: Should validate context on each emission and
- *       properly suspend when downstream cannot keep up, ensuring flow invariants.
+ * @note **CURRENT LIMITATION**: Context validation is not fully implemented yet.
  */
 template <typename T>
 class SafeCollector : public FlowCollector<T>, public SafeCollectorBase {
@@ -69,15 +64,12 @@ public:
      *
      * @throws IllegalStateException if context validation fails (not implemented)
      */
-    virtual void emit(T value) override {
+    void* emit(T value, Continuation<void*>* continuation) override {
         // TODO: Implement proper context validation
         // auto current = currentCoroutineContext();
         // check_context(current); 
-        
-        // TODO: Fix method signature to support suspension
-        // Should be: virtual void* emit(T value, Continuation<void*>* continuation) override
-        
-        downstream_->emit(value);
+
+        return downstream_->emit(std::move(value), continuation);
     }
 
 private:

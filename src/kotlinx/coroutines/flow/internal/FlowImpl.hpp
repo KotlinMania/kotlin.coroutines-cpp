@@ -12,18 +12,21 @@ namespace internal {
     template<typename T>
     struct FlowCollectorImpl : public FlowCollector<T> {
         std::function<void(T)> emit_impl;
-        FlowCollectorImpl(std::function<void(T)> e) : emit_impl(e) {}
-        void emit(T value) override {
-            emit_impl(value);
+        explicit FlowCollectorImpl(std::function<void(T)> e) : emit_impl(std::move(e)) {}
+
+        void* emit(T value, Continuation<void*>* /*continuation*/) override {
+            emit_impl(std::move(value));
+            return nullptr;
         }
     };
 
     template<typename T>
     struct FlowImpl : public Flow<T> {
-        std::function<void(FlowCollector<T>*)> collect_impl;
-        FlowImpl(std::function<void(FlowCollector<T>*)> c) : collect_impl(c) {}
-        void collect(FlowCollector<T>* collector) override {
-            collect_impl(collector);
+        std::function<void*(FlowCollector<T>*, Continuation<void*>*)> collect_impl;
+        explicit FlowImpl(std::function<void*(FlowCollector<T>*, Continuation<void*>*)> c) : collect_impl(std::move(c)) {}
+
+        void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
+            return collect_impl(collector, continuation);
         }
     };
 

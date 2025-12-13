@@ -1,9 +1,11 @@
 #pragma once
 #include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/channels/Channels.hpp"
 #include "kotlinx/coroutines/channels/ProducerScope.hpp"
 #include "kotlinx/coroutines/channels/ChannelCoroutine.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/context_impl.hpp"
 #include <functional>
 #include <memory>
 
@@ -70,23 +72,23 @@ std::shared_ptr<ReceiveChannel<E>> produce(
     auto channel = create_channel<E>(capacity, on_buffer_overflow);
     
     // 2. Create Context
-    // Scope + context
-    // newCoroutineContext implementation?
-    // Using simple merge for sketch
-    // TODO: Proper context combination
-    // scope->get_coroutine_context() returns shared_ptr<CoroutineContext>
-    auto scopeContext = scope->get_coroutine_context();
-    auto newContext = std::make_shared<CombinedContext>(scopeContext, context);
+    // Kotlin: val newContext = scope.newCoroutineContext(context)
+    // For now, approximate with CoroutineContext.plus (scope + provided context).
+    if (!context) context = EmptyCoroutineContext::instance();
+    auto newContext = scope->get_coroutine_context()->operator+(context);
 
     // 3. Create Coroutine
     auto coroutine = std::make_shared<ProducerCoroutine<E>>(newContext, channel);
     
     // 4. Start
     if (block) {
-        coroutine->start(start, coroutine, [block](auto receiver) {
-            block(receiver.get()); // Adapter
-            return Unit();
-        });
+        // AbstractCoroutine::start expects an explicit std::function<T(R)> (not a generic lambda).
+        std::function<Unit(std::shared_ptr<ProducerCoroutine<E>>)> wrapped_block =
+            [block](std::shared_ptr<ProducerCoroutine<E>> receiver) {
+                block(receiver.get());
+                return Unit();
+            };
+        coroutine->start(start, coroutine, std::move(wrapped_block));
     }
     
     return coroutine;

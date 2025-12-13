@@ -5,6 +5,13 @@
 // TODO: Handle Worker and TransferMode APIs
 // TODO: Handle TestBase inheritance
 
+#include <future>
+
+#include "kotlinx/coroutines/context_impl.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/Delay.hpp"
+#include <kotlinx/coroutines/channels/Channel.hpp>
+
 namespace kotlinx {
     namespace coroutines {
         // TODO: import kotlinx.coroutines.testing.*
@@ -16,7 +23,7 @@ namespace kotlinx {
         class WorkerTest : public TestBase {
         public:
             // TODO: @Test
-            void test_launch_in_worker() {
+            static void test_launch_in_worker() {
                 auto worker = Worker::start();
                 worker.execute(TransferMode::SAFE, []() {
                                }, []() {
@@ -31,7 +38,7 @@ namespace kotlinx {
             }
 
             // TODO: @Test
-            void test_launch_in_worker_through_global_scope() {
+            static void test_launch_in_worker_through_global_scope() {
                 auto worker = Worker::start();
                 worker.execute(TransferMode::SAFE, []() {
                                }, []() {
@@ -49,7 +56,7 @@ namespace kotlinx {
      * Test that [runBlocking] does not crash after [Worker.requestTermination] is called on the worker that runs it.
      */
             // TODO: @Test
-            void test_run_blocking_in_terminated_worker() {
+            static void test_run_blocking_in_terminated_worker() {
                 Channel<void> worker_in_run_blocking;
                 Channel<void> worker_terminated;
                 Channel<void> check_resumption;

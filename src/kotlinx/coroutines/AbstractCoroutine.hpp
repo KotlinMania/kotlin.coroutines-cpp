@@ -60,7 +60,7 @@ namespace kotlinx::coroutines {
  *       to provide specialized behavior.
  */
     template <typename T>
-    class AbstractCoroutine : public JobSupport, public Continuation<T>, public CoroutineScope {
+    class AbstractCoroutine : public JobSupport, public Continuation<T>, public virtual CoroutineScope {
     public:
         using JobSupport::start;
         /**

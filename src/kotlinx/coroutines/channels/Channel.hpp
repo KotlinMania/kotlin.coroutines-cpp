@@ -10,9 +10,9 @@
 #include <string>
 #include <optional>
 
-namespace kotlinx {
-namespace coroutines {
-namespace channels {
+
+
+namespace kotlinx::coroutines::channels {
 
 /**
  * Handler for elements that were sent to a channel but were not delivered to the consumer.
@@ -96,9 +96,9 @@ public:
         }
     }
 
-    bool is_success() const { return type == ResultType::SUCCESS; }
-    bool is_failure() const { return type == ResultType::FAILURE || type == ResultType::CLOSED; }
-    bool is_closed() const { return type == ResultType::CLOSED; }
+    [[nodiscard]] bool is_success() const { return type == ResultType::SUCCESS; }
+    [[nodiscard]] bool is_failure() const { return type == ResultType::FAILURE || type == ResultType::CLOSED; }
+    [[nodiscard]] bool is_closed() const { return type == ResultType::CLOSED; }
 
     T* get_or_null() const { return is_success() ? const_cast<T*>(&success_value) : nullptr; }
 
@@ -111,7 +111,7 @@ public:
         throw std::runtime_error("Channel operation failed");
     }
 
-    std::exception_ptr exception_or_null() const { return is_closed() ? closed_cause : nullptr; }
+    [[nodiscard]] std::exception_ptr exception_or_null() const { return is_closed() ? closed_cause : nullptr; }
 
     static ChannelResult<T> success(T value) { return ChannelResult<T>(std::move(value)); }
     static ChannelResult<T> failure() { return ChannelResult<T>(); }
@@ -131,10 +131,10 @@ public:
     ChannelResult(ResultType t) : type(t) {}
     ChannelResult(std::exception_ptr cause) : type(ResultType::CLOSED), closed_cause(cause) {}
 
-    bool is_success() const { return type == ResultType::SUCCESS; }
-    bool is_failure() const { return type == ResultType::FAILURE || type == ResultType::CLOSED; }
-    bool is_closed() const { return type == ResultType::CLOSED; }
-    std::exception_ptr exception_or_null() const { return is_closed() ? closed_cause : nullptr; }
+    [[nodiscard]] bool is_success() const { return type == ResultType::SUCCESS; }
+    [[nodiscard]] bool is_failure() const { return type == ResultType::FAILURE || type == ResultType::CLOSED; }
+    [[nodiscard]] bool is_closed() const { return type == ResultType::CLOSED; }
+    [[nodiscard]] std::exception_ptr exception_or_null() const { return is_closed() ? closed_cause : nullptr; }
 
     static ChannelResult<void> success() { return ChannelResult<void>(ResultType::SUCCESS); }
     static ChannelResult<void> failure() { return ChannelResult<void>(ResultType::FAILURE); }
@@ -282,7 +282,7 @@ struct ReceiveChannel {
 };
 
 template <typename E>
-struct Channel : public SendChannel<E>, public ReceiveChannel<E> {
+struct Channel : public virtual SendChannel<E>, public virtual ReceiveChannel<E> {
     static constexpr int UNLIMITED = 2147483647;
     static constexpr int RENDEZVOUS = 0;
     static constexpr int CONFLATED = -1;
@@ -303,6 +303,5 @@ std::shared_ptr<Channel<E>> create_channel(
     OnUndeliveredElement<E> on_undelivered_element = nullptr
 );
 
-} // namespace channels
-} // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines::channels
+

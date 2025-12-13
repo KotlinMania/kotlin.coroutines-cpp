@@ -7,7 +7,7 @@ namespace coroutines {
 namespace channels {
 
 template <typename E>
-struct ProducerScope : public CoroutineScope, public SendChannel<E> {
+struct ProducerScope : public virtual CoroutineScope, public virtual SendChannel<E> {
     virtual ~ProducerScope() = default;
 
     virtual SendChannel<E>* get_channel() = 0;

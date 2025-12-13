@@ -4,7 +4,7 @@
 - Deliver a near 1:1 transliteration of Kotlin `kotlinx.coroutines` into C++.
 - Priority is syntactic and API-surface equivalence; correctness/semantics come later.
 - It is OK if code does not compile yet, as long as the translation is faithful and consistent with repo conventions.
-- Use Kotlin sources under `tmp/kotlinx.coroutines/**/*.kt` as the ground truth for each C++ header/source pair in `include/` and `kotlinx-coroutines-*/**/*.cpp`.
+- Use Kotlin sources under `tmp/kotlinx.coroutines/**/*.kt` as the ground truth for each C++ header/source pair under `src/kotlinx/coroutines/**` (headers are co-located with sources in this repo).
 
 ---
 
@@ -74,7 +74,7 @@
 ---
 
 ### Matching Kotlin ⇄ C++ files
-- Primary lookup: mirror paths from `tmp/kotlinx.coroutines/kotlinx-coroutines-core/**/X.kt` to `include/kotlinx/coroutines/**/X.hpp` and `kotlinx-coroutines-core/**/X.cpp`.
+- Primary lookup: mirror paths from `tmp/kotlinx.coroutines/kotlinx-coroutines-core/**/X.kt` to `src/kotlinx/coroutines/**/X.hpp` and `src/kotlinx/coroutines/**/X.cpp`.
 - If a C++ file has no obvious `.kt` twin:
     - Search by class/function names in `tmp/kotlinx.coroutines`.
     - For platform-specific code, check `common/src`, `native/src`, and `darwin/src` in Kotlin; split similarly in C++ if needed.
@@ -213,8 +213,8 @@
 
 ### References
 - IR/LLVM plan: `docs/cpp_port/docking_ring.md`.
-- Headers: `include/kotlinx/coroutines/*.hpp` (e.g., `CoroutineDispatcher.hpp`, `Delay.hpp`, `Deferred.hpp`, `Job.hpp`).
-- Implementations: `kotlinx-coroutines-core/**/src/**/*.cpp`.
+- Headers: `src/kotlinx/coroutines/**/*.hpp` (headers are co-located with sources).
+- Implementations: `src/kotlinx/coroutines/**/*.cpp`.
 - Kotlin sources: `tmp/kotlinx.coroutines/**/src/**/*.kt`.
 - Suspend intrinsics: `kotlinx/coroutines/intrinsics/Intrinsics.hpp` and `CancellableContinuationImpl.hpp`.
 

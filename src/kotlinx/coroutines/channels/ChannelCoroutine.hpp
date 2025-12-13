@@ -78,7 +78,9 @@ public:
         AbstractCoroutine<Unit>::cancel(cause);
     }
 
-    virtual std::shared_ptr<Channel<E>> get_channel() { return _channel; }
+    // NOTE: ProducerScope also defines get_channel() returning SendChannel<E>*.
+    // Keep a distinct name here to avoid C++ return-type conflicts in diamond inheritance.
+    virtual std::shared_ptr<Channel<E>> get_channel_shared() { return _channel; }
 };
 
 } // namespace channels

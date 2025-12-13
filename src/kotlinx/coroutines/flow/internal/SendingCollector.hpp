@@ -1,6 +1,7 @@
 #pragma once
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -14,11 +15,15 @@ class SendingCollector : public FlowCollector<T> {
 public:
     explicit SendingCollector(channels::SendChannel<T>* channel) : channel_(channel) {}
 
-    void emit(T value) override {
+    void* emit(T value, Continuation<void*>* /*continuation*/) override {
         if (channel_->is_closed_for_send()) {
              throw channels::ClosedSendChannelException("Channel was closed");
         }
-        channel_->send(value);
+        auto awaiter = channel_->send(std::move(value));
+        if (awaiter.needs_suspend()) {
+            return intrinsics::get_COROUTINE_SUSPENDED();
+        }
+        return nullptr;
     }
 
 private:

@@ -2,8 +2,11 @@
 
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
+#include "kotlinx/coroutines/Result.hpp"
 #include <functional>
+#include <exception>
 #include <memory>
+#include <type_traits>
 
 namespace kotlinx {
 namespace coroutines {
@@ -45,7 +48,38 @@ inline bool is_lazy(CoroutineStart start) {
  */
 template <typename Block, typename Receiver, typename Completion>
 void invoke(CoroutineStart start, Block&& block, Receiver&& receiver, Completion&& completion) {
-    if (start == CoroutineStart::DEFAULT) {
+    if (start == CoroutineStart::LAZY) {
+        return;
+    }
+
+    auto run_block = [block = std::forward<Block>(block), receiver, completion]() mutable {
+        using ReturnT = decltype(block(receiver));
+        try {
+            if constexpr (std::is_void_v<ReturnT>) {
+                block(receiver);
+                completion->resume_with(Result<void>::success());
+            } else {
+                auto value = block(receiver);
+                completion->resume_with(Result<ReturnT>::success(std::move(value)));
+            }
+        } catch (...) {
+            if constexpr (std::is_void_v<ReturnT>) {
+                completion->resume_with(Result<void>::failure(std::current_exception()));
+            } else {
+                completion->resume_with(Result<ReturnT>::failure(std::current_exception()));
+            }
+        }
+    };
+
+    if (start == CoroutineStart::UNDISPATCHED) {
+        // Kotlin: run immediately in current thread without dispatch.
+        run_block();
+        return;
+    }
+
+    // DEFAULT and ATOMIC both start immediately; ATOMIC differs in cancellation checks, which
+    // we don't model yet in this C++ runtime.
+    if (start == CoroutineStart::DEFAULT || start == CoroutineStart::ATOMIC) {
         auto context = completion->get_context();
         
         std::shared_ptr<CoroutineDispatcher> dispatcher;
@@ -60,10 +94,7 @@ void invoke(CoroutineStart start, Block&& block, Receiver&& receiver, Completion
              void run() override { b(); }
         };
         
-        // Capture block and receiver by value (assuming they are cheap/copyable functions/pointers)
-        auto runnable = std::make_shared<LambdaRunnable>([b = block, r = receiver]() {
-             b(r);
-        });
+        auto runnable = std::make_shared<LambdaRunnable>([run = std::move(run_block)]() mutable { run(); });
         
         if (dispatcher) {
              dispatcher->dispatch(*context, runnable);

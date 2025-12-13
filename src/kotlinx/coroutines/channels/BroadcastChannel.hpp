@@ -75,9 +75,9 @@ public:
             // s is concrete Subscriber type which is a SendChannel.
             // We need to cast or use the concrete type.
             if (capacity_ == CONFLATED) {
-                std::static_pointer_cast<SubscriberConflated>(s)->try_send(last_conflated_element_);
+                std::dynamic_pointer_cast<SubscriberConflated>(s)->try_send(last_conflated_element_);
             } else {
-                std::static_pointer_cast<SubscriberBuffered>(s)->try_send(last_conflated_element_);
+                std::dynamic_pointer_cast<SubscriberBuffered>(s)->try_send(last_conflated_element_);
             }
         }
         
