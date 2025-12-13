@@ -1,0 +1,21 @@
+@PACKAGE_INIT@
+
+# KotlinxCoroutinesConfig.cmake
+#
+# Imported targets:
+#   kotlinx::coroutines        - Full coroutine support with IR transformation
+#   kotlinx::coroutines_headers - Headers only (for callers, not definers)
+#
+# Usage:
+#   find_package(KotlinxCoroutines REQUIRED)
+#   target_link_libraries(my_app PRIVATE kotlinx::coroutines)
+#   kxs_enable_suspend(my_app)
+
+include("${CMAKE_CURRENT_LIST_DIR}/KotlinxCoroutinesTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/KotlinxCoroutineTransform.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/kxs_transform_ir.cmake")
+
+# Re-export the convenience functions
+include("${CMAKE_CURRENT_LIST_DIR}/KotlinxCoroutines.cmake")
+
+check_required_components(KotlinxCoroutines)
