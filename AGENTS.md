@@ -66,6 +66,7 @@
 - Useful CMake options:
     - `KOTLIN_NATIVE_RUNTIME_AVAILABLE=ON` only when Kotlin/Native runtime is present for GC bridge work.
     - `KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=ON` to build the Apple-focused suspend DSL plugin in `tools/clang_suspend_plugin/`.
+    - If LLVM/Clang dev packages are missing, prefer `-DKOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=OFF` to avoid configure-time warnings.
 - Outputs (as set in root `CMakeLists.txt`):
     - Binaries: `build*/bin/`
     - Libraries: `build*/lib/`

@@ -7,15 +7,17 @@
  * stackless coroutine state machines matching Kotlin/Native's pattern.
  *
  * Two modes:
- * 1. Computed goto (KXS_COMPUTED_GOTO): Uses void* _label with &&label addresses.
- *    Compiles to LLVM indirectbr + blockaddress - exact Kotlin/Native parity.
+ * 1. Computed goto (default on GCC/Clang, disable with `KXS_NO_COMPUTED_GOTO`):
+ *    Uses `void* _label` with `&&label` addresses and compiles to LLVM
+ *    `indirectbr` + `blockaddress` (Kotlin/Native parity).
  *
- * 2. Switch mode (default): Uses int _label with switch/case. Portable fallback.
+ * 2. Switch mode (MSVC fallback, or when `KXS_NO_COMPUTED_GOTO` is defined):
+ *    Uses `int _label` with `switch/case` (portable, but not identical IR).
  *
  * Usage example:
  * ```cpp
  * class MyCoroutine : public ContinuationImpl {
- *     int _label = 0;  // or void* _label = nullptr for computed goto
+ *     void* _label = nullptr;  // blockaddress storage (computed goto)
  *     int my_state;    // spilled variables
  *
  *     void* invoke_suspend(Result<void*> result) override {
@@ -85,11 +87,10 @@ inline T suspend(T&& value) {
  *   coroutine_end(coroutine_ptr)
  *
  * For computed goto mode:
- *   - Define KXS_COMPUTED_GOTO before including this header
- *   - Use void* _label = nullptr in your coroutine class
- *
- * For switch mode (default):
- *   - Use int _label = 0 in your coroutine class
+ * NOTE:
+ * - The `invoke_suspend` parameter name must be `result` (Result<void*>) so
+ *   the macros can mirror Kotlin's `getOrThrow(resultArgument)` behavior.
+ * - Suspension sites also emit `__kxs_suspend_point(i32)` markers for IR tooling.
  */
 
 /**
@@ -114,7 +115,9 @@ inline T suspend(T&& value) {
 #define coroutine_begin(c) \
     if ((c)->_label == nullptr) goto _kxs_start; \
     goto *(c)->_label; \
-    _kxs_start:
+    _kxs_start: \
+    /* Kotlin: throwIfNotNull(exceptionOrNull(resultArgument)) */ \
+    (void)(result).get_or_throw();
 
 // Store blockaddress, execute expr, check if suspended, provide resume point.
 //
@@ -174,7 +177,9 @@ inline T suspend(T&& value) {
 
 #define coroutine_begin(c) \
     switch ((c)->_label) { \
-    case 0:
+    case 0: \
+        /* Kotlin: throwIfNotNull(exceptionOrNull(resultArgument)) */ \
+        (void)(result).get_or_throw();
 
 // __LINE__ creates the unique case label for switch dispatch.
 //

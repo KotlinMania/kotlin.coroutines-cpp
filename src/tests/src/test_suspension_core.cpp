@@ -287,6 +287,25 @@ void test_resume_with_value() {
     std::cout << "PASSED" << std::endl;
 }
 
+void test_start_with_exception_throws() {
+    std::cout << "test_start_with_exception_throws... ";
+    execution_log.clear();
+
+    auto completion = std::make_shared<TestCompletion>();
+    auto coro = std::make_shared<SimpleYieldCoroutine>(completion);
+
+    bool threw = false;
+    try {
+        (void)coro->invoke_suspend(Result<void*>::failure(std::make_exception_ptr(std::runtime_error("boom"))));
+    } catch (const std::runtime_error&) {
+        threw = true;
+    }
+
+    assert(threw);
+    assert(execution_log.empty());
+    std::cout << "PASSED" << std::endl;
+}
+
 int main() {
     std::cout << "=== test_suspension_core ===" << std::endl;
 
@@ -295,6 +314,7 @@ int main() {
     test_loop_suspend();
     test_yield_value_resume_result();
     test_resume_with_value();
+    test_start_with_exception_throws();
 
     std::cout << "=== All tests passed ===" << std::endl;
     return 0;

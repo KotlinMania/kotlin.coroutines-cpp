@@ -300,6 +300,7 @@ private:
         os << "    void* invoke_suspend(Result<void*> result) override {\n";
         os << "        switch (_label) {\n";
         os << "        case 0:\n";
+        os << "            (void)result.get_or_throw();\n";
 
         const auto* body = dyn_cast<CompoundStmt>(fd->getBody());
         int stateId = 1;
@@ -442,6 +443,7 @@ private:
         os << "        goto *_label;  // Computed goto -> LLVM indirectbr\n\n";
 
         os << "    __kxs_start:\n";
+        os << "        (void)result.get_or_throw();\n";
 
         const auto* body = dyn_cast<CompoundStmt>(fd->getBody());
         int resumeId = 0;
