@@ -40,6 +40,16 @@
 // The transformer is expected to rewrite/remove these calls.
 extern "C" void __kxs_suspend_point(int id);
 
+// Helper to create unique label names.
+// Note: __LINE__ must be unique per suspend point; do not put multiple
+// coroutine_yield/coroutine_yield_value calls on the same source line.
+#ifndef _KXS_CONCAT
+#define _KXS_CONCAT(a, b) a##b
+#endif
+#ifndef _KXS_LABEL
+#define _KXS_LABEL(prefix, line) _KXS_CONCAT(prefix, line)
+#endif
+
 namespace kotlinx {
 namespace coroutines {
 namespace dsl {
@@ -101,10 +111,6 @@ inline T suspend(T&& value) {
  */
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(KXS_NO_COMPUTED_GOTO)
 
-// Helper to create unique label names
-#define _KXS_CONCAT(a, b) a##b
-#define _KXS_LABEL(prefix, line) _KXS_CONCAT(prefix, line)
-
 #define coroutine_begin(c) \
     if ((c)->_label == nullptr) goto _kxs_start; \
     goto *(c)->_label; \
@@ -122,6 +128,30 @@ inline T suspend(T&& value) {
                 return _kxs_tmp; \
         } \
         _KXS_LABEL(_kxs_resume_, __LINE__):; \
+    } while (0)
+
+// Suspension point that produces a value.
+//
+// This mirrors Kotlin/Native's IrSuspensionPoint + continuationBlock pattern:
+// - normal path computes `expr` and jumps to continuation
+// - resume path computes value from `result.get_or_throw()` and jumps to continuation
+//
+// The "continuation" is implemented via an explicit local label to avoid
+// running resume-only code on the non-suspending fast path.
+#define coroutine_yield_value(c, result, expr, out_lvalue) \
+    do { \
+        (c)->_label = &&_KXS_LABEL(_kxs_resume_, __LINE__); \
+        ::__kxs_suspend_point(__LINE__); \
+        { \
+            auto _kxs_tmp = (expr); \
+            if (::kotlinx::coroutines::intrinsics::is_coroutine_suspended(_kxs_tmp)) \
+                return _kxs_tmp; \
+            (out_lvalue) = _kxs_tmp; \
+        } \
+        goto _KXS_LABEL(_kxs_cont_, __LINE__); \
+        _KXS_LABEL(_kxs_resume_, __LINE__): \
+        (out_lvalue) = (result).get_or_throw(); \
+        _KXS_LABEL(_kxs_cont_, __LINE__):; \
     } while (0)
 
 #define coroutine_end(c) \
@@ -148,6 +178,23 @@ inline T suspend(T&& value) {
                 return _tmp; \
         } \
         case __LINE__:; \
+    } while (0)
+
+// Value-producing suspension point (Duff's device fallback).
+#define coroutine_yield_value(c, result, expr, out_lvalue) \
+    do { \
+        (c)->_label = __LINE__; \
+        ::__kxs_suspend_point(__LINE__); \
+        { \
+            auto _tmp = (expr); \
+            if (::kotlinx::coroutines::intrinsics::is_coroutine_suspended(_tmp)) \
+                return _tmp; \
+            (out_lvalue) = _tmp; \
+        } \
+        goto _KXS_LABEL(_kxs_cont_, __LINE__); \
+        case __LINE__: \
+        (out_lvalue) = (result).get_or_throw(); \
+        _KXS_LABEL(_kxs_cont_, __LINE__):; \
     } while (0)
 
 #define coroutine_end(c) \

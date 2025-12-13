@@ -113,6 +113,30 @@ public:
     }
 };
 
+/**
+ * Coroutine that resumes with a value via the invoke_suspend(Result<...>) parameter.
+ *
+ * This exercises Kotlin/Native-style suspension point semantics:
+ * - initial call returns COROUTINE_SUSPENDED
+ * - resumed call receives the value via `result`
+ */
+class YieldValueCoroutine : public ContinuationImpl {
+public:
+    void* _label = nullptr;
+    void* value = nullptr;
+
+    explicit YieldValueCoroutine(std::shared_ptr<Continuation<void*>> completion)
+        : ContinuationImpl(std::move(completion)) {}
+
+    void* invoke_suspend(Result<void*> result) override {
+        coroutine_begin(this)
+
+        coroutine_yield_value(this, result, COROUTINE_SUSPENDED, value);
+
+        return value;
+    }
+};
+
 // Completion continuation that captures the result
 class TestCompletion : public Continuation<void*> {
 public:
@@ -226,6 +250,26 @@ void test_loop_suspend() {
     std::cout << "PASSED" << std::endl;
 }
 
+void test_yield_value_resume_result() {
+    std::cout << "test_yield_value_resume_result... ";
+
+    static int k_marker = 42;
+    void* expected = static_cast<void*>(&k_marker);
+
+    auto completion = std::make_shared<TestCompletion>();
+    auto coro = std::make_shared<YieldValueCoroutine>(completion);
+
+    void* r1 = coro->invoke_suspend(Result<void*>::success(nullptr));
+    assert(is_coroutine_suspended(r1));
+
+    void* r2 = coro->invoke_suspend(Result<void*>::success(expected));
+    assert(!is_coroutine_suspended(r2));
+    assert(r2 == expected);
+    assert(coro->value == expected);
+
+    std::cout << "PASSED" << std::endl;
+}
+
 void test_resume_with_value() {
     std::cout << "test_resume_with_value... ";
 
@@ -249,6 +293,7 @@ int main() {
     test_simple_yield();
     test_conditional_suspend();
     test_loop_suspend();
+    test_yield_value_resume_result();
     test_resume_with_value();
 
     std::cout << "=== All tests passed ===" << std::endl;
