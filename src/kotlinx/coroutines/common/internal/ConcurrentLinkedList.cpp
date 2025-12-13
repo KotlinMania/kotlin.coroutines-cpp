@@ -253,7 +253,7 @@ namespace kotlinx {
                 Segment(long id, S *prev, int pointers)
                     : ConcurrentLinkedListNode<S>(prev),
                       id(id),
-                      cleaned_and_pointers_(pointers << kPointersShift) {
+                      cleaned_and_pointers_(pointers << POINTERS_SHIFT) {
                 }
 
                 /**
@@ -267,7 +267,7 @@ namespace kotlinx {
      */
             private:
                 std::atomic<int> cleaned_and_pointers_;
-                static constexpr int kPointersShift = 16;
+                static constexpr int POINTERS_SHIFT = 16;
 
             public:
                 /**
@@ -280,14 +280,14 @@ namespace kotlinx {
 
                 // increments the number of pointers if this segment is not logically removed.
                 bool try_inc_pointers() {
-                    return add_conditionally(cleaned_and_pointers_, 1 << kPointersShift,
+                    return add_conditionally(cleaned_and_pointers_, 1 << POINTERS_SHIFT,
                                              [this](int it) { return it != number_of_slots() || this->is_tail(); });
                 }
 
                 // returns `true` if this segment is logically removed after the decrement.
                 bool dec_pointers() {
-                    int result = cleaned_and_pointers_.fetch_add(-(1 << kPointersShift));
-                    result -= (1 << kPointersShift);
+                    int result = cleaned_and_pointers_.fetch_add(-(1 << POINTERS_SHIFT));
+                    result -= (1 << POINTERS_SHIFT);
                     return result == number_of_slots() && !this->is_tail();
                 }
 

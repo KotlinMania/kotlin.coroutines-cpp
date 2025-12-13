@@ -107,7 +107,7 @@ namespace kotlinx {
             void test_second_subscription_after_resume_cancel_and_dispatch() {
                 run_test([this]() {
                     CancellableContinuation<void> *cont = nullptr;
-                    auto job = launch(CoroutineStart::kUndispatched, [this, &cont]() {
+                    auto job = launch(CoroutineStart::UNDISPATCHED, [this, &cont]() {
                         // will be cancelled during dispatch
                         assert_fails_with<CancellationException>([this, &cont]() {
                             suspend_cancellable_coroutine<void>([this, &cont](auto c) {

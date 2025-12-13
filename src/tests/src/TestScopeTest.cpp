@@ -395,7 +395,7 @@ namespace kotlinx {
                                 delay(1);
                             }
                         });
-                        auto state_flow = my_flow.state_in(background_scope, SharingStarted::kEagerly, 0);
+                        auto state_flow = my_flow.state_in(background_scope, SharingStarted::eagerly(), 0);
                         int j = 0;
                         for (int it = 0; it < 100; ++it) {
                             assert(j++ == state_flow.value());
@@ -591,7 +591,7 @@ namespace kotlinx {
                             });
                         },
                         [&](auto it) {
-                            GlobalScope::launch(CoroutineStart::kUndispatched, [&]() {
+                            GlobalScope::launch(CoroutineStart::UNDISPATCHED, [&]() {
                                 throw thrown;
                             });
                             return run_test([&]() {

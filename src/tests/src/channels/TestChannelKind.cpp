@@ -12,30 +12,30 @@ namespace kotlinx {
             // TODO: import kotlinx.coroutines.selects.*
 
             enum class TestChannelKind {
-                kRendezvous,
-                kBuffered1,
-                kBuffered2,
-                kBuffered10,
-                kUnlimited,
-                kConflated,
-                kBuffered1Broadcast,
-                kBuffered10Broadcast,
-                kConflatedBroadcast
+                RENDEZVOUS,
+                BUFFERED1,
+                BUFFERED2,
+                BUFFERED10,
+                UNLIMITED,
+                CONFLATED,
+                BUFFERED1_BROADCAST,
+                BUFFERED10_BROADCAST,
+                CONFLATED_BROADCAST
             };
 
             // TODO: class TestChannelKindHelper {
             // public:
             //     static int capacity(TestChannelKind kind) {
             //         switch (kind) {
-            //             case TestChannelKind::kRendezvous: return 0;
-            //             case TestChannelKind::kBuffered1:
-            //             case TestChannelKind::kBuffered1Broadcast: return 1;
-            //             case TestChannelKind::kBuffered2: return 2;
-            //             case TestChannelKind::kBuffered10:
-            //             case TestChannelKind::kBuffered10Broadcast: return 10;
-            //             case TestChannelKind::kUnlimited: return Channel::UNLIMITED;
-            //             case TestChannelKind::kConflated:
-            //             case TestChannelKind::kConflatedBroadcast: return Channel::CONFLATED;
+            //             case TestChannelKind::RENDEZVOUS: return 0;
+            //             case TestChannelKind::BUFFERED1:
+            //             case TestChannelKind::BUFFERED1_BROADCAST: return 1;
+            //             case TestChannelKind::BUFFERED2: return 2;
+            //             case TestChannelKind::BUFFERED10:
+            //             case TestChannelKind::BUFFERED10_BROADCAST: return 10;
+            //             case TestChannelKind::UNLIMITED: return Channel::UNLIMITED;
+            //             case TestChannelKind::CONFLATED:
+            //             case TestChannelKind::CONFLATED_BROADCAST: return Channel::CONFLATED;
             //         }
             //     }
             //

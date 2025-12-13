@@ -97,7 +97,7 @@ Deliver a near 1:1 transliteration of Kotlin `kotlinx.coroutines` into C++. Prio
 |--------|-----|
 | Classes/structs | `CamelCase` |
 | Methods/functions/properties | `snake_case` (e.g., `minusKey` → `minus_key`, `isActive` → `is_active`) |
-| Enums | `enum class Name { kPascalCaseEnumerators }` |
+| Enums | `enum class Name { ALL_CAPS }` |
 | Packages | Namespaces: `kotlinx::coroutines::channels` |
 
 ### Public vs Private Split

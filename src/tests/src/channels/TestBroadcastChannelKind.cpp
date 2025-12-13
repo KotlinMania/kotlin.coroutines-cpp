@@ -9,9 +9,9 @@ namespace kotlinx {
         namespace channels {
             // TODO: @Suppress("DEPRECATION_ERROR")
             enum class TestBroadcastChannelKind {
-                kArray1,
-                kArray10,
-                kConflated
+                ARRAY1,
+                ARRAY10,
+                CONFLATED
             };
 
             // TODO: Template specialization or visitor pattern for create() and toString()
@@ -20,28 +20,28 @@ namespace kotlinx {
             //     template<typename T>
             //     static BroadcastChannel<T>* create(TestBroadcastChannelKind kind) {
             //         switch (kind) {
-            //             case TestBroadcastChannelKind::kArray1:
+            //             case TestBroadcastChannelKind::ARRAY1:
             //                 return new BroadcastChannel<T>(1);
-            //             case TestBroadcastChannelKind::kArray10:
+            //             case TestBroadcastChannelKind::ARRAY10:
             //                 return new BroadcastChannel<T>(10);
-            //             case TestBroadcastChannelKind::kConflated:
+            //             case TestBroadcastChannelKind::CONFLATED:
             //                 return new ConflatedBroadcastChannel<T>();
             //         }
             //     }
             //
             //     static const char* toString(TestBroadcastChannelKind kind) {
             //         switch (kind) {
-            //             case TestBroadcastChannelKind::kArray1:
+            //             case TestBroadcastChannelKind::ARRAY1:
             //                 return "BufferedBroadcastChannel(1)";
-            //             case TestBroadcastChannelKind::kArray10:
+            //             case TestBroadcastChannelKind::ARRAY10:
             //                 return "BufferedBroadcastChannel(10)";
-            //             case TestBroadcastChannelKind::kConflated:
+            //             case TestBroadcastChannelKind::CONFLATED:
             //                 return "ConflatedBroadcastChannel";
             //         }
             //     }
             //
             //     static bool isConflated(TestBroadcastChannelKind kind) {
-            //         return kind == TestBroadcastChannelKind::kConflated;
+            //         return kind == TestBroadcastChannelKind::CONFLATED;
             //     }
             // };
         } // namespace channels

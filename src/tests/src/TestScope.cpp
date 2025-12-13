@@ -239,7 +239,7 @@ namespace kotlinx {
                 TestDispatcher *dispatcher;
 
                 if (auto *test_disp = dynamic_cast<TestDispatcher *>(interceptor)) {
-                    auto *ctx_scheduler = context[TestCoroutineScheduler::kKey];
+                    auto *ctx_scheduler = context[TestCoroutineScheduler::KEY];
                     if (ctx_scheduler != nullptr) {
                         if (&test_disp->scheduler() != ctx_scheduler) {
                             throw std::invalid_argument(
@@ -250,7 +250,7 @@ namespace kotlinx {
                     }
                     dispatcher = test_disp;
                 } else if (interceptor == nullptr) {
-                    dispatcher = standard_test_dispatcher(context[TestCoroutineScheduler::kKey], nullptr);
+                    dispatcher = standard_test_dispatcher(context[TestCoroutineScheduler::KEY], nullptr);
                 } else {
                     throw std::invalid_argument("Dispatcher must implement TestDispatcher");
                 }
@@ -282,7 +282,7 @@ namespace kotlinx {
                 }
 
                 TestCoroutineScheduler &test_scheduler() override {
-                    return *context_[TestCoroutineScheduler::kKey];
+                    return *context_[TestCoroutineScheduler::KEY];
                 }
 
                 CoroutineScope &background_scope() override {

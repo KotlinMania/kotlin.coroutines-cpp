@@ -12,10 +12,10 @@ namespace kotlinx {
     namespace coroutines {
         namespace flow {
             // TODO: Implement actual SharingStarted strategies
-            SharingStarted *SharingStarted::Eagerly() { return nullptr; }
-            SharingStarted *SharingStarted::Lazily() { return nullptr; }
+            SharingStarted *SharingStarted::eagerly() { return nullptr; }
+            SharingStarted *SharingStarted::lazily() { return nullptr; }
 
-            SharingStarted *SharingStarted::WhileSubscribed(long long stop_timeout_millis,
+            SharingStarted *SharingStarted::while_subscribed(long long stop_timeout_millis,
                                                             long long replay_expiration_millis) { return nullptr; }
         } // namespace flow
     } // namespace coroutines

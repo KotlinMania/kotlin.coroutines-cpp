@@ -55,7 +55,7 @@ namespace kotlinx {
                     // TODO: suspend function
                     for (int index = 0; index < n_workers; ++index) {
                         // Always launch a coroutine even if parent job was already cancelled (atomic start)
-                        launch(workers[index], CoroutineStart::kAtomic, [&, index]() {
+                        launch(workers[index], CoroutineStart::ATOMIC, [&, index]() {
                             // TODO: suspend function
                             random_wait();
                             throw StressException(index);

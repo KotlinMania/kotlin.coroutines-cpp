@@ -22,9 +22,9 @@ struct SharingStarted {
     virtual Flow<SharingCommand>* command(StateFlow<int>* subscription_count) = 0;
     
     // Static factories
-    static SharingStarted* Eagerly();
-    static SharingStarted* Lazily();
-    static SharingStarted* WhileSubscribed(
+    static SharingStarted* eagerly();
+    static SharingStarted* lazily();
+    static SharingStarted* while_subscribed(
         long long stop_timeout_millis = 0,
         long long replay_expiration_millis = std::numeric_limits<long long>::max()
     );

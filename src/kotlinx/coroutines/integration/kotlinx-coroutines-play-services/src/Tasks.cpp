@@ -86,7 +86,7 @@ namespace kotlinx {
                     }
                 } else {
                     // Run the callback directly to avoid unnecessarily scheduling on the main thread.
-                    task.add_on_complete_listener(kDirectExecutor, [&deferred](Task<T> &it) {
+                    task.add_on_complete_listener(DIRECT_EXECUTOR, [&deferred](Task<T> &it) {
                         auto *e = it.exception();
                         if (e == nullptr) {
                             // @Suppress("UNCHECKED_CAST")
@@ -165,7 +165,7 @@ namespace kotlinx {
 
                 return suspend_cancellable_coroutine([&](CancellableContinuation<T> &cont) {
                     // Run the callback directly to avoid unnecessarily scheduling on the main thread.
-                    task.add_on_complete_listener(kDirectExecutor, [&cont](Task<T> &it) {
+                    task.add_on_complete_listener(DIRECT_EXECUTOR, [&cont](Task<T> &it) {
                         auto *e = it.exception();
                         if (e == nullptr) {
                             // @Suppress("UNCHECKED_CAST")
@@ -203,7 +203,7 @@ namespace kotlinx {
                 }
             };
 
-            const DirectExecutor &kDirectExecutor = DirectExecutor::instance();
+            const DirectExecutor &DIRECT_EXECUTOR = DirectExecutor::instance();
         } // namespace tasks
     } // namespace coroutines
 } // namespace kotlinx

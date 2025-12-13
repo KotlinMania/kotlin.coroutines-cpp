@@ -213,7 +213,7 @@ namespace kotlinx {
                                         }
                                     }, []() {
                                         return run_test(std::chrono::milliseconds(10), [&]() {
-                                            launch(CoroutineStart::kUndispatched, [&]() {
+                                            launch(CoroutineStart::UNDISPATCHED, [&]() {
                                                 with_context(NonCancellable + Dispatchers::default_dispatcher(), [&]() {
                                                     delay(std::chrono::milliseconds(100));
                                                 });
@@ -319,7 +319,7 @@ namespace kotlinx {
                                     }, []() {
                                         return run_test([&]() {
                                             launch([&]() {
-                                                delay(kSlow);
+                                                delay(SLOW);
                                                 throw std::runtime_error("");
                                             });
                                         });
@@ -515,7 +515,7 @@ namespace kotlinx {
      */
                 // TODO: @Test
                 void test_coroutine_completing_without_dispatch() {
-                    run_test(Duration::kInfinite, [&]() {
+                    run_test(Duration::INFINITE, [&]() {
                         launch(Dispatchers::default_dispatcher(), [&]() { delay(100); });
                     });
                 }

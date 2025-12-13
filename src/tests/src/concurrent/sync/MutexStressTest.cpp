@@ -104,7 +104,7 @@ namespace kotlinx {
                                 // otherwise it's a bug.
                                 assertTrue(mutex.is_locked());
                                 bool job1_entered_critical_section = false;
-                                auto job1 = launch(CoroutineStart::kUndispatched, [&]() {
+                                auto job1 = launch(CoroutineStart::UNDISPATCHED, [&]() {
                                     // TODO: suspend function
                                     mutex.lock();
                                     job1_entered_critical_section = true;
@@ -141,7 +141,7 @@ namespace kotlinx {
                                 // otherwise it's a bug.
                                 assertTrue(mutex.is_locked());
                                 bool job1_entered_critical_section = false;
-                                auto job1 = launch(CoroutineStart::kUndispatched, [&]() {
+                                auto job1 = launch(CoroutineStart::UNDISPATCHED, [&]() {
                                     // TODO: suspend function
                                     select<void>([&](auto &builder) {
                                         builder.on_lock(mutex, [&]() {

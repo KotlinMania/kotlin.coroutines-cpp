@@ -38,7 +38,7 @@ namespace kotlinx {
             void test_atomic_launch() {
                 test::run_test([this]() {
                     expect(1);
-                    auto job = launch(CoroutineStart::kAtomic, [this]() {
+                    auto job = launch(CoroutineStart::ATOMIC, [this]() {
                         finish(4); // will execute even after it was cancelled
                     });
                     expect(2);
@@ -55,7 +55,7 @@ namespace kotlinx {
                     assert_fails_with<CancellationException>([this]() {
                         with_context(Job(), [this]() {
                             cancel();
-                            launch(CoroutineStart::kUndispatched, [this]() {
+                            launch(CoroutineStart::UNDISPATCHED, [this]() {
                                 expect(2);
                                 yield();
                                 expect_unreached();
@@ -74,7 +74,7 @@ namespace kotlinx {
                     assert_fails_with<CancellationException>([this]() {
                         with_context(Dispatchers::Unconfined + Job(), [this]() {
                             cancel();
-                            launch(CoroutineStart::kUndispatched, [this]() {
+                            launch(CoroutineStart::UNDISPATCHED, [this]() {
                                 expect(2);
                                 std::this_thread::yield();
                                 expect_unreached();
@@ -103,7 +103,7 @@ namespace kotlinx {
                         assert_equals(true, deferred.is_completed());
                         job->cancel();
                     });
-                    job = &launch(CoroutineStart::kUndispatched, [this, &deferred]() {
+                    job = &launch(CoroutineStart::UNDISPATCHED, [this, &deferred]() {
                         expect(2);
                         try {
                             deferred.await(); // suspends
@@ -135,7 +135,7 @@ namespace kotlinx {
                         assert_equals(true, job_to_join.is_completed());
                         job->cancel();
                     });
-                    job = &launch(CoroutineStart::kUndispatched, [this, &job_to_join]() {
+                    job = &launch(CoroutineStart::UNDISPATCHED, [this, &job_to_join]() {
                         expect(2);
                         try {
                             job_to_join.join(); // suspends
@@ -156,7 +156,7 @@ namespace kotlinx {
                 run_test([this]() {
                     expect(1);
                     auto mutex = Mutex(true); // locked mutex
-                    auto job = launch(CoroutineStart::kUndispatched, [this, &mutex]() {
+                    auto job = launch(CoroutineStart::UNDISPATCHED, [this, &mutex]() {
                         expect(2);
                         mutex.lock(); // suspends
                         expect_unreached(); // should NOT execute because of cancellation
@@ -175,7 +175,7 @@ namespace kotlinx {
                 run_test([this]() {
                     expect(1);
                     auto mutex = Mutex(true); // locked mutex
-                    auto job = launch(CoroutineStart::kUndispatched, [this, &mutex]() {
+                    auto job = launch(CoroutineStart::UNDISPATCHED, [this, &mutex]() {
                         expect(2);
                         select<std::string>([this, &mutex]() {
                             // suspends

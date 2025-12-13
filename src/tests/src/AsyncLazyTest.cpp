@@ -23,7 +23,7 @@ namespace kotlinx {
             void test_simple() {
                 test::run_test([this]() {
                     expect(1);
-                    auto d = async(CoroutineStart::kLazy, [this]() {
+                    auto d = async(CoroutineStart::LAZY, [this]() {
                         expect(3);
                         return 42;
                     });
@@ -42,7 +42,7 @@ namespace kotlinx {
             void test_lazy_defer_and_yield() {
                 test::run_test([this]() {
                     expect(1);
-                    auto d = async(CoroutineStart::kLazy, [this]() {
+                    auto d = async(CoroutineStart::LAZY, [this]() {
                         expect(3);
                         std::this_thread::yield(); // this has not effect, because parent coroutine is waiting
                         expect(4);
@@ -63,7 +63,7 @@ namespace kotlinx {
             void test_lazy_defer_and_yield2() {
                 test::run_test([this]() {
                     expect(1);
-                    auto d = async(CoroutineStart::kLazy, [this]() {
+                    auto d = async(CoroutineStart::LAZY, [this]() {
                         expect(7);
                         return 42;
                     });
@@ -98,7 +98,7 @@ namespace kotlinx {
                          },
                          [this]() {
                              expect(1);
-                             auto d = async<void>(CoroutineStart::kLazy, [this]() {
+                             auto d = async<void>(CoroutineStart::LAZY, [this]() {
                                  finish(3);
                                  throw TestException();
                              });
@@ -114,7 +114,7 @@ namespace kotlinx {
                 run_test([](auto it) { return dynamic_cast<TestException *>(it) != nullptr; },
                          [this]() {
                              expect(1);
-                             auto d = async<void>(CoroutineStart::kLazy, [this]() {
+                             auto d = async<void>(CoroutineStart::LAZY, [this]() {
                                  expect(3);
                                  yield(); // this has not effect, because parent coroutine is waiting
                                  finish(4);
@@ -131,7 +131,7 @@ namespace kotlinx {
             void test_catch_exception() {
                 run_test([this]() {
                     expect(1);
-                    auto d = async<void>(NonCancellable, CoroutineStart::kLazy, [this]() {
+                    auto d = async<void>(NonCancellable, CoroutineStart::LAZY, [this]() {
                         expect(3);
                         throw TestException();
                     });
@@ -152,7 +152,7 @@ namespace kotlinx {
             void test_start() {
                 run_test([this]() {
                     expect(1);
-                    auto d = async(CoroutineStart::kLazy, [this]() {
+                    auto d = async(CoroutineStart::LAZY, [this]() {
                         expect(4);
                         return 42;
                     });
@@ -176,7 +176,7 @@ namespace kotlinx {
                 run_test([](auto it) { return dynamic_cast<CancellationException *>(it) != nullptr; },
                          [this]() {
                              expect(1);
-                             auto d = async(CoroutineStart::kLazy, [this]() {
+                             auto d = async(CoroutineStart::LAZY, [this]() {
                                  expect_unreached();
                                  return 42;
                              });
@@ -197,7 +197,7 @@ namespace kotlinx {
                 run_test([](auto it) { return dynamic_cast<CancellationException *>(it) != nullptr; },
                          [this]() {
                              expect(1);
-                             auto d = async(CoroutineStart::kLazy, [this]() {
+                             auto d = async(CoroutineStart::LAZY, [this]() {
                                  expect(4);
                                  yield(); // yield to main, that is going to cancel us
                                  expect_unreached();

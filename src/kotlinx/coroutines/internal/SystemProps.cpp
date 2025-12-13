@@ -1,16 +1,8 @@
-#include <string>
+#include "kotlinx/coroutines/internal/SystemProps.hpp"
+
 // Transliterated from Kotlin to C++
 // Original: kotlinx-coroutines-core/native/src/internal/SystemProps.kt
 //
-// TODO: actual keyword - platform-specific implementation
-
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // TODO: actual function
-            std::string *system_prop(std::string property_name) {
-                return nullptr;
-            }
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx
+// NOTE:
+// For now, the common implementation in `SystemProps.common.cpp` is used for all platforms.
+// This TU is kept for source parity only and must not introduce conflicting overloads.

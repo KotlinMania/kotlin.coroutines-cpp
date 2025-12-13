@@ -43,11 +43,11 @@ namespace kotlinx {
             void test_await_all_lazy() {
                 run_test([this]() {
                     expect(1);
-                    auto d = async(CoroutineStart::kLazy, [this]() {
+                    auto d = async(CoroutineStart::LAZY, [this]() {
                         expect(2);
                         return 1;
                     });
-                    auto d2 = async(CoroutineStart::kLazy, [this]() {
+                    auto d2 = async(CoroutineStart::LAZY, [this]() {
                         expect(3);
                         return 2;
                     });
@@ -313,10 +313,10 @@ namespace kotlinx {
             void test_join_all_lazy() {
                 run_test([this]() {
                     expect(1);
-                    auto d = async(CoroutineStart::kLazy, [this]() {
+                    auto d = async(CoroutineStart::LAZY, [this]() {
                         expect(2);
                     });
-                    auto d2 = launch(CoroutineStart::kLazy, [this]() {
+                    auto d2 = launch(CoroutineStart::LAZY, [this]() {
                         expect(3);
                     });
                     join_all(d, d2);

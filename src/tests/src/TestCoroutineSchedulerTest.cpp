@@ -86,7 +86,7 @@ namespace kotlinx {
                                     assert(scope.current_time == LLONG_MAX - 1);
                                     entered_near_infinity = true;
                                 });
-                                test_scheduler.advance_time_by(Duration::kInfinite);
+                                test_scheduler.advance_time_by(Duration::INFINITE);
                                 assert(!entered_infinity);
                                 assert(entered_near_infinity);
                                 assert(scope.current_time == LLONG_MAX);
@@ -164,15 +164,15 @@ namespace kotlinx {
                             TestScope scope(it);
                             int stage = 1;
                             scope.launch([&]() {
-                                delay(kSlow);
+                                delay(SLOW);
                                 launch([&]() {
-                                    delay(kSlow);
+                                    delay(SLOW);
                                     stage = 3;
                                 });
-                                scheduler.advance_time_by(std::chrono::milliseconds(kSlow));
+                                scheduler.advance_time_by(std::chrono::milliseconds(SLOW));
                                 stage = 2;
                             });
-                            scheduler.advance_time_by(std::chrono::milliseconds(kSlow));
+                            scheduler.advance_time_by(std::chrono::milliseconds(SLOW));
                             assert(stage == 1);
                             scheduler.run_current();
                             assert(stage == 2);
@@ -192,7 +192,7 @@ namespace kotlinx {
                             bool executed = false;
                             scope.launch([&]() {
                                 launch([&]() {
-                                    delay(kSlow);
+                                    delay(SLOW);
                                     executed = true;
                                 });
                                 scheduler.advance_until_idle();
@@ -300,10 +300,10 @@ namespace kotlinx {
                 void test_small_timeouts() {
                     for_test_dispatchers([&](TestDispatcher *it) {
                         TestScope scope(it);
-                        check_timeout(scope, true, kSlow, [&]() {
-                            int64_t half = kSlow / 2;
+                        check_timeout(scope, true, SLOW, [&]() {
+                            int64_t half = SLOW / 2;
                             delay(half);
-                            delay(kSlow - half);
+                            delay(SLOW - half);
                         });
                     });
                 }
@@ -313,10 +313,10 @@ namespace kotlinx {
                 void test_large_timeouts() {
                     for_test_dispatchers([&](TestDispatcher *it) {
                         TestScope scope(it);
-                        check_timeout(scope, false, kSlow, [&]() {
-                            int64_t half = kSlow / 2;
+                        check_timeout(scope, false, SLOW, [&]() {
+                            int64_t half = SLOW / 2;
                             delay(half);
-                            delay(kSlow - half - 1);
+                            delay(SLOW - half - 1);
                         });
                     });
                 }
@@ -328,12 +328,12 @@ namespace kotlinx {
                         TestScope scope(it);
                         auto deferred = CompletableDeferred<void>();
                         scope.launch([&]() {
-                            int64_t half = kSlow / 2;
+                            int64_t half = SLOW / 2;
                             delay(half);
-                            delay(kSlow - half);
+                            delay(SLOW - half);
                             deferred.complete();
                         });
-                        check_timeout(scope, true, kSlow, [&]() {
+                        check_timeout(scope, true, SLOW, [&]() {
                             deferred.await();
                         });
                     });
@@ -346,12 +346,12 @@ namespace kotlinx {
                         TestScope scope(it);
                         auto deferred = CompletableDeferred<void>();
                         scope.launch([&]() {
-                            int64_t half = kSlow / 2;
+                            int64_t half = SLOW / 2;
                             delay(half);
-                            delay(kSlow - half - 1);
+                            delay(SLOW - half - 1);
                             deferred.complete();
                         });
-                        check_timeout(scope, false, kSlow, [&]() {
+                        check_timeout(scope, false, SLOW, [&]() {
                             deferred.await();
                         });
                     });

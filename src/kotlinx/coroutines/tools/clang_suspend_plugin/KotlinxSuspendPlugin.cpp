@@ -20,7 +20,7 @@ namespace {
 
 // Kotlin-aligned tokens:
 //  - "suspend" marks a suspend function (attribute) and a suspend point (statement annotate or wrapper call).
-static constexpr const char* kSuspendAnnot = "suspend";
+static constexpr const char* SUSPEND_ANNOT = "suspend";
 
 // -----------------------------------------------------------------------------
 // Attribute registration
@@ -46,7 +46,7 @@ public:
     AttrHandling handleDeclAttribute(Sema& S, Decl* D, const ParsedAttr& Attr) const override {
         // Adapt to newer Clang API for CreateImplicit
         AttributeCommonInfo Info(Attr.getRange(), AttributeCommonInfo::UnknownAttribute, AttributeCommonInfo::Form::CXX11()); 
-        auto* ann = AnnotateAttr::CreateImplicit(S.Context, kSuspendAnnot, Info);
+        auto* ann = AnnotateAttr::CreateImplicit(S.Context, SUSPEND_ANNOT, Info);
         D->addAttr(ann);
         return AttributeApplied;
     }
@@ -68,7 +68,7 @@ public:
         if (!fd || !fd->hasBody())
             return true;
 
-        if (hasAnnotate(fd, kSuspendAnnot)) {
+        if (hasAnnotate(fd, SUSPEND_ANNOT)) {
             auto id = diags_.getCustomDiagID(DiagnosticsEngine::Remark,
                                             "kotlinx-suspend: found suspend function '%0'");
             diags_.Report(fd->getLocation(), id) << fd->getNameAsString();
@@ -84,7 +84,7 @@ public:
 
         for (const Attr* a : stmt->getAttrs()) {
             if (const auto* ann = dyn_cast<AnnotateAttr>(a)) {
-                if (ann->getAnnotation() == kSuspendAnnot) {
+                if (ann->getAnnotation() == SUSPEND_ANNOT) {
                     auto id = diags_.getCustomDiagID(DiagnosticsEngine::Remark,
                                                     "kotlinx-suspend: suspend point in '%0'");
                     diags_.Report(stmt->getBeginLoc(), id)
@@ -98,7 +98,7 @@ public:
     bool TraverseFunctionDecl(FunctionDecl* fd) {
         // Track current suspend function while traversing its body.
         FunctionDecl* prev = currentSuspend_;
-        if (fd && hasAnnotate(fd, kSuspendAnnot))
+        if (fd && hasAnnotate(fd, SUSPEND_ANNOT))
             currentSuspend_ = fd;
         bool res = RecursiveASTVisitor::TraverseFunctionDecl(fd);
         currentSuspend_ = prev;
@@ -149,8 +149,8 @@ private:
         // Attribute-based form: [[clang::annotate("suspend")]]
         if (const auto* attributed = dyn_cast<AttributedStmt>(st)) {
             for (const Attr* a : attributed->getAttrs()) {
-                if (const auto* ann = dyn_cast<AnnotateAttr>(a)) {
-                    if (ann->getAnnotation() == kSuspendAnnot)
+                    if (const auto* ann = dyn_cast<AnnotateAttr>(a)) {
+                    if (ann->getAnnotation() == SUSPEND_ANNOT)
                         return true;
                 }
             }

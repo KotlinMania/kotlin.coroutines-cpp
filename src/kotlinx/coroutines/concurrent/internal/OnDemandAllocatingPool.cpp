@@ -23,7 +23,7 @@ namespace kotlinx {
                 }
             }
 
-            constexpr int kIsClosedMask = 1 << 31;
+            constexpr int IS_CLOSED_MASK = 1 << 31;
 
             /**
  * A thread-safe resource pool.
@@ -56,7 +56,7 @@ namespace kotlinx {
                     while (true) {
                         int current = control_state_.load(std::memory_order_acquire);
                         if (is_closed(current)) return 0; // already closed
-                        int new_val = current | kIsClosedMask;
+                        int new_val = current | IS_CLOSED_MASK;
                         if (control_state_.compare_exchange_strong(current, new_val,
                                                                    std::memory_order_release,
                                                                    std::memory_order_acquire)) {
@@ -67,7 +67,7 @@ namespace kotlinx {
 
                 // @Suppress("NOTHING_TO_INLINE")
                 inline bool is_closed(int value) const {
-                    return (value & kIsClosedMask) != 0;
+                    return (value & IS_CLOSED_MASK) != 0;
                 }
 
             public:
@@ -140,7 +140,7 @@ namespace kotlinx {
                 std::string state_representation() const {
                     int ctl = control_state_.load(std::memory_order_acquire);
                     std::string elements_str = "[";
-                    int num_elements = ctl & (~kIsClosedMask);
+                    int num_elements = ctl & (~IS_CLOSED_MASK);
                     for (int i = 0; i < num_elements; ++i) {
                         if (i > 0) elements_str += ", ";
                         T *elem = elements_[i].load(std::memory_order_acquire);

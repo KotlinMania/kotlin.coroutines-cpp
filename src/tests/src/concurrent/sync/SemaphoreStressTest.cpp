@@ -139,7 +139,7 @@ namespace kotlinx {
                                 // otherwise it's a bug.
                                 assertEquals(0, semaphore.available_permits());
                                 bool job1_entered_critical_section = false;
-                                auto job1 = launch(CoroutineStart::kUndispatched, [&]() {
+                                auto job1 = launch(CoroutineStart::UNDISPATCHED, [&]() {
                                     // TODO: suspend function
                                     semaphore.acquire();
                                     job1_entered_critical_section = true;

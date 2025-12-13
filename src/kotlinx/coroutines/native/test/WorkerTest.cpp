@@ -18,7 +18,7 @@ namespace kotlinx {
             // TODO: @Test
             void test_launch_in_worker() {
                 auto worker = Worker::start();
-                worker.execute(TransferMode::kSafe, []() {
+                worker.execute(TransferMode::SAFE, []() {
                                }, []() {
                                    // TODO: runBlocking is a suspend function
                                    // runBlocking {
@@ -33,7 +33,7 @@ namespace kotlinx {
             // TODO: @Test
             void test_launch_in_worker_through_global_scope() {
                 auto worker = Worker::start();
-                worker.execute(TransferMode::kSafe, []() {
+                worker.execute(TransferMode::SAFE, []() {
                                }, []() {
                                    // TODO: runBlocking is a suspend function
                                    // runBlocking {

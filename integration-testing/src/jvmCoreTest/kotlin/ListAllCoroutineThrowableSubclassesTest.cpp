@@ -8,6 +8,8 @@
 // import java.lang.reflect.Modifier
 // import kotlin.test.*
 
+#include <set>
+
 namespace kotlinx {
 namespace coroutines {
 
@@ -22,7 +24,7 @@ private:
      *
      * See #3328 for serialization rationale.
      */
-    const std::set<std::string> kKnownThrowables = {
+    const std::set<std::string> KNOWN_THROWABLES = {
         "kotlinx.coroutines.TimeoutCancellationException",
         "kotlinx.coroutines.JobCancellationException",
         "kotlinx.coroutines.internal.UndeliveredElementException",
@@ -61,7 +63,7 @@ public:
                     "Throwable " + throwable + " has non-serializable field " + field);
             }
         }
-        assert_equals(kKnownThrowables.sorted(), throwables.sorted());
+        assert_equals(KNOWN_THROWABLES.sorted(), throwables.sorted());
     }
 };
 

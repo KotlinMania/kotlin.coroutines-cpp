@@ -29,7 +29,7 @@ namespace kotlinx {
                         assert_equals(0, sh.subscription_count().value);
                         expect(2);
                         // one collector
-                        auto job1 = launch(CoroutineStart::kUndispatched, [&]() {
+                        auto job1 = launch(CoroutineStart::UNDISPATCHED, [&]() {
                             expect(3);
                             sh.collect([&](int *it) {
                                 switch (*it) {
@@ -54,7 +54,7 @@ namespace kotlinx {
                         sh.emit(6);
                         expect(8);
                         // one more collector
-                        auto job2 = launch(CoroutineStart::kUndispatched, [&]() {
+                        auto job2 = launch(CoroutineStart::UNDISPATCHED, [&]() {
                             expect(9);
                             sh.collect([&](int *it) {
                                 if (it == nullptr) {
@@ -114,12 +114,12 @@ namespace kotlinx {
 
                 // @Test
                 void test_drop_latest() {
-                    test_drop_latest_or_oldest(BufferOverflow::kDropLatest);
+                    test_drop_latest_or_oldest(BufferOverflow::DROP_LATEST);
                 }
 
                 // @Test
                 void test_drop_oldest() {
-                    test_drop_latest_or_oldest(BufferOverflow::kDropOldest);
+                    test_drop_latest_or_oldest(BufferOverflow::DROP_OLDEST);
                 }
 
             private:
@@ -162,7 +162,7 @@ namespace kotlinx {
             ) {
                 // TODO: implement coroutine suspension
                 int received = 0;
-                auto job = scope.launch(CoroutineStart::kUndispatched, [&]() {
+                auto job = scope.launch(CoroutineStart::UNDISPATCHED, [&]() {
                     flow.collect([&](int it) {
                         received = it;
                     });
@@ -178,7 +178,7 @@ namespace kotlinx {
 // TODO: Semantic implementation tasks:
 // 1. Implement coroutine suspension for all suspend functions
 // 2. Implement MutableSharedFlow template class
-// 3. Implement BufferOverflow enumeration (kDropLatest, kDropOldest, kSuspend)
+// 3. Implement BufferOverflow enumeration (DROP_LATEST, DROP_OLDEST, SUSPEND)
 // 4. Implement TestBase base class
 // 5. Implement run_test, yield, launch functions
 // 6. Implement Job class with cancel, join methods

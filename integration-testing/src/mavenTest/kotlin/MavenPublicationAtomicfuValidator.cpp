@@ -15,8 +15,8 @@ namespace validator {
 
 class MavenPublicationAtomicfuValidator {
 private:
-    const std::vector<uint8_t> kAtomicFuRef = {'L', 'k', 'o', 't', 'l', 'i', 'n', 'x', '/', 'a', 't', 'o', 'm', 'i', 'c', 'f', 'u', '/'};
-    const std::string kKotlinMetadataDesc = "Lkotlin/Metadata;";
+    const std::vector<uint8_t> ATOMIC_FU_REF = {'L', 'k', 'o', 't', 'l', 'i', 'n', 'x', '/', 'a', 't', 'o', 'm', 'i', 'c', 'f', 'u', '/'};
+    const std::string KOTLIN_METADATA_DESC = "Lkotlin/Metadata;";
 
 public:
     // @Test
@@ -67,10 +67,10 @@ private:
     }
 
     bool check_bytes(const std::vector<uint8_t>& bytes) {
-        for (size_t i = 0; i < bytes.size() - kAtomicFuRef.size(); ++i) {
+        for (size_t i = 0; i < bytes.size() - ATOMIC_FU_REF.size(); ++i) {
             bool match = true;
-            for (size_t j = 0; j < kAtomicFuRef.size(); ++j) {
-                if (bytes[i + j] != kAtomicFuRef[j]) {
+            for (size_t j = 0; j < ATOMIC_FU_REF.size(); ++j) {
+                if (bytes[i + j] != ATOMIC_FU_REF[j]) {
                     match = false;
                     break;
                 }
@@ -81,11 +81,11 @@ private:
     }
 
     std::vector<uint8_t> erase_metadata(const std::vector<uint8_t>& bytes) {
-        ClassWriter cw(kComputeMaxs | kComputeFrames);
+        ClassWriter cw(COMPUTE_MAXS | COMPUTE_FRAMES);
         ClassReader(bytes).accept(
             // TODO: Create custom ClassVisitor
             // object : ClassVisitor(ASM9, cw)
-            kSkipFrames
+            SKIP_FRAMES
         );
         return cw.to_byte_array();
     }

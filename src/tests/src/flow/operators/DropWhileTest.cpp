@@ -42,7 +42,7 @@ namespace kotlinx {
                     // TODO: runTest {
                     auto flow_var = flow([](auto &emit) {
                         coroutine_scope([&]() {
-                            launch(CoroutineStart::kAtomic, [&]() {
+                            launch(CoroutineStart::ATOMIC, [&]() {
                                 hang([&]() { expect(4); });
                             });
                             expect(2);

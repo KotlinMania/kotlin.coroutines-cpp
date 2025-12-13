@@ -240,7 +240,7 @@ namespace kotlinx {
                 // @Test
                 void test_replay2_extra2_drop_oldest() {
                     // TODO: implement coroutine suspension
-                    test_shared_flow<int>(MutableSharedFlow(2, 2, BufferOverflow::kDropOldest), [this]() {
+                    test_shared_flow<int>(MutableSharedFlow(2, 2, BufferOverflow::DROP_OLDEST), [this]() {
                         emit_right_now(0);
                         expect_replay_of(0);
                         emit_right_now(1);
@@ -486,7 +486,7 @@ namespace kotlinx {
                     TestJob launch_emit(T a) {
                         std::string name = "emit(" + std::to_string(a) + ")";
                         // TODO: implement coroutine suspension
-                        Job *job = scope.launch(CoroutineStart::kUndispatched, [&]() {
+                        Job *job = scope.launch(CoroutineStart::UNDISPATCHED, [&]() {
                             TestJob job_obj{
                                 /*coroutineContext[Job]!*/ nullptr, name
                             };
@@ -541,7 +541,7 @@ namespace kotlinx {
                     TestJob subscribe(const std::string &id) {
                         std::string name = "collect(" + id + ")";
                         // TODO: implement coroutine suspension
-                        Job *job = scope.launch(CoroutineStart::kUndispatched, [&]() {
+                        Job *job = scope.launch(CoroutineStart::UNDISPATCHED, [&]() {
                             TestJob job_obj{
                                 /*coroutineContext[Job]!*/ nullptr, name
                             };

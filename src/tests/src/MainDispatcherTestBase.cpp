@@ -195,7 +195,7 @@ namespace kotlinx {
                         with_main_scope([&](CoroutineScope &main_scope) {
                             // TODO: implement coroutine suspension
                             main_scope.cancel();
-                            main_scope.launch(CoroutineStart::kAtomic, [&]() {
+                            main_scope.launch(CoroutineStart::ATOMIC, [&]() {
                                 // TODO: implement coroutine suspension
                                 check_is_main_thread();
                                 delay(LONG_MAX);
@@ -210,7 +210,7 @@ namespace kotlinx {
                     // TODO: implement coroutine suspension
                     MainScope main_scope;
                     R result = block(main_scope);
-                    main_scope.coroutine_context()[Job::kKey]->cancel_and_join();
+                    main_scope.coroutine_context()[Job::type_key]->cancel_and_join();
                     return result;
                 }
 
@@ -290,7 +290,7 @@ namespace kotlinx {
                                     // TODO: implement coroutine suspension
                                     // A substitute for withContext(Dispatcher.Main) that is started even if the 300ms
                                     // timeout happens fsater then dispatch
-                                    scope.launch(Dispatchers::Main, CoroutineStart::kAtomic, [&]() {
+                                    scope.launch(Dispatchers::Main, CoroutineStart::ATOMIC, [&]() {
                                         // TODO: implement coroutine suspension
                                         check_is_main_thread();
                                         expect(2);

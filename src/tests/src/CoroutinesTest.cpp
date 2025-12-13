@@ -52,7 +52,7 @@ namespace kotlinx {
             void test_launch_undispatched() {
                 run_test([this]() {
                     expect(1);
-                    auto job = launch(CoroutineStart::kUndispatched, [this]() {
+                    auto job = launch(CoroutineStart::UNDISPATCHED, [this]() {
                         expect(2);
                         yield();
                         expect(4);

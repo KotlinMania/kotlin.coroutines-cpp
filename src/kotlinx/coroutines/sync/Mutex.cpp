@@ -16,16 +16,16 @@ namespace kotlinx {
             };
 
             // Symbol-like markers
-            auto kNoOwner = reinterpret_cast<void *>(0x100);
-            auto kOnLockAlreadyLockedByOwner = reinterpret_cast<void *>(0x101);
+            auto NO_OWNER = reinterpret_cast<void *>(0x100);
+            auto ON_LOCK_ALREADY_LOCKED_BY_OWNER = reinterpret_cast<void *>(0x101);
 
-            constexpr int kTryLockSuccess = 0;
-            constexpr int kTryLockFailed = 1;
-            constexpr int kTryLockAlreadyLockedByOwner = 2;
+            constexpr int TRY_LOCK_SUCCESS = 0;
+            constexpr int TRY_LOCK_FAILED = 1;
+            constexpr int TRY_LOCK_ALREADY_LOCKED_BY_OWNER = 2;
 
-            constexpr int kHoldsLockUnlocked = 0;
-            constexpr int kHoldsLockYes = 1;
-            constexpr int kHoldsLockAnotherOwner = 2;
+            constexpr int HOLDS_LOCK_UNLOCKED = 0;
+            constexpr int HOLDS_LOCK_YES = 1;
+            constexpr int HOLDS_LOCK_ANOTHER_OWNER = 2;
 
 
             class MutexImpl : public SemaphoreImpl, public Mutex {
@@ -36,7 +36,7 @@ namespace kotlinx {
             public:
                 explicit MutexImpl(bool locked)
                     : SemaphoreImpl(1, locked ? 1 : 0),
-                      owner(locked ? nullptr : kNoOwner),
+                      owner(locked ? nullptr : NO_OWNER),
                       on_select_cancellation_unlock_constructor(
                           [](void *) {
                               // Stub
@@ -49,16 +49,16 @@ namespace kotlinx {
                 }
 
                 bool holds_lock(void *owner_) override {
-                    return holds_lock_impl(owner_) == kHoldsLockYes;
+                    return holds_lock_impl(owner_) == HOLDS_LOCK_YES;
                 }
 
             protected:
                 int holds_lock_impl(void *owner_) {
                     while (true) {
-                        if (!is_locked()) return kHoldsLockUnlocked;
+                        if (!is_locked()) return HOLDS_LOCK_UNLOCKED;
                         void *cur_owner = owner.load();
-                        if (cur_owner == kNoOwner) continue;
-                        return (cur_owner == owner_) ? kHoldsLockYes : kHoldsLockAnotherOwner;
+                        if (cur_owner == NO_OWNER) continue;
+                        return (cur_owner == owner_) ? HOLDS_LOCK_YES : HOLDS_LOCK_ANOTHER_OWNER;
                     }
                 }
 
@@ -78,9 +78,9 @@ namespace kotlinx {
                 bool try_lock(void *owner_ = nullptr) override {
                     int result = try_lock_impl(owner_);
                     switch (result) {
-                        case kTryLockSuccess: return true;
-                        case kTryLockFailed: return false;
-                        case kTryLockAlreadyLockedByOwner:
+                        case TRY_LOCK_SUCCESS: return true;
+                        case TRY_LOCK_FAILED: return false;
+                        case TRY_LOCK_ALREADY_LOCKED_BY_OWNER:
                             throw std::runtime_error("This mutex is already locked by the specified owner");
                         default: throw std::runtime_error("unexpected");
                     }
@@ -91,14 +91,14 @@ namespace kotlinx {
                     while (true) {
                         if (try_acquire()) {
                             owner.store(owner_);
-                            return kTryLockSuccess;
+                            return TRY_LOCK_SUCCESS;
                         } else {
-                            if (owner_ == nullptr) return kTryLockFailed;
+                            if (owner_ == nullptr) return TRY_LOCK_FAILED;
                             int holds = holds_lock_impl(owner_);
                             switch (holds) {
-                                case kHoldsLockYes: return kTryLockAlreadyLockedByOwner;
-                                case kHoldsLockAnotherOwner: return kTryLockFailed;
-                                case kHoldsLockUnlocked: continue;
+                                case HOLDS_LOCK_YES: return TRY_LOCK_ALREADY_LOCKED_BY_OWNER;
+                                case HOLDS_LOCK_ANOTHER_OWNER: return TRY_LOCK_FAILED;
+                                case HOLDS_LOCK_UNLOCKED: continue;
                             }
                         }
                     }
@@ -109,13 +109,13 @@ namespace kotlinx {
                     while (true) {
                         if (!is_locked()) throw std::runtime_error("This mutex is not locked");
                         void *cur_owner = owner.load();
-                        if (cur_owner == kNoOwner) continue;
+                        if (cur_owner == NO_OWNER) continue;
 
                         if (!(cur_owner == owner_ || owner_ == nullptr)) {
                             throw std::runtime_error("This mutex is locked by different owner");
                         }
                         void *expected = cur_owner;
-                        if (!owner.compare_exchange_strong(expected, kNoOwner)) continue;
+                        if (!owner.compare_exchange_strong(expected, NO_OWNER)) continue;
                         release();
                         return;
                     }
@@ -134,12 +134,12 @@ namespace kotlinx {
             protected:
                 virtual void on_lock_reg_function(SelectInstance<void *> *select, void *owner_) {
                     if (owner_ != nullptr && holds_lock(owner_)) {
-                        select->select_in_registration_phase(kOnLockAlreadyLockedByOwner);
+                        select->select_in_registration_phase(ON_LOCK_ALREADY_LOCKED_BY_OWNER);
                     }
                 }
 
                 virtual void *on_lock_process_result(void *owner_, void *result) {
-                    if (result == kOnLockAlreadyLockedByOwner) {
+                    if (result == ON_LOCK_ALREADY_LOCKED_BY_OWNER) {
                         throw std::runtime_error("This mutex is already locked by the specified owner");
                     }
                     return this;

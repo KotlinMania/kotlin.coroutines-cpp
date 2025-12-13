@@ -30,7 +30,7 @@ namespace kotlinx {
             void test_infinite() {
                 run_test([](auto it) { return dynamic_cast<CancellationException *>(it) != nullptr; },
                          [this]() {
-                             run_and_cancel(Duration::kInfinite);
+                             run_and_cancel(Duration::INFINITE);
                          });
             }
 

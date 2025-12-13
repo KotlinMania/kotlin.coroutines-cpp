@@ -60,7 +60,7 @@ namespace kotlinx {
                 void test_select_send_resource_cleanup_rendezvous_channel() {
                     runTest([&]() {
                         // TODO: suspend function
-                        auto channel = Channel<int>(Channel::kRendezvous);
+                        auto channel = Channel<int>(Channel<int>::RENDEZVOUS);
                         expect(1);
                         for (int i = 0; i < iterations; ++i) {
                             select<void>([&](auto &builder) {
@@ -77,7 +77,7 @@ namespace kotlinx {
                 void test_select_receive_resource_rendezvous_channel() {
                     runTest([&]() {
                         // TODO: suspend function
-                        auto channel = Channel<int>(Channel::kRendezvous);
+                        auto channel = Channel<int>(Channel<int>::RENDEZVOUS);
                         expect(1);
                         for (int i = 0; i < iterations; ++i) {
                             select<void>([&](auto &builder) {

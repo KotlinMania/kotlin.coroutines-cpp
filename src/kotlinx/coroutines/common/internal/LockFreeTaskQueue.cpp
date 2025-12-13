@@ -13,6 +13,7 @@
 #include <atomic>
 #include <vector>
 #include <functional>
+#include "kotlinx/coroutines/internal/Symbol.hpp"
 
 namespace kotlinx {
     namespace coroutines {
@@ -20,7 +21,6 @@ namespace kotlinx {
             // Forward declarations
             template<typename E>
             class LockFreeTaskQueueCore;
-            class Symbol;
 
             // typealias Core<E> = LockFreeTaskQueueCore<E>
             template<typename E>
@@ -50,7 +50,7 @@ namespace kotlinx {
 
             public:
                 explicit LockFreeTaskQueue(bool single_consumer)
-                    : _cur(new Core<E>(Core<E>::kInitialCapacity, single_consumer)) {
+                    : _cur(new Core<E>(Core<E>::INITIAL_CAPACITY, single_consumer)) {
                 }
 
                 // Note: it is not atomic w.r.t. remove operation (remove can transiently fail when isEmpty is false)
@@ -69,9 +69,9 @@ namespace kotlinx {
                     while (true) {
                         Core<E> *cur = _cur.load();
                         int result = cur->add_last(element);
-                        if (result == Core<E>::kAddSuccess) return true;
-                        if (result == Core<E>::kAddClosed) return false;
-                        if (result == Core<E>::kAddFrozen) {
+                        if (result == Core<E>::ADD_SUCCESS) return true;
+                        if (result == Core<E>::ADD_CLOSED) return false;
+                        if (result == Core<E>::ADD_FROZEN) {
                             _cur.compare_exchange_weak(cur, cur->next()); // move to next
                         }
                     }
@@ -82,7 +82,7 @@ namespace kotlinx {
                     while (true) {
                         Core<E> *cur = _cur.load();
                         void *result = cur->remove_first_or_null();
-                        if (result != Core<E>::kRemoveFrozen) return static_cast<E *>(result);
+                        if (result != Core<E>::REMOVE_FROZEN) return static_cast<E *>(result);
                         _cur.compare_exchange_weak(cur, cur->next());
                     }
                 }
@@ -127,24 +127,24 @@ namespace kotlinx {
                 // Note: it is not atomic w.r.t. remove operation (remove can transiently fail when isEmpty is false)
                 bool is_empty() const {
                     const long state = _state.load();
-                    const int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
-                    const int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+                    const int head = static_cast<int>((state & HEAD_MASK) >> HEAD_SHIFT);
+                    const int tail = static_cast<int>((state & TAIL_MASK) >> TAIL_SHIFT);
                     return head == tail;
                 }
 
                 int size() const {
                     const long state = _state.load();
-                    const int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
-                    const int tail = static_cast<int>((state & kTailMask) >> kTailShift);
-                    return (tail - head) & kMaxCapacityMask;
+                    const int head = static_cast<int>((state & HEAD_MASK) >> HEAD_SHIFT);
+                    const int tail = static_cast<int>((state & TAIL_MASK) >> TAIL_SHIFT);
+                    return (tail - head) & MAX_CAPACITY_MASK;
                 }
 
                 bool close() {
                     while (true) {
                         long state = _state.load();
-                        if ((state & kClosedMask) != 0L) return true; // ok - already closed
-                        if ((state & kFrozenMask) != 0L) return false; // frozen -- try next
-                        long new_state = state | kClosedMask;
+                        if ((state & CLOSED_MASK) != 0L) return true; // ok - already closed
+                        if ((state & FROZEN_MASK) != 0L) return false; // frozen -- try next
+                        long new_state = state | CLOSED_MASK;
                         if (_state.compare_exchange_weak(state, new_state)) return true;
                     }
                 }
@@ -153,17 +153,17 @@ namespace kotlinx {
                 int add_last(E *element) {
                     while (true) {
                         long state = _state.load();
-                        if ((state & (kFrozenMask | kClosedMask)) != 0L) {
+                        if ((state & (FROZEN_MASK | CLOSED_MASK)) != 0L) {
                             return add_fail_reason(state); // cannot add
                         }
 
-                        const int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
-                        const int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+                        const int head = static_cast<int>((state & HEAD_MASK) >> HEAD_SHIFT);
+                        const int tail = static_cast<int>((state & TAIL_MASK) >> TAIL_SHIFT);
                         const int mask = this->mask_; // manually move instance field to local for performance
 
                         // If queue is Single-Consumer then there could be one element beyond head that we cannot overwrite,
                         // so we check for full queue with an extra margin of one element
-                        if (((tail + 2) & mask) == (head & mask)) return kAddFrozen; // overfull, so do freeze & copy
+                        if (((tail + 2) & mask) == (head & mask)) return ADD_FROZEN; // overfull, so do freeze & copy
 
                         // If queue is Multi-Consumer then the consumer could still have not cleared element
                         // despite the above check for one free slot.
@@ -173,15 +173,15 @@ namespace kotlinx {
                             // 2. Freeze & resize to avoid spinning
                             // We use heuristic here to avoid memory-overallocation
                             // Freeze & reallocate when queue is small or more than half of the queue is used
-                            if (capacity_ < kMinAddSpinCapacity || ((tail - head) & kMaxCapacityMask) > (
+                            if (capacity_ < MIN_ADD_SPIN_CAPACITY || ((tail - head) & MAX_CAPACITY_MASK) > (
                                     capacity_ >> 1)) {
-                                return kAddFrozen;
+                                return ADD_FROZEN;
                             }
                             // otherwise spin
                             continue;
                         }
 
-                        int new_tail = (tail + 1) & kMaxCapacityMask;
+                        int new_tail = (tail + 1) & MAX_CAPACITY_MASK;
                         long new_state = update_tail(state, new_tail);
                         if (_state.compare_exchange_weak(state, new_state)) {
                             // successfully added
@@ -189,11 +189,11 @@ namespace kotlinx {
                             // could have been frozen & copied before this item was set -- correct it by filling placeholder
                             Core<E> *cur = this;
                             while (true) {
-                                if ((cur->_state.load() & kFrozenMask) == 0L) break; // all fine -- not frozen yet
+                                if ((cur->_state.load() & FROZEN_MASK) == 0L) break; // all fine -- not frozen yet
                                 cur = cur->next()->fill_placeholder(tail, element);
                                 if (cur == nullptr) break;
                             }
-                            return kAddSuccess; // added successfully
+                            return ADD_SUCCESS; // added successfully
                         }
                     }
                 }
@@ -225,10 +225,10 @@ namespace kotlinx {
                 void *remove_first_or_null() {
                     while (true) {
                         long state = _state.load();
-                        if ((state & kFrozenMask) != 0L) return kRemoveFrozen; // frozen -- cannot modify
+                        if ((state & FROZEN_MASK) != 0L) return REMOVE_FROZEN; // frozen -- cannot modify
 
-                        int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
-                        int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+                        int head = static_cast<int>((state & HEAD_MASK) >> HEAD_SHIFT);
+                        int tail = static_cast<int>((state & TAIL_MASK) >> TAIL_SHIFT);
 
                         if ((tail & mask_) == (head & mask_)) return nullptr; // empty
 
@@ -245,7 +245,7 @@ namespace kotlinx {
                         if (placeholder) return nullptr; // consider it not added yet
 
                         // we cannot put nullptr into array here, because copying thread could replace it with Placeholder and that is a disaster
-                        int new_head = (head + 1) & kMaxCapacityMask;
+                        int new_head = (head + 1) & MAX_CAPACITY_MASK;
                         long new_state = update_head(state, new_head);
                         if (_state.compare_exchange_weak(state, new_state)) {
                             // Array could have been copied by another thread and it is perfectly fine, since only elements
@@ -269,10 +269,10 @@ namespace kotlinx {
                 Core<E> *remove_slow_path(int old_head, int new_head) {
                     while (true) {
                         long state = _state.load();
-                        int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
+                        int head = static_cast<int>((state & HEAD_MASK) >> HEAD_SHIFT);
                         // TODO: assert { head == old_head } // "This queue can have only one consumer"
 
-                        if ((state & kFrozenMask) != 0L) {
+                        if ((state & FROZEN_MASK) != 0L) {
                             // state was already frozen, so removed element was copied to next
                             return next(); // continue to correct head in next
                         }
@@ -290,8 +290,8 @@ namespace kotlinx {
                 long mark_frozen() {
                     while (true) {
                         long state = _state.load();
-                        if ((state & kFrozenMask) != 0L) return state; // already marked
-                        long new_state = state | kFrozenMask;
+                        if ((state & FROZEN_MASK) != 0L) return state; // already marked
+                        long new_state = state | FROZEN_MASK;
                         if (_state.compare_exchange_weak(state, new_state)) return new_state;
                     }
                 }
@@ -307,8 +307,8 @@ namespace kotlinx {
 
                 Core<E> *allocate_next_copy(long state) {
                     Core<E> *next = new Core<E>(capacity_ * 2, single_consumer_);
-                    int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
-                    int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+                    int head = static_cast<int>((state & HEAD_MASK) >> HEAD_SHIFT);
+                    int tail = static_cast<int>((state & TAIL_MASK) >> TAIL_SHIFT);
 
                     int index = head;
                     while ((index & mask_) != (tail & mask_)) {
@@ -318,7 +318,7 @@ namespace kotlinx {
                         next->array_[index & next->mask_].store(value);
                         index++;
                     }
-                    next->_state.store(state & ~kFrozenMask);
+                    next->_state.store(state & ~FROZEN_MASK);
                     return next;
                 }
 
@@ -327,8 +327,8 @@ namespace kotlinx {
                 std::vector<R> map(std::function<R(E *)> transform) {
                     std::vector<R> res;
                     long state = _state.load();
-                    int head = static_cast<int>((state & kHeadMask) >> kHeadShift);
-                    int tail = static_cast<int>((state & kTailMask) >> kTailShift);
+                    int head = static_cast<int>((state & HEAD_MASK) >> HEAD_SHIFT);
+                    int tail = static_cast<int>((state & TAIL_MASK) >> TAIL_SHIFT);
 
                     int index = head;
                     while ((index & mask_) != (tail & mask_)) {
@@ -343,7 +343,7 @@ namespace kotlinx {
                 }
 
                 // Used for validation in tests only
-                bool is_closed() { return (_state.load() & kClosedMask) != 0L; }
+                bool is_closed() { return (_state.load() & CLOSED_MASK) != 0L; }
 
                 // Instance of this class is placed into array when we have to copy array, but addLast is in progress --
                 // it had already reserved a slot in the array (with nullptr) and have not yet put its value there.
@@ -357,38 +357,37 @@ namespace kotlinx {
                     }
                 };
 
-                // TODO: @Suppress("PrivatePropertyName", "MemberVisibilityCanBePrivate")
                 // Constants
-                static constexpr int kInitialCapacity = 8;
-                static constexpr int kCapacityBits = 30;
-                static constexpr int kMaxCapacityMask = (1 << kCapacityBits) - 1;
-                static constexpr int kHeadShift = 0;
-                static constexpr long kHeadMask = static_cast<long>(kMaxCapacityMask) << kHeadShift;
-                static constexpr int kTailShift = kHeadShift + kCapacityBits;
-                static constexpr long kTailMask = static_cast<long>(kMaxCapacityMask) << kTailShift;
-                static constexpr int kFrozenShift = kTailShift + kCapacityBits;
-                static constexpr long kFrozenMask = 1L << kFrozenShift;
-                static constexpr int kClosedShift = kFrozenShift + 1;
-                static constexpr long kClosedMask = 1L << kClosedShift;
-                static constexpr int kMinAddSpinCapacity = 1024;
+                static constexpr int INITIAL_CAPACITY = 8;
+                static constexpr int CAPACITY_BITS = 30;
+                static constexpr int MAX_CAPACITY_MASK = (1 << CAPACITY_BITS) - 1;
+                static constexpr int HEAD_SHIFT = 0;
+                static constexpr long HEAD_MASK = static_cast<long>(MAX_CAPACITY_MASK) << HEAD_SHIFT;
+                static constexpr int TAIL_SHIFT = HEAD_SHIFT + CAPACITY_BITS;
+                static constexpr long TAIL_MASK = static_cast<long>(MAX_CAPACITY_MASK) << TAIL_SHIFT;
+                static constexpr int FROZEN_SHIFT = TAIL_SHIFT + CAPACITY_BITS;
+                static constexpr long FROZEN_MASK = 1L << FROZEN_SHIFT;
+                static constexpr int CLOSED_SHIFT = FROZEN_SHIFT + 1;
+                static constexpr long CLOSED_MASK = 1L << CLOSED_SHIFT;
+                static constexpr int MIN_ADD_SPIN_CAPACITY = 1024;
 
-                static Symbol *kRemoveFrozen; // TODO: Symbol("REMOVE_FROZEN")
+                static inline Symbol* REMOVE_FROZEN = new Symbol("REMOVE_FROZEN");
 
-                static constexpr int kAddSuccess = 0;
-                static constexpr int kAddFrozen = 1;
-                static constexpr int kAddClosed = 2;
+                static constexpr int ADD_SUCCESS = 0;
+                static constexpr int ADD_FROZEN = 1;
+                static constexpr int ADD_CLOSED = 2;
 
             private:
                 static long update_head(long state, int new_head) {
-                    return (state & ~kHeadMask) | (static_cast<long>(new_head) << kHeadShift);
+                    return (state & ~HEAD_MASK) | (static_cast<long>(new_head) << HEAD_SHIFT);
                 }
 
                 static long update_tail(long state, int new_tail) {
-                    return (state & ~kTailMask) | (static_cast<long>(new_tail) << kTailShift);
+                    return (state & ~TAIL_MASK) | (static_cast<long>(new_tail) << TAIL_SHIFT);
                 }
 
                 static int add_fail_reason(long state) {
-                    return ((state & kClosedMask) != 0L) ? kAddClosed : kAddFrozen;
+                    return ((state & CLOSED_MASK) != 0L) ? ADD_CLOSED : ADD_FROZEN;
                 }
             };
         } // namespace internal

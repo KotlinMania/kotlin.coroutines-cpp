@@ -46,7 +46,7 @@ namespace kotlinx {
         // TODO: class declaration - needs singleton implementation
         class NonCancellable /* : AbstractCoroutineContextElement(Job), Job */ {
         private:
-            static constexpr auto kMessage =
+            static constexpr auto MESSAGE =
                     "NonCancellable can be used only as an argument for 'withContext', direct usages of its API are prohibited";
 
             NonCancellable() = default; // Private constructor for singleton

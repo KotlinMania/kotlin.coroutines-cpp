@@ -29,7 +29,7 @@ namespace kotlinx {
                     // TODO: suspend function
                     expect(1);
                     auto channel = channels::Channel<int>();
-                    auto job = std::launch(CoroutineStart::kUndispatched, [&]() {
+                    auto job = std::launch(CoroutineStart::UNDISPATCHED, [&]() {
                         // TODO: suspend function
                         expect(2);
                         channel.send(42); // suspends
@@ -51,7 +51,7 @@ namespace kotlinx {
                     // TODO: suspend function
                     expect(1);
                     auto channel = Channel<int>();
-                    auto job = launch(CoroutineStart::kUndispatched, [&]() {
+                    auto job = launch(CoroutineStart::UNDISPATCHED, [&]() {
                         // TODO: suspend function
                         expect(2);
                         auto result = select<std::string>([&](auto &builder) {
@@ -78,7 +78,7 @@ namespace kotlinx {
                     // TODO: suspend function
                     expect(1);
                     auto channel = Channel<int>();
-                    auto job = launch(CoroutineStart::kUndispatched, [&]() {
+                    auto job = launch(CoroutineStart::UNDISPATCHED, [&]() {
                         // TODO: suspend function
                         expect(2);
                         assertEquals(42, channel.receive()); // suspends
@@ -99,7 +99,7 @@ namespace kotlinx {
                     // TODO: suspend function
                     expect(1);
                     auto channel = Channel<int>();
-                    auto job = launch(CoroutineStart::kUndispatched, [&]() {
+                    auto job = launch(CoroutineStart::UNDISPATCHED, [&]() {
                         // TODO: suspend function
                         expect(2);
                         auto result = select<std::string>([&](auto &builder) {
@@ -139,7 +139,7 @@ namespace kotlinx {
                         assertEquals(true, deferred.is_completed());
                         job->cancel();
                     });
-                    job = launch(CoroutineStart::kUndispatched, [&]() {
+                    job = launch(CoroutineStart::UNDISPATCHED, [&]() {
                         // TODO: suspend function
                         expect(2);
                         try {
@@ -179,7 +179,7 @@ namespace kotlinx {
                         assertEquals(true, job_to_join.is_completed());
                         job->cancel();
                     });
-                    job = launch(CoroutineStart::kUndispatched, [&]() {
+                    job = launch(CoroutineStart::UNDISPATCHED, [&]() {
                         // TODO: suspend function
                         expect(2);
                         try {

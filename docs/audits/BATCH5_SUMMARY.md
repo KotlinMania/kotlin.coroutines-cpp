@@ -99,7 +99,7 @@ This batch focused on transliterating 16 Kotlin flow operator and terminal opera
 - **Classes/Structs**: PascalCase (e.g., `CancellableFlowImpl`)
 - **Functions**: lower_snake_case (e.g., `distinct_until_changed()`)
 - **Variables**: lower_snake_case (e.g., `timeout_millis`)
-- **Constants**: kPascalCase (e.g., `kDefaultConcurrency`)
+- **Constants**: `ALL_CAPS` (e.g., `DEFAULT_CONCURRENCY`)
 - **Template parameters**: PascalCase for types (e.g., `typename T`)
 
 #### Kotlin to C++ Mappings
@@ -117,7 +117,7 @@ This batch focused on transliterating 16 Kotlin flow operator and terminal opera
 #### Key TODOs in Translated Files
 
 **Coroutine Semantics**
-- Suspend functions need C++20 coroutines or continuation-passing style
+- Suspend functions use the Kotlin/Native-style continuation ABI and the suspend DSL + Clang plugin (no C++20 coroutines)
 - Coroutine context propagation and thread switching
 - Cancellation and cancellation exceptions
 - Job hierarchy and structured concurrency

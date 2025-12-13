@@ -34,7 +34,7 @@ namespace kotlinx {
                     expect(1);
                     // emit all and conflate, then collect first & last
                     auto expected_list = [&]() {
-                        if (on_buffer_overflow == BufferOverflow::kDropOldest) {
+                        if (on_buffer_overflow == BufferOverflow::DROP_OLDEST) {
                             // first item & capacity last ones
                             std::vector<int> result;
                             result.push_back(0);
@@ -42,7 +42,7 @@ namespace kotlinx {
                                 result.push_back(i);
                             }
                             return result;
-                        } else if (on_buffer_overflow == BufferOverflow::kDropLatest) {
+                        } else if (on_buffer_overflow == BufferOverflow::DROP_LATEST) {
                             // first & capacity following ones
                             std::vector<int> result;
                             for (int i = 0; i <= capacity; ++i) {
@@ -74,49 +74,49 @@ namespace kotlinx {
             public:
                 // TODO: @Test
                 void testConflate() {
-                    check_conflate(1, BufferOverflow::kDropOldest, [](auto &flow) {
+                    check_conflate(1, BufferOverflow::DROP_OLDEST, [](auto &flow) {
                         return flow.conflate();
                     });
                 }
 
                 // TODO: @Test
                 void testBufferConflated() {
-                    check_conflate(1, BufferOverflow::kDropOldest, [](auto &flow) {
-                        return flow.buffer(Channel::kConflated);
+                    check_conflate(1, BufferOverflow::DROP_OLDEST, [](auto &flow) {
+                        return flow.buffer(Channel<int>::CONFLATED);
                     });
                 }
 
                 // TODO: @Test
                 void testBufferDropOldest() {
-                    check_conflate(1, BufferOverflow::kDropOldest, [](auto &flow) {
-                        return flow.buffer(BufferOverflow::kDropOldest);
+                    check_conflate(1, BufferOverflow::DROP_OLDEST, [](auto &flow) {
+                        return flow.buffer(BufferOverflow::DROP_OLDEST);
                     });
                 }
 
                 // TODO: @Test
                 void testBuffer0DropOldest() {
-                    check_conflate(1, BufferOverflow::kDropOldest, [](auto &flow) {
-                        return flow.buffer(0, BufferOverflow::kDropOldest);
+                    check_conflate(1, BufferOverflow::DROP_OLDEST, [](auto &flow) {
+                        return flow.buffer(0, BufferOverflow::DROP_OLDEST);
                     });
                 }
 
                 // TODO: @Test
                 void testBuffer1DropOldest() {
-                    check_conflate(1, BufferOverflow::kDropOldest, [](auto &flow) {
-                        return flow.buffer(1, BufferOverflow::kDropOldest);
+                    check_conflate(1, BufferOverflow::DROP_OLDEST, [](auto &flow) {
+                        return flow.buffer(1, BufferOverflow::DROP_OLDEST);
                     });
                 }
 
                 // TODO: @Test
                 void testBuffer10DropOldest() {
-                    check_conflate(10, BufferOverflow::kDropOldest, [](auto &flow) {
-                        return flow.buffer(10, BufferOverflow::kDropOldest);
+                    check_conflate(10, BufferOverflow::DROP_OLDEST, [](auto &flow) {
+                        return flow.buffer(10, BufferOverflow::DROP_OLDEST);
                     });
                 }
 
                 // TODO: @Test
                 void testConflateOverridesBuffer() {
-                    check_conflate(1, BufferOverflow::kDropOldest, [](auto &flow) {
+                    check_conflate(1, BufferOverflow::DROP_OLDEST, [](auto &flow) {
                         return flow.buffer(42).conflate();
                     });
                 }
@@ -124,74 +124,74 @@ namespace kotlinx {
                 // TODO: @Test
                 // conflate().conflate() should work like a single conflate
                 void testDoubleConflate() {
-                    check_conflate(1, BufferOverflow::kDropOldest, [](auto &flow) {
+                    check_conflate(1, BufferOverflow::DROP_OLDEST, [](auto &flow) {
                         return flow.conflate().conflate();
                     });
                 }
 
                 // TODO: @Test
                 void testConflateBuffer10Combine() {
-                    check_conflate(10, BufferOverflow::kDropOldest, [](auto &flow) {
+                    check_conflate(10, BufferOverflow::DROP_OLDEST, [](auto &flow) {
                         return flow.conflate().buffer(10);
                     });
                 }
 
                 // TODO: @Test
                 void testBufferDropLatest() {
-                    check_conflate(1, BufferOverflow::kDropLatest, [](auto &flow) {
-                        return flow.buffer(BufferOverflow::kDropLatest);
+                    check_conflate(1, BufferOverflow::DROP_LATEST, [](auto &flow) {
+                        return flow.buffer(BufferOverflow::DROP_LATEST);
                     });
                 }
 
                 // TODO: @Test
                 void testBuffer0DropLatest() {
-                    check_conflate(1, BufferOverflow::kDropLatest, [](auto &flow) {
-                        return flow.buffer(0, BufferOverflow::kDropLatest);
+                    check_conflate(1, BufferOverflow::DROP_LATEST, [](auto &flow) {
+                        return flow.buffer(0, BufferOverflow::DROP_LATEST);
                     });
                 }
 
                 // TODO: @Test
                 void testBuffer1DropLatest() {
-                    check_conflate(1, BufferOverflow::kDropLatest, [](auto &flow) {
-                        return flow.buffer(1, BufferOverflow::kDropLatest);
+                    check_conflate(1, BufferOverflow::DROP_LATEST, [](auto &flow) {
+                        return flow.buffer(1, BufferOverflow::DROP_LATEST);
                     });
                 }
 
                 // TODO: @Test
                 // overrides previous buffer
                 void testBufferDropLatestOverrideBuffer() {
-                    check_conflate(1, BufferOverflow::kDropLatest, [](auto &flow) {
-                        return flow.buffer(42).buffer(BufferOverflow::kDropLatest);
+                    check_conflate(1, BufferOverflow::DROP_LATEST, [](auto &flow) {
+                        return flow.buffer(42).buffer(BufferOverflow::DROP_LATEST);
                     });
                 }
 
                 // TODO: @Test
                 // overrides previous conflate
                 void testBufferDropLatestOverrideConflate() {
-                    check_conflate(1, BufferOverflow::kDropLatest, [](auto &flow) {
-                        return flow.conflate().buffer(BufferOverflow::kDropLatest);
+                    check_conflate(1, BufferOverflow::DROP_LATEST, [](auto &flow) {
+                        return flow.conflate().buffer(BufferOverflow::DROP_LATEST);
                     });
                 }
 
                 // TODO: @Test
                 void testBufferDropLatestBuffer7Combine() {
-                    check_conflate(7, BufferOverflow::kDropLatest, [](auto &flow) {
-                        return flow.buffer(BufferOverflow::kDropLatest).buffer(7);
+                    check_conflate(7, BufferOverflow::DROP_LATEST, [](auto &flow) {
+                        return flow.buffer(BufferOverflow::DROP_LATEST).buffer(7);
                     });
                 }
 
                 // TODO: @Test
                 void testConflateOverrideBufferDropLatest() {
-                    check_conflate(1, BufferOverflow::kDropOldest, [](auto &flow) {
-                        return flow.buffer(BufferOverflow::kDropLatest).conflate();
+                    check_conflate(1, BufferOverflow::DROP_OLDEST, [](auto &flow) {
+                        return flow.buffer(BufferOverflow::DROP_LATEST).conflate();
                     });
                 }
 
                 // TODO: @Test
                 void testBuffer3DropOldestOverrideBuffer8DropLatest() {
-                    check_conflate(3, BufferOverflow::kDropOldest, [](auto &flow) {
-                        return flow.buffer(8, BufferOverflow::kDropLatest)
-                                .buffer(3, BufferOverflow::kDropOldest);
+                    check_conflate(3, BufferOverflow::DROP_OLDEST, [](auto &flow) {
+                        return flow.buffer(8, BufferOverflow::DROP_LATEST)
+                                .buffer(3, BufferOverflow::DROP_OLDEST);
                     });
                 }
             };

@@ -178,7 +178,7 @@ namespace kotlinx {
                         // TODO: suspend function
                         coroutine_context().cancel();
                         expect(1);
-                        auto job = launch(NonCancellable, CoroutineStart::kUndispatched, [&]() {
+                        auto job = launch(NonCancellable, CoroutineStart::UNDISPATCHED, [&]() {
                             // TODO: suspend function
                             try {
                                 expect(2);

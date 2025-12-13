@@ -139,7 +139,7 @@ Audit of kotlinx-coroutines-play-services integration module for Android Play Se
   - `execute(Runnable& r)` method
 
 #### Constants
-- `kDirectExecutor` (line 207) - Global reference to DirectExecutor instance
+- `DIRECT_EXECUTOR` (line 206) - Global reference to DirectExecutor instance
 
 ### C++ Mapping Status
 
@@ -151,7 +151,7 @@ Audit of kotlinx-coroutines-play-services integration module for Android Play Se
 | `await()` | Template Function | **Complete** | Tasks.cpp:125-147 | Overloaded with cancellation support |
 | `await_impl()` | Template Function | **Complete** | Tasks.cpp:149-189 | Internal implementation |
 | `DirectExecutor` | Class | **Complete** | Tasks.cpp:194-206 | Singleton executor implementation |
-| `kDirectExecutor` | Constant | **Complete** | Tasks.cpp:207 | Global instance reference |
+| `DIRECT_EXECUTOR` | Constant | **Complete** | Tasks.cpp:206 | Global instance reference |
 
 ### Implementation Status Details
 

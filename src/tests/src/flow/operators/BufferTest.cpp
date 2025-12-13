@@ -236,10 +236,10 @@ namespace kotlinx {
                     assertFailsWith<IllegalArgumentException>([&]() { flow_var.buffer(-3); });
                     assertFailsWith<IllegalArgumentException>([&]() { flow_var.buffer(INT_MIN); });
                     assertFailsWith<IllegalArgumentException>([&]() {
-                        flow_var.buffer(Channel::kConflated, BufferOverflow::kDropLatest);
+                        flow_var.buffer(Channel<int>::CONFLATED, BufferOverflow::DROP_LATEST);
                     });
                     assertFailsWith<IllegalArgumentException>([&]() {
-                        flow_var.buffer(Channel::kConflated, BufferOverflow::kDropOldest);
+                        flow_var.buffer(Channel<int>::CONFLATED, BufferOverflow::DROP_OLDEST);
                     });
                 }
             };

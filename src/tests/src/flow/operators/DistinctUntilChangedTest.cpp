@@ -88,7 +88,7 @@ namespace kotlinx {
                     // TODO: runTest {
                     auto flow_var = flow([](auto &emit) {
                         coroutine_scope([&]() {
-                            launch(CoroutineStart::kAtomic, [&]() {
+                            launch(CoroutineStart::ATOMIC, [&]() {
                                 hang([&]() { expect(3); });
                             });
                             expect(2);
@@ -110,7 +110,7 @@ namespace kotlinx {
                     // TODO: runTest {
                     auto flow_var = flow([](auto &emit) {
                         coroutine_scope([&]() {
-                            launch(CoroutineStart::kAtomic, [&]() {
+                            launch(CoroutineStart::ATOMIC, [&]() {
                                 hang([&]() { expect(3); });
                             });
                             expect(2);

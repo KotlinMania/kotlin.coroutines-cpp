@@ -44,7 +44,7 @@
             void test_undispatched() {
                 run_test([this]() {
                     expect(1);
-                    auto d = async(CoroutineStart::kUndispatched, [this]() {
+                    auto d = async(CoroutineStart::UNDISPATCHED, [this]() {
                         expect(2);
                         return 42;
                     });
@@ -75,7 +75,7 @@
             void test_cancellation_with_cause() {
                 run_test([this]() {
                     expect(1);
-                    auto d = async(NonCancellable, CoroutineStart::kAtomic, [this]() {
+                    auto d = async(NonCancellable, CoroutineStart::ATOMIC, [this]() {
                         expect(3);
                         yield();
                     });
@@ -196,7 +196,7 @@
             // TODO: Translate @Test annotation
             void test_cancellation_transparency() {
                 run_test([this]() {
-                    auto deferred = async(NonCancellable, CoroutineStart::kAtomic, [this]() {
+                    auto deferred = async(NonCancellable, CoroutineStart::ATOMIC, [this]() {
                         expect(2);
                         throw TestException();
                     });
@@ -280,7 +280,7 @@
             void test_overridden_parent() {
                 run_test([this]() {
                     auto parent = Job();
-                    auto deferred = async(parent, CoroutineStart::kAtomic, [this]() {
+                    auto deferred = async(parent, CoroutineStart::ATOMIC, [this]() {
                         expect(2);
                         delay(LONG_MAX);
                     });

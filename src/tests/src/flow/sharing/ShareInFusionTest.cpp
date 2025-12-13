@@ -17,12 +17,12 @@ namespace kotlinx {
                 void test_operator_fusion() {
                     // TODO: implement coroutine suspension
                     run_test([this]() {
-                        auto sh = empty_flow<int>().share_in(*this, SharingStarted::kEagerly);
+                        auto sh = empty_flow<int>().share_in(*this, SharingStarted::eagerly());
                         assert_true(dynamic_cast<MutableSharedFlow<int> *>(&sh) == nullptr);
                         // cannot be cast to mutable shared flow!!!
                         assert_same(&sh, &(static_cast<Flow<int> &>(sh).cancellable()));
-                        assert_same(&sh, &(static_cast<Flow<int> &>(sh).flow_on(Dispatchers::kDefault)));
-                        assert_same(&sh, &sh.buffer(Channel::kRendezvous));
+                        assert_same(&sh, &(static_cast<Flow<int> &>(sh).flow_on(Dispatchers::get_default())));
+                        assert_same(&sh, &sh.buffer(Channel<int>::RENDEZVOUS));
                         coroutine_context().cancel_children();
                     });
                 }
@@ -35,7 +35,7 @@ namespace kotlinx {
                             assert_equals("FlowCtx", current_coroutine_context()[CoroutineName]->name);
                             emit("OK");
                         }).flow_on(CoroutineName("FlowCtx"));
-                        assert_equals("OK", flow_obj.share_in(*this, SharingStarted::kEagerly, 1).first());
+                        assert_equals("OK", flow_obj.share_in(*this, SharingStarted::eagerly(), 1).first());
                         coroutine_context().cancel_children();
                     });
                 }
@@ -57,7 +57,7 @@ namespace kotlinx {
                             send(0); // done
                         }).buffer(10); // request a buffer of 10
                         // ^^^^^^^^^ buffer stays here
-                        auto shared = flow_obj.share_in(*this, SharingStarted::kEagerly);
+                        auto shared = flow_obj.share_in(*this, SharingStarted::eagerly());
                         shared
                                 .take_while([](int it) { return it > 0; })
                                 .collect([this](int i) { expect(i + 1); });

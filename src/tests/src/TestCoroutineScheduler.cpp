@@ -51,7 +51,7 @@ namespace kotlinx {
                 class Key : CoroutineContext::Key<TestCoroutineScheduler> {
                 };
 
-                static Key kKey;
+                static Key KEY;
 
             private:
                 /** This heap stores the knowledge about which dispatchers are interested in which moments of virtual time. */
@@ -69,7 +69,7 @@ namespace kotlinx {
                 int64_t current_time_;
 
             public:
-                TestCoroutineScheduler() : AbstractCoroutineContextElement(kKey),
+                TestCoroutineScheduler() : AbstractCoroutineContextElement(KEY),
                                            events_(new ThreadSafeHeap<TestDispatchEvent<void *> >()),
                                            lock_(new SynchronizedObject()),
                                            count_(0),
@@ -90,8 +90,8 @@ namespace kotlinx {
 
             public:
                 TestCoroutineScheduler() {
-                    dispatch_events_foreground_ = new Channel<void>(Channel::kConflated);
-                    dispatch_events_ = new Channel<void>(Channel::kConflated);
+                    dispatch_events_foreground_ = new Channel<void>(Channel<void>::CONFLATED);
+                    dispatch_events_ = new Channel<void>(Channel<void>::CONFLATED);
                 }
 
                 /**
@@ -368,7 +368,7 @@ namespace kotlinx {
             }
 
             void check_scheduler_in_context(const TestCoroutineScheduler &scheduler, const CoroutineContext &context) {
-                auto *ctx_scheduler = context[TestCoroutineScheduler::kKey];
+                auto *ctx_scheduler = context[TestCoroutineScheduler::KEY];
                 if (ctx_scheduler != nullptr) {
                     if (ctx_scheduler != &scheduler) {
                         throw std::logic_error(
@@ -390,11 +390,11 @@ namespace kotlinx {
                 class Key : CoroutineContext::Key<BackgroundWork> {
                 };
 
-                static Key kKey;
+                static Key KEY;
                 static BackgroundWork instance;
 
                 CoroutineContext::Key<BackgroundWork> *key() const override {
-                    return &kKey;
+                    return &KEY;
                 }
 
                 std::string to_string() const override {
@@ -403,7 +403,7 @@ namespace kotlinx {
             };
 
             BackgroundWork BackgroundWork::instance;
-            BackgroundWork::Key BackgroundWork::kKey;
+            BackgroundWork::Key BackgroundWork::KEY;
 
             template<typename T>
             bool none(ThreadSafeHeap<T> *heap, std::function<bool(const T *)> predicate) {
