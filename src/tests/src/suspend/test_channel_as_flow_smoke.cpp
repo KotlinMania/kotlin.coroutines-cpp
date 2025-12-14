@@ -48,7 +48,8 @@ int main() {
     if (!ch->try_send(2).is_success()) return 1;
     ch->close(nullptr);
 
-    auto recv = std::dynamic_pointer_cast<kotlinx::coroutines::channels::ReceiveChannel<int>>(ch);
+    // Channel<E> inherits from ReceiveChannel<E>
+    std::shared_ptr<kotlinx::coroutines::channels::ReceiveChannel<int>> recv = ch;
     if (!recv) return 1;
 
     // receive_as_flow: multiple collections are allowed (channel fan-out).
