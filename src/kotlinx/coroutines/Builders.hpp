@@ -242,7 +242,6 @@ namespace coroutines {
     // Implemented as a suspend function that handles context switching logic.
 
     template<typename T, typename Block>
-    [[suspend]]
     void* with_context(
         std::shared_ptr<CoroutineContext> context,
         Block&& block,
@@ -285,7 +284,6 @@ namespace coroutines {
      * Use this function to manage the lifecycle of concurrent operations.
      */
     template<typename T, typename Block>
-    [[suspend]]
     void* coroutine_scope(
         Block&& block,
         std::shared_ptr<Continuation<void*>> completion
@@ -315,7 +313,6 @@ namespace coroutines {
      * The children failure does not cause this scope to fail and does not affect other children.
      */
     template<typename T, typename Block>
-    [[suspend]]
     void* supervisor_scope(
         Block&& block,
         std::shared_ptr<Continuation<void*>> completion

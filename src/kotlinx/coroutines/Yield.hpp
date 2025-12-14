@@ -32,11 +32,7 @@ namespace coroutines {
 [[deprecated("Use yield(completion) instead")]]
 void yield_coroutine();
 
-[[suspend]]
 void* yield(std::shared_ptr<Continuation<void*>> completion);
-
-[[suspend]]
-void yield();
 
 } // namespace coroutines
 } // namespace kotlinx

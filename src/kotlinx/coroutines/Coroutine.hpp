@@ -13,7 +13,7 @@
  * ### 1. Kotlin Runtime (kotlin::coroutines namespace)
  * Direct transliteration of Kotlin's coroutine kernel:
  * - `Continuation<T>` - continuation interface
- * - `BaseContinuationImpl` - the resumeWith/invokeSuspend loop
+ * - `BaseContinuationImpl` - the resume_with/invoke_suspend loop
  * - `ContinuationImpl` - adds context and interception
  * - `COROUTINE_SUSPENDED` - suspension marker
  *
@@ -33,31 +33,27 @@
  * 4. Uses a `label` field to track state
  *
  * In C++, we replicate this with:
- * - `BaseContinuationImpl::invokeSuspend()` - the state machine method
+ * - `BaseContinuationImpl::invoke_suspend()` - the state machine method
  * - `COROUTINE_SUSPENDED` marker for suspension
- * - Protothreads macros (CO_BEGIN/CO_END) for state machine generation
+ * - Macros (coroutine_begin/yield/end) for state machine generation
  *
  * ## Usage Example
  *
  * ```cpp
  * // Create a suspend function as a class
  * class MySuspendFunction : public ContinuationImpl {
- *     int label = 0;  // State machine label
- *     int saved_x;    // Spilled local variable
+ *     void* _label = nullptr;  // State machine label (blockaddress)
+ *     int saved_x;             // Spilled local variable
  *
- *     void* invokeSuspend(Result<void*> result) override {
- *         switch (label) {
- *         case 0:
- *             saved_x = 42;
- *             label = 1;
- *             // Call another suspend function, passing this as continuation
- *             if (delay(100, this) == COROUTINE_SUSPENDED)
- *                 return COROUTINE_SUSPENDED;
- *             [[fallthrough]];
- *         case 1:
- *             return (void*)(intptr_t)saved_x;  // Return value
- *         }
- *         return nullptr;
+ *     void* invoke_suspend(Result<void*> result) override {
+ *         coroutine_begin(this)
+ *
+ *         saved_x = 42;
+ *         coroutine_yield(this, delay(100, completion_));
+ *
+ *         return (void*)(intptr_t)saved_x;  // Return value
+ *
+ *         coroutine_end(this)
  *     }
  * };
  * ```

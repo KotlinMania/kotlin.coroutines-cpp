@@ -120,14 +120,5 @@ void* yield(std::shared_ptr<Continuation<void*>> completion) {
     return COROUTINE_SUSPENDED;
 }
 
-// The parameterless yield() for use in tests - currently a no-op stub
-// In real usage, the plugin transforms calls to use the continuation-passing version
-void yield() {
-    // This should never be called directly in production code.
-    // The Clang plugin transforms yield() calls to yield(completion).
-    // For tests that don't use the plugin, this just does an OS yield.
-    std::this_thread::yield();
-}
-
 } // namespace coroutines
 } // namespace kotlinx

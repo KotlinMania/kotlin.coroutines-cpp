@@ -88,48 +88,27 @@ namespace kotlinx {
 } // namespace kotlinx
 
 // -----------------------------------------------------------------------------
-// Plugin-compatible Overloads (shared_ptr)
+// shared_ptr Overloads (convenience wrappers)
 // -----------------------------------------------------------------------------
 
 namespace kotlinx {
     namespace coroutines {
-        // NOLINTBEGIN(readability-identifier-naming)
 
-        [[suspend]]
         void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> continuation) {
-            using namespace kotlinx::coroutines::dsl;
-            suspend(delay(time_millis, continuation.get()));
-            return nullptr;
+            return delay(time_millis, continuation.get());
         }
 
-        [[suspend]]
         void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void*>> continuation) {
-            using namespace kotlinx::coroutines::dsl;
-            suspend(delay(duration, continuation.get()));
-            return nullptr;
+            return delay(duration, continuation.get());
         }
 
-        [[suspend]]
         void* delay(std::chrono::milliseconds duration, std::shared_ptr<Continuation<void*>> continuation) {
-             using namespace kotlinx::coroutines::dsl;
-             suspend(delay(duration, continuation.get()));
-             return nullptr;
+            return delay(duration, continuation.get());
         }
 
-        [[suspend]]
         void* await_cancellation(std::shared_ptr<Continuation<void*>> continuation) {
-             using namespace kotlinx::coroutines::dsl;
-             suspend(await_cancellation(continuation.get()));
-             return nullptr;
+            return await_cancellation(continuation.get());
         }
-
-        // NOLINTEND(readability-identifier-naming)
-
-        // Frontend Stubs
-        [[suspend]] void delay(long long) {}
-        [[suspend]] void delay(std::chrono::nanoseconds) {}
-        [[suspend]] void delay(std::chrono::milliseconds) {}
-        [[suspend]] void await_cancellation() {}
 
     } // namespace coroutines
 } // namespace kotlinx
