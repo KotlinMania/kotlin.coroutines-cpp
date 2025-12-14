@@ -164,6 +164,26 @@ private:
         }
         return cur;
     }
+
+public:
+    /**
+     * Line 78-88 of ConcurrentLinkedList.kt:
+     * Closes this linked list of nodes by forbidding adding new ones,
+     * returns the last node in the list.
+     */
+    N* close() {
+        N* cur = static_cast<N*>(this);
+        while (true) {
+            bool was_closed = false;
+            N* next_node = cur->next_or_if_closed([&was_closed]() { was_closed = true; });
+            if (was_closed) return cur;
+            if (next_node == nullptr) {
+                if (cur->mark_as_closed()) return cur;
+            } else {
+                cur = next_node;
+            }
+        }
+    }
 };
 
 // Line 262: private const val POINTERS_SHIFT = 16
