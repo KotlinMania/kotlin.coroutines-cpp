@@ -5,15 +5,7 @@
 namespace kotlinx {
     namespace coroutines {
         namespace channels {
-            // ClosedSendChannelException implementation
-            ClosedSendChannelException::ClosedSendChannelException(const std::string &message)
-                : std::runtime_error(message) {
-            }
-
-            // ClosedReceiveChannelException implementation
-            ClosedReceiveChannelException::ClosedReceiveChannelException(const std::string &message)
-                : std::runtime_error(message) {
-            }
+            // Exception constructors are defined inline in Channel.hpp
 
             namespace detail {
                 int get_default_buffer_capacity_impl() {
