@@ -28,7 +28,7 @@ namespace kotlinx::coroutines::flow {
 
 // Forward declarations
 template<typename T> class SharedFlowImpl;
-template<typename T> class StateFlow;
+template<typename T> struct StateFlow;  // StateFlow is defined as struct in StateFlow.hpp
 class SharedFlowSlot;
 
 /**
@@ -69,7 +69,7 @@ public:
      *
      * @note This is a suspend function - takes Continuation parameter and returns void* (COROUTINE_SUSPENDED or result)
      */
-    virtual void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) = 0;
+    void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override = 0;
 };
 
 /**

@@ -14,7 +14,10 @@ public:
     NoopContinuation() : ctx_(kotlinx::coroutines::EmptyCoroutineContext::instance()) {}
 
     std::shared_ptr<kotlinx::coroutines::CoroutineContext> get_context() const override { return ctx_; }
-    void resume_with(kotlinx::coroutines::Result<void*> /*result*/) override {}
+    void resume_with(kotlinx::coroutines::Result<void*> result) override {
+        // No-op continuation - result indicates completion status
+        // Could check result.is_success() to verify expected behavior
+    }
 
 private:
     std::shared_ptr<kotlinx::coroutines::CoroutineContext> ctx_;
@@ -25,8 +28,9 @@ class VectorCollector : public kotlinx::coroutines::flow::FlowCollector<T> {
 public:
     explicit VectorCollector(std::vector<T>* out) : out_(out) {}
 
-    void* emit(T value, kotlinx::coroutines::Continuation<void*>* /*continuation*/) override {
+    void* emit(T value, kotlinx::coroutines::Continuation<void*>* continuation) override {
         out_->push_back(std::move(value));
+        // continuation could be used for suspend/resume in async scenarios
         return nullptr;
     }
 

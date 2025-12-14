@@ -108,14 +108,14 @@ public:
     }
 
     virtual std::shared_ptr<Continuation<void>> create(
-        std::shared_ptr<Continuation<void*>> /*completion*/
+        std::shared_ptr<Continuation<void*>> completion
     ) {
         throw std::runtime_error("create(Continuation) has not been overridden");
     }
 
     virtual std::shared_ptr<Continuation<void>> create(
-        void* /*value*/,
-        std::shared_ptr<Continuation<void*>> /*completion*/
+        void* value,
+        std::shared_ptr<Continuation<void*>> completion
     ) {
         throw std::runtime_error("create(Any?, Continuation) has not been overridden");
     }
@@ -186,7 +186,7 @@ public:
         throw std::runtime_error("This continuation is already complete");
     }
 
-    void resume_with(kotlinx::coroutines::Result<void*> /*result*/) override {
+    void resume_with(kotlinx::coroutines::Result<void*> result) override {
         throw std::runtime_error("This continuation is already complete");
     }
 };

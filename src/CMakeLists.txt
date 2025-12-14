@@ -42,6 +42,16 @@ list(FILTER CORE_SOURCES EXCLUDE REGEX "/integration/")
 # Create the core library
 add_library(kotlinx-coroutines-core ${CORE_SOURCES})
 
+# Disable unused warnings for library code.
+# This is a transliterated library - parameters, constants, and fields exist for API
+# parity with Kotlin even when not all code paths use them yet. Tests should exercise these.
+target_compile_options(kotlinx-coroutines-core PRIVATE
+    -Wno-unused-parameter
+    -Wno-unused-variable
+    -Wno-unused-const-variable
+    -Wno-unused-private-field
+)
+
 if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN AND TARGET KotlinxSuspendPlugin)
     target_compile_options(kotlinx-coroutines-core PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
     add_dependencies(kotlinx-coroutines-core KotlinxSuspendPlugin)

@@ -95,7 +95,7 @@ namespace kotlinx {
      */
             // @Deprecated(level = DeprecationLevel.WARNING, message = message)
             // Kotlin: suspend fun join(): Nothing = throw UnsupportedOperationException("...")
-            void *join(kotlinx::coroutines::Continuation<void *> * /*continuation*/) {
+            void *join(kotlinx::coroutines::Continuation<void *> * continuation) {
                 throw std::logic_error("This job is always active");
             }
 

@@ -11,6 +11,8 @@
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/CompletableJob.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
+// kotlinx.coroutines.selects.* (from Kotlin)
+#include "kotlinx/coroutines/selects/Select.hpp"
 #include <stdexcept>
 
 namespace kotlinx {

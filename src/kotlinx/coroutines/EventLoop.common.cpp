@@ -64,7 +64,7 @@ namespace kotlinx {
         void EventLoop::shutdown() {
         }
 
-        void EventLoop::dispatch(const CoroutineContext & /*context*/, std::shared_ptr<Runnable> /*block*/) const {
+        void EventLoop::dispatch(const CoroutineContext & context, std::shared_ptr<Runnable> block) const {
             // TODO: implement event-loop dispatch
         }
 
@@ -99,7 +99,7 @@ namespace kotlinx {
         BlockingEventLoop::BlockingEventLoop(std::shared_ptr<std::thread> t) : thread(t) {
         }
 
-        void BlockingEventLoop::dispatch(const CoroutineContext& /*context*/, std::shared_ptr<Runnable> block) const {
+        void BlockingEventLoop::dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const {
             {
                 std::lock_guard<std::mutex> lock(mtx);
                 // We need to cast away constness to push to queue if we keep task_queue mutable or use current implementation

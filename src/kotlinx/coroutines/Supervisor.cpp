@@ -29,7 +29,7 @@ namespace kotlinx {
      * Override to return false - supervisor jobs do not fail when children fail.
      * This isolates child failures from affecting other children or the supervisor.
      */
-                bool child_cancelled(std::exception_ptr /*cause*/) override {
+                bool child_cancelled(std::exception_ptr cause) override {
                     return false; // Supervisor ignores child failures
                 }
 

@@ -67,7 +67,7 @@ namespace kotlinx {
             return name_;
         }
 
-        void ExecutorCoroutineDispatcherImpl::dispatch(const CoroutineContext & /*context*/,
+        void ExecutorCoroutineDispatcherImpl::dispatch(const CoroutineContext & context,
                                                        std::shared_ptr<Runnable> block) const {
             if (closed_) return;
             {

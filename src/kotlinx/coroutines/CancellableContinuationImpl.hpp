@@ -320,7 +320,7 @@ public:
     
     // cancelCompletedResult (used by DispatchedTask cancellation)
     // Kotlin lines 169-189
-    void cancel_completed_result(Result<T> /*taken_state*/, std::exception_ptr cause) override {
+    void cancel_completed_result(Result<T> taken_state, std::exception_ptr cause) override {
         while (true) {
             State* state = state_.load(std::memory_order_acquire);
             if (dynamic_cast<NotCompleted*>(state)) {
@@ -861,18 +861,18 @@ public:
              resume_impl_exception(result.exception_or_null(), this->resume_mode);
     }
     
-    void resume_impl_exception(std::exception_ptr exception, int /*mode*/) {
+    void resume_impl_exception(std::exception_ptr exception, int mode) {
         void* token = try_resume_with_exception(exception);
         if (!token) throw std::logic_error("Already resumed");
         complete_resume(token);
     }
 
-    void resume_undispatched(CoroutineDispatcher* /*dispatcher*/, T value) override {
+    void resume_undispatched(CoroutineDispatcher* dispatcher, T value) override {
         // Resume directly without dispatch
         resume_impl(value, MODE_UNDISPATCHED);
     }
 
-    void resume_undispatched_with_exception(CoroutineDispatcher* /*dispatcher*/, std::exception_ptr exception) override {
+    void resume_undispatched_with_exception(CoroutineDispatcher* dispatcher, std::exception_ptr exception) override {
         // Resume with exception directly without dispatch
         resume_impl_exception(exception, MODE_UNDISPATCHED);
     }
@@ -894,7 +894,7 @@ public:
     bool get_on_cancelling() const override { return true; }
 
     // Kotlin: override fun invoke(cause: Throwable?)
-    void invoke(std::exception_ptr /*cause*/) override {
+    void invoke(std::exception_ptr cause) override {
         // child.parent_cancelled(child.get_continuation_cancellation_cause(job))
         // job is the parent JobSupport* from JobNode base class
         child->parent_cancelled(child->get_continuation_cancellation_cause(*static_cast<Job*>(job)));
@@ -973,7 +973,7 @@ public:
     }
 
     // ---- Cancellation ----
-    void cancel_completed_result(Result<void> /*taken_state*/, std::exception_ptr cause) override {
+    void cancel_completed_result(Result<void> taken_state, std::exception_ptr cause) override {
         while (true) {
             State* state = state_.load(std::memory_order_acquire);
             if (dynamic_cast<NotCompleted*>(state)) throw std::runtime_error("Not completed");
@@ -1194,7 +1194,7 @@ public:
     }
 
     // ---- Waiter ----
-    void invoke_on_cancellation(void* /*segment*/, int /*index*/) override {}
+    void invoke_on_cancellation(void* segment, int index) override {}
 
     // ---- invoke_on_cancellation ----
     void invoke_on_cancellation(std::function<void(std::exception_ptr)> handler) override {

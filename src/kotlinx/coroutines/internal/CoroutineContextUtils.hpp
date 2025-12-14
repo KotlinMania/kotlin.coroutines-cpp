@@ -24,8 +24,8 @@ namespace coroutines {
  */
 template<typename R>
 inline R with_coroutine_context(
-    const std::shared_ptr<CoroutineContext>& /*context*/,
-    void* /*count_or_element*/,
+    const std::shared_ptr<CoroutineContext>& context,
+    void* count_or_element,
     std::function<R()> block
 ) {
     return block();
@@ -37,8 +37,8 @@ inline R with_coroutine_context(
  */
 template<typename R, typename T>
 inline R with_continuation_context(
-    const std::shared_ptr<Continuation<T>>& /*continuation*/,
-    void* /*count_or_element*/,
+    const std::shared_ptr<Continuation<T>>& continuation,
+    void* count_or_element,
     std::function<R()> block
 ) {
     return block();

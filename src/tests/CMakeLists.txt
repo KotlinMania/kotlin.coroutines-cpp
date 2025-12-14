@@ -14,6 +14,15 @@ function(add_coroutine_test TEST_NAME)
             ${PROJECT_SOURCE_DIR}/include
             ${PROJECT_SOURCE_DIR}/src/${KOTLINX_COROUTINES_SRC_DIR}
         )
+        # Suppress library header warnings - these parameters exist for Kotlin API parity.
+        # Tests include library headers, so they need the same suppressions as library code.
+        # Test CODE should still be written to use parameters properly.
+        target_compile_options(${TEST_NAME} PRIVATE
+            -Wno-unused-parameter
+            -Wno-unused-variable
+            -Wno-unused-const-variable
+            -Wno-unused-private-field
+        )
         # Link against core library so tests can exercise non-inline implementations.
         target_link_libraries(${TEST_NAME} PRIVATE pthread kotlinx-coroutines-core)
         add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})

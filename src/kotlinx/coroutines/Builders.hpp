@@ -358,11 +358,7 @@ namespace coroutines {
             }
         }
 
-        void on_cancelled(std::exception_ptr cause, bool /*handled*/) override {
-            // Note: 'handled' is intentionally unused here. In Kotlin, the base
-            // AbstractCoroutine.onCancelled is an empty hook. BlockingCoroutine
-            // doesn't need to know if the exception was handled by parent - it just
-            // needs to know that cancellation occurred so it can wake up the blocked thread.
+        void on_cancelled(std::exception_ptr cause, bool handled) override {
             exception_ = cause;
             completed_ = true;
             if (auto blocking_loop = std::dynamic_pointer_cast<BlockingEventLoop>(event_loop_)) {

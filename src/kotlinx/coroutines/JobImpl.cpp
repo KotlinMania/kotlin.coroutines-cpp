@@ -8,7 +8,7 @@
 
 namespace kotlinx {
     namespace coroutines {
-        JobImpl::JobImpl(std::shared_ptr<Job> /*parent*/) : JobSupport(true) {
+        JobImpl::JobImpl(std::shared_ptr<Job> parent) : JobSupport(true) {
             // Kotlin: init { initParentJob(parent) }
             // C++ can't call init_parent_job here - shared_from_this() not yet available.
             // Use create() factory which calls init_parent_job after construction.

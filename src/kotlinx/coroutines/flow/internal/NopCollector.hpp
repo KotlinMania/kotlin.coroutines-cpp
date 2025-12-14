@@ -8,7 +8,7 @@ namespace internal {
 
 template <typename T>
 struct NopCollector : public FlowCollector<T> {
-    void* emit(T /*value*/, Continuation<void*>* /*continuation*/) override { return nullptr; }
+    void* emit(T value, Continuation<void*>* continuation) override { return nullptr; }
 };
 
 } // namespace internal

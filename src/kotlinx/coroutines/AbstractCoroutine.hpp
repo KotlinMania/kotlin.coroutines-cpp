@@ -129,7 +129,7 @@ namespace kotlinx::coroutines {
      *
      * @param value The result value of the coroutine
      */
-        virtual void on_completed(T /*value*/) {}
+        virtual void on_completed(T value) {}
 
         /**
      * @brief Called when the coroutine is cancelled or fails with an exception.
@@ -140,7 +140,7 @@ namespace kotlinx::coroutines {
      * @param cause The exception that caused cancellation
      * @param handled Whether the exception was handled by exception handlers
      */
-        virtual void on_cancelled(std::exception_ptr /*cause*/, bool /*handled*/) {}
+        virtual void on_cancelled(std::exception_ptr cause, bool handled) {}
 
         /**
      * @brief Returns the message for cancellation exceptions.

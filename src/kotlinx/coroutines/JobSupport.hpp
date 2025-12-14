@@ -159,6 +159,9 @@ public:
         bool invoke_immediately,
         std::function<void(std::exception_ptr)> handler) override;
 
+    // disposeOnCompletion extension function equivalent
+    std::shared_ptr<DisposableHandle> dispose_on_completion(std::shared_ptr<DisposableHandle> handle);
+
     // ===========================================
     // CoroutineContext::Element implementation
     // ===========================================
@@ -279,7 +282,7 @@ protected:
      * Called to handle a job exception (for CoroutineExceptionHandler).
      * @return true if the exception was handled
      */
-    virtual bool handle_job_exception(std::exception_ptr /*exception*/) { return false; }
+    virtual bool handle_job_exception(std::exception_ptr exception) { return false; }
 
     // ===========================================
     // Protected methods for subclasses

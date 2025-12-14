@@ -431,7 +431,7 @@ public:
 
     // Line 2849-2911: override fun onCancellation(index: Int, cause: Throwable?, context: CoroutineContext)
     void on_cancellation(int index, std::exception_ptr cause,
-                         std::shared_ptr<CoroutineContext> /*context*/) override {
+                         std::shared_ptr<CoroutineContext> context) override {
         // Line 2852-2853: To distinguish cancelled senders and receivers,
         // senders equip the index value with an additional marker, adding SEGMENT_SIZE.
         bool is_sender = index >= SEGMENT_SIZE;

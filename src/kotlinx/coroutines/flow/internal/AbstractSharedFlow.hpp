@@ -19,7 +19,7 @@
 
 // Forward declarations (full definitions come from SharedFlow.hpp include below)
 namespace kotlinx::coroutines::flow {
-    template<typename T> class StateFlow;
+    template<typename T> struct StateFlow;
 }
 
 namespace kotlinx::coroutines::flow::internal {

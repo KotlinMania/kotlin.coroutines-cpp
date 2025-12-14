@@ -72,11 +72,11 @@ protected:
     std::atomic<SemaphoreSegment*> tail_;
     std::atomic<long> enq_idx_{0};
 
+    // Line 125: Constructor argument (must be declared before available_permits_ for initialization order)
+    const int permits_;
+
     // Line 146: private val _availablePermits = atomic(permits - acquiredPermits)
     std::atomic<int> available_permits_;
-
-    // Line 125: Constructor argument
-    const int permits_;
 
     // Line 149: private val onCancellationRelease = { ... }
     // Stored as member for use in resume callbacks
@@ -206,9 +206,8 @@ protected:
      * for select clause on Semaphore/Mutex.
      */
     template <typename R>
-    void on_acquire_reg_function(selects::SelectInstance<R>* select, void* /*ignored_param*/) {
+    void on_acquire_reg_function(selects::SelectInstance<R>* select, void* ignored_param) {
         // Select support requires SelectInstance::selectInRegistrationPhase
-        (void)select;
     }
 
 private:

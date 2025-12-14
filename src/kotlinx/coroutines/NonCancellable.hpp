@@ -97,7 +97,7 @@ public:
      * Does nothing.
      * @suppress **This an API and should not be used from general code.**
      */
-    void cancel(std::exception_ptr /*cause*/ = nullptr) override {
+    void cancel(std::exception_ptr cause = nullptr) override {
         // Does nothing - job is never cancelled
     }
 
@@ -113,7 +113,7 @@ public:
      * Always returns NonDisposableHandle and does not do anything.
      * @suppress **This an API and should not be used from general code.**
      */
-    std::shared_ptr<ChildHandle> attach_child(std::shared_ptr<ChildJob> /*child*/) override {
+    std::shared_ptr<ChildHandle> attach_child(std::shared_ptr<ChildJob> child) override {
         // Return a shared_ptr to the singleton NonDisposableHandle
         return std::shared_ptr<ChildHandle>(&NonDisposableHandle::instance(), [](ChildHandle*){});
     }
@@ -122,7 +122,7 @@ public:
      * Always throws std::logic_error.
      * @suppress **This an API and should not be used from general code.**
      */
-    void* join(Continuation<void*>* /*continuation*/) override {
+    void* join(Continuation<void*>* continuation) override {
         throw std::logic_error("This job is always active");
     }
 
@@ -139,7 +139,7 @@ public:
      * @suppress **This an API and should not be used from general code.**
      */
     std::shared_ptr<DisposableHandle> invoke_on_completion(
-        std::function<void(std::exception_ptr)> /*handler*/) override {
+        std::function<void(std::exception_ptr)> handler) override {
         return non_disposable_handle();
     }
 
@@ -148,9 +148,9 @@ public:
      * @suppress **This an API and should not be used from general code.**
      */
     std::shared_ptr<DisposableHandle> invoke_on_completion(
-        bool /*on_cancelling*/,
-        bool /*invoke_immediately*/,
-        std::function<void(std::exception_ptr)> /*handler*/) override {
+        bool on_cancelling,
+        bool invoke_immediately,
+        std::function<void(std::exception_ptr)> handler) override {
         return non_disposable_handle();
     }
 

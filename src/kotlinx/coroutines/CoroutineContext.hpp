@@ -75,7 +75,7 @@ public:
      * @param key The key to look up
      * @return The element with the given key, or nullptr if not found
      */
-    virtual std::shared_ptr<Element> get(Key* /*key*/) const { return nullptr; }
+    virtual std::shared_ptr<Element> get(Key* key) const { return nullptr; }
 
     /**
      * Iterates over all elements in this context.

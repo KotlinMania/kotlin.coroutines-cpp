@@ -80,7 +80,7 @@ public:
     virtual Result<T> take_state() = 0;
 
     // Kotlin: internal open fun cancelCompletedResult(...)
-    virtual void cancel_completed_result(Result<T> /*taken_state*/, std::exception_ptr /*cause*/) {}
+    virtual void cancel_completed_result(Result<T> taken_state, std::exception_ptr cause) {}
 
     // Kotlin: internal open fun <T> getSuccessfulResult(state: Any?): T
     template<typename R>

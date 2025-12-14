@@ -12,7 +12,10 @@
  */
 
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
+// kotlinx.coroutines.internal.* (from Kotlin)
 #include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
+#include "kotlinx/coroutines/internal/DispatchedTask.hpp"
+#include "kotlinx/coroutines/internal/Symbol.hpp"
 #include <mutex>
 #include <queue>
 #include <atomic>
@@ -125,7 +128,7 @@ namespace kotlinx {
         CoroutineDispatcher::CoroutineDispatcher() : AbstractCoroutineContextElement(ContinuationInterceptor::type_key) {
         }
 
-        bool CoroutineDispatcher::is_dispatch_needed(const CoroutineContext& /*context*/) const {
+        bool CoroutineDispatcher::is_dispatch_needed(const CoroutineContext& context) const {
             // Base implementation always returns true - context exists for subclasses
             // that might check if they're already on the correct thread/executor
             return true;

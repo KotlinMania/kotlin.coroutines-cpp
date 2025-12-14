@@ -8,6 +8,16 @@ set(DEBUGGING_SOURCES
 
 add_library(kotlinx-coroutines-debug STATIC ${DEBUGGING_SOURCES})
 
+# Disable unused warnings for library code.
+# This is a transliterated library - parameters, constants, and fields exist for API
+# parity with Kotlin even when not all code paths use them yet.
+target_compile_options(kotlinx-coroutines-debug PRIVATE
+    -Wno-unused-parameter
+    -Wno-unused-variable
+    -Wno-unused-const-variable
+    -Wno-unused-private-field
+)
+
 target_include_directories(kotlinx-coroutines-debug PUBLIC
     ${CMAKE_SOURCE_DIR}/src/${KOTLINX_COROUTINES_SRC_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src

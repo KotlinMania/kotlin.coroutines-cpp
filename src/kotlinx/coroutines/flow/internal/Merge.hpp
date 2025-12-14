@@ -42,7 +42,7 @@ public:
     explicit NoopContinuation(std::shared_ptr<CoroutineContext> context) : context_(std::move(context)) {}
 
     std::shared_ptr<CoroutineContext> get_context() const override { return context_; }
-    void resume_with(Result<void*> /*result*/) override {}
+    void resume_with(Result<void*> result) override {}
 
 private:
     std::shared_ptr<CoroutineContext> context_;
@@ -105,7 +105,7 @@ protected:
                            std::shared_ptr<Job>* previous_flow)
                 : scope_(scope), collector_(collector), transform_(std::move(transform)), previous_flow_(previous_flow) {}
 
-            void* emit(T value, Continuation<void*>* /*cont*/) override {
+            void* emit(T value, Continuation<void*>* cont) override {
                 if (*previous_flow_) {
                     (*previous_flow_)->cancel(std::make_exception_ptr(ChildCancelledException()));
                     (*previous_flow_)->join_blocking();
@@ -224,7 +224,7 @@ public:
                   first_exception_(first_exception),
                   exception_mutex_(exception_mutex) {}
 
-            void* emit(std::shared_ptr<Flow<T>> inner, Continuation<void*>* /*cont*/) override {
+            void* emit(std::shared_ptr<Flow<T>> inner, Continuation<void*>* cont) override {
                 if (job_) ensure_active(*job_);
                 semaphore_->acquire();
 

@@ -14,7 +14,7 @@ namespace internal {
         std::function<void(T)> emit_impl;
         explicit FlowCollectorImpl(std::function<void(T)> e) : emit_impl(std::move(e)) {}
 
-        void* emit(T value, Continuation<void*>* /*continuation*/) override {
+        void* emit(T value, Continuation<void*>* continuation) override {
             emit_impl(std::move(value));
             return nullptr;
         }

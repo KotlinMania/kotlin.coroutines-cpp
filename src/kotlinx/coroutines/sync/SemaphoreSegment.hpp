@@ -111,8 +111,8 @@ public:
      * Cleans the acquirer slot located by the specified index
      * and removes this segment physically if all slots are cleaned.
      */
-    void on_cancellation(int index, std::exception_ptr /*cause*/,
-        std::shared_ptr<CoroutineContext> /*context*/) override
+    void on_cancellation(int index, std::exception_ptr cause,
+        std::shared_ptr<CoroutineContext> context) override
     {
         // Line 383: set(index, CANCELLED)
         set(index, static_cast<void*>(&CANCELLED()));

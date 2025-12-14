@@ -11,5 +11,5 @@
  * to satisfy the linker; it is intentionally a no-op.
  */
 
-extern "C" void __kxs_suspend_point(int /*id*/) {}
+extern "C" void __kxs_suspend_point(int id) {}
 

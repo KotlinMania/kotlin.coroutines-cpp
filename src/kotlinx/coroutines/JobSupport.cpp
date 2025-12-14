@@ -13,7 +13,13 @@
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/Result.hpp"
+// kotlinx.coroutines.internal.* (from Kotlin)
 #include "kotlinx/coroutines/internal/LockFreeLinkedList.hpp"
+#include "kotlinx/coroutines/internal/Symbol.hpp"
+#include "kotlinx/coroutines/internal/ConcurrentLinkedList.hpp"
+#include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
+// kotlinx.coroutines.selects.* (from Kotlin)
+#include "kotlinx/coroutines/selects/Select.hpp"
 #include <atomic>
 #include <mutex>
 #include <thread>
@@ -232,7 +238,6 @@ namespace kotlinx {
             bool get_on_cancelling() const override { return false; }
 
             void invoke(std::exception_ptr cause) override {
-                // Resume with Unit (nullptr) - join() returns Unit
                 continuation_->resume_with(Result<void *>::success(nullptr));
             }
         };
@@ -252,13 +257,10 @@ namespace kotlinx {
             bool get_on_cancelling() const override { return false; }
 
             void invoke(std::exception_ptr cause) override {
-                // Get the final state from the job
                 auto *state = job->get_state_for_await();
                 if (auto *ex = dynamic_cast<CompletedExceptionally *>(state)) {
-                    // Resume with the exception
                     continuation_->resume_with(Result<void *>::failure(ex->cause));
                 } else {
-                    // Resume with the result value (type-erased as void*)
                     continuation_->resume_with(Result<void *>::success(state));
                 }
             }
@@ -399,7 +401,6 @@ namespace kotlinx {
 
         bool JobSupport::start() {
             while (true) {
-                auto *state = impl_->state.load(std::memory_order_acquire);
                 int result = impl_->start_internal(this);
                 if (result == FALSE) return false;
                 if (result == TRUE) return true;
@@ -557,8 +558,13 @@ namespace kotlinx {
                 if (auto *list = incomplete->get_list()) {
                     list->for_each([&](internal::LockFreeLinkedListNode *node) {
                         if (auto *child_node = dynamic_cast<ChildHandleNode *>(node)) {
-                            if (auto *child_job_ptr = dynamic_cast<Job *>(child_node->child_job)) {
-                                // Can't easily get shared_ptr here without more infrastructure
+                            // TODO(port): ChildJob needs enable_shared_from_this to return shared_ptr
+                            // For now, return raw Job* wrapped in shared_ptr with no-op deleter
+                            if (child_node->child_job) {
+                                auto *job_ptr = dynamic_cast<Job*>(child_node->child_job);
+                                if (job_ptr) {
+                                    result.push_back(std::shared_ptr<Job>(job_ptr, [](Job*){}));
+                                }
                             }
                         }
                     });
@@ -633,6 +639,13 @@ namespace kotlinx {
             }
             delete node;
             return non_disposable_handle();
+        }
+
+        // disposeOnCompletion extension function equivalent
+        std::shared_ptr<DisposableHandle> JobSupport::dispose_on_completion(std::shared_ptr<DisposableHandle> handle) {
+            return invoke_on_completion([handle](std::exception_ptr) {
+                handle->dispose();
+            });
         }
 
         CoroutineContext::Key *JobSupport::key() const {
