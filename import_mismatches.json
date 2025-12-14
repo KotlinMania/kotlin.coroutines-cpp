@@ -47,7 +47,6 @@
   {
     "file": "AbstractSharedFlow",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/flow/internal/AbstractSharedFlow.cpp",
       "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/AbstractSharedFlow.hpp"
     ],
     "missing_imports": [
@@ -57,16 +56,17 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
     "file": "Annotations",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Annotations.cpp"
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Annotations.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Annotations.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.flow."
@@ -127,8 +127,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -196,8 +196,8 @@
         "UNLIMITED",
         "CONFLATED"
       ],
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.intrinsics.": []
+      "kotlinx.coroutines.intrinsics.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -214,16 +214,16 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.channels.Channel.Factory": [
-        "BUFFERED",
         "CONFLATED",
-        "UNLIMITED",
-        "CHANNEL_DEFAULT_CAPACITY"
+        "CHANNEL_DEFAULT_CAPACITY",
+        "BUFFERED",
+        "UNLIMITED"
       ],
-      "kotlinx.coroutines.channels.BufferOverflow.": []
+      "kotlinx.coroutines.channels.BufferOverflow.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -264,8 +264,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -330,11 +330,11 @@
       "kotlinx.coroutines.selects.TrySelectDetailedResult."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.ChannelResult.Companion.failure": [],
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.channels.ChannelResult.Companion.closed": [],
-      "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.channels.ChannelResult.Companion.failure": [],
+      "kotlinx.coroutines.channels.ChannelResult.Companion.closed": [],
       "kotlinx.coroutines.channels.ChannelResult.Companion.success": [],
       "kotlinx.coroutines.selects.TrySelectDetailedResult.": []
     }
@@ -365,8 +365,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -389,16 +389,16 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.channels.Channel.Factory": [
         "BUFFERED"
       ],
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.intrinsics.": [],
       "kotlinx.coroutines.flow.internal.unsafeFlow": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -418,7 +418,9 @@
   {
     "file": "Cancellable",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp"
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/dsl/Cancellable.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -452,8 +454,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -506,9 +508,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -538,16 +540,16 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.channels.Channel.Factory": [
-        "BUFFERED",
-        "RENDEZVOUS",
         "CONFLATED",
+        "CHANNEL_DEFAULT_CAPACITY",
+        "BUFFERED",
         "UNLIMITED",
-        "CHANNEL_DEFAULT_CAPACITY"
+        "RENDEZVOUS"
       ],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": []
     }
   },
   {
@@ -592,8 +594,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -622,10 +624,10 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -670,10 +672,10 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.selects.": []
     }
   },
   {
@@ -696,7 +698,8 @@
       "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.common.cpp",
       "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp",
       "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/channels/Channels.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.hpp"
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.hpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -706,11 +709,11 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.flow.internal.unsafeFlow": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -724,8 +727,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -739,8 +742,8 @@
       "kotlinx.coroutines.flow.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -771,10 +774,10 @@
       "kotlinx.coroutines.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -817,9 +820,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.flow.combine": [],
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.combineTransform": []
     }
   },
@@ -834,9 +837,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.exceptions.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -898,15 +901,16 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.exceptions.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
     "file": "ConcurrentLinkedList",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/ConcurrentLinkedList.cpp"
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/ConcurrentLinkedList.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ConcurrentLinkedList.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -983,9 +987,9 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
+      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.channels.BufferOverflow.": [],
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.channels.ChannelResult.Companion.success": []
     }
   },
@@ -1031,12 +1035,12 @@
     ],
     "classes": {
       "kotlinx.coroutines.channels.Channel.Factory": [
-        "BUFFERED",
-        "CONFLATED"
+        "CONFLATED",
+        "BUFFERED"
       ],
+      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -1141,8 +1145,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -1229,11 +1233,11 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1287,8 +1291,7 @@
   {
     "file": "DispatchedContinuation",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/DispatchedContinuation.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/DispatchedContinuation.hpp"
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/DispatchedContinuation.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -1404,8 +1407,8 @@
       "kotlinx.coroutines.flow.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1435,8 +1438,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.unsafeFlow": []
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1524,11 +1527,11 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.internal.": [],
-      "kotlinx.coroutines.CoroutineStart.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.CoroutineStart.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1595,8 +1598,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -1609,8 +1612,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -1623,8 +1626,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -1650,8 +1653,8 @@
       "kotlinx.coroutines.flow.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1682,9 +1685,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -1717,12 +1720,12 @@
       "kotlinx.coroutines.intrinsics."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.intrinsics.": [],
-      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1737,8 +1740,8 @@
       "kotlinx.coroutines.flow."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1753,9 +1756,9 @@
       "kotlinx.coroutines.testing.flow."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.flow.": [],
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.testing.flow.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -1771,9 +1774,9 @@
       "kotlinx.coroutines.testing.flow."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.flow.": [],
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.testing.flow.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -1909,8 +1912,8 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": []
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.selects.": []
     }
   },
   {
@@ -1949,8 +1952,8 @@
       "kotlinx.coroutines.flow."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -1992,10 +1995,10 @@
       "kotlinx.coroutines.flow.internal.unsafeFlow"
     ],
     "classes": {
-      "kotlinx.coroutines.flow.flow": [],
-      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.flow.flow": []
     }
   },
   {
@@ -2021,8 +2024,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.exceptions.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": []
     }
   },
@@ -2189,7 +2192,8 @@
     "cpp_files": [
       "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Merge.cpp",
       "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Merge.hpp"
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Merge.hpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2201,13 +2205,13 @@
       "kotlinx.coroutines.sync."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.channels.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
       "kotlinx.coroutines.sync.": [],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2222,8 +2226,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.flow.merge": [],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.flow.merge": []
     }
   },
   {
@@ -2280,9 +2284,9 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": []
     }
   },
   {
@@ -2297,10 +2301,10 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.exceptions.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.testing.": []
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.selects.": []
     }
   },
   {
@@ -2313,16 +2317,17 @@
       "kotlinx.coroutines."
     ],
     "classes": {
+      "kotlinx.coroutines.": [],
       "kotlinx.coroutines": [
         "DefaultDelay"
-      ],
-      "kotlinx.coroutines.": []
+      ]
     }
   },
   {
     "file": "NonCancellable",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/NonCancellable.cpp"
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/NonCancellable.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/NonCancellable.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.selects."
@@ -2368,10 +2373,10 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.flow.internal.": [],
+      "kotlinx.coroutines.testing.": [],
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -2453,8 +2458,8 @@
       "kotlinx.coroutines.flow."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2482,9 +2487,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2555,8 +2560,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.exceptions.": []
+      "kotlinx.coroutines.exceptions.": [],
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -2571,10 +2576,10 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -2591,10 +2596,10 @@
     ],
     "classes": {
       "kotlinx.coroutines.flow.": [],
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.internal": [
         "ScopeCoroutine"
-      ]
+      ],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2668,9 +2673,9 @@
       "kotlinx.coroutines.selects.TrySelectDetailedResult."
     ],
     "classes": {
-      "kotlinx.coroutines.selects.TrySelectDetailedResult.": [],
       "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.TrySelectDetailedResult.": [],
       "kotlinx.coroutines.channels.": []
     }
   },
@@ -2775,9 +2780,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.sync.": [],
       "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.sync.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2791,9 +2796,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.sync.": [],
       "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.sync.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -2894,9 +2899,9 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.selects.": []
     }
   },
   {
@@ -2910,8 +2915,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.exceptions.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": []
     }
   },
@@ -2955,9 +2960,9 @@
       "kotlinx.coroutines.flow."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -2971,9 +2976,9 @@
       "kotlinx.coroutines.flow.internal."
     ],
     "classes": {
+      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -3041,7 +3046,6 @@
   {
     "file": "SharedFlow",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/SharedFlow.cpp",
       "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/SharedFlow.hpp"
     ],
     "missing_imports": [
@@ -3052,9 +3056,9 @@
     ],
     "classes": {
       "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -3067,8 +3071,8 @@
       "kotlinx.coroutines.flow."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3114,10 +3118,10 @@
       "kotlinx.coroutines.internal"
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
       "kotlinx.coroutines.internal": [
         "IgnoreJreRequirement"
-      ]
+      ],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3173,9 +3177,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3192,9 +3196,9 @@
     ],
     "classes": {
       "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.channels.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -3238,9 +3242,9 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
+      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3330,7 +3334,8 @@
   {
     "file": "TestBase",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestBase.cpp"
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestBase.cpp",
+      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/testing/TestBase.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3339,8 +3344,8 @@
     ],
     "classes": {
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3386,13 +3391,13 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.selects.": [],
-      "kotlinx.coroutines.internal.": [],
       "kotlinx.coroutines.channels.Channel.Factory": [
         "CONFLATED"
       ],
-      "kotlinx.coroutines.channels.": []
+      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.internal.": [],
+      "kotlinx.coroutines.selects.": [],
+      "kotlinx.coroutines.": []
     }
   },
   {
@@ -3405,8 +3410,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.testing.": []
     }
   },
   {
@@ -3431,8 +3436,8 @@
       "kotlinx.coroutines.test.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.test.internal.": [],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.test.internal.": []
     }
   },
   {
@@ -3461,9 +3466,9 @@
       "kotlinx.coroutines.test.internal."
     ],
     "classes": {
-      "kotlinx.coroutines.test.internal.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.": []
+      "kotlinx.coroutines.": [],
+      "kotlinx.coroutines.test.internal.": []
     }
   },
   {
@@ -3478,8 +3483,8 @@
       "kotlinx.coroutines.testing."
     ],
     "classes": {
-      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.flow.": [],
+      "kotlinx.coroutines.testing.": [],
       "kotlinx.coroutines.": [],
       "kotlinx.coroutines.channels.": []
     }
@@ -3508,9 +3513,9 @@
       "kotlinx.coroutines.selects."
     ],
     "classes": {
-      "kotlinx.coroutines.selects.": [],
       "kotlinx.coroutines.internal.": [],
-      "kotlinx.coroutines.intrinsics.": []
+      "kotlinx.coroutines.intrinsics.": [],
+      "kotlinx.coroutines.selects.": []
     }
   },
   {
@@ -3557,9 +3562,9 @@
     ],
     "classes": {
       "kotlinx.coroutines.flow.unsafeTransform": [],
-      "kotlinx.coroutines.flow.internal.unsafeFlow": [],
+      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.flow.internal.unsafeFlow": []
     }
   },
   {
@@ -3641,9 +3646,9 @@
       "kotlinx.coroutines.flow."
     ],
     "classes": {
-      "kotlinx.coroutines.channels.": [],
+      "kotlinx.coroutines.flow.": [],
       "kotlinx.coroutines.": [],
-      "kotlinx.coroutines.flow.": []
+      "kotlinx.coroutines.channels.": []
     }
   },
   {
@@ -3830,9 +3835,9 @@
       "kotlinx.coroutines.flow.internal.unsafeFlow"
     ],
     "classes": {
-      "kotlinx.coroutines.flow.flow": [],
+      "kotlinx.coroutines.flow.internal.": [],
       "kotlinx.coroutines.flow.internal.unsafeFlow": [],
-      "kotlinx.coroutines.flow.internal.": []
+      "kotlinx.coroutines.flow.flow": []
     }
   },
   {

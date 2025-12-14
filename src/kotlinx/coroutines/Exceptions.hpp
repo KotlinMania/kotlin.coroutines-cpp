@@ -37,28 +37,36 @@ public:
  * and does not cause its parent to fail.
  */
 class CancellationException : public std::runtime_error {
+private:
+    std::exception_ptr cause_;
+
 public:
     explicit CancellationException(const std::string& message)
-        : std::runtime_error(message) {}
+        : std::runtime_error(message), cause_(nullptr) {}
+
+    CancellationException(const std::string& message, std::exception_ptr cause)
+        : std::runtime_error(message), cause_(cause) {}
+
+    std::exception_ptr get_cause() const { return cause_; }
 
     virtual ~CancellationException() = default;
 };
 
 /**
  * Thrown by cancellable suspending functions if the Job of the coroutine is cancelled
- * while it is suspending. Contains a reference to the job that was cancelled.
+ * or completed without cause, or with a cause or exception that is not CancellationException.
+ * See Job.getCancellationException().
  */
 class JobCancellationException : public CancellationException {
 private:
-    std::exception_ptr cause_;
     struct Job* job_;
 
 public:
     JobCancellationException(const std::string& message, std::exception_ptr cause, struct Job* job)
-        : CancellationException(message), cause_(cause), job_(job) {}
+        : CancellationException(message, cause), job_(job) {}
 
     struct Job* get_job() const { return job_; }
-    std::exception_ptr get_cause() const { return cause_; }
+    // get_cause() inherited from CancellationException
 };
 
 /**
@@ -79,6 +87,12 @@ public:
  * Factory function to create a CancellationException.
  */
 CancellationException* make_cancellation_exception(const std::string& message, std::exception_ptr cause);
+
+/**
+ * For use in tests - whether to recover stack traces.
+ * Native: false (no stack trace recovery support)
+ */
+extern const bool RECOVER_STACK_TRACES;
 
 } // namespace coroutines
 } // namespace kotlinx

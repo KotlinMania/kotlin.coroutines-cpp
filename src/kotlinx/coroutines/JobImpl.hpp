@@ -50,7 +50,9 @@ public:
      * 
      * Creates a new job instance and establishes parent-child relationship
      * if parent is provided. The job starts in active state.
-     * 
+     * Note: Parent cannot be used in constructor due to shared_from_this() requirement.
+     * The create() factory handles calling init_parent_job after construction.
+     *
      * @param parent Optional parent job for structured concurrency
      */
     explicit JobImpl(std::shared_ptr<Job> parent);
@@ -75,7 +77,7 @@ public:
      * 
      * @param parent Parent job to attach to
      */
-    void init_parent_job(std::shared_ptr<Job> parent);
+    void init_parent_job(std::shared_ptr<Job> parent) override;
 
     /**
      * @brief Completes the job normally.

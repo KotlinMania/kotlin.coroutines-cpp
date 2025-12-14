@@ -29,10 +29,12 @@ namespace kotlinx {
         // @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
         // @kotlin.internal.LowPriorityInOverloadResolution
         // TODO: suspend lambda parameter needs coroutine infrastructure
+        // Note: This function exists only for Kotlin's @Deprecated(level=ERROR) guidance.
+        // In C++ there's no equivalent - consider removing this file entirely.
         Job *launch(
-            CoroutineContext &context, // = EmptyCoroutineContext
-            CoroutineStart &start, // = CoroutineStart.DEFAULT
-            std::function<void(CoroutineScope &)> block
+            CoroutineContext& /*context*/,
+            CoroutineStart& /*start*/,
+            std::function<void(CoroutineScope &)> /*block*/
         ) {
             throw std::logic_error("Should never be called, was introduced to help with incomplete code");
         }
@@ -49,9 +51,9 @@ namespace kotlinx {
         // TODO: suspend lambda parameter needs coroutine infrastructure
         template<typename T>
         Deferred<T> *async(
-            CoroutineContext &context, // = EmptyCoroutineContext
-            CoroutineStart &start, // = CoroutineStart.DEFAULT
-            std::function<T(CoroutineScope &)> block
+            CoroutineContext& /*context*/,
+            CoroutineStart& /*start*/,
+            std::function<T(CoroutineScope &)> /*block*/
         ) {
             throw std::logic_error("Should never be called, was introduced to help with incomplete code");
         }

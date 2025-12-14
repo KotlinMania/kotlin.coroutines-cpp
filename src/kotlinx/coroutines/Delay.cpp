@@ -78,10 +78,9 @@ namespace kotlinx {
         }
 
         void *await_cancellation(Continuation<void *> *continuation) {
-            return suspend_cancellable_coroutine<void>([](CancellableContinuation<void> &cont) {
-                // Do nothing. Never resume.
-                // Wait until cancelled. 
-                // suspend_cancellable_coroutine handles cancellation automatically if we don't resume.
+            // Kotlin: suspendCancellableCoroutine {} - empty lambda, never resumes
+            return suspend_cancellable_coroutine<void>([](CancellableContinuation<void>&) {
+                // Do nothing. Never resume. Wait until cancelled.
             }, continuation);
         }
     } // namespace coroutines

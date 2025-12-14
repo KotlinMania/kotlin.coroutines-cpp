@@ -10,9 +10,9 @@
 
 namespace kotlinx {
     namespace coroutines {
-        // Implementation of make_cancellation_exception stub
+        // Factory function matching Kotlin: CancellationException(message, cause)
         CancellationException *make_cancellation_exception(const std::string &message, std::exception_ptr cause) {
-            return new CancellationException(message);
+            return new CancellationException(message, cause);
         }
 
         // Global variable definition stub

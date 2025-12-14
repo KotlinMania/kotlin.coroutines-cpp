@@ -1017,7 +1017,8 @@ public:
     }
 
     // Line 1797-1798: internal open fun cancelImpl(cause: Throwable?): Boolean
-    bool cancel_impl(std::exception_ptr cause) {
+    // `open` in Kotlin means virtual in C++
+    virtual bool cancel_impl(std::exception_ptr cause) {
         if (!cause) {
             cause = std::make_exception_ptr(std::runtime_error("Channel was cancelled"));
         }
@@ -1025,7 +1026,8 @@ public:
     }
 
     // Line 1816-1835: protected open fun closeOrCancelImpl(...)
-    bool close_or_cancel_impl(std::exception_ptr cause, bool cancel) {
+    // `open` in Kotlin means virtual in C++
+    virtual bool close_or_cancel_impl(std::exception_ptr cause, bool cancel) {
         // Line 1821: If this is a cancel(..) invocation, set the cancellation started bit.
         if (cancel) mark_cancellation_started();
 

@@ -279,7 +279,7 @@ protected:
      * Called to handle a job exception (for CoroutineExceptionHandler).
      * @return true if the exception was handled
      */
-    virtual bool handle_job_exception(std::exception_ptr exception) { return false; }
+    virtual bool handle_job_exception(std::exception_ptr /*exception*/) { return false; }
 
     // ===========================================
     // Protected methods for subclasses

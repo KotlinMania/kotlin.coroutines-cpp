@@ -157,9 +157,9 @@ struct CancelledContinuation : public CompletedExceptionally, public State {
 
     // Helper to make it look like Kotlin's makeHandled() which is atomic in Kotlin but we simplify here
     // In Kotlin it uses atomic boolean updater.
-    // For faithful transliteration we should respect the atomic nature if possible, 
+    // For faithful transliteration we should respect the atomic nature if possible,
     // but here we might rely on the fact that it's checked in a CAS loop on state.
-    bool make_handled() {
+    bool make_handled() override {
         bool expected = false;
         return std::atomic_ref(handled).compare_exchange_strong(expected, true);
     }
@@ -916,7 +916,8 @@ private:
     std::shared_ptr<State> owned_state_; // Prevents use-after-free of dynamically allocated states
     std::shared_ptr<DisposableHandle> parent_handle_;
     std::shared_ptr<CoroutineContext> context_;
-    void* segment_for_cancellation_ = nullptr;  // For segment-based cancellation
+    // Note: segment_for_cancellation_ omitted - invoke_on_cancellation(void*, int) is stub
+    // When implementing segment-based cancellation for void specialization, add field back
 
 public:
     CancellableContinuationImpl(std::shared_ptr<Continuation<void>> delegate_, int resume_mode_)

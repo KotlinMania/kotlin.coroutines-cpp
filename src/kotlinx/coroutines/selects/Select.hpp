@@ -206,6 +206,10 @@ class SelectImplementation : public SelectInstance<R>, public std::enable_shared
     std::shared_ptr<CancellableContinuation<R>> continuation;
     ClauseData* selectedClause = nullptr;
     void* internalResult = nullptr;
+
+    // Segment-based cancellation storage (mirrors Kotlin's disposableHandleOrSegment/indexInSegment)
+    void* disposable_handle_or_segment_ = nullptr;
+    int index_in_segment_ = -1;
     
 public:
     SelectImplementation(std::shared_ptr<CancellableContinuation<R>> cont) : continuation(cont) {}
@@ -259,7 +263,10 @@ public:
     }
 
     void invoke_on_cancellation(void* segment, int index) override {
-        // TODO: Implement segment-based cancellation for Select
+        // Store segment and index for later cancellation handling
+        // Mirrors Kotlin: this.disposableHandleOrSegment = segment; this.indexInSegment = index
+        disposable_handle_or_segment_ = segment;
+        index_in_segment_ = index;
     }
     
     // Core logic called by select()

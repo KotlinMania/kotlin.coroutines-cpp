@@ -125,7 +125,9 @@ namespace kotlinx {
         CoroutineDispatcher::CoroutineDispatcher() : AbstractCoroutineContextElement(ContinuationInterceptor::type_key) {
         }
 
-        bool CoroutineDispatcher::is_dispatch_needed(const CoroutineContext &context) const {
+        bool CoroutineDispatcher::is_dispatch_needed(const CoroutineContext& /*context*/) const {
+            // Base implementation always returns true - context exists for subclasses
+            // that might check if they're already on the correct thread/executor
             return true;
         }
 

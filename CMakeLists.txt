@@ -36,8 +36,8 @@ endforeach()
 # Enable testing
 enable_testing()
 
-# Add compile options
-add_compile_options(-Wall -Wextra -Wpedantic)
+# Add compile options - treat warnings as errors to maintain code quality
+add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
 # Kotlin Native runtime detection (for GC bridge weak-linking)
 option(KOTLIN_NATIVE_RUNTIME_AVAILABLE "Link with Kotlin Native runtime for GC coordination" OFF)
