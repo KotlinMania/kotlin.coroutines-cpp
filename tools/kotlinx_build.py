@@ -371,7 +371,7 @@ def validate_file(cpp_file: Path, all_symbols: Dict[str, List[str]]) -> Validati
         result.add_error(err)
 
     # Check symbol coverage
-    coverage_errors, coverage_warnings = check_symbol_coverage(cpp_file, result.kotlin_source)
+    coverage_errors, coverage_warnings = check_symbol_coverage(cpp_file, result.kotlin_source, set(all_symbols.keys()))
     for err in coverage_errors:
         result.add_error(err)
     for warn in coverage_warnings:
