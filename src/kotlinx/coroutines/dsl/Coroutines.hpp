@@ -44,26 +44,11 @@
 #include <memory>
 #include <chrono>
 
-// Forward declarations for types not yet fully ported
-namespace kotlinx {
-namespace coroutines {
-
-class Job;
-template <typename T> class Deferred;
-
-namespace channels {
-template <typename E> class SendChannel;
-template <typename E> class ReceiveChannel;
-template <typename E> class Channel;
-} // namespace channels
-
-namespace sync {
-class Mutex;
-class Semaphore;
-} // namespace sync
-
-} // namespace coroutines
-} // namespace kotlinx
+#include "kotlinx/coroutines/Job.hpp"
+#include "kotlinx/coroutines/Deferred.hpp"
+#include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/sync/Mutex.hpp"
+#include "kotlinx/coroutines/sync/Semaphore.hpp"
 
 namespace kotlinx {
 namespace coroutines {

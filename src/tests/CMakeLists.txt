@@ -28,6 +28,7 @@ add_coroutine_test(test_cancellation)
 add_coroutine_test(test_dispatchers)
 add_coroutine_test(test_context)
 add_coroutine_test(test_suspend)
+add_coroutine_test(test_timeout)
 
 # Transliterated Kotlin tests
 add_coroutine_test(AsyncTest)
