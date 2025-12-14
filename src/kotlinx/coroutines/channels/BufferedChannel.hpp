@@ -686,8 +686,16 @@ public:
     }
 
     // Line 645: internal open fun shouldSendSuspend(): Boolean
-    bool should_send_suspend() const {
+    virtual bool should_send_suspend() const {
         return should_send_suspend(senders_and_close_status_.load(std::memory_order_acquire));
+    }
+
+    // Line 218-231: internal open suspend fun sendBroadcast(element: E): Boolean
+    virtual void* send_broadcast(E element, Continuation<void*>* continuation) {
+        // Default implementation suspends like send()
+        // ConflatedBufferedChannel overrides to never suspend
+        (void)continuation;
+        throw std::logic_error("sendBroadcast suspend path not implemented");
     }
 
     // =========================================================================
@@ -1202,7 +1210,7 @@ public:
             if (segment->id != id) {
                 segment = const_cast<BufferedChannel*>(this)->find_segment_receive(id, segment);
                 if (segment == nullptr) {
-                    if (receive_segment_.load(std::memory_order_acquire)->id() < id) {
+                    if (receive_segment_.load(std::memory_order_acquire)->id < id) {
                         return false;
                     }
                     continue;
@@ -1861,26 +1869,27 @@ private:
             , continuation_(nullptr) {}
 
         // Line 1616-1640: override suspend fun hasNext(): Boolean
-        bool has_next() override {
+        void* has_next(Continuation<void*>* continuation) override {
             if (receive_result_ != static_cast<void*>(&NO_RECEIVE_RESULT()) &&
                 receive_result_ != static_cast<void*>(&CHANNEL_CLOSED())) {
-                return true;
+                return new bool(true);  // Boxing result
             }
 
             auto result = channel_->try_receive();
             if (result.is_success()) {
                 receive_result_ = new E(result.get_or_throw());
-                return true;
+                return new bool(true);
             }
             if (result.is_closed()) {
                 receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
                 auto cause = channel_->close_cause();
                 if (cause) std::rethrow_exception(cause);
-                return false;
+                return new bool(false);
             }
 
-            // Would need to suspend
-            return false;
+            // Would need to suspend - for now return false
+            (void)continuation;
+            return new bool(false);
         }
 
         // Line 1698-1707: override fun next(): E
