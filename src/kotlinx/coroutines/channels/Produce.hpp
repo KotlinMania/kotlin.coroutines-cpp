@@ -17,45 +17,42 @@ template <typename E>
 class ProducerCoroutine : public ChannelCoroutine<E>, public ProducerScope<E> {
 public:
     ProducerCoroutine(
-        std::shared_ptr<CoroutineContext> parentContext, 
+        std::shared_ptr<CoroutineContext> parentContext,
         std::shared_ptr<Channel<E>> channel
     ) : ChannelCoroutine<E>(parentContext, channel, true, true) {}
-    
+
     virtual ~ProducerCoroutine() = default;
 
     bool is_active() const override { return ChannelCoroutine<E>::is_active(); }
-    
+
     // AbstractCoroutine overrides
     void on_completed(Unit value) override {
+        (void)value;
         ChannelCoroutine<E>::_channel->close(nullptr);
     }
-    
+
     void on_cancelled(std::exception_ptr cause, bool handled) override {
         bool processed = ChannelCoroutine<E>::_channel->close(cause);
         if (!processed && !handled) {
             // handleCoroutineException(context, cause); // TODO: Implement exception handling
         }
     }
-    
+
     // ProducerScope overrides (delegating to ChannelCoroutine -> Channel)
-    // Note: ChannelCoroutine already implements SendChannel, but ProducerScope also inherits SendChannel.
-    // C++ dominance/virtual inheritance might be tricky.
-    // Explicit delegation helps.
-    
     bool is_closed_for_send() const override { return ChannelCoroutine<E>::is_closed_for_send(); }
-    
-    ChannelAwaiter<void> send(E element) override { 
-        return ChannelCoroutine<E>::send(std::move(element)); 
+
+    void* send(E element, Continuation<void*>* continuation) override {
+        return ChannelCoroutine<E>::send(std::move(element), continuation);
     }
-    
+
     ChannelResult<void> try_send(E element) override { return ChannelCoroutine<E>::try_send(std::move(element)); }
-    
+
     bool close(std::exception_ptr cause = nullptr) override { return ChannelCoroutine<E>::close(cause); }
-    
-    void invoke_on_close(std::function<void(std::exception_ptr)> handler) override { 
-        ChannelCoroutine<E>::invoke_on_close(handler); 
+
+    void invoke_on_close(std::function<void(std::exception_ptr)> handler) override {
+        ChannelCoroutine<E>::invoke_on_close(handler);
     }
-    
+
     SendChannel<E>* get_channel() override { return ChannelCoroutine<E>::_channel.get(); }
 };
 
@@ -70,16 +67,15 @@ std::shared_ptr<ReceiveChannel<E>> produce(
 ) {
     // 1. Create Channel
     auto channel = create_channel<E>(capacity, on_buffer_overflow);
-    
+
     // 2. Create Context
     // Kotlin: val newContext = scope.newCoroutineContext(context)
-    // For now, approximate with CoroutineContext.plus (scope + provided context).
     if (!context) context = EmptyCoroutineContext::instance();
     auto newContext = scope->get_coroutine_context()->operator+(context);
 
     // 3. Create Coroutine
     auto coroutine = std::make_shared<ProducerCoroutine<E>>(newContext, channel);
-    
+
     // 4. Start
     if (block) {
         // AbstractCoroutine::start expects an explicit std::function<T(R)> (not a generic lambda).
@@ -90,7 +86,7 @@ std::shared_ptr<ReceiveChannel<E>> produce(
             };
         coroutine->start(start, coroutine, std::move(wrapped_block));
     }
-    
+
     return coroutine;
 }
 
