@@ -145,3 +145,5 @@ Desktop.ini
 /src/build/
 /src/kotlinx/coroutines/flow/internal/AbstractSharedFlow.hpp.backup
 /*build*.txt
+/*report*.txt
+/*todo*.txt
