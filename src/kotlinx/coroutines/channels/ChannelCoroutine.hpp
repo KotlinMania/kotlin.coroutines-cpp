@@ -27,50 +27,49 @@ public:
 
     // SendChannel delegation
     bool is_closed_for_send() const override { return _channel->is_closed_for_send(); }
-    
-    ChannelAwaiter<void> send(E element) override { 
-        // Delegate suspend function
-        return _channel->send(std::move(element)); 
+
+    void* send(E element, Continuation<void*>* continuation) override {
+        return _channel->send(std::move(element), continuation);
     }
-    
+
     ChannelResult<void> try_send(E element) override { return _channel->try_send(std::move(element)); }
-    
+
     bool close(std::exception_ptr cause = nullptr) override { return _channel->close(cause); }
-    
-    void invoke_on_close(std::function<void(std::exception_ptr)> handler) override { 
-        _channel->invoke_on_close(handler); 
+
+    void invoke_on_close(std::function<void(std::exception_ptr)> handler) override {
+        _channel->invoke_on_close(handler);
     }
 
     // ReceiveChannel delegation
     bool is_closed_for_receive() const override { return _channel->is_closed_for_receive(); }
     bool is_empty() const override { return _channel->is_empty(); }
-    
-    ChannelAwaiter<E> receive() override { 
-        return _channel->receive(); 
-    }
-    
-    ChannelAwaiter<ChannelResult<E>> receive_catching() override { 
-        return _channel->receive_catching(); 
-    }
-    
-    ChannelResult<E> try_receive() override { return _channel->try_receive(); }
-    
-    ChannelAwaiter<ChannelResult<E>> receive_with_timeout(long timeout_millis) override { 
-        return _channel->receive_with_timeout(timeout_millis); 
+
+    void* receive(Continuation<void*>* continuation) override {
+        return _channel->receive(continuation);
     }
 
-    std::shared_ptr<selects::SelectClause2<E, SendChannel<E>>> on_send() override {
+    void* receive_catching(Continuation<void*>* continuation) override {
+        return _channel->receive_catching(continuation);
+    }
+
+    ChannelResult<E> try_receive() override { return _channel->try_receive(); }
+
+    selects::SelectClause2<E, SendChannel<E>*>& on_send() override {
         return _channel->on_send();
     }
 
-    std::shared_ptr<selects::SelectClause1<E>> on_receive() override {
+    selects::SelectClause1<E>& on_receive() override {
         return _channel->on_receive();
     }
-    
-    std::shared_ptr<ChannelIterator<E>> iterator() override { return _channel->iterator(); }
+
+    selects::SelectClause1<ChannelResult<E>>& on_receive_catching() override {
+        return _channel->on_receive_catching();
+    }
+
+    std::unique_ptr<ChannelIterator<E>> iterator() override { return _channel->iterator(); }
 
     // Cancellation logic matching ChannelCoroutine.kt
-    void cancel(std::exception_ptr cause = nullptr) override { 
+    void cancel(std::exception_ptr cause = nullptr) override {
         // cancelInternal logic:
         // 1. Cancel the channel
         _channel->cancel(cause);
