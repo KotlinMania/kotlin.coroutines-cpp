@@ -1,79 +1,58 @@
 #pragma once
+/**
+ * @file SemaphoreImpl.hpp
+ * @brief Semaphore implementation using lock-free segment queue.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt
+ * Lines 355-357
+ */
+
 #include "kotlinx/coroutines/sync/Semaphore.hpp"
-#include <atomic>
-#include <stdexcept>
-#include <thread>
-#include <chrono> // Fix namespace issue
+#include "kotlinx/coroutines/sync/SemaphoreAndMutexImpl.hpp"
+#include <memory>
 
 namespace kotlinx {
 namespace coroutines {
 namespace sync {
 
-class SemaphoreImpl : public Semaphore {
-protected:
-    int permits;
-    std::atomic<int> available;
-
+/**
+ * Line 355-357: SemaphoreImpl
+ *
+ * private class SemaphoreImpl(
+ *     permits: Int, acquiredPermits: Int
+ * ): SemaphoreAndMutexImpl(permits, acquiredPermits), Semaphore
+ */
+class SemaphoreImplFull : public SemaphoreAndMutexImpl, public Semaphore {
 public:
-    SemaphoreImpl(int permits, int acquired_permits) 
-        : permits(permits), available(permits - acquired_permits) {
-        if (permits <= 0) throw std::invalid_argument("Semaphore permits must be > 0");
+    SemaphoreImplFull(int permits, int acquired_permits)
+        : SemaphoreAndMutexImpl(permits, acquired_permits)
+    {}
+
+    // Line 25: val availablePermits: Int
+    int available_permits() const override {
+        return SemaphoreAndMutexImpl::available_permits();
     }
 
-    int get_available_permits() const override {
-        return available.load();
+    // Line 44: suspend fun acquire()
+    void* acquire(Continuation<void*>* cont) override {
+        return SemaphoreAndMutexImpl::acquire(cont);
     }
 
-    void acquire() override {
-        /*
-         * TODO: STUB - Semaphore acquire uses busy-wait instead of suspension
-         *
-         * Kotlin source: Semaphore.acquire() in Semaphore.kt
-         *
-         * What's missing:
-         * - Should be a suspend function: suspend fun acquire()
-         * - When no permits available, should suspend using suspendCancellableCoroutine
-         * - Resume when release() is called and permits become available
-         * - Requires: waiters queue to track suspended acquirers
-         * - Requires: proper Continuation<void*>* parameter (Kotlin-style suspend)
-         * - Should support fairness (FIFO ordering of waiters)
-         *
-         * Current behavior: Busy-waits (spins) with yield() until permit available
-         *   - Burns CPU cycles
-         *   - Not coroutine-friendly (blocks the thread)
-         * Correct behavior: Suspend coroutine, allowing other coroutines to run
-         *
-         * Dependencies:
-         * - suspendCancellableCoroutine integration
-         * - Waiters queue (similar to channel senders/receivers queues)
-         * - Atomic state management for lock-free acquire/release coordination
-         *
-         * Impact: High - current implementation blocks thread instead of suspending
-         *
-         * Workaround: Use in non-coroutine context where blocking is acceptable,
-         *   or use try_acquire() with manual retry logic
-         */
-        int expected;
-        do {
-            expected = available.load();
-            while (expected <= 0) {
-                 // busy wait
-                 std::this_thread::yield();
-                 expected = available.load();
-            }
-        } while (!available.compare_exchange_weak(expected, expected - 1));
-    }
-
+    // Line 51: fun tryAcquire(): Boolean
     bool try_acquire() override {
-        int expected = available.load();
-        if (expected <= 0) return false;
-        return available.compare_exchange_strong(expected, expected - 1);
+        return SemaphoreAndMutexImpl::try_acquire();
     }
 
+    // Line 58: fun release()
     void release() override {
-        available.fetch_add(1);
+        SemaphoreAndMutexImpl::release();
     }
 };
+
+// Factory function implementation
+inline std::shared_ptr<Semaphore> create_semaphore(int permits, int acquired_permits) {
+    return std::make_shared<SemaphoreImplFull>(permits, acquired_permits);
+}
 
 } // namespace sync
 } // namespace coroutines
