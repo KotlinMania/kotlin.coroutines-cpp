@@ -1002,15 +1002,13 @@ public:
  *        was not delivered to the consumer.
  * @throws std::invalid_argument when [capacity] < -2
  */
+// Declaration - implementation in Channels.hpp
 template <typename E>
-std::unique_ptr<Channel<E>> create_channel(
+std::shared_ptr<Channel<E>> create_channel(
     int capacity = Channel<E>::RENDEZVOUS,
     BufferOverflow on_buffer_overflow = BufferOverflow::SUSPEND,
     OnUndeliveredElement<E> on_undelivered_element = nullptr
 );
-
-// Implementation in BufferedChannel.hpp / ConflatedBufferedChannel.hpp
-// because it requires the concrete implementations.
 
 } // namespace channels
 } // namespace coroutines
