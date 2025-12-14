@@ -149,48 +149,82 @@ This section is grounded in the Kotlin/Native compiler sources you vendored in `
      - creates a resume basic block,
      - stores its block address into the coroutine label field.
 
-### 5.2 Representation difference to close
-- Kotlin/Native label is a **block address** (`void*`) used by `indirectbr`.
-- Current C++ macro era label is an **int** used by a `switch`.
-- `switch` is semantically correct and can lower to a jump table, but not identical in structure.
+### 5.2 Representation: Now Matching Kotlin/Native
+- **Kotlin/Native:** `void*` label storing `blockaddress`, dispatched via `indirectbr`
+- **C++ (current):** `void* _label` storing `&&label`, dispatched via `goto *label`
 
-Long‑term direction: a compiler plugin that emits computed‑goto dispatch so clang generates the same IR shape as Kotlin/Native.
+Both compile to identical LLVM IR:
+```llvm
+store ptr blockaddress(@func, %resume), ptr %label
+indirectbr ptr %label, [label %resume0, label %resume1, ...]
+```
+
+The `__kxs_suspend_point(__LINE__)` marker provides IR visibility for tooling (kxs-inject).
 
 ---
 
-## 6. DSL + compiler plugin direction
+## 6. Suspend Implementation: Macros + Computed Goto + IR Markers
 
-### 6.1 Why a plugin
-- Macros approximate lowering but require human‑manual spills and state numbering.
-- Kotlin/Native’s correctness hinges on:
-  - liveness‑based spilling,
-  - consistent label/resume dispatch,
-  - structured prompt cancellation.
-- A Clang plugin can mechanize this and keep authoring ergonomic.
+### 6.1 Current Approach (Production)
+The suspend implementation uses **macros with computed goto** that generate LLVM IR identical to Kotlin/Native:
 
-### 6.2 DSL surface (current direction)
-- Suspend functions are annotated:
-  ```cpp
-  [[suspend]] void* foo(int x, Continuation<void*>* cont);
-  ```
-- Suspend points use a Kotlin‑aligned marker:
-  ```cpp
-  auto y = suspend(bar(x, cont));
-  ```
-  Use `suspend(expr)` as the single canonical suspension marker in C++ source.
+```cpp
+class MyCoroutine : public ContinuationImpl {
+    void* _label = nullptr;  // blockaddress storage
 
-### 6.3 Plugin responsibilities
-For each `[[suspend]]` function:
-1. Discover suspend points (`suspend(expr)`).
-2. Build CFG and run liveness to compute spill sets per suspend point.
-3. Synthesize a coroutine frame/class:
-   - `_label` field (prefer `void*` label‑address mode; fallback to int).
-   - spill fields for live locals.
-4. Rewrite into a Kotlin/Native‑equivalent state machine:
-   - save spills → set label → call → propagate sentinel → resume label → restore spills.
-5. (Later) apply tail‑suspend optimization as in `NativeSuspendFunctionLowering.kt`.
+    void* invoke_suspend(Result<void*> result) override {
+        coroutine_begin(this)
 
-Implementation scaffold lives in `tools/clang_suspend_plugin/`.
+        coroutine_yield(this, delay(100, completion_));
+
+        coroutine_end(this)
+    }
+};
+```
+
+### 6.2 The Two Pieces
+
+**1. `__LINE__` → Computed Goto (Runtime Dispatch)**
+```cpp
+(c)->_label = &&_kxs_resume_42;  // stores blockaddress
+goto *(c)->_label;  // indirectbr dispatch
+```
+
+Compiles to:
+```llvm
+store ptr blockaddress(@func, %resume42), ptr %label
+indirectbr ptr %label, [label %resume42, ...]
+```
+
+**2. `__kxs_suspend_point(__LINE__)` → IR Marker (Tooling)**
+```cpp
+::__kxs_suspend_point(42);  // survives to IR
+```
+
+Compiles to:
+```llvm
+call void @__kxs_suspend_point(i32 42)
+```
+
+The kxs-inject tool finds these for liveness analysis.
+
+### 6.3 Macro Definitions
+From `src/kotlinx/coroutines/dsl/Suspend.hpp`:
+- `coroutine_begin(c)` - Entry dispatch (null check + indirectbr)
+- `coroutine_yield(c, expr)` - Suspension point (stores label, calls, checks COROUTINE_SUSPENDED)
+- `coroutine_yield_value(c, result, expr, out)` - Value-producing suspension
+- `coroutine_end(c)` - Returns nullptr (Unit)
+
+### 6.4 kxs-inject (IR Transform)
+The `kxs-inject` tool (`src/kotlinx/coroutines/tools/kxs_inject/`) processes LLVM IR to:
+1. Find `__kxs_suspend_point()` markers
+2. Compute liveness at each suspension point
+3. Generate spill/restore code automatically
+4. Remove marker calls from output
+
+### 6.5 Portability
+- **GCC/Clang**: Computed goto (void* _label) → identical IR to Kotlin/Native
+- **MSVC**: Duff's device fallback (int _label with switch/case) → semantically correct
 
 ---
 
