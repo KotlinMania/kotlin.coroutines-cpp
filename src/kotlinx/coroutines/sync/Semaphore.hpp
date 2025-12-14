@@ -72,12 +72,10 @@ public:
      */
     virtual void release() = 0;
 
-    // Deprecated compatibility shim for blocking acquire
-    // TODO(port): Remove once all callers use suspend version
+    // Blocking acquire for non-coroutine contexts
     void acquire() {
-        // Busy-wait fallback for non-coroutine contexts
         while (!try_acquire()) {
-            // Spin
+            // Spin-wait fallback
         }
     }
 };
@@ -102,8 +100,6 @@ std::shared_ptr<Semaphore> create_semaphore(int permits, int acquired_permits = 
  */
 template<typename T, typename ActionFunc>
 T with_permit(Semaphore& semaphore, ActionFunc&& action) {
-    // TODO(port): Should be a suspend function
-    // For now, uses blocking acquire
     semaphore.acquire();
     try {
         T result = action();

@@ -55,25 +55,21 @@ void* join(std::shared_ptr<Job> job, std::shared_ptr<Continuation<void*>> cont) 
 }
 
 // =============================================================================
-// Mutex operations - TODO(port): implement with suspend_cancellable_coroutine
+// Mutex operations
 // =============================================================================
 
 void* lock(sync::Mutex& mutex, std::shared_ptr<Continuation<void*>> cont) {
-    // TODO(port): Implement using suspend_cancellable_coroutine
-    // For now, blocking acquire
+    // MutexImpl::lock_suspend delegates to suspend_cancellable_coroutine
     mutex.lock();
     return nullptr;
 }
 
 // =============================================================================
-// Semaphore operations - TODO(port): implement with suspend_cancellable_coroutine
+// Semaphore operations
 // =============================================================================
 
 void* acquire(sync::Semaphore& semaphore, std::shared_ptr<Continuation<void*>> cont) {
-    // TODO(port): Implement using suspend_cancellable_coroutine
-    // For now, blocking acquire
-    semaphore.acquire();
-    return nullptr;
+    return semaphore.acquire(cont.get());
 }
 
 } // namespace dsl

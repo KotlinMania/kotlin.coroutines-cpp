@@ -64,7 +64,7 @@ public:
 
         if (this->is_closed_for_send() && !has_conflated_element_) {
             // TODO: ReceiveChannel doesn't have close() - use cancel() instead
-            s->cancel(this->close_cause_);
+            s->cancel(this->close_cause());
             return s;
         }
 
@@ -96,21 +96,31 @@ public:
     // # The `send(..)` Operations #
     // #############################
 
-    ChannelAwaiter<void> send(E element) override {
-        // We need to construct a ChannelAwaiter that suspends if necessary.
+    void* send(E element, Continuation<void*>* continuation) override {
         // Kotlin: send is suspend.
         // It iterates subscribers and calls send(element).
-        // This project does not use C++20 coroutines (`co_await`/`co_return`).
-        // Suspending behavior must be expressed via the Continuation ABI / ChannelAwaiter machinery.
-        
-        return suspend_send_logic(std::move(element));
+        // Fast path - try to send immediately
+        auto result = try_send(std::move(element));
+        if (result.is_success()) {
+            return nullptr;  // Completed immediately
+        }
+        if (result.is_closed()) {
+            auto cause = result.exception_or_null();
+            if (cause) std::rethrow_exception(cause);
+            throw ClosedSendChannelException("Channel was closed");
+        }
+
+        // Need to suspend - full state machine implementation required
+        (void)continuation;
+        throw std::logic_error("BroadcastChannel::send suspend path requires full state machine implementation");
+        return nullptr;
     }
 
     ChannelResult<void> try_send(E element) override {
         std::lock_guard<std::recursive_mutex> g(lock_);
         
         if (this->is_closed_for_send()) {
-            return ChannelResult<void>::closed(this->close_cause_);
+            return ChannelResult<void>::closed(this->close_cause());
         }
 
         // Check if any subscriber should suspend (unsupported in simple try_send?)
@@ -207,7 +217,7 @@ private:
         std::vector<std::shared_ptr<SendChannel<E>>> subs;
         {
              std::lock_guard<std::recursive_mutex> g(lock_);
-             if (this->is_closed_for_send()) throw ClosedSendChannelException();
+             if (this->is_closed_for_send()) throw ClosedSendChannelException("Channel was closed");
              
              if (capacity_ == CONFLATED) {
                  last_conflated_element_ = element;

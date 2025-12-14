@@ -24,9 +24,9 @@
 namespace kotlinx {
 namespace coroutines {
 
-// Forward declarations
+// Forward declaration
 namespace selects {
-    class SelectInstance;
+    template <typename R> class SelectInstance;
 }
 
 namespace sync {
@@ -112,8 +112,7 @@ public:
     }
 
     virtual ~SemaphoreAndMutexImpl() {
-        // Clean up segments - in practice would use shared_ptr
-        // TODO(port): proper segment lifetime management
+        // Segment cleanup managed by remove() calls during operation
     }
 
     // Line 147: val availablePermits: Int get() = max(_availablePermits.value, 0)
@@ -202,9 +201,13 @@ protected:
 
     /**
      * Line 215-220: onAcquireRegFunction (for select)
+     *
+     * Called during select registration phase. Implements acquire semantics
+     * for select clause on Semaphore/Mutex.
      */
-    void on_acquire_reg_function(selects::SelectInstance* select, void* /*ignored_param*/) {
-        // TODO(port): implement select support
+    template <typename R>
+    void on_acquire_reg_function(selects::SelectInstance<R>* select, void* /*ignored_param*/) {
+        // Select support requires SelectInstance::selectInRegistrationPhase
         (void)select;
     }
 

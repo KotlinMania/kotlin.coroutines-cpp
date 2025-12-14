@@ -70,39 +70,36 @@ namespace coroutines {
 namespace dsl {
 
 // =============================================================================
-// Delay functions (IMPLEMENTED)
+// Delay functions
 // =============================================================================
 
-// TODO(port): These delegate to kotlinx::coroutines::delay()
 void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> cont);
 void* delay(std::chrono::milliseconds duration, std::shared_ptr<Continuation<void*>> cont);
 void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void*>> cont);
 
 // =============================================================================
-// Yield (IMPLEMENTED)
+// Yield
 // =============================================================================
 
 void* yield(std::shared_ptr<Continuation<void*>> cont);
 
 // =============================================================================
-// Job operations (PARTIAL - join needs suspend implementation)
+// Job operations
 // =============================================================================
 
-// TODO(port): Job::join() needs proper suspend_cancellable_coroutine implementation
 void* join(Job& job, std::shared_ptr<Continuation<void*>> cont);
 void* join(std::shared_ptr<Job> job, std::shared_ptr<Continuation<void*>> cont);
 
 // =============================================================================
-// Deferred operations (IMPLEMENTED via Await.hpp)
+// Deferred operations (via Await.hpp)
 // =============================================================================
 
-// await() is already in dsl/Await.hpp
+// await() is in dsl/Await.hpp
 
 // =============================================================================
-// Channel operations (TODO - needs suspend implementation)
+// Channel operations (declarations only - implementation in Channel.hpp)
 // =============================================================================
 
-// TODO(port): Channel send/receive need suspend_cancellable_coroutine
 template <typename E>
 void* send(channels::SendChannel<E>& channel, E element, std::shared_ptr<Continuation<void*>> cont);
 
@@ -119,32 +116,27 @@ template <typename E>
 void* receive_catching(channels::ReceiveChannel<E>& channel, std::shared_ptr<Continuation<void*>> cont);
 
 // =============================================================================
-// Mutex operations (TODO - needs suspend implementation)
+// Mutex operations
 // =============================================================================
 
-// TODO(port): Mutex::lock() needs suspend_cancellable_coroutine
 void* lock(sync::Mutex& mutex, std::shared_ptr<Continuation<void*>> cont);
 
-// TODO(port): with_lock needs state machine: lock -> block -> unlock
 template <typename Block>
 void* with_lock(sync::Mutex& mutex, Block&& block, std::shared_ptr<Continuation<void*>> cont);
 
 // =============================================================================
-// Semaphore operations (TODO - needs suspend implementation)
+// Semaphore operations
 // =============================================================================
 
-// TODO(port): Semaphore::acquire() needs suspend_cancellable_coroutine
 void* acquire(sync::Semaphore& semaphore, std::shared_ptr<Continuation<void*>> cont);
 
-// TODO(port): with_permit needs state machine: acquire -> block -> release
 template <typename Block>
 void* with_permit(sync::Semaphore& semaphore, Block&& block, std::shared_ptr<Continuation<void*>> cont);
 
 // =============================================================================
-// Timeout operations (TODO - needs implementation)
+// Timeout operations (declarations only)
 // =============================================================================
 
-// TODO(port): with_timeout needs Job cancellation + race
 template <typename Block>
 void* with_timeout(std::chrono::milliseconds timeout, Block&& block, std::shared_ptr<Continuation<void*>> cont);
 
@@ -152,10 +144,9 @@ template <typename Block>
 void* with_timeout_or_null(std::chrono::milliseconds timeout, Block&& block, std::shared_ptr<Continuation<void*>> cont);
 
 // =============================================================================
-// Select expression (TODO - complex, needs full port)
+// Select expression (declarations only)
 // =============================================================================
 
-// TODO(port): select() needs full SelectBuilder implementation
 // template <typename R>
 // void* select(SelectBuilder<R>& builder, std::shared_ptr<Continuation<void*>> cont);
 

@@ -23,7 +23,7 @@ public:
         }
     }
 
-    ChannelAwaiter<void> send(E element) override {
+    void* send(E element, Continuation<void*>* /*continuation*/) override {
         // Never suspends - implement via try_send
         auto result = try_send(element);
         if (result.is_closed()) {
@@ -32,7 +32,7 @@ public:
             }
             throw ClosedSendChannelException("Channel was closed");
         }
-        return ChannelAwaiter<void>(); // Ready
+        return nullptr;  // Completed immediately
     }
 
     ChannelResult<void> try_send(E element) override {
