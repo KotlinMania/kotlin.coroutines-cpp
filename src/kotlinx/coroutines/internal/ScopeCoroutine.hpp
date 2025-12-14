@@ -1,11 +1,33 @@
 #pragma once
 #include "kotlinx/coroutines/AbstractCoroutine.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/CompletedExceptionally.hpp"
+#include "kotlinx/coroutines/CompletedValue.hpp"
 #include <memory>
+
+namespace kotlinx::coroutines {
+    class TimeoutCancellationException;
+}
 
 namespace kotlinx {
 namespace coroutines {
 namespace internal {
+
+/**
+ * Kotlin: internal fun <T> recoverResult(state: Any?, uCont: Continuation<T>): Result<T>
+ * Converts a JobState to a Result<T> for resumption.
+ */
+template <typename T>
+Result<T> recover_result(JobState* state) {
+    if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
+        return Result<T>::failure(ex->cause);
+    }
+    if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
+        return Result<T>::success(completed->value);
+    }
+    // Default case: state is null or unknown type, return default value
+    return Result<T>::success(T{});
+}
 
 /**
  * This is a coroutine instance that is created by [coroutineScope] builder.
@@ -22,10 +44,9 @@ public:
 
     void after_completion(JobState* state) override {
         // Resume in a cancellable way by default when resuming from another context
-        // TODO(port): implement interception and result recovery
-        // u_cont->intercepted()->resume_cancellable_with(recover_result(state, u_cont));
+        // Kotlin: uCont.intercepted().resumeCancellableWith(recoverResult(state, uCont))
         if (u_cont) {
-            u_cont->resume_with(Result<T>::success(T{})); // TODO(semantics): proper result recovery
+            u_cont->resume_with(recover_result<T>(state));
         }
     }
 
@@ -38,8 +59,28 @@ public:
 
     void after_resume(JobState* state) override {
         // Resume direct because scope is already in the correct context
+        // Kotlin: uCont.resumeWith(recoverResult(state, uCont))
         if (u_cont) {
-            u_cont->resume_with(Result<T>::success(T{})); // TODO(semantics): proper result recovery
+            u_cont->resume_with(recover_result<T>(state));
+        }
+    }
+
+    // startUndispatchedOrReturnIgnoreTimeout from Undispatched.kt
+    void* start_undispatched_or_return_ignore_timeout(
+        std::shared_ptr<ScopeCoroutine<T>> receiver,
+        std::function<T(CoroutineScope&)> block) {
+        // Simplified implementation - TODO: full undispatched logic
+        try {
+            // Start the coroutine
+            auto result = block(*this);
+            // If it completes immediately, return the result
+            return reinterpret_cast<void*>(&result);
+        } catch (const TimeoutCancellationException& e) {
+            // Ignore timeout exceptions on fast path
+            if (e.coroutine.get() == this) {
+                return nullptr; // null result for timeout
+            }
+            throw;
         }
     }
 };
