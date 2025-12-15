@@ -16,7 +16,7 @@
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
-#include "kotlinx/coroutines/internal/DispatchedTaskDispatch.hpp"
+#include "kotlinx/coroutines/common/DispatchedTaskDispatch.hpp"
 #include <thread>
 #include <chrono>
 #include <limits>

@@ -62,11 +62,11 @@ namespace coroutines {
                 }
                 if (!delay) delay = &get_default_delay();
 
-                auto exception = make_timeout_cancellation_exception(time, delay, this->shared_from_this());
+                auto exception = make_timeout_cancellation_exception(time, delay, std::dynamic_pointer_cast<Job>(this->JobSupport::shared_from_this()));
                 this->cancel(std::make_exception_ptr(exception));
             }
 
-            std::string name_string() override {
+            std::string name_string() const override {
                  return internal::ScopeCoroutine<T>::name_string() + "(timeMillis=" + std::to_string(time) + ")";
             }
         };

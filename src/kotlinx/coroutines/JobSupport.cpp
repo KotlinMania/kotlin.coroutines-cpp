@@ -181,9 +181,9 @@ namespace kotlinx {
 
         class ChildHandleNode : public JobNode, public ChildHandle {
         public:
-            ChildJob *child_job;
+            std::shared_ptr<ChildJob> child_job;
 
-            explicit ChildHandleNode(ChildJob *child) : child_job(child) {
+            explicit ChildHandleNode(std::shared_ptr<ChildJob> child) : child_job(std::move(child)) {
             }
 
             bool get_on_cancelling() const override { return true; }
@@ -558,13 +558,9 @@ namespace kotlinx {
                 if (auto *list = incomplete->get_list()) {
                     list->for_each([&](internal::LockFreeLinkedListNode *node) {
                         if (auto *child_node = dynamic_cast<ChildHandleNode *>(node)) {
-                            // TODO(port): ChildJob needs enable_shared_from_this to return shared_ptr
-                            // For now, return raw Job* wrapped in shared_ptr with no-op deleter
                             if (child_node->child_job) {
-                                auto *job_ptr = dynamic_cast<Job*>(child_node->child_job);
-                                if (job_ptr) {
-                                    result.push_back(std::shared_ptr<Job>(job_ptr, [](Job*){}));
-                                }
+                                // child_job is now stored as shared_ptr<ChildJob>, which inherits from Job
+                                result.push_back(std::static_pointer_cast<Job>(child_node->child_job));
                             }
                         }
                     });
@@ -574,7 +570,7 @@ namespace kotlinx {
         }
 
         std::shared_ptr<ChildHandle> JobSupport::attach_child(std::shared_ptr<ChildJob> child) {
-            auto *node = new ChildHandleNode(child.get());
+            auto *node = new ChildHandleNode(std::move(child));
             node->job = this;
 
             bool added = impl_->try_put_node_into_list(this, node,

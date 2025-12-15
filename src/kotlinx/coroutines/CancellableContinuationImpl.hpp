@@ -598,7 +598,7 @@ public:
             State* state = state_.load(std::memory_order_acquire);
 
             if (auto* nc = dynamic_cast<NotCompleted*>(state)) {
-                State* update = resumed_state(nc, value, this->resume_mode, on_cancellation, idempotent);
+                State* update = resumed_state(nc, owned_state_, value, this->resume_mode, on_cancellation, idempotent);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
                     detach_child_if_non_reusable();
                     return const_cast<void*>(RESUME_TOKEN);
@@ -648,6 +648,7 @@ public:
     // Kotlin lines 473-491
     State* resumed_state(
         NotCompleted* state,
+        std::shared_ptr<State> owned_state,  // shared ownership of state for proper CancelHandler handling
         T proposed_update,
         int resume_mode,
         std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation,
@@ -666,9 +667,11 @@ public:
         // -> CompletedCancellableContinuationState (need to track handlers/metadata)
         auto* ch = dynamic_cast<CancelHandler*>(state);
         if (on_cancellation != nullptr || ch != nullptr || idempotent != nullptr) {
+            // Use dynamic_pointer_cast from owned_state to properly share ownership
+            auto ch_shared = ch ? std::dynamic_pointer_cast<CancelHandler>(owned_state) : nullptr;
             return new CompletedCancellableContinuationState<T>(
                 proposed_update,
-                ch ? std::shared_ptr<CancelHandler>(ch, [](CancelHandler*){}) : nullptr,
+                ch_shared,
                 on_cancellation,
                 idempotent
             );
@@ -685,7 +688,7 @@ public:
             State* state = state_.load(std::memory_order_acquire);
 
             if (auto* nc = dynamic_cast<NotCompleted*>(state)) {
-                State* update = resumed_state(nc, proposed_update, resume_mode, on_cancellation, nullptr);
+                State* update = resumed_state(nc, owned_state_, proposed_update, resume_mode, on_cancellation, nullptr);
                 if (!state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
                     delete update;
                     continue; // retry on CAS failure
@@ -1115,8 +1118,10 @@ public:
 
                 // Use CompletedCancellableContinuationState when metadata needed
                 if (ch != nullptr || idempotent != nullptr) {
+                    // Use dynamic_pointer_cast from owned_state_ for proper shared ownership
+                    auto ch_shared = ch ? std::dynamic_pointer_cast<CancelHandler>(owned_state_) : nullptr;
                     auto* update = new CompletedCancellableContinuationState<void>(
-                        ch ? std::shared_ptr<CancelHandler>(ch, [](CancelHandler*){}) : nullptr,
+                        ch_shared,
                         nullptr,
                         idempotent);
                     if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
