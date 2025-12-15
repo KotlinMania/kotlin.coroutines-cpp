@@ -4,13 +4,26 @@
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
 #include "kotlinx/coroutines/CompletedValue.hpp"
 #include <memory>
-
-namespace kotlinx::coroutines {
-    class TimeoutCancellationException;
-}
+#include <typeinfo>
 
 namespace kotlinx {
 namespace coroutines {
+
+// Forward declaration - defined in Timeout.hpp
+class TimeoutCancellationException;
+
+/**
+ * Checks if the current exception is a TimeoutCancellationException from the given coroutine.
+ * Returns true if it IS our own timeout (should NOT rethrow), false otherwise.
+ *
+ * Kotlin: private fun ScopeCoroutine<*>.notOwnTimeout(cause: Throwable): Boolean =
+ *     cause !is TimeoutCancellationException || cause.coroutine !== this
+ *
+ * This is the inverse: returns true if it IS own timeout.
+ * Implemented in Scopes.cpp to avoid circular dependency with Timeout.hpp.
+ */
+bool is_own_timeout_exception(std::exception_ptr ex, const void* coroutine_ptr);
+
 namespace internal {
 
 /**
@@ -65,22 +78,34 @@ public:
         }
     }
 
-    // startUndispatchedOrReturnIgnoreTimeout from Undispatched.kt
+    /**
+     * Kotlin: internal fun <T, R> ScopeCoroutine<T>.startUndispatchedOrReturnIgnoreTimeout(...)
+     * From Undispatched.kt - starts an undispatched coroutine, ignoring timeout exceptions
+     * that originated from this coroutine.
+     *
+     * @param receiver unused in C++ (Kotlin extension function receiver)
+     * @param block the coroutine block to execute
+     * @return result pointer, COROUTINE_SUSPENDED, or nullptr on own timeout
+     */
     void* start_undispatched_or_return_ignore_timeout(
         std::shared_ptr<ScopeCoroutine<T>> receiver,
         std::function<T(CoroutineScope&)> block) {
-        // Simplified implementation - TODO: full undispatched logic
+        // TODO(port): full undispatched logic with make_completing_once and child waiting
+        // Currently simplified: just execute block and handle timeout exceptions
         try {
-            // Start the coroutine
             auto result = block(*this);
-            // If it completes immediately, return the result
-            return reinterpret_cast<void*>(&result);
-        } catch (const TimeoutCancellationException& e) {
-            // Ignore timeout exceptions on fast path
-            if (e.coroutine.get() == this) {
-                return nullptr; // null result for timeout
+            // Block completed synchronously - return heap-allocated result
+            return reinterpret_cast<void*>(new T(std::move(result)));
+        } catch (...) {
+            auto ex = std::current_exception();
+            // Check if this is our own timeout exception (should return null, not rethrow)
+            // Kotlin: notOwnTimeout returns true if should rethrow, false if own timeout
+            if (is_own_timeout_exception(ex, this)) {
+                // Own timeout - return nullptr (null result for with_timeout_or_null)
+                return nullptr;
             }
-            throw;
+            // Not our timeout or different exception - rethrow
+            std::rethrow_exception(ex);
         }
     }
 };

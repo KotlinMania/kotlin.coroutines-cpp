@@ -9,7 +9,7 @@
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
-#include "kotlinx/coroutines/internal/CoroutineContextUtils.hpp"
+#include "kotlinx/coroutines/common/CoroutineContextUtils.hpp"
 #include "kotlinx/coroutines/internal/CoroutineStackFrame.hpp"
 #include "kotlinx/coroutines/internal/DispatchedTask.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
@@ -432,4 +432,4 @@ std::shared_ptr<Continuation<T>> CoroutineDispatcher::intercept_continuation(std
 } // namespace kotlinx
 
 // Definitions for DispatchedTask::run/dispatch/resume live here to avoid cycles.
-#include "kotlinx/coroutines/internal/DispatchedTaskDispatch.hpp"
+#include "kotlinx/coroutines/common/DispatchedTaskDispatch.hpp"
