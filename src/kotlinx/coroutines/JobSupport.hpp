@@ -54,6 +54,16 @@ public:
 /**
  * Node in the linked list of completion handlers.
  * Transliterated from: internal abstract class JobNode (JobSupport.kt:1460)
+ *
+ * NOTE: The `job` pointer is a raw pointer to the parent JobSupport. This is safe
+ * because nodes are stored in a linked list owned by the JobSupport, and are cleaned
+ * up when the JobSupport is destroyed. However, if a node were to outlive its parent
+ * (which shouldn't happen in normal usage), the pointer would become dangling.
+ *
+ * TODO(abi-ownership): Consider using weak_ptr<CoroutineContext> for job_ with a
+ * get_job() helper that returns JobSupport* after checking validity. This would
+ * require changing setters to use shared_from_this() and handling the case where
+ * shared_from_this() isn't available yet (during construction).
  */
 class JobNode : public Incomplete,
                 public internal::LockFreeLinkedListNode,

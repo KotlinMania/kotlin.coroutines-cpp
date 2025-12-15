@@ -384,12 +384,13 @@ public:
     }
 
     // AbstractSharedFlow overrides
-    SharedFlowSlot* create_slot() override {
-        return new SharedFlowSlot();
+    std::unique_ptr<SharedFlowSlot> create_slot() override {
+        return std::make_unique<SharedFlowSlot>();
     }
 
-    std::vector<SharedFlowSlot*>* create_slot_array(int size) override {
-        auto* arr = new std::vector<SharedFlowSlot*>(size, nullptr);
+    std::unique_ptr<std::vector<std::unique_ptr<SharedFlowSlot>>> create_slot_array(int size) override {
+        auto arr = std::make_unique<std::vector<std::unique_ptr<SharedFlowSlot>>>(size);
+        // All elements initialized to nullptr by default
         return arr;
     }
 

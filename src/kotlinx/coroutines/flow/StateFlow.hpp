@@ -211,9 +211,9 @@ template<typename S, typename F>
 inline StateFlow<int>* AbstractSharedFlow<S, F>::get_subscription_count() {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (!subscription_count_) {
-        subscription_count_ = new SubscriptionCountStateFlow(n_collectors_);
+        subscription_count_ = std::make_unique<SubscriptionCountStateFlow>(n_collectors_);
     }
-    return static_cast<StateFlow<int>*>(subscription_count_);
+    return static_cast<StateFlow<int>*>(subscription_count_.get());
 }
 
 template<typename S, typename F>
@@ -224,29 +224,28 @@ inline S* AbstractSharedFlow<S, F>::allocate_slot() {
     {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
-        std::vector<S*>* current_slots = slots_;
-        if (!current_slots) {
+        // Kotlin: val slots = when (val curSlots = slots) { null -> createSlotArray(2).also { slots = it } ... }
+        if (!slots_) {
             slots_ = create_slot_array(2);
-            current_slots = slots_;
-        } else if (n_collectors_ >= static_cast<int>(current_slots->size())) {
-            auto* new_slots = create_slot_array(2 * current_slots->size());
-            for (size_t i = 0; i < current_slots->size(); ++i) {
-                (*new_slots)[i] = (*current_slots)[i];
+        } else if (n_collectors_ >= static_cast<int>(slots_->size())) {
+            // Kotlin: curSlots.copyOf(2 * curSlots.size).also { slots = it }
+            // Transfer ownership of existing slots to new, larger vector
+            auto new_slots = create_slot_array(2 * slots_->size());
+            for (size_t i = 0; i < slots_->size(); ++i) {
+                (*new_slots)[i] = std::move((*slots_)[i]);
             }
-            delete slots_;
-            slots_ = new_slots;
-            current_slots = slots_;
+            slots_ = std::move(new_slots);
         }
 
         int index = next_index_;
         while (true) {
-            slot = (*current_slots)[index];
-            if (!slot) {
-                slot = create_slot();
-                (*current_slots)[index] = slot;
+            // Kotlin: slot = slots[index] ?: createSlot().also { slots[index] = it }
+            if (!(*slots_)[index]) {
+                (*slots_)[index] = create_slot();
             }
+            slot = (*slots_)[index].get();
             index++;
-            if (index >= static_cast<int>(current_slots->size())) index = 0;
+            if (index >= static_cast<int>(slots_->size())) index = 0;
 
             if (slot->allocate_locked(as_flow())) {
                 break;
@@ -255,7 +254,7 @@ inline S* AbstractSharedFlow<S, F>::allocate_slot() {
 
         next_index_ = index;
         n_collectors_++;
-        subscription_count_copy = subscription_count_;
+        subscription_count_copy = subscription_count_.get();
     }
 
     if (subscription_count_copy) {
@@ -273,7 +272,7 @@ inline void AbstractSharedFlow<S, F>::free_slot(S* slot) {
     {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         n_collectors_--;
-        subscription_count_copy = subscription_count_;
+        subscription_count_copy = subscription_count_.get();
 
         if (n_collectors_ == 0) {
             next_index_ = 0;

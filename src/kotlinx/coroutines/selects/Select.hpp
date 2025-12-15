@@ -204,7 +204,9 @@ class SelectImplementation : public SelectInstance<R>, public std::enable_shared
     State state = REGISTRATION;
     std::vector<ClauseData> clauses;
     std::shared_ptr<CancellableContinuation<R>> continuation;
-    ClauseData* selectedClause = nullptr;
+    // Use index instead of pointer to avoid dangling pointer if vector reallocates
+    // (even though current state machine prevents this, index is safer)
+    size_t selectedClauseIndex = SIZE_MAX;
     void* internalResult = nullptr;
 
     // Segment-based cancellation storage (mirrors Kotlin's disposableHandleOrSegment/indexInSegment)
@@ -240,7 +242,7 @@ public:
         
         if (it != clauses.end()) {
             state = SELECTED;
-            selectedClause = &(*it);
+            selectedClauseIndex = static_cast<size_t>(std::distance(clauses.begin(), it));
             internalResult = result;
             return true;
         }
@@ -297,11 +299,11 @@ public:
         // 1. Check if already selected during registration
         {
             std::lock_guard<std::recursive_mutex> lock(mutex);
-            if (state == SELECTED) {
+            if (state == SELECTED && selectedClauseIndex < clauses.size()) {
                 state = COMPLETED;
                 dispose_others();
                 // Execute block
-                return selectedClause->block(internalResult);
+                return clauses[selectedClauseIndex].block(internalResult);
             }
             state = WAITING;
         }
@@ -312,7 +314,7 @@ public:
     
     void resume_if_waiting() {
         std::lock_guard<std::recursive_mutex> lock(mutex);
-        if (state == SELECTED && continuation && continuation->is_active()) {
+        if (state == SELECTED && selectedClauseIndex < clauses.size() && continuation && continuation->is_active()) {
             // value is produced by block? No, block is executed after resume usually in Kotlin's optimized select.
             // Simplified: we resume with INTERNAL result, then select wrapper executes block.
             // But R might not be void*.
@@ -322,9 +324,9 @@ public:
             // Let's assume we execute block here and resume with result.
             // Or resume with "SelectClause" index/pointer and let main routine execute block.
             // Better: Resume with R.
-            
+
             try {
-                R res = selectedClause->block(internalResult);
+                R res = clauses[selectedClauseIndex].block(internalResult);
                 state = COMPLETED;
                 dispose_others();
                 continuation->resume(res);
@@ -344,9 +346,9 @@ public:
     }
     
     void dispose_others() {
-        for(auto& c : clauses) {
-            if (&c != selectedClause && c.disposable) {
-                c.disposable->dispose();
+        for (size_t i = 0; i < clauses.size(); ++i) {
+            if (i != selectedClauseIndex && clauses[i].disposable) {
+                clauses[i].disposable->dispose();
             }
         }
     }
