@@ -82,9 +82,10 @@ if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
 endif()
 
 # -----------------------------------------------------------------------------
-# kxs-inject: LLVM IR transformation tool (builds vendored LLVM)
+# kxs-inject: LLVM IR transformation tool (Kotlin/Native-style IR lowering)
+# See: docs/IR_SUSPEND_LOWERING_SPEC.md
 # -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_KXS_INJECT "Build kxs-inject IR transformation tool" OFF)
+option(KOTLINX_BUILD_KXS_INJECT "Build kxs-inject IR transformation tool" ON)
 if(KOTLINX_BUILD_KXS_INJECT)
     add_subdirectory(src/kotlinx/coroutines/tools/kxs_inject)
 endif()

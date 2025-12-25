@@ -233,15 +233,31 @@ public:
          this->resume_with(Result<void>::failure(exception));
     }
     
-    template<typename R>
-    void* try_resume(
-        [[maybe_unused]] R value,
-        [[maybe_unused]] void* idempotent,
-        [[maybe_unused]] std::function<void(Throwable, R, std::shared_ptr<CoroutineContext>)> on_cancellation
-    ) {
-         return nullptr; 
-    }
+    // Kotlin: tryResume(value: R, idempotent: Any?, onCancellation: ...)
+    // For void specialization, no value parameter needed
+    virtual void* try_resume(
+        void* idempotent,
+        std::function<void(std::exception_ptr, void*, std::shared_ptr<CoroutineContext>)> on_cancellation
+    ) = 0;
 };
+
+/**
+ * Kotlin extension function from Select.kt lines 865-872:
+ *   private fun CancellableContinuation<Unit>.tryResume(onCancellation: ...): Boolean
+ *
+ * Convenience wrapper that calls try_resume(Unit, null, onCancellation), then complete_resume.
+ * Returns true if resumption succeeded, false if already cancelled.
+ */
+inline bool try_resume_with_on_cancellation(
+    CancellableContinuation<void>* cont,
+    std::function<void(std::exception_ptr, void*, std::shared_ptr<CoroutineContext>)> on_cancellation
+) {
+    if (!cont) return false;
+    void* token = cont->try_resume(nullptr, on_cancellation);
+    if (!token) return false;
+    cont->complete_resume(token);
+    return true;
+}
 
 /**
  * Suspends the coroutine like [suspendCoroutine], but providing a [CancellableContinuation] to

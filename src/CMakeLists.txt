@@ -39,6 +39,7 @@ list(FILTER CORE_SOURCES EXCLUDE REGEX "/examples/")
 list(FILTER CORE_SOURCES EXCLUDE REGEX "/test/")
 list(FILTER CORE_SOURCES EXCLUDE REGEX "/integration/")
 
+
 # Create the core library
 add_library(kotlinx-coroutines-core ${CORE_SOURCES})
 

@@ -13,6 +13,7 @@
 #include <functional>
 #include <cassert>
 #include "kotlinx/coroutines/internal/Symbol.hpp"
+#include "kotlinx/coroutines/ContinuationState.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -31,6 +32,30 @@ inline Symbol& CLOSED_SYMBOL() {
 // Forward declarations
 template <typename S> class Segment;
 template <typename S> struct SegmentOrClosed;
+
+/**
+ * Non-templated base class for Segment<S>.
+ * Used by Waiter interface to avoid circular template dependencies.
+ * Corresponds to Kotlin's Segment<*> (star projection).
+ *
+ * Inherits from NotCompleted because in Kotlin, Segment<*> can be stored
+ * directly as state in CancellableContinuationImpl (alongside CancelHandler).
+ * See CancellableContinuationImpl.kt line 205, 210, 407.
+ */
+class SegmentBase : public NotCompleted {
+public:
+    virtual ~SegmentBase() = default;
+
+    /**
+     * Called when a slot is logically removed/cancelled.
+     * Kotlin line 237: fun onCancellation(index: Int, cause: Throwable?, context: CoroutineContext)
+     * Subclasses implement the actual cleanup logic.
+     */
+    virtual void on_cancellation(int index, std::exception_ptr cause,
+        std::shared_ptr<CoroutineContext> context) = 0;
+
+    std::string to_string() const override { return "Segment"; }
+};
 
 /**
  * Line 90-182: ConcurrentLinkedListNode
@@ -197,7 +222,7 @@ static constexpr int POINTERS_SHIFT = 16;
  * queue algorithm, but with maintaining prev pointer for efficient remove.
  */
 template <typename S>
-class Segment : public ConcurrentLinkedListNode<S> {
+class Segment : public ConcurrentLinkedListNode<S>, public SegmentBase {
 public:
     // Line 193: @JvmField val id: Long
     const long id;
@@ -251,8 +276,8 @@ public:
     /**
      * Line 237: This function is invoked on continuation cancellation.
      */
-    virtual void on_cancellation(int index, std::exception_ptr cause,
-        std::shared_ptr<CoroutineContext> context) = 0;
+    void on_cancellation(int index, std::exception_ptr cause,
+        std::shared_ptr<CoroutineContext> context) override = 0;
 
     /**
      * Line 242-244: Invoked on each slot clean-up.

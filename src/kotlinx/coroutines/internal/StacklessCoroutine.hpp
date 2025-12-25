@@ -16,6 +16,7 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <iostream>
 
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/Runnable.hpp"
@@ -72,8 +73,12 @@ public:
             if (task) {
                 try {
                     task->run();
+                } catch (const std::exception& e) {
+                    // Log exception but continue loop to process remaining tasks
+                    // TODO(port): Forward to CoroutineExceptionHandler when available
+                    std::cerr << "Uncaught exception in StacklessScheduler: " << e.what() << std::endl;
                 } catch (...) {
-                    // Ignore exceptions to keep loop running
+                    std::cerr << "Uncaught unknown exception in StacklessScheduler" << std::endl;
                 }
             }
         }
@@ -91,7 +96,12 @@ public:
         if (task) {
             try {
                 task->run();
+            } catch (const std::exception& e) {
+                // Log exception but return true (task was processed)
+                // TODO(port): Forward to CoroutineExceptionHandler when available
+                std::cerr << "Uncaught exception in StacklessScheduler::run_one: " << e.what() << std::endl;
             } catch (...) {
+                std::cerr << "Uncaught unknown exception in StacklessScheduler::run_one" << std::endl;
             }
             return true;
         }

@@ -242,6 +242,38 @@ public:
         }
     }
 
+    // Copy assignment operator
+    ChannelResult& operator=(const ChannelResult& other) {
+        if (this != &other) {
+            // Destroy current content
+            this->~ChannelResult();
+            // Copy construct in place
+            holder_type_ = other.holder_type_;
+            switch (holder_type_) {
+                case HolderType::VALUE: new (&value_) T(other.value_); break;
+                case HolderType::FAILED: failed_ = other.failed_; break;
+                case HolderType::CLOSED: new (&closed_) Closed(other.closed_); break;
+            }
+        }
+        return *this;
+    }
+
+    // Move assignment operator
+    ChannelResult& operator=(ChannelResult&& other) noexcept {
+        if (this != &other) {
+            // Destroy current content
+            this->~ChannelResult();
+            // Move construct in place
+            holder_type_ = other.holder_type_;
+            switch (holder_type_) {
+                case HolderType::VALUE: new (&value_) T(std::move(other.value_)); break;
+                case HolderType::FAILED: failed_ = other.failed_; break;
+                case HolderType::CLOSED: new (&closed_) Closed(std::move(other.closed_)); break;
+            }
+        }
+        return *this;
+    }
+
     ~ChannelResult() {
         switch (holder_type_) {
             case HolderType::VALUE: value_.~T(); break;
@@ -417,6 +449,24 @@ public:
         : holder_type_(other.holder_type_), closed_(other.closed_) {}
     ChannelResult(ChannelResult&& other) noexcept
         : holder_type_(other.holder_type_), closed_(std::move(other.closed_)) {}
+
+    // Copy assignment operator
+    ChannelResult& operator=(const ChannelResult& other) {
+        if (this != &other) {
+            holder_type_ = other.holder_type_;
+            closed_ = other.closed_;
+        }
+        return *this;
+    }
+
+    // Move assignment operator
+    ChannelResult& operator=(ChannelResult&& other) noexcept {
+        if (this != &other) {
+            holder_type_ = other.holder_type_;
+            closed_ = std::move(other.closed_);
+        }
+        return *this;
+    }
 
     [[nodiscard]] bool is_success() const { return holder_type_ == HolderType::VALUE; }
     [[nodiscard]] bool is_failure() const { return holder_type_ != HolderType::VALUE; }

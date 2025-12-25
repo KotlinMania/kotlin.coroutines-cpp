@@ -277,3 +277,113 @@ Before submitting changes:
 ## Final Note
 
 Transliteration first, helpers second. Keep it mechanical and reversible. Call out every mismatch explicitly with a `TODO` so we can schedule semantic work once the Clang suspend plugin lands.
+
+---
+
+## AST Distance Tool
+
+A vendored cross-language AST comparison tool for analyzing port progress and identifying priority files.
+
+### Location
+```
+tools/ast_distance/
+├── CMakeLists.txt
+├── README.md
+├── include/
+│   ├── ast_parser.hpp      # Tree-sitter parsing for Rust/Kotlin/C++
+│   ├── codebase.hpp        # Directory scanning, dependency graphs, matching
+│   ├── imports.hpp         # Import/include extraction, package detection
+│   ├── node_types.hpp      # Normalized AST node type mappings
+│   ├── similarity.hpp      # Cosine similarity, combined scoring
+│   └── tree.hpp            # Tree data structure
+└── src/
+    ├── main.cpp            # CLI entry point
+    ├── ast_parser.cpp
+    ├── ast_normalizer.cpp
+    └── similarity.cpp
+```
+
+### Build
+```bash
+cd tools/ast_distance
+mkdir -p build && cd build
+cmake .. && make -j8
+```
+
+### Commands
+
+**Analyze this project (Kotlin → C++):**
+```bash
+./ast_distance --deep \
+    /path/to/kotlinx.coroutines/kotlinx-coroutines-core/common/src kotlin \
+    ../../../src/kotlinx/coroutines cpp
+```
+
+**Check what's missing:**
+```bash
+./ast_distance --missing <src_dir> <src_lang> <tgt_dir> <tgt_lang>
+```
+
+**Scan a codebase (dependency graph):**
+```bash
+./ast_distance --deps <directory> <rust|kotlin|cpp>
+```
+
+**Compare two files directly:**
+```bash
+./ast_distance file1.kt file2.cpp
+```
+
+**Dump AST structure:**
+```bash
+./ast_distance --dump <file> <rust|kotlin|cpp>
+```
+
+### Output Interpretation
+
+The `--deep` command outputs:
+- **Matched files** with similarity scores (0.0–1.0)
+- **Priority score** = dependents × (1 - similarity) — high priority = many dependents + low similarity
+- **Incomplete ports** (similarity < 60%)
+- **Missing files** not yet ported
+
+Similarity thresholds:
+- `> 0.85` — Excellent port, likely complete
+- `0.60–0.85` — Good port, may need refinement
+- `0.40–0.60` — Partial port, significant gaps
+- `< 0.40` — Stub or very different implementation
+
+### Extending the Tool
+
+**Add a new language:**
+1. Add tree-sitter grammar to `CMakeLists.txt` (FetchContent)
+2. Add `extern "C" { const TSLanguage* tree_sitter_<lang>(); }` to `ast_parser.hpp` and `imports.hpp`
+3. Add `<LANG>` to `enum class Language` in `ast_parser.hpp`
+4. Add `<lang>_node_to_type()` mapping in `node_types.hpp`
+5. Add import/package extraction in `imports.hpp`
+6. Update file extension checks in `codebase.hpp`
+
+**Improve matching:**
+- Edit `name_match_score()` in `codebase.hpp` for better fuzzy matching
+- Edit `PackageDecl::similarity_to()` in `imports.hpp` for package-aware matching
+
+**Add new metrics:**
+- Add to `ASTSimilarity` class in `similarity.hpp`
+- Expose in `combined_similarity()` function
+
+### Using for Porting Decisions
+
+Run periodically to track progress:
+```bash
+# Save baseline
+./ast_distance --deep ... > baseline.txt
+
+# After porting work
+./ast_distance --deep ... > current.txt
+diff baseline.txt current.txt
+```
+
+Focus porting effort on files with:
+1. High dependent count (core infrastructure)
+2. Low similarity score (incomplete)
+3. Listed in "Top priority to complete" output

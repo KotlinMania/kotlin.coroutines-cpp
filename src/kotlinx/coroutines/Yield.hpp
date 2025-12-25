@@ -32,7 +32,25 @@ namespace coroutines {
 [[deprecated("Use yield(completion) instead")]]
 void yield_coroutine();
 
+/**
+ * Suspend function form - requires continuation.
+ * This is the proper suspend function implementation.
+ */
 void* yield(std::shared_ptr<Continuation<void*>> completion);
+
+/**
+ * No-arg yield for test compatibility.
+ * In Kotlin, yield() is a suspend function called within coroutines.
+ * In C++ tests not using full coroutine machinery, this provides
+ * a simple OS-level thread yield as a stand-in.
+ */
+inline void yield() {
+    // Suppress deprecation warning - this is the test compatibility wrapper
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    yield_coroutine();
+    #pragma clang diagnostic pop
+}
 
 } // namespace coroutines
 } // namespace kotlinx

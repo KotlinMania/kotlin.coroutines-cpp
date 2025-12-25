@@ -147,3 +147,6 @@ Desktop.ini
 /*build*.txt
 /*report*.txt
 /*todo*.txt
+
+# ast_distance build artifacts
+tools/ast_distance/build/

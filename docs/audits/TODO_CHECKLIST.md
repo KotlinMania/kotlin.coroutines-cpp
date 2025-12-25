@@ -131,15 +131,33 @@ This document tracks the implementation progress of missing APIs marked with `TO
 
 ### Select Support
 
-- [ ] `Job::get_on_join()` - Select clause  
-      **File**: `Job.hpp:293`  
-      **Kotlin**: `val onJoin: SelectClause0`  
-      **Note**: Requires full select expression implementation
+- [x] `SelectImplementation` - Core select state machine
+      **File**: `selects/Select.hpp`
+      **Kotlin**: `Select.kt` (904 lines)
+      **Completed**: 2024-12-22 - Full line-for-line transliteration of Select.kt
+      - 3-phase state machine (REGISTRATION → WAITING → COMPLETION)
+      - State markers: STATE_REG, STATE_COMPLETED, STATE_CANCELLED, NO_RESULT
+      - `trySelect()`, `trySelectDetailed()`, `trySelectInternal()`
+      - `doSelect()` suspend entry point
+      - `waitUntilSelected()` suspension logic
+      - `complete()` and `cleanup()` lifecycle
+      - `ClauseData` inner class with registration/disposal
+      - All error paths match Kotlin (lines 601, 666, 682, 529)
 
-- [ ] `Deferred::get_on_await()` - Select clause  
-      **File**: `Deferred.hpp:76` (commented out)  
-      **Kotlin**: `val onAwait: SelectClause1<T>`  
-      **Note**: Requires full select expression implementation
+- [x] `try_resume_with_on_cancellation()` - CancellableContinuation extension
+      **File**: `CancellableContinuation.hpp`
+      **Kotlin**: `Select.kt:865-872`
+      **Completed**: 2024-12-22 - Added for Select resumption support
+
+- [ ] `Job::get_on_join()` - Select clause
+      **File**: `Job.hpp:293`
+      **Kotlin**: `val onJoin: SelectClause0`
+      **Note**: SelectImplementation ready, need clause registration
+
+- [ ] `Deferred::get_on_await()` - Select clause
+      **File**: `Deferred.hpp:76` (commented out)
+      **Kotlin**: `val onAwait: SelectClause1<T>`
+      **Note**: SelectImplementation ready, need clause registration
 
 ### Dispatcher Composition
 
@@ -151,19 +169,25 @@ This document tracks the implementation progress of missing APIs marked with `TO
 
 ## Progress Tracking
 
-Last updated: 2024-12-10
+Last updated: 2024-12-22
 
 **Statistics**:
-- Total TODOs: 23
-- Implemented: 2
+- Total TODOs: 25
+- Implemented: 10
 - In Progress: 0
-- Remaining: 21
+- Remaining: 15
 
 **Priority Breakdown**:
-- Critical: 6 TODOs (was 8)
-- High: 6 TODOs
-- Medium: 7 TODOs
-- Low: 2 TODOs
+- Critical: 5 TODOs (CoroutineDispatcher core)
+- High: 2 TODOs (minus_key, to_string)
+- Medium: 6 TODOs (AbstractCoroutine lifecycle)
+- Low: 2 TODOs (Job/Deferred select clauses)
+
+**Recent Completions (2024-12-22)**:
+- SelectImplementation full transliteration from Select.kt
+- try_resume_with_on_cancellation for void CancellableContinuation
+- Error suppression audit (empty catch blocks now log)
+- Kotlin parity fixes (find_clause throws on not-found)
 
 ## Implementation Guidelines
 

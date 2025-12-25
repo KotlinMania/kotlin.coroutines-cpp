@@ -108,8 +108,12 @@ namespace kotlinx {
                 void run() override {
                     try {
                         wrapped->run();
+                    } catch (const std::exception& e) {
+                        // Uncaught exception in dispatched task - report to stderr
+                        // TODO(port): Forward to CoroutineExceptionHandler when available
+                        std::cerr << "Uncaught exception in LimitedDispatcher task: " << e.what() << std::endl;
                     } catch (...) {
-                        // handle
+                        std::cerr << "Uncaught unknown exception in LimitedDispatcher task" << std::endl;
                     }
                     // Notify completion
                     // We need to cast back to LimitedDispatcher

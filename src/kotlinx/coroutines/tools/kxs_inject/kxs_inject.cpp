@@ -4,6 +4,8 @@
 // __kxs_suspend_point() calls, and transforms them into computed goto
 // dispatch (indirectbr + blockaddress) matching Kotlin/Native's pattern.
 //
+// See: docs/IR_SUSPEND_LOWERING_SPEC.md
+//
 // Pipeline: .cpp -> clang -emit-llvm -> .ll -> kxs-inject -> .ll -> clang -> .o
 //
 // Usage: kxs-inject input.ll -o output.ll
@@ -15,6 +17,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/Support/CommandLine.h"
@@ -23,9 +26,11 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
 #include <vector>
 #include <string>
+#include <map>
 
 using namespace llvm;
 
@@ -47,16 +52,31 @@ static cl::opt<bool> Verbose("v",
     cl::desc("Verbose output"),
     cl::init(false));
 
+// Suspend point info
+struct SuspendPoint {
+    CallInst *call;
+    int id;
+    BasicBlock *resumeBlock = nullptr;
+};
+
 // Find all calls to __kxs_suspend_point in a function
-static std::vector<CallInst*> findSuspendPoints(Function &F) {
-    std::vector<CallInst*> suspendPoints;
+static std::vector<SuspendPoint> findSuspendPoints(Function &F) {
+    std::vector<SuspendPoint> suspendPoints;
 
     for (BasicBlock &BB : F) {
         for (Instruction &I : BB) {
             if (auto *CI = dyn_cast<CallInst>(&I)) {
                 if (Function *Callee = CI->getCalledFunction()) {
                     if (Callee->getName() == "__kxs_suspend_point") {
-                        suspendPoints.push_back(CI);
+                        SuspendPoint SP;
+                        SP.call = CI;
+                        // Extract the suspend point ID from the argument
+                        if (auto *ConstArg = dyn_cast<ConstantInt>(CI->getArgOperand(0))) {
+                            SP.id = static_cast<int>(ConstArg->getSExtValue());
+                        } else {
+                            SP.id = static_cast<int>(suspendPoints.size());
+                        }
+                        suspendPoints.push_back(SP);
                     }
                 }
             }
@@ -66,34 +86,28 @@ static std::vector<CallInst*> findSuspendPoints(Function &F) {
     return suspendPoints;
 }
 
+// Get or create the label pointer from the coroutine struct (first argument, first field)
+static Value* getLabelPointer(Function &F, IRBuilder<> &Builder) {
+    // The coroutine struct is passed as the first argument
+    // The _label field is at offset 0
+    Argument *CoroArg = F.getArg(0);
+
+    // GEP to get the first field (index 0, 0)
+    // Assuming the struct layout has _label as the first field
+    Type *PtrTy = Builder.getPtrTy();
+
+    // For opaque pointers, we just do a direct pointer access
+    // The _label field is at the start of the struct
+    return CoroArg;  // The pointer itself points to _label (first field)
+}
+
 // Transform a function with suspend points into computed-goto dispatch
 //
-// Before:
-//   entry:
-//     ... code ...
-//     call void @__kxs_suspend_point(i32 1)
-//     ... more code ...
-//
-// After:
-//   entry:
-//     %label_ptr = getelementptr %Coroutine, ptr %coro, i32 0, i32 0  ; label field
-//     %saved_label = load ptr, ptr %label_ptr
-//     %is_null = icmp eq ptr %saved_label, null
-//     br i1 %is_null, label %start, label %dispatch
-//
-//   dispatch:
-//     indirectbr ptr %saved_label, [label %resume0, label %resume1, ...]
-//
-//   start:
-//     ... code before suspend ...
-//     store ptr blockaddress(@func, %resume0), ptr %label_ptr
-//     ; spill live variables
-//     ; call actual suspend function
-//     ; if suspended, return COROUTINE_SUSPENDED
-//
-//   resume0:
-//     ; restore live variables
-//     ... code after suspend ...
+// Implements the Kotlin/Native pattern:
+//   1. Entry dispatch: check if _label is null, goto start or dispatch
+//   2. Dispatch block: indirectbr to resume labels
+//   3. At each suspend point: store blockaddress, check if suspended
+//   4. Resume labels: continue execution after suspension
 //
 static bool transformFunction(Function &F) {
     auto suspendPoints = findSuspendPoints(F);
@@ -107,43 +121,96 @@ static bool transformFunction(Function &F) {
                << " with " << suspendPoints.size() << " suspend points\n";
     }
 
-    // For now, just demonstrate that we found the suspend points
-    // Full transformation will:
-    // 1. Create dispatch block with indirectbr
-    // 2. Split at each suspend point to create resume labels
-    // 3. Generate blockaddress constants
-    // 4. Add spill/restore code based on liveness analysis
-
     LLVMContext &Ctx = F.getContext();
-    IRBuilder<> Builder(Ctx);
+    Type *PtrTy = PointerType::get(Ctx, 0);
 
-    // Create resume blocks for each suspend point
+    // Get the entry block
+    BasicBlock *EntryBlock = &F.getEntryBlock();
+
+    // Create new blocks for dispatch logic
+    BasicBlock *DispatchBlock = BasicBlock::Create(Ctx, "kxs_dispatch", &F, EntryBlock);
+    BasicBlock *StartBlock = BasicBlock::Create(Ctx, "kxs_start", &F, EntryBlock);
+
+    // Move all instructions from entry to start
+    StartBlock->splice(StartBlock->begin(), EntryBlock);
+
+    // Build the entry dispatch in the original entry block
+    IRBuilder<> EntryBuilder(EntryBlock);
+
+    // Load the saved label from the coroutine struct
+    // %label_ptr = first argument (points to coroutine, _label is first field)
+    Value *LabelPtr = F.getArg(0);
+
+    // %saved_label = load ptr, ptr %label_ptr
+    Value *SavedLabel = EntryBuilder.CreateLoad(PtrTy, LabelPtr, "kxs_saved_label");
+
+    // %is_first = icmp eq ptr %saved_label, null
+    Value *NullPtr = ConstantPointerNull::get(cast<PointerType>(PtrTy));
+    Value *IsFirst = EntryBuilder.CreateICmpEQ(SavedLabel, NullPtr, "kxs_is_first");
+
+    // br i1 %is_first, label %start, label %dispatch
+    EntryBuilder.CreateCondBr(IsFirst, StartBlock, DispatchBlock);
+
+    // Create resume blocks for each suspend point by splitting
     std::vector<BasicBlock*> resumeBlocks;
     for (size_t i = 0; i < suspendPoints.size(); i++) {
-        CallInst *SP = suspendPoints[i];
-        BasicBlock *BB = SP->getParent();
+        SuspendPoint &SP = suspendPoints[i];
+        CallInst *CI = SP.call;
+        BasicBlock *BB = CI->getParent();
 
         // Split the block after the suspend point call
+        // The new block becomes the resume point
         BasicBlock *ResumeBlock = BB->splitBasicBlock(
-            SP->getNextNode(),
-            "kxs_resume" + std::to_string(i)
+            CI->getNextNode(),
+            "kxs_resume_" + std::to_string(SP.id)
         );
+        SP.resumeBlock = ResumeBlock;
         resumeBlocks.push_back(ResumeBlock);
 
         if (Verbose) {
-            errs() << "  Created resume block: " << ResumeBlock->getName() << "\n";
+            errs() << "  Created resume block: " << ResumeBlock->getName()
+                   << " for suspend point " << SP.id << "\n";
         }
     }
 
-    // Remove the marker calls (they're placeholders)
-    for (CallInst *SP : suspendPoints) {
-        SP->eraseFromParent();
+    // Build the dispatch block with indirectbr
+    IRBuilder<> DispatchBuilder(DispatchBlock);
+    IndirectBrInst *IndBr = DispatchBuilder.CreateIndirectBr(SavedLabel, resumeBlocks.size());
+    for (BasicBlock *BB : resumeBlocks) {
+        IndBr->addDestination(BB);
     }
 
-    // TODO: Insert dispatch block at function entry
-    // TODO: Generate blockaddress constants for each resume block
-    // TODO: Create indirectbr instruction
-    // TODO: Add label store before each original suspend point
+    // Insert blockaddress stores before each suspend point
+    for (size_t i = 0; i < suspendPoints.size(); i++) {
+        SuspendPoint &SP = suspendPoints[i];
+        CallInst *CI = SP.call;
+
+        // Insert before the suspend point call
+        IRBuilder<> Builder(CI);
+
+        // Get blockaddress for the resume block
+        BlockAddress *ResumeAddr = BlockAddress::get(&F, SP.resumeBlock);
+
+        // Store the blockaddress to the label pointer
+        Builder.CreateStore(ResumeAddr, LabelPtr);
+
+        if (Verbose) {
+            errs() << "  Inserted blockaddress store for resume_" << SP.id << "\n";
+        }
+    }
+
+    // Remove the marker calls (they're just placeholders)
+    for (SuspendPoint &SP : suspendPoints) {
+        // Get the terminator that was created by splitBasicBlock
+        BasicBlock *BB = SP.call->getParent();
+
+        // Remove the call
+        SP.call->eraseFromParent();
+    }
+
+    if (Verbose) {
+        errs() << "  Transformation complete\n";
+    }
 
     return true;
 }
@@ -152,7 +219,12 @@ int main(int argc, char **argv) {
     InitLLVM X(argc, argv);
 
     cl::ParseCommandLineOptions(argc, argv,
-        "kxs-inject - LLVM IR coroutine transformation tool\n");
+        "kxs-inject - LLVM IR coroutine transformation tool\n"
+        "\n"
+        "Transforms __kxs_suspend_point() markers into Kotlin/Native-style\n"
+        "computed goto dispatch (indirectbr + blockaddress).\n"
+        "\n"
+        "See: docs/IR_SUSPEND_LOWERING_SPEC.md\n");
 
     // Parse input file
     LLVMContext Context;

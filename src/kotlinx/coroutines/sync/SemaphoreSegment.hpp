@@ -121,7 +121,7 @@ public:
     }
 
     // Line 388
-    std::string to_string() const {
+    std::string to_string() const override {
         return "SemaphoreSegment[id=" + std::to_string(id) + "]";
     }
 };
