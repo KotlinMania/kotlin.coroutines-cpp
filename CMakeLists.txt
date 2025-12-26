@@ -154,6 +154,14 @@ install(EXPORT KotlinxCoroutinesTargets
 )
 
 # -----------------------------------------------------------------------------
+# AST Distance Tool (porting analysis)
+# -----------------------------------------------------------------------------
+option(KOTLINX_BUILD_AST_DISTANCE "Build AST distance/porting analysis tool" ON)
+if(KOTLINX_BUILD_AST_DISTANCE)
+    add_subdirectory(tools/ast_distance)
+endif()
+
+# -----------------------------------------------------------------------------
 # Lint targets (don't require compilation)
 # -----------------------------------------------------------------------------
 find_package(Python3 COMPONENTS Interpreter)
@@ -197,6 +205,69 @@ if(Python3_FOUND)
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/analyze_symbols.py --stubs
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Finding stub implementations..."
+    )
+endif()
+
+# -----------------------------------------------------------------------------
+# AST-based porting analysis targets (requires ast_distance tool)
+# -----------------------------------------------------------------------------
+if(KOTLINX_BUILD_AST_DISTANCE)
+    # Lint check using AST analysis
+    add_custom_target(ast-lint
+        COMMAND $<TARGET_FILE:ast_distance> --lint ${CMAKE_SOURCE_DIR}/src
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        DEPENDS ast_distance
+        COMMENT "Running AST-based lint checks (unused params, missing guards)..."
+    )
+
+    # TODO scanning with tags
+    add_custom_target(ast-todos
+        COMMAND $<TARGET_FILE:ast_distance> --todos ${CMAKE_SOURCE_DIR}/src
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        DEPENDS ast_distance
+        COMMENT "Scanning for TODOs with tags and context..."
+    )
+
+    # TODO summary (no context)
+    add_custom_target(ast-todos-summary
+        COMMAND $<TARGET_FILE:ast_distance> --todos ${CMAKE_SOURCE_DIR}/src --summary
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        DEPENDS ast_distance
+        COMMENT "Scanning for TODOs (summary only)..."
+    )
+
+    # File statistics
+    add_custom_target(ast-stats
+        COMMAND $<TARGET_FILE:ast_distance> --stats ${CMAKE_SOURCE_DIR}/src
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        DEPENDS ast_distance
+        COMMENT "Showing file statistics (line counts, stubs, TODOs)..."
+    )
+
+    # Deep porting analysis (Kotlin -> C++)
+    add_custom_target(ast-deep
+        COMMAND $<TARGET_FILE:ast_distance> --deep
+            ${CMAKE_SOURCE_DIR}/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src kotlin
+            ${CMAKE_SOURCE_DIR}/src/kotlinx/coroutines cpp
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        DEPENDS ast_distance
+        COMMENT "Running deep porting analysis (AST + deps + TODOs + lint)..."
+    )
+
+    # Missing files analysis
+    add_custom_target(ast-missing
+        COMMAND $<TARGET_FILE:ast_distance> --missing
+            ${CMAKE_SOURCE_DIR}/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src kotlin
+            ${CMAKE_SOURCE_DIR}/src/kotlinx/coroutines cpp
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        DEPENDS ast_distance
+        COMMENT "Finding files missing from C++ port..."
+    )
+
+    # Combined porting report target
+    add_custom_target(porting-report
+        DEPENDS ast-deep
+        COMMENT "Full porting analysis complete"
     )
 endif()
 

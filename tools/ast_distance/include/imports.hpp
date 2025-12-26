@@ -230,6 +230,7 @@ public:
      * Extract module path from a Rust file (uses file path + mod declarations).
      */
     PackageDecl extract_rust_module(const std::string& source, const std::string& file_path) {
+        (void)source;  // Rust modules derive from file path, not source content
         PackageDecl pkg;
 
         // For Rust, derive from file path: src/widgets/block.rs -> widgets.block

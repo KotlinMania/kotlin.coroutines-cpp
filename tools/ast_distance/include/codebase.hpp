@@ -3,12 +3,15 @@
 #include "imports.hpp"
 #include "ast_parser.hpp"
 #include "similarity.hpp"
+#include "porting_utils.hpp"
 #include <filesystem>
 #include <map>
 #include <set>
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
+#include <regex>
 
 namespace fs = std::filesystem;
 
@@ -36,6 +39,14 @@ struct SourceFile {
     // For comparison
     float similarity_score = 0.0f;
     std::string matched_file;      // Matched file in other codebase
+
+    // Porting analysis
+    std::string transliterated_from;  // "Transliterated from:" header value
+    int line_count = 0;
+    int code_lines = 0;
+    bool is_stub = false;
+    std::vector<TodoItem> todos;
+    std::vector<LintError> lint_errors;
 
     // Get the "identity" for matching - last part of package + filename
     std::string identity() const {
@@ -197,6 +208,39 @@ public:
     }
 
     /**
+     * Extract porting analysis data (transliterated_from, TODOs, lint, line counts).
+     */
+    void extract_porting_data() {
+        for (auto& [path, sf] : files) {
+            // Extract "Transliterated from:" header
+            sf.transliterated_from = PortingAnalyzer::extract_transliterated_from(sf.path);
+
+            // Get file stats
+            FileStats stats = PortingAnalyzer::analyze_file(sf.path);
+            sf.line_count = stats.line_count;
+            sf.code_lines = stats.code_lines;
+            sf.is_stub = stats.is_stub;
+            sf.todos = stats.todos;
+
+            // Run lint checks
+            sf.lint_errors = PortingAnalyzer::lint_file(sf.path);
+        }
+    }
+
+    /**
+     * Build map of transliterated_from paths to files for matching.
+     */
+    std::map<std::string, std::string> transliteration_map() const {
+        std::map<std::string, std::string> result;
+        for (const auto& [path, sf] : files) {
+            if (!sf.transliterated_from.empty()) {
+                result[sf.transliterated_from] = path;
+            }
+        }
+        return result;
+    }
+
+    /**
      * Build dependency graph - resolve imports to actual files.
      */
     void build_dependency_graph() {
@@ -338,6 +382,12 @@ public:
         float similarity;
         int source_dependents;
         int target_dependents;
+        int source_lines = 0;
+        int target_lines = 0;
+        int todo_count = 0;
+        int lint_count = 0;
+        bool is_stub = false;
+        bool matched_by_header = false;  // True if matched via "Transliterated from:"
     };
 
     std::vector<Match> matches;
@@ -412,15 +462,59 @@ public:
     }
 
     /**
-     * Find matching files between codebases by name.
+     * Find matching files between codebases.
+     * Priority: 1) "Transliterated from:" headers, 2) Name matching
      */
     void find_matches() {
+        std::set<std::string> matched_sources;
         std::set<std::string> matched_targets;
+
+        // First pass: Match by "Transliterated from:" header
+        // Target files reference source files, so look in target for headers
+        for (const auto& [tgt_path, tgt_file] : target.files) {
+            if (tgt_file.transliterated_from.empty()) continue;
+
+            // Try to find the source file that matches the header
+            for (const auto& [src_path, src_file] : source.files) {
+                // Check if transliterated_from contains this source file's path
+                if (tgt_file.transliterated_from.find(src_file.filename) != std::string::npos ||
+                    src_file.path.find(tgt_file.transliterated_from) != std::string::npos ||
+                    tgt_file.transliterated_from.find(src_file.stem) != std::string::npos) {
+
+                    if (matched_sources.count(src_path)) continue;
+
+                    Match m;
+                    m.source_path = src_path;
+                    m.target_path = tgt_path;
+                    m.source_qualified = src_file.qualified_name;
+                    m.target_qualified = tgt_file.qualified_name;
+                    m.similarity = 0.0f;
+                    m.source_dependents = src_file.dependent_count;
+                    m.target_dependents = tgt_file.dependent_count;
+                    m.source_lines = src_file.line_count;
+                    m.target_lines = tgt_file.line_count;
+                    m.todo_count = tgt_file.todos.size();
+                    m.lint_count = tgt_file.lint_errors.size();
+                    m.is_stub = tgt_file.is_stub;
+                    m.matched_by_header = true;
+
+                    matches.push_back(m);
+                    matched_sources.insert(src_path);
+                    matched_targets.insert(tgt_path);
+                    break;
+                }
+            }
+        }
+
+        // Second pass: Name-based matching for remaining files
         std::vector<std::tuple<float, std::string, std::string>> candidates;
 
-        // First pass: collect all potential matches with scores
         for (const auto& [src_path, src_file] : source.files) {
+            if (matched_sources.count(src_path)) continue;
+
             for (const auto& [tgt_path, tgt_file] : target.files) {
+                if (matched_targets.count(tgt_path)) continue;
+
                 float score = name_match_score(src_file, tgt_file);
                 if (score > 0.4f) {
                     candidates.emplace_back(score, src_path, tgt_path);
@@ -435,7 +529,6 @@ public:
             });
 
         // Greedy matching: take best matches first
-        std::set<std::string> matched_sources;
         for (const auto& [score, src_path, tgt_path] : candidates) {
             if (matched_sources.count(src_path) || matched_targets.count(tgt_path)) {
                 continue;  // Already matched
@@ -452,6 +545,12 @@ public:
             m.similarity = 0.0f;  // AST similarity computed later
             m.source_dependents = src_file.dependent_count;
             m.target_dependents = tgt_file.dependent_count;
+            m.source_lines = src_file.line_count;
+            m.target_lines = tgt_file.line_count;
+            m.todo_count = tgt_file.todos.size();
+            m.lint_count = tgt_file.lint_errors.size();
+            m.is_stub = tgt_file.is_stub;
+            m.matched_by_header = false;
 
             matches.push_back(m);
             matched_sources.insert(src_path);

@@ -2,6 +2,7 @@
 #include "similarity.hpp"
 #include "tree_lstm.hpp"
 #include "codebase.hpp"
+#include "porting_utils.hpp"
 #include <iostream>
 #include <filesystem>
 #include <iomanip>
@@ -25,7 +26,7 @@ const char* language_name(Language lang) {
 }
 
 void print_usage(const char* program) {
-    std::cerr << "AST Distance - Cross-language AST comparison and dependency analysis\n\n";
+    std::cerr << "AST Distance - Cross-language AST comparison and porting analysis\n\n";
     std::cerr << "Usage:\n";
     std::cerr << "  " << program << " <file1> <lang1> <file2> <lang2>\n";
     std::cerr << "      Compare AST similarity between two files\n\n";
@@ -40,9 +41,15 @@ void print_usage(const char* program) {
     std::cerr << "  " << program << " --rank <src_dir> <src_lang> <tgt_dir> <tgt_lang>\n";
     std::cerr << "      Rank files by porting priority (dependents + similarity)\n\n";
     std::cerr << "  " << program << " --deep <src_dir> <src_lang> <tgt_dir> <tgt_lang>\n";
-    std::cerr << "      Full analysis: AST similarity + dependencies + rankings\n\n";
+    std::cerr << "      Full analysis: AST + deps + TODOs + lint + line ratios\n\n";
     std::cerr << "  " << program << " --missing <src_dir> <src_lang> <tgt_dir> <tgt_lang>\n";
     std::cerr << "      Show files missing from target, ranked by importance\n\n";
+    std::cerr << "  " << program << " --todos <directory>\n";
+    std::cerr << "      Scan for TODO comments with tags and context\n\n";
+    std::cerr << "  " << program << " --lint <directory>\n";
+    std::cerr << "      Run lint checks (unused params, missing guards)\n\n";
+    std::cerr << "  " << program << " --stats <directory>\n";
+    std::cerr << "      Show file statistics (line counts, stubs, TODOs)\n\n";
     std::cerr << "  Languages: rust, kotlin, cpp\n\n";
 }
 
@@ -175,6 +182,7 @@ void cmd_deep(const std::string& src_dir, const std::string& src_lang,
     target.scan();
     target.extract_imports();
     target.build_dependency_graph();
+    target.extract_porting_data();  // Extract TODOs, lint, line counts
     target.print_summary();
 
     // Compare
@@ -187,10 +195,70 @@ void cmd_deep(const std::string& src_dir, const std::string& src_lang,
 
     comp.print_report();
 
+    // Porting quality summary
+    std::cout << "\n=== Porting Quality Summary ===\n\n";
+
+    int total_todos = 0;
+    int total_lint = 0;
+    int stub_count = 0;
+    int header_matched = 0;
+
+    for (const auto& m : comp.matches) {
+        total_todos += m.todo_count;
+        total_lint += m.lint_count;
+        if (m.is_stub) stub_count++;
+        if (m.matched_by_header) header_matched++;
+    }
+
+    std::cout << "Matched by header:    " << header_matched << " / " << comp.matches.size() << "\n";
+    std::cout << "Matched by name:      " << (comp.matches.size() - header_matched) << " / " << comp.matches.size() << "\n";
+    std::cout << "Total TODOs in target: " << total_todos << "\n";
+    std::cout << "Total lint errors:    " << total_lint << "\n";
+    std::cout << "Stub files:           " << stub_count << "\n";
+
+    // Show files with issues
+    std::cout << "\n=== Files with Issues ===\n\n";
+    std::cout << std::setw(30) << std::left << "File"
+              << std::setw(8) << "Sim"
+              << std::setw(8) << "Ratio"
+              << std::setw(6) << "TODOs"
+              << std::setw(6) << "Lint"
+              << "Status\n";
+    std::cout << std::string(70, '-') << "\n";
+
+    auto ranked = comp.ranked_for_porting();
+    int shown = 0;
+    for (const auto& m : ranked) {
+        if (m.todo_count == 0 && m.lint_count == 0 && !m.is_stub && m.similarity >= 0.6) {
+            continue;  // Skip files without issues
+        }
+        if (shown++ >= 20) {
+            std::cout << "... and " << (ranked.size() - 20) << " more files\n";
+            break;
+        }
+
+        std::string status;
+        if (m.is_stub) status = "STUB";
+        else if (m.similarity < 0.4) status = "LOW_SIM";
+        else if (m.lint_count > 0) status = "LINT";
+        else if (m.todo_count > 0) status = "TODO";
+
+        float ratio = 0.0f;
+        if (m.source_lines > 0) {
+            ratio = static_cast<float>(m.target_lines) / static_cast<float>(m.source_lines);
+        }
+
+        std::cout << std::setw(30) << std::left << m.target_qualified.substr(0, 28)
+                  << std::setw(8) << std::fixed << std::setprecision(2) << m.similarity
+                  << std::setw(8) << std::fixed << std::setprecision(2) << ratio
+                  << std::setw(6) << m.todo_count
+                  << std::setw(6) << m.lint_count
+                  << status << "\n";
+    }
+
     // Porting recommendations
     std::cout << "\n=== Porting Recommendations ===\n\n";
 
-    auto ranked = comp.ranked_for_porting();
     int incomplete = 0;
     for (const auto& m : ranked) {
         if (m.similarity < 0.6) incomplete++;
@@ -201,12 +269,15 @@ void cmd_deep(const std::string& src_dir, const std::string& src_lang,
 
     if (incomplete > 0) {
         std::cout << "Top priority to complete:\n";
-        int shown = 0;
+        int shown_priority = 0;
         for (const auto& m : ranked) {
-            if (m.similarity < 0.6 && shown++ < 10) {
+            if (m.similarity < 0.6 && shown_priority++ < 10) {
                 std::cout << "  " << std::setw(30) << std::left << m.source_qualified
                           << " sim=" << std::fixed << std::setprecision(2) << m.similarity
-                          << " deps=" << m.source_dependents << "\n";
+                          << " deps=" << m.source_dependents;
+                if (m.is_stub) std::cout << " [STUB]";
+                if (m.todo_count > 0) std::cout << " [" << m.todo_count << " TODOs]";
+                std::cout << "\n";
             }
         }
     }
@@ -223,9 +294,9 @@ void cmd_deep(const std::string& src_dir, const std::string& src_lang,
                 return a->dependent_count > b->dependent_count;
             });
 
-        int shown = 0;
+        int shown_missing = 0;
         for (const auto* sf : missing) {
-            if (shown++ < 10) {
+            if (shown_missing++ < 10) {
                 std::cout << "  " << std::setw(30) << std::left << sf->qualified_name
                           << " deps=" << sf->dependent_count << "\n";
             }
@@ -271,8 +342,111 @@ void cmd_missing(const std::string& src_dir, const std::string& src_lang,
     std::cout << "\nTotal: " << missing.size() << " files missing\n";
 }
 
+void cmd_todos(const std::string& directory, bool verbose = true) {
+    std::cout << "Scanning for TODOs in: " << directory << "\n\n";
+
+    auto file_stats = PortingAnalyzer::analyze_directory(directory);
+
+    // Collect all TODOs
+    std::vector<TodoItem> all_todos;
+    for (const auto& fs : file_stats) {
+        all_todos.insert(all_todos.end(), fs.todos.begin(), fs.todos.end());
+    }
+
+    PortingAnalyzer::print_todo_report(all_todos, verbose);
+}
+
+void cmd_lint(const std::string& directory) {
+    std::cout << "Running lint checks on: " << directory << "\n\n";
+
+    auto file_stats = PortingAnalyzer::analyze_directory(directory);
+
+    // Collect all lint errors
+    std::vector<LintError> all_errors;
+    for (const auto& fs : file_stats) {
+        all_errors.insert(all_errors.end(), fs.lint_errors.begin(), fs.lint_errors.end());
+    }
+
+    PortingAnalyzer::print_lint_report(all_errors);
+
+    if (!all_errors.empty()) {
+        std::cout << "\nLint check failed with " << all_errors.size() << " error(s).\n";
+    }
+}
+
+void cmd_stats(const std::string& directory) {
+    std::cout << "=== File Statistics: " << directory << " ===\n\n";
+
+    auto file_stats = PortingAnalyzer::analyze_directory(directory);
+
+    // Sort by line count descending
+    std::sort(file_stats.begin(), file_stats.end(),
+        [](const FileStats& a, const FileStats& b) {
+            return a.line_count > b.line_count;
+        });
+
+    int total_lines = 0;
+    int total_code = 0;
+    int total_todos = 0;
+    int total_lint = 0;
+    int stub_count = 0;
+
+    std::cout << std::setw(40) << std::left << "File"
+              << std::setw(8) << "Lines"
+              << std::setw(8) << "Code"
+              << std::setw(6) << "TODOs"
+              << std::setw(6) << "Lint"
+              << "Status\n";
+    std::cout << std::string(80, '-') << "\n";
+
+    for (const auto& fs : file_stats) {
+        std::string status;
+        if (fs.is_stub) {
+            status = "STUB";
+            stub_count++;
+        } else if (!fs.lint_errors.empty()) {
+            status = "LINT_ERR";
+        } else if (!fs.todos.empty()) {
+            status = "HAS_TODO";
+        } else {
+            status = "OK";
+        }
+
+        std::string name = fs.relative_path;
+        if (name.length() > 38) {
+            name = "..." + name.substr(name.length() - 35);
+        }
+
+        std::cout << std::setw(40) << std::left << name
+                  << std::setw(8) << fs.line_count
+                  << std::setw(8) << fs.code_lines
+                  << std::setw(6) << fs.todos.size()
+                  << std::setw(6) << fs.lint_errors.size()
+                  << status << "\n";
+
+        total_lines += fs.line_count;
+        total_code += fs.code_lines;
+        total_todos += fs.todos.size();
+        total_lint += fs.lint_errors.size();
+    }
+
+    std::cout << std::string(80, '-') << "\n";
+    std::cout << std::setw(40) << std::left << "TOTAL"
+              << std::setw(8) << total_lines
+              << std::setw(8) << total_code
+              << std::setw(6) << total_todos
+              << std::setw(6) << total_lint
+              << "\n\n";
+
+    std::cout << "Summary:\n";
+    std::cout << "  Files:      " << file_stats.size() << "\n";
+    std::cout << "  Stubs:      " << stub_count << "\n";
+    std::cout << "  TODOs:      " << total_todos << "\n";
+    std::cout << "  Lint errors: " << total_lint << "\n";
+}
+
 int main(int argc, char* argv[]) {
-    if (argc < 3) {
+    if (argc < 2) {
         print_usage(argv[0]);
         return 1;
     }
@@ -294,6 +468,19 @@ int main(int argc, char* argv[]) {
 
         } else if (mode == "--missing" && argc >= 6) {
             cmd_missing(argv[2], argv[3], argv[4], argv[5]);
+
+        } else if (mode == "--todos" && argc >= 3) {
+            bool verbose = true;
+            if (argc >= 4 && std::string(argv[3]) == "--summary") {
+                verbose = false;
+            }
+            cmd_todos(argv[2], verbose);
+
+        } else if (mode == "--lint" && argc >= 3) {
+            cmd_lint(argv[2]);
+
+        } else if (mode == "--stats" && argc >= 3) {
+            cmd_stats(argv[2]);
 
         } else if (mode == "--dump" && argc >= 4) {
             ASTParser parser;
@@ -418,6 +605,16 @@ int main(int argc, char* argv[]) {
             }
             std::cout << "Doc count similarity: " << std::fixed << std::setprecision(2)
                       << (doc_count_sim * 100.0f) << "%\n";
+
+            // Bag-of-words text similarity for documentation
+            float doc_cosine = comments1.doc_cosine_similarity(comments2);
+            float doc_jaccard = comments1.doc_jaccard_similarity(comments2);
+            std::cout << "Doc text cosine:      " << std::fixed << std::setprecision(2)
+                      << (doc_cosine * 100.0f) << "%\n";
+            std::cout << "Doc text jaccard:     " << std::fixed << std::setprecision(2)
+                      << (doc_jaccard * 100.0f) << "%\n";
+            std::cout << "Unique doc words:     " << comments1.word_freq.size()
+                      << " vs " << comments2.word_freq.size() << "\n";
 
         } else {
             print_usage(argv[0]);

@@ -7,7 +7,10 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include <regex>
+#include <map>
+#include <set>
+#include <cctype>
+#include <algorithm>
 
 // External declarations for tree-sitter language functions
 extern "C" {
@@ -33,6 +36,8 @@ struct CommentStats {
     int block_comment_count = 0;    // /* ... */ style (non-doc)
     int total_comment_lines = 0;    // Total lines occupied by comments
     int total_doc_lines = 0;        // Lines in doc comments specifically
+    std::vector<std::string> doc_texts;  // Raw text of each doc comment
+    std::map<std::string, int> word_freq; // Bag of words from all doc comments
 
     void print() const {
         printf("Comment Statistics:\n");
@@ -41,11 +46,65 @@ struct CommentStats {
         printf("  Block comments:    %d\n", block_comment_count);
         printf("  Total comment lines: %d\n", total_comment_lines);
         printf("  Doc comment lines:   %d\n", total_doc_lines);
+        printf("  Unique doc words:    %d\n", static_cast<int>(word_freq.size()));
     }
 
     float doc_coverage_ratio() const {
         if (total_comment_lines == 0) return 0.0f;
         return static_cast<float>(total_doc_lines) / static_cast<float>(total_comment_lines);
+    }
+
+    /**
+     * Compute cosine similarity of doc word frequencies with another CommentStats.
+     * Returns 0.0 to 1.0 where 1.0 = identical vocabulary distribution.
+     */
+    float doc_cosine_similarity(const CommentStats& other) const {
+        if (word_freq.empty() || other.word_freq.empty()) {
+            return 0.0f;
+        }
+
+        // Build union of all words
+        std::set<std::string> all_words;
+        for (const auto& [word, _] : word_freq) all_words.insert(word);
+        for (const auto& [word, _] : other.word_freq) all_words.insert(word);
+
+        // Compute dot product and norms
+        double dot = 0.0, norm1 = 0.0, norm2 = 0.0;
+        for (const auto& word : all_words) {
+            int freq1 = 0, freq2 = 0;
+            auto it1 = word_freq.find(word);
+            auto it2 = other.word_freq.find(word);
+            if (it1 != word_freq.end()) freq1 = it1->second;
+            if (it2 != other.word_freq.end()) freq2 = it2->second;
+
+            dot += freq1 * freq2;
+            norm1 += freq1 * freq1;
+            norm2 += freq2 * freq2;
+        }
+
+        if (norm1 < 1e-8 || norm2 < 1e-8) return 0.0f;
+        return static_cast<float>(dot / (std::sqrt(norm1) * std::sqrt(norm2)));
+    }
+
+    /**
+     * Jaccard similarity of doc word sets (ignoring frequency).
+     */
+    float doc_jaccard_similarity(const CommentStats& other) const {
+        if (word_freq.empty() && other.word_freq.empty()) return 1.0f;
+        if (word_freq.empty() || other.word_freq.empty()) return 0.0f;
+
+        std::set<std::string> words1, words2;
+        for (const auto& [word, _] : word_freq) words1.insert(word);
+        for (const auto& [word, _] : other.word_freq) words2.insert(word);
+
+        int intersection = 0;
+        for (const auto& w : words1) {
+            if (words2.count(w)) intersection++;
+        }
+
+        int union_size = static_cast<int>(words1.size() + words2.size()) - intersection;
+        if (union_size == 0) return 1.0f;
+        return static_cast<float>(intersection) / static_cast<float>(union_size);
     }
 };
 
@@ -211,6 +270,37 @@ private:
         return lines;
     }
 
+    /**
+     * Extract words from doc comment text for bag-of-words comparison.
+     * Strips comment markers, converts to lowercase, filters short words.
+     */
+    void tokenize_doc_comment(const std::string& text, std::map<std::string, int>& word_freq) {
+        std::string current_word;
+        for (char c : text) {
+            if (std::isalnum(static_cast<unsigned char>(c))) {
+                current_word += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            } else {
+                if (current_word.length() >= 3) {
+                    // Filter out common comment markers and very short words
+                    if (current_word != "the" && current_word != "and" &&
+                        current_word != "for" && current_word != "this" &&
+                        current_word != "that" && current_word != "with") {
+                        word_freq[current_word]++;
+                    }
+                }
+                current_word.clear();
+            }
+        }
+        // Don't forget last word
+        if (current_word.length() >= 3) {
+            if (current_word != "the" && current_word != "and" &&
+                current_word != "for" && current_word != "this" &&
+                current_word != "that" && current_word != "with") {
+                word_freq[current_word]++;
+            }
+        }
+    }
+
     void extract_comments_recursive(TSNode node, const std::string& source,
                                     Language lang, CommentStats& stats) {
         const char* type_str = ts_node_type(node);
@@ -267,6 +357,8 @@ private:
             if (is_doc_comment) {
                 stats.doc_comment_count++;
                 stats.total_doc_lines += lines;
+                stats.doc_texts.push_back(text);
+                tokenize_doc_comment(text, stats.word_freq);
             } else if (is_block_comment || (text.find("/*") == 0)) {
                 stats.block_comment_count++;
             } else {

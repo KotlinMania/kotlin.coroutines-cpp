@@ -35,6 +35,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(tree-sitter tree-sitter-rust tree-sitter-kotlin tree-sitter-cpp)
 
 # Build tree-sitter core as a library
+# Disable warnings for third-party C code (they use old-style prototypes)
 add_library(tree-sitter-core STATIC
     ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
 )
@@ -42,6 +43,7 @@ target_include_directories(tree-sitter-core PUBLIC
     ${tree-sitter_SOURCE_DIR}/lib/include
     ${tree-sitter_SOURCE_DIR}/lib/src
 )
+target_compile_options(tree-sitter-core PRIVATE -w)
 
 # Build tree-sitter-rust parser
 add_library(tree-sitter-rust-parser STATIC
@@ -52,6 +54,7 @@ target_include_directories(tree-sitter-rust-parser PUBLIC
     ${tree-sitter_SOURCE_DIR}/lib/include
     ${tree-sitter-rust_SOURCE_DIR}/src
 )
+target_compile_options(tree-sitter-rust-parser PRIVATE -w)
 
 # Build tree-sitter-kotlin parser
 add_library(tree-sitter-kotlin-parser STATIC
@@ -62,6 +65,7 @@ target_include_directories(tree-sitter-kotlin-parser PUBLIC
     ${tree-sitter_SOURCE_DIR}/lib/include
     ${tree-sitter-kotlin_SOURCE_DIR}/src
 )
+target_compile_options(tree-sitter-kotlin-parser PRIVATE -w)
 
 # Build tree-sitter-cpp parser
 add_library(tree-sitter-cpp-parser STATIC
@@ -72,6 +76,7 @@ target_include_directories(tree-sitter-cpp-parser PUBLIC
     ${tree-sitter_SOURCE_DIR}/lib/include
     ${tree-sitter-cpp_SOURCE_DIR}/src
 )
+target_compile_options(tree-sitter-cpp-parser PRIVATE -w)
 
 # Main executable
 add_executable(ast_distance
@@ -82,7 +87,7 @@ add_executable(ast_distance
 )
 
 target_include_directories(ast_distance PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${tree-sitter_SOURCE_DIR}/lib/include
 )
 
