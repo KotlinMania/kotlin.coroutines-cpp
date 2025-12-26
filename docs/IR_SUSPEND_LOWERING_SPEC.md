@@ -71,11 +71,8 @@ kxs_add_executable(my_app SOURCES main.cpp)
 
 ### Macros in `src/kotlinx/coroutines/dsl/Suspend.hpp`
 
-Two modes are supported:
-
-#### Mode 1: Computed Goto (GCC/Clang - Default)
-
-Uses GNU labels-as-values extension (`&&label`). Generates `indirectbr` + `blockaddress` in LLVM IR.
+Uses Clang labels-as-values extension (`&&label`). Generates `indirectbr` + `blockaddress` in LLVM IR,
+matching Kotlin/Native exactly.
 
 ```cpp
 class MyCoroutine : public ContinuationImpl {
@@ -89,24 +86,6 @@ class MyCoroutine : public ContinuationImpl {
         // ... more code ...
 
         coroutine_end(this)
-    }
-};
-```
-
-#### Mode 2: Switch/Case (MSVC Fallback)
-
-When `KXS_NO_COMPUTED_GOTO` is defined or on MSVC. Uses Duff's device pattern.
-
-```cpp
-class MyCoroutine : public ContinuationImpl {
-    int _label = 0;  // switch case number (not void*)
-
-    void* invoke_suspend(Result<void*> result) override {
-        coroutine_begin(this)  // expands to: switch (_label) { case 0:
-
-        coroutine_yield(this, some_suspend_call(completion_));  // case __LINE__:
-
-        coroutine_end(this)  // expands to: } return nullptr;
     }
 };
 ```
@@ -326,8 +305,7 @@ The coroutine struct must have `_label` as a field (typically first for efficien
 
 ```cpp
 struct MyCoroutine : public ContinuationImpl {
-    void* _label = nullptr;  // blockaddress storage (computed goto mode)
-    // OR: int _label = 0;   // case number (switch mode)
+    void* _label = nullptr;  // blockaddress storage (Kotlin/Native NativePtr)
 
     // ... spilled variables ...
     int saved_count;
@@ -344,17 +322,12 @@ In LLVM IR terms:
 
 ## Compiler Flags for Tests
 
-Tests using the DSL macros with computed goto need:
+Tests using the DSL macros need:
 
 ```cmake
 target_compile_options(my_test PRIVATE
     -Wno-gnu-label-as-value    # Allow &&label (labels as values)
 )
-```
-
-Or disable computed goto entirely:
-```cmake
-target_compile_definitions(my_test PRIVATE KXS_NO_COMPUTED_GOTO)
 ```
 
 ---
@@ -363,6 +336,6 @@ target_compile_definitions(my_test PRIVATE KXS_NO_COMPUTED_GOTO)
 
 - Kotlin/Native IrToBitcode.kt lines 2377-2424
 - Kotlin/Native CoroutinesVarSpillingLowering.kt
-- GCC Labels as Values: https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html
+- Clang Labels as Values: https://clang.llvm.org/docs/LanguageExtensions.html#labels-as-values
 - LLVM indirectbr: https://llvm.org/docs/LangRef.html#indirectbr-instruction
 - CMake Modules: `cmake/Modules/kxs_transform_ir.cmake`, `KotlinxCoroutineTransform.cmake`, `KotlinxCoroutines.cmake`

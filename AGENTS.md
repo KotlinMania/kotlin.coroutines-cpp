@@ -55,7 +55,7 @@
 ---
 
 ### Build and testing workflow
-- Toolchain: CMake >= 3.16, C++20 compiler (clang++ on macOS), and Threads/pthreads.
+- Toolchain: CMake >= 3.16, Apple Clang (clang++ on macOS) — **Clang-only, no GCC/MSVC**, and Threads/pthreads.
 - Prefer out-of-source builds; artifacts land under `build/` (or another build dir).
 - Standard build:
     ```bash

@@ -57,7 +57,7 @@ tests/                               # Test executables
 
 ### Prerequisites
 - CMake >= 3.16
-- C++20 compiler (clang++ on macOS)
+- Apple Clang (clang++ on macOS) — **Clang-only, no GCC/MSVC support**
 - Threads/pthreads
 
 ### Standard Build
@@ -143,9 +143,9 @@ void* my_function(Args..., std::shared_ptr<Continuation<void*>> completion) {
 
 The plugin (`tools/clang_suspend_plugin/`) generates a `.kx.cpp` sidecar file containing:
 - Coroutine class extending `ContinuationImpl`
-- State machine with switch-based dispatch
+- State machine with computed goto dispatch (`indirectbr` + `blockaddress`)
 - Automatic parameter capture
-- Label management and suspension checks
+- `void* _label` storage matching Kotlin/Native's NativePtr
 
 ### ABI Convention
 
@@ -225,7 +225,7 @@ Before submitting changes:
 2. Methods and enums follow naming rules; no camelCase methods remain in C++
 3. All new gaps are called out with a specific, tagged `TODO`
 4. Resolved `TODO`s are removed in edited regions
-5. Compile cleanly: `g++ -std=c++20 -Wall -Wextra -I include your_file.cpp`
+5. Compile cleanly: `clang++ -std=c++20 -Wall -Wextra -I include your_file.cpp`
 6. Tests pass: `./test_suspend`
 7. Update `docs/audits/*` to reflect new API presence with file:line
 
