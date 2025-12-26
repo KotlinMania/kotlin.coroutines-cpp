@@ -23,7 +23,6 @@ class CoroutineContext;
 
 namespace internal {
 
-// Line 264: private val CLOSED = Symbol("CLOSED")
 inline Symbol& CLOSED_SYMBOL() {
     static Symbol instance("CLOSED");
     return instance;
@@ -66,7 +65,6 @@ public:
 template <typename N>
 class ConcurrentLinkedListNode {
 public:
-    // Line 93-94: private val _next = atomic<Any?>(null)
     //             private val _prev = atomic(prev)
     std::atomic<void*> _next{nullptr};
     std::atomic<N*> _prev;
@@ -75,7 +73,6 @@ public:
 
     virtual ~ConcurrentLinkedListNode() = default;
 
-    // Line 96: private val nextOrClosed get() = _next.value
     void* next_or_closed() const {
         return _next.load(std::memory_order_acquire);
     }
@@ -94,7 +91,6 @@ public:
         return static_cast<N*>(val);
     }
 
-    // Line 111: val next: N? get() = nextOrIfClosed { return null }
     N* next() const {
         return next_or_if_closed([]() { /* return null via outer return */ });
     }
@@ -109,22 +105,18 @@ public:
             std::memory_order_release, std::memory_order_relaxed);
     }
 
-    // Line 121: val isTail: Boolean get() = next == null
     bool is_tail() const {
         return next() == nullptr;
     }
 
-    // Line 123: val prev: N? get() = _prev.value
     N* prev() const {
         return _prev.load(std::memory_order_acquire);
     }
 
-    // Line 128: fun cleanPrev() { _prev.lazySet(null) }
     void clean_prev() {
         _prev.store(nullptr, std::memory_order_release);
     }
 
-    // Line 133: fun markAsClosed() = _next.compareAndSet(null, CLOSED)
     bool mark_as_closed() {
         void* expected = nullptr;
         return _next.compare_exchange_strong(expected, static_cast<void*>(&CLOSED_SYMBOL()),
@@ -169,7 +161,6 @@ public:
     }
 
 private:
-    // Line 168-172: private val aliveSegmentLeft
     N* alive_segment_left() const {
         N* cur = _prev.load(std::memory_order_acquire);
         while (cur != nullptr && cur->is_removed()) {
@@ -178,7 +169,6 @@ private:
         return cur;
     }
 
-    // Line 175-181: private val aliveSegmentRight
     N* alive_segment_right() const {
         assert(!is_tail()); // Should not be invoked on the tail node
         N* cur = next();
@@ -211,7 +201,6 @@ public:
     }
 };
 
-// Line 262: private const val POINTERS_SHIFT = 16
 static constexpr int POINTERS_SHIFT = 16;
 
 /**
@@ -224,10 +213,8 @@ static constexpr int POINTERS_SHIFT = 16;
 template <typename S>
 class Segment : public ConcurrentLinkedListNode<S>, public SegmentBase {
 public:
-    // Line 193: @JvmField val id: Long
     const long id;
 
-    // Line 212: private val cleanedAndPointers = atomic(pointers shl POINTERS_SHIFT)
     std::atomic<int> cleaned_and_pointers;
 
     Segment(long id, S* prev, int pointers)
@@ -301,12 +288,10 @@ struct SegmentOrClosed {
     explicit SegmentOrClosed(void* v) : value(v) {}
     explicit SegmentOrClosed(S* segment) : value(static_cast<void*>(segment)) {}
 
-    // Line 257: val isClosed: Boolean get() = value === CLOSED
     bool is_closed() const {
         return value == static_cast<void*>(&CLOSED_SYMBOL());
     }
 
-    // Line 259: val segment: S get() = ...
     S* segment() const {
         assert(!is_closed());
         return static_cast<S*>(value);

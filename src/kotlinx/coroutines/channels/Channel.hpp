@@ -10,7 +10,6 @@
  * Channel, ChannelResult, and ChannelIterator.
  */
 
-// Line 3-13: Kotlin imports -> C++ includes
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
@@ -70,7 +69,6 @@ template <typename E>
 using OnUndeliveredElement = std::function<void(E)>;
 
 // =============================================================================
-// Line 1457-1470: ClosedSendChannelException
 // =============================================================================
 
 /**
@@ -102,7 +100,6 @@ public:
 };
 
 // =============================================================================
-// Line 1472-1484: ClosedReceiveChannelException
 // =============================================================================
 
 /**
@@ -130,11 +127,9 @@ public:
         : std::runtime_error(message) {}
 };
 
-// Line 1092: DEFAULT_CLOSE_MESSAGE used by ChannelIterator
 inline const char* DEFAULT_CLOSE_MESSAGE = "Channel was closed";
 
 // =============================================================================
-// Line 788-977: ChannelResult
 // =============================================================================
 
 /**
@@ -169,14 +164,12 @@ inline const char* DEFAULT_CLOSE_MESSAGE = "Channel was closed";
 template <typename T>
 class ChannelResult {
 public:
-    // Line 942-944: Failed marker class
     class Failed {
     public:
         virtual ~Failed() = default;
         virtual std::string to_string() const { return "Failed"; }
     };
 
-    // Line 946-950: Closed marker class
     class Closed : public Failed {
     public:
         std::exception_ptr cause;
@@ -194,7 +187,6 @@ public:
     };
 
 private:
-    // Line 814: @PublishedApi internal val holder: Any?
     // Using variant-like storage
     enum class HolderType { VALUE, FAILED, CLOSED };
     HolderType holder_type_;
@@ -378,7 +370,6 @@ public:
         }
     }
 
-    // Line 952-970: Companion object factory methods
 
     /**
      * Line 959-961: fun <E> success(value: E): ChannelResult<E>
@@ -555,7 +546,6 @@ private:
 };
 
 // =============================================================================
-// Line 979-1049: ChannelResult extension functions (as free functions)
 // =============================================================================
 
 /**
@@ -616,7 +606,6 @@ ChannelResult<T>& on_closed(ChannelResult<T>& result, Action&& action) {
 }
 
 // =============================================================================
-// Line 1051-1121: ChannelIterator
 // =============================================================================
 
 /**
@@ -674,7 +663,6 @@ public:
 };
 
 // =============================================================================
-// Line 15-349: SendChannel interface
 // =============================================================================
 
 /**
@@ -807,7 +795,6 @@ public:
 };
 
 // =============================================================================
-// Line 351-786: ReceiveChannel interface
 // =============================================================================
 
 /**
@@ -941,7 +928,6 @@ public:
 };
 
 // =============================================================================
-// Line 1123-1371: Channel interface
 // =============================================================================
 
 /**
@@ -1013,7 +999,6 @@ public:
      */
     static constexpr int BUFFERED = -2;
 
-    // Line 1349-1350: internal const val OPTIONAL_CHANNEL = -3
     static constexpr int OPTIONAL_CHANNEL = -3;
 
     /**
@@ -1037,7 +1022,6 @@ public:
 };
 
 // =============================================================================
-// Line 1373-1456: Channel factory function
 // =============================================================================
 
 /**

@@ -6,6 +6,8 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <vector>
+#include <regex>
 
 // External declarations for tree-sitter language functions
 extern "C" {
@@ -20,6 +22,31 @@ enum class Language {
     RUST,
     KOTLIN,
     CPP
+};
+
+/**
+ * Statistics about comments/documentation in source code.
+ */
+struct CommentStats {
+    int doc_comment_count = 0;      // /** ... */ or /// style
+    int line_comment_count = 0;     // // style (non-doc)
+    int block_comment_count = 0;    // /* ... */ style (non-doc)
+    int total_comment_lines = 0;    // Total lines occupied by comments
+    int total_doc_lines = 0;        // Lines in doc comments specifically
+
+    void print() const {
+        printf("Comment Statistics:\n");
+        printf("  Doc comments:      %d\n", doc_comment_count);
+        printf("  Line comments:     %d\n", line_comment_count);
+        printf("  Block comments:    %d\n", block_comment_count);
+        printf("  Total comment lines: %d\n", total_comment_lines);
+        printf("  Doc comment lines:   %d\n", total_doc_lines);
+    }
+
+    float doc_coverage_ratio() const {
+        if (total_comment_lines == 0) return 0.0f;
+        return static_cast<float>(total_doc_lines) / static_cast<float>(total_comment_lines);
+    }
 };
 
 /**
@@ -94,6 +121,52 @@ public:
     }
 
     /**
+     * Extract comment statistics from source code.
+     * Uses tree-sitter to find comment nodes.
+     */
+    CommentStats extract_comments(const std::string& source, Language lang) {
+        CommentStats stats;
+
+        const TSLanguage* ts_lang;
+        switch (lang) {
+            case Language::RUST: ts_lang = tree_sitter_rust(); break;
+            case Language::KOTLIN: ts_lang = tree_sitter_kotlin(); break;
+            case Language::CPP: ts_lang = tree_sitter_cpp(); break;
+        }
+
+        if (!ts_parser_set_language(parser_, ts_lang)) {
+            return stats;
+        }
+
+        TSTree* ts_tree = ts_parser_parse_string(
+            parser_, nullptr, source.c_str(), source.length());
+
+        if (!ts_tree) {
+            return stats;
+        }
+
+        TSNode root = ts_tree_root_node(ts_tree);
+        extract_comments_recursive(root, source, lang, stats);
+
+        ts_tree_delete(ts_tree);
+        return stats;
+    }
+
+    /**
+     * Extract comment statistics from a file.
+     */
+    CommentStats extract_comments_from_file(const std::string& filepath, Language lang) {
+        std::ifstream file(filepath);
+        if (!file.is_open()) {
+            return CommentStats{};
+        }
+
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        return extract_comments(buffer.str(), lang);
+    }
+
+    /**
      * Parse and extract only function bodies for comparison.
      */
     std::vector<std::pair<std::string, TreePtr>> extract_functions(
@@ -128,6 +201,86 @@ public:
 
 private:
     TSParser* parser_;
+
+    int count_lines(const std::string& text) {
+        if (text.empty()) return 0;
+        int lines = 1;
+        for (char c : text) {
+            if (c == '\n') lines++;
+        }
+        return lines;
+    }
+
+    void extract_comments_recursive(TSNode node, const std::string& source,
+                                    Language lang, CommentStats& stats) {
+        const char* type_str = ts_node_type(node);
+        std::string type_s(type_str);
+
+        // Check for comment nodes (tree-sitter node types vary by language)
+        bool is_comment = false;
+        bool is_doc_comment = false;
+        bool is_line_comment = false;
+        bool is_block_comment = false;
+
+        if (lang == Language::KOTLIN) {
+            is_line_comment = (type_s == "line_comment");
+            is_block_comment = (type_s == "multiline_comment");
+            is_comment = is_line_comment || is_block_comment;
+        } else if (lang == Language::CPP) {
+            is_line_comment = (type_s == "comment");  // // style
+            is_block_comment = (type_s == "comment"); // Also covers /* */
+            is_comment = (type_s == "comment");
+        } else if (lang == Language::RUST) {
+            is_line_comment = (type_s == "line_comment");
+            is_block_comment = (type_s == "block_comment");
+            is_comment = is_line_comment || is_block_comment;
+        }
+
+        if (is_comment) {
+            uint32_t start = ts_node_start_byte(node);
+            uint32_t end = ts_node_end_byte(node);
+            std::string text;
+            if (end > start && end <= source.length()) {
+                text = source.substr(start, end - start);
+            }
+
+            int lines = count_lines(text);
+            stats.total_comment_lines += lines;
+
+            // Check if it's a doc comment
+            // Kotlin: /** ... */ or lines starting with *
+            // C++: /** ... */ or ///
+            // Rust: /// or //! or /** */
+            if (lang == Language::KOTLIN) {
+                is_doc_comment = (text.find("/**") == 0) ||
+                                 (text.find("/*") == 0 && text.find("*") != std::string::npos);
+            } else if (lang == Language::CPP) {
+                is_doc_comment = (text.find("/**") == 0) ||
+                                 (text.find("///") == 0) ||
+                                 (text.find("//!") == 0);
+            } else if (lang == Language::RUST) {
+                is_doc_comment = (text.find("///") == 0) ||
+                                 (text.find("//!") == 0) ||
+                                 (text.find("/**") == 0);
+            }
+
+            if (is_doc_comment) {
+                stats.doc_comment_count++;
+                stats.total_doc_lines += lines;
+            } else if (is_block_comment || (text.find("/*") == 0)) {
+                stats.block_comment_count++;
+            } else {
+                stats.line_comment_count++;
+            }
+        }
+
+        // Recurse into all children (including unnamed ones for comments)
+        uint32_t child_count = ts_node_child_count(node);
+        for (uint32_t i = 0; i < child_count; ++i) {
+            TSNode child = ts_node_child(node, i);
+            extract_comments_recursive(child, source, lang, stats);
+        }
+    }
 
     TreePtr convert_node(TSNode node, const std::string& source, Language lang) {
         const char* type_str = ts_node_type(node);

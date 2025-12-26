@@ -804,10 +804,8 @@ public:
         std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation,
         void* idempotent
     ) {
-        // Line 480-484: proposedUpdate is CompletedExceptionally -> return it directly
         // (handled separately via resume_impl_exception)
 
-        // Line 485: !resumeMode.isCancellableMode && idempotent == null -> proposedUpdate
         // Cannot be cancelled in process, no metadata needed - use lightweight wrapper
         if (!is_cancellable_mode(resume_mode) && idempotent == nullptr) {
             return new CompletedWithValue<T>(std::move(proposed_update));
@@ -827,7 +825,6 @@ public:
             );
         }
 
-        // Line 490: else -> proposedUpdate (simple case, raw value)
         return new CompletedWithValue<T>(std::move(proposed_update));
     }
 

@@ -31,22 +31,18 @@ public:
         : SemaphoreAndMutexImpl(permits, acquired_permits)
     {}
 
-    // Line 25: val availablePermits: Int
     int available_permits() const override {
         return SemaphoreAndMutexImpl::available_permits();
     }
 
-    // Line 44: suspend fun acquire()
     void* acquire(Continuation<void*>* cont) override {
         return SemaphoreAndMutexImpl::acquire(cont);
     }
 
-    // Line 51: fun tryAcquire(): Boolean
     bool try_acquire() override {
         return SemaphoreAndMutexImpl::try_acquire();
     }
 
-    // Line 58: fun release()
     void release() override {
         SemaphoreAndMutexImpl::release();
     }

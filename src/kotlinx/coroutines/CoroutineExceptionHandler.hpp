@@ -34,7 +34,6 @@ public:
 inline void handle_coroutine_exception(CoroutineContext& context, std::exception_ptr exception) {
     if (!exception) return;
 
-    // Line 21-25: Invoke an exception handler from the context if present
     try {
         auto element = context.get(CoroutineExceptionHandler::type_key);
         if (auto handler = std::dynamic_pointer_cast<CoroutineExceptionHandler>(element)) {
@@ -42,11 +41,9 @@ inline void handle_coroutine_exception(CoroutineContext& context, std::exception
             return;
         }
     } catch (...) {
-        // Line 26-28: If handler throws, handle both exceptions
         // For now, just fall through to global handler
     }
 
-    // Line 31: handleUncaughtCoroutineException - fallback to platform handler
     // In C++ we just print to stderr (like Native platform behavior)
     try {
         std::rethrow_exception(exception);

@@ -23,19 +23,15 @@ namespace channels {
 template <typename E>
 class ConflatedBufferedChannel : public BufferedChannel<E> {
 private:
-    // Line 15: private val capacity: Int
     int conflated_capacity_;
-    // Line 16: private val onBufferOverflow: BufferOverflow
     BufferOverflow on_buffer_overflow_;
 
 public:
-    // Line 14-18: constructor
     ConflatedBufferedChannel(int capacity, BufferOverflow on_buffer_overflow = BufferOverflow::DROP_OLDEST,
                              OnUndeliveredElement<E> on_undelivered_element = nullptr)
         : BufferedChannel<E>(capacity, on_undelivered_element)
         , conflated_capacity_(capacity)
         , on_buffer_overflow_(on_buffer_overflow) {
-        // Line 19-26: init block
         if (on_buffer_overflow == BufferOverflow::SUSPEND) {
             throw std::invalid_argument(
                 "This implementation does not support suspension for senders, use BufferedChannel instead");
@@ -46,12 +42,10 @@ public:
         }
     }
 
-    // Line 28-29: override val isConflatedDropOldest: Boolean
     bool is_conflated_drop_oldest() const override {
         return on_buffer_overflow_ == BufferOverflow::DROP_OLDEST;
     }
 
-    // Line 31-40: override suspend fun send(element: E)
     void* send(E element, Continuation<void*>* continuation) override {
         // Should never suspend, implement via `trySend(..)`.
         auto result = try_send_impl(std::move(element), true);
@@ -68,7 +62,6 @@ public:
         return nullptr;
     }
 
-    // Line 42-47: override suspend fun sendBroadcast(element: E): Boolean
     void* send_broadcast(E element, Continuation<void*>* continuation) override {
         // Should never suspend, implement via `trySend(..)`.
         auto result = try_send_impl(std::move(element), true);
@@ -79,18 +72,15 @@ public:
         return new bool(false);
     }
 
-    // Line 49: override fun trySend(element: E): ChannelResult<Unit>
     ChannelResult<void> try_send(E element) override {
         return try_send_impl(std::move(element), false);
     }
 
-    // Line 88: override fun shouldSendSuspend() = false
     bool should_send_suspend() const override {
         return false;  // never suspends
     }
 
 private:
-    // Line 51-53: private fun trySendImpl(element: E, isSendOp: Boolean)
     ChannelResult<void> try_send_impl(E element, bool is_send_op) {
         if (on_buffer_overflow_ == BufferOverflow::DROP_LATEST) {
             return try_send_drop_latest(std::move(element), is_send_op);
@@ -99,7 +89,6 @@ private:
         }
     }
 
-    // Line 55-69: private fun trySendDropLatest(element: E, isSendOp: Boolean): ChannelResult<Unit>
     ChannelResult<void> try_send_drop_latest(E element, bool is_send_op) {
         // Try to send the element without suspension.
         auto result = BufferedChannel<E>::try_send(element);
@@ -114,7 +103,6 @@ private:
         return ChannelResult<void>::success();
     }
 
-    // Line 71-86: trySendDropOldest - calls into BufferedChannel's existing implementation
     // The DROP_OLDEST logic is handled by isConflatedDropOldest() being true
     ChannelResult<void> try_send_drop_oldest(E element) {
         // When isConflatedDropOldest is true, BufferedChannel handles dropping

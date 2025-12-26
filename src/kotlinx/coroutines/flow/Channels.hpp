@@ -3,13 +3,14 @@
  * @file Channels.hpp
  * @brief Flow-Channel integration utilities.
  *
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt
- *
  * Provides conversion between flows and channels:
  * - emitAll() - emit all channel elements into a flow collector
  * - receiveAsFlow() - represent channel as a hot flow (fan-out)
  * - consumeAsFlow() - represent channel as a one-time consumable flow
  * - produceIn() - create a produce coroutine that collects the given flow
+ *
+ * Private implementations (emit_all_impl, ChannelAsFlow) are exposed due to
+ * template requirements but should not be used directly.
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -39,10 +40,18 @@ template <typename T> class SendingCollector;
 namespace kotlinx::coroutines::flow {
 
 /**
- * Line 25-26: Emits all elements from the given [channel] to this flow collector and [cancels][cancel] (consumes)
- * the channel afterwards.
+ * Emits all elements from the given channel to this flow collector and cancels (consumes)
+ * the channel afterwards. If you need to iterate over the channel without consuming it,
+ * a regular loop should be used instead.
  *
- * Kotlin: public suspend fun <T> FlowCollector<T>.emitAll(channel: ReceiveChannel<T>): Unit
+ * Note that emitting values from a channel into a flow is not atomic. A value that was
+ * received from the channel may not reach the flow collector if it was cancelled and
+ * will be lost.
+ *
+ * This function provides a more efficient shorthand for:
+ *   channel.consumeEach { value -> emit(value) }
+ *
+ * @see consume_each
  */
 template <typename T>
 void* emit_all(
@@ -52,9 +61,8 @@ void* emit_all(
 );  // Forward declaration, defined after emit_all_impl
 
 /**
- * Line 28-41: Internal implementation with configurable "consume" behavior.
- *
- * Kotlin: private suspend fun <T> FlowCollector<T>.emitAllImpl(channel: ReceiveChannel<T>, consume: Boolean)
+ * Internal implementation with configurable "consume" behavior.
+ * WARNING: Private implementation - do not use directly.
  */
 template <typename T>
 void* emit_all_impl(
@@ -63,54 +71,39 @@ void* emit_all_impl(
     bool consume,
     Continuation<void*>* cont
 ) {
-    // Line 29: ensureActive()
+    // ensureActive()
     if (cont) {
         auto ctx = cont->get_context();
         if (ctx) context_ensure_active(*ctx);
     }
 
-    // Line 30: var cause: Throwable? = null
+    // var cause: Throwable? = null
     std::exception_ptr cause = nullptr;
-
-    // Line 31-40: try { for (element in channel) { emit(element) } } catch/finally
     try {
-        // Line 32-34: for (element in channel) { emit(element) }
-        // TODO(suspend-plugin): Replace with proper suspend iteration when channels support it
-        while (true) {
-            auto result = channel->try_receive();
-            if (result.is_closed()) {
-                break;
-            }
+        // for (element in channel) { emit(element) }
+        // TODO(suspend-plugin): Replace with suspend iterator when available
+        for (auto result = channel->try_receive(); !result.is_closed(); result = channel->try_receive()) {
             if (result.is_success()) {
-                void* emitted = collector->emit(result.get_or_throw(), cont);
+                T element = result.get_or_throw();
+                void* emitted = collector->emit(std::move(element), cont);
                 if (emitted == intrinsics::get_COROUTINE_SUSPENDED()) {
                     return emitted;
                 }
-                continue;
+            } else {
+                std::this_thread::yield();
             }
-            // TODO(semantics): Kotlin would suspend here; we busy-wait
-            std::this_thread::yield();
         }
     } catch (...) {
-        // Line 35-37: catch (e: Throwable) { cause = e; throw e }
+        // catch (e: Throwable) { cause = e; throw e }
         cause = std::current_exception();
-        // Line 38-40: finally { if (consume) channel.cancelConsumed(cause) }
-        if (consume) {
-            channels::cancel_consumed(channel, cause);
-        }
+        if (consume) channels::cancel_consumed(channel, cause);
         throw;
     }
-    // Line 38-40: finally { if (consume) channel.cancelConsumed(cause) } - normal path
-    if (consume) {
-        channels::cancel_consumed(channel, cause);
-    }
-
+    // finally { if (consume) channel.cancelConsumed(cause) }
+    if (consume) channels::cancel_consumed(channel, cause);
     return nullptr;
 }
 
-/**
- * Line 25-26: emit_all implementation
- */
 template <typename T>
 inline void* emit_all(
     FlowCollector<T>* collector,
@@ -129,14 +122,12 @@ inline void* emit_all(
 namespace kotlinx::coroutines::flow {
 
 /**
- * Line 95-137: Represents an existing [channel] as [ChannelFlow] implementation.
- *
- * Kotlin: private class ChannelAsFlow<T>(channel, consume, context, capacity, onBufferOverflow) : ChannelFlow<T>
+ * Represents an existing channel as ChannelFlow implementation.
+ * WARNING: Private class - use receive_as_flow() or consume_as_flow() instead.
  */
 template <typename T>
 class ChannelAsFlow final : public internal::ChannelFlow<T> {
 public:
-    // Line 95-101: Constructor
     ChannelAsFlow(
         std::shared_ptr<channels::ReceiveChannel<T>> channel,
         bool consume,
@@ -152,47 +143,37 @@ public:
 
     ~ChannelAsFlow() override = default;
 
-    // Line 110-111: override fun create(context, capacity, onBufferOverflow): ChannelFlow<T>
     internal::ChannelFlow<T>* create(std::shared_ptr<CoroutineContext> context,
                                      int capacity,
                                      channels::BufferOverflow on_buffer_overflow) override {
         return new ChannelAsFlow<T>(channel_, consume_, std::move(context), capacity, on_buffer_overflow);
     }
 
-    // Line 113-114: override fun dropChannelOperators(): Flow<T>
     Flow<T>* drop_channel_operators() override {
         return new ChannelAsFlow<T>(channel_, consume_);
     }
 
-    // Line 116-117: override suspend fun collectTo(scope: ProducerScope<T>)
     void collect_to(channels::ProducerScope<T>* scope) override {
         internal::SendingCollector<T> sending(scope);
-        // Kotlin: SendingCollector(scope).emitAllImpl(channel, consume)
-        (void)::kotlinx::coroutines::flow::emit_all_impl<T>(&sending, channel_.get(), consume_, /*cont=*/nullptr);
+        (void)emit_all_impl<T>(&sending, channel_.get(), consume_, nullptr);
     }
 
-    // Line 119-125: override fun produceImpl(scope: CoroutineScope): ReceiveChannel<T>
     std::shared_ptr<channels::ReceiveChannel<T>> produce_impl(CoroutineScope* scope) override {
-        mark_consumed(); // Line 120: fail fast on repeated attempt to collect it
-        // Line 121-124: if (capacity == OPTIONAL_CHANNEL) channel else super.produceImpl(scope)
+        mark_consumed();
         if (this->capacity() == channels::Channel<T>::OPTIONAL_CHANNEL) {
             return channel_;
         }
         return internal::ChannelFlow<T>::produce_impl(scope);
     }
 
-    // Line 127-134: override suspend fun collect(collector: FlowCollector<T>)
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
-        // Line 128-131: if (capacity == OPTIONAL_CHANNEL) { markConsumed(); collector.emitAllImpl(channel, consume) }
         if (this->capacity() == channels::Channel<T>::OPTIONAL_CHANNEL) {
             mark_consumed();
-            return ::kotlinx::coroutines::flow::emit_all_impl<T>(collector, channel_.get(), consume_, continuation);
+            return emit_all_impl<T>(collector, channel_.get(), consume_, continuation);
         }
-        // Line 132-133: else { super.collect(collector) }
         return internal::ChannelFlow<T>::collect(collector, continuation);
     }
 
-    // Line 136: override fun additionalToStringProps(): String
     std::string additional_to_string_props() override {
         std::ostringstream oss;
         oss << "channel=" << channel_.get();
@@ -200,13 +181,10 @@ public:
     }
 
 private:
-    // Line 102: private val consumed = atomic(false)
     std::atomic<bool> consumed_{false};
 
-    // Line 104-108: private fun markConsumed()
     void mark_consumed() {
         if (!consume_) return;
-        // Line 106: check(!consumed.getAndSet(true)) { "..." }
         bool already = consumed_.exchange(true, std::memory_order_acq_rel);
         if (already) {
             throw std::logic_error("ReceiveChannel.consumeAsFlow can be collected just once");
@@ -218,40 +196,80 @@ private:
 };
 
 /**
- * Line 65: Represents the given receive channel as a hot flow and [receives] from the channel
- * in fan-out fashion every time this flow is collected.
+ * Represents the given receive channel as a hot flow and receives from the channel
+ * in fan-out fashion every time this flow is collected. One element will be emitted
+ * to one collector only.
  *
- * Kotlin: public fun <T> ReceiveChannel<T>.receiveAsFlow(): Flow<T> = ChannelAsFlow(this, consume = false)
+ * See also consume_as_flow() which ensures that the resulting flow is collected just once.
+ *
+ * ### Cancellation semantics
+ *
+ * - Flow collectors are cancelled when the original channel is closed with an exception.
+ * - Flow collectors complete normally when the original channel is closed normally.
+ * - Failure or cancellation of the flow collector does not affect the channel.
+ *   However, if a flow collector gets cancelled after receiving an element from the
+ *   channel but before starting to process it, the element will be lost, and the
+ *   on_undelivered_element callback of the Channel, if provided on channel construction,
+ *   will be invoked.
+ *
+ * ### Operator fusion
+ *
+ * Adjacent applications of flow_on, buffer, conflate, and produce_in to the result of
+ * receive_as_flow are fused. In particular, produce_in returns the original channel.
+ * Calls to flow_on have generally no effect, unless buffer is used to explicitly
+ * request buffering.
  */
 template <typename T>
 inline std::shared_ptr<Flow<T>> receive_as_flow(std::shared_ptr<channels::ReceiveChannel<T>> channel) {
-    return std::make_shared<ChannelAsFlow<T>>(std::move(channel), /*consume=*/false);
+    return std::make_shared<ChannelAsFlow<T>>(std::move(channel), false);
 }
 
 /**
- * Line 87: Represents the given receive channel as a hot flow and [consumes] the channel
- * on the first collection from this flow.
+ * Represents the given receive channel as a hot flow and consumes the channel
+ * on the first collection from this flow. The resulting flow can be collected just once
+ * and throws std::logic_error when trying to collect it more than once.
  *
- * Kotlin: public fun <T> ReceiveChannel<T>.consumeAsFlow(): Flow<T> = ChannelAsFlow(this, consume = true)
+ * See also receive_as_flow() which supports multiple collectors of the resulting flow.
+ *
+ * ### Cancellation semantics
+ *
+ * - Flow collector is cancelled when the original channel is closed with an exception.
+ * - Flow collector completes normally when the original channel is closed normally.
+ * - If the flow collector fails with an exception (for example, by getting cancelled),
+ *   the source channel is cancelled.
+ *
+ * ### Operator fusion
+ *
+ * Adjacent applications of flow_on, buffer, conflate, and produce_in to the result of
+ * consume_as_flow are fused. In particular, produce_in returns the original channel
+ * (but throws std::logic_error on repeated calls). Calls to flow_on have generally no
+ * effect, unless buffer is used to explicitly request buffering.
  */
 template <typename T>
 inline std::shared_ptr<Flow<T>> consume_as_flow(std::shared_ptr<channels::ReceiveChannel<T>> channel) {
-    return std::make_shared<ChannelAsFlow<T>>(std::move(channel), /*consume=*/true);
+    return std::make_shared<ChannelAsFlow<T>>(std::move(channel), true);
 }
 
 /**
- * Line 154-157: Creates a [produce] coroutine that collects the given flow.
+ * Creates a produce coroutine that collects the given flow.
  *
- * Kotlin: public fun <T> Flow<T>.produceIn(scope: CoroutineScope): ReceiveChannel<T>
+ * This transformation is stateful, it launches a produce coroutine that collects
+ * the given flow, and has the same behavior:
+ *
+ * - If collecting the flow throws, the channel will be closed with that exception.
+ * - If the ReceiveChannel is cancelled, the collection of the flow will be cancelled.
+ * - If collecting the flow completes normally, the ReceiveChannel will be closed normally.
+ *
+ * A channel with default buffer size is created. Use buffer operator on the flow before
+ * calling produce_in to specify a value other than default and to control what happens
+ * when data is produced faster than it is consumed, that is to control backpressure behavior.
  */
 template <typename T>
 inline std::shared_ptr<channels::ReceiveChannel<T>> produce_in(
-    std::shared_ptr<Flow<T>> flow,
+    internal::ChannelFlow<T>* flow,
     CoroutineScope* scope
 ) {
-    // Line 157: asChannelFlow().produceImpl(scope)
-    auto channel_flow = internal::as_channel_flow(std::move(flow));
-    return channel_flow->produce_impl(scope);
+    return flow->produce_impl(scope);
 }
 
 } // namespace kotlinx::coroutines::flow

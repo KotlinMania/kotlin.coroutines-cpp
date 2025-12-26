@@ -8,12 +8,28 @@
 
 using namespace ast_distance;
 
+Language parse_language(const std::string& lang_str) {
+    if (lang_str == "rust") return Language::RUST;
+    if (lang_str == "kotlin") return Language::KOTLIN;
+    if (lang_str == "cpp") return Language::CPP;
+    throw std::runtime_error("Unknown language: " + lang_str + " (use rust, kotlin, or cpp)");
+}
+
+const char* language_name(Language lang) {
+    switch (lang) {
+        case Language::RUST: return "Rust";
+        case Language::KOTLIN: return "Kotlin";
+        case Language::CPP: return "C++";
+    }
+    return "Unknown";
+}
+
 void print_usage(const char* program) {
     std::cerr << "AST Distance - Cross-language AST comparison and dependency analysis\n\n";
     std::cerr << "Usage:\n";
-    std::cerr << "  " << program << " <rust_file> <kotlin_file>\n";
+    std::cerr << "  " << program << " <file1> <lang1> <file2> <lang2>\n";
     std::cerr << "      Compare AST similarity between two files\n\n";
-    std::cerr << "  " << program << " --compare-functions <rust_file> <kotlin_file>\n";
+    std::cerr << "  " << program << " --compare-functions <file1> <lang1> <file2> <lang2>\n";
     std::cerr << "      Compare functions between files with similarity matrix\n\n";
     std::cerr << "  " << program << " --dump <file> <rust|kotlin|cpp>\n";
     std::cerr << "      Dump AST structure of a file\n\n";
@@ -302,72 +318,106 @@ int main(int argc, char* argv[]) {
             std::cout << "  Size:  " << tree->size() << " nodes\n";
             std::cout << "  Depth: " << tree->depth() << "\n";
 
-        } else if (mode == "--compare-functions" && argc >= 4) {
+        } else if (mode == "--compare-functions" && argc >= 6) {
             ASTParser parser;
-            std::string rust_file = argv[2];
-            std::string kotlin_file = argv[3];
+            std::string file1 = argv[2];
+            Language lang1 = parse_language(argv[3]);
+            std::string file2 = argv[4];
+            Language lang2 = parse_language(argv[5]);
 
-            std::cout << "Extracting functions from " << rust_file << "...\n";
-            std::ifstream rs_stream(rust_file);
-            std::stringstream rs_buffer;
-            rs_buffer << rs_stream.rdbuf();
-            auto rust_funcs = parser.extract_functions(rs_buffer.str(), Language::RUST);
+            std::cout << "Extracting functions from " << file1 << " (" << language_name(lang1) << ")...\n";
+            std::ifstream stream1(file1);
+            std::stringstream buffer1;
+            buffer1 << stream1.rdbuf();
+            auto funcs1 = parser.extract_functions(buffer1.str(), lang1);
 
-            std::cout << "Found " << rust_funcs.size() << " Rust functions\n";
-            for (const auto& [name, tree] : rust_funcs) {
+            std::cout << "Found " << funcs1.size() << " " << language_name(lang1) << " functions\n";
+            for (const auto& [name, tree] : funcs1) {
                 std::cout << "  - " << name << " (" << tree->size() << " nodes)\n";
             }
 
-            std::cout << "\nExtracting functions from " << kotlin_file << "...\n";
-            std::ifstream kt_stream(kotlin_file);
-            std::stringstream kt_buffer;
-            kt_buffer << kt_stream.rdbuf();
-            auto kotlin_funcs = parser.extract_functions(kt_buffer.str(), Language::KOTLIN);
+            std::cout << "\nExtracting functions from " << file2 << " (" << language_name(lang2) << ")...\n";
+            std::ifstream stream2(file2);
+            std::stringstream buffer2;
+            buffer2 << stream2.rdbuf();
+            auto funcs2 = parser.extract_functions(buffer2.str(), lang2);
 
-            std::cout << "Found " << kotlin_funcs.size() << " Kotlin functions\n";
-            for (const auto& [name, tree] : kotlin_funcs) {
+            std::cout << "Found " << funcs2.size() << " " << language_name(lang2) << " functions\n";
+            for (const auto& [name, tree] : funcs2) {
                 std::cout << "  - " << name << " (" << tree->size() << " nodes)\n";
             }
 
             // Compare functions with similar names
             std::cout << "\n=== Function Similarity Matrix ===\n\n";
             std::cout << std::setw(20) << "";
-            for (const auto& [kt_name, _] : kotlin_funcs) {
-                std::cout << std::setw(12) << kt_name.substr(0, 10);
+            for (const auto& [name2, _] : funcs2) {
+                std::cout << std::setw(12) << name2.substr(0, 10);
             }
             std::cout << "\n";
 
-            for (const auto& [rs_name, rs_tree] : rust_funcs) {
-                std::cout << std::setw(20) << rs_name.substr(0, 18);
-                for (const auto& [kt_name, kt_tree] : kotlin_funcs) {
+            for (const auto& [name1, tree1] : funcs1) {
+                std::cout << std::setw(20) << name1.substr(0, 18);
+                for (const auto& [name2, tree2] : funcs2) {
                     float sim = ASTSimilarity::combined_similarity(
-                        rs_tree.get(), kt_tree.get());
+                        tree1.get(), tree2.get());
                     std::cout << std::setw(12) << std::fixed << std::setprecision(3) << sim;
                 }
                 std::cout << "\n";
             }
 
-        } else if (mode[0] != '-') {
-            // Default: compare two files
+        } else if (mode[0] != '-' && argc >= 5) {
+            // Default: compare two files with explicit languages
             ASTParser parser;
-            std::string rust_file = argv[1];
-            std::string kotlin_file = argv[2];
+            std::string file1 = argv[1];
+            Language lang1 = parse_language(argv[2]);
+            std::string file2 = argv[3];
+            Language lang2 = parse_language(argv[4]);
 
-            std::cout << "Parsing Rust file: " << rust_file << "\n";
-            TreePtr rust_tree = parser.parse_file(rust_file, Language::RUST);
+            std::cout << "Parsing " << language_name(lang1) << " file: " << file1 << "\n";
+            TreePtr tree1 = parser.parse_file(file1, lang1);
 
-            std::cout << "Parsing Kotlin file: " << kotlin_file << "\n";
-            TreePtr kotlin_tree = parser.parse_file(kotlin_file, Language::KOTLIN);
+            std::cout << "Parsing " << language_name(lang2) << " file: " << file2 << "\n";
+            TreePtr tree2 = parser.parse_file(file2, lang2);
 
             std::cout << "\n";
-            auto report = ASTSimilarity::compare(rust_tree.get(), kotlin_tree.get());
+            auto report = ASTSimilarity::compare(tree1.get(), tree2.get());
             report.print();
 
-            std::cout << "\n=== Rust AST Histogram ===\n";
+            std::cout << "\n=== " << language_name(lang1) << " AST Histogram ===\n";
             print_histogram(report.hist1);
 
-            std::cout << "\n=== Kotlin AST Histogram ===\n";
+            std::cout << "\n=== " << language_name(lang2) << " AST Histogram ===\n";
             print_histogram(report.hist2);
+
+            // Extract and compare comment statistics
+            std::cout << "\n=== " << language_name(lang1) << " Comments ===\n";
+            auto comments1 = parser.extract_comments_from_file(file1, lang1);
+            comments1.print();
+
+            std::cout << "\n=== " << language_name(lang2) << " Comments ===\n";
+            auto comments2 = parser.extract_comments_from_file(file2, lang2);
+            comments2.print();
+
+            // Documentation comparison
+            std::cout << "\n=== Documentation Comparison ===\n";
+            int doc_diff = std::abs(comments1.doc_comment_count - comments2.doc_comment_count);
+            int line_diff = std::abs(comments1.total_doc_lines - comments2.total_doc_lines);
+            std::cout << "Doc comment count: " << comments1.doc_comment_count
+                      << " vs " << comments2.doc_comment_count
+                      << " (diff: " << doc_diff << ")\n";
+            std::cout << "Doc lines:         " << comments1.total_doc_lines
+                      << " vs " << comments2.total_doc_lines
+                      << " (diff: " << line_diff << ")\n";
+
+            // Simple doc coverage similarity
+            float doc_count_sim = 1.0f;
+            if (comments1.doc_comment_count > 0 || comments2.doc_comment_count > 0) {
+                int max_doc = std::max(comments1.doc_comment_count, comments2.doc_comment_count);
+                int min_doc = std::min(comments1.doc_comment_count, comments2.doc_comment_count);
+                doc_count_sim = static_cast<float>(min_doc) / static_cast<float>(max_doc);
+            }
+            std::cout << "Doc count similarity: " << std::fixed << std::setprecision(2)
+                      << (doc_count_sim * 100.0f) << "%\n";
 
         } else {
             print_usage(argv[0]);

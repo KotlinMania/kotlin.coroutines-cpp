@@ -53,7 +53,6 @@ constexpr int64_t BUFFER_END_RENDEZVOUS = 0L; // no buffer
 constexpr int64_t BUFFER_END_UNLIMITED = INT64_MAX; // infinite buffer
 
 inline int64_t initial_buffer_end(int capacity) {
-    // Line 2969-2973
     if (capacity == CHANNEL_RENDEZVOUS) return BUFFER_END_RENDEZVOUS;
     if (capacity == CHANNEL_UNLIMITED) return BUFFER_END_UNLIMITED;
     return static_cast<int64_t>(capacity);
@@ -63,12 +62,10 @@ inline int64_t initial_buffer_end(int capacity) {
 // Lines 2934-2945: Segment size and wait iterations
 // ============================================================================
 
-// Line 2937-2938: Number of cells in each segment.
 // @JvmField
 // internal val SEGMENT_SIZE = systemProp("kotlinx.coroutines.bufferedChannel.segmentSize", 32)
 constexpr int SEGMENT_SIZE = 32;
 
-// Line 2940-2945: Number of iterations to wait in waitExpandBufferCompletion
 // until the numbers of started and completed expandBuffer calls coincide.
 constexpr int EXPAND_BUFFER_COMPLETION_WAIT_ITERATIONS = 10000;
 
@@ -76,14 +73,12 @@ constexpr int EXPAND_BUFFER_COMPLETION_WAIT_ITERATIONS = 10000;
 // Lines 2975-3009: Cell state symbols
 // ============================================================================
 
-// Line 2980-2982: The cell stores a buffered element.
 // @JvmField internal val BUFFERED = Symbol("BUFFERED")
 inline internal::Symbol& BUFFERED() {
     static internal::Symbol instance("BUFFERED");
     return instance;
 }
 
-// Line 2983-2985: Concurrent expandBuffer() can inform the upcoming sender
 // that it should buffer the element.
 // private val IN_BUFFER = Symbol("SHOULD_BUFFER")
 inline internal::Symbol& IN_BUFFER() {
@@ -91,21 +86,18 @@ inline internal::Symbol& IN_BUFFER() {
     return instance;
 }
 
-// Line 2986-2991: Indicates that a receiver (RCV suffix) is resuming the suspended sender
 // private val RESUMING_BY_RCV = Symbol("S_RESUMING_BY_RCV")
 inline internal::Symbol& RESUMING_BY_RCV() {
     static internal::Symbol instance("S_RESUMING_BY_RCV");
     return instance;
 }
 
-// Line 2992-2995: Indicates that expandBuffer() is resuming the suspended sender
 // private val RESUMING_BY_EB = Symbol("RESUMING_BY_EB")
 inline internal::Symbol& RESUMING_BY_EB() {
     static internal::Symbol instance("RESUMING_BY_EB");
     return instance;
 }
 
-// Line 2996-3000: When a receiver comes to the cell already covered by a sender
 // but the cell is still in EMPTY or IN_BUFFER state, it breaks the cell.
 // private val POISONED = Symbol("POISONED")
 inline internal::Symbol& POISONED() {
@@ -113,28 +105,24 @@ inline internal::Symbol& POISONED() {
     return instance;
 }
 
-// Line 3001-3003: When the element is successfully transferred to a receiver.
 // private val DONE_RCV = Symbol("DONE_RCV")
 inline internal::Symbol& DONE_RCV() {
     static internal::Symbol instance("DONE_RCV");
     return instance;
 }
 
-// Line 3004-3005: Cancelled sender.
 // private val INTERRUPTED_SEND = Symbol("INTERRUPTED_SEND")
 inline internal::Symbol& INTERRUPTED_SEND() {
     static internal::Symbol instance("INTERRUPTED_SEND");
     return instance;
 }
 
-// Line 3006-3007: Cancelled receiver.
 // private val INTERRUPTED_RCV = Symbol("INTERRUPTED_RCV")
 inline internal::Symbol& INTERRUPTED_RCV() {
     static internal::Symbol instance("INTERRUPTED_RCV");
     return instance;
 }
 
-// Line 3008-3009: Indicates that the channel is closed.
 // internal val CHANNEL_CLOSED = Symbol("CHANNEL_CLOSED")
 inline internal::Symbol& CHANNEL_CLOSED() {
     static internal::Symbol instance("CHANNEL_CLOSED");
@@ -422,10 +410,8 @@ public:
 template <typename E>
 class ChannelSegment : public internal::Segment<ChannelSegment<E>> {
 private:
-    // Line 2803: private val _channel: BufferedChannel<E>? = channel
     BufferedChannel<E>* channel_;
 
-    // Line 2806: private val data = atomicArrayOfNulls<Any?>(SEGMENT_SIZE * 2)
     // 2 registers per slot: state + element
     std::atomic<void*> data_[SEGMENT_SIZE * 2];
 
@@ -444,39 +430,33 @@ public:
         }
     }
 
-    // Line 2804: val channel get() = _channel!!
     BufferedChannel<E>* channel() const {
         assert(channel_ != nullptr);
         return channel_;
     }
 
-    // Line 2807: override val numberOfSlots: Int get() = SEGMENT_SIZE
     int number_of_slots() const override { return SEGMENT_SIZE; }
 
     // ########################################
     // # Manipulation with the Element Fields #
     // ########################################
 
-    // Line 2813-2815: internal fun storeElement(index: Int, element: E)
     void store_element(int index, E element) {
         set_element_lazy(index, reinterpret_cast<void*>(new E(std::move(element))));
     }
 
-    // Line 2817-2818: internal fun getElement(index: Int) = data[index * 2].value as E
     E get_element(int index) const {
         void* ptr = data_[index * 2].load(std::memory_order_acquire);
         if (ptr == nullptr) return E{};
         return *reinterpret_cast<E*>(ptr);
     }
 
-    // Line 2820: internal fun retrieveElement(index: Int): E = getElement(index).also { cleanElement(index) }
     E retrieve_element(int index) {
         E elem = get_element(index);
         clean_element(index);
         return elem;
     }
 
-    // Line 2822-2824: internal fun cleanElement(index: Int)
     void clean_element(int index) {
         void* ptr = data_[index * 2].exchange(nullptr, std::memory_order_acq_rel);
         if (ptr != nullptr) {
@@ -484,7 +464,6 @@ public:
         }
     }
 
-    // Line 2826-2828: private fun setElementLazy(index: Int, value: Any?)
     void set_element_lazy(int index, void* value) {
         data_[index * 2].store(value, std::memory_order_release);
     }
@@ -493,23 +472,19 @@ public:
     // # Manipulation with the State Fields #
     // ######################################
 
-    // Line 2834: internal fun getState(index: Int): Any? = data[index * 2 + 1].value
     void* get_state(int index) const {
         return data_[index * 2 + 1].load(std::memory_order_acquire);
     }
 
-    // Line 2836-2838: internal fun setState(index: Int, value: Any?)
     void set_state(int index, void* value) {
         data_[index * 2 + 1].store(value, std::memory_order_release);
     }
 
-    // Line 2840: internal fun casState(index: Int, from: Any?, to: Any?)
     bool cas_state(int index, void* from, void* to) {
         return data_[index * 2 + 1].compare_exchange_strong(from, to,
             std::memory_order_acq_rel, std::memory_order_acquire);
     }
 
-    // Line 2842: internal fun getAndSetState(index: Int, update: Any?)
     void* get_and_set_state(int index, void* update) {
         return data_[index * 2 + 1].exchange(update, std::memory_order_acq_rel);
     }
@@ -538,23 +513,18 @@ public:
     // # Cancellation Support #
     // ########################
 
-    // Line 2849-2911: override fun onCancellation(index: Int, cause: Throwable?, context: CoroutineContext)
     void on_cancellation(int index, std::exception_ptr cause,
                          std::shared_ptr<CoroutineContext> context) override {
-        // Line 2852-2853: To distinguish cancelled senders and receivers,
         // senders equip the index value with an additional marker, adding SEGMENT_SIZE.
         bool is_sender = index >= SEGMENT_SIZE;
         // Unwrap the index.
         if (is_sender) index = index - SEGMENT_SIZE;
 
-        // Line 2856: Read the element, which may be needed to call onUndeliveredElement.
         E element = get_element(index);
 
-        // Line 2858-2910: Update the cell state (CAS-loop)
         while (true) {
             void* cur = get_state(index);
 
-            // Line 2864-2882: The cell stores a waiter.
             // cur is Waiter || cur is WaiterEB
             if (cur != nullptr &&
                 cur != static_cast<void*>(&INTERRUPTED_SEND()) &&
@@ -583,7 +553,6 @@ public:
                 continue;
             }
 
-            // Line 2885-2893: The cell already indicates that the operation is cancelled.
             if (cur == static_cast<void*>(&INTERRUPTED_SEND()) ||
                 cur == static_cast<void*>(&INTERRUPTED_RCV())) {
                 clean_element(index);
@@ -593,30 +562,25 @@ public:
                 return;
             }
 
-            // Line 2897-2901: An opposite operation is resuming this request; wait.
             if (cur == static_cast<void*>(&RESUMING_BY_EB()) ||
                 cur == static_cast<void*>(&RESUMING_BY_RCV())) {
                 continue;
             }
 
-            // Line 2903-2904: This request was successfully resumed (prompt cancellation).
             if (cur == static_cast<void*>(&DONE_RCV()) ||
                 cur == static_cast<void*>(&BUFFERED())) {
                 return;
             }
 
-            // Line 2906-2907: The cell state indicates that the channel is closed.
             if (cur == static_cast<void*>(&CHANNEL_CLOSED())) {
                 return;
             }
 
-            // Line 2908: else -> error("unexpected state: $cur")
             assert(false && "unexpected state in onCancellation");
             return;
         }
     }
 
-    // Line 2913-2920: fun onCancelledRequest(index: Int, receiver: Boolean)
     void on_cancelled_request(int index, bool receiver) {
         if (receiver) {
             channel_->wait_expand_buffer_completion(this->id * SEGMENT_SIZE + index);
@@ -626,7 +590,6 @@ public:
 };
 
 // ============================================================================
-// Line 2932: NULL_SEGMENT singleton
 // ============================================================================
 
 // private val NULL_SEGMENT = ChannelSegment<Any?>(id = -1, prev = null, channel = null, pointers = 0)
@@ -640,7 +603,6 @@ inline ChannelSegment<E>* null_segment() {
 // Lines 2924-2931: createSegment function
 // ============================================================================
 
-// Line 2926-2931: private fun <E> createSegment(id: Long, prev: ChannelSegment<E>)
 template <typename E>
 ChannelSegment<E>* create_segment(int64_t id, ChannelSegment<E>* prev) {
     return new ChannelSegment<E>(
@@ -652,7 +614,6 @@ ChannelSegment<E>* create_segment(int64_t id, ChannelSegment<E>* prev) {
 }
 
 // ============================================================================
-// Line 2946-2960: tryResume0 extension function
 // ============================================================================
 
 // private fun <T> CancellableContinuation<T>.tryResume0(
@@ -667,9 +628,7 @@ bool try_resume_0(
     T value,
     std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation = nullptr
 ) {
-    // Line 2955: tryResume(value, null, onCancellation).let { token ->
     void* token = cont->try_resume(value, nullptr, on_cancellation);
-    // Line 2956-2959: if (token != null) { completeResume(token); true } else false
     if (token != nullptr) {
         cont->complete_resume(token);
         return true;
@@ -721,7 +680,6 @@ bool try_resume_0(
 template <typename E>
 class BufferedChannel : public Channel<E> {
 public:
-    // Line 33-45: Constructor and init block
     BufferedChannel(int capacity, OnUndeliveredElement<E> on_undelivered_element = nullptr)
         : capacity_(capacity)
         , on_undelivered_element_(on_undelivered_element)
@@ -731,19 +689,16 @@ public:
         , completed_expand_buffers_and_pause_flag_(initial_buffer_end(capacity))
         , close_cause_(static_cast<void*>(&NO_CLOSE_CAUSE()))
         , close_handler_(nullptr) {
-        // Line 43: require(capacity >= 0) { "Invalid channel capacity: $capacity, should be >=0" }
         if (capacity < 0 && capacity != CHANNEL_UNLIMITED) {
             throw std::invalid_argument("Invalid channel capacity: " + std::to_string(capacity) + ", should be >=0");
         }
 
-        // Line 93-103: Second init block - create first segment
         // @Suppress("LeakingThis")
         // val firstSegment = ChannelSegment(id = 0, prev = null, channel = this, pointers = 3)
         auto* first_segment = new ChannelSegment<E>(0, nullptr, this, 3);
         send_segment_.store(first_segment, std::memory_order_release);
         receive_segment_.store(first_segment, std::memory_order_release);
 
-        // Line 98-102: If this channel is rendezvous or has unlimited capacity, the algorithm never
         // invokes the buffer expansion procedure, and the corresponding segment reference
         // points to a special NULL_SEGMENT.
         if (is_rendezvous_or_unlimited()) {
@@ -758,29 +713,24 @@ public:
         close(std::make_exception_ptr(std::runtime_error("Channel destroyed")));
     }
 
-    // Line 40: @JvmField internal val onUndeliveredElement
     OnUndeliveredElement<E> on_undelivered_element() const { return on_undelivered_element_; }
 
     // =========================================================================
     // Lines 63-103: Counters and segment references
     // =========================================================================
 
-    // Line 67: internal val sendersCounter: Long get() = sendersAndCloseStatus.value.sendersCounter
     int64_t senders_counter() const {
         return channels::senders_counter(senders_and_close_status_.load(std::memory_order_acquire));
     }
 
-    // Line 68: internal val receiversCounter: Long get() = receivers.value
     int64_t receivers_counter() const {
         return receivers_.load(std::memory_order_acquire);
     }
 
-    // Line 69: private val bufferEndCounter: Long get() = bufferEnd.value
     int64_t buffer_end_counter() const {
         return buffer_end_.load(std::memory_order_acquire);
     }
 
-    // Line 86-87: private val isRendezvousOrUnlimited get() = ...
     bool is_rendezvous_or_unlimited() const {
         int64_t bec = buffer_end_counter();
         return bec == BUFFER_END_RENDEZVOUS || bec == BUFFER_END_UNLIMITED;
@@ -790,30 +740,21 @@ public:
     // Lines 105-608: The send operations
     // =========================================================================
 
-    // Line 109-128: override suspend fun send(element: E): Unit
     void* send(E element, Continuation<void*>* completion) override {
         // Lines 241-348: sendImpl inline function
-        // Line 270: var segment = sendSegment.value
         ChannelSegment<E>* segment = send_segment_.load(std::memory_order_acquire);
 
         while (true) {
-            // Line 274: val sendersAndCloseStatusCur = sendersAndCloseStatus.getAndIncrement()
             int64_t senders_and_close_status_cur = senders_and_close_status_.fetch_add(1, std::memory_order_acq_rel);
-            // Line 275: val s = sendersAndCloseStatusCur.sendersCounter
             int64_t s = channels::senders_counter(senders_and_close_status_cur);
-            // Line 277: val closed = sendersAndCloseStatusCur.isClosedForSend0
             bool closed = is_closed_for_send_internal(senders_and_close_status_cur);
-            // Line 279-280: val id = s / SEGMENT_SIZE; val i = (s % SEGMENT_SIZE).toInt()
             int64_t id = s / SEGMENT_SIZE;
             int i = static_cast<int>(s % SEGMENT_SIZE);
 
-            // Line 283-297: if (segment.id != id) { segment = findSegmentSend(...) }
             if (segment->id != id) {
                 segment = find_segment_send(id, segment);
                 if (segment == nullptr) {
-                    // Line 292-296: if (closed) return onClosed() else continue
                     if (closed) {
-                        // Line 123: onClosed = { onClosedSend(element) }
                         return on_closed_send(element, std::shared_ptr<Continuation<void*>>(
                             completion, [](Continuation<void*>*){}));
                     } else {
@@ -822,48 +763,36 @@ public:
                 }
             }
 
-            // Line 301: when (updateCellSend(segment, i, element, s, waiter, closed))
-            // Line 114: waiter = null (no waiter yet for send())
             int result = update_cell_send(segment, i, element, s, nullptr, closed);
 
             switch (result) {
                 case RESULT_RENDEZVOUS:
-                    // Line 302-308: segment.cleanPrev(); return onRendezvousOrBuffered()
                     segment->clean_prev();
-                    // Line 117: onRendezvousOrBuffered = {} (just return Unit)
                     return nullptr;
 
                 case RESULT_BUFFERED:
-                    // Line 310-312: return onRendezvousOrBuffered()
                     return nullptr;
 
                 case RESULT_SUSPEND:
-                    // Line 314-324: This shouldn't happen with waiter=null
                     // but if closed, we installed INTERRUPTED_SEND
                     if (closed) {
                         segment->on_slot_cleaned();
-                        // Line 123: onClosed = { onClosedSend(element) }
                         return on_closed_send(element, std::shared_ptr<Continuation<void*>>(
                             completion, [](Continuation<void*>*){}));
                     }
-                    // Line 119: onSuspend = { _, _ -> assert { false } }
                     assert(false && "RESULT_SUSPEND with null waiter");
                     return nullptr;
 
                 case RESULT_CLOSED:
-                    // Line 326-332: if (s < receiversCounter) segment.cleanPrev(); return onClosed()
                     if (s < receivers_counter()) segment->clean_prev();
                     return on_closed_send(element, std::shared_ptr<Continuation<void*>>(
                         completion, [](Continuation<void*>*){}));
 
                 case RESULT_FAILED:
-                    // Line 334-339: segment.cleanPrev(); continue
                     segment->clean_prev();
                     continue;
 
                 case RESULT_SUSPEND_NO_WAITER:
-                    // Line 341-344: return onNoWaiterSuspend(segment, i, element, s)
-                    // Line 127: onNoWaiterSuspend = { segm, i, elem, s -> sendOnNoWaiterSuspend(...) }
                     return send_on_no_waiter_suspend(segment, i, element, s, completion);
 
                 default:
@@ -873,9 +802,7 @@ public:
         }
     }
 
-    // Line 183-208: override fun trySend(element: E): ChannelResult<Unit>
     ChannelResult<void> try_send(E element) override {
-        // Line 185: Do not try to send the element if the plain send(e) operation would suspend.
         if (should_send_suspend(senders_and_close_status_.load(std::memory_order_acquire))) {
             return ChannelResult<void>::failure();
         }
@@ -885,33 +812,25 @@ public:
         return send_impl_try_send(std::move(element));
     }
 
-    // Line 621-627: private fun shouldSendSuspend(curSendersAndCloseStatus: Long): Boolean
     bool should_send_suspend(int64_t cur_senders_and_close_status) const {
-        // Line 624: Does not suspend if the channel is already closed.
         if (is_closed_for_send_internal(cur_senders_and_close_status)) return false;
-        // Line 626: Does not suspend if a rendezvous may happen or the buffer is not full.
         return !buffer_or_rendezvous_send(channels::senders_counter(cur_senders_and_close_status));
     }
 
-    // Line 633-634: private fun bufferOrRendezvousSend(curSenders: Long): Boolean
     bool buffer_or_rendezvous_send(int64_t cur_senders) const {
         return cur_senders < buffer_end_counter() ||
                cur_senders < receivers_counter() + capacity_;
     }
 
-    // Line 645: internal open fun shouldSendSuspend(): Boolean
     virtual bool should_send_suspend() const {
         return should_send_suspend(senders_and_close_status_.load(std::memory_order_acquire));
     }
 
-    // Line 218-231: internal open suspend fun sendBroadcast(element: E): Boolean
     virtual void* send_broadcast(E element, Continuation<void*>* continuation) {
-        // Line 219-221: check(onUndeliveredElement == null)
         if (on_undelivered_element_) {
             throw std::logic_error("the `onUndeliveredElement` feature is unsupported for `sendBroadcast(e)`");
         }
 
-        // Line 222-228: sendImpl with SendBroadcast waiter
         // Create a CancellableContinuationImpl for the result
         auto cont = std::make_shared<CancellableContinuationImpl<bool>>(
             std::dynamic_pointer_cast<Continuation<bool>>(
@@ -935,7 +854,6 @@ public:
             segment = find_segment_send(id, segment);
             if (segment == nullptr) {
                 if (closed) {
-                    // Line 227: onClosed = { cont.resume(false) }
                     delete waiter;
                     cont->resume_with(Result<bool>::success(false));
                     return COROUTINE_SUSPENDED;
@@ -947,18 +865,15 @@ public:
         switch (result) {
             case RESULT_RENDEZVOUS:
             case RESULT_BUFFERED:
-                // Line 225: onRendezvousOrBuffered = { cont.resume(true) }
                 delete waiter;
                 cont->resume_with(Result<bool>::success(true));
                 return COROUTINE_SUSPENDED;
             case RESULT_SUSPEND:
-                // Line 226: onSuspend = { _, _ -> }
                 if (!closed) {
                     prepare_sender_for_suspension(waiter, segment, i);
                 }
                 return COROUTINE_SUSPENDED;
             case RESULT_CLOSED:
-                // Line 227: onClosed = { cont.resume(false) }
                 delete waiter;
                 cont->resume_with(Result<bool>::success(false));
                 return COROUTINE_SUSPENDED;
@@ -973,7 +888,6 @@ public:
     // Lines 671-1004: The receive operations
     // =========================================================================
 
-    // Line 686-706: override suspend fun receive(): E
     void* receive(Continuation<void*>* continuation) override {
         auto result = try_receive();
         if (result.is_success()) {
@@ -993,7 +907,6 @@ public:
         return nullptr;
     }
 
-    // Line 751-760: override suspend fun receiveCatching(): ChannelResult<E>
     void* receive_catching(Continuation<void*>* continuation) override {
         auto result = try_receive();
         if (result.is_success() || result.is_closed()) {
@@ -1007,18 +920,14 @@ public:
         return nullptr;
     }
 
-    // Line 782-818: override fun tryReceive(): ChannelResult<E>
     ChannelResult<E> try_receive() override {
-        // Line 783-784: Read the receivers counter first.
         int64_t r = receivers_.load(std::memory_order_acquire);
         int64_t senders_and_close_status_cur = senders_and_close_status_.load(std::memory_order_acquire);
 
-        // Line 787-789: Is this channel closed for receive?
         if (is_closed_for_receive_internal(senders_and_close_status_cur)) {
             return ChannelResult<E>::closed(close_cause());
         }
 
-        // Line 791-792: Do not try to receive an element if the plain receive() would suspend.
         int64_t s = channels::senders_counter(senders_and_close_status_cur);
         if (r >= s) return ChannelResult<E>::failure();
 
@@ -1030,21 +939,15 @@ public:
     // Lines 1186-1467: The expandBuffer() procedure
     // =========================================================================
 
-    // Line 1190-1252: private fun expandBuffer()
     void expand_buffer() {
-        // Line 1193: Do not need to take any action if this channel is rendezvous or unlimited.
         if (is_rendezvous_or_unlimited()) return;
 
-        // Line 1196: Read the current segment of the expandBuffer() procedure.
         ChannelSegment<E>* segment = buffer_end_segment_.load(std::memory_order_acquire);
 
-        // Line 1198: Try to expand the buffer until succeed.
         while (true) {
-            // Line 1201: Increment the logical end of the buffer.
             int64_t b = buffer_end_.fetch_add(1, std::memory_order_acq_rel);
             int64_t id = b / SEGMENT_SIZE;
 
-            // Line 1210-1217: After that, read the current senders counter.
             int64_t s = senders_counter();
             if (s <= b) {
                 // Should bufferEndSegment be moved forward?
@@ -1055,13 +958,11 @@ public:
                 return;
             }
 
-            // Line 1221-1229: Find the required segment if needed
             if (segment->id != id) {
                 segment = find_segment_buffer_end(id, segment, b);
                 if (segment == nullptr) continue;
             }
 
-            // Line 1233-1250: Try to add the cell to the logical buffer
             int i = static_cast<int>(b % SEGMENT_SIZE);
             if (update_cell_expand_buffer(segment, i, b)) {
                 inc_completed_expand_buffer_attempts();
@@ -1073,7 +974,6 @@ public:
         }
     }
 
-    // Line 1254-1296: private fun updateCellExpandBuffer(...)
     bool update_cell_expand_buffer(ChannelSegment<E>* segment, int index, int64_t b) {
         // Fast-path
         void* state = segment->get_state(index);
@@ -1109,7 +1009,6 @@ public:
         return update_cell_expand_buffer_slow(segment, index, b);
     }
 
-    // Line 1298-1379: private fun updateCellExpandBufferSlow(...)
     bool update_cell_expand_buffer_slow(ChannelSegment<E>* segment, int index, int64_t b) {
         while (true) {
             void* state = segment->get_state(index);
@@ -1170,7 +1069,6 @@ public:
         }
     }
 
-    // Line 1388-1399: private fun incCompletedExpandBufferAttempts(nAttempts: Long = 1)
     void inc_completed_expand_buffer_attempts(int64_t n_attempts = 1) {
         int64_t result = completed_expand_buffers_and_pause_flag_.fetch_add(n_attempts, std::memory_order_acq_rel) + n_attempts;
         if (eb_pause_expand_buffers(result)) {
@@ -1180,17 +1078,13 @@ public:
         }
     }
 
-    // Line 1410-1467: internal fun waitExpandBufferCompletion(globalIndex: Long)
     void wait_expand_buffer_completion(int64_t global_index) {
-        // Line 1413: Do nothing if this channel is rendezvous or unlimited.
         if (is_rendezvous_or_unlimited()) return;
 
-        // Line 1417: Wait until the number of started buffer expansion calls >= cell index.
         while (buffer_end_counter() <= global_index) {
             // spin
         }
 
-        // Line 1422: Wait in a fixed-size spin-loop
         for (int i = 0; i < EXPAND_BUFFER_COMPLETION_WAIT_ITERATIONS; ++i) {
             int64_t b = buffer_end_counter();
             int64_t eb_completed = eb_completed_counter(
@@ -1240,7 +1134,6 @@ public:
     // Lines 1569-1744: Iterator Support
     // =========================================================================
 
-    // Line 1573: override fun iterator(): ChannelIterator<E>
     std::unique_ptr<ChannelIterator<E>> iterator() override {
         return std::make_unique<BufferedChannelIterator>(this);
     }
@@ -1249,7 +1142,6 @@ public:
     // Lines 1746-2211: Closing and Cancellation
     // =========================================================================
 
-    // Line 1756: protected val closeCause get() = _closeCause.value as Throwable?
     std::exception_ptr close_cause() const {
         void* cause = close_cause_.load(std::memory_order_acquire);
         if (cause == static_cast<void*>(&NO_CLOSE_CAUSE()) || cause == nullptr) {
@@ -1258,36 +1150,30 @@ public:
         return *reinterpret_cast<std::exception_ptr*>(cause);
     }
 
-    // Line 1759: protected val sendException get() = closeCause ?: ClosedSendChannelException(...)
     std::exception_ptr send_exception() const {
         auto cause = close_cause();
         if (cause) return cause;
         return std::make_exception_ptr(ClosedSendChannelException("Channel was closed"));
     }
 
-    // Line 1762: private val receiveException get() = closeCause ?: ClosedReceiveChannelException(...)
     std::exception_ptr receive_exception() const {
         auto cause = close_cause();
         if (cause) return cause;
         return std::make_exception_ptr(ClosedReceiveChannelException("Channel was closed"));
     }
 
-    // Line 1786-1787: override fun close(cause: Throwable?): Boolean
     bool close(std::exception_ptr cause = nullptr) override {
         return close_or_cancel_impl(cause, false);
     }
 
-    // Line 1790: final override fun cancel(cause: Throwable?): Boolean
     bool cancel_with_cause(std::exception_ptr cause) {
         return cancel_impl(cause);
     }
 
-    // Line 1793: final override fun cancel()
     void cancel(std::exception_ptr cause = nullptr) override {
         cancel_impl(cause);
     }
 
-    // Line 1797-1798: internal open fun cancelImpl(cause: Throwable?): Boolean
     // `open` in Kotlin means virtual in C++
     virtual bool cancel_impl(std::exception_ptr cause) {
         if (!cause) {
@@ -1296,13 +1182,10 @@ public:
         return close_or_cancel_impl(cause, true);
     }
 
-    // Line 1816-1835: protected open fun closeOrCancelImpl(...)
     // `open` in Kotlin means virtual in C++
     virtual bool close_or_cancel_impl(std::exception_ptr cause, bool cancel) {
-        // Line 1821: If this is a cancel(..) invocation, set the cancellation started bit.
         if (cancel) mark_cancellation_started();
 
-        // Line 1824: Try to install the specified cause.
         void* no_cause = static_cast<void*>(&NO_CLOSE_CAUSE());
         void* cause_ptr = cause ? new std::exception_ptr(cause) : nullptr;
         bool closed_by_this_operation = close_cause_.compare_exchange_strong(
@@ -1312,17 +1195,14 @@ public:
             delete reinterpret_cast<std::exception_ptr*>(cause_ptr);
         }
 
-        // Line 1826: Mark this channel as closed or cancelled.
         if (cancel) {
             mark_cancelled();
         } else {
             mark_closed();
         }
 
-        // Line 1828: Complete the closing or cancellation procedure.
         complete_close_or_cancel();
 
-        // Line 1831-1834: Invoke handlers if this operation installed the cause.
         on_closed_idempotent();
         if (closed_by_this_operation) {
             invoke_close_handler_internal();
@@ -1331,10 +1211,8 @@ public:
         return closed_by_this_operation;
     }
 
-    // Line 1784: protected open fun onClosedIdempotent() {}
     virtual void on_closed_idempotent() {}
 
-    // Line 1859-1885: override fun invokeOnClose(handler: (cause: Throwable?) -> Unit)
     void invoke_on_close(std::function<void(std::exception_ptr)> handler) override {
         void* null_handler = nullptr;
         auto* handler_ptr = new std::function<void(std::exception_ptr)>(handler);
@@ -1364,7 +1242,6 @@ public:
         }
     }
 
-    // Line 1896-1905: private fun markClosed()
     void mark_closed() {
         while (true) {
             int64_t cur = senders_and_close_status_.load(std::memory_order_acquire);
@@ -1387,7 +1264,6 @@ public:
         }
     }
 
-    // Line 1913-1916: private fun markCancelled()
     void mark_cancelled() {
         while (true) {
             int64_t cur = senders_and_close_status_.load(std::memory_order_acquire);
@@ -1399,7 +1275,6 @@ public:
         }
     }
 
-    // Line 1924-1929: private fun markCancellationStarted()
     void mark_cancellation_started() {
         while (true) {
             int64_t cur = senders_and_close_status_.load(std::memory_order_acquire);
@@ -1416,33 +1291,27 @@ public:
         }
     }
 
-    // Line 1934-1936: private fun completeCloseOrCancel()
     void complete_close_or_cancel() {
         // must finish the started close/cancel if one is detected.
         (void)is_closed_for_send();
     }
 
-    // Line 2213-2214: override val isClosedForSend: Boolean
     bool is_closed_for_send() const override {
         return is_closed_for_send_internal(senders_and_close_status_.load(std::memory_order_acquire));
     }
 
-    // Line 2216-2217: private val Long.isClosedForSend0
     bool is_closed_for_send_internal(int64_t senders_and_close_status_cur) const {
         return is_closed(senders_and_close_status_cur, false);
     }
 
-    // Line 2220-2221: override val isClosedForReceive: Boolean
     bool is_closed_for_receive() const override {
         return is_closed_for_receive_internal(senders_and_close_status_.load(std::memory_order_acquire));
     }
 
-    // Line 2223-2224: private val Long.isClosedForReceive0
     bool is_closed_for_receive_internal(int64_t senders_and_close_status_cur) const {
         return is_closed(senders_and_close_status_cur, true);
     }
 
-    // Line 2226-2256: private fun isClosed(...)
     bool is_closed(int64_t senders_and_close_status_cur, bool is_closed_for_receive) const {
         int status = senders_close_status(senders_and_close_status_cur);
         switch (status) {
@@ -1464,14 +1333,12 @@ public:
         }
     }
 
-    // Line 2259-2268: override val isEmpty: Boolean
     bool is_empty() const override {
         if (is_closed_for_receive()) return false;
         if (has_elements()) return false;
         return !is_closed_for_receive();
     }
 
-    // Line 2279-2308: internal fun hasElements(): Boolean
     bool has_elements() const {
         while (true) {
             ChannelSegment<E>* segment = receive_segment_.load(std::memory_order_acquire);
@@ -1501,7 +1368,6 @@ public:
         }
     }
 
-    // Line 2319-2373: private fun isCellNonEmpty(...)
     bool is_cell_non_empty(ChannelSegment<E>* segment, int index, int64_t global_index) const {
         while (true) {
             void* state = segment->get_state(index);
@@ -1536,19 +1402,16 @@ public:
     // Lines 1469-1567: Select Expression
     // =========================================================================
 
-    // Line 1475-1480: override val onSend
     selects::SelectClause2<E, SendChannel<E>*>& on_send() override {
         // Select support not yet implemented
         throw std::logic_error("BufferedChannel::on_send select clause not yet implemented");
     }
 
-    // Line 1504-1510: override val onReceive
     selects::SelectClause1<E>& on_receive() override {
         // Select support not yet implemented
         throw std::logic_error("BufferedChannel::on_receive select clause not yet implemented");
     }
 
-    // Line 1512-1518: override val onReceiveCatching
     selects::SelectClause1<ChannelResult<E>>& on_receive_catching() override {
         // Select support not yet implemented
         throw std::logic_error("BufferedChannel::on_receive_catching select clause not yet implemented");
@@ -1558,7 +1421,6 @@ public:
     // Lines 2591-2697: Debug Functions
     // =========================================================================
 
-    // Line 2596-2654: override fun toString(): String
     std::string to_string() const {
         std::ostringstream sb;
 
@@ -1575,11 +1437,9 @@ public:
     }
 
 protected:
-    // Line 38-39: Channel capacity and onUndeliveredElement
     int capacity_;
     OnUndeliveredElement<E> on_undelivered_element_;
 
-    // Line 1938: protected open val isConflatedDropOldest get() = false
     virtual bool is_conflated_drop_oldest() const { return false; }
 
     // -------------------------------------------------------------------------
@@ -1587,7 +1447,6 @@ protected:
     // Note: temporarily in BufferedChannel due to KT-65554
     // -------------------------------------------------------------------------
     ChannelResult<void> try_send_drop_oldest(E element) {
-        // Line 353-370: sendImpl with BUFFERED as waiter
         ChannelSegment<E>* segment = send_segment_.load(std::memory_order_acquire);
 
         while (true) {
@@ -1602,34 +1461,27 @@ protected:
                 segment = find_segment_send(id, segment);
                 if (segment == nullptr) {
                     if (closed) {
-                        // Line 370: onClosed = { return closed(sendException) }
                         return ChannelResult<void>::closed(send_exception());
                     }
                     continue;
                 }
             }
 
-            // Line 358: waiter = BUFFERED
             int result = update_cell_send(segment, i, element, s,
                 static_cast<void*>(&BUFFERED()), closed);
 
             switch (result) {
                 case RESULT_RENDEZVOUS:
                     segment->clean_prev();
-                    // Line 361: onRendezvousOrBuffered = { return success(Unit) }
                     return ChannelResult<void>::success();
                 case RESULT_BUFFERED:
-                    // Line 361: onRendezvousOrBuffered = { return success(Unit) }
                     return ChannelResult<void>::success();
                 case RESULT_SUSPEND:
-                    // Line 365-367: onSuspend - buffer overflowed, drop oldest
                     drop_first_element_until_the_specified_cell_is_in_the_buffer(
                         segment->id * SEGMENT_SIZE + i);
-                    // Line 367: return success(Unit)
                     return ChannelResult<void>::success();
                 case RESULT_CLOSED:
                     if (s < receivers_counter()) segment->clean_prev();
-                    // Line 370: onClosed = { return closed(sendException) }
                     return ChannelResult<void>::closed(send_exception());
                 case RESULT_FAILED:
                     segment->clean_prev();
@@ -1645,27 +1497,20 @@ private:
     // Lines 63-91: Counters and state
     // =========================================================================
 
-    // Line 63: private val sendersAndCloseStatus = atomic(0L)
     std::atomic<int64_t> senders_and_close_status_;
 
-    // Line 64: private val receivers = atomic(0L)
     mutable std::atomic<int64_t> receivers_;
 
-    // Line 65: private val bufferEnd = atomic(initialBufferEnd(capacity))
     std::atomic<int64_t> buffer_end_;
 
-    // Line 84: private val completedExpandBuffersAndPauseFlag = atomic(bufferEndCounter)
     std::atomic<int64_t> completed_expand_buffers_and_pause_flag_;
 
-    // Line 89-91: Segment references
     std::atomic<ChannelSegment<E>*> send_segment_;
     mutable std::atomic<ChannelSegment<E>*> receive_segment_;
     std::atomic<ChannelSegment<E>*> buffer_end_segment_;
 
-    // Line 1754: private val _closeCause = atomic<Any?>(NO_CLOSE_CAUSE)
     mutable std::atomic<void*> close_cause_;
 
-    // Line 1778: private val closeHandler = atomic<Any?>(null)
     std::atomic<void*> close_handler_;
 
     // =========================================================================
@@ -1677,17 +1522,12 @@ private:
     // NB: return type could've been Nothing, but it breaks TCO
     // -------------------------------------------------------------------------
     void* on_closed_send(E element, std::shared_ptr<Continuation<void*>> completion) {
-        // Line 131: suspendCancellableCoroutine { continuation ->
-        // Line 132: onUndeliveredElement?.callUndeliveredElementCatchingException(element)?.let {
         std::exception_ptr ex = call_undelivered_element_catching_exception(element);
         if (ex) {
-            // Line 133-135: If it crashes, add send exception as suppressed for better diagnostics
             // TODO(port): C++ doesn't have addSuppressed - just use the exception as-is
-            // Line 135: continuation.resumeWithStackTrace(it)
             completion->resume_with(Result<void*>::failure(ex));
             return COROUTINE_SUSPENDED;
         }
-        // Line 138: continuation.resumeWithStackTrace(sendException)
         completion->resume_with(Result<void*>::failure(send_exception()));
         return COROUTINE_SUSPENDED;
     }
@@ -1702,7 +1542,6 @@ private:
         int64_t s,
         Continuation<void*>* completion
     ) {
-        // Line 150: suspendCancellableCoroutineReusable sc@{ cont ->
         // Create a CancellableContinuationImpl like suspendCancellableCoroutineReusable does
         // Note: completion is Continuation<void*>*, wrap in shared_ptr with no-op deleter
         auto completion_wrapper = std::shared_ptr<Continuation<void>>(
@@ -1713,14 +1552,10 @@ private:
             completion_wrapper, MODE_CANCELLABLE_REUSABLE
         );
 
-        // Line 151-163: sendImplOnNoWaiter(...)
         send_impl_on_no_waiter(
             segment, index, element, s,
-            // Line 154: waiter = cont
             cont.get(),
-            // Line 159: onRendezvousOrBuffered = { cont.resume(Unit) }
             [cont]() { cont->resume({}); },
-            // Line 162: onClosed = { onClosedSendOnNoWaiterSuspend(element, cont) }
             [this, element, cont]() { on_closed_send_on_no_waiter_suspend(element, cont.get()); }
         );
         return COROUTINE_SUSPENDED;
@@ -1736,7 +1571,6 @@ private:
         if (auto sp = waiter->shared_from_this_waiter()) {
             segment->set_waiter_ref(index, sp);
         }
-        // Line 174-175: To distinguish cancelled senders and receivers,
         // senders equip the index value with an additional marker,
         // adding SEGMENT_SIZE to the value.
         waiter->invoke_on_cancellation(segment, index + SEGMENT_SIZE);
@@ -1746,12 +1580,10 @@ private:
     // Lines 178-181: private fun onClosedSendOnNoWaiterSuspend(...)
     // -------------------------------------------------------------------------
     void on_closed_send_on_no_waiter_suspend(E element, CancellableContinuation<void>* cont) {
-        // Line 179: onUndeliveredElement?.callUndeliveredElement(element, cont.context)
         // Note: C++ OnUndeliveredElement takes only the element, context is implicit
         if (on_undelivered_element_) {
             on_undelivered_element_(element);
         }
-        // Line 180: cont.resumeWithException(recoverStackTrace(sendException, cont))
         cont->resume_with(Result<void>::failure(send_exception()));
     }
 
@@ -1763,9 +1595,7 @@ private:
         if (auto sp = waiter->shared_from_this_waiter()) {
             segment->set_waiter_ref(index, sp);
         }
-        // Line 736: onReceiveEnqueued()
         on_receive_enqueued();
-        // Line 737: invokeOnCancellation(segment, index)
         waiter->invoke_on_cancellation(segment, index);
     }
 
@@ -1774,7 +1604,6 @@ private:
     // -------------------------------------------------------------------------
     template<typename T>
     void on_closed_receive_on_no_waiter_suspend(CancellableContinuation<T>* cont) {
-        // Line 741: cont.resumeWithException(receiveException)
         cont->resume_with(Result<T>::failure(receive_exception()));
     }
 
@@ -1782,7 +1611,6 @@ private:
     // Lines 778-780: private fun onClosedReceiveCatchingOnNoWaiterSuspend(...)
     // -------------------------------------------------------------------------
     void on_closed_receive_catching_on_no_waiter_suspend(CancellableContinuation<ChannelResult<E>>* cont) {
-        // Line 779: cont.resume(closed(closeCause))
         cont->resume_with(Result<ChannelResult<E>>::success(ChannelResult<E>::closed(close_cause())));
     }
 
@@ -1797,22 +1625,15 @@ private:
         std::function<void(E)> on_element_retrieved,
         std::function<void()> on_closed
     ) {
-        // Line 984: val updCellResult = updateCellReceive(segment, index, r, waiter)
         void* upd_cell_result = update_cell_receive(segment, index, r, waiter);
 
-        // Line 985-1003: when { ... }
         if (upd_cell_result == static_cast<void*>(&SUSPEND())) {
-            // Line 987: waiter.prepareReceiverForSuspension(segment, index)
             prepare_receiver_for_suspension(waiter, segment, index);
         } else if (upd_cell_result == static_cast<void*>(&FAILED())) {
-            // Line 990: if (r < sendersCounter) segment.cleanPrev()
             if (r < senders_counter()) segment->clean_prev();
-            // Line 991-996: receiveImpl(waiter, onElementRetrieved, ..., onClosed)
             receive_impl_with_waiter(waiter, on_element_retrieved, on_closed);
         } else {
-            // Line 999: segment.cleanPrev()
             segment->clean_prev();
-            // Line 1001: onElementRetrieved(updCellResult as E)
             on_element_retrieved(*static_cast<E*>(upd_cell_result));
         }
     }
@@ -1849,11 +1670,9 @@ private:
     // Lines 1493-1496: private fun onClosedSelectOnSend(element: E, select: SelectInstance<*>)
     // -------------------------------------------------------------------------
     void on_closed_select_on_send(E element, selects::SelectInstance<void*>* select) {
-        // Line 1494: onUndeliveredElement?.callUndeliveredElement(element, select.context)
         if (on_undelivered_element_) {
             on_undelivered_element_(element);
         }
-        // Line 1495: select.selectInRegistrationPhase(CHANNEL_CLOSED)
         select->select_in_registration_phase(static_cast<void*>(&CHANNEL_CLOSED()));
     }
 
@@ -1861,11 +1680,9 @@ private:
     // Lines 1499-1501: private fun processResultSelectSend(ignoredParam: Any?, selectResult: Any?): Any?
     // -------------------------------------------------------------------------
     void* process_result_select_send(void* /*ignored_param*/, void* select_result) {
-        // Line 1500: if (selectResult === CHANNEL_CLOSED) throw sendException
         if (select_result == static_cast<void*>(&CHANNEL_CLOSED())) {
             std::rethrow_exception(send_exception());
         }
-        // Line 1501: else this
         return static_cast<void*>(this);
     }
 
@@ -1875,7 +1692,6 @@ private:
 protected:
     virtual void register_select_for_send(selects::SelectInstance<void*>* select, void* element_any) {
         E element = *static_cast<E*>(element_any);
-        // Line 1484-1490: sendImpl(...)
         // TODO(port): This calls into sendImpl which is an inline function in Kotlin.
         // For now, provide a simplified implementation that just calls selectInRegistrationPhase.
         // Full implementation requires integrating with the sendImpl state machine.
@@ -1893,7 +1709,6 @@ private:
     // Lines 1539-1541: private fun onClosedSelectOnReceive(select: SelectInstance<*>)
     // -------------------------------------------------------------------------
     void on_closed_select_on_receive(selects::SelectInstance<void*>* select) {
-        // Line 1540: select.selectInRegistrationPhase(CHANNEL_CLOSED)
         select->select_in_registration_phase(static_cast<void*>(&CHANNEL_CLOSED()));
     }
 
@@ -1901,11 +1716,9 @@ private:
     // Lines 1544-1546: private fun processResultSelectReceive(ignoredParam: Any?, selectResult: Any?): Any?
     // -------------------------------------------------------------------------
     void* process_result_select_receive(void* /*ignored_param*/, void* select_result) {
-        // Line 1545: if (selectResult === CHANNEL_CLOSED) throw receiveException
         if (select_result == static_cast<void*>(&CHANNEL_CLOSED())) {
             std::rethrow_exception(receive_exception());
         }
-        // Line 1546: else selectResult
         return select_result;
     }
 
@@ -1913,7 +1726,6 @@ private:
     // Lines 1549-1553: private fun processResultSelectReceiveOrNull(ignoredParam: Any?, selectResult: Any?): Any?
     // -------------------------------------------------------------------------
     void* process_result_select_receive_or_null(void* /*ignored_param*/, void* select_result) {
-        // Line 1550-1552: if (selectResult === CHANNEL_CLOSED) { if (closeCause == null) null else throw receiveException }
         if (select_result == static_cast<void*>(&CHANNEL_CLOSED())) {
             if (!close_cause()) {
                 return nullptr;
@@ -1921,7 +1733,6 @@ private:
                 std::rethrow_exception(receive_exception());
             }
         }
-        // Line 1553: else selectResult
         return select_result;
     }
 
@@ -1929,13 +1740,11 @@ private:
     // Lines 1556-1558: private fun processResultSelectReceiveCatching(ignoredParam: Any?, selectResult: Any?): Any?
     // -------------------------------------------------------------------------
     void* process_result_select_receive_catching(void* /*ignored_param*/, void* select_result) {
-        // Line 1557: if (selectResult === CHANNEL_CLOSED) closed(closeCause)
         if (select_result == static_cast<void*>(&CHANNEL_CLOSED())) {
             // Return a boxed ChannelResult::closed
             auto* result = new ChannelResult<E>(ChannelResult<E>::closed(close_cause()));
             return static_cast<void*>(result);
         }
-        // Line 1558: else success(selectResult as E)
         E element = *static_cast<E*>(select_result);
         auto* result = new ChannelResult<E>(ChannelResult<E>::success(element));
         return static_cast<void*>(result);
@@ -1945,7 +1754,6 @@ private:
     // Lines 1531-1537: private fun registerSelectForReceive(select: SelectInstance<*>, ignoredParam: Any?)
     // -------------------------------------------------------------------------
     void register_select_for_receive(selects::SelectInstance<void*>* select, void* /*ignored_param*/) {
-        // Line 1532-1537: receiveImpl(...)
         // TODO(port): This calls into receiveImpl which is an inline function in Kotlin.
         // For now, provide a simplified implementation.
         receive_impl_with_select(
@@ -1963,7 +1771,6 @@ private:
         if (!on_undelivered_element_) {
             return nullptr;
         }
-        // Line 1562-1566: Returns a lambda that checks if element !== CHANNEL_CLOSED
         return [this](void* /*select*/, void* /*param*/, void* element) -> selects::OnCancellationAction {
             return [this, element](std::exception_ptr, void*, std::shared_ptr<CoroutineContext>) {
                 if (element != static_cast<void*>(&CHANNEL_CLOSED())) {
@@ -1985,39 +1792,29 @@ private:
         std::function<void()> on_rendezvous_or_buffered,
         std::function<void()> on_closed
     ) {
-        // Line 394: when (updateCellSend(segment, index, element, s, waiter, false))
         int result = update_cell_send(segment, index, element, s, waiter, false);
         switch (result) {
             case RESULT_RENDEZVOUS:
-                // Line 396: segment.cleanPrev()
                 segment->clean_prev();
-                // Line 397: onRendezvousOrBuffered()
                 on_rendezvous_or_buffered();
                 break;
             case RESULT_BUFFERED:
-                // Line 400: onRendezvousOrBuffered()
                 on_rendezvous_or_buffered();
                 break;
             case RESULT_SUSPEND:
-                // Line 403: waiter.prepareSenderForSuspension(segment, index)
                 prepare_sender_for_suspension(waiter, segment, index);
                 break;
             case RESULT_CLOSED:
-                // Line 406: if (s < receiversCounter) segment.cleanPrev()
                 if (s < receivers_counter()) segment->clean_prev();
-                // Line 407: onClosed()
                 on_closed();
                 break;
             case RESULT_FAILED:
-                // Line 410: segment.cleanPrev()
                 segment->clean_prev();
-                // Line 411-417: sendImpl(element, waiter, onRendezvousOrBuffered, ..., onClosed)
                 // TODO(port): Full sendImpl needs inline expansion
                 // For now, recursively retry via simplified path
                 send_impl_with_waiter(element, waiter, on_rendezvous_or_buffered, on_closed);
                 break;
             default:
-                // Line 419: error("unexpected")
                 assert(false && "unexpected result from update_cell_send");
         }
     }
@@ -2187,14 +1984,12 @@ public:
     // =========================================================================
 
     // -------------------------------------------------------------------------
-    // Line 2193: private fun Waiter.resumeReceiverOnClosedChannel()
     // -------------------------------------------------------------------------
     void resume_receiver_on_closed_channel(Waiter* waiter) {
         resume_waiter_on_closed_channel(waiter, /* receiver = */ true);
     }
 
     // -------------------------------------------------------------------------
-    // Line 2199: private fun Waiter.resumeSenderOnCancelledChannel()
     // -------------------------------------------------------------------------
     void resume_sender_on_cancelled_channel(Waiter* waiter) {
         resume_waiter_on_closed_channel(waiter, /* receiver = */ false);
@@ -2204,39 +1999,32 @@ public:
     // Lines 2201-2209: private fun Waiter.resumeWaiterOnClosedChannel(receiver: Boolean)
     // -------------------------------------------------------------------------
     void resume_waiter_on_closed_channel(Waiter* waiter, bool receiver) {
-        // Line 2202-2208: when (this) { ... }
         // Check if it's a SendBroadcast
         if (auto* sb = dynamic_cast<SendBroadcast*>(waiter)) {
-            // Line 2203: is SendBroadcast -> cont.resume(false)
             sb->cont->resume_with(Result<bool>::success(false));
             return;
         }
         // Check if it's a CancellableContinuation (via CancellableContinuationImpl)
         if (auto* cc = dynamic_cast<CancellableContinuationImpl<void*>*>(waiter)) {
-            // Line 2204: is CancellableContinuation<*> -> resumeWithException(...)
             auto exc = receiver ? receive_exception() : send_exception();
             cc->resume_with(Result<void*>::failure(exc));
             return;
         }
         // Check if it's a ReceiveCatching
         if (auto* rc = dynamic_cast<ReceiveCatching<E>*>(waiter)) {
-            // Line 2205: is ReceiveCatching<*> -> cont.resume(closed(closeCause))
             rc->cont->resume_with(Result<ChannelResult<E>>::success(ChannelResult<E>::closed(close_cause())));
             return;
         }
         // Check if it's a BufferedChannelIterator
         if (auto* iter = dynamic_cast<BufferedChannelIterator*>(waiter)) {
-            // Line 2206: is BufferedChannel<*>.BufferedChannelIterator -> tryResumeHasNextOnClosedChannel()
             iter->try_resume_has_next_on_closed_channel();
             return;
         }
         // Check if it's a SelectInstance
         if (auto* sel = dynamic_cast<selects::SelectInstance<void*>*>(waiter)) {
-            // Line 2207: is SelectInstance<*> -> trySelect(this@BufferedChannel, CHANNEL_CLOSED)
             sel->try_select(static_cast<void*>(this), static_cast<void*>(&CHANNEL_CLOSED()));
             return;
         }
-        // Line 2208: else -> error("Unexpected waiter: $this")
         throw std::runtime_error("Unexpected waiter type in resumeWaiterOnClosedChannel");
     }
 
@@ -2325,7 +2113,6 @@ public:
         }
     }
 
-    // Line 423-496: private fun updateCellSend(...)
     int update_cell_send(ChannelSegment<E>* segment, int index, E element,
                          int64_t s, void* waiter, bool closed) {
         // Fast path
@@ -2377,7 +2164,6 @@ public:
         return update_cell_send_slow(segment, index, element, s, waiter, closed);
     }
 
-    // Line 501-608: private fun updateCellSendSlow(...)
     int update_cell_send_slow(ChannelSegment<E>* segment, int index, E element,
                               int64_t s, void* waiter, bool closed) {
         while (true) {
@@ -2442,7 +2228,6 @@ public:
         }
     }
 
-    // Line 1006-1052: private fun updateCellReceive(...)
     void* update_cell_receive(ChannelSegment<E>* segment, int index, int64_t r, void* waiter) {
         // Fast path
         void* state = segment->get_state(index);
@@ -2469,7 +2254,6 @@ public:
         return update_cell_receive_slow(segment, index, r, waiter);
     }
 
-    // Line 1054-1165: private fun updateCellReceiveSlow(...)
     void* update_cell_receive_slow(ChannelSegment<E>* segment, int index, int64_t r, void* waiter) {
         while (true) {
             void* state = segment->get_state(index);
@@ -2533,33 +2317,25 @@ public:
         }
     }
 
-    // Line 652-669: private fun Any.tryResumeReceiver(element: E): Boolean
     bool try_resume_receiver(void* receiver, E element) {
-        // Line 653: is SelectInstance<*> -> trySelect(this@BufferedChannel, element)
         if (auto* select = dynamic_cast<selects::SelectInstance<void*>*>(static_cast<Waiter*>(receiver))) {
             return select->try_select(static_cast<void*>(this), new E(element));
         }
-        // Line 656-658: is ReceiveCatching<*> -> cont.tryResume0(success(element), onUndeliveredElement?.bindCancellationFunResult())
         if (auto* rc = dynamic_cast<ReceiveCatching<E>*>(static_cast<Waiter*>(receiver))) {
             auto on_cancellation = bind_cancellation_fun_result();
             return try_resume_0(rc->cont, ChannelResult<E>::success(element), on_cancellation);
         }
-        // Line 660-662: is BufferedChannelIterator -> tryResumeHasNext(element)
         if (auto* iter = dynamic_cast<BufferedChannelIterator*>(static_cast<Waiter*>(receiver))) {
             return iter->try_resume_has_next(element);
         }
-        // Line 664-666: is CancellableContinuation<*> -> tryResume0(element, onUndeliveredElement?.bindCancellationFun())
         if (auto* cont = dynamic_cast<CancellableContinuationImpl<E>*>(static_cast<Waiter*>(receiver))) {
             auto on_cancellation = bind_cancellation_fun();
             return try_resume_0(cont, element, on_cancellation);
         }
-        // Line 668: else -> error("Unexpected receiver type: $this")
         throw std::runtime_error("Unexpected receiver type in tryResumeReceiver");
     }
 
-    // Line 1167-1184: private fun Any.tryResumeSender(segment: ChannelSegment<E>, index: Int): Boolean
     bool try_resume_sender(void* sender, ChannelSegment<E>* segment, int index) {
-        // Line 1168-1172: is CancellableContinuation<*> -> tryResume0(Unit)
         if (auto* cont = dynamic_cast<CancellableContinuationImpl<void>*>(static_cast<Waiter*>(sender))) {
             // For void/Unit, tryResume0 just needs to be called
             void* token = cont->try_resume(nullptr);
@@ -2569,18 +2345,13 @@ public:
             }
             return false;
         }
-        // Line 1173-1181: is SelectInstance<*> -> ...
         if (auto* select = dynamic_cast<selects::SelectImplementation<void*>*>(static_cast<Waiter*>(sender))) {
-            // Line 1175: val trySelectResult = trySelectDetailed(clauseObject = this@BufferedChannel, result = Unit)
             auto try_select_result = select->try_select_detailed(static_cast<void*>(this), nullptr);
-            // Line 1177-1178: if (trySelectResult === REREGISTER) segment.cleanElement(index)
             if (try_select_result == selects::TrySelectDetailedResult::REREGISTER) {
                 segment->clean_element(index);
             }
-            // Line 1180: trySelectResult === SUCCESSFUL
             return try_select_result == selects::TrySelectDetailedResult::SUCCESSFUL;
         }
-        // Line 1182: is SendBroadcast -> cont.tryResume0(true)
         if (auto* sb = dynamic_cast<SendBroadcast*>(static_cast<Waiter*>(sender))) {
             void* token = sb->cont->try_resume(true, nullptr);
             if (token != nullptr) {
@@ -2589,14 +2360,11 @@ public:
             }
             return false;
         }
-        // Line 1183: else -> error("Unexpected waiter: $this")
         throw std::runtime_error("Unexpected sender type in tryResumeSender");
     }
 
-    // Line 678: protected open fun onReceiveEnqueued() {}
     virtual void on_receive_enqueued() {}
 
-    // Line 684: protected open fun onReceiveDequeued() {}
     virtual void on_receive_dequeued() {}
 
     // -------------------------------------------------------------------------
@@ -2607,23 +2375,19 @@ public:
         E element,
         std::exception_ptr undelivered_element_exception = nullptr
     ) {
-        // Line 12-21: try { invoke(element) } catch (ex: Throwable) { ... }
         try {
             if (on_undelivered_element_) {
                 on_undelivered_element_(element);
             }
         } catch (...) {
             std::exception_ptr ex = std::current_exception();
-            // Line 17-20: if existing exception and cause differs, add suppressed; else create new
             if (undelivered_element_exception) {
                 // TODO(port): C++ doesn't have addSuppressed - just return the original
                 return undelivered_element_exception;
             } else {
-                // Line 20: return UndeliveredElementException("...", ex)
                 return ex;
             }
         }
-        // Line 23: return undeliveredElementException
         return undelivered_element_exception;
     }
 
@@ -2636,7 +2400,6 @@ public:
         if (!on_undelivered_element_) {
             return nullptr;
         }
-        // Line 2781-2782: { _: Throwable, _, context: CoroutineContext -> callUndeliveredElement(element, context) }
         // Note: C++ OnUndeliveredElement only takes element (context implicit)
         return [this, element](std::exception_ptr, E, std::shared_ptr<CoroutineContext>) {
             on_undelivered_element_(element);
@@ -2652,7 +2415,6 @@ public:
         if (!on_undelivered_element_) {
             return nullptr;
         }
-        // Line 2791-2792: fun onCancellationImplDoNotCall(cause: Throwable, element: E, context: CoroutineContext)
         return [this](std::exception_ptr, E element, std::shared_ptr<CoroutineContext>) {
             on_undelivered_element_(element);
         };
@@ -2667,7 +2429,6 @@ public:
         if (!on_undelivered_element_) {
             return nullptr;
         }
-        // Line 2774-2777: onUndeliveredElement!!.callUndeliveredElement(element.getOrNull()!!, context)
         return [this](std::exception_ptr, ChannelResult<E> result, std::shared_ptr<CoroutineContext>) {
             if (result.is_success()) {
                 on_undelivered_element_(result.get_or_throw());
@@ -2675,7 +2436,6 @@ public:
         };
     }
 
-    // Line 1841-1857: private fun invokeCloseHandler()
     void invoke_close_handler_internal() {
         void* handler = close_handler_.exchange(static_cast<void*>(&CLOSE_HANDLER_INVOKED()),
             std::memory_order_acq_rel);
@@ -2695,7 +2455,6 @@ public:
         delete fn;
     }
 
-    // Line 1943-1967: private fun completeClose(sendersCur: Long): ChannelSegment<E>
     ChannelSegment<E>* complete_close(int64_t senders_cur) {
         ChannelSegment<E>* last_segment = close_linked_list();
 
@@ -2710,13 +2469,11 @@ public:
         return last_segment;
     }
 
-    // Line 1972-1979: private fun completeCancel(sendersCur: Long)
     void complete_cancel(int64_t senders_cur) {
         ChannelSegment<E>* last_segment = complete_close(senders_cur);
         remove_unprocessed_elements(last_segment);
     }
 
-    // Line 1984-1992: private fun closeLinkedList(): ChannelSegment<E>
     ChannelSegment<E>* close_linked_list() {
         ChannelSegment<E>* last_segment = buffer_end_segment_.load(std::memory_order_acquire);
         ChannelSegment<E>* send_seg = send_segment_.load(std::memory_order_acquire);
@@ -2728,7 +2485,6 @@ public:
         return last_segment->close();
     }
 
-    // Line 2003-2033: private fun markAllEmptyCellsAsClosed(...)
     int64_t mark_all_empty_cells_as_closed(ChannelSegment<E>* last_segment) {
         ChannelSegment<E>* segment = last_segment;
         while (true) {
@@ -2755,53 +2511,36 @@ public:
         }
     }
 
-    // Line 826-873: protected fun dropFirstElementUntilTheSpecifiedCellIsInTheBuffer(...)
     void drop_first_element_until_the_specified_cell_is_in_the_buffer(int64_t global_cell_index) {
-        // Line 827: assert { isConflatedDropOldest }
         assert(is_conflated_drop_oldest());
-        // Line 830: var segment = receiveSegment.value
         ChannelSegment<E>* segment = receive_segment_.load(std::memory_order_acquire);
-        // Line 831: while (true)
         while (true) {
-            // Line 834: val r = this.receivers.value
             int64_t r = receivers_.load(std::memory_order_acquire);
-            // Line 835: if (globalCellIndex < max(r + capacity, bufferEndCounter)) return
             if (global_cell_index < std::max(r + capacity_, buffer_end_counter())) {
                 return;
             }
-            // Line 838: if (!this.receivers.compareAndSet(r, r + 1)) continue
             if (!receivers_.compare_exchange_weak(r, r + 1,
                     std::memory_order_acq_rel, std::memory_order_acquire)) {
                 continue;
             }
-            // Line 840: val id = r / SEGMENT_SIZE
             int64_t id = r / SEGMENT_SIZE;
-            // Line 841: val i = (r % SEGMENT_SIZE).toInt()
             int i = static_cast<int>(r % SEGMENT_SIZE);
-            // Line 844: if (segment.id != id)
             if (segment->id != id) {
-                // Line 846: segment = findSegmentReceive(id, segment) ?:
                 ChannelSegment<E>* found = find_segment_receive(id, segment);
                 if (found == nullptr) {
-                    // Line 853: continue
                     continue;
                 }
                 segment = found;
             }
-            // Line 856: val updCellResult = updateCellReceive(segment, i, r, null)
             void* upd_cell_result = update_cell_receive(segment, i, r, nullptr);
-            // Line 857-871: when { ... }
             if (upd_cell_result == &FAILED()) {
-                // Line 858-862: The cell is poisoned; restart from the beginning.
                 // To avoid memory leaks, we also need to reset the `prev` pointer.
                 if (r < senders_counter()) {
                     segment->clean_prev();
                 }
             } else {
-                // Line 864-869: A buffered element was retrieved from the cell.
                 // Clean the reference to the previous segment.
                 segment->clean_prev();
-                // Line 869: onUndeliveredElement?.callUndeliveredElementCatchingException(updCellResult as E)?.let { throw it }
                 if (on_undelivered_element_) {
                     E element = *static_cast<E*>(upd_cell_result);
                     std::exception_ptr ex = call_undelivered_element_catching_exception(element);
@@ -2813,45 +2552,29 @@ public:
         }
     }
 
-    // Line 2041-2134: private fun removeUnprocessedElements(...)
     void remove_unprocessed_elements(ChannelSegment<E>* last_segment) {
-        // Line 2046: val onUndeliveredElement = onUndeliveredElement
         auto on_undelivered_element = on_undelivered_element_;
-        // Line 2047: var undeliveredElementException: UndeliveredElementException? = null
         std::exception_ptr undelivered_element_exception = nullptr;
-        // Line 2054: var suspendedSenders = InlineList<Waiter>()
         std::vector<Waiter*> suspended_senders;
-        // Line 2055: var segment = lastSegment
         ChannelSegment<E>* segment = last_segment;
-        // Line 2056: process_segments@ while (true)
         bool process_segments_done = false;
         while (!process_segments_done) {
-            // Line 2057: for (index in SEGMENT_SIZE - 1 downTo 0)
             for (int index = SEGMENT_SIZE - 1; index >= 0; --index) {
-                // Line 2059: val globalIndex = segment.id * SEGMENT_SIZE + index
                 int64_t global_index = segment->id * SEGMENT_SIZE + index;
-                // Line 2061: update_cell@ while (true)
                 bool update_cell_done = false;
                 while (!update_cell_done) {
-                    // Line 2063: val state = segment.getState(index)
                     void* state = segment->get_state(index);
-                    // Line 2064-2124: when { ... }
                     if (state == &DONE_RCV()) {
-                        // Line 2066: break@process_segments
                         process_segments_done = true;
                         update_cell_done = true;
                         break;
                     } else if (state == &BUFFERED()) {
-                        // Line 2068-2083: The cell stores a buffered element
-                        // Line 2070: if (globalIndex < receiversCounter) break@process_segments
                         if (global_index < receivers_counter()) {
                             process_segments_done = true;
                             update_cell_done = true;
                             break;
                         }
-                        // Line 2072: if (segment.casState(index, state, CHANNEL_CLOSED))
                         if (segment->cas_state(index, state, static_cast<void*>(&CHANNEL_CLOSED()))) {
-                            // Line 2074-2077: If onUndeliveredElement lambda is non-null, call it
                             if (on_undelivered_element) {
                                 E element = segment->get_element(index);
                                 std::exception_ptr ex = call_undelivered_element_catching_exception(element, undelivered_element_exception);
@@ -2859,34 +2582,25 @@ public:
                                     undelivered_element_exception = ex;
                                 }
                             }
-                            // Line 2080-2081: Clean the element field and inform the segment
                             segment->clean_element(index);
                             segment->on_slot_cleaned();
                             update_cell_done = true;
                         }
                     } else if (state == &IN_BUFFER() || state == nullptr) {
-                        // Line 2086-2092: The cell is empty
-                        // Line 2088: if (segment.casState(index, state, CHANNEL_CLOSED))
                         if (segment->cas_state(index, state, static_cast<void*>(&CHANNEL_CLOSED()))) {
-                            // Line 2090: Inform the segment that the slot is cleaned
                             segment->on_slot_cleaned();
                             update_cell_done = true;
                         }
                     } else if (is_waiter(state) || is_waiter_eb(state)) {
-                        // Line 2095-2115: The cell stores a suspended waiter
-                        // Line 2097: if (globalIndex < receiversCounter) break@process_segments
                         if (global_index < receivers_counter()) {
                             process_segments_done = true;
                             update_cell_done = true;
                             break;
                         }
-                        // Line 2099-2100: Obtain the sender
                         Waiter* sender = is_waiter_eb(state) ?
                             static_cast<WaiterEB*>(state)->waiter :
                             static_cast<Waiter*>(state);
-                        // Line 2102: if (segment.casState(index, state, CHANNEL_CLOSED))
                         if (segment->cas_state(index, state, static_cast<void*>(&CHANNEL_CLOSED()))) {
-                            // Line 2104-2107: If onUndeliveredElement lambda is non-null, call it
                             if (on_undelivered_element) {
                                 E element = segment->get_element(index);
                                 std::exception_ptr ex = call_undelivered_element_catching_exception(element, undelivered_element_exception);
@@ -2894,103 +2608,76 @@ public:
                                     undelivered_element_exception = ex;
                                 }
                             }
-                            // Line 2109: Save the sender for further cancellation
                             suspended_senders.push_back(sender);
-                            // Line 2112-2113: Clean the element field and inform the segment
                             segment->clean_element(index);
                             segment->on_slot_cleaned();
                             update_cell_done = true;
                         }
                     } else if (state == &RESUMING_BY_EB() || state == &RESUMING_BY_RCV()) {
-                        // Line 2119: A concurrent receiver is resuming a suspended sender.
                         // As the cell is covered by a receiver, finish immediately.
                         process_segments_done = true;
                         update_cell_done = true;
                         break;
                     } else {
-                        // Line 2123: else -> break@update_cell
                         update_cell_done = true;
                     }
                 }
                 if (process_segments_done) break;
             }
-            // Line 2128: segment = segment.prev ?: break
             ChannelSegment<E>* prev = segment->prev();
             if (prev == nullptr) break;
             segment = prev;
         }
-        // Line 2131: suspendedSenders.forEachReversed { it.resumeSenderOnCancelledChannel() }
         for (auto it = suspended_senders.rbegin(); it != suspended_senders.rend(); ++it) {
             resume_sender_on_cancelled_channel(*it);
         }
-        // Line 2133: undeliveredElementException?.let { throw it }
         if (undelivered_element_exception) {
             std::rethrow_exception(undelivered_element_exception);
         }
     }
 
-    // Line 2140-2187: private fun cancelSuspendedReceiveRequests(...)
     void cancel_suspended_receive_requests(ChannelSegment<E>* last_segment, int64_t senders_counter_val) {
-        // Line 2148: var suspendedReceivers = InlineList<Waiter>()
         std::vector<Waiter*> suspended_receivers;
-        // Line 2149: var segment: ChannelSegment<E>? = lastSegment
         ChannelSegment<E>* segment = last_segment;
-        // Line 2150: process_segments@ while (segment != null)
         bool process_segments_done = false;
         while (segment != nullptr && !process_segments_done) {
-            // Line 2151: for (index in SEGMENT_SIZE - 1 downTo 0)
             for (int index = SEGMENT_SIZE - 1; index >= 0; --index) {
-                // Line 2153: if (segment.id * SEGMENT_SIZE + index < sendersCounter) break@process_segments
                 if (segment->id * SEGMENT_SIZE + index < senders_counter_val) {
                     process_segments_done = true;
                     break;
                 }
-                // Line 2155: cell_update@ while (true)
                 bool cell_update_done = false;
                 while (!cell_update_done) {
-                    // Line 2156: val state = segment.getState(index)
                     void* state = segment->get_state(index);
-                    // Line 2157-2179: when { ... }
                     if (state == nullptr || state == &IN_BUFFER()) {
-                        // Line 2158-2162: state === null || state === IN_BUFFER
                         if (segment->cas_state(index, state, static_cast<void*>(&CHANNEL_CLOSED()))) {
                             segment->on_slot_cleaned();
                             cell_update_done = true;
                         }
                     } else if (is_waiter_eb(state)) {
-                        // Line 2164-2169: state is WaiterEB
                         if (segment->cas_state(index, state, static_cast<void*>(&CHANNEL_CLOSED()))) {
-                            // Line 2166: suspendedReceivers += state.waiter
                             suspended_receivers.push_back(static_cast<WaiterEB*>(state)->waiter);
-                            // Line 2167: segment.onCancelledRequest(index = index, receiver = true)
                             segment->on_cancelled_request(index, true);
                             cell_update_done = true;
                         }
                     } else if (is_waiter(state)) {
-                        // Line 2171-2176: state is Waiter
                         if (segment->cas_state(index, state, static_cast<void*>(&CHANNEL_CLOSED()))) {
-                            // Line 2173: suspendedReceivers += state
                             suspended_receivers.push_back(static_cast<Waiter*>(state));
-                            // Line 2174: segment.onCancelledRequest(index = index, receiver = true)
                             segment->on_cancelled_request(index, true);
                             cell_update_done = true;
                         }
                     } else {
-                        // Line 2178: else -> break@cell_update
                         cell_update_done = true;
                     }
                 }
             }
-            // Line 2183: segment = segment.prev
             segment = segment->prev();
         }
-        // Line 2186: suspendedReceivers.forEachReversed { it.resumeReceiverOnClosedChannel() }
         for (auto it = suspended_receivers.rbegin(); it != suspended_receivers.rend(); ++it) {
             resume_receiver_on_closed_channel(*it);
         }
     }
 
-    // Line 2393-2432: private fun findSegmentSend(...)
     ChannelSegment<E>* find_segment_send(int64_t id, ChannelSegment<E>* start_from) {
         // Simplified segment finding
         ChannelSegment<E>* segment = start_from;
@@ -3019,7 +2706,6 @@ public:
         return segment;
     }
 
-    // Line 2448-2491: private fun findSegmentReceive(...)
     ChannelSegment<E>* find_segment_receive(int64_t id, ChannelSegment<E>* start_from) {
         ChannelSegment<E>* segment = start_from;
         while (segment != nullptr && segment->id < id) {
@@ -3047,7 +2733,6 @@ public:
         return segment;
     }
 
-    // Line 2497-2535: private fun findSegmentBufferEnd(...)
     ChannelSegment<E>* find_segment_buffer_end(int64_t id, ChannelSegment<E>* start_from, int64_t current_buffer_end_counter) {
         (void)current_buffer_end_counter;
 
@@ -3077,7 +2762,6 @@ public:
         return segment;
     }
 
-    // Line 2543-2561: private fun moveSegmentBufferEndToSpecifiedOrLast(...)
     void move_segment_buffer_end_to_specified_or_last(int64_t id, ChannelSegment<E>* start_from) {
         ChannelSegment<E>* segment = start_from;
         while (segment->id < id) {
@@ -3103,10 +2787,8 @@ public:
     }
 
     // =========================================================================
-    // Line 1595-1744: BufferedChannelIterator inner class
     // =========================================================================
 
-    // Line 1595-1744: BufferedChannelIterator inner class
     // Implements both ChannelIterator and Waiter interfaces
     class BufferedChannelIterator : public ChannelIterator<E>, public Waiter {
     public:
@@ -3115,7 +2797,6 @@ public:
             , receive_result_(static_cast<void*>(&NO_RECEIVE_RESULT()))
             , continuation_(nullptr) {}
 
-        // Line 1616-1640: override suspend fun hasNext(): Boolean
         void* has_next(Continuation<void*>* continuation) override {
             if (receive_result_ != static_cast<void*>(&NO_RECEIVE_RESULT()) &&
                 receive_result_ != static_cast<void*>(&CHANNEL_CLOSED())) {
@@ -3139,7 +2820,6 @@ public:
             return new bool(false);
         }
 
-        // Line 1698-1707: override fun next(): E
         E next() override {
             if (receive_result_ == static_cast<void*>(&NO_RECEIVE_RESULT())) {
                 throw std::logic_error("`hasNext()` has not been invoked");
@@ -3164,14 +2844,10 @@ public:
         // Lines 1709-1720: fun tryResumeHasNext(element: E): Boolean
         // -------------------------------------------------------------------------
         bool try_resume_has_next(E element) {
-            // Line 1712: val cont = this.continuation!!
             CancellableContinuationImpl<bool>* cont = continuation_;
             assert(cont != nullptr);
-            // Line 1713: this.continuation = null
             continuation_ = nullptr;
-            // Line 1715: this.receiveResult = element
             receive_result_ = new E(element);
-            // Line 1719: return cont.tryResume0(true, onUndeliveredElement?.bindCancellationFun(element))
             // Note: Kotlin uses (Throwable, Any?, CoroutineContext) signature and ignores the value.
             // In C++, we capture the element and ignore the bool value passed in.
             std::function<void(std::exception_ptr, bool, std::shared_ptr<CoroutineContext>)> on_cancellation = nullptr;
@@ -3195,26 +2871,19 @@ public:
         // Lines 1722-1742: fun tryResumeHasNextOnClosedChannel()
         // -------------------------------------------------------------------------
         void try_resume_has_next_on_closed_channel() {
-            // Line 1728: val cont = this.continuation!!
             CancellableContinuationImpl<bool>* cont = continuation_;
             assert(cont != nullptr);
-            // Line 1729: this.continuation = null
             continuation_ = nullptr;
-            // Line 1733: this.receiveResult = CHANNEL_CLOSED
             receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
-            // Line 1737-1741: Resume with result based on closeCause
             auto cause = channel_->close_cause();
             if (!cause) {
-                // Line 1739: cont.resume(false)
                 cont->resume_with(Result<bool>::success(false));
             } else {
-                // Line 1741: cont.resumeWithException(recoverStackTrace(cause, cont))
                 cont->resume_with(Result<bool>::failure(cause));
             }
         }
 
         // Waiter interface implementation
-        // Line 1711-1716: invokeOnCancellation delegating to continuation
         void invoke_on_cancellation(internal::SegmentBase* segment, int index) override {
             if (continuation_) {
                 continuation_->invoke_on_cancellation(segment, index);

@@ -21,7 +21,6 @@ namespace coroutines {
         : CancellationException(message), coroutine(coroutine) {}
 
     std::exception_ptr TimeoutCancellationException::create_copy() const {
-        // Line 178: TimeoutCancellationException(message ?: "", coroutine).also { it.initCause(this) }
         auto copy = TimeoutCancellationException(what(), coroutine);
         // Note: initCause equivalent not fully established, passing explicit construction
         return std::make_exception_ptr(copy);
@@ -33,7 +32,6 @@ namespace coroutines {
         std::shared_ptr<Job> coroutine
     ) {
         (void)delay;
-        // Line 187: val message = (delay as? DelayWithTimeoutDiagnostics)?.timeoutMessage(time.milliseconds) ?: "Timed out waiting for $time ms"
         // Wrapper for dynamic_cast check if Delay supports diagnostics
         std::string message = "Timed out waiting for " + std::to_string(time) + " ms";
         
