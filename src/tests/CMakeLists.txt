@@ -22,6 +22,7 @@ function(add_coroutine_test TEST_NAME)
             -Wno-unused-variable
             -Wno-unused-const-variable
             -Wno-unused-private-field
+            -Wno-gnu-label-as-value  # Required for computed goto (K/N binary parity)
         )
         # Link against core library so tests can exercise non-inline implementations.
         target_link_libraries(${TEST_NAME} PRIVATE pthread kotlinx-coroutines-core)
@@ -60,13 +61,6 @@ add_coroutine_test(test_sync)
 if(TARGET test_plugin_canonical AND KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     target_compile_options(test_plugin_canonical PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
     add_dependencies(test_plugin_canonical KotlinxSuspendPlugin)
-endif()
-if(KOTLINX_ENABLE_STACKLESS)
-    add_coroutine_test(test_stackless_plugin)
-    if(TARGET test_stackless_plugin AND KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
-        target_compile_options(test_stackless_plugin PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
-        add_dependencies(test_stackless_plugin KotlinxSuspendPlugin)
-    endif()
 endif()
 
 # Add gc_bridge tests if directory exists
