@@ -40,6 +40,49 @@ public:
 };
 
 /**
+ * Box for Incomplete states used as final job results.
+ * Transliterated from: private class IncompleteStateBox (JobSupport.kt:1393)
+ *
+ * When a job's result happens to implement Incomplete (e.g., a DisposableHandle),
+ * we need to box it to distinguish it from actual incomplete states during
+ * state machine transitions.
+ */
+class IncompleteStateBox : public JobState {
+public:
+    Incomplete* state;
+
+    explicit IncompleteStateBox(Incomplete* s) : state(s) {}
+};
+
+/**
+ * Box an Incomplete state for use as a final result.
+ * Transliterated from: internal fun Any?.boxIncomplete(): Any? (JobSupport.kt:1394)
+ *
+ * @param state The state to potentially box
+ * @return IncompleteStateBox if state is Incomplete, otherwise state unchanged
+ */
+inline JobState* box_incomplete(JobState* state) {
+    if (auto* incomplete = dynamic_cast<Incomplete*>(state)) {
+        return new IncompleteStateBox(incomplete);
+    }
+    return state;
+}
+
+/**
+ * Unbox an IncompleteStateBox to retrieve the original Incomplete state.
+ * Transliterated from: internal fun Any?.unboxState(): Any? (JobSupport.kt:1395)
+ *
+ * @param state The potentially boxed state
+ * @return The unboxed Incomplete if boxed, otherwise state unchanged
+ */
+inline JobState* unbox_state(JobState* state) {
+    if (auto* box = dynamic_cast<IncompleteStateBox*>(state)) {
+        return box->state;
+    }
+    return state;
+}
+
+/**
  * List of job nodes (handlers).
  * Transliterated from: internal class NodeList (JobSupport.kt:1453)
  */
@@ -158,6 +201,16 @@ public:
     void cancel(std::exception_ptr cause = nullptr) override;
     void* join(Continuation<void*>* continuation) override;
     void join_blocking() override;
+
+    // TODO(port): Add SelectClause0 onJoin property
+    // Transliterated from: public final override val onJoin: SelectClause0 (JobSupport.kt:591-595)
+    // This provides select {} support for waiting on job completion:
+    //   select {
+    //       job.onJoin { /* handle completion */ }
+    //   }
+    // Requires: SelectClause0, SelectClause0Impl, RegistrationFunction
+    // See: registerSelectForOnJoin(), SelectOnJoinCompletionHandler inner class
+
     std::vector<std::shared_ptr<Job>> get_children() const override;
     std::shared_ptr<ChildHandle> attach_child(std::shared_ptr<ChildJob> child) override;
 
@@ -211,6 +264,15 @@ public:
      * @return true if cancellation was initiated
      */
     bool cancel_coroutine(std::exception_ptr cause = nullptr);
+
+    /**
+     * Returns true if this job handles exceptions from children.
+     * Transliterated from: internal open val handlesException: Boolean (JobSupport.kt:1118)
+     *
+     * This is public (not protected) because it's accessed in the parent chain
+     * when determining exception handling responsibility.
+     */
+    virtual bool get_handles_exception() const { return true; }
 
     /**
      * Returns the completion cause if completed exceptionally, nullptr otherwise.
@@ -284,11 +346,6 @@ protected:
     virtual bool get_is_scoped_coroutine() const { return false; }
 
     /**
-     * Returns true if this job handles exceptions from children.
-     */
-    virtual bool get_handles_exception() const { return true; }
-
-    /**
      * Called to handle a job exception (for CoroutineExceptionHandler).
      * @return true if the exception was handled
      */
@@ -349,6 +406,15 @@ protected:
      * Blocking version of await for non-coroutine contexts.
      */
     JobState* await_internal_blocking();
+
+    // TODO(port): Add SelectClause1 onAwaitInternal property
+    // Transliterated from: protected val onAwaitInternal: SelectClause1<*> (JobSupport.kt:1351-1355)
+    // This provides select {} support for waiting on deferred results:
+    //   select {
+    //       deferred.onAwait { result -> /* handle result */ }
+    //   }
+    // Requires: SelectClause1, SelectClause1Impl, RegistrationFunction, ProcessResultFunction
+    // See: onAwaitInternalRegFunc(), onAwaitInternalProcessResFunc(), SelectOnAwaitCompletionHandler
 
     // ===========================================
     // Debug support

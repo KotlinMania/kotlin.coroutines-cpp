@@ -45,12 +45,6 @@ if(KOTLIN_NATIVE_RUNTIME_AVAILABLE)
     add_compile_definitions(KOTLIN_NATIVE_RUNTIME_AVAILABLE=1)
 endif()
 
-# Stackless Coroutine Support (Experimental/Legacy)
-option(KOTLINX_ENABLE_STACKLESS "Enable stackless coroutine implementation" OFF)
-if(KOTLINX_ENABLE_STACKLESS)
-    add_compile_definitions(KOTLINX_ENABLE_STACKLESS=1)
-endif()
-
 # -----------------------------------------------------------------------------
 # Source layout root
 #

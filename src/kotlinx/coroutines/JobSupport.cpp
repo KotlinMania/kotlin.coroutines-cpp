@@ -10,6 +10,7 @@
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
+#include "kotlinx/coroutines/Timeout.hpp"  // For TimeoutCancellationException
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/Result.hpp"
@@ -1096,18 +1097,58 @@ namespace kotlinx {
             return finalize_finishing_state(job, finishing, proposed);
         }
 
+        /**
+         * Add suppressed exceptions to the root cause.
+         * Transliterated from: private fun addSuppressedExceptions(rootCause: Throwable, exceptions: List<Throwable>)
+         *     (JobSupport.kt:262-278)
+         *
+         * NOTE: C++ exceptions do not have built-in addSuppressed support like Java/Kotlin.
+         * This function is provided for API completeness but cannot actually attach suppressed
+         * exceptions to the root cause. In C++, all exceptions in the list are effectively
+         * "suppressed" (ignored) except for the final root cause.
+         *
+         * TODO(semantics): Consider creating a custom exception wrapper that can hold
+         * suppressed exceptions if this functionality is needed for debugging.
+         */
+        void add_suppressed_exceptions(std::exception_ptr root_cause,
+                                       const std::vector<std::exception_ptr>& exceptions) {
+            // In Kotlin, this would:
+            // 1. Create an identity set to avoid duplicates
+            // 2. Unwrap recovered exceptions
+            // 3. Skip CancellationExceptions
+            // 4. Call rootCause.addSuppressed(exception) for each
+            //
+            // In C++, we cannot modify the exception after creation, so we just
+            // acknowledge that these exceptions are being suppressed.
+            // This is a semantic gap between Kotlin and C++.
+
+            if (exceptions.size() <= 1) return;  // Nothing to suppress
+
+            // Log or handle suppressed exceptions if debugging is needed
+            // For now, this is intentionally a no-op
+            (void)root_cause;
+        }
+
         JobState *JobSupport::Impl::finalize_finishing_state(JobSupport *job, Finishing *finishing,
                                                              JobState *proposed) {
+            // Transliterated from: private fun finalizeFinishingState(state: Finishing, proposedUpdate: Any?): Any?
+            //     (JobSupport.kt:191-235)
             auto *proposed_ex = dynamic_cast<CompletedExceptionally *>(proposed);
             std::exception_ptr proposed_exception = proposed_ex ? proposed_ex->cause : nullptr;
 
+            // Create the final exception and seal the state so that no more exceptions can be added
             bool was_cancelling;
             std::exception_ptr final_exception;
+            std::vector<std::exception_ptr> exceptions;
             {
                 std::lock_guard<std::recursive_mutex> lock(finishing->mutex);
                 was_cancelling = finishing->is_cancelling();
-                auto exceptions = finishing->seal_locked(proposed_exception);
+                exceptions = finishing->seal_locked(proposed_exception);
                 final_exception = get_final_root_cause(finishing, exceptions);
+                // Add suppressed exceptions (semantic no-op in C++, see note above)
+                if (final_exception) {
+                    add_suppressed_exceptions(final_exception, exceptions);
+                }
             }
 
             JobState *final_state;
@@ -1128,34 +1169,96 @@ namespace kotlinx {
                 }
             }
 
+            // Process state updates for the final state before the state of the Job is actually set
+            // to avoid races where outside observer may see the job in the final state,
+            // yet exception is not handled yet.
             if (!was_cancelling) job->on_cancelling(final_exception);
             job->on_completion_internal(final_state);
 
+            // Then CAS to completed state -> it must succeed
+            // NOTE: Box the final state if it's Incomplete to prevent confusion with actual incomplete states
             auto *expected = static_cast<JobState *>(finishing);
-            bool cas_ok = state.compare_exchange_strong(expected, final_state);
+            auto *boxed_final_state = box_incomplete(final_state);
+            bool cas_ok = state.compare_exchange_strong(expected, boxed_final_state);
             assert(cas_ok);
 
+            // And process all post-completion actions
             complete_state_finalization(job, finishing, final_state);
             return final_state;
         }
 
         std::exception_ptr JobSupport::Impl::get_final_root_cause(Finishing *finishing,
                                                                   const std::vector<std::exception_ptr> &exceptions) {
+            // Transliterated from: private fun getFinalRootCause(state: Finishing, exceptions: List<Throwable>): Throwable?
+            //     (JobSupport.kt:237-260)
+
+            // A case of no exceptions
             if (exceptions.empty()) {
+                // materialize cancellation exception if it was not materialized yet
                 if (finishing->is_cancelling()) {
                     return default_cancellation_exception(nullptr);
                 }
                 return nullptr;
             }
-            return exceptions[0];
+
+            /*
+             * 1) If we have non-CE, use it as root cause
+             * 2) If our original cause was TCE, use *non-original* TCE because of the special nature of TCE
+             *    - It is a CE, so it's not reported by children
+             *    - The first instance (cancellation cause) is created by timeout coroutine and has no meaningful stacktrace
+             *    - The potential second instance is thrown by withTimeout lexical block itself, then it has recovered stacktrace
+             * 3) Just return the very first CE
+             */
+
+            // Find first non-CancellationException
+            std::exception_ptr first_non_cancellation;
+            for (const auto& ex : exceptions) {
+                if (!is_cancellation_exception(ex)) {
+                    first_non_cancellation = ex;
+                    break;
+                }
+            }
+            if (first_non_cancellation) return first_non_cancellation;
+
+            // All are CancellationExceptions
+            std::exception_ptr first = exceptions[0];
+
+            // Check if first is TimeoutCancellationException
+            bool first_is_timeout = false;
+            try {
+                std::rethrow_exception(first);
+            } catch (const TimeoutCancellationException&) {
+                first_is_timeout = true;
+            } catch (...) {
+                // Not a TimeoutCancellationException
+            }
+
+            if (first_is_timeout) {
+                // Look for a different TimeoutCancellationException (with recovered stacktrace)
+                for (size_t i = 1; i < exceptions.size(); ++i) {
+                    try {
+                        std::rethrow_exception(exceptions[i]);
+                    } catch (const TimeoutCancellationException&) {
+                        return exceptions[i];  // Use the non-original TCE
+                    } catch (...) {
+                        // Not a TCE, continue
+                    }
+                }
+            }
+
+            return first;
         }
 
         bool JobSupport::Impl::try_finalize_simple_state(JobSupport *job, Incomplete *s, JobState *update) {
+            // Transliterated from: private fun tryFinalizeSimpleState(state: Incomplete, update: Any?): Boolean
+            //     (JobSupport.kt:282-290)
+            // NOTE: Box the update if it's Incomplete to prevent confusion with actual incomplete states
             auto *expected = static_cast<JobState *>(s);
-            if (!state.compare_exchange_strong(expected, update)) {
+            auto *boxed_update = box_incomplete(update);
+            if (!state.compare_exchange_strong(expected, boxed_update)) {
                 return false;
             }
-            job->on_cancelling(nullptr);
+            job->on_cancelling(nullptr);  // simple state is not a failure
             job->on_completion_internal(update);
             complete_state_finalization(job, s, update);
             return true;

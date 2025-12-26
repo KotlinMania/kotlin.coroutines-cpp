@@ -47,7 +47,7 @@ class JobImpl : public JobSupport, public CompletableJob {
 public:
     /**
      * @brief Constructs a JobImpl with optional parent.
-     * 
+     *
      * Creates a new job instance and establishes parent-child relationship
      * if parent is provided. The job starts in active state.
      * Note: Parent cannot be used in constructor due to shared_from_this() requirement.
@@ -56,6 +56,41 @@ public:
      * @param parent Optional parent job for structured concurrency
      */
     explicit JobImpl(std::shared_ptr<Job> parent);
+
+protected:
+    /**
+     * Returns true - JobImpl completes on cancel.
+     * Transliterated from: override val onCancelComplete get() = true (JobSupport.kt:1427)
+     */
+    bool get_on_cancel_complete() const override { return true; }
+
+    /**
+     * Cached result of handlesException() check.
+     * Transliterated from: override val handlesException: Boolean = handlesException() (JobSupport.kt:1438)
+     *
+     * This recursively checks whether the parent job handles exceptions.
+     * With this check, an exception in this pattern will be handled once:
+     * ```cpp
+     * launch {
+     *     auto child = JobImpl::create(coroutineContext[Job]);
+     *     launch(child, [] { throw ... });
+     * }
+     * ```
+     */
+    bool get_handles_exception() const override;
+
+private:
+    /**
+     * Computes whether this job's parent hierarchy handles exceptions.
+     * Transliterated from: private fun handlesException(): Boolean (JobSupport.kt:1444-1449)
+     */
+    bool compute_handles_exception() const;
+
+    // Cached result - mutable because computed lazily in const getter
+    mutable bool handles_exception_cached_ = false;
+    mutable bool handles_exception_computed_ = false;
+
+public:
     
     /**
      * @brief Factory method to create JobImpl with proper shared_ptr setup.

@@ -89,6 +89,59 @@ public:
 CancellationException* make_cancellation_exception(const std::string& message, std::exception_ptr cause);
 
 /**
+ * Converts an exception_ptr to a CancellationException.
+ * Transliterated from: protected fun Throwable.toCancellationException(message: String?): CancellationException
+ *     (JobSupport.kt:421-422)
+ *
+ * If the exception is already a CancellationException, it is rethrown.
+ * Otherwise, a new CancellationException is created with the original exception as cause.
+ *
+ * @param exception The exception to convert
+ * @param message Optional message for the new CancellationException (if creating one)
+ * @return A CancellationException wrapping the original exception
+ */
+inline std::exception_ptr to_cancellation_exception(
+    std::exception_ptr exception,
+    const std::string& message = ""
+) {
+    if (!exception) {
+        return std::make_exception_ptr(CancellationException(
+            message.empty() ? "Job was cancelled" : message));
+    }
+
+    // Check if already a CancellationException
+    try {
+        std::rethrow_exception(exception);
+    } catch (const CancellationException&) {
+        // Already a CancellationException, return as-is
+        return exception;
+    } catch (...) {
+        // Wrap in CancellationException
+        return std::make_exception_ptr(CancellationException(
+            message.empty() ? "Job was cancelled" : message,
+            exception));
+    }
+}
+
+/**
+ * Checks if an exception_ptr contains a CancellationException.
+ * Transliterated from: cause is CancellationException (various places in JobSupport.kt)
+ *
+ * @param exception The exception to check
+ * @return true if the exception is a CancellationException
+ */
+inline bool is_cancellation_exception(std::exception_ptr exception) {
+    if (!exception) return false;
+    try {
+        std::rethrow_exception(exception);
+    } catch (const CancellationException&) {
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+/**
  * For use in tests - whether to recover stack traces.
  * Native: false (no stack trace recovery support)
  */
