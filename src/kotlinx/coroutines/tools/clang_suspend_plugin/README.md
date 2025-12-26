@@ -1,26 +1,19 @@
 # Clang Suspend DSL Plugin (kotlinx.coroutines-cpp)
 
-This Clang plugin transforms C++ suspend functions into Kotlin/Native-style state machines.
+This Clang plugin transforms C++ suspend functions into Kotlin/Native-style state machines
+with binary-compatible coroutine ABI.
 
 ## Features
 
-### Phase 1 (Complete): Switch-based Dispatch
 - Detects suspend functions annotated with `[[suspend]]` or `[[kotlinx::suspend]]`
 - Detects suspend points via `suspend(expr)` wrapper or `[[clang::annotate("suspend")]]`
-- Generates sidecar `.kx.cpp` files with switch-based state machines
-- Captures all parameters as coroutine class fields
-
-### Phase 2 (Complete): Liveness-based Spilling
-- CFG construction using Clang's analysis infrastructure
-- True backward dataflow liveness analysis (matching Kotlin/Native)
-- Only spills variables that are actually live across suspension points
-- Reduces memory footprint of coroutine objects
-
-### Phase 3 (Complete): Computed-Goto Dispatch
-- Uses `void* _label` instead of `int _label`
-- Generates `&&label` (GCC/Clang labels-as-values extension)
-- Uses `goto *_label` for computed goto dispatch
+- Generates sidecar `.kx.cpp` files with computed-goto state machines
+- Uses `void* _label` (Kotlin/Native NativePtr)
+- Generates `&&label` (labels-as-values) + `goto *_label` (computed goto)
 - Compiles to LLVM `indirectbr` + `blockaddress` - exact Kotlin/Native parity
+- CFG-based liveness analysis for automatic variable spilling
+
+Target: Apple clang only.
 
 ## Building (Apple/Clang)
 
@@ -71,7 +64,7 @@ clang++ -fsyntax-only \
 | Argument | Values | Default | Description |
 |----------|--------|---------|-------------|
 | `out-dir=<path>` | directory path | `kxs_generated` | Output directory for generated `.kx.cpp` files |
-| `dispatch=<mode>` | `switch`, `goto` | `switch` | State machine dispatch mode |
+| `dispatch=<mode>` | `goto` | `goto` | State machine dispatch (computed goto) |
 | `spill=<mode>` | `all`, `liveness` | `all` | Variable spilling strategy |
 
 ## Example

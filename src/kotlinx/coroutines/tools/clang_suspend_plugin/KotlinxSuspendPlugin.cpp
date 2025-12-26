@@ -193,7 +193,8 @@ private:
         os << "#include <kotlinx/coroutines/ContinuationImpl.hpp>\n";
         os << "#include <kotlinx/coroutines/Result.hpp>\n";
         os << "#include <kotlinx/coroutines/intrinsics/Intrinsics.hpp>\n";
-        os << "#include <memory>\n\n";
+        os << "#include <memory>\n";
+        os << "#include <cstdint>\n\n";
         os << "using namespace kotlinx::coroutines;\n";
         os << "using namespace kotlinx::coroutines::intrinsics;\n\n";
         os << "extern \"C\" void __kxs_suspend_point(int id);\n\n";
@@ -266,7 +267,7 @@ private:
 
         // Emit coroutine class.
         os << "struct " << coroName << " : public ContinuationImpl {\n";
-        os << "    int _label = 0;\n";
+        os << "    intptr_t _label = 0;  // NativePtr equivalent for blockaddress\n";
 
         // Emit fields based on spill mode.
         if (spillMode_ == SpillMode::Liveness && !spillVars.empty()) {
@@ -416,9 +417,11 @@ private:
 
         std::string retTy = fd->getReturnType().getAsString(pp);
 
-        // Emit coroutine class with void* label.
+        // Emit coroutine class with void* label for computed goto (blockaddress type).
+        // Note: Switch mode uses intptr_t _label (integral for switch, pointer-sized).
+        // Computed goto mode uses void* _label (direct blockaddress storage for goto *).
         os << "struct " << coroName << " : public ContinuationImpl {\n";
-        os << "    void* _label = nullptr;  // Block address for computed goto\n";
+        os << "    void* _label = nullptr;  // Blockaddress for computed goto (NativePtr)\n";
 
         // Emit spill fields.
         for (const VarDecl* vd : spillVars) {
@@ -558,8 +561,8 @@ protected:
 
 private:
     std::string outDir_ = "kxs_generated";
-    DispatchMode dispatchMode_ = DispatchMode::Switch;  // Default: Phase 1 behavior
-    SpillMode spillMode_ = SpillMode::All;              // Default: Phase 1 behavior
+    DispatchMode dispatchMode_ = DispatchMode::ComputedGoto;  // K/N binary compatible
+    SpillMode spillMode_ = SpillMode::All;
 };
 
 } // namespace

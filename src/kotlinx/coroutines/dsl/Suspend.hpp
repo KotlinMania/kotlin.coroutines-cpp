@@ -6,13 +6,10 @@
  * Provides coroutine_begin/coroutine_yield/coroutine_end macros that implement
  * stackless coroutine state machines matching Kotlin/Native's pattern.
  *
- * Two modes:
- * 1. Computed goto (default on GCC/Clang, disable with `KXS_NO_COMPUTED_GOTO`):
- *    Uses `void* _label` with `&&label` addresses and compiles to LLVM
- *    `indirectbr` + `blockaddress` (Kotlin/Native parity).
- *
- * 2. Switch mode (MSVC fallback, or when `KXS_NO_COMPUTED_GOTO` is defined):
- *    Uses `int _label` with `switch/case` (portable, but not identical IR).
+ * Uses computed goto (Clang labels-as-values extension):
+ *   - `void* _label` stores `&&label` blockaddresses
+ *   - `goto *_label` for computed goto dispatch
+ *   - Compiles to LLVM `indirectbr` + `blockaddress` (exact Kotlin/Native parity)
  *
  * Usage example:
  * ```cpp
@@ -72,12 +69,8 @@ inline T suspend(T&& value) {
 /**
  * Macro-based state machine for hand-written suspend functions.
  *
- * Two modes:
- * 1. Computed goto mode (KXS_COMPUTED_GOTO): Uses void* _label with &&label
- *    addresses. Compiles to LLVM indirectbr + blockaddress (Kotlin/Native parity).
- *
- * 2. Switch mode (default): Uses int _label with switch/case. Portable fallback
- *    that works on all compilers including MSVC.
+ * Uses computed goto (labels-as-values) for Kotlin/Native binary parity.
+ * Compiles to LLVM `indirectbr` + `blockaddress`.
  *
  * Usage:
  *   coroutine_begin(coroutine_ptr)
@@ -86,31 +79,27 @@ inline T suspend(T&& value) {
  *       // more code
  *   coroutine_end(coroutine_ptr)
  *
- * For computed goto mode:
  * NOTE:
  * - The `invoke_suspend` parameter name must be `result` (Result<void*>) so
  *   the macros can mirror Kotlin's `getOrThrow(resultArgument)` behavior.
- * - Suspension sites also emit `__kxs_suspend_point(i32)` markers for IR tooling.
+ * - Suspension sites emit `__kxs_suspend_point(i32)` markers for IR tooling.
  */
 
 /**
- * Computed goto mode (DEFAULT on GCC/Clang):
- * Uses labels-as-values extension for Kotlin/Native parity.
+ * Computed goto implementation (Clang labels-as-values extension).
  *
  * The _label field is void* storing blockaddress:
  *   - nullptr on first call → jump to start
  *   - &&resume_label on resume → indirectbr to that label
  *
  * This compiles to LLVM indirectbr + blockaddress, matching Kotlin/Native exactly.
- * This is REQUIRED for proper Kotlin/Native interop.
+ * Required for proper Kotlin/Native interop.
  *
  * Requirements:
  *   - Coroutine class must have: void* _label = nullptr;
  *   - Each coroutine_yield must use a unique label (via __LINE__ or __COUNTER__)
- *
- * To force Duff's device fallback on GCC/Clang, define KXS_NO_COMPUTED_GOTO.
  */
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(KXS_NO_COMPUTED_GOTO)
+#if defined(__clang__)
 
 #define coroutine_begin(c) \
     if ((c)->_label == nullptr) goto _kxs_start; \
@@ -170,55 +159,5 @@ inline T suspend(T&& value) {
     return nullptr;
 
 #else
-// MSVC fallback: Duff's device state machine (switch/__LINE__)
-// This is ONLY for portability to MSVC which lacks computed goto.
-// The primary mode is KXS_COMPUTED_GOTO above, which compiles to
-// LLVM indirectbr + blockaddress - required for Kotlin/Native interop.
-
-#define coroutine_begin(c) \
-    switch ((c)->_label) { \
-    case 0: \
-        /* Kotlin: throwIfNotNull(exceptionOrNull(resultArgument)) */ \
-        (void)(result).get_or_throw();
-
-// __LINE__ creates the unique case label for switch dispatch.
-//
-// NOTE: This macro expects the enclosing invoke_suspend signature to use the
-// parameter name `result` (Result<void*>), matching Kotlin's invokeSuspend contract.
-#define coroutine_yield(c, expr) \
-    do { \
-        (c)->_label = __LINE__; \
-        ::__kxs_suspend_point(__LINE__); \
-        { \
-            auto _tmp = (expr); \
-            if (::kotlinx::coroutines::intrinsics::is_coroutine_suspended(_tmp)) \
-                return _tmp; \
-        } \
-        goto _KXS_LABEL(_kxs_cont_, __LINE__); \
-        case __LINE__: \
-        (void)(result).get_or_throw(); \
-        _KXS_LABEL(_kxs_cont_, __LINE__):; \
-    } while (0)
-
-// Value-producing suspension point (Duff's device fallback).
-#define coroutine_yield_value(c, result, expr, out_lvalue) \
-    do { \
-        (c)->_label = __LINE__; \
-        ::__kxs_suspend_point(__LINE__); \
-        { \
-            auto _tmp = (expr); \
-            if (::kotlinx::coroutines::intrinsics::is_coroutine_suspended(_tmp)) \
-                return _tmp; \
-            (out_lvalue) = _tmp; \
-        } \
-        goto _KXS_LABEL(_kxs_cont_, __LINE__); \
-        case __LINE__: \
-        (out_lvalue) = (result).get_or_throw(); \
-        _KXS_LABEL(_kxs_cont_, __LINE__):; \
-    } while (0)
-
-#define coroutine_end(c) \
-    } \
-    return nullptr;
-
+#error "kotlinx.coroutines-cpp requires Clang for computed goto support"
 #endif

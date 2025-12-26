@@ -26,7 +26,7 @@ static std::vector<int> execution_log;
  */
 class SimpleYieldCoroutine : public ContinuationImpl {
 public:
-    void* _label = nullptr;  // State machine label (blockaddress for indirectbr)
+    void* _label = nullptr;  // blockaddress storage (NativePtr)
     int counter = 0;
 
     explicit SimpleYieldCoroutine(std::shared_ptr<Continuation<void*>> completion)
@@ -61,7 +61,7 @@ public:
  */
 class ConditionalSuspendCoroutine : public ContinuationImpl {
 public:
-    void* _label = nullptr;
+    void* _label = nullptr;  // blockaddress storage (NativePtr)
     bool should_suspend;
     int value = 0;
 
@@ -91,7 +91,7 @@ public:
  */
 class LoopCoroutine : public ContinuationImpl {
 public:
-    void* _label = nullptr;
+    void* _label = nullptr;  // blockaddress storage (NativePtr)
     int iteration = 0;
     int sum = 0;
 
@@ -122,7 +122,7 @@ public:
  */
 class YieldValueCoroutine : public ContinuationImpl {
 public:
-    void* _label = nullptr;
+    void* _label = nullptr;  // blockaddress storage (NativePtr)
     void* value = nullptr;
 
     explicit YieldValueCoroutine(std::shared_ptr<Continuation<void*>> completion)

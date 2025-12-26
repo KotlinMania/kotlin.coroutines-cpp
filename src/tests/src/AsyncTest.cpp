@@ -91,7 +91,7 @@ public:
             // Create a coroutine that yields using proper DSL
             class YieldCoroutine : public ContinuationImpl {
             public:
-                void* _label = nullptr;
+                void* _label = nullptr;  // blockaddress storage (NativePtr)
                 AsyncTest* test_;
 
                 explicit YieldCoroutine(AsyncTest* t, std::shared_ptr<Continuation<void*>> completion)
@@ -144,8 +144,8 @@ public:
 
     // @Test
     void test_parallel_decomposition_caught_exception() {
-        run_test([this](CoroutineScope* scope) {
-            auto deferred = async<int>(scope, non_cancellable(), [this](CoroutineScope* inner_scope) -> int {
+        run_test([](CoroutineScope* scope) {
+            auto deferred = async<int>(scope, non_cancellable(), [](CoroutineScope* inner_scope) -> int {
                 auto decomposed = async<int>(inner_scope, non_cancellable(), [](CoroutineScope*) -> int {
                     throw testing::TestException();
                     return 1;
@@ -348,7 +348,7 @@ public:
 
     // @Test
     void test_incomplete_async_state() {
-        run_test([this](CoroutineScope* scope) {
+        run_test([](CoroutineScope* scope) {
             auto deferred = async<std::shared_ptr<DisposableHandle>>(scope, [](CoroutineScope* s) {
                 auto job = s->get_coroutine_context()->get(Job::type_key);
                 auto job_ptr = std::dynamic_pointer_cast<Job>(job);
@@ -366,7 +366,7 @@ public:
 
     // @Test
     void test_incomplete_async_fast_path() {
-        run_test([this](CoroutineScope* scope) {
+        run_test([](CoroutineScope* scope) {
             // TODO: Pass Dispatchers::get_unconfined() when dispatcher as context is supported
             // For now, use nullptr context (default dispatcher)
             auto deferred = async<std::shared_ptr<DisposableHandle>>(scope, [](CoroutineScope* s) {
