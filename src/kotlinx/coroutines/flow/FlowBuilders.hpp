@@ -1,4 +1,8 @@
 #pragma once
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt
+ */
+
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
@@ -60,11 +64,72 @@ std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
 
 /**
  * Creates a flow from elements.
+ *
+ * Example of usage:
+ * ```cpp
+ * flow_of({1, 2, 3})
+ * ```
  */
 template <typename T>
 std::shared_ptr<Flow<T>> flow_of(std::initializer_list<T> elements) {
     std::vector<T> vec = elements;
     return as_flow(vec);
+}
+
+/**
+ * Creates a flow that produces the given value.
+ *
+ * Optimized overload for single-value flows which significantly reduces
+ * the footprint compared to initializer_list version.
+ */
+template <typename T>
+std::shared_ptr<Flow<T>> flow_of(T value) {
+    return flow<T>([value](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+        return collector->emit(value, cont);
+    });
+}
+
+/**
+ * Returns an empty flow.
+ *
+ * Transliterated from: public fun <T> emptyFlow(): Flow<T> = EmptyFlow
+ */
+template <typename T>
+std::shared_ptr<Flow<T>> empty_flow() {
+    class EmptyFlow : public Flow<T> {
+    public:
+        void* collect(FlowCollector<T>*, Continuation<void*>*) override {
+            return nullptr;  // Unit - nothing to emit
+        }
+    };
+    static auto instance = std::make_shared<EmptyFlow>();
+    return instance;
+}
+
+/**
+ * Creates a flow that produces values from the given range [start, end).
+ *
+ * Transliterated from: public fun IntRange.asFlow(): Flow<Int>
+ */
+inline std::shared_ptr<Flow<int>> as_flow_range(int start, int end) {
+    return flow<int>([start, end](FlowCollector<int>* collector, Continuation<void*>* cont) -> void* {
+        for (int i = start; i < end; ++i) {
+            collector->emit(i, cont);
+        }
+        return nullptr;
+    });
+}
+
+/**
+ * Creates a flow that produces values from the given range [start, end).
+ */
+inline std::shared_ptr<Flow<long>> as_flow_range(long start, long end) {
+    return flow<long>([start, end](FlowCollector<long>* collector, Continuation<void*>* cont) -> void* {
+        for (long i = start; i < end; ++i) {
+            collector->emit(i, cont);
+        }
+        return nullptr;
+    });
 }
 
 /**

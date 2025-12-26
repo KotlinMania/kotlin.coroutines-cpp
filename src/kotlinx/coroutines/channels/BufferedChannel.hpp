@@ -1,8 +1,9 @@
 #pragma once
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt
+ * Lines: 1-3116
+ */
 // @file:Suppress("PrivatePropertyName")
-//
-// Kotlin source: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt
-// Lines: 1-3116
 //
 // Kotlin imports:
 // - kotlinx.atomicfu.*

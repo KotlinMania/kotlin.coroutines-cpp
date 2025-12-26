@@ -167,9 +167,24 @@ public:
         }
 
         // Handle duplicates - if multiple files have same stem, use qualified names
+        // Sort to process header files first so they keep the short qualified name
         for (auto& [stem, paths] : by_stem) {
             if (paths.size() > 1) {
                 // Multiple files with same stem - ensure unique qualified names
+                // Sort paths so headers (.hpp, .h) come before implementation (.cpp, .cc)
+                std::sort(paths.begin(), paths.end(), [this](const std::string& a, const std::string& b) {
+                    auto& sf_a = files[a];
+                    auto& sf_b = files[b];
+                    bool a_header = sf_a.extension == ".hpp" || sf_a.extension == ".h" ||
+                                    sf_a.extension == ".hxx" || sf_a.extension == ".hh";
+                    bool b_header = sf_b.extension == ".hpp" || sf_b.extension == ".h" ||
+                                    sf_b.extension == ".hxx" || sf_b.extension == ".hh";
+                    // Headers come first
+                    if (a_header != b_header) return a_header > b_header;
+                    // Then by path length (shorter = less nesting = more "canonical")
+                    return a.size() < b.size();
+                });
+
                 std::set<std::string> seen_qualified;
                 for (auto& path : paths) {
                     auto& sf = files[path];
@@ -388,6 +403,21 @@ public:
         int lint_count = 0;
         bool is_stub = false;
         bool matched_by_header = false;  // True if matched via "Transliterated from:"
+
+        // Documentation statistics
+        int source_doc_lines = 0;
+        int target_doc_lines = 0;
+        int source_doc_comments = 0;
+        int target_doc_comments = 0;
+        float doc_similarity = 0.0f;     // Cosine similarity of doc word frequencies
+
+        // Compute doc gap ratio: 0 = no gap, 1 = completely missing
+        float doc_gap_ratio() const {
+            if (source_doc_lines == 0) return 0.0f;  // Source has no docs, no gap
+            if (target_doc_lines == 0) return 1.0f;  // Target missing all docs
+            float ratio = 1.0f - (static_cast<float>(target_doc_lines) / source_doc_lines);
+            return std::max(0.0f, ratio);  // Clamp to 0 if target has more
+        }
     };
 
     std::vector<Match> matches;
@@ -398,35 +428,72 @@ public:
         : source(src), target(tgt) {}
 
     /**
+     * Check if a file is a header file based on extension.
+     */
+    static bool is_header_file(const SourceFile& file) {
+        const std::string& ext = file.extension;
+        return ext == ".hpp" || ext == ".h" || ext == ".hxx" || ext == ".hh";
+    }
+
+    /**
      * Compute name match score between two files.
-     * Returns 0.0 for no match, 1.0 for perfect match.
+     * Returns 0.0 for no match, up to 1.02 for perfect match with header preference.
+     * Header files get a small boost (0.02) to prefer matching .hpp over .cpp
+     * when both have the same qualified name.
      */
     static float name_match_score(const SourceFile& src, const SourceFile& tgt) {
         std::string src_norm = SourceFile::normalize_name(src.stem);
         std::string tgt_norm = SourceFile::normalize_name(tgt.stem);
+        std::string src_qual_norm = SourceFile::normalize_name(src.qualified_name);
+        std::string tgt_qual_norm = SourceFile::normalize_name(tgt.qualified_name);
 
-        // Exact match
+        // Small boost for header files - prefer matching .hpp over .cpp
+        // when both exist with the same qualified name
+        float header_boost = is_header_file(tgt) ? 0.02f : 0.0f;
+
+        // HIGHEST PRIORITY: Exact qualified name match (e.g., "flow.Channels" == "flow.Channels")
+        // This ensures flow.Channels matches flow.Channels, not channels.Channels
+        if (src_qual_norm == tgt_qual_norm) {
+            return 1.0f + header_boost;
+        }
+
+        // Extract parent directory from qualified name
+        std::string src_parent, tgt_parent;
+        size_t src_dot = src.qualified_name.rfind('.');
+        size_t tgt_dot = tgt.qualified_name.rfind('.');
+        if (src_dot != std::string::npos) src_parent = src.qualified_name.substr(0, src_dot);
+        if (tgt_dot != std::string::npos) tgt_parent = tgt.qualified_name.substr(0, tgt_dot);
+
+        // HIGH PRIORITY: Same stem AND same parent directory
+        // e.g., flow.Channels should match flow.Channels, not channels.Channels
+        if (src_norm == tgt_norm && !src_parent.empty() && !tgt_parent.empty()) {
+            std::string src_parent_norm = SourceFile::normalize_name(src_parent);
+            std::string tgt_parent_norm = SourceFile::normalize_name(tgt_parent);
+            if (src_parent_norm == tgt_parent_norm) {
+                return 0.95f + header_boost;  // Same directory + same name = very strong match
+            }
+        }
+
+        // MEDIUM-HIGH: Exact stem match (but different directory)
         if (src_norm == tgt_norm) {
-            return 1.0f;
+            return 0.7f + header_boost;  // Lower than before - ambiguous without directory match
         }
 
         // Check if one contains the other (handles RatatuiLogo vs logo)
         if (tgt_norm.find(src_norm) != std::string::npos) {
-            // tgt contains src (e.g., "ratatuilogo" contains "logo")
             float ratio = static_cast<float>(src_norm.length()) / tgt_norm.length();
-            return 0.7f + 0.3f * ratio;  // 0.7-1.0 range
+            return 0.5f + 0.2f * ratio + header_boost;  // 0.5-0.7 range
         }
         if (src_norm.find(tgt_norm) != std::string::npos) {
-            // src contains tgt
             float ratio = static_cast<float>(tgt_norm.length()) / src_norm.length();
-            return 0.7f + 0.3f * ratio;
+            return 0.5f + 0.2f * ratio + header_boost;
         }
 
         // Package path similarity
         if (!src.package.parts.empty() && !tgt.package.parts.empty()) {
             float pkg_sim = src.package.similarity_to(tgt.package);
             if (pkg_sim > 0.5f) {
-                return pkg_sim * 0.8f;  // Package match is good but not as strong
+                return pkg_sim * 0.6f + header_boost;  // Package match alone is weaker
             }
         }
 
@@ -434,28 +501,20 @@ public:
         if (!src.package.parts.empty()) {
             std::string src_last = PackageDecl::normalize(src.package.last());
             if (src_last == tgt_norm || tgt_norm.find(src_last) != std::string::npos) {
-                return 0.6f;
+                return 0.5f + header_boost;
             }
         }
         if (!tgt.package.parts.empty()) {
             std::string tgt_last = PackageDecl::normalize(tgt.package.last());
             if (tgt_last == src_norm || src_norm.find(tgt_last) != std::string::npos) {
-                return 0.6f;
+                return 0.5f + header_boost;
             }
         }
 
-        // Common suffix matching (Monthly vs calendar - look at parent dir)
-        // e.g., calendar/Monthly.kt should match calendar.rs
-        std::string src_parent = src.qualified_name;
-        std::string tgt_parent = tgt.qualified_name;
-        size_t src_dot = src_parent.rfind('.');
-        size_t tgt_dot = tgt_parent.rfind('.');
-        if (src_dot != std::string::npos) src_parent = src_parent.substr(0, src_dot);
-        if (tgt_dot != std::string::npos) tgt_parent = tgt_parent.substr(0, tgt_dot);
-
+        // Same parent directory but different filename
         if (SourceFile::normalize_name(src_parent) == SourceFile::normalize_name(tgt_parent) &&
             !src_parent.empty()) {
-            return 0.5f;  // Same parent directory
+            return 0.4f + header_boost;  // Same parent directory
         }
 
         return 0.0f;
@@ -471,39 +530,92 @@ public:
 
         // First pass: Match by "Transliterated from:" header
         // Target files reference source files, so look in target for headers
+        // Store candidates with scores for best matching
+        std::vector<std::tuple<float, std::string, std::string>> header_candidates;
+
         for (const auto& [tgt_path, tgt_file] : target.files) {
             if (tgt_file.transliterated_from.empty()) continue;
 
             // Try to find the source file that matches the header
             for (const auto& [src_path, src_file] : source.files) {
-                // Check if transliterated_from contains this source file's path
-                if (tgt_file.transliterated_from.find(src_file.filename) != std::string::npos ||
-                    src_file.path.find(tgt_file.transliterated_from) != std::string::npos ||
-                    tgt_file.transliterated_from.find(src_file.stem) != std::string::npos) {
+                float match_score = 0.0f;
 
-                    if (matched_sources.count(src_path)) continue;
+                // Check if transliterated_from contains the FULL relative path (most precise)
+                if (tgt_file.transliterated_from.find(src_file.relative_path) != std::string::npos) {
+                    match_score = 1.0f;  // Full path match
+                }
+                // Check if transliterated_from ends with the filename (good match)
+                else if (tgt_file.transliterated_from.find("/" + src_file.filename) != std::string::npos ||
+                         tgt_file.transliterated_from.ends_with(src_file.filename)) {
+                    // Also verify directory context matches
+                    std::string tgt_dir = tgt_file.qualified_name;
+                    std::string src_dir = src_file.qualified_name;
+                    size_t tgt_dot = tgt_dir.rfind('.');
+                    size_t src_dot = src_dir.rfind('.');
+                    if (tgt_dot != std::string::npos) tgt_dir = tgt_dir.substr(0, tgt_dot);
+                    if (src_dot != std::string::npos) src_dir = src_dir.substr(0, src_dot);
 
-                    Match m;
-                    m.source_path = src_path;
-                    m.target_path = tgt_path;
-                    m.source_qualified = src_file.qualified_name;
-                    m.target_qualified = tgt_file.qualified_name;
-                    m.similarity = 0.0f;
-                    m.source_dependents = src_file.dependent_count;
-                    m.target_dependents = tgt_file.dependent_count;
-                    m.source_lines = src_file.line_count;
-                    m.target_lines = tgt_file.line_count;
-                    m.todo_count = tgt_file.todos.size();
-                    m.lint_count = tgt_file.lint_errors.size();
-                    m.is_stub = tgt_file.is_stub;
-                    m.matched_by_header = true;
+                    if (SourceFile::normalize_name(tgt_dir) == SourceFile::normalize_name(src_dir)) {
+                        match_score = 0.9f;  // Filename + directory context match
+                    } else {
+                        match_score = 0.5f;  // Just filename match, different directory
+                    }
+                }
+                // Loose check - transliterated_from contains stem (weakest)
+                else if (tgt_file.transliterated_from.find("/" + src_file.stem + ".") != std::string::npos) {
+                    match_score = 0.3f;  // Stem found but not as confident
+                }
 
-                    matches.push_back(m);
-                    matched_sources.insert(src_path);
-                    matched_targets.insert(tgt_path);
-                    break;
+                if (match_score > 0.0f) {
+                    header_candidates.emplace_back(match_score, src_path, tgt_path);
                 }
             }
+        }
+
+        // Sort by score descending, with header preference for ties
+        std::sort(header_candidates.begin(), header_candidates.end(),
+            [this](const auto& a, const auto& b) {
+                float score_a = std::get<0>(a);
+                float score_b = std::get<0>(b);
+                if (std::abs(score_a - score_b) > 0.001f) {
+                    return score_a > score_b;  // Higher score first
+                }
+                // Same score - prefer header files
+                const auto& tgt_a = target.files.at(std::get<2>(a));
+                const auto& tgt_b = target.files.at(std::get<2>(b));
+                bool a_header = is_header_file(tgt_a);
+                bool b_header = is_header_file(tgt_b);
+                if (a_header != b_header) return a_header;  // Headers first
+                // Same type - prefer shorter path (less nesting)
+                return std::get<2>(a).size() < std::get<2>(b).size();
+            });
+
+        for (const auto& [score, src_path, tgt_path] : header_candidates) {
+            if (matched_sources.count(src_path) || matched_targets.count(tgt_path)) {
+                continue;  // Already matched
+            }
+
+            const auto& src_file = source.files.at(src_path);
+            const auto& tgt_file = target.files.at(tgt_path);
+
+            Match m;
+            m.source_path = src_path;
+            m.target_path = tgt_path;
+            m.source_qualified = src_file.qualified_name;
+            m.target_qualified = tgt_file.qualified_name;
+            m.similarity = 0.0f;
+            m.source_dependents = src_file.dependent_count;
+            m.target_dependents = tgt_file.dependent_count;
+            m.source_lines = src_file.line_count;
+            m.target_lines = tgt_file.line_count;
+            m.todo_count = tgt_file.todos.size();
+            m.lint_count = tgt_file.lint_errors.size();
+            m.is_stub = tgt_file.is_stub;
+            m.matched_by_header = true;
+
+            matches.push_back(m);
+            matched_sources.insert(src_path);
+            matched_targets.insert(tgt_path);
         }
 
         // Second pass: Name-based matching for remaining files
@@ -585,15 +697,24 @@ public:
 
         for (auto& m : matches) {
             try {
-                auto src_tree = parser.parse_file(
-                    source.root_path + "/" + m.source_path,
-                    string_to_language(source.language));
-                auto tgt_tree = parser.parse_file(
-                    target.root_path + "/" + m.target_path,
-                    string_to_language(target.language));
+                std::string src_path = source.root_path + "/" + m.source_path;
+                std::string tgt_path = target.root_path + "/" + m.target_path;
+
+                auto src_tree = parser.parse_file(src_path, string_to_language(source.language));
+                auto tgt_tree = parser.parse_file(tgt_path, string_to_language(target.language));
 
                 m.similarity = ASTSimilarity::combined_similarity(
                     src_tree.get(), tgt_tree.get());
+
+                // Extract documentation statistics
+                auto src_docs = parser.extract_comments_from_file(src_path, string_to_language(source.language));
+                auto tgt_docs = parser.extract_comments_from_file(tgt_path, string_to_language(target.language));
+
+                m.source_doc_lines = src_docs.total_doc_lines;
+                m.target_doc_lines = tgt_docs.total_doc_lines;
+                m.source_doc_comments = src_docs.doc_comment_count;
+                m.target_doc_comments = tgt_docs.doc_comment_count;
+                m.doc_similarity = src_docs.doc_cosine_similarity(tgt_docs);
             } catch (...) {
                 m.similarity = -1.0f;  // Error
             }

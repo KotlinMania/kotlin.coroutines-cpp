@@ -302,6 +302,66 @@ void cmd_deep(const std::string& src_dir, const std::string& src_lang,
             }
         }
     }
+
+    // Documentation gaps section
+    std::cout << "\n=== Documentation Gaps ===\n\n";
+
+    // Collect files with doc gaps, sorted by gap severity
+    std::vector<std::pair<float, const CodebaseComparator::Match*>> doc_gaps;
+    for (const auto& m : comp.matches) {
+        float gap = m.doc_gap_ratio();
+        if (gap > 0.2f && m.source_doc_lines > 5) {  // >20% gap and source has meaningful docs
+            doc_gaps.emplace_back(gap, &m);
+        }
+    }
+
+    std::sort(doc_gaps.begin(), doc_gaps.end(),
+        [](const auto& a, const auto& b) {
+            // Sort by gap ratio * source doc lines (prioritize big gaps in well-documented files)
+            return (a.first * a.second->source_doc_lines) > (b.first * b.second->source_doc_lines);
+        });
+
+    if (doc_gaps.empty()) {
+        std::cout << "No significant documentation gaps found.\n";
+    } else {
+        std::cout << std::setw(30) << std::left << "File"
+                  << std::setw(12) << "Src Docs"
+                  << std::setw(12) << "Tgt Docs"
+                  << std::setw(10) << "Gap %"
+                  << std::setw(10) << "DocSim"
+                  << "\n";
+        std::cout << std::string(74, '-') << "\n";
+
+        int shown_docs = 0;
+        for (const auto& [gap, m] : doc_gaps) {
+            if (shown_docs++ >= 25) {
+                std::cout << "... and " << (doc_gaps.size() - 25) << " more files with doc gaps\n";
+                break;
+            }
+
+            std::string gap_str = std::to_string(static_cast<int>(gap * 100)) + "%";
+            std::cout << std::setw(30) << std::left << m->source_qualified.substr(0, 28)
+                      << std::setw(12) << m->source_doc_lines
+                      << std::setw(12) << m->target_doc_lines
+                      << std::setw(10) << gap_str
+                      << std::setw(10) << std::fixed << std::setprecision(2) << m->doc_similarity
+                      << "\n";
+        }
+
+        // Summary
+        int total_src_doc_lines = 0;
+        int total_tgt_doc_lines = 0;
+        for (const auto& m : comp.matches) {
+            total_src_doc_lines += m.source_doc_lines;
+            total_tgt_doc_lines += m.target_doc_lines;
+        }
+
+        std::cout << "\nDocumentation coverage: " << total_tgt_doc_lines << " / " << total_src_doc_lines
+                  << " lines (" << std::fixed << std::setprecision(0)
+                  << (total_src_doc_lines > 0 ? (100.0f * total_tgt_doc_lines / total_src_doc_lines) : 0)
+                  << "%)\n";
+        std::cout << "Files with >20% doc gap: " << doc_gaps.size() << "\n";
+    }
 }
 
 void cmd_missing(const std::string& src_dir, const std::string& src_lang,

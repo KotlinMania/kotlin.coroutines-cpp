@@ -16,8 +16,10 @@
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/channels/Channels.hpp"
 #include "kotlinx/coroutines/channels/ProducerScope.hpp"
@@ -31,7 +33,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <thread>
 
 // Forward declarations to break circular dependency
 namespace kotlinx::coroutines::flow::internal {
@@ -63,8 +64,126 @@ void* emit_all(
 );  // Forward declaration, defined after emit_all_impl
 
 /**
+ * State machine for emit_all_impl that properly suspends on channel receive.
+ *
+ * Transliterates the Kotlin:
+ *   for (element in channel) { emit(element) }
+ *
+ * Which desugars to:
+ *   val iterator = channel.iterator()
+ *   while (iterator.hasNext()) {  // suspends
+ *       emit(iterator.next())     // suspends
+ *   }
+ */
+template <typename T>
+class EmitAllContinuation : public ContinuationImpl {
+public:
+    EmitAllContinuation(
+        FlowCollector<T>* collector,
+        channels::ReceiveChannel<T>* channel,
+        bool consume,
+        std::shared_ptr<Continuation<void*>> completion
+    ) : ContinuationImpl(std::move(completion)),
+        collector_(collector),
+        channel_(channel),
+        consume_(consume),
+        label_(0),
+        cause_(nullptr) {}
+
+    void* invoke_suspend(Result<void*> result) override {
+        // Store result from previous suspension point for case 2/4 resumption
+        void* resumed_value = result.is_success() ? result.get_or_throw() : nullptr;
+
+        // Check for exception from previous suspension point
+        if (result.is_failure()) {
+            cause_ = result.exception_or_null();
+            if (consume_) channels::cancel_consumed(channel_, cause_);
+            std::rethrow_exception(cause_);
+        }
+
+        // State machine loop - handles both initial entry and resumption
+        while (true) {
+            switch (label_) {
+                case 0: {
+                    // Initial: ensureActive() and get iterator
+                    if (this->completion) {
+                        auto ctx = this->completion->get_context();
+                        if (ctx) context_ensure_active(*ctx);
+                    }
+                    iterator_ = channel_->iterator();
+                    label_ = 1;
+                    continue;  // Fall through to case 1
+                }
+
+                case 1: {
+                    // Call has_next() - may suspend
+                    label_ = 2;
+                    void* has_next_result = iterator_->has_next(this);
+                    if (intrinsics::is_coroutine_suspended(has_next_result)) {
+                        return intrinsics::get_COROUTINE_SUSPENDED();
+                    }
+                    // Unbox bool result
+                    resumed_value = has_next_result;
+                    continue;  // Fall through to case 2
+                }
+
+                case 2: {
+                    // Resumed from has_next() - check result
+                    has_next_value_ = (resumed_value != nullptr) &&
+                                      *static_cast<bool*>(resumed_value);
+                    if (!has_next_value_) {
+                        // Channel exhausted - cleanup and return
+                        if (consume_) channels::cancel_consumed(channel_, cause_);
+                        return nullptr;  // Unit
+                    }
+                    // Get element (non-suspending after has_next returned true)
+                    current_element_ = iterator_->next();
+                    label_ = 3;
+                    continue;  // Fall through to case 3
+                }
+
+                case 3: {
+                    // Emit element - may suspend
+                    label_ = 4;
+                    void* emit_result = collector_->emit(std::move(current_element_), this);
+                    if (intrinsics::is_coroutine_suspended(emit_result)) {
+                        return intrinsics::get_COROUTINE_SUSPENDED();
+                    }
+                    // Emit completed synchronously
+                    label_ = 1;
+                    continue;  // Loop back to has_next
+                }
+
+                case 4: {
+                    // Resumed from emit() - loop back to has_next
+                    label_ = 1;
+                    continue;
+                }
+
+                default:
+                    throw std::logic_error("Invalid state in EmitAllContinuation");
+            }
+        }
+    }
+
+private:
+    FlowCollector<T>* collector_;
+    channels::ReceiveChannel<T>* channel_;
+    bool consume_;
+    int label_;
+    std::exception_ptr cause_;
+    std::unique_ptr<channels::ChannelIterator<T>> iterator_;
+    bool has_next_value_;
+    T current_element_;
+};
+
+/**
  * Internal implementation with configurable "consume" behavior.
  * WARNING: Private implementation - do not use directly.
+ *
+ * Transliterated from: private suspend fun <T> FlowCollector<T>.emitAllImpl(
+ *     channel: ReceiveChannel<T>, consume: Boolean
+ * )
  */
 template <typename T>
 void* emit_all_impl(
@@ -73,37 +192,13 @@ void* emit_all_impl(
     bool consume,
     Continuation<void*>* cont
 ) {
-    // ensureActive()
-    if (cont) {
-        auto ctx = cont->get_context();
-        if (ctx) context_ensure_active(*ctx);
-    }
-
-    // var cause: Throwable? = null
-    std::exception_ptr cause = nullptr;
-    try {
-        // for (element in channel) { emit(element) }
-        // TODO(suspend-plugin): Replace with suspend iterator when available
-        for (auto result = channel->try_receive(); !result.is_closed(); result = channel->try_receive()) {
-            if (result.is_success()) {
-                T element = result.get_or_throw();
-                void* emitted = collector->emit(std::move(element), cont);
-                if (emitted == intrinsics::get_COROUTINE_SUSPENDED()) {
-                    return emitted;
-                }
-            } else {
-                std::this_thread::yield();
-            }
-        }
-    } catch (...) {
-        // catch (e: Throwable) { cause = e; throw e }
-        cause = std::current_exception();
-        if (consume) channels::cancel_consumed(channel, cause);
-        throw;
-    }
-    // finally { if (consume) channel.cancelConsumed(cause) }
-    if (consume) channels::cancel_consumed(channel, cause);
-    return nullptr;
+    // Create state machine and start it
+    auto sm = std::make_shared<EmitAllContinuation<T>>(
+        collector, channel, consume,
+        cont ? std::shared_ptr<Continuation<void*>>(cont, [](Continuation<void*>*){})
+             : nullptr
+    );
+    return sm->invoke_suspend(Result<void*>::success(nullptr));
 }
 
 template <typename T>

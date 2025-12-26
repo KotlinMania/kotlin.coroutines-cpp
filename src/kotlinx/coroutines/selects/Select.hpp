@@ -4,7 +4,43 @@
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt
  *
- * Waits for the result of multiple suspending functions simultaneously.
+ * Waits for the result of multiple suspending functions simultaneously, which are specified
+ * using _clauses_ in the builder scope of this select invocation. The caller is suspended
+ * until one of the clauses is either _selected_ or _fails_.
+ *
+ * At most one clause is *atomically* selected and its block is executed. The result of the
+ * selected clause becomes the result of the select. If any clause _fails_, then the select
+ * invocation produces the corresponding exception. No clause is selected in this case.
+ *
+ * This select function is _biased_ to the first clause. When multiple clauses can be selected
+ * at the same time, the first one of them gets priority. Use select_unbiased for an unbiased
+ * (randomized) selection among the clauses.
+ *
+ * There is no `default` clause for select expression. Instead, each selectable suspending
+ * function has the corresponding non-suspending version that can be used with a regular
+ * conditional to select one of the alternatives or to perform the default action if none
+ * of them can be immediately selected.
+ *
+ * ## List of supported select methods
+ *
+ * | Receiver       | Suspending function    | Select clause        |
+ * |----------------|------------------------|----------------------|
+ * | Job            | join                   | on_join              |
+ * | Deferred<T>    | await                  | on_await             |
+ * | SendChannel    | send                   | on_send              |
+ * | ReceiveChannel | receive                | on_receive           |
+ * | ReceiveChannel | receive_catching       | on_receive_catching  |
+ * | none           | delay                  | on_timeout           |
+ *
+ * This suspending function is cancellable: if the Job of the current coroutine is cancelled
+ * while this suspending function is waiting, this function immediately resumes with
+ * CancellationException. There is a **prompt cancellation guarantee**: even if this function
+ * is ready to return the result, but was cancelled while suspended, CancellationException
+ * will be thrown.
+ *
+ * Note that this function does not check for cancellation when it is not suspended.
+ * Use yield or CoroutineScope::is_active to periodically check for cancellation in tight
+ * loops if needed.
  */
 #pragma once
 
@@ -20,6 +56,7 @@
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"  // CancelHandler defined here
 #include "kotlinx/coroutines/DisposableHandle.hpp"
 #include "kotlinx/coroutines/Waiter.hpp"
+#include "kotlinx/coroutines/Delay.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
 namespace kotlinx {
@@ -74,35 +111,68 @@ inline void* STATE_CANCELLED() { return &detail::STATE_CANCELLED_MARKER; }
 inline void* NO_RESULT() { return &detail::NO_RESULT_MARKER; }
 inline void* PARAM_CLAUSE_0() { return &detail::PARAM_CLAUSE_0_MARKER; }
 
-// =============================================================================
-// (clauseObject: Any, select: SelectInstance<*>, param: Any?) -> Unit
-// Note: SelectInstance<*> becomes void* in C++ since we don't know R at clause level
-// =============================================================================
+/**
+ * The registration function specifies how the select instance should be registered into
+ * the specified clause object. In case of channels, the registration logic coincides with
+ * the plain send/receive operation with the only difference that the select instance is
+ * stored as a waiter instead of continuation.
+ *
+ * Transliterated from:
+ * public typealias RegistrationFunction = (clauseObject: Any, select: SelectInstance<*>, param: Any?) -> Unit
+ *
+ * @note SelectInstance<*> becomes void* in C++ since we don't know R at clause level
+ */
 using RegistrationFunction = std::function<void(void* clause_object, void* select, void* param)>;
 
-// =============================================================================
-// (clauseObject: Any, param: Any?, clauseResult: Any?) -> Any?
-// =============================================================================
+/**
+ * This function specifies how the _internal_ result, provided via SelectInstance::select_in_registration_phase
+ * or SelectInstance::try_select should be processed. For example, both ReceiveChannel::on_receive and
+ * ReceiveChannel::on_receive_catching clauses perform exactly the same synchronization logic,
+ * but differ when the channel has been discovered in the closed or cancelled state.
+ *
+ * Transliterated from:
+ * public typealias ProcessResultFunction = (clauseObject: Any, param: Any?, clauseResult: Any?) -> Any?
+ */
 using ProcessResultFunction = std::function<void*(void* clause_object, void* param, void* clause_result)>;
 
-// =============================================================================
-// (select: SelectInstance<*>, param: Any?, internalResult: Any?) ->
-//     (Throwable, Any?, CoroutineContext) -> Unit
-// =============================================================================
+/**
+ * Action to execute on cancellation.
+ */
 using OnCancellationAction = std::function<void(std::exception_ptr, void*, std::shared_ptr<CoroutineContext>)>;
 
+/**
+ * This function specifies how the internal result, provided via SelectInstance::try_select
+ * or SelectInstance::select_in_registration_phase, should be processed in case of this select
+ * cancellation while dispatching. Unfortunately, we cannot pass this function only in try_select,
+ * as select_in_registration_phase can be called when the coroutine is already cancelled.
+ *
+ * Transliterated from:
+ * public typealias OnCancellationConstructor = (select: SelectInstance<*>, param: Any?, internalResult: Any?) ->
+ *     (Throwable, Any?, CoroutineContext) -> Unit
+ */
 using OnCancellationConstructor = std::function<
     OnCancellationAction(void* select, void* param, void* internal_result)
 >;
 
-// =============================================================================
-// =============================================================================
 inline ProcessResultFunction dummy_process_result_function() {
     return [](void*, void*, void*) -> void* { return nullptr; };
 }
 
-// =============================================================================
-// =============================================================================
+/**
+ * Each select clause is specified with:
+ * 1) the object of this clause (clauseObject), such as the channel instance for SendChannel::on_send;
+ * 2) the function that specifies how this clause should be registered in the object above (regFunc);
+ * 3) the function that modifies the internal result (passed via SelectInstance::try_select or
+ *    SelectInstance::select_in_registration_phase) to the argument of the user-specified block (processResFunc);
+ * 4) the function that specifies how the internal result provided via SelectInstance::try_select or
+ *    SelectInstance::select_in_registration_phase should be processed in case of this select cancellation
+ *    while dispatching (onCancellationConstructor).
+ *
+ * @note This is unstable API, and it is subject to change.
+ *
+ * Transliterated from:
+ * public sealed interface SelectClause
+ */
 class SelectClause {
 public:
     virtual ~SelectClause() = default;
@@ -117,8 +187,12 @@ public:
     virtual bool has_on_cancellation_constructor() const = 0;
 };
 
-// =============================================================================
-// =============================================================================
+/**
+ * Clause for select expression without additional parameters that does not select any value.
+ *
+ * Transliterated from:
+ * public sealed interface SelectClause0 : SelectClause
+ */
 class SelectClause0 : public SelectClause {};
 
 // =============================================================================
@@ -146,8 +220,12 @@ public:
     bool has_on_cancellation_constructor() const override { return has_on_cancellation_; }
 };
 
-// =============================================================================
-// =============================================================================
+/**
+ * Clause for select expression without additional parameters that selects value of type Q.
+ *
+ * Transliterated from:
+ * public sealed interface SelectClause1<out Q> : SelectClause
+ */
 template<typename Q>
 class SelectClause1 : public SelectClause {};
 
@@ -664,12 +742,63 @@ public:
     }
 
     void on_timeout(long long time_millis, std::function<void*(Continuation<void*>*)> block) override {
-        // TODO(port): Implement onTimeout using delay infrastructure
-        // IMPORTANT: This is NOT implemented - will cause runtime error if called
-        (void)time_millis;
-        (void)block;
-        throw std::runtime_error("select onTimeout is not yet implemented - use external timeout wrapper");
+        // Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt
+        //
+        // OnTimeout creates a SelectClause0 that:
+        // 1. If timeout <= 0, selects immediately
+        // 2. Otherwise schedules a callback via delay.invokeOnTimeout that calls trySelect
+
+        // Create the OnTimeout clause object (just need a unique address for clause identity)
+        auto* timeout_marker = new char{'T'};  // Leaked intentionally as clause object
+
+        // Registration function
+        RegistrationFunction reg_func = [time_millis, timeout_marker](void* clause_obj, void* select_ptr, void* param) {
+            (void)clause_obj;
+            (void)param;
+            auto* select = static_cast<SelectImplementation<R>*>(select_ptr);
+
+            // If timeout <= 0, select immediately
+            if (time_millis <= 0) {
+                select->select_in_registration_phase(nullptr);  // Unit result
+                return;
+            }
+
+            // Schedule trySelect after timeout
+            auto select_weak = select->weak_from_this();
+            auto runnable = std::make_shared<LambdaRunnable>([select_weak, timeout_marker]() {
+                if (auto select = select_weak.lock()) {
+                    select->try_select(timeout_marker, nullptr);  // Unit result
+                }
+            });
+
+            auto context = select->get_context();
+            auto& delay = get_default_delay();
+            auto handle = delay.invoke_on_timeout(time_millis, runnable, *context);
+
+            // Clean up when select completes
+            select->dispose_on_completion(handle);
+        };
+
+        // Wrap block to ignore the void* argument (OnTimeout has no result value)
+        auto wrapped = [block](void*, Continuation<void*>* c) { return block(c); };
+
+        register_clause(
+            timeout_marker,
+            std::move(reg_func),
+            dummy_process_result_function(),
+            PARAM_CLAUSE_0(),
+            std::move(wrapped),
+            nullptr  // No cancellation constructor
+        );
     }
+
+    // Helper class for lambda-based Runnable
+    class LambdaRunnable : public Runnable {
+        std::function<void()> func_;
+    public:
+        explicit LambdaRunnable(std::function<void()> f) : func_(std::move(f)) {}
+        void run() override { func_(); }
+    };
 
 private:
     // ==========================================================================
