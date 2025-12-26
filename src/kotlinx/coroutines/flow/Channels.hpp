@@ -3,11 +3,13 @@
  * @file Channels.hpp
  * @brief Flow-Channel integration utilities.
  *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt
+ *
  * Provides conversion between flows and channels:
- * - emitAll() - emit all channel elements into a flow collector
- * - receiveAsFlow() - represent channel as a hot flow (fan-out)
- * - consumeAsFlow() - represent channel as a one-time consumable flow
- * - produceIn() - create a produce coroutine that collects the given flow
+ * - emit_all() - emit all channel elements into a flow collector
+ * - receive_as_flow() - represent channel as a hot flow (fan-out)
+ * - consume_as_flow() - represent channel as a one-time consumable flow
+ * - produce_in() - create a produce coroutine that collects the given flow
  *
  * Private implementations (emit_all_impl, ChannelAsFlow) are exposed due to
  * template requirements but should not be used directly.
@@ -265,11 +267,9 @@ inline std::shared_ptr<Flow<T>> consume_as_flow(std::shared_ptr<channels::Receiv
  * when data is produced faster than it is consumed, that is to control backpressure behavior.
  */
 template <typename T>
-inline std::shared_ptr<channels::ReceiveChannel<T>> produce_in(
-    internal::ChannelFlow<T>* flow,
+std::shared_ptr<channels::ReceiveChannel<T>> produce_in(
+    std::shared_ptr<Flow<T>> flow,
     CoroutineScope* scope
-) {
-    return flow->produce_impl(scope);
-}
+);  // Defined in ChannelFlow.hpp after as_channel_flow
 
 } // namespace kotlinx::coroutines::flow

@@ -1,4 +1,8 @@
 #pragma once
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt
+ */
+
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
@@ -194,7 +198,7 @@ public:
      * and exception transparency, then delegates to collect_safely().
      */
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
-        // TODO: Get actual coroutineContext from continuation
+        // TODO(semantics): Get actual coroutineContext from continuation for context preservation
         auto collect_context = kotlinx::coroutines::EmptyCoroutineContext::instance();
         internal::SafeCollector<T> safe_collector(collector, collect_context);
 

@@ -181,10 +181,29 @@ void cancel_consumed(ReceiveChannel<E>* channel, std::exception_ptr cause) {
 
 /**
  * Executes the block and then cancels the channel.
+ *
  * It is guaranteed that, after invoking this operation, the channel will be cancelled,
  * so the operation is _terminal_.
  * If the block finishes with an exception, that exception will be used for cancelling
  * the channel and rethrown.
+ *
+ * This function is useful for building more complex terminal operators while ensuring
+ * that producers stop sending new elements to the channel.
+ *
+ * Example:
+ * ```cpp
+ * template <typename E>
+ * E consume_first(ReceiveChannel<E>* channel) {
+ *     return consume<E, E>(channel, [](ReceiveChannel<E>* c) {
+ *         return c->receive(nullptr);  // Get first element
+ *     });
+ * }
+ * ```
+ *
+ * consume() does not guarantee that new elements will not enter the channel after
+ * block finishes executing, so some channel elements may be lost. Use the
+ * on_undelivered_element parameter of a manually created Channel to define what
+ * should happen with these elements during cancel().
  */
 template <typename E, typename R>
 R consume(ReceiveChannel<E>* channel, std::function<R(ReceiveChannel<E>*)> block) {
@@ -216,10 +235,25 @@ void consume(ReceiveChannel<E>* channel, std::function<void(ReceiveChannel<E>*)>
 
 /**
  * Performs the given action for each received element and cancels the channel afterward.
+ *
  * This function stops processing elements when either the channel is closed,
- * action fails with an exception, or an early return from action happens.
+ * the coroutine in which the collection is performed gets cancelled and there are
+ * no readily available elements in the channel's buffer, action fails with an
+ * exception, or an early return from action happens.
+ *
+ * If the action finishes with an exception, that exception will be used for cancelling
+ * the channel and rethrown. If the channel is closed with a cause, this cause will be
+ * rethrown from consume_each().
+ *
+ * When the channel does not need to be closed after iterating over its elements,
+ * a regular for loop should be used instead.
  *
  * The operation is _terminal_.
+ * This function consumes all elements of the original ReceiveChannel.
+ *
+ * Pitfall: even though the name says "each", some elements could be left unprocessed
+ * if they are added after this function decided to close the channel. Use the
+ * on_undelivered_element parameter of the Channel constructor to handle these.
  */
 template <typename E>
 void consume_each(ReceiveChannel<E>* channel, std::function<void(E)> action) {
@@ -249,10 +283,19 @@ void consume_each(ReceiveChannel<E>* channel, std::function<void(E)> action) {
 }
 
 /**
- * Returns a List containing all the elements sent to this channel, preserving their order.
- * This function will attempt to receive elements until the channel is closed.
+ * Returns a vector containing all the elements sent to this channel, preserving their order.
+ *
+ * This function will attempt to receive elements and put them into the vector until
+ * the channel is closed. Calling to_list() on channels that are not eventually closed
+ * is always incorrect:
+ * - It will suspend indefinitely if the channel is not closed, but no new elements arrive.
+ * - If new elements do arrive and the channel is not eventually closed, to_list() will
+ *   use more and more memory until exhausting it.
+ *
+ * If the channel is closed with a cause, to_list() will rethrow that cause.
  *
  * The operation is _terminal_.
+ * This function consumes all elements of the original ReceiveChannel.
  */
 template <typename E>
 std::vector<E> to_list(ReceiveChannel<E>* channel) {

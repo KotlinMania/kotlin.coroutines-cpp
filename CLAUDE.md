@@ -80,6 +80,7 @@ cmake --build build --target test_suspension_core
 ### CMake Options
 - `KOTLIN_NATIVE_RUNTIME_AVAILABLE=ON` — Only when K/N runtime is present for GC bridge
 - `KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=ON` — Build the suspend DSL plugin
+- `KOTLINX_BUILD_AST_DISTANCE=ON` — Build porting analysis tool (default: ON)
 
 ---
 
@@ -221,13 +222,17 @@ Remove TODOs you resolve; never leave contradictory TODOs in place.
 ## Acceptance Checks
 
 Before submitting changes:
-1. Headers contain only the public surface and minimal ABI-critical code
-2. Methods and enums follow naming rules; no camelCase methods remain in C++
-3. All new gaps are called out with a specific, tagged `TODO`
-4. Resolved `TODO`s are removed in edited regions
-5. Compile cleanly: `clang++ -std=c++20 -Wall -Wextra -I include your_file.cpp`
-6. Tests pass: `./test_suspend`
-7. Update `docs/audits/*` to reflect new API presence with file:line
+1. **Run `make ast-lint`** — no new lint errors in modified files
+2. **Run `make ast-todos-summary`** — no untagged TODOs
+3. **Run `make ast-deep`** — similarity scores for modified files are acceptable (>0.60)
+4. Headers contain only the public surface and minimal ABI-critical code
+5. Methods and enums follow naming rules; no camelCase methods remain in C++
+6. All new gaps are called out with a specific, tagged `TODO`
+7. Resolved `TODO`s are removed in edited regions
+8. Compile cleanly: `clang++ -std=c++20 -Wall -Wextra -I include your_file.cpp`
+9. Tests pass: `./test_suspend`
+10. Update `docs/audits/*` to reflect new API presence with file:line
+11. Include `Transliterated from:` header in new files for proper matching
 
 ---
 
@@ -280,110 +285,185 @@ Transliteration first, helpers second. Keep it mechanical and reversible. Call o
 
 ---
 
+## Porting Quality Tools (MANDATORY)
+
+This project includes integrated porting analysis tools that **MUST** be used to ensure transliteration quality. These tools are built as part of the main CMake build and provide CMake targets for easy access.
+
+### ⚠️ REQUIRED: Run Before Submitting Changes
+
+**Before any PR or significant change, you MUST run:**
+```bash
+make ast-lint        # Check for unused parameters, missing guards
+make ast-todos       # Review outstanding TODOs
+make ast-deep        # Full porting analysis
+```
+
+If any of these reveal issues in files you modified, **fix them before proceeding**.
+
+### When to Use These Tools
+
+| Situation | Required Action |
+|-----------|-----------------|
+| Compilation errors | Run `make ast-lint` to check for structural issues |
+| Adding new files | Run `make ast-deep` to verify Kotlin matching |
+| Modifying existing files | Run `make ast-lint` and `make ast-todos` |
+| Before any commit | Run `make ast-todos-summary` to check TODO count |
+| Weekly health check | Run `make porting-report` for full analysis |
+
+---
+
+## CMake Porting Targets
+
+All targets are available from the build directory after running `cmake ..`:
+
+### Quality Checks
+
+```bash
+# Lint: unused parameters, missing header guards
+make ast-lint
+
+# TODO scanning with full context
+make ast-todos
+
+# TODO scanning (summary only, no context)
+make ast-todos-summary
+
+# File statistics: line counts, stubs, issues
+make ast-stats
+```
+
+### Porting Analysis
+
+```bash
+# Full analysis: AST similarity + deps + TODOs + lint + line ratios
+make ast-deep
+# or
+make porting-report
+
+# Find files missing from C++ port
+make ast-missing
+```
+
+### Example Output
+
+**`make ast-deep` output:**
+```
+=== Porting Quality Summary ===
+Matched by header:    59 / 111
+Matched by name:      52 / 111
+Total TODOs in target: 176
+Total lint errors:    136
+Stub files:           33
+
+=== Files with Issues ===
+File                          Sim     Ratio   TODOs Lint  Status
+----------------------------------------------------------------------
+channels.Channels             0.39    0.00    1     0     STUB
+flow.SharedFlow               0.54    0.00    0     2     LINT
+...
+
+=== Porting Recommendations ===
+Top priority to complete:
+  flow.Channels        sim=0.39 deps=14 [STUB] [1 TODOs]
+  flow.Flow            sim=0.54 deps=13
+```
+
+---
+
 ## AST Distance Tool
 
-A vendored cross-language AST comparison tool for analyzing port progress and identifying priority files.
+The underlying tool powering the CMake targets. Located at `tools/ast_distance/`.
 
-### Location
+### Direct CLI Usage
+
+```bash
+# From project root (after building)
+./build/bin/ast_distance --help
+
+# Compare two files directly
+./build/bin/ast_distance file1.kt kotlin file2.cpp cpp
+
+# Dump AST structure
+./build/bin/ast_distance --dump <file> <rust|kotlin|cpp>
+
+# Scan directory for dependencies
+./build/bin/ast_distance --deps <directory> <rust|kotlin|cpp>
+```
+
+### Similarity Thresholds
+
+| Score | Status | Action |
+|-------|--------|--------|
+| > 0.85 | Excellent | Likely complete, verify docs match |
+| 0.60–0.85 | Good | May need refinement |
+| 0.40–0.60 | Partial | Significant gaps, prioritize |
+| < 0.40 | Stub | Needs full implementation |
+
+### File Matching
+
+The tool uses two matching strategies:
+1. **Header-based** (preferred): Reads `Transliterated from:` comments in C++ files
+2. **Name-based** (fallback): Fuzzy matches file names with snake_case conversion
+
+Always include this header in transliterated files:
+```cpp
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt
+ */
+```
+
+### Tool Location
+
 ```
 tools/ast_distance/
-├── CMakeLists.txt
-├── README.md
 ├── include/
 │   ├── ast_parser.hpp      # Tree-sitter parsing for Rust/Kotlin/C++
 │   ├── codebase.hpp        # Directory scanning, dependency graphs, matching
 │   ├── imports.hpp         # Import/include extraction, package detection
+│   ├── porting_utils.hpp   # TODO scanning, lint checks, file stats
 │   ├── node_types.hpp      # Normalized AST node type mappings
 │   ├── similarity.hpp      # Cosine similarity, combined scoring
 │   └── tree.hpp            # Tree data structure
 └── src/
-    ├── main.cpp            # CLI entry point
-    ├── ast_parser.cpp
-    ├── ast_normalizer.cpp
-    └── similarity.cpp
+    └── main.cpp            # CLI entry point
 ```
 
-### Build
-```bash
-cd tools/ast_distance
-mkdir -p build && cd build
-cmake .. && make -j8
+---
+
+## Interpreting Lint Errors
+
+### Unused Parameters
+
+```
+file.hpp:42: unused_param: Unused parameter 'ctx' in function 'dispatch'
 ```
 
-### Commands
+**Fix options:**
+1. Use the parameter (preferred if it should be used)
+2. Cast to void: `(void)ctx;`
+3. Rename with underscore prefix: `_ctx` (if intentionally unused)
 
-**Analyze this project (Kotlin → C++):**
-```bash
-./ast_distance --deep \
-    /path/to/kotlinx.coroutines/kotlinx-coroutines-core/common/src kotlin \
-    ../../../src/kotlinx/coroutines cpp
+### Missing Header Guards
+
+```
+file.hpp:1: missing_guard: Missing header guard (#pragma once or #ifndef)
 ```
 
-**Check what's missing:**
-```bash
-./ast_distance --missing <src_dir> <src_lang> <tgt_dir> <tgt_lang>
-```
+**Fix:** Add `#pragma once` at the top of the file.
 
-**Scan a codebase (dependency graph):**
-```bash
-./ast_distance --deps <directory> <rust|kotlin|cpp>
-```
+---
 
-**Compare two files directly:**
-```bash
-./ast_distance file1.kt file2.cpp
-```
+## TODO Tag Reference
 
-**Dump AST structure:**
-```bash
-./ast_distance --dump <file> <rust|kotlin|cpp>
-```
+When the tool scans TODOs, it groups by tag:
 
-### Output Interpretation
+| Tag | Meaning |
+|-----|---------|
+| `port` | Direct transliteration needed |
+| `semantics` | Correctness/race condition not yet mirrored |
+| `suspend-plugin` | Will be handled by Clang plugin |
+| `abi-ownership` | Ownership of `void*` return unclear |
+| `perf` | Known performance gap |
+| `untagged` | Missing tag — should be categorized |
 
-The `--deep` command outputs:
-- **Matched files** with similarity scores (0.0–1.0)
-- **Priority score** = dependents × (1 - similarity) — high priority = many dependents + low similarity
-- **Incomplete ports** (similarity < 60%)
-- **Missing files** not yet ported
-
-Similarity thresholds:
-- `> 0.85` — Excellent port, likely complete
-- `0.60–0.85` — Good port, may need refinement
-- `0.40–0.60` — Partial port, significant gaps
-- `< 0.40` — Stub or very different implementation
-
-### Extending the Tool
-
-**Add a new language:**
-1. Add tree-sitter grammar to `CMakeLists.txt` (FetchContent)
-2. Add `extern "C" { const TSLanguage* tree_sitter_<lang>(); }` to `ast_parser.hpp` and `imports.hpp`
-3. Add `<LANG>` to `enum class Language` in `ast_parser.hpp`
-4. Add `<lang>_node_to_type()` mapping in `node_types.hpp`
-5. Add import/package extraction in `imports.hpp`
-6. Update file extension checks in `codebase.hpp`
-
-**Improve matching:**
-- Edit `name_match_score()` in `codebase.hpp` for better fuzzy matching
-- Edit `PackageDecl::similarity_to()` in `imports.hpp` for package-aware matching
-
-**Add new metrics:**
-- Add to `ASTSimilarity` class in `similarity.hpp`
-- Expose in `combined_similarity()` function
-
-### Using for Porting Decisions
-
-Run periodically to track progress:
-```bash
-# Save baseline
-./ast_distance --deep ... > baseline.txt
-
-# After porting work
-./ast_distance --deep ... > current.txt
-diff baseline.txt current.txt
-```
-
-Focus porting effort on files with:
-1. High dependent count (core infrastructure)
-2. Low similarity score (incomplete)
-3. Listed in "Top priority to complete" output
+**Goal:** Zero untagged TODOs. Every TODO should have a category.

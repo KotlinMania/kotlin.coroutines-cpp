@@ -308,6 +308,23 @@ inline std::shared_ptr<ChannelFlow<T>> as_channel_flow(std::shared_ptr<Flow<T>> 
     return std::make_shared<ChannelFlowOperatorImpl<T>>(std::move(flow));
 }
 
+} // namespace internal
+
+/**
+ * Implementation of produce_in after as_channel_flow is available.
+ * See Channels.hpp for documentation.
+ */
+template <typename T>
+inline std::shared_ptr<channels::ReceiveChannel<T>> produce_in(
+    std::shared_ptr<Flow<T>> flow,
+    CoroutineScope* scope
+) {
+    auto channel_flow = internal::as_channel_flow(std::move(flow));
+    return channel_flow->produce_impl(scope);
+}
+
+namespace internal {
+
 template <typename S, typename T>
 inline void* ChannelFlowOperator<S, T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {
     // Kotlin fast-path optimization is more complex (newCoroutineContext + undispatched collection).

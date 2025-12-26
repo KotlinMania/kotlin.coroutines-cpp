@@ -199,11 +199,15 @@
 ---
 
 ### Acceptance checks per PR
+- **Run `make ast-lint`** — no new lint errors in modified files.
+- **Run `make ast-todos-summary`** — no untagged TODOs.
+- **Run `make ast-deep`** — similarity scores for modified files are acceptable (>0.60).
 - Headers contain only the public surface and minimal ABI-critical code.
 - Methods and enums follow naming rules; no camelCase methods remain in C++.
 - All new gaps are called out with a specific, tagged `TODO`.
 - Resolved `TODO`s are removed in edited regions.
 - `docs/audits/*` updated to reflect new API presence with file:line.
+- Include `Transliterated from:` header in new files for proper matching.
 
 ---
 
@@ -222,6 +226,86 @@
 - Implementations: `src/kotlinx/coroutines/**/*.cpp`.
 - Kotlin sources: `tmp/kotlinx.coroutines/**/src/**/*.kt`.
 - Suspend intrinsics: `kotlinx/coroutines/intrinsics/Intrinsics.hpp` and `CancellableContinuationImpl.hpp`.
+
+---
+
+## ⚠️ MANDATORY: Porting Quality Tools
+
+**You MUST use the porting analysis tools to ensure transliteration quality.** These are not optional — they are required for maintaining code quality and tracking porting progress.
+
+### Required Tool Usage
+
+| Event | Required Action |
+|-------|-----------------|
+| **Any compilation error** | Run `make ast-lint` first |
+| **Adding new C++ files** | Run `make ast-deep` to verify Kotlin matching |
+| **Modifying existing files** | Run `make ast-lint` and `make ast-todos` |
+| **Before any commit** | Run `make ast-todos-summary` |
+| **When debugging issues** | Run `make ast-stats` to check file status |
+
+### CMake Targets
+
+From the build directory:
+
+```bash
+# REQUIRED before commits - check for lint issues
+make ast-lint
+
+# REQUIRED for new files - verify Kotlin matching
+make ast-deep
+
+# Check TODO status
+make ast-todos          # Full context
+make ast-todos-summary  # Summary only
+
+# File statistics (stubs, line counts)
+make ast-stats
+
+# Find missing files
+make ast-missing
+
+# Full porting report
+make porting-report
+```
+
+### Responding to Tool Output
+
+**When `ast-lint` finds unused parameters:**
+```
+file.hpp:42: unused_param: Unused parameter 'ctx' in function 'dispatch'
+```
+→ Fix by: (1) using the parameter, (2) `(void)ctx;`, or (3) rename to `_ctx`
+
+**When `ast-deep` shows low similarity:**
+```
+channels.Channels             0.39    0.00    1     0     STUB
+```
+→ This file needs implementation work. Check the Kotlin source and port missing functionality.
+
+**When `ast-todos` shows untagged TODOs:**
+```
+Summary by tag:
+  untagged: 41
+```
+→ **Unacceptable.** Every TODO must have a tag (`port`, `semantics`, `suspend-plugin`, etc.)
+
+### File Headers for Matching
+
+Always include this header in transliterated files for proper matching:
+```cpp
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt
+ */
+```
+
+### Similarity Score Interpretation
+
+| Score | Status | Required Action |
+|-------|--------|-----------------|
+| > 0.85 | Excellent | Verify documentation matches |
+| 0.60–0.85 | Good | Review for refinements |
+| 0.40–0.60 | Partial | Prioritize completion |
+| < 0.40 | Stub | **Needs full implementation** |
 
 ---
 
