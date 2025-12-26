@@ -4,8 +4,9 @@
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt
  *
- * NOTE: Template helpers live in `kotlinx/coroutines/flow/Channels.hpp` so they
- *       can be instantiated for any T.
+ * NOTE: Template implementations (emit_all, ChannelAsFlow) are in headers:
+ * - Channels.hpp: emit_all, emit_all_impl
+ * - ChannelAsFlow.hpp: ChannelAsFlow class, receive_as_flow, consume_as_flow
  */
 
 #include "kotlinx/coroutines/flow/Channels.hpp"

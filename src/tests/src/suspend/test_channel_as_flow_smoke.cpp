@@ -1,7 +1,7 @@
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/channels/Channels.hpp"
-#include "kotlinx/coroutines/flow/ChannelAsFlow.hpp"
+#include "kotlinx/coroutines/flow/Channels.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include <algorithm>
 #include <memory>

@@ -75,8 +75,8 @@ public:
  *       // after first suspension...
  *   }
  */
-#if defined(__GNUC__) || defined(__clang__)
-    // GCC/Clang support labels-as-values extension
+#if defined(__clang__)
+    // Clang labels-as-values extension (computed goto)
     #define KXS_COROUTINE_DISPATCH(label) \
         if ((label) == nullptr) goto __kxs_start; \
         goto *(label);
@@ -86,16 +86,7 @@ public:
 
     #define KXS_HAS_COMPUTED_GOTO 1
 #else
-    // Fallback for compilers without computed goto (MSVC)
-    // Uses switch/case dispatch - less efficient but portable
-    #define KXS_COROUTINE_DISPATCH(label) \
-        switch (reinterpret_cast<intptr_t>(label)) { \
-            case 0: goto __kxs_start;
-
-    #define KXS_SUSPEND_POINT(label_field, resume_label) \
-        /* In switch mode, we'd need case labels */
-
-    #define KXS_HAS_COMPUTED_GOTO 0
+    #error "kotlinx.coroutines-cpp requires Clang for computed goto support"
 #endif
 
 /**

@@ -2,12 +2,35 @@
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/Job.hpp"
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
 
 using channels::BufferOverflow;
+
+// CancellableFlow is defined in Flow.hpp
+
+/**
+ * Implementation of cancellable() operator.
+ *
+ * Wraps a flow to check cancellation status on each emission.
+ */
+template<typename T>
+class CancellableFlowImpl : public CancellableFlow<T> {
+public:
+    explicit CancellableFlowImpl(Flow<T>* upstream) : upstream_(upstream) {}
+
+    void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
+        // TODO(suspend-plugin): Properly implement with ensureActive() check
+        // For now, delegate to upstream - cancellation check not yet implemented
+        return upstream_->collect(collector, continuation);
+    }
+
+private:
+    Flow<T>* upstream_;
+};
 
 /**
  * Buffers flow emissions via channel of a specified capacity.
@@ -38,11 +61,20 @@ Flow<T>* flowOn(Flow<T>* flow, std::shared_ptr<CoroutineContext> context) {
 
 /**
  * Returns a flow which checks cancellation status on each emission.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Context.kt
+ *
+ * If the flow already implements CancellableFlow (like AbstractFlow-based flows),
+ * this is a no-op. Otherwise, wraps in CancellableFlowImpl.
  */
 template<typename T>
 Flow<T>* cancellable(Flow<T>* flow) {
-    // TODO: Implement cancellable wrapper
-    return flow;
+    // Fast-path: already cancellable
+    if (dynamic_cast<CancellableFlow<T>*>(flow) != nullptr) {
+        return flow;
+    }
+    // Wrap in CancellableFlowImpl
+    return new CancellableFlowImpl<T>(flow);
 }
 
 } // namespace flow

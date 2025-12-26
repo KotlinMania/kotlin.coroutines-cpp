@@ -67,9 +67,22 @@ public:
     void* emit(T value, Continuation<void*>* continuation) override {
         // TODO: Implement proper context validation
         // auto current = currentCoroutineContext();
-        // check_context(current); 
+        // check_context(current);
 
         return downstream_->emit(std::move(value), continuation);
+    }
+
+    /**
+     * Releases any intercepted continuation resources.
+     *
+     * Called in the finally block of AbstractFlow::collect() to clean up
+     * any dispatcher-related resources that were captured during collection.
+     *
+     * Transliterated from: SafeCollector.releaseIntercepted() in SafeCollector.common.kt
+     */
+    void release_intercepted() {
+        // TODO: Implement proper interceptor release
+        // For now, no-op as context interception is not fully implemented
     }
 
 private:

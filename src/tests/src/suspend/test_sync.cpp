@@ -13,9 +13,7 @@
 #include <atomic>
 
 #include "kotlinx/coroutines/sync/Mutex.hpp"
-#include "kotlinx/coroutines/sync/MutexImpl.hpp"
 #include "kotlinx/coroutines/sync/Semaphore.hpp"
-#include "kotlinx/coroutines/sync/SemaphoreImpl.hpp"
 
 using namespace kotlinx::coroutines::sync;
 

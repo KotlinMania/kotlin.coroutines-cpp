@@ -1,57 +1,55 @@
-// Kotlin source: kotlinx-coroutines-core/common/src/sync/Semaphore.kt
+/**
+ * @file Semaphore.cpp
+ * @brief Semaphore implementation using lock-free segment queue.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt
+ *
+ * Contains the private SemaphoreImpl class (lines 355-357 in Kotlin).
+ */
+
 #include "kotlinx/coroutines/sync/Semaphore.hpp"
-#include "kotlinx/coroutines/Continuation.hpp"
-#include <atomic>
-#include <stdexcept>
+#include "kotlinx/coroutines/sync/SemaphoreAndMutexImpl.hpp"
+#include <memory>
 
 namespace kotlinx {
 namespace coroutines {
 namespace sync {
 
-// Simple implementation of Semaphore
-class SemaphoreImpl : public Semaphore {
+/**
+ * Line 355-357: SemaphoreImpl
+ *
+ * private class SemaphoreImpl(
+ *     permits: Int, acquiredPermits: Int
+ * ): SemaphoreAndMutexImpl(permits, acquiredPermits), Semaphore
+ *
+ * This private implementation class inherits from both the implementation
+ * base and the public interface to provide the complete Semaphore functionality.
+ */
+class SemaphoreImpl : public SemaphoreAndMutexImpl, public Semaphore {
 public:
     SemaphoreImpl(int permits, int acquired_permits)
-        : available_permits_(permits - acquired_permits) {
-        if (permits < 0) {
-            throw std::invalid_argument("Semaphore permits must be non-negative");
-        }
-        if (acquired_permits < 0 || acquired_permits > permits) {
-            throw std::invalid_argument("acquired_permits must be between 0 and permits");
-        }
-    }
+        : SemaphoreAndMutexImpl(permits, acquired_permits)
+    {}
 
+    // Line 25: val availablePermits: Int
     int available_permits() const override {
-        return available_permits_.load(std::memory_order_acquire);
+        return SemaphoreAndMutexImpl::available_permits();
     }
 
+    // Line 44: suspend fun acquire()
     void* acquire(Continuation<void*>* cont) override {
-        // Try to acquire immediately
-        if (try_acquire()) {
-            return nullptr;  // Success, no suspension
-        }
-        // Would need to suspend - for now throw
-        (void)cont;
-        throw std::logic_error("Semaphore::acquire suspend path not implemented");
+        return SemaphoreAndMutexImpl::acquire(cont);
     }
 
+    // Line 51: fun tryAcquire(): Boolean
     bool try_acquire() override {
-        int current = available_permits_.load(std::memory_order_acquire);
-        while (current > 0) {
-            if (available_permits_.compare_exchange_weak(current, current - 1,
-                    std::memory_order_acq_rel, std::memory_order_acquire)) {
-                return true;
-            }
-        }
-        return false;
+        return SemaphoreAndMutexImpl::try_acquire();
     }
 
+    // Line 58: fun release()
     void release() override {
-        available_permits_.fetch_add(1, std::memory_order_release);
+        SemaphoreAndMutexImpl::release();
     }
-
-private:
-    std::atomic<int> available_permits_;
 };
 
 std::shared_ptr<Semaphore> create_semaphore(int permits, int acquired_permits) {

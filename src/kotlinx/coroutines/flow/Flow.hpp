@@ -1,10 +1,13 @@
 #pragma once
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/context_impl.hpp"
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
+
 
 /**
  * An asynchronous data stream that sequentially emits values and completes normally or with an exception.
@@ -137,6 +140,20 @@ struct Flow {
 };
 
 /**
+ * Internal marker interface for flows that are cancellable.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Context.kt
+ *
+ * Flows implementing this interface check for cancellation on each emission.
+ * AbstractFlow implements this interface, so all flows built with the flow {}
+ * builder are cancellable by default.
+ */
+template<typename T>
+struct CancellableFlow : public virtual Flow<T> {
+    virtual ~CancellableFlow() = default;
+};
+
+/**
  * Base class for stateful implementations of `Flow`.
  * It tracks all the properties required for context preservation and throws an [IllegalStateException]
  * if any of the properties are violated.
@@ -166,13 +183,30 @@ struct Flow {
  * ```
  */
 template<typename T>
-class AbstractFlow : public Flow<T> {
+class AbstractFlow : public CancellableFlow<T> {
 public:
+    /**
+     * Collects the flow with context preservation guarantees.
+     *
+     * Transliterated from: AbstractFlow.collect() in Flow.kt
+     *
+     * Wraps the collector in SafeCollector to ensure context preservation
+     * and exception transparency, then delegates to collect_safely().
+     */
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
-        // Collect context (mocked for now as empty/default)
-        // TODO: Properly implement context preservation with SafeCollector
-        // Current stub just delegates
-        return collect_safely(collector, continuation);
+        // TODO: Get actual coroutineContext from continuation
+        auto collect_context = kotlinx::coroutines::EmptyCoroutineContext::instance();
+        internal::SafeCollector<T> safe_collector(collector, collect_context);
+
+        void* result = nullptr;
+        try {
+            result = collect_safely(&safe_collector, continuation);
+        } catch (...) {
+            safe_collector.release_intercepted();
+            throw;
+        }
+        safe_collector.release_intercepted();
+        return result;
     }
 
     /**
