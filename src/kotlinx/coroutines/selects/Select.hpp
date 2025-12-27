@@ -292,19 +292,57 @@ public:
     bool has_on_cancellation_constructor() const override { return has_on_cancellation_; }
 };
 
-// =============================================================================
-// =============================================================================
+/**
+ * Internal representation of select instance.
+ *
+ * @note This is unstable API, and it is subject to change.
+ *
+ * Transliterated from:
+ * public sealed interface SelectInstance<in R>
+ */
 template<typename R>
 class SelectInstance {
 public:
     virtual ~SelectInstance() = default;
 
+    /**
+     * The context of the coroutine that is performing this select operation.
+     *
+     * Transliterated from:
+     * public val context: CoroutineContext
+     */
     virtual std::shared_ptr<CoroutineContext> get_context() const = 0;
 
+    /**
+     * This function should be called by other operations, which are trying to perform a rendezvous
+     * with this select. Returns true if the rendezvous succeeds, false otherwise.
+     *
+     * Note that according to the current implementation, a rendezvous attempt can fail when either
+     * another clause is already selected or this select is still in REGISTRATION phase. To distinguish
+     * the reasons, SelectImplementation::try_select_detailed function can be used instead.
+     *
+     * Transliterated from:
+     * public fun trySelect(clauseObject: Any, result: Any?): Boolean
+     */
     virtual bool try_select(void* clause_object, void* result) = 0;
 
+    /**
+     * When this select instance is stored as a waiter, the specified handle defines how the stored
+     * select should be removed in case of cancellation or another clause selection.
+     *
+     * Transliterated from:
+     * public fun disposeOnCompletion(disposableHandle: DisposableHandle)
+     */
     virtual void dispose_on_completion(std::shared_ptr<DisposableHandle> handle) = 0;
 
+    /**
+     * When a clause becomes selected during registration, the corresponding internal result
+     * (which is further passed to the clause's ProcessResultFunction) should be provided via this
+     * function. After that, other clause registrations are ignored and try_select fails.
+     *
+     * Transliterated from:
+     * public fun selectInRegistrationPhase(internalResult: Any?)
+     */
     virtual void select_in_registration_phase(void* internal_result) = 0;
 };
 
@@ -318,34 +356,178 @@ public:
     virtual void invoke_on_cancellation(internal::SegmentBase* segment, int index) = 0;
 };
 
-// =============================================================================
-// =============================================================================
+/**
+ * Scope for select invocation.
+ *
+ * An instance of SelectBuilder can only be retrieved as a receiver of a select block call,
+ * and it is only valid during the registration phase of the select builder.
+ * Any uses outside it lead to unspecified behaviour and are prohibited.
+ *
+ * The general rule of thumb is that instances of this type should always be used
+ * implicitly and there shouldn't be any signatures mentioning this type,
+ * whether explicitly (e.g. function signature) or implicitly (e.g. inferred variable type).
+ *
+ * Transliterated from:
+ * public sealed interface SelectBuilder<in R>
+ */
 template<typename R>
 class SelectBuilder {
 public:
     virtual ~SelectBuilder() = default;
 
+    /**
+     * Registers a clause in this select expression without additional parameters that does not select any value.
+     *
+     * Transliterated from:
+     * public operator fun SelectClause0.invoke(block: suspend () -> R)
+     */
     virtual void invoke(SelectClause0& clause, std::function<void*(Continuation<void*>*)> block) = 0;
 
+    /**
+     * Registers clause in this select expression without additional parameters that selects value of type Q.
+     *
+     * Transliterated from:
+     * public operator fun <Q> SelectClause1<Q>.invoke(block: suspend (Q) -> R)
+     */
     template<typename Q>
     void invoke(SelectClause1<Q>& clause, std::function<void*(Q, Continuation<void*>*)> block);
 
+    /**
+     * Registers clause in this select expression with additional parameter of type P that selects value of type Q.
+     *
+     * Transliterated from:
+     * public operator fun <P, Q> SelectClause2<P, Q>.invoke(param: P, block: suspend (Q) -> R)
+     */
     template<typename P, typename Q>
     void invoke(SelectClause2<P, Q>& clause, P param, std::function<void*(Q, Continuation<void*>*)> block);
 
+    /**
+     * Clause that selects the given block after a specified timeout passes.
+     * If timeout is negative or zero, block is selected immediately.
+     *
+     * @note This is an experimental API. It may be replaced with light-weight timer/timeout channels in the future.
+     *
+     * @param time_millis timeout time in milliseconds.
+     *
+     * Transliterated from:
+     * public fun onTimeout(timeMillis: Long, block: suspend () -> R)
+     */
     virtual void on_timeout(long long time_millis, std::function<void*(Continuation<void*>*)> block) = 0;
 };
 
-// =============================================================================
-// =============================================================================
+/**
+ * Internal implementation of the select expression.
+ *
+ * Essentially, the `select` operation is split into three phases: REGISTRATION, WAITING, and COMPLETION.
+ *
+ * == Phase 1: REGISTRATION ==
+ * In the first REGISTRATION phase, the user-specified SelectBuilder is applied, and all the listed clauses
+ * are registered via the provided registration functions. Intuitively, select clause registration is similar
+ * to the plain blocking operation, with the only difference that this SelectInstance is stored as a waiter
+ * instead of continuation, and SelectInstance::try_select is used to make a rendezvous. Also, when registering,
+ * it is possible for the operation to complete immediately, without waiting. In this case,
+ * SelectInstance::select_in_registration_phase should be used. Otherwise, when no rendezvous happens and this
+ * select instance is stored as a waiter, a completion handler for the registering clause should be specified
+ * via SelectInstance::dispose_on_completion; this handler specifies how to remove this select instance from
+ * the clause object when another clause becomes selected or the operation cancels.
+ *
+ * After a clause registration is completed, another coroutine can attempt to make a rendezvous with this select.
+ * However, to resolve a race between clauses registration and SelectInstance::try_select, the latter fails when
+ * this select is still in REGISTRATION phase. Thus, the corresponding clause has to be re-registered.
+ *
+ * In this phase, the state field stores either a special STATE_REG marker or a list of clauses to be
+ * re-registered due to failed rendezvous attempts.
+ *
+ * == Phase 2: WAITING ==
+ * If no rendezvous happens in REGISTRATION phase, the select operation moves to WAITING phase and suspends
+ * until SelectInstance::try_select is called. Also, when waiting, this select can be cancelled. In the latter
+ * case, further SelectInstance::try_select attempts fail, and all the completion handlers, specified via
+ * SelectInstance::dispose_on_completion, are invoked to remove this select instance from the corresponding
+ * clause objects.
+ *
+ * In this phase, the state field stores either the continuation to be later resumed or a special Cancelled
+ * object (with the cancellation cause inside) when this select becomes cancelled.
+ *
+ * == Phase 3: COMPLETION ==
+ * Once a rendezvous happens either in REGISTRATION phase (via SelectInstance::select_in_registration_phase) or
+ * in WAITING phase (via SelectInstance::try_select), this select moves to the final COMPLETION phase.
+ * First, the provided internal result is processed via the ProcessResultFunction of the selected clause;
+ * it returns the argument for the user-specified block or throws an exception (see SendChannel::on_send as
+ * an example). After that, this select should be removed from all other clause objects by calling the
+ * corresponding DisposableHandles, provided via SelectInstance::dispose_on_completion during registration.
+ * At the end, the user-specified block is called and this select finishes.
+ *
+ * In this phase, once a rendezvous has happened, the state field stores the corresponding clause.
+ * After that, it moves to STATE_COMPLETED to avoid memory leaks.
+ *
+ * The state machine is listed below:
+ * ```
+ *            REGISTRATION PHASE                   WAITING PHASE             COMPLETION PHASE
+ *       ⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢             ⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢         ⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢⌢
+ *
+ *                                                 +-----------+                 +-----------+
+ *                                                 | CANCELLED |                 | COMPLETED |
+ *                                                 +-----------+                 +-----------+
+ *                                                       ^                             ^
+ *     INITIAL STATE                                     |                             | this select
+ *     ------------+                                     |  cancelled                  | is completed
+ *                  \                                    |                             |
+ *                   +=============+     move to     +------+    successful   +------------+
+ *                +--|  STATE_REG  |---------------> | cont |-----------------| ClauseData |
+ *                |  +=============+  WAITING phase  +------+  try_select(..) +------------+
+ *                |    ^     |                                                       ^
+ *                |    |     |    some clause has been selected during registration  |
+ *         add a  |    |     +-------------------------------------------------------+
+ *   clause to be |    |                                                             |
+ *  re-registered |    | re-register                   some clause has been selected |
+ *                |    | clauses                     during registration while there |
+ *                v    |                            are clauses to be re-registered; |
+ *          +------------------+                                   ignore the latter |
+ *       +--| List<ClauseData> |-----------------------------------------------------+
+ *       |  +------------------+
+ *       |            ^
+ *       |            |  add one more clause
+ *       |            |  for re-registration
+ *       +------------+
+ * ```
+ *
+ * One of the most valuable benefits of this select design is that it allows processing clauses in a way
+ * similar to plain operations, such as send or receive on channels. The only difference is that instead
+ * of continuation, the operation should store the provided select instance object. Thus, this design makes
+ * it possible to support the select expression for any blocking data structure in Kotlin Coroutines.
+ *
+ * It is worth mentioning that the algorithm above provides "obstruction-freedom" non-blocking guarantee
+ * instead of the standard "lock-freedom" to avoid using heavy descriptors. In practice, this relaxation
+ * does not make significant difference. However, it is vital for Kotlin Coroutines to provide some
+ * non-blocking guarantee, as users may add blocking code in SelectBuilder, and this blocking code should
+ * not cause blocking behaviour in other places, such as an attempt to make a rendezvous with the select
+ * that is hung in REGISTRATION phase.
+ *
+ * Also, this implementation is NOT linearizable under some circumstances. The reason is that a rendezvous
+ * attempt with select (via SelectInstance::try_select) may fail when this select operation is still in
+ * REGISTRATION phase. Consider the following situation on two empty rendezvous channels c1 and c2 and the
+ * select operation that tries to send an element to one of these channels. First, this select instance is
+ * registered as a waiter in c1. After that, another thread can observe that c1 is no longer empty and try
+ * to receive an element from c1 -- this receive attempt fails due to the select operation being in
+ * REGISTRATION phase. We, however, find such a non-linearizable behaviour not so important in practice and
+ * leverage the correctness relaxation for the algorithm simplicity and the non-blocking progress guarantee.
+ *
+ * Transliterated from:
+ * internal open class SelectImplementation<R>(override val context: CoroutineContext)
+ *     : CancelHandler, SelectBuilder<R>, SelectInstanceInternal<R>
+ */
 template<typename R>
 class SelectImplementation : public CancelHandler,
                              public SelectBuilder<R>,
                              public SelectInstanceInternal<R>,
                              public std::enable_shared_from_this<SelectImplementation<R>> {
 public:
-    // ==========================================================================
-    // ==========================================================================
+    /**
+     * Each select clause is internally represented with a ClauseData instance.
+     *
+     * Transliterated from:
+     * internal inner class ClauseData(...)
+     */
     class ClauseData {
     public:
         void* const clause_object;
