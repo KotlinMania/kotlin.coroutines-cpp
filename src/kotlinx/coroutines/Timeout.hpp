@@ -1,3 +1,24 @@
+/**
+ * @file Timeout.hpp
+ * @brief Timeout functions: with_timeout and with_timeout_or_null
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Timeout.kt
+ *
+ * Provides timeout-based execution control for coroutines. The key functions are:
+ *
+ * - with_timeout: Runs a block with a timeout, throws TimeoutCancellationException if exceeded
+ * - with_timeout_or_null: Runs a block with a timeout, returns nullptr if exceeded
+ *
+ * **The timeout event is asynchronous with respect to the code running in the block** and may happen
+ * at any time, even right before the return from inside the timeout block. Keep this in mind if you
+ * open or acquire some resource inside the block that needs closing or release outside the block.
+ *
+ * See the Asynchronous timeout and resources section of the coroutines guide for details:
+ * https://kotlinlang.org/docs/reference/coroutines/cancellation-and-timeouts.html#asynchronous-timeout-and-resources
+ *
+ * Implementation note: how the time is tracked exactly is an implementation detail of the context's
+ * CoroutineDispatcher.
+ */
 #ifndef KOTLINX_COROUTINES_TIMEOUT_HPP
 #define KOTLINX_COROUTINES_TIMEOUT_HPP
 
@@ -21,6 +42,13 @@ namespace coroutines {
     // Forward declaration of Delay is sufficient as we use pointers/interface
     class Delay;
 
+    /**
+     * This exception is thrown by with_timeout to indicate timeout.
+     *
+     * Transliterated from:
+     * public class TimeoutCancellationException internal constructor(message: String, coroutine: Job?)
+     *     : CancellationException(message), CopyableThrowable<TimeoutCancellationException>
+     */
     class TimeoutCancellationException : public CancellationException {
     public:
         // Internal constructor logic matching Kotlin
@@ -103,8 +131,28 @@ namespace coroutines {
     } // namespace detail
 
     /**
-     * Runs a given suspending [block] of code inside a coroutine with the specified [timeout][timeMillis] and throws
-     * a [TimeoutCancellationException] if the timeout was exceeded.
+     * Runs a given suspending block of code inside a coroutine with the specified timeout and throws
+     * a TimeoutCancellationException if the timeout was exceeded.
+     * If the given time_millis is non-positive, TimeoutCancellationException is thrown immediately.
+     *
+     * The code that is executing inside the block is cancelled on timeout and the active or next invocation of
+     * the cancellable suspending function inside the block throws a TimeoutCancellationException.
+     *
+     * The sibling function that does not throw an exception on timeout is with_timeout_or_null.
+     * Note that the timeout action can be specified for a select invocation with SelectBuilder::on_timeout clause.
+     *
+     * **The timeout event is asynchronous with respect to the code running in the block** and may happen at any time,
+     * even right before the return from inside the timeout block. Keep this in mind if you open or acquire some
+     * resource inside the block that needs closing or release outside the block.
+     *
+     * @param time_millis timeout time in milliseconds.
+     * @param block the coroutine code to execute with timeout.
+     * @param completion the continuation for resume after block completes or times out.
+     * @return the result of the block or COROUTINE_SUSPENDED.
+     * @throws TimeoutCancellationException if the timeout was exceeded.
+     *
+     * Transliterated from:
+     * public suspend fun <T> withTimeout(timeMillis: Long, block: suspend CoroutineScope.() -> T): T
      */
     template <typename T>
     void* with_timeout(long time_millis, std::function<T(CoroutineScope&)> block, std::shared_ptr<Continuation<void*>> completion) {
@@ -126,8 +174,27 @@ namespace coroutines {
     }
     
     /**
-     * Runs a given suspending block of code inside a coroutine with a specified [timeout][timeMillis] and returns
-     * `null` if this timeout was exceeded.
+     * Runs a given suspending block of code inside a coroutine with a specified timeout and returns
+     * nullptr if this timeout was exceeded.
+     * If the given time_millis is non-positive, nullptr is returned immediately.
+     *
+     * The code that is executing inside the block is cancelled on timeout and the active or next invocation of
+     * cancellable suspending function inside the block throws a TimeoutCancellationException.
+     *
+     * The sibling function that throws an exception on timeout is with_timeout.
+     * Note that the timeout action can be specified for a select invocation with SelectBuilder::on_timeout clause.
+     *
+     * **The timeout event is asynchronous with respect to the code running in the block** and may happen at any time,
+     * even right before the return from inside the timeout block. Keep this in mind if you open or acquire some
+     * resource inside the block that needs closing or release outside the block.
+     *
+     * @param time_millis timeout time in milliseconds.
+     * @param block the coroutine code to execute with timeout.
+     * @param completion the continuation for resume after block completes or times out.
+     * @return the result of the block, nullptr if timeout occurred, or COROUTINE_SUSPENDED.
+     *
+     * Transliterated from:
+     * public suspend fun <T> withTimeoutOrNull(timeMillis: Long, block: suspend CoroutineScope.() -> T): T?
      */
     template <typename T>
     void* with_timeout_or_null(long time_millis, std::function<T(CoroutineScope&)> block, std::shared_ptr<Continuation<void*>> completion) {
