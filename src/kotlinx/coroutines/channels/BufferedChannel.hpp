@@ -75,58 +75,125 @@ constexpr int EXPAND_BUFFER_COMPLETION_WAIT_ITERATIONS = 10000;
 // ============================================================================
 // Lines 2975-3009: Cell state symbols
 // ============================================================================
+//
+// Each cell in the channel segment can be in various states during its lifecycle.
+// These states are represented by special Symbol objects.
+//
+// The cell state machine for a sender:
+//   null/IN_BUFFER -> [element stored] -> BUFFERED (if buffered)
+//                  -> [receiver arrives] -> DONE_RCV (rendezvous)
+//                  -> [cancelled] -> INTERRUPTED_SEND
+//                  -> [closed] -> CHANNEL_CLOSED
+//
+// The cell state machine for a receiver:
+//   null -> [no element] -> [waiter stored] -> [element arrives] -> DONE_RCV
+//       -> [cancelled] -> INTERRUPTED_RCV
+//       -> [closed] -> CHANNEL_CLOSED
+//
+// POISONED is used when a cell is broken due to concurrent access issues.
 
-// @JvmField internal val BUFFERED = Symbol("BUFFERED")
+/**
+ * Indicates that the element has been buffered in the cell.
+ * This state is set when a sender stores an element that doesn't require
+ * a rendezvous (the buffer has capacity).
+ *
+ * Transliterated from: @JvmField internal val BUFFERED = Symbol("BUFFERED")
+ */
 inline internal::Symbol& BUFFERED() {
     static internal::Symbol instance("BUFFERED");
     return instance;
 }
 
-// that it should buffer the element.
-// private val IN_BUFFER = Symbol("SHOULD_BUFFER")
+/**
+ * Indicates that a sender should buffer the element in this cell.
+ * This is a transitional state during the expandBuffer procedure,
+ * signaling to the sender that it should store the element.
+ *
+ * Transliterated from: private val IN_BUFFER = Symbol("SHOULD_BUFFER")
+ */
 inline internal::Symbol& IN_BUFFER() {
     static internal::Symbol instance("SHOULD_BUFFER");
     return instance;
 }
 
-// private val RESUMING_BY_RCV = Symbol("S_RESUMING_BY_RCV")
+/**
+ * Indicates that a receiver is in the process of resuming the sender
+ * stored in this cell. This transitional state prevents races between
+ * concurrent receivers.
+ *
+ * Transliterated from: private val RESUMING_BY_RCV = Symbol("S_RESUMING_BY_RCV")
+ */
 inline internal::Symbol& RESUMING_BY_RCV() {
     static internal::Symbol instance("S_RESUMING_BY_RCV");
     return instance;
 }
 
-// private val RESUMING_BY_EB = Symbol("RESUMING_BY_EB")
+/**
+ * Indicates that the expandBuffer procedure is in the process of resuming
+ * the sender stored in this cell. Similar to RESUMING_BY_RCV but for the
+ * buffer expansion path.
+ *
+ * Transliterated from: private val RESUMING_BY_EB = Symbol("RESUMING_BY_EB")
+ */
 inline internal::Symbol& RESUMING_BY_EB() {
     static internal::Symbol instance("RESUMING_BY_EB");
     return instance;
 }
 
-// but the cell is still in EMPTY or IN_BUFFER state, it breaks the cell.
-// private val POISONED = Symbol("POISONED")
+/**
+ * Indicates that this cell is broken (poisoned) due to concurrent access.
+ * When a receiver observes that the senders counter is greater than the
+ * current index, but the cell is still in EMPTY or IN_BUFFER state, it
+ * breaks (poisons) the cell to signal that something went wrong.
+ *
+ * Transliterated from: private val POISONED = Symbol("POISONED")
+ */
 inline internal::Symbol& POISONED() {
     static internal::Symbol instance("POISONED");
     return instance;
 }
 
-// private val DONE_RCV = Symbol("DONE_RCV")
+/**
+ * Indicates that a receiver has completed processing this cell.
+ * This terminal state is set after a receiver either retrieved an element
+ * or made a rendezvous with a sender.
+ *
+ * Transliterated from: private val DONE_RCV = Symbol("DONE_RCV")
+ */
 inline internal::Symbol& DONE_RCV() {
     static internal::Symbol instance("DONE_RCV");
     return instance;
 }
 
-// private val INTERRUPTED_SEND = Symbol("INTERRUPTED_SEND")
+/**
+ * Indicates that the sender waiting in this cell was interrupted (cancelled).
+ * This allows the cell to be reused and the segment to be garbage collected.
+ *
+ * Transliterated from: private val INTERRUPTED_SEND = Symbol("INTERRUPTED_SEND")
+ */
 inline internal::Symbol& INTERRUPTED_SEND() {
     static internal::Symbol instance("INTERRUPTED_SEND");
     return instance;
 }
 
-// private val INTERRUPTED_RCV = Symbol("INTERRUPTED_RCV")
+/**
+ * Indicates that the receiver waiting in this cell was interrupted (cancelled).
+ * This allows the cell to be reused and the segment to be garbage collected.
+ *
+ * Transliterated from: private val INTERRUPTED_RCV = Symbol("INTERRUPTED_RCV")
+ */
 inline internal::Symbol& INTERRUPTED_RCV() {
     static internal::Symbol instance("INTERRUPTED_RCV");
     return instance;
 }
 
-// internal val CHANNEL_CLOSED = Symbol("CHANNEL_CLOSED")
+/**
+ * Indicates that the channel has been closed. This state is set in cells
+ * when operations detect that the channel is closed, preventing further
+ * operations on those cells.
+ *
+ * Transliterated from: internal val CHANNEL_CLOSED = Symbol("CHANNEL_CLOSED")
+ */
 inline internal::Symbol& CHANNEL_CLOSED() {
     static internal::Symbol instance("CHANNEL_CLOSED");
     return instance;
@@ -135,20 +202,23 @@ inline internal::Symbol& CHANNEL_CLOSED() {
 // ============================================================================
 // Lines 3039-3041: Internal results for updateCellReceive
 // ============================================================================
+//
+// These symbols are returned by updateCellReceive to indicate the outcome
+// of attempting to process a cell for receiving.
 
-// private val SUSPEND = Symbol("SUSPEND")
+/** Indicates the receive operation should suspend. */
 inline internal::Symbol& SUSPEND() {
     static internal::Symbol instance("SUSPEND");
     return instance;
 }
 
-// private val SUSPEND_NO_WAITER = Symbol("SUSPEND_NO_WAITER")
+/** Indicates suspension is needed but no waiter was provided. */
 inline internal::Symbol& SUSPEND_NO_WAITER() {
     static internal::Symbol instance("SUSPEND_NO_WAITER");
     return instance;
 }
 
-// private val FAILED = Symbol("FAILED")
+/** Indicates the cell processing failed and should be retried with next cell. */
 inline internal::Symbol& FAILED() {
     static internal::Symbol instance("FAILED");
     return instance;
@@ -157,18 +227,26 @@ inline internal::Symbol& FAILED() {
 // ============================================================================
 // Lines 3043-3051: Internal results for updateCellSend
 // ============================================================================
+//
+// These constants are returned by updateCellSend to indicate the outcome
+// of attempting to process a cell for sending.
 
-// private const val RESULT_RENDEZVOUS = 0
+/** A rendezvous with a receiver occurred - element was transferred directly. */
 constexpr int RESULT_RENDEZVOUS = 0;
-// private const val RESULT_BUFFERED = 1
+
+/** The element was successfully buffered in the cell. */
 constexpr int RESULT_BUFFERED = 1;
-// private const val RESULT_SUSPEND = 2
+
+/** The operation suspended and stored a waiter in the cell. */
 constexpr int RESULT_SUSPEND = 2;
-// private const val RESULT_SUSPEND_NO_WAITER = 3
+
+/** The operation needs to suspend but no waiter was provided. */
 constexpr int RESULT_SUSPEND_NO_WAITER = 3;
-// private const val RESULT_CLOSED = 4
+
+/** The channel is closed. */
 constexpr int RESULT_CLOSED = 4;
-// private const val RESULT_FAILED = 5
+
+/** The cell processing failed (e.g., interrupted receiver) - retry with next cell. */
 constexpr int RESULT_FAILED = 5;
 
 // ============================================================================
@@ -443,23 +521,54 @@ public:
     // ########################################
     // # Manipulation with the Element Fields #
     // ########################################
+    //
+    // Lines 2817-2851: Each slot in the segment stores two values:
+    // - The element (at even indices: index * 2)
+    // - The state (at odd indices: index * 2 + 1)
+    //
+    // The element field stores the value being sent through the channel.
+    // Following the safe publication pattern, the element is stored BEFORE
+    // updating the state, ensuring receivers always see a valid element.
 
+    /**
+     * Stores an element in the specified slot.
+     * The element is heap-allocated to allow type-erased storage.
+     *
+     * Transliterated from: fun storeElement(index: Int, value: E)
+     */
     void store_element(int index, E element) {
         set_element_lazy(index, reinterpret_cast<void*>(new E(std::move(element))));
     }
 
+    /**
+     * Retrieves the element from the specified slot without removing it.
+     *
+     * Transliterated from: fun getElement(index: Int): E
+     */
     E get_element(int index) const {
         void* ptr = data_[index * 2].load(std::memory_order_acquire);
         if (ptr == nullptr) return E{};
         return *reinterpret_cast<E*>(ptr);
     }
 
+    /**
+     * Retrieves and removes the element from the specified slot.
+     * This combines get_element and clean_element for atomic retrieval.
+     *
+     * Transliterated from: fun retrieveElement(index: Int): E
+     */
     E retrieve_element(int index) {
         E elem = get_element(index);
         clean_element(index);
         return elem;
     }
 
+    /**
+     * Cleans (removes) the element from the specified slot.
+     * Frees the heap-allocated element to avoid memory leaks.
+     *
+     * Transliterated from: fun cleanElement(index: Int)
+     */
     void clean_element(int index) {
         void* ptr = data_[index * 2].exchange(nullptr, std::memory_order_acq_rel);
         if (ptr != nullptr) {
@@ -467,6 +576,10 @@ public:
         }
     }
 
+    /**
+     * Lazily sets the element in the specified slot.
+     * Uses release semantics for safe publication.
+     */
     void set_element_lazy(int index, void* value) {
         data_[index * 2].store(value, std::memory_order_release);
     }
@@ -474,20 +587,51 @@ public:
     // ######################################
     // # Manipulation with the State Fields #
     // ######################################
+    //
+    // Lines 2853-2885: The state field tracks the cell's lifecycle:
+    // - nullptr: empty cell, not yet processed
+    // - Waiter*: waiting sender or receiver continuation
+    // - WaiterEB*: waiter wrapped during expandBuffer procedure
+    // - Symbol pointers: terminal states (BUFFERED, DONE_RCV, etc.)
+    //
+    // State transitions follow the cell state machine documented above.
 
+    /**
+     * Reads the current state of the specified slot.
+     *
+     * Transliterated from: fun getState(index: Int): Any?
+     */
     void* get_state(int index) const {
         return data_[index * 2 + 1].load(std::memory_order_acquire);
     }
 
+    /**
+     * Sets the state of the specified slot unconditionally.
+     * Used when the caller has already established exclusive access.
+     *
+     * Transliterated from: fun setState(index: Int, value: Any?)
+     */
     void set_state(int index, void* value) {
         data_[index * 2 + 1].store(value, std::memory_order_release);
     }
 
+    /**
+     * Atomically compares and sets the state of the specified slot.
+     * Returns true if the CAS succeeded (state was 'from' and is now 'to').
+     *
+     * Transliterated from: fun casState(index: Int, from: Any?, to: Any?): Boolean
+     */
     bool cas_state(int index, void* from, void* to) {
         return data_[index * 2 + 1].compare_exchange_strong(from, to,
             std::memory_order_acq_rel, std::memory_order_acquire);
     }
 
+    /**
+     * Atomically exchanges the state and returns the previous value.
+     * Used for unconditional state updates that need the old value.
+     *
+     * Transliterated from: fun getAndSetState(index: Int, update: Any?): Any?
+     */
     void* get_and_set_state(int index, void* update) {
         return data_[index * 2 + 1].exchange(update, std::memory_order_acq_rel);
     }
@@ -515,7 +659,22 @@ public:
     // ########################
     // # Cancellation Support #
     // ########################
+    //
+    // Lines 2887-2921: Handles cancellation of waiters stored in this segment.
+    // When a coroutine is cancelled while waiting in a cell, this method
+    // updates the cell state to INTERRUPTED_SEND or INTERRUPTED_RCV
+    // and invokes the onUndeliveredElement handler if applicable.
+    //
+    // The index encodes whether this is a sender or receiver:
+    // - Senders add SEGMENT_SIZE to the index as a marker
+    // - Receivers use the raw index
 
+    /**
+     * Called when a waiter stored in this segment is cancelled.
+     * Updates the cell state machine and cleans up resources.
+     *
+     * Transliterated from: override fun onCancellation(index: Int, cause: Throwable?, context: CoroutineContext)
+     */
     void on_cancellation(int index, std::exception_ptr cause,
                          std::shared_ptr<CoroutineContext> context) override {
         // senders equip the index value with an additional marker, adding SEGMENT_SIZE.
@@ -584,6 +743,13 @@ public:
         }
     }
 
+    /**
+     * Called after a request (sender or receiver) in this cell is cancelled.
+     * For receivers, waits for any in-progress expandBuffer to complete.
+     * Then marks the slot as cleaned for segment garbage collection.
+     *
+     * Transliterated from: fun onCancelledRequest(index: Int, receiver: Boolean)
+     */
     void on_cancelled_request(int index, bool receiver) {
         if (receiver) {
             channel_->wait_expand_buffer_completion(this->id * SEGMENT_SIZE + index);
@@ -742,7 +908,29 @@ public:
     // =========================================================================
     // Lines 105-608: The send operations
     // =========================================================================
+    //
+    // The send algorithm works as follows:
+    // 1. Increment the senders counter atomically to claim a cell
+    // 2. Find or create the segment containing that cell
+    // 3. Try to either:
+    //    - Buffer the element (if capacity available)
+    //    - Rendezvous with a waiting receiver
+    //    - Suspend until a receiver arrives
+    // 4. Handle closure/cancellation appropriately
+    //
+    // The sendImpl inline function (lines 241-348) is the core implementation
+    // that all send variants (send, trySend, sendBroadcast) delegate to.
 
+    /**
+     * Sends the specified element to this channel, suspending if the buffer
+     * is full or there are no waiting receivers (for rendezvous channels).
+     *
+     * This function can be cancelled while waiting for buffer space or a receiver.
+     * If cancelled, throws CancellationException and the element is not delivered.
+     * If the channel is closed, throws ClosedSendChannelException.
+     *
+     * Transliterated from: override suspend fun send(element: E): Unit
+     */
     void* send(E element, Continuation<void*>* completion) override {
         // Lines 241-348: sendImpl inline function
         ChannelSegment<E>* segment = send_segment_.load(std::memory_order_acquire);
@@ -805,6 +993,17 @@ public:
         }
     }
 
+    /**
+     * Attempts to send the specified element to this channel without suspending.
+     *
+     * Returns ChannelResult.success() if the element was sent (buffered or rendezvous).
+     * Returns ChannelResult.failure() if the channel buffer is full and no receivers waiting.
+     * Returns ChannelResult.closed() if the channel is closed.
+     *
+     * Unlike send(), this method never suspends and returns immediately.
+     *
+     * Transliterated from: override fun trySend(element: E): ChannelResult<Unit>
+     */
     ChannelResult<void> try_send(E element) override {
         if (should_send_suspend(senders_and_close_status_.load(std::memory_order_acquire))) {
             return ChannelResult<void>::failure();
@@ -815,20 +1014,47 @@ public:
         return send_impl_try_send(std::move(element));
     }
 
+    /**
+     * Checks whether a send invocation would suspend given the current counters.
+     * Returns false if the channel is closed (send would fail, not suspend).
+     *
+     * Transliterated from: private fun shouldSendSuspend(curSendersAndCloseStatus: Long): Boolean
+     */
     bool should_send_suspend(int64_t cur_senders_and_close_status) const {
         if (is_closed_for_send_internal(cur_senders_and_close_status)) return false;
         return !buffer_or_rendezvous_send(channels::senders_counter(cur_senders_and_close_status));
     }
 
+    /**
+     * Returns true when the specified send should place its element to the
+     * working cell without suspension. This happens when:
+     * - The buffer has space (curSenders < bufferEnd)
+     * - A rendezvous may happen (curSenders < receivers + capacity)
+     *
+     * Transliterated from: private fun bufferOrRendezvousSend(curSenders: Long): Boolean
+     */
     bool buffer_or_rendezvous_send(int64_t cur_senders) const {
         return cur_senders < buffer_end_counter() ||
                cur_senders < receivers_counter() + capacity_;
     }
 
+    /**
+     * Checks whether a send invocation is bound to suspend with current values.
+     * This is a convenience wrapper around should_send_suspend().
+     *
+     * Transliterated from: internal open fun shouldSendSuspend(): Boolean
+     */
     virtual bool should_send_suspend() const {
         return should_send_suspend(senders_and_close_status_.load(std::memory_order_acquire));
     }
 
+    /**
+     * Special send implementation for BroadcastChannel.
+     * Returns true if the element was sent, false if the channel is closed.
+     * The onUndeliveredElement feature is not supported.
+     *
+     * Transliterated from: internal open suspend fun sendBroadcast(element: E): Boolean
+     */
     virtual void* send_broadcast(E element, Continuation<void*>* continuation) {
         if (on_undelivered_element_) {
             throw std::logic_error("the `onUndeliveredElement` feature is unsupported for `sendBroadcast(e)`");
@@ -890,7 +1116,27 @@ public:
     // =========================================================================
     // Lines 671-1004: The receive operations
     // =========================================================================
+    //
+    // The receive algorithm is symmetric to send:
+    // 1. Increment the receivers counter atomically to claim a cell
+    // 2. Find the segment containing that cell
+    // 3. Try to either:
+    //    - Retrieve a buffered element
+    //    - Rendezvous with a waiting sender
+    //    - Suspend until a sender arrives
+    // 4. After successful retrieval, call expandBuffer() to maintain buffer invariant
+    //
+    // Key difference from send: receive calls expandBuffer() after completion
+    // to move the logical buffer end forward.
 
+    /**
+     * Receives an element from this channel, suspending if the channel is empty.
+     *
+     * Throws ClosedReceiveChannelException if the channel is closed (and empty).
+     * Throws the close cause exception if the channel was cancelled.
+     *
+     * Transliterated from: override suspend fun receive(): E
+     */
     void* receive(Continuation<void*>* continuation) override {
         auto result = try_receive();
         if (result.is_success()) {
@@ -910,6 +1156,14 @@ public:
         return nullptr;
     }
 
+    /**
+     * Receives an element from this channel, wrapping the result in ChannelResult.
+     *
+     * Unlike receive(), this method does not throw on channel closure.
+     * Instead, it returns ChannelResult.closed(cause) which can be inspected.
+     *
+     * Transliterated from: override suspend fun receiveCatching(): ChannelResult<E>
+     */
     void* receive_catching(Continuation<void*>* continuation) override {
         auto result = try_receive();
         if (result.is_success() || result.is_closed()) {
@@ -923,6 +1177,17 @@ public:
         return nullptr;
     }
 
+    /**
+     * Attempts to receive an element from this channel without suspending.
+     *
+     * Returns ChannelResult.success(element) if an element was available.
+     * Returns ChannelResult.failure() if the channel is empty.
+     * Returns ChannelResult.closed(cause) if the channel is closed.
+     *
+     * Unlike receive(), this method never suspends and returns immediately.
+     *
+     * Transliterated from: override fun tryReceive(): ChannelResult<E>
+     */
     ChannelResult<E> try_receive() override {
         int64_t r = receivers_.load(std::memory_order_acquire);
         int64_t senders_and_close_status_cur = senders_and_close_status_.load(std::memory_order_acquire);
@@ -941,7 +1206,32 @@ public:
     // =========================================================================
     // Lines 1186-1467: The expandBuffer() procedure
     // =========================================================================
+    //
+    // The expandBuffer() procedure is critical for buffered channels. After a
+    // receiver retrieves an element, it calls expandBuffer() to move the
+    // logical buffer end forward, allowing another sender to buffer an element.
+    //
+    // Algorithm overview:
+    // 1. Increment bufferEnd counter to claim the next cell for buffering
+    // 2. If no sender has reached this cell yet (senders <= bufferEnd),
+    //    just update the segment reference and finish
+    // 3. Otherwise, find the cell and update its state:
+    //    - If a sender waiter is found, try to resume it (mark as BUFFERED)
+    //    - If receiver might be in cell, wrap waiter in WaiterEB and delegate
+    //    - Handle various terminal states (INTERRUPTED, POISONED, etc.)
+    //
+    // The procedure uses RESUMING_BY_EB as an intermediate state to synchronize
+    // with concurrent receive operations trying to resume the same sender.
 
+    /**
+     * Expands the logical buffer by one cell.
+     * Called after each successful receive to maintain the buffer size invariant.
+     *
+     * For rendezvous (capacity=0) or unlimited channels, this is a no-op
+     * since those channels don't have a logical buffer to expand.
+     *
+     * Transliterated from: private fun expandBuffer()
+     */
     void expand_buffer() {
         if (is_rendezvous_or_unlimited()) return;
 
@@ -977,8 +1267,17 @@ public:
         }
     }
 
+    /**
+     * Updates the working cell of the expandBuffer() procedure.
+     * This is the fast-path that handles the common case of a sender waiter.
+     *
+     * Returns true if the cell was successfully added to the buffer,
+     * false if the operation should skip this cell and try the next.
+     *
+     * Transliterated from: private fun updateCellExpandBuffer(segment, index, b): Boolean
+     */
     bool update_cell_expand_buffer(ChannelSegment<E>* segment, int index, int64_t b) {
-        // Fast-path
+        // Fast-path: check if we can directly resume a sender
         void* state = segment->get_state(index);
 
         // Check if state is a waiter (not a known symbol)
@@ -1012,6 +1311,19 @@ public:
         return update_cell_expand_buffer_slow(segment, index, b);
     }
 
+    /**
+     * Slow-path for updateCellExpandBuffer when the fast-path CAS fails.
+     * Handles all cell states according to the state machine.
+     *
+     * State transitions:
+     * - Waiter (sender): CAS to RESUMING_BY_EB, try resume, set BUFFERED or INTERRUPTED_SEND
+     * - Waiter (unknown): Wrap in WaiterEB to delegate to pairwise operation
+     * - nullptr: CAS to IN_BUFFER
+     * - BUFFERED/DONE_RCV/POISONED/etc.: Cell already processed, return true
+     * - RESUMING_BY_RCV: Spin wait for concurrent operation
+     *
+     * Transliterated from: private fun updateCellExpandBufferSlow(segment, index, b): Boolean
+     */
     bool update_cell_expand_buffer_slow(ChannelSegment<E>* segment, int index, int64_t b) {
         while (true) {
             void* state = segment->get_state(index);
@@ -1072,6 +1384,12 @@ public:
         }
     }
 
+    /**
+     * Increments the counter of completed expandBuffer() attempts.
+     * Pauses if the PAUSE_EXPAND_BUFFERS flag is set to avoid starvation.
+     *
+     * Transliterated from: private fun incCompletedExpandBufferAttempts(nAttempts: Long = 1)
+     */
     void inc_completed_expand_buffer_attempts(int64_t n_attempts = 1) {
         int64_t result = completed_expand_buffers_and_pause_flag_.fetch_add(n_attempts, std::memory_order_acq_rel) + n_attempts;
         if (eb_pause_expand_buffers(result)) {
@@ -1081,6 +1399,19 @@ public:
         }
     }
 
+    /**
+     * Waits for any in-progress expandBuffer() calls that may affect the cell
+     * at the specified global index. This is called when a receiver is cancelled
+     * to ensure the expandBuffer procedure won't touch the cancelled cell.
+     *
+     * The algorithm:
+     * 1. Wait until bufferEnd > globalIndex (cell is covered by buffer)
+     * 2. Spin briefly waiting for started == completed expandBuffer calls
+     * 3. If spin fails, set PAUSE flag to prevent new expandBuffer calls
+     * 4. Wait until counters match, then unset flag
+     *
+     * Transliterated from: private fun waitExpandBufferCompletion(globalIndex: Long)
+     */
     void wait_expand_buffer_completion(int64_t global_index) {
         if (is_rendezvous_or_unlimited()) return;
 
@@ -1144,7 +1475,26 @@ public:
     // =========================================================================
     // Lines 1746-2211: Closing and Cancellation
     // =========================================================================
+    //
+    // Channel close status transitions:
+    //   ACTIVE → CLOSED        (via close())
+    //   ACTIVE → CANCELLATION_STARTED → CANCELLED (via cancel())
+    //   CLOSED → CANCELLED     (via cancel() after close())
+    //
+    // Closing a channel:
+    // - Prevents new send() operations
+    // - Allows pending receives to complete
+    // - Does not remove buffered elements
+    //
+    // Cancelling a channel:
+    // - Prevents new send() and receive() operations
+    // - Removes all buffered elements (calling onUndeliveredElement)
+    // - Resumes all waiting senders/receivers with CancellationException
 
+    /**
+     * Returns the close cause if this channel is closed/cancelled with a cause,
+     * or nullptr if not closed or closed without a cause.
+     */
     std::exception_ptr close_cause() const {
         void* cause = close_cause_.load(std::memory_order_acquire);
         if (cause == static_cast<void*>(&NO_CLOSE_CAUSE()) || cause == nullptr) {
@@ -1165,19 +1515,43 @@ public:
         return std::make_exception_ptr(ClosedReceiveChannelException("Channel was closed"));
     }
 
+    /**
+     * Closes this channel for sending. All subsequent send() calls will throw
+     * ClosedSendChannelException. Buffered elements remain available for receive.
+     *
+     * Returns true if this invocation closed the channel, false if already closed.
+     *
+     * Transliterated from: override fun close(cause: Throwable?): Boolean
+     */
     bool close(std::exception_ptr cause = nullptr) override {
         return close_or_cancel_impl(cause, false);
     }
 
+    /**
+     * Cancels this channel with the specified cause.
+     * Returns true if this invocation cancelled the channel.
+     */
     bool cancel_with_cause(std::exception_ptr cause) {
         return cancel_impl(cause);
     }
 
+    /**
+     * Cancels this channel. All buffered elements are discarded (calling
+     * onUndeliveredElement if set), and all waiting senders/receivers are
+     * resumed with CancellationException.
+     *
+     * Transliterated from: override fun cancel(cause: CancellationException?)
+     */
     void cancel(std::exception_ptr cause = nullptr) override {
         cancel_impl(cause);
     }
 
-    // `open` in Kotlin means virtual in C++
+    /**
+     * Internal cancel implementation. Creates a default cancellation exception
+     * if cause is null, then delegates to close_or_cancel_impl.
+     *
+     * Transliterated from: protected open fun cancelImpl(cause: Throwable?): Boolean
+     */
     virtual bool cancel_impl(std::exception_ptr cause) {
         if (!cause) {
             cause = std::make_exception_ptr(std::runtime_error("Channel was cancelled"));
