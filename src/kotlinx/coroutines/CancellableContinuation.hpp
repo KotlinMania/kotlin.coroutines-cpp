@@ -1,8 +1,10 @@
 #pragma once
-// Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt
-//
-// Kotlin imports:
-// - kotlinx.coroutines.internal.*
+/**
+ * @file CancellableContinuation.hpp
+ * @brief Cancellable continuation interface with prompt cancellation guarantee
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt
+ */
 
 #include <string>
 #include <functional>
@@ -17,79 +19,122 @@
 namespace kotlinx {
 namespace coroutines {
 
-class CoroutineDispatcher; 
+class CoroutineDispatcher;
 
 // Throwable alias standard
 using Throwable = std::exception_ptr;
 
 /**
- * @brief Thread-safe cancellable continuation with atomic decision state machine support.
+ * Cancellable [continuation][Continuation] is a thread-safe continuation primitive with the support of
+ * an asynchronous cancellation.
  *
- * CancellableContinuation is a thread-safe continuation primitive that supports asynchronous
- * cancellation through an atomic decision state machine. It extends the base Continuation<T>
- * interface with cancellation capabilities and proper coordination between suspension and
- * resumption operations.
+ * Cancellable continuation can be [resumed][Continuation::resume_with], but unlike regular [Continuation],
+ * it also might be [cancelled][CancellableContinuation::cancel] explicitly or [implicitly][Job::cancel] via a parent [job][Job].
  *
- * The implementation uses a fixed suspension infrastructure that eliminates exception-based
- * hacks in favor of proper atomic coordination. This provides LLVM-optimized performance
- * and eliminates runtime overhead from exception handling.
+ * If the continuation is cancelled successfully, it resumes with a [CancellationException] or
+ * the specified cancel cause.
  *
- * ## Usage
+ * ### Usage
  *
- * An instance of CancellableContinuation can only be obtained through the
- * suspend_cancellable_coroutine function. The typical usage pattern is to suspend
- * a coroutine while waiting for a result from a callback or external source that
- * supports cancellation:
+ * An instance of `CancellableContinuation` can only be obtained by the [suspend_cancellable_coroutine] function.
+ * The interface itself is public for use and private for implementation.
+ *
+ * A typical usages of this function is to suspend a coroutine while waiting for a result
+ * from a callback or an external source of values that optionally supports cancellation:
  *
  * ```cpp
- * auto future = some_async_operation();
- * suspend_cancellable_coroutine<int>([&](auto& continuation) {
- *     future.whenComplete([&](int result, std::exception_ptr error) {
- *         if (error) {
- *             continuation.resume_with_exception(error);
- *         } else {
- *             continuation.resume(result);
- *         }
- *     });
- *     // Cancel the future if continuation is cancelled
- *     continuation.invoke_on_cancellation([&](std::exception_ptr) {
- *         future.cancel();
- *     });
- * }, caller_continuation);
+ * template<typename T>
+ * void* await(CompletableFuture<T>& future, Continuation<void*>* cont) {
+ *     return suspend_cancellable_coroutine<T>([&future](CancellableContinuation<T>& c) {
+ *         future.when_complete([&c](T result, std::exception_ptr error) {
+ *             if (error) {
+ *                 // Resume continuation with an exception if an external source failed
+ *                 c.resume_with_exception(error);
+ *             } else {
+ *                 // Resume continuation with a value if it was computed
+ *                 c.resume(result);
+ *             }
+ *         });
+ *         // Cancel the computation if the continuation itself was cancelled
+ *         c.invoke_on_cancellation([&future](std::exception_ptr) {
+ *             future.cancel(true);
+ *         });
+ *     }, cont);
+ * }
  * ```
  *
- * ## Thread Safety
+ * ### Thread-safety
  *
- * - All public methods are thread-safe and can be called concurrently
- * - Concurrent cancel() and resume() operations are coordinated atomically
- * - Only one operation will succeed in any race condition
- * - Multiple concurrent resume() attempts are considered programmatic errors
+ * Instances of [CancellableContinuation] are thread-safe and can be safely shared across multiple threads.
+ * [CancellableContinuation] allows concurrent invocations of the [cancel] and [resume] pair, guaranteeing
+ * that only one of these operations will succeed.
+ * Concurrent invocations of [resume] methods lead to a [std::logic_error] and are considered a programmatic error.
+ * Concurrent invocations of [cancel] methods is permitted, and at most one of them succeeds.
  *
- * ## Prompt Cancellation Guarantee
+ * ### Prompt cancellation guarantee
  *
- * The continuation provides prompt cancellation guarantee: if the parent Job is
- * cancelled while this continuation is suspended, it will not resume successfully,
- * even if resume() was called but not yet executed. This is enforced through the
- * atomic decision state machine.
+ * A cancellable continuation provides a **prompt cancellation guarantee**.
  *
- * ## State Machine
+ * If the [Job] of the coroutine that obtained a cancellable continuation was cancelled while this continuation was suspended it will not resume
+ * successfully, even if [CancellableContinuation::resume] was already invoked but not yet executed.
  *
- * The continuation transitions through three observable states:
+ * The cancellation of the coroutine's job is generally asynchronous with respect to the suspended coroutine.
+ * The suspended coroutine is resumed with a call to its [Continuation::resume_with] member function or to the
+ * [resume][Continuation::resume] extension function.
+ * However, when the coroutine is resumed, it does not immediately start executing but is passed to its
+ * [CoroutineDispatcher] to schedule its execution when the dispatcher's resources become available for execution.
+ * The job's cancellation can happen before, after, and concurrently with the call to `resume`. In any
+ * case, prompt cancellation guarantees that the coroutine will not resume its code successfully.
  *
- * | State      | is_active() | is_completed() | is_cancelled() |
- * |------------|-------------|----------------|----------------|
- * | Active     | true        | false          | false          |
- * | Resumed    | false       | true           | false          |
- * | Cancelled  | false       | true           | true           |
+ * If the coroutine was resumed with an exception (for example, using the [Continuation::resume_with_exception] extension
+ * function) and cancelled, then the exception thrown by the `suspend_cancellable_coroutine` function is determined
+ * by what happened first: exceptional resume or cancellation.
  *
- * State transitions:
- * - Active -> Resumed: via successful resume() call
- * - Active -> Cancelled: via successful cancel() call
+ * ### Resuming with a closeable resource
  *
- * @tparam T The result type of the continuation
+ * [CancellableContinuation] provides the capability to work with values that represent a resource that should be
+ * closed. For that, it provides `resume(value, on_cancellation)` function that guarantees that either the given
+ * `value` will be successfully returned from the corresponding `suspend` function or that `on_cancellation` will
+ * be invoked with the supplied value:
  *
- * @note This interface uses the fixed suspension infrastructure with atomic decision
- *       state machine, replacing the previous exception-based approach.
+ * ```cpp
+ * continuation.resume(resource_to_resume_with, [](std::exception_ptr, auto resource) {
+ *     // Will be invoked if the continuation is cancelled while being dispatched
+ *     resource.close();
+ * });
+ * ```
+ *
+ * #### Continuation states
+ *
+ * A cancellable continuation has three observable states:
+ *
+ * | **State**                           | [is_active] | [is_completed] | [is_cancelled] |
+ * | ----------------------------------- | ----------- | -------------- | -------------- |
+ * | _Active_ (initial state)            | `true`      | `false`        | `false`        |
+ * | _Resumed_ (final _completed_ state) | `false`     | `true`         | `false`        |
+ * | _Canceled_ (final _completed_ state)| `false`     | `true`         | `true`         |
+ *
+ * For a detailed description of each state, see the corresponding properties' documentation.
+ *
+ * A successful invocation of [cancel] transitions the continuation from an _active_ to a _cancelled_ state, while
+ * an invocation of [Continuation::resume] or [Continuation::resume_with_exception] transitions it from
+ * an _active_ to _resumed_ state.
+ *
+ * Possible state transitions diagram:
+ * ```
+ *    +-----------+   resume    +---------+
+ *    |  Active   | ----------> | Resumed |
+ *    +-----------+             +---------+
+ *          |
+ *          | cancel
+ *          V
+ *    +-----------+
+ *    | Cancelled |
+ *    +-----------+
+ * ```
+ *
+ * Transliterated from:
+ * public interface CancellableContinuation<in T> : Continuation<T>
  */
 template<typename T>
 class CancellableContinuation : public Continuation<T> {

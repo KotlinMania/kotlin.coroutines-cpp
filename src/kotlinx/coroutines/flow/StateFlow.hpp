@@ -16,14 +16,66 @@ namespace coroutines {
 namespace flow {
 
 /**
- * A SharedFlow that represents a read-only state with a single up-to-date value.
+ * A [SharedFlow] that represents a read-only state with a single updatable data [value] that emits updates
+ * to the value to its collectors. A state flow is a _hot_ flow because its active instance exists independently
+ * of the presence of collectors. Its current value can be retrieved via the [value] property.
  *
- * State flow is a SharedFlow with a replay of 1 and a specific conflation strategy.
- * It always has a value, and every time a new value is emitted, the previous value is
- * replaced (conflated) with the new one.
+ * **State flow never completes**. A call to [Flow::collect] on a state flow never completes normally, and
+ * neither does a coroutine started by the [Flow::launch_in] function. An active collector of a state flow is called a _subscriber_.
  *
- * State flow never completes. A call to collect on a state flow never completes normally,
- * and neither does a call to first on it.
+ * A [mutable state flow][MutableStateFlow] is created using `MutableStateFlow(value)` constructor function with
+ * the initial value. The value of mutable state flow can be updated by setting its [value] property.
+ * Updates to the [value] are always [conflated][Flow::conflate]. So a slow collector skips fast updates,
+ * but always collects the most recently emitted value.
+ *
+ * [StateFlow] is useful as a data-model class to represent any kind of state.
+ * Derived values can be defined using various operators on the flows, with [combine] operator being especially
+ * useful to combine values from multiple state flows using arbitrary functions.
+ *
+ * For example, the following class encapsulates an integer state and increments its value on each call to `inc`:
+ *
+ * ```cpp
+ * class CounterModel {
+ *     MutableStateFlow<int> counter_{0}; // private mutable state flow
+ * public:
+ *     StateFlow<int>& counter() { return counter_; } // exposed as read-only state flow
+ *
+ *     void inc() {
+ *         counter_.update([](int count) { return count + 1; }); // atomic, safe for concurrent use
+ *     }
+ * };
+ * ```
+ *
+ * ### Strong equality-based conflation
+ *
+ * Values in state flow are conflated using `operator==` comparison in a similar way to
+ * [distinct_until_changed] operator. It is used to conflate incoming updates
+ * to [value][MutableStateFlow::value] in [MutableStateFlow] and to suppress emission of the values to collectors
+ * when new value is equal to the previously emitted one.
+ *
+ * ### State flow is a shared flow
+ *
+ * State flow is a special-purpose, high-performance, and efficient implementation of [SharedFlow] for the narrow,
+ * but widely used case of sharing a state. See the [SharedFlow] documentation for the basic rules,
+ * constraints, and operators that are applicable to all shared flows.
+ *
+ * State flow always has an initial value, replays one most recent value to new subscribers, does not buffer any
+ * more values, but keeps the last emitted one, and does not support [reset_replay_cache][MutableSharedFlow::reset_replay_cache].
+ *
+ * ### Concurrency
+ *
+ * All methods of state flow are **thread-safe** and can be safely invoked from concurrent coroutines without
+ * external synchronization.
+ *
+ * ### Implementation notes
+ *
+ * State flow implementation is optimized for memory consumption and allocation-freedom. It uses a lock to ensure
+ * thread-safety, but suspending collector coroutines are resumed outside of this lock to avoid dead-locks when
+ * using unconfined coroutines. Adding new subscribers has `O(1)` amortized cost, but updating a [value] has `O(N)`
+ * cost, where `N` is the number of active subscribers.
+ *
+ * Transliterated from:
+ * public interface StateFlow<out T> : SharedFlow<T>
  */
 template<typename T>
 struct StateFlow : public SharedFlow<T> {
@@ -31,21 +83,38 @@ struct StateFlow : public SharedFlow<T> {
 
     /**
      * The current value of this state flow.
+     *
+     * Transliterated from:
+     * public val value: T
      */
     virtual T value() const = 0;
 };
 
 /**
- * A mutable StateFlow that provides a setter for value.
+ * A mutable [StateFlow] that provides a setter for [value].
+ * An instance of `MutableStateFlow` with the given initial `value` can be created using
+ * `MutableStateFlow(value)` constructor function.
  *
- * See StateFlow documentation for details on state flows.
+ * See the [StateFlow] documentation for details on state flows.
+ * Note that all emission-related operators, such as [value]'s setter, [emit], and [try_emit], are conflated
+ * using `operator==`.
  *
- * A mutable state flow is created using MutableStateFlow(value) constructor function
- * with the initial value. The value of mutable state flow can be updated by setting
- * its value property. Updates to the value are always conflated.
+ * ### Comparison with SharedFlow
  *
- * MutableStateFlow can be used as a communication mechanism between coroutines
- * or between different parts of the application.
+ * `MutableStateFlow(initial_value)` is a shared flow with the following parameters:
+ *
+ * ```cpp
+ * auto shared = MutableSharedFlow<T>(
+ *     /*replay=*/1,
+ *     /*extra_buffer_capacity=*/0,
+ *     /*on_buffer_overflow=*/BufferOverflow::DROP_OLDEST
+ * );
+ * shared.try_emit(initial_value); // emit the initial value
+ * auto state = distinct_until_changed(shared); // get StateFlow-like behavior
+ * ```
+ *
+ * Transliterated from:
+ * public interface MutableStateFlow<T> : StateFlow<T>, MutableSharedFlow<T>
  */
 template<typename T>
 class MutableStateFlow : public StateFlow<T> {

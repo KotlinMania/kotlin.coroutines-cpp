@@ -1,22 +1,24 @@
 #pragma once
 /**
+ * @file BufferedChannel.hpp
+ * @brief The buffered channel implementation
+ *
  * Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt
- * Lines: 1-3116
+ *
+ * The buffered channel implementation, which also serves as a rendezvous channel when the capacity is zero.
+ * The high-level structure bases on a conceptually infinite array for storing elements and waiting requests,
+ * separate counters of [send] and [receive] invocations that were ever performed, and an additional counter
+ * that indicates the end of the logical buffer by counting the number of array cells it ever contained.
+ *
+ * The key idea is that both [send] and [receive] start by incrementing their counters, assigning the array cell
+ * referenced by the counter. In case of rendezvous channels, the operation either suspends and stores its continuation
+ * in the cell or makes a rendezvous with the opposite request. Each cell can be processed by exactly one [send] and
+ * one [receive]. As for buffered channels, [send]-s can also add elements without suspension if the logical buffer
+ * contains the cell, while the [receive] operation updates the end of the buffer when its synchronization finishes.
+ *
+ * Please see the ["Fast and Scalable Channels in Kotlin Coroutines"](https://arxiv.org/abs/2211.04986)
+ * paper by Nikita Koval, Roman Elizarov, and Dan Alistarh for the detailed algorithm description.
  */
-// @file:Suppress("PrivatePropertyName")
-//
-// Kotlin imports:
-// - kotlinx.atomicfu.*
-// - kotlinx.coroutines.*
-// - kotlinx.coroutines.channels.ChannelResult.Companion.{closed, failure, success}
-// - kotlinx.coroutines.internal.*
-// - kotlinx.coroutines.selects.*
-// - kotlinx.coroutines.selects.TrySelectDetailedResult.*
-// - kotlin.coroutines.*
-// - kotlin.js.*
-// - kotlin.jvm.*
-// - kotlin.math.*
-// - kotlin.reflect.*
 
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
