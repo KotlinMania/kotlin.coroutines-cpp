@@ -1,7 +1,17 @@
-#pragma once
 /**
+ * @file FlowBuilders.hpp
+ * @brief Flow creation functions: flow, flow_of, as_flow, empty_flow, channel_flow
+ *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt
+ *
+ * This file provides functions for creating Flow instances:
+ * - flow(): The primary builder for creating cold flows
+ * - flow_of(): Creates flows from values or initializer lists
+ * - as_flow(): Converts iterables/vectors to flows
+ * - empty_flow(): Returns an empty flow
+ * - channel_flow(): Creates a flow backed by a channel (hot flow)
  */
+#pragma once
 
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
@@ -21,9 +31,47 @@ namespace kotlinx {
 namespace coroutines {
 namespace flow {
 
-// Temporarily disable Flow builder stubs with complex types until full C++ port is ready.
 /**
- * Creates a flow from the given suspendable block.
+ * Creates a _cold_ flow from the given suspendable block.
+ * The flow being _cold_ means that the block is called every time a terminal operator is applied to the resulting flow.
+ *
+ * Example of usage:
+ *
+ * ```cpp
+ * auto fibonacci() {
+ *     return flow<long long>([](FlowCollector<long long>* emit, Continuation<void*>* cont) -> void* {
+ *         long long x = 0, y = 1;
+ *         while (true) {
+ *             emit->emit(x, cont);
+ *             std::tie(x, y) = std::make_tuple(y, x + y);
+ *         }
+ *         return nullptr;
+ *     });
+ * }
+ *
+ * fibonacci() | take(100) | collect([](long long v) { std::cout << v << "\n"; });
+ * ```
+ *
+ * Emissions from flow builder are cancellable by default &mdash; each call to emit
+ * also calls ensure_active.
+ *
+ * emit should happen strictly in the dispatchers of the block in order to preserve the flow context.
+ * For example, the following code will result in an exception:
+ *
+ * ```cpp
+ * flow<int>([](FlowCollector<int>* emit, Continuation<void*>* cont) -> void* {
+ *     emit->emit(1, cont); // Ok
+ *     with_context(Dispatchers::IO, [&]() {
+ *         emit->emit(2, cont); // Will fail with ISE
+ *     });
+ *     return nullptr;
+ * });
+ * ```
+ *
+ * If you want to switch the context of execution of a flow, use the flow_on operator.
+ *
+ * Transliterated from:
+ * public fun <T> flow(block: suspend FlowCollector<T>.() -> Unit): Flow<T> = SafeFlow(block)
  */
 template <typename T>
 std::shared_ptr<Flow<T>> flow(std::function<void*(FlowCollector<T>*, Continuation<void*>*)> block) {
@@ -39,7 +87,20 @@ std::shared_ptr<Flow<T>> flow(std::function<void*(FlowCollector<T>*, Continuatio
 }
 
 /**
- * Creates a flow that produces a single value from the given functional type.
+ * Creates a _cold_ flow that produces a single value from the given functional type.
+ *
+ * The function is invoked each time the flow is collected, making this
+ * useful for wrapping lazy computations as flows.
+ *
+ * Example of usage:
+ *
+ * ```cpp
+ * auto remote_call() -> Data { ... }
+ * auto remote_call_flow() { return as_flow<Data>(remote_call); }
+ * ```
+ *
+ * Transliterated from:
+ * public fun <T> (() -> T).asFlow(): Flow<T>
  */
 template <typename T>
 std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
@@ -49,7 +110,13 @@ std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
 }
 
 /**
- * Creates a flow that produces values from the given iterable.
+ * Creates a _cold_ flow that produces values from the given iterable (vector).
+ *
+ * The vector elements are emitted in order each time the flow is collected.
+ * Each collection starts from the beginning of the vector.
+ *
+ * Transliterated from:
+ * public fun <T> Iterable<T>.asFlow(): Flow<T>
  */
 template <typename T>
 std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
