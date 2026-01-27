@@ -1,12 +1,16 @@
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/ConcurrentLinkedList.kt
-//
-// TODO: This is a mechanical transliteration - semantics not fully implemented
-// TODO: atomicfu library needs C++ equivalent (std::atomic or custom)
-// TODO: Inline functions and lambda captures need proper C++ implementation
-// TODO: Segment and Node template patterns need careful design
-// TODO: @JvmField, @JvmInline annotations - JVM-specific, translate to comments
-// TODO: Loop constructs with atomic operations need lock-free algorithm review
+/**
+ * @file ConcurrentLinkedList.cpp
+ * @brief Implementation of lock-free linked list segments for coroutine queues
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/ConcurrentLinkedList.kt
+ *
+ * TODO(semantics): This is a mechanical transliteration - semantics not fully implemented
+ * TODO(port): atomicfu library needs C++ equivalent (std::atomic or custom)
+ * TODO(port): Inline functions and lambda captures need proper C++ implementation
+ * TODO(port): Segment and Node template patterns need careful design
+ * TODO(port): @JvmField, @JvmInline annotations - JVM-specific, translate to comments
+ * TODO(semantics): Loop constructs with atomic operations need lock-free algorithm review
+ */
 
 #include <atomic>
 #include <functional>
