@@ -30,7 +30,7 @@ namespace kotlinx {
         // TODO: inline function with crossinline
         template<typename F>
         Runnable *make_runnable(F block) {
-            class RunnableImpl : Runnable {
+            class RunnableImpl : public Runnable {
             private:
                 F block;
 

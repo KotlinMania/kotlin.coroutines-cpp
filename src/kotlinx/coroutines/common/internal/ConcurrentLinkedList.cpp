@@ -246,7 +246,7 @@ namespace kotlinx {
  */
             // TODO: NotCompleted struct - needs implementation
             template<typename S>
-            class Segment : ConcurrentLinkedListNode<S> {
+            class Segment : public ConcurrentLinkedListNode<S> {
             public:
                 const long id;
 
