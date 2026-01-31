@@ -247,8 +247,7 @@ public:
         if (this->capacity() == channels::CHANNEL_OPTIONAL) {
              return channel_;
         }
-        // return internal::ChannelFlow<T>::produce_impl(scope); // Disabled due to compilation issues in Produce.hpp
-        throw std::runtime_error("ChannelAsFlow::produce_impl not fully implemented due to infra compilation issues");
+        return internal::ChannelFlow<T>::produce_impl(scope);
     }
 
     void* collect(FlowCollector<T>* collector, Continuation<void*>* cont) override {

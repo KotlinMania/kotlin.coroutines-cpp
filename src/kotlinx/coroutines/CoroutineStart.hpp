@@ -347,6 +347,33 @@ enum class CoroutineStart {
     UNDISPATCHED
 };
 
+/**
+ * Invokes the coroutine block with the given start strategy.
+ * This mimics the Kotlin `CoroutineStart.invoke` operator.
+ */
+template <typename Block, typename R, typename T>
+void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<Continuation<T>> completion) {
+    if (start == CoroutineStart::LAZY) {
+        // TODO: Handle Lazy start
+        return;
+    }
+
+    try {
+        // Execute the block immediately for DEFAULT/ATOMIC/UNDISPATCHED (synchronous simulation)
+        // In a real suspend world, this would start the state machine.
+        if constexpr (std::is_invocable_v<Block, R>) {
+            auto result = std::invoke(std::forward<Block>(block), std::forward<R>(receiver));
+            if (completion) {
+                completion->resume_with(Result<T>(result));
+            }
+        }
+    } catch (...) {
+        if (completion) {
+            completion->resume_with(Result<T>(std::current_exception()));
+        }
+    }
+}
+
 // Extension methods for CoroutineStart
 class CoroutineStartExtensions {
 public:

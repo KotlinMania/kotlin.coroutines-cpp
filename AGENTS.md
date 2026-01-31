@@ -265,7 +265,14 @@ make ast-stats
 make ast-missing
 
 # Full porting report
+# Full porting report
 make porting-report
+
+# Single-file analysis (new!)
+# You can run these tools on individual files to verify your work:
+# ast_distance --stats src/path/to/File.hpp
+# ast_distance --lint src/path/to/File.hpp
+# ast_distance --todos src/path/to/File.hpp
 ```
 
 ### Responding to Tool Output
@@ -306,6 +313,8 @@ Always include this header in transliterated files for proper matching:
 | 0.60–0.85 | Good | Review for refinements |
 | 0.40–0.60 | Partial | Prioritize completion |
 | < 0.40 | Stub | **Needs full implementation** |
+
+**Note on C++ Namespaces:** The tool now automatically flattens C++ `namespace` and `declaration_list` nesting during comparison. You do not need to artificially flatten your C++ code to match Kotlin's structure; write idiomatic C++ namespaces (`namespace kotlinx::coroutines { ... }`).
 
 ---
 
