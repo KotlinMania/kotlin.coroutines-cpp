@@ -1,5 +1,5 @@
 #pragma once
-// port-lint: source tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Flow.kt
+// port-lint: source kotlinx-coroutines-core/common/src/flow/Flow.kt
 
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"

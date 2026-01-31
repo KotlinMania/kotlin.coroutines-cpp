@@ -562,9 +562,10 @@ public:
                 if (tgt_file.transliterated_from.find(src_file.relative_path) != std::string::npos) {
                     match_score = 1.0f;  // Full path match
                 }
-                // Check if transliterated_from ends with the filename (good match)
-                else if (tgt_file.transliterated_from.find("/" + src_file.filename) != std::string::npos ||
-                         tgt_file.transliterated_from.ends_with(src_file.filename)) {
+                // Check if transliterated_from ends with the EXACT filename (not substring)
+                // Use ends_with to avoid Flow.kt matching StateFlow.kt
+                else if (tgt_file.transliterated_from.ends_with("/" + src_file.filename) ||
+                         tgt_file.transliterated_from == src_file.filename) {
                     // Also verify directory context matches
                     std::string tgt_dir = tgt_file.qualified_name;
                     std::string src_dir = src_file.qualified_name;
@@ -579,8 +580,9 @@ public:
                         match_score = 0.5f;  // Just filename match, different directory
                     }
                 }
-                // Loose check - transliterated_from contains stem (weakest)
-                else if (tgt_file.transliterated_from.find("/" + src_file.stem + ".") != std::string::npos) {
+                // Loose check - transliterated_from ends with stem (stricter than find)
+                else if (tgt_file.transliterated_from.ends_with("/" + src_file.stem + ".kt") ||
+                         tgt_file.transliterated_from.ends_with("/" + src_file.stem + ".rs")) {
                     match_score = 0.3f;  // Stem found but not as confident
                 }
 

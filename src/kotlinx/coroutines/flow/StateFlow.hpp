@@ -8,6 +8,7 @@
  */
 
 #include "kotlinx/coroutines/flow/SharedFlow.hpp"
+#include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
 #include <mutex>
@@ -74,6 +75,67 @@ public:
  */
 template<typename T>
 std::shared_ptr<MutableStateFlow<T>> make_mutable_state_flow(T initial_value);
+
+// ------------------------------------ Update methods ------------------------------------
+
+/**
+ * Updates the MutableStateFlow::value atomically using the specified function of its value,
+ * and returns the new value.
+ *
+ * function may be evaluated multiple times, if value is being concurrently updated.
+ *
+ * Transliterated from:
+ * public inline fun <T> MutableStateFlow<T>.updateAndGet(function: (T) -> T): T
+ */
+template<typename T, typename Func>
+T update_and_get(MutableStateFlow<T>& flow, Func function) {
+    while (true) {
+        T prev_value = flow.value();
+        T next_value = function(prev_value);
+        if (flow.compare_and_set(prev_value, next_value)) {
+            return next_value;
+        }
+    }
+}
+
+/**
+ * Updates the MutableStateFlow::value atomically using the specified function of its value,
+ * and returns its prior value.
+ *
+ * function may be evaluated multiple times, if value is being concurrently updated.
+ *
+ * Transliterated from:
+ * public inline fun <T> MutableStateFlow<T>.getAndUpdate(function: (T) -> T): T
+ */
+template<typename T, typename Func>
+T get_and_update(MutableStateFlow<T>& flow, Func function) {
+    while (true) {
+        T prev_value = flow.value();
+        T next_value = function(prev_value);
+        if (flow.compare_and_set(prev_value, next_value)) {
+            return prev_value;
+        }
+    }
+}
+
+/**
+ * Updates the MutableStateFlow::value atomically using the specified function of its value.
+ *
+ * function may be evaluated multiple times, if value is being concurrently updated.
+ *
+ * Transliterated from:
+ * public inline fun <T> MutableStateFlow<T>.update(function: (T) -> T)
+ */
+template<typename T, typename Func>
+void update(MutableStateFlow<T>& flow, Func function) {
+    while (true) {
+        T prev_value = flow.value();
+        T next_value = function(prev_value);
+        if (flow.compare_and_set(prev_value, next_value)) {
+            return;
+        }
+    }
+}
 
 } // namespace flow
 } // namespace coroutines
@@ -487,8 +549,41 @@ std::shared_ptr<MutableStateFlow<T>> make_mutable_state_flow(T initial_value) {
 } // namespace kotlinx::coroutines::flow::internal
 
 namespace kotlinx::coroutines::flow {
-    template<typename T>
+
+template<typename T>
     std::shared_ptr<MutableStateFlow<T>> MutableStateFlow_func(T value) {
         return internal::make_mutable_state_flow(value);
+    }
+
+    /**
+     * Fuses StateFlow with the given context, capacity, and overflow strategy.
+     * StateFlow is always conflated so additional conflation does not have any effect.
+     *
+     * Transliterated from:
+     * internal fun <T> StateFlow<T>.fuseStateFlow(
+     *     context: CoroutineContext,
+     *     capacity: Int,
+     *     onBufferOverflow: BufferOverflow
+     * ): Flow<T>
+     */
+    template<typename T>
+    std::shared_ptr<Flow<T>> fuse_state_flow(
+        StateFlow<T>& flow,
+        std::shared_ptr<CoroutineContext> context,
+        int capacity,
+        channels::BufferOverflow on_buffer_overflow
+    ) {
+        // State flow is always conflated so additional conflation does not have any effect.
+        // assert { capacity != Channel.CONFLATED } // should be desugared by callers
+        
+        if ((capacity >= 0 && capacity <= 1) || capacity == channels::CHANNEL_BUFFERED) {
+            if (on_buffer_overflow == channels::BufferOverflow::DROP_OLDEST) {
+                return std::shared_ptr<Flow<T>>(&flow, [](Flow<T>*) {}); // Return as-is (non-owning)
+            }
+        }
+        
+        // Otherwise, fuse using SharedFlow logic
+        // TODO: Implement fuse_shared_flow for full parity
+        return std::shared_ptr<Flow<T>>(&flow, [](Flow<T>*) {}); // Placeholder
     }
 }
