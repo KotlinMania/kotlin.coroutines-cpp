@@ -242,7 +242,7 @@ class AbstractFlow : public CancellableFlow<T> {
 public:
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
         // Context preservation: use the collector's context or the continuation's context
-        auto collect_context = continuation ? continuation->context() : EmptyCoroutineContext::instance();
+        auto collect_context = continuation ? continuation->get_context() : EmptyCoroutineContext::instance();
         internal::SafeCollector<T> safe_collector(collector, collect_context);
 
         void* result = nullptr;
