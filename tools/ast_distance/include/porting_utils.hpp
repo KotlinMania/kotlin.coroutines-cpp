@@ -178,14 +178,20 @@ public:
     }
 
     /**
-     * Extract "Transliterated from:" header from a file.
-     * Returns the Kotlin source path if found.
+     * Extract source path header from a file.
+     * Recognizes formats:
+     *   - "Transliterated from: path/to/file.kt"
+     *   - "// port-lint: source path/to/file.rs"
+     *   - "// port-lint: source codex-rs/path/to/file.rs"
+     * Returns the source path if found.
      */
     static std::string extract_transliterated_from(const std::string& filepath) {
         std::ifstream file(filepath);
         if (!file.is_open()) return "";
 
+        // Match "Transliterated from: *.kt" or "port-lint: source *.rs"
         std::regex trans_re(R"(Transliterated from:\s*(.+\.kt))", std::regex::icase);
+        std::regex portlint_re(R"(port-lint:\s*source\s+(.+\.rs))", std::regex::icase);
         std::string line;
         int line_count = 0;
 
@@ -193,9 +199,18 @@ public:
             std::smatch match;
             if (std::regex_search(line, match, trans_re)) {
                 std::string result = match[1].str();
-                // Trim whitespace
                 result.erase(0, result.find_first_not_of(" \t\r\n"));
                 result.erase(result.find_last_not_of(" \t\r\n") + 1);
+                return result;
+            }
+            if (std::regex_search(line, match, portlint_re)) {
+                std::string result = match[1].str();
+                result.erase(0, result.find_first_not_of(" \t\r\n"));
+                result.erase(result.find_last_not_of(" \t\r\n") + 1);
+                // Strip "codex-rs/" prefix if present
+                if (result.substr(0, 9) == "codex-rs/") {
+                    result = result.substr(9);
+                }
                 return result;
             }
         }
@@ -417,7 +432,8 @@ public:
     }
 
     /**
-     * Scan a directory for all C++ files and analyze them.
+     * Scan a directory for source files and analyze them.
+     * Supports C++ (.hpp, .cpp, .h), Kotlin (.kt), and Rust (.rs) files.
      */
     static std::vector<FileStats> analyze_directory(const std::string& directory) {
         std::vector<FileStats> results;
@@ -428,8 +444,9 @@ public:
             std::string path = entry.path().string();
             std::string ext = entry.path().extension().string();
 
-            // Skip non-C++ files
-            if (ext != ".hpp" && ext != ".cpp" && ext != ".h") continue;
+            // Support C++, Kotlin, and Rust files
+            if (ext != ".hpp" && ext != ".cpp" && ext != ".h" &&
+                ext != ".kt" && ext != ".kts" && ext != ".rs") continue;
 
             // Skip vendor, build, tmp directories
             if (path.find("/vendor/") != std::string::npos ||
