@@ -104,7 +104,7 @@ public:
     bool allocate_locked(StateFlowImplBase* flow) override {
         // No need for atomic check & update here, since allocated happens under StateFlow lock
         if (state_.load(std::memory_order_relaxed) != nullptr) return false;
-        state_.store(internal::symbol("NONE"), std::memory_order_relaxed); // NONE symbol
+        state_.store(get_none_symbol(), std::memory_order_relaxed); // NONE symbol
         return true;
     }
 
@@ -121,9 +121,18 @@ public:
 };
 
 // PENDING/NONE Symbols helpers
-inline void* get_pending_symbol() { return internal::symbol("PENDING"); }
-inline void* get_none_symbol() { return internal::symbol("NONE"); }
-inline void* get_null_symbol() { return internal::symbol("NULL"); }
+inline internal::Symbol* get_pending_symbol() { 
+    static auto* s = new internal::Symbol("PENDING"); 
+    return s; 
+}
+inline internal::Symbol* get_none_symbol() { 
+    static auto* s = new internal::Symbol("NONE"); 
+    return s; 
+}
+inline internal::Symbol* get_null_symbol() { 
+    static auto* s = new internal::Symbol("NULL"); 
+    return s; 
+}
 
 /**
  * Internal implementation of StateFlow.
@@ -136,8 +145,7 @@ class StateFlowImpl
     : public StateFlowImplBase,
       public AbstractSharedFlow<StateFlowSlot, StateFlowImpl<T>>,
       public MutableStateFlow<T>,
-      public internal::CancellableFlow<T>,
-      public internal::FusibleFlow<T>
+      public CancellableFlow<T>
 {
 private:
     std::atomic<void*> state_; // Boxed T
@@ -319,7 +327,7 @@ public:
                                     
                                     // collector->emit(value, cont) is suspendable.
                                     // We need to provide a continuation that calls step() again.
-                                    auto loop_cont = new LoopContinuation(shared_from_this());
+                                    auto loop_cont = new LoopContinuation(this->shared_from_this());
                                     // Optimistic suspend check? 
                                     // For parity, we assume it might suspend.
                                     // Check if we can just call it? 
@@ -346,9 +354,9 @@ public:
                                 // 3. Wait for updates
                                 if (!slot->take_pending()) {
                                     // slot->await_pending(cont) returns void*
-                                    auto await_cont = new LoopContinuation(shared_from_this());
+                                    auto await_cont = new LoopContinuation(this->shared_from_this());
                                     void* res = slot->await_pending(await_cont);
-                                    if (res == internal::COROUTINE_SUSPENDED) {
+                                    if (res == COROUTINE_SUSPENDED) {
                                         return; // Suspend loop
                                     }
                                     // If strict, await_pending only returns deferred?
@@ -363,7 +371,7 @@ public:
                     
                     void finish(std::exception_ptr e) {
                         flow->free_slot(slot);
-                        if (e) completion->resume_with(Result<void*>::failure(e));
+                        if (e) completion->resume_with(Result<void>::failure(e));
                         // Else? Loop never completes normally.
                     }
                 };
