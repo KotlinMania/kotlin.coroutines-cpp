@@ -98,6 +98,13 @@ enum class NodeType : int {
     FUNC_TYPE = 73,
     GENERIC_TYPE = 74,
 
+    // Operators (captured from unnamed nodes for semantic awareness)
+    ARITHMETIC_OP = 75,
+    COMPARISON_OP = 76,
+    LOGICAL_OP = 77,
+    BITWISE_OP = 78,
+    ASSIGNMENT_OP = 79,
+
     // Other
     COMMENT = 80,
     IMPORT = 81,

@@ -402,9 +402,52 @@ private:
         // Recursively process children
         for (uint32_t i = 0; i < child_count; ++i) {
             TSNode child = ts_node_child(node, i);
-            // Skip unnamed nodes (syntax tokens like punctuation)
+
             if (ts_node_is_named(child)) {
+                // Named nodes are always included
                 tree_node->add_child(convert_node(child, source, lang));
+            } else {
+                // Capture semantically significant unnamed nodes (operators)
+                const char* child_type = ts_node_type(child);
+                std::string op_str(child_type);
+
+                // Arithmetic operators
+                if (op_str == "+" || op_str == "-" || op_str == "*" ||
+                    op_str == "/" || op_str == "%" || op_str == "**") {
+                    auto op_node = std::make_shared<Tree>(
+                        static_cast<int>(NodeType::ARITHMETIC_OP), child_type);
+                    tree_node->add_child(op_node);
+                }
+                // Comparison operators
+                else if (op_str == "==" || op_str == "!=" || op_str == "<" ||
+                         op_str == ">" || op_str == "<=" || op_str == ">=" ||
+                         op_str == "===" || op_str == "!==") {
+                    auto op_node = std::make_shared<Tree>(
+                        static_cast<int>(NodeType::COMPARISON_OP), child_type);
+                    tree_node->add_child(op_node);
+                }
+                // Logical operators
+                else if (op_str == "&&" || op_str == "||" || op_str == "!") {
+                    auto op_node = std::make_shared<Tree>(
+                        static_cast<int>(NodeType::LOGICAL_OP), child_type);
+                    tree_node->add_child(op_node);
+                }
+                // Bitwise operators
+                else if (op_str == "&" || op_str == "|" || op_str == "^" ||
+                         op_str == "~" || op_str == "<<" || op_str == ">>") {
+                    auto op_node = std::make_shared<Tree>(
+                        static_cast<int>(NodeType::BITWISE_OP), child_type);
+                    tree_node->add_child(op_node);
+                }
+                // Assignment operators
+                else if (op_str == "=" || op_str == "+=" || op_str == "-=" ||
+                         op_str == "*=" || op_str == "/=" || op_str == "%=" ||
+                         op_str == "&=" || op_str == "|=" || op_str == "^=" ||
+                         op_str == "<<=" || op_str == ">>=") {
+                    auto op_node = std::make_shared<Tree>(
+                        static_cast<int>(NodeType::ASSIGNMENT_OP), child_type);
+                    tree_node->add_child(op_node);
+                }
             }
         }
 

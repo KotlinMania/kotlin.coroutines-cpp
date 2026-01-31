@@ -16,8 +16,48 @@ public:
     static constexpr int NUM_NODE_TYPES = static_cast<int>(NodeType::NUM_TYPES);
 
     /**
-     * Cosine similarity based on node type histogram.
-     * Fast baseline method.
+     * Get semantic weight for a node type.
+     * Structural nodes (CLASS, FUNCTION, IF) have higher weight.
+     * Common nodes (VARIABLE, VAR_DECL) have lower weight.
+     */
+    static float get_node_weight(int node_type) {
+        NodeType nt = static_cast<NodeType>(node_type);
+
+        // Critical structural elements: weight 5.0
+        if (nt == NodeType::CLASS || nt == NodeType::STRUCT ||
+            nt == NodeType::FUNCTION || nt == NodeType::IF ||
+            nt == NodeType::WHILE || nt == NodeType::FOR ||
+            nt == NodeType::SWITCH || nt == NodeType::TRY ||
+            nt == NodeType::INTERFACE || nt == NodeType::ENUM) {
+            return 5.0f;
+        }
+
+        // Important operations: weight 2.0
+        if (nt == NodeType::CALL || nt == NodeType::METHOD_CALL ||
+            nt == NodeType::RETURN || nt == NodeType::THROW ||
+            nt == NodeType::LAMBDA || nt == NodeType::COMPARISON_OP ||
+            nt == NodeType::LOGICAL_OP) {
+            return 2.0f;
+        }
+
+        // Operators: weight 1.5 (semantic awareness improvement)
+        if (nt == NodeType::ARITHMETIC_OP || nt == NodeType::BITWISE_OP ||
+            nt == NodeType::ASSIGNMENT_OP) {
+            return 1.5f;
+        }
+
+        // Common/boilerplate: weight 0.5
+        if (nt == NodeType::VARIABLE || nt == NodeType::VAR_DECL) {
+            return 0.5f;
+        }
+
+        // Default weight
+        return 1.0f;
+    }
+
+    /**
+     * Weighted cosine similarity based on node type histogram.
+     * Uses semantic importance weighting to prioritize structural differences.
      */
     static float histogram_cosine_similarity(Tree* tree1, Tree* tree2) {
         auto hist1 = tree1->node_type_histogram(NUM_NODE_TYPES);
@@ -25,9 +65,13 @@ public:
 
         float dot = 0.0f, norm1 = 0.0f, norm2 = 0.0f;
         for (int i = 0; i < NUM_NODE_TYPES; ++i) {
-            dot += static_cast<float>(hist1[i]) * static_cast<float>(hist2[i]);
-            norm1 += static_cast<float>(hist1[i]) * static_cast<float>(hist1[i]);
-            norm2 += static_cast<float>(hist2[i]) * static_cast<float>(hist2[i]);
+            float weight = get_node_weight(i);
+            float weighted1 = weight * static_cast<float>(hist1[i]);
+            float weighted2 = weight * static_cast<float>(hist2[i]);
+
+            dot += weighted1 * weighted2;
+            norm1 += weighted1 * weighted1;
+            norm2 += weighted2 * weighted2;
         }
 
         if (norm1 < 1e-8f || norm2 < 1e-8f) return 0.0f;
