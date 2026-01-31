@@ -807,7 +807,7 @@ void cmd_init_tasks(const std::string& src_dir, const std::string& src_lang,
 
     // Add missing files as tasks (sorted by dependents)
     std::vector<const SourceFile*> pending_files;
-    
+
     // 1. Missing files
     for (const auto& path : comp.unmatched_source) {
         pending_files.push_back(&source.files.at(path));
