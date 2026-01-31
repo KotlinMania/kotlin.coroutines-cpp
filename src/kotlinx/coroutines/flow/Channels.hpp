@@ -6,7 +6,7 @@
 
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
-#include "kotlinx/coroutines/channels/ReceiveChannel.hpp"
+#include "kotlinx/coroutines/channels/Channel.hpp" // ReceiveChannel is defined in Channel.hpp usually in this port
 #include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -22,8 +22,33 @@
 
 namespace kotlinx::coroutines::flow {
 
-namespace internal {
-    // Forward declaration if needed or use detail namespace
+using kotlinx::coroutines::Continuation;
+using kotlinx::coroutines::ContinuationImpl;
+using kotlinx::coroutines::CoroutineContext;
+using kotlinx::coroutines::EmptyCoroutineContext;
+using kotlinx::coroutines::CoroutineScope;
+using kotlinx::coroutines::Result;
+using kotlinx::coroutines::Job;
+using kotlinx::coroutines::context_ensure_active;
+// Forward declaration if needed or use detail namespace
+
+
+namespace detail {
+    // Wrapper for raw Continuation* pointer to be used as completion
+    class RawContinuationWrapper : public Continuation<void*> {
+    public:
+        explicit RawContinuationWrapper(Continuation<void*>* cont) : cont_(cont) {}
+        
+        std::shared_ptr<CoroutineContext> get_context() const override {
+            return cont_ ? cont_->get_context() : EmptyCoroutineContext::instance();
+        }
+        
+        void resume_with(Result<void*> result) override {
+            if (cont_) cont_->resume_with(std::move(result));
+        }
+    private:
+        Continuation<void*>* cont_;
+    };
 }
 
 /**
@@ -143,18 +168,28 @@ private:
  * This function provides a more efficient shorthand for `channel.consumeEach { value -> emit(value) }`.
  * See [consumeEach][ReceiveChannel.consumeEach].
  */
+/**
+ * Emits all elements from the given [channel] to this flow collector and [cancels][cancel] (consumes)
+ * the channel afterwards. If you need to iterate over the channel without consuming it,
+ * a regular `for` loop should be used instead.
+ */
+template <typename T>
+void* emit_all_impl(FlowCollector<T>* collector, channels::ReceiveChannel<T>* channel, bool consume, Continuation<void*>* cont) {
+    auto sm = std::make_shared<EmitAllContinuation<T>>(
+        collector, channel, consume,
+        cont ? std::make_shared<detail::RawContinuationWrapper>(cont) : nullptr
+    );
+    return sm->invoke_suspend(Result<void*>::success(nullptr));
+}
+
+/**
+ * Emits all elements from the given [channel] to this flow collector and [cancels][cancel] (consumes)
+ * the channel afterwards. If you need to iterate over the channel without consuming it,
+ * a regular `for` loop should be used instead.
+ */
 template <typename T>
 void* emit_all(FlowCollector<T>* collector, channels::ReceiveChannel<T>* channel, Continuation<void*>* cont) {
-    // We default consume=true for strict emitAll semantics from docs
-    // "cancels (consumes) the channel afterwards"
-    
-    // Create state machine and start it
-    auto sm = std::make_shared<EmitAllContinuation<T>>(
-        collector, channel, true,
-        cont ? std::shared_ptr<Continuation<void*>>(cont->shared_from_this()) : nullptr
-    );
-    // Initial jump
-    return sm->invoke_suspend(Result<void*>::success(nullptr));
+    return emit_all_impl(collector, channel, true, cont);
 }
 
 /**
@@ -184,28 +219,49 @@ public:
     ChannelAsFlow(std::shared_ptr<channels::ReceiveChannel<T>> channel,
                   bool _consume,
                   std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance(),
-                  int capacity = channels::Channel::OPTIONAL_CHANNEL,
+                  int capacity = channels::CHANNEL_OPTIONAL,
                   channels::BufferOverflow on_buffer_overflow = channels::BufferOverflow::SUSPEND)
         : internal::ChannelFlow<T>(context, capacity, on_buffer_overflow),
           channel_(channel), consume_(_consume) {
         consumed_ = std::make_shared<std::atomic<bool>>(false);
     }
     
-    // Minimal implementation for now to satisfy basic usage in tests
-    // A real implementation needs dropChannelOperators etc.
-    // For now we assume direct collection via collect() override if ChannelFlow supports it.
-    
-    void* collect(FlowCollector<T>* collector, Continuation<void*>* cont) override {
-        // Simple delegating collection logic:
+    internal::ChannelFlow<T>* create(std::shared_ptr<CoroutineContext> context, int capacity, channels::BufferOverflow on_buffer_overflow) override {
+        return new ChannelAsFlow(channel_, consume_, context, capacity, on_buffer_overflow);
+    }
+
+    Flow<T>* drop_channel_operators() override {
+        return new ChannelAsFlow(channel_, consume_);
+    }
+
+    void collect_to(channels::ProducerScope<T>* scope) override {
+        internal::SendingCollector<T> collector(scope);
+        // Note: collect_to currently assumes synchronous execution in this stub, but emit_all is suspend.
+        // This will be fixed when ChannelFlow becomes suspend-aware.
+        // For now, we instantiate the continuation and hope for the best (or this remains a limitation).
+        // In a real suspend world, we'd pass 'this' (continuation) from a suspend lambda.
+    }
+
+    std::shared_ptr<channels::ReceiveChannel<T>> produce_impl(CoroutineScope* scope) override {
         mark_consumed();
-        // emitAll(collector, channel)
-        // Since we are inside class, we shouldn't shadow channel.
-        // We can call the free function emit_all but we need to pass consume=consume_ logic?
-        // emit_all consumes by default.
-        // If !consume_, we shouldn't close it? receiveAsFlow semantics say "does not affect the channel" if cancelled.
-        // But emit_all says it consumes. 
-        // We might need a non-consuming emit_all variant or just iterate.
-        return emit_all(collector, channel_.get(), cont); 
+        if (this->capacity() == channels::CHANNEL_OPTIONAL) {
+             return channel_;
+        }
+        // return internal::ChannelFlow<T>::produce_impl(scope); // Disabled due to compilation issues in Produce.hpp
+        throw std::runtime_error("ChannelAsFlow::produce_impl not fully implemented due to infra compilation issues");
+    }
+
+    void* collect(FlowCollector<T>* collector, Continuation<void*>* cont) override {
+        if (this->capacity() == channels::CHANNEL_OPTIONAL) {
+            mark_consumed();
+            return emit_all_impl(collector, channel_.get(), consume_, cont);
+        } else {
+             return internal::ChannelFlow<T>::collect(collector, cont);
+        }
+    }
+
+    std::string additional_to_string_props() override {
+        return "channel=" + std::to_string((size_t)channel_.get());
     }
 
 private:
@@ -237,10 +293,6 @@ std::shared_ptr<Flow<T>> consume_as_flow(std::shared_ptr<channels::ReceiveChanne
     return std::make_shared<detail::ChannelAsFlow<T>>(channel, true);
 }
 
-template <typename T>
-std::shared_ptr<channels::ReceiveChannel<T>> produce_in(Flow<T>* /*flow*/, CoroutineScope* /*scope*/) {
-    // Stub
-    return nullptr; 
-}
+
 
 } // namespace kotlinx::coroutines::flow

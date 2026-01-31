@@ -33,6 +33,10 @@
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
+
+template <typename T>
+void* emit_all(FlowCollector<T>* collector, kotlinx::coroutines::channels::ReceiveChannel<T>* channel, kotlinx::coroutines::Continuation<void*>* continuation);
+
 namespace internal {
 
 // Forward declarations and using statements
@@ -41,6 +45,12 @@ using kotlinx::coroutines::channels::BufferOverflow;
 using kotlinx::coroutines::channels::ProducerScope;
 using kotlinx::coroutines::channels::ReceiveChannel;
 namespace channels = ::kotlinx::coroutines::channels;
+using kotlinx::coroutines::Continuation;
+using kotlinx::coroutines::CoroutineScope;
+using kotlinx::coroutines::CoroutineContext;
+using kotlinx::coroutines::EmptyCoroutineContext;
+
+// Forward declaration moved specific to flow namespace
 
 inline const char* buffer_overflow_to_string(BufferOverflow value) {
     switch (value) {
@@ -97,12 +107,12 @@ public:
     virtual std::string additional_to_string_props();
     virtual std::string to_string();
 
+    virtual std::shared_ptr<ReceiveChannel<T>> produce_impl(CoroutineScope* scope);
+
 protected:
     virtual ChannelFlow<T>* create(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_overflow) = 0;
     
     virtual void collect_to(ProducerScope<T>* scope) = 0;
-
-    virtual std::shared_ptr<ReceiveChannel<T>> produce_impl(CoroutineScope* scope);
 
     std::shared_ptr<CoroutineContext> context() const { return context_; }
     int capacity() const { return capacity_; }

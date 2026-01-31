@@ -22,10 +22,16 @@
 #include <string>
 #include <stdexcept>
 #include <type_traits>
+#include "kotlinx/coroutines/CoroutineScope.hpp"
 
 namespace kotlinx {
 namespace coroutines {
 namespace channels {
+
+using kotlinx::coroutines::Continuation;
+using kotlinx::coroutines::CancellationException;
+using kotlinx::coroutines::CoroutineScope;
+namespace selects = kotlinx::coroutines::selects;
 
 // Forward declarations
 template <typename E> class SendChannel;
@@ -145,6 +151,11 @@ constexpr int CHANNEL_CONFLATED = -1;
  * public const val BUFFERED: Int = -2
  */
 constexpr int CHANNEL_BUFFERED = -2;
+
+/**
+ * Optional capacity for ChannelFlow.
+ */
+constexpr int CHANNEL_OPTIONAL = -3;
 
 /**
  * Line 20-22: Handler for elements that were sent to a channel but were not
@@ -1046,7 +1057,8 @@ public:
      * });
      *
      * auto ui_updater = launch(Dispatchers::Main, [&events]() {
-     *     events->consume([](Event e) { /* handle events */ });
+     *     events->consume([](Event e) { // handle events 
+     *     });
      * });
      * // Stop the callback after the channel is closed or cancelled
      * events->invoke_on_close([&callback_api](auto) {
