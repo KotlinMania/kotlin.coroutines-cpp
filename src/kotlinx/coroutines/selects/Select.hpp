@@ -401,18 +401,7 @@ public:
     template<typename P, typename Q>
     void invoke(SelectClause2<P, Q>& clause, P param, std::function<void*(Q, Continuation<void*>*)> block);
 
-    /**
-     * Clause that selects the given block after a specified timeout passes.
-     * If timeout is negative or zero, block is selected immediately.
-     *
-     * @note This is an experimental API. It may be replaced with light-weight timer/timeout channels in the future.
-     *
-     * @param time_millis timeout time in milliseconds.
-     *
-     * Transliterated from:
-     * public fun onTimeout(timeMillis: Long, block: suspend () -> R)
-     */
-    virtual void on_timeout(long long time_millis, std::function<void*(Continuation<void*>*)> block) = 0;
+
 };
 
 /**
@@ -923,56 +912,7 @@ public:
         );
     }
 
-    void on_timeout(long long time_millis, std::function<void*(Continuation<void*>*)> block) override {
-        // Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt
-        //
-        // OnTimeout creates a SelectClause0 that:
-        // 1. If timeout <= 0, selects immediately
-        // 2. Otherwise schedules a callback via delay.invokeOnTimeout that calls trySelect
 
-        // Create the OnTimeout clause object (just need a unique address for clause identity)
-        auto* timeout_marker = new char{'T'};  // Leaked intentionally as clause object
-
-        // Registration function
-        RegistrationFunction reg_func = [time_millis, timeout_marker](void* clause_obj, void* select_ptr, void* param) {
-            (void)clause_obj;
-            (void)param;
-            auto* select = static_cast<SelectImplementation<R>*>(select_ptr);
-
-            // If timeout <= 0, select immediately
-            if (time_millis <= 0) {
-                select->select_in_registration_phase(nullptr);  // Unit result
-                return;
-            }
-
-            // Schedule trySelect after timeout
-            auto select_weak = select->weak_from_this();
-            auto runnable = std::make_shared<LambdaRunnable>([select_weak, timeout_marker]() {
-                if (auto select = select_weak.lock()) {
-                    select->try_select(timeout_marker, nullptr);  // Unit result
-                }
-            });
-
-            auto context = select->get_context();
-            auto& delay = get_default_delay();
-            auto handle = delay.invoke_on_timeout(time_millis, runnable, *context);
-
-            // Clean up when select completes
-            select->dispose_on_completion(handle);
-        };
-
-        // Wrap block to ignore the void* argument (OnTimeout has no result value)
-        auto wrapped = [block](void*, Continuation<void*>* c) { return block(c); };
-
-        register_clause(
-            timeout_marker,
-            std::move(reg_func),
-            dummy_process_result_function(),
-            PARAM_CLAUSE_0(),
-            std::move(wrapped),
-            nullptr  // No cancellation constructor
-        );
-    }
 
     // Helper class for lambda-based Runnable
     class LambdaRunnable : public Runnable {
