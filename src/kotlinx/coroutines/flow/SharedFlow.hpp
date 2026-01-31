@@ -831,3 +831,6 @@ std::shared_ptr<MutableSharedFlow<T>> make_mutable_shared_flow(
 } // namespace kotlinx::coroutines::flow
 
 // SubscriptionCountStateFlow and AbstractSharedFlow implementations moved to StateFlow.hpp
+
+// Include StateFlow.hpp to provide definition for SubscriptionCountStateFlow (which SharedFlowImpl needs for complete type in destructor)
+#include "kotlinx/coroutines/flow/StateFlow.hpp"

@@ -1,27 +1,18 @@
 #pragma once
+
 /**
- * @file CoroutineStart.hpp
- * @brief Start options for coroutine builders
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt
  */
 
-#include "kotlinx/coroutines/CoroutineDispatcher.hpp"
-#include "kotlinx/coroutines/ContinuationInterceptor.hpp"
-#include "kotlinx/coroutines/Result.hpp"
-#include <functional>
-#include <exception>
-#include <memory>
-#include <type_traits>
+#include "kotlinx/coroutines/Continuation.hpp"
 
-namespace kotlinx {
-namespace coroutines {
+namespace kotlinx::coroutines {
 
 /**
  * Defines start options for coroutines builders.
  *
  * It is used in the `start` parameter of coroutine builder functions like
- * [launch][CoroutineScope::launch] and [async][CoroutineScope::async]
+ * [launch][CoroutineScope.launch] and [async][CoroutineScope.async]
  * to describe when and how the coroutine should be dispatched initially.
  *
  * This parameter only affects how the coroutine behaves until the code of its body starts executing.
@@ -33,9 +24,6 @@ namespace coroutines {
  * - [ATOMIC] prevents the coroutine from being cancelled before it starts, ensuring that its code will start
  *   executing in any case.
  * - [UNDISPATCHED] immediately executes the coroutine until its first suspension point _in the current thread_.
- *
- * Transliterated from:
- * public enum class CoroutineStart
  */
 enum class CoroutineStart {
     /**
@@ -44,37 +32,53 @@ enum class CoroutineStart {
      * [DEFAULT] uses the default dispatch procedure described in the [CoroutineDispatcher] documentation.
      *
      * If the coroutine's [Job] is cancelled before it started executing, then it will not start its
-     * execution at all and will be considered [cancelled][Job::is_cancelled].
+     * execution at all and will be considered [cancelled][Job.isCancelled].
      *
      * Examples:
      *
-     * ```cpp
+     * ```
      * // Example of starting a new coroutine that goes through a dispatch
-     * run_blocking([](CoroutineScope& scope) {
-     *     std::cout << "1. About to start a new coroutine.\n";
+     * runBlocking {
+     *     println("1. About to start a new coroutine.")
      *     // Dispatch the job to execute later.
      *     // The parent coroutine's dispatcher is inherited by default.
-     *     launch(scope, []() { // CoroutineStart::DEFAULT is launch's default start mode
-     *         std::cout << "3. When the thread is available, we start the coroutine\n";
-     *     });
-     *     std::cout << "2. The thread keeps doing other work after launching the coroutine\n";
-     * });
+     *     // In this case, it's the single thread backing `runBlocking`.
+     *     launch { // CoroutineStart.DEFAULT is launch's default start mode
+     *         println("3. When the thread is available, we start the coroutine")
+     *     }
+     *     println("2. The thread keeps doing other work after launching the coroutine")
+     * }
      * ```
      *
-     * ```cpp
+     * ```
+     * // Example of starting a new coroutine that doesn't go through a dispatch initially
+     * runBlocking {
+     *     println("1. About to start a coroutine not needing a dispatch.")
+     *     // Dispatch the job to execute.
+     *     // `Dispatchers.Unconfined` is explicitly chosen.
+     *     launch(Dispatchers.Unconfined) { // CoroutineStart.DEFAULT is the launch's default start mode
+     *         println("2. The body will be executed immediately")
+     *         delay(50.milliseconds) // give up the thread to the outer coroutine
+     *         println("4. When the thread is next available, this coroutine proceeds further")
+     *     }
+     *     println("3. After the initial suspension, the thread does other work.")
+     * }
+     * ```
+     *
+     * ```
      * // Example of cancelling coroutines before they start executing.
-     * run_blocking([](CoroutineScope& scope) {
+     * runBlocking {
      *     // dispatch the job to execute on this thread later
-     *     launch(scope, []() { // CoroutineStart::DEFAULT is the launch's default start mode
-     *         std::cout << "This code will never execute\n";
-     *     });
-     *     scope.cancel(); // cancels the current coroutine scope and its children
-     *     std::cout << "This code will execute.\n";
-     * });
+     *     launch { // CoroutineStart.DEFAULT is the launch's default start mode
+     *         println("This code will never execute")
+     *     }
+     *     cancel() // cancels the current coroutine scope and its children
+     *     launch(Dispatchers.Unconfined) {
+     *         println("This code will never execute")
+     *     }
+     *     println("This code will execute.")
+     * }
      * ```
-     *
-     * Transliterated from:
-     * DEFAULT
      */
     DEFAULT,
 
@@ -83,41 +87,83 @@ enum class CoroutineStart {
      *
      * Starting a coroutine with [LAZY] only creates the coroutine, but does not schedule it for execution.
      * When the completion of the coroutine is first awaited
-     * (for example, via [Job::join]) or explicitly [started][Job::start],
+     * (for example, via [Job.join]) or explicitly [started][Job.start],
      * the dispatch procedure described in the [CoroutineDispatcher] documentation is performed in the thread
      * that did it.
      *
      * The details of what counts as waiting can be found in the documentation of the corresponding coroutine builders
-     * like [launch][CoroutineScope::launch] and [async][CoroutineScope::async].
+     * like [launch][CoroutineScope.launch] and [async][CoroutineScope.async].
      *
      * If the coroutine's [Job] is cancelled before it started executing, then it will not start its
-     * execution at all and will be considered [cancelled][Job::is_cancelled].
+     * execution at all and will be considered [cancelled][Job.isCancelled].
      *
      * **Pitfall**: launching a coroutine with [LAZY] without awaiting or cancelling it at any point means that it will
      * never be completed, leading to deadlocks and resource leaks.
-     * For example, the following code will deadlock, since [coroutine_scope] waits for all of its child coroutines to
+     * For example, the following code will deadlock, since [coroutineScope] waits for all of its child coroutines to
      * complete:
-     * ```cpp
+     * ```
      * // This code hangs!
-     * coroutine_scope([](CoroutineScope& scope) {
-     *     launch(scope, CoroutineStart::LAZY, []() { });
-     * }, cont);
+     * coroutineScope {
+     *     launch(start = CoroutineStart.LAZY) { }
+     * }
+     * ```
+     *
+     * The behavior of [LAZY] can be described with the following examples:
+     *
+     * ```
+     * // Example of lazily starting a new coroutine that goes through a dispatch
+     * runBlocking {
+     *     println("1. About to start a new coroutine.")
+     *     // Create a job to execute on `Dispatchers.Default` later.
+     *     val job = launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
+     *         println("3. Only now does the coroutine start.")
+     *     }
+     *     delay(10.milliseconds) // try to give the coroutine some time to run
+     *     println("2. The coroutine still has not started. Now, we join it.")
+     *     job.join()
+     * }
+     * ```
+     *
+     * ```
+     * // Example of lazily starting a new coroutine that doesn't go through a dispatch initially
+     * runBlocking {
+     *     println("1. About to lazily start a new coroutine.")
+     *     // Create a job to execute on `Dispatchers.Unconfined` later.
+     *     val lazyJob = launch(Dispatchers.Unconfined, start = CoroutineStart.LAZY) {
+     *         println("3. The coroutine starts on the thread that called `join`.")
+     *     }
+     *     // We start the job on another thread for illustrative purposes
+     *     launch(Dispatchers.Default) {
+     *         println("2. We start the lazyJob.")
+     *         job.start() // runs lazyJob's code in-place
+     *         println("4. Only now does the `start` call return.")
+     *     }
+     * }
      * ```
      *
      * ## Alternatives
      *
      * The effects of [LAZY] can usually be achieved more idiomatically without it.
      *
+     * When a coroutine is started with [LAZY] and is stored in a property,
+     * it may be a better choice to use [lazy] instead:
+     *
+     * ```
+     * // instead of `val page = scope.async(start = CoroutineStart.LAZY) { getPage() }`, do
+     * val page by lazy { scope.async { getPage() } }
+     * ```
+     *
+     * This way, the child coroutine is not created at all unless it is needed.
+     * Note that with this, any access to this variable will start the coroutine,
+     * even something like `page.invokeOnCompletion { }` or `page.isActive`.
+     *
      * If a coroutine is started with [LAZY] and then unconditionally started,
      * it is more idiomatic to create the coroutine in the exact place where it is started:
      *
-     * ```cpp
-     * // instead of `auto job = launch(scope, CoroutineStart::LAZY, []{}); job->start();`, do
-     * launch(scope, []() { });
      * ```
-     *
-     * Transliterated from:
-     * LAZY
+     * // instead of `val job = scope.launch(start = CoroutineStart.LAZY) { }; job.start()`, do
+     * scope.launch { }
+     * ```
      */
     LAZY,
 
@@ -136,162 +182,210 @@ enum class CoroutineStart {
      * and uses a specific dispatcher to do that.
      *
      * Example:
-     * ```cpp
-     * Mutex mutex;
+     * ```
+     * val mutex = Mutex()
      *
-     * mutex.lock(); // lock the mutex outside the coroutine
+     * mutex.lock() // lock the mutex outside the coroutine
      * // ... // initial portion of the work, protected by the mutex
-     * auto job = launch(scope, CoroutineStart::ATOMIC, [&mutex]() {
+     * val job = launch(start = CoroutineStart.ATOMIC) {
      *     // the work must continue in a coroutine, but still under the mutex
-     *     std::cout << "Coroutine running!\n";
+     *     println("Coroutine running!")
      *     try {
      *         // this `try` block will be entered in any case because of ATOMIC
-     *         std::cout << "Starting task...\n";
-     *         delay(10, cont); // throws due to cancellation
-     *         std::cout << "Finished task.\n";
-     *     } catch (...) {
-     *         mutex.unlock(); // correctly release the mutex
-     *         throw;
+     *         println("Starting task...")
+     *         delay(10.milliseconds) // throws due to cancellation
+     *         println("Finished task.")
+     *     } finally {
+     *         mutex.unlock() // correctly release the mutex
      *     }
-     *     mutex.unlock();
-     * });
+     * }
      *
-     * job->cancel_and_join(cont); // we immediately cancel the coroutine.
-     * mutex.with_lock([]() {
-     *     std::cout << "The lock has been returned correctly!\n";
-     * });
+     * job.cancelAndJoin() // we immediately cancel the coroutine.
+     * mutex.withLock {
+     *     println("The lock has been returned correctly!")
+     * }
      * ```
      *
      * Here, we used [ATOMIC] to ensure that a mutex that was acquired outside the coroutine does get released
      * even if cancellation happens between `lock()` and `launch`.
      * As a result, the mutex will always be released.
      *
+     * The behavior of [ATOMIC] can be described with the following examples:
+     *
+     * ```
+     * // Example of cancelling atomically started coroutines
+     * runBlocking {
+     *     println("1. Atomically starting a coroutine that goes through a dispatch.")
+     *     launch(start = CoroutineStart.ATOMIC) {
+     *         check(!isActive) // attempting to suspend later will throw
+     *         println("4. The coroutine was cancelled (isActive = $isActive), but starts anyway.")
+     *         try {
+     *             delay(10.milliseconds) // will throw: the coroutine is cancelled
+     *             println("This code will never run.")
+     *         } catch (e: CancellationException) {
+     *             println("5. Cancellation at later points still works.")
+     *             throw e
+     *         }
+     *     }
+     *     println("2. Cancelling this coroutine and all of its children.")
+     *     cancel()
+     *     launch(Dispatchers.Unconfined, start = CoroutineStart.ATOMIC) {
+     *         check(!isActive) // attempting to suspend will throw
+     *         println("3. An undispatched coroutine starts.")
+     *     }
+     *     ensureActive() // we can even crash the current coroutine.
+     * }
+     * ```
+     *
      * This is a **delicate** API. The coroutine starts execution even if its [Job] is cancelled before starting.
      * However, the resources used within a coroutine may rely on the cancellation mechanism,
-     * and cannot be used after the [Job] cancellation.
-     *
-     * @DelicateCoroutinesApi
-     *
-     * Transliterated from:
-     * ATOMIC
+     * and cannot be used after the [Job] cancellation. For instance, in Android development, updating a UI element
+     * is not allowed if the coroutine's scope, which is tied to the element's lifecycle, has been cancelled.
      */
     ATOMIC,
 
     /**
      * Immediately executes the coroutine until its first suspension point _in the current thread_.
      *
-     * Starting a coroutine using [UNDISPATCHED] is similar to using [Dispatchers::Unconfined] with [DEFAULT], except:
+     * Starting a coroutine using [UNDISPATCHED] is similar to using [Dispatchers.Unconfined] with [DEFAULT], except:
      * - Resumptions from later suspensions will properly use the actual dispatcher from the coroutine's context.
      *   Only the code until the first suspension point will be executed immediately.
      * - Even if the coroutine was cancelled already, its code will still start running, similar to [ATOMIC].
-     * - The coroutine will not form an event loop. See [Dispatchers::Unconfined] for an explanation of event loops.
+     * - The coroutine will not form an event loop. See [Dispatchers.Unconfined] for an explanation of event loops.
      *
      * This set of behaviors makes [UNDISPATCHED] well-suited for cases where the coroutine has a distinct
      * initialization phase whose side effects we want to rely on later.
      *
      * Example:
-     * ```cpp
-     * int tasks = 0;
-     * for (int i = 0; i < 3; ++i) {
-     *     launch(scope, CoroutineStart::UNDISPATCHED, [&tasks]() {
-     *         tasks++;
+     * ```
+     * var tasks = 0
+     * repeat(3) {
+     *     launch(start = CoroutineStart.UNDISPATCHED) {
+     *         tasks++
      *         try {
-     *             std::cout << "Waiting for a reply...\n";
-     *             delay(50, cont);
-     *             std::cout << "Got a reply!\n";
-     *         } catch (...) {
-     *             tasks--;
-     *             throw;
+     *             println("Waiting for a reply...")
+     *             delay(50.milliseconds)
+     *             println("Got a reply!")
+     *         } finally {
+     *             tasks--
      *         }
-     *         tasks--;
-     *     });
+     *     }
      * }
      * // Because of UNDISPATCHED,
      * // we know that the tasks already ran to their first suspension point,
      * // so this number is non-zero initially.
      * while (tasks > 0) {
-     *     std::cout << "currently active: " << tasks << "\n";
-     *     delay(10, cont);
+     *     println("currently active: $tasks")
+     *     delay(10.milliseconds)
      * }
      * ```
      *
-     * **Pitfall**: unlike [Dispatchers::Unconfined] and [MainCoroutineDispatcher::immediate], nested undispatched
+     * Here, we implement a publisher-subscriber interaction, where [UNDISPATCHED] ensures that the
+     * subscribers do get registered before the publisher first checks if it can stop emitting values due to
+     * the lack of subscribers.
+     *
+     * ```
+     * // Constant usage of stack space
+     * fun CoroutineScope.factorialWithUnconfined(n: Int): Deferred<Int> =
+     *     async(Dispatchers.Unconfined) {
+     *         if (n > 0) {
+     *             n * factorialWithUnconfined(n - 1).await()
+     *         } else {
+     *             1 // replace with `error()` to see the stacktrace
+     *         }
+     *     }
+     *
+     * // Linearly increasing usage of stack space
+     * fun CoroutineScope.factorialWithUndispatched(n: Int): Deferred<Int> =
+     *     async(start = CoroutineStart.UNDISPATCHED) {
+     *         if (n > 0) {
+     *             n * factorialWithUndispatched(n - 1).await()
+     *         } else {
+     *             1 // replace with `error()` to see the stacktrace
+     *         }
+     *     }
+     * ```
+     *
+     * Calling `factorialWithUnconfined` from this example will result in a constant-size stack,
+     * whereas `factorialWithUndispatched` will lead to `n` recursively nested calls,
+     * resulting in a stack overflow for large values of `n`.
+     *
+     * The behavior of [UNDISPATCHED] can be described with the following examples:
+     *
+     * ```
+     * runBlocking {
+     *     println("1. About to start a new coroutine.")
+     *     launch(Dispatchers.Default, start = CoroutineStart.UNDISPATCHED) {
+     *         println("2. The coroutine is immediately started in the same thread.")
+     *         delay(10.milliseconds)
+     *         println("4. The execution continues in a Dispatchers.Default thread.")
+     *     }
+     *     println("3. Execution of the outer coroutine only continues later.")
+     * }
+     * ```
+     *
+     * ```
+     * // Cancellation does not prevent the coroutine from being started
+     * runBlocking {
+     *     println("1. First, we cancel this scope.")
+     *     cancel()
+     *     println("2. Now, we start a new UNDISPATCHED child.")
+     *     launch(start = CoroutineStart.UNDISPATCHED) {
+     *         check(!isActive) // the child is already cancelled
+     *         println("3. We entered the coroutine despite being cancelled.")
+     *     }
+     *     println("4. Execution of the outer coroutine only continues later.")
+     * }
+     * ```
+     *
+     * **Pitfall**: unlike [Dispatchers.Unconfined] and [MainCoroutineDispatcher.immediate], nested undispatched
      * coroutines do not form an event loop that otherwise prevents potential stack overflow in case of unlimited
      * nesting. This property is necessary for the use case of guaranteed initialization, but may be undesirable in
      * other cases.
-     * See [Dispatchers::Unconfined] for an explanation of event loops.
-     *
-     * Transliterated from:
-     * UNDISPATCHED
+     * See [Dispatchers.Unconfined] for an explanation of event loops.
      */
     UNDISPATCHED
 };
 
-inline bool is_lazy(CoroutineStart start) {
-    return start == CoroutineStart::LAZY;
-}
-
-// TODO(semantics): CoroutineStart.invoke() dispatch logic incomplete
-// - DEFAULT should use startCoroutineCancellable() for proper cancellation checks
-// - ATOMIC should skip cancellation check before starting
-// - Current implementation is a simplified approximation
-template <typename Block, typename Receiver, typename Completion>
-void invoke(CoroutineStart start, Block&& block, Receiver&& receiver, Completion&& completion) {
-    if (start == CoroutineStart::LAZY) {
-        return;
-    }
-
-    auto run_block = [block = std::forward<Block>(block), receiver, completion]() mutable {
-        using ReturnT = decltype(block(receiver));
-        try {
-            if constexpr (std::is_void_v<ReturnT>) {
-                block(receiver);
-                completion->resume_with(Result<void>::success());
-            } else {
-                auto value = block(receiver);
-                completion->resume_with(Result<ReturnT>::success(std::move(value)));
-            }
-        } catch (...) {
-            if constexpr (std::is_void_v<ReturnT>) {
-                completion->resume_with(Result<void>::failure(std::current_exception()));
-            } else {
-                completion->resume_with(Result<ReturnT>::failure(std::current_exception()));
-            }
-        }
-    };
-
-    if (start == CoroutineStart::UNDISPATCHED) {
-        // Kotlin: run immediately in current thread without dispatch.
-        run_block();
-        return;
-    }
-
-    // DEFAULT and ATOMIC both start immediately; ATOMIC differs in cancellation checks, which
-    // we don't model yet in this C++ runtime.
-    if (start == CoroutineStart::DEFAULT || start == CoroutineStart::ATOMIC) {
-        auto context = completion->get_context();
-        
-        std::shared_ptr<CoroutineDispatcher> dispatcher;
-        auto element = context->get(ContinuationInterceptor::type_key);
-        if (element) {
-             dispatcher = std::dynamic_pointer_cast<CoroutineDispatcher>(element);
-        }
-        
-        struct LambdaRunnable : Runnable {
-             std::function<void()> b;
-             LambdaRunnable(std::function<void()> f) : b(std::move(f)) {}
-             void run() override { b(); }
-        };
-        
-        auto runnable = std::make_shared<LambdaRunnable>([run = std::move(run_block)]() mutable { run(); });
-        
-        if (dispatcher) {
-             dispatcher->dispatch(*context, runnable);
-        } else {
-             runnable->run();
+// Extension methods for CoroutineStart
+class CoroutineStartExtensions {
+public:
+    /**
+     * Starts the corresponding block with receiver as a coroutine with this coroutine start strategy.
+     *
+     * - [DEFAULT] uses [startCoroutineCancellable].
+     * - [ATOMIC] uses [startCoroutine].
+     * - [UNDISPATCHED] uses [startCoroutineUndispatched].
+     * - [LAZY] does nothing.
+     *
+     * @suppress **This an internal API and should not be used from general code.**
+     */
+    template <typename R, typename T>
+    static void invoke(CoroutineStart start, R receiver, Continuation<T>* completion) {
+        switch (start) {
+            case CoroutineStart::DEFAULT:
+                // TODO(port): block.startCoroutineCancellable(receiver, completion)
+                break;
+            case CoroutineStart::ATOMIC:
+                // TODO(port): block.startCoroutine(receiver, completion)
+                break;
+            case CoroutineStart::UNDISPATCHED:
+                // TODO(port): block.startCoroutineUndispatched(receiver, completion)
+                break;
+            case CoroutineStart::LAZY:
+                // will start lazily
+                break;
         }
     }
-}
 
-} // namespace coroutines
-} // namespace kotlinx
+    /**
+     * Returns `true` when [LAZY].
+     *
+     * @suppress **This an internal API and should not be used from general code.**
+     */
+    static bool is_lazy(CoroutineStart start) {
+        return start == CoroutineStart::LAZY;
+    }
+};
+
+} // namespace kotlinx::coroutines

@@ -96,6 +96,20 @@ public:
  * Transliterated from:
  * private class StateFlowSlot : AbstractSharedFlowSlot<StateFlowImpl<*>>()
  */
+// PENDING/NONE Symbols helpers
+inline ::kotlinx::coroutines::internal::Symbol* get_pending_symbol() { 
+    static auto* s = new ::kotlinx::coroutines::internal::Symbol("PENDING"); 
+    return s; 
+}
+inline ::kotlinx::coroutines::internal::Symbol* get_none_symbol() { 
+    static auto* s = new ::kotlinx::coroutines::internal::Symbol("NONE"); 
+    return s; 
+}
+inline ::kotlinx::coroutines::internal::Symbol* get_null_symbol() { 
+    static auto* s = new ::kotlinx::coroutines::internal::Symbol("NULL"); 
+    return s; 
+}
+
 class StateFlowSlot : public AbstractSharedFlowSlot<StateFlowImplBase> {
 public:
     // Kotlin: private val _state = atomic<Any?>(null)
@@ -120,19 +134,7 @@ public:
     void* await_pending(Continuation<void*>* cont);
 };
 
-// PENDING/NONE Symbols helpers
-inline ::kotlinx::coroutines::internal::Symbol* get_pending_symbol() { 
-    static auto* s = new ::kotlinx::coroutines::internal::Symbol("PENDING"); 
-    return s; 
-}
-inline ::kotlinx::coroutines::internal::Symbol* get_none_symbol() { 
-    static auto* s = new ::kotlinx::coroutines::internal::Symbol("NONE"); 
-    return s; 
-}
-inline ::kotlinx::coroutines::internal::Symbol* get_null_symbol() { 
-    static auto* s = new ::kotlinx::coroutines::internal::Symbol("NULL"); 
-    return s; 
-}
+
 
 /**
  * Internal implementation of StateFlow.
@@ -140,6 +142,36 @@ inline ::kotlinx::coroutines::internal::Symbol* get_null_symbol() {
  * Transliterated from:
  * private class StateFlowImpl<T>(initialState: Any) : AbstractSharedFlow<StateFlowSlot>(), ...
  */
+
+// SubscriptionCountStateFlow definition
+// Needed here so StateFlowImpl can use it (via AbstractSharedFlow dtor)
+class SubscriptionCountStateFlow : public SharedFlowImpl<int>, public StateFlow<int> {
+public:
+    SubscriptionCountStateFlow(int initial_value)
+        : SharedFlowImpl<int>(1, 0, channels::BufferOverflow::DROP_OLDEST) {
+        this->try_emit(initial_value);
+    }
+    
+    // StateFlow overrides
+    int value() const override {
+        // Kotlin: value getter uses lastReplayedLocked logic
+        // We can access protected get_last_replayed_locked from SharedFlowImpl
+        std::lock_guard<std::recursive_mutex> lock(this->mutex());
+        return this->get_last_replayed_locked();
+    }
+
+    // MutableStateFlow set_value is NOT supported (it's read-only StateFlow view of count)
+    // But it inherits SharedFlowImpl which is MutableSharedFlow...
+    // SubscriptionCountStateFlow in Kotlin is just a StateFlow (read-only interface) backed by SharedFlowImpl.
+    // But here we inherit SharedFlowImpl directly.
+    // Ideally we should hide MutableSharedFlow methods if it's read-only.
+    // But for internal usage it's fine.
+    
+    // Helper to update count (Kotlin: Increment/Decrement logic done by SharedFlowImpl updateCollectorIndex)
+    // Actually Kotlin's SubscriptionCountStateFlow logic is handled within SharedFlowImpl's update methods
+    // which update this flow.
+};
+
 template<typename T>
 class StateFlowImpl 
     : public StateFlowImplBase,
