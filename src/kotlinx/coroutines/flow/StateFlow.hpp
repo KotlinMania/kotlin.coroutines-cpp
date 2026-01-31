@@ -121,16 +121,16 @@ public:
 };
 
 // PENDING/NONE Symbols helpers
-inline internal::Symbol* get_pending_symbol() { 
-    static auto* s = new internal::Symbol("PENDING"); 
+inline ::kotlinx::coroutines::internal::Symbol* get_pending_symbol() { 
+    static auto* s = new ::kotlinx::coroutines::internal::Symbol("PENDING"); 
     return s; 
 }
-inline internal::Symbol* get_none_symbol() { 
-    static auto* s = new internal::Symbol("NONE"); 
+inline ::kotlinx::coroutines::internal::Symbol* get_none_symbol() { 
+    static auto* s = new ::kotlinx::coroutines::internal::Symbol("NONE"); 
     return s; 
 }
-inline internal::Symbol* get_null_symbol() { 
-    static auto* s = new internal::Symbol("NULL"); 
+inline ::kotlinx::coroutines::internal::Symbol* get_null_symbol() { 
+    static auto* s = new ::kotlinx::coroutines::internal::Symbol("NULL"); 
     return s; 
 }
 
