@@ -806,16 +806,27 @@ void cmd_init_tasks(const std::string& src_dir, const std::string& src_lang,
     tm.agents_md_path = agents_md;
 
     // Add missing files as tasks (sorted by dependents)
-    std::vector<const SourceFile*> missing;
+    std::vector<const SourceFile*> pending_files;
+    
+    // 1. Missing files
     for (const auto& path : comp.unmatched_source) {
-        missing.push_back(&source.files.at(path));
+        pending_files.push_back(&source.files.at(path));
     }
-    std::sort(missing.begin(), missing.end(),
+
+    // 2. Incomplete files (similarity < 0.85)
+    // We treat them as "missing" for task purposes to force re-evaluation/completion
+    for (const auto& m : comp.matches) {
+        if (m.similarity < 0.85) { // Strict threshold for swarm quality
+            pending_files.push_back(&source.files.at(m.source_path));
+        }
+    }
+
+    std::sort(pending_files.begin(), pending_files.end(),
         [](const SourceFile* a, const SourceFile* b) {
             return a->dependent_count > b->dependent_count;
         });
 
-    for (const auto* sf : missing) {
+    for (const auto* sf : pending_files) {
         PortTask task;
         task.source_path = sf->relative_path;
         task.source_qualified = sf->qualified_name;
@@ -1013,6 +1024,13 @@ void cmd_complete(const std::string& task_file, const std::string& source_qualif
     for (const auto& path : comp.unmatched_source) {
         missing.push_back(&source.files.at(path));
     }
+    // Also include incomplete files
+    for (const auto& m : comp.matches) {
+        if (m.similarity < 0.85) {
+            missing.push_back(&source.files.at(m.source_path));
+        }
+    }
+
     std::sort(missing.begin(), missing.end(),
         [](const SourceFile* a, const SourceFile* b) {
             return a->dependent_count > b->dependent_count;

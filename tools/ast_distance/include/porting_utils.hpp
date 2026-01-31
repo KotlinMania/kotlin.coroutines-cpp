@@ -438,6 +438,18 @@ public:
     static std::vector<FileStats> analyze_directory(const std::string& directory) {
         std::vector<FileStats> results;
 
+        if (std::filesystem::is_regular_file(directory)) {
+            std::filesystem::path p(directory);
+            std::string ext = p.extension().string();
+            if (ext == ".hpp" || ext == ".cpp" || ext == ".h" ||
+                ext == ".kt" || ext == ".kts" || ext == ".rs") {
+                FileStats stats = analyze_file(directory);
+                stats.lint_errors = lint_file(directory);
+                results.push_back(std::move(stats));
+            }
+            return results;
+        }
+
         for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
             if (!entry.is_regular_file()) continue;
 

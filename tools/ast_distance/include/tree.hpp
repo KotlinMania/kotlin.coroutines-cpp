@@ -111,6 +111,32 @@ struct Tree {
         });
         return hist;
     }
+    // Flatten nodes of specific type (replacing them with their children)
+    void flatten_node_type(int type_to_flatten) {
+        if (children.empty()) return;
+
+        std::vector<TreePtr> new_children;
+        new_children.reserve(children.size());
+
+        for (auto& child : children) {
+            // Recurse first (bottom-up flattening)
+            child->flatten_node_type(type_to_flatten);
+
+            if (child->node_type == type_to_flatten) {
+                // Dissolve this node, append its children to current parent
+                for (auto& grand_child : child->children) {
+                    grand_child->parent = this;
+                    new_children.push_back(std::move(grand_child));
+                }
+            } else {
+                new_children.push_back(std::move(child));
+            }
+        }
+
+        children = std::move(new_children);
+        cached_size = -1;
+        cached_depth = -1;
+    }
 };
 
 // Convert n-ary tree to binary (left-child right-sibling)

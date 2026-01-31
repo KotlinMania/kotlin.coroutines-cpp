@@ -378,7 +378,7 @@ private:
         const char* type_str = ts_node_type(node);
 
         // Normalize node type
-        NodeType normalized_type;
+        NodeType normalized_type = NodeType::UNKNOWN;
         switch (lang) {
             case Language::RUST: normalized_type = rust_node_to_type(type_str); break;
             case Language::KOTLIN: normalized_type = kotlin_node_to_type(type_str); break;

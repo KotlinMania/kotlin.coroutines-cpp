@@ -140,6 +140,24 @@ public:
             return false;
         };
 
+        if (fs::is_regular_file(root_path)) {
+            // Handle single file input
+            if (has_valid_ext(root_path)) {
+                SourceFile sf;
+                sf.path = root_path;
+                sf.relative_path = fs::path(root_path).filename().string(); // Use filename as relative path
+                sf.filename = fs::path(root_path).filename().string();
+                sf.stem = fs::path(root_path).stem().string();
+                sf.extension = fs::path(root_path).extension().string();
+                sf.qualified_name = SourceFile::make_qualified_name(sf.relative_path);
+
+                files[sf.relative_path] = sf;
+                by_stem[sf.stem].push_back(sf.relative_path);
+                by_qualified[sf.qualified_name] = sf.relative_path;
+            }
+            return;
+        }
+
         for (const auto& entry : fs::recursive_directory_iterator(root_path)) {
             if (!entry.is_regular_file()) continue;
 
@@ -702,6 +720,11 @@ public:
 
                 auto src_tree = parser.parse_file(src_path, string_to_language(source.language));
                 auto tgt_tree = parser.parse_file(tgt_path, string_to_language(target.language));
+
+                // Normalize ASTs: Flatten namespaces/packages to reduce structural noise
+                // Node type 82 is PACKAGE (includes C++ namespaces)
+                if (src_tree) src_tree->flatten_node_type(82);
+                if (tgt_tree) tgt_tree->flatten_node_type(82);
 
                 m.similarity = ASTSimilarity::combined_similarity(
                     src_tree.get(), tgt_tree.get());
