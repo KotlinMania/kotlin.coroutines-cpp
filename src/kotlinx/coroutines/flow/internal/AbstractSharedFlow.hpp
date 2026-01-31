@@ -82,7 +82,7 @@ public:
  */
 template<typename S, typename F>
 class AbstractSharedFlow {
-private:
+protected:
     // Kotlin: protected var slots: Array<S?>? = null (with private set)
     // Vector of unique_ptr owns the slots; slots are reused (not deleted) when freed
     std::unique_ptr<std::vector<std::unique_ptr<S>>> slots_;
