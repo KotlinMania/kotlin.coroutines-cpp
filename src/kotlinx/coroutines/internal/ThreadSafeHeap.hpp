@@ -1,17 +1,25 @@
 #pragma once
+
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/ThreadSafeHeap.kt
+ */
+
 #include <vector>
 #include <atomic>
 #include <mutex>
 #include <cassert>
 #include <functional>
+#include <type_traits>
+#include "kotlinx/coroutines/internal/SynchronizedObject.hpp"
 
-namespace kotlinx {
-namespace coroutines {
-namespace internal {
+namespace kotlinx::coroutines::internal {
 
 // Forward declaration
 template<typename T> class ThreadSafeHeap;
 
+/**
+ * @suppress **This an internal API and should not be used from general code.**
+ */
 class ThreadSafeHeapNode {
 public:
     ThreadSafeHeap<ThreadSafeHeapNode>* heap;
@@ -21,73 +29,118 @@ public:
     virtual ~ThreadSafeHeapNode() = default;
 };
 
+/**
+ * Synchronized binary heap.
+ * @suppress **This an internal API and should not be used from general code.**
+ */
 template<typename T>
-class ThreadSafeHeap {
+class ThreadSafeHeap : public SynchronizedObject {
 private:
     std::vector<T*> a_;
     std::atomic<int> _size;
-    std::mutex mutex_; // Basic synchronization
 
 public:
     ThreadSafeHeap() : _size(0) {}
 
+    virtual ~ThreadSafeHeap() = default;
+
     int size() const { return _size.load(); }
     bool is_empty() const { return size() == 0; }
+    
+    // Clear functionality if needed by C++ specific lifecycle
+    void clear() {
+        synchronized(static_cast<SynchronizedObject&>(*this), [&]() {
+            _size.store(0);
+            a_.clear();
+            return 0; // dummy return
+        });
+    }
 
     template<typename Predicate>
     T* find(Predicate predicate) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        for (int i = 0; i < size(); ++i) {
-            T* value = a_[i];
-            if (predicate(value)) return value;
-        }
-        return nullptr;
+        return synchronized(static_cast<SynchronizedObject&>(*this), [&]() -> T* {
+             int s = size();
+             for (int i = 0; i < s; ++i) {
+                 T* value = a_[i];
+                 if (predicate(value)) return value;
+             }
+             return nullptr;
+        });
     }
 
     T* peek() {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return first_impl();
+        return synchronized(static_cast<SynchronizedObject&>(*this), [&]() -> T* {
+            return first_impl();
+        });
     }
 
     T* remove_first_or_null() {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (size() > 0) {
-            return remove_at_impl(0);
-        } else {
+         return synchronized(static_cast<SynchronizedObject&>(*this), [&]() -> T* {
+            if (size() > 0) {
+                return remove_at_impl(0);
+            }
             return nullptr;
-        }
+        });
+    }
+
+    template<typename Predicate>
+    T* remove_first_if(Predicate predicate) {
+        return synchronized(static_cast<SynchronizedObject&>(*this), [&]() -> T* {
+            auto first = first_impl();
+            if (!first) return nullptr;
+            if (predicate(first)) {
+                return remove_at_impl(0);
+            }
+            return nullptr;
+        });
     }
 
     void add_last(T* node) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        add_impl(node);
+        synchronized(static_cast<SynchronizedObject&>(*this), [&]() {
+            add_impl(node);
+            return 0;
+        });
+    }
+
+    template<typename Condition>
+    bool add_last_if(T* node, Condition cond) {
+         return synchronized(static_cast<SynchronizedObject&>(*this), [&]() -> bool {
+             if (cond(first_impl())) {
+                 add_impl(node);
+                 return true;
+             }
+             return false;
+         });
     }
 
     bool remove(T* node) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (node->heap == nullptr) {
-            return false;
-        } else {
+        return synchronized(static_cast<SynchronizedObject&>(*this), [&]() -> bool {
+            if (node->heap == nullptr) {
+                return false;
+            }
             int index = node->index;
+            // assert(index >= 0);
             if (index >= 0) {
-                 remove_at_impl(index);
-                 return true;
+                remove_at_impl(index);
+                return true;
             }
             return false;
-        }
+        });
     }
-
-private:
-    void set_size(int value) { _size.store(value); }
-
+    
+    // For manual locking scenarios if public access is needed
     T* first_impl() {
-        return a_.empty() ? nullptr : a_[0];
+        return a_.empty() || size() == 0 ? nullptr : a_[0];
     }
 
     T* remove_at_impl(int index) {
-        set_size(size() - 1);
-        if (index < size()) {
-            swap(index, size());
+        // assert(size() > 0);
+        int s = size();
+        set_size(s - 1);
+        s = size(); // new size
+        
+        if (index < s) {
+            swap(index, s);
             int j = (index - 1) / 2;
             if (index > 0 && *a_[index] < *a_[j]) {
                 swap(index, j);
@@ -96,20 +149,25 @@ private:
                 sift_down_from(index);
             }
         }
-        T* result = a_[size()];
-        if (result) {
-            // result->heap = nullptr; // TODO
-            result->index = -1;
-        }
-        a_[size()] = nullptr;
+        
+        T* result = a_[s];
+        // assert(result->heap == this);
+        result->heap = nullptr;
+        result->index = -1;
+        a_[s] = nullptr;
         return result;
     }
 
+private:
+    void set_size(int value) { _size.store(value); }
+
     void add_impl(T* node) {
-        // node->heap = this; // TODO
+        // assert(node->heap == nullptr);
+        // Cast to correct heap type helper
+        node->heap = reinterpret_cast<ThreadSafeHeap<ThreadSafeHeapNode>*>(this);
         realloc();
         int i = size();
-        set_size(size() + 1);
+        set_size(i + 1);
         a_[i] = node;
         node->index = i;
         sift_up_from(i);
@@ -124,19 +182,21 @@ private:
     }
 
     void sift_down_from(int i) {
+        int s = size();
         int j = 2 * i + 1;
-        if (j >= size()) return;
-        if (j + 1 < size() && *a_[j + 1] < *a_[j]) j++;
+        if (j >= s) return;
+        if (j + 1 < s && *a_[j + 1] < *a_[j]) j++;
         if (*a_[i] <= *a_[j]) return;
         swap(i, j);
         sift_down_from(j);
     }
 
     void realloc() {
+        int s = size();
         if (a_.empty()) {
             a_.resize(4, nullptr);
-        } else if (size() >= static_cast<int>(a_.size())) {
-            a_.resize(size() * 2, nullptr);
+        } else if (s >= static_cast<int>(a_.size())) {
+            a_.resize(s * 2, nullptr);
         }
     }
 
@@ -150,6 +210,4 @@ private:
     }
 };
 
-} // namespace internal
-} // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines::internal
