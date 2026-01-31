@@ -1,7 +1,5 @@
 #pragma once
-/**
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt
- */
+// port-lint: source tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Flow.kt
 
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
@@ -50,6 +48,19 @@ namespace flow {
  * into a _hot_ one by the [stateIn] and [shareIn] operators, or by converting the flow into a hot channel
  * via the [produceIn] operator.
  *
+ * ### Flow builders
+ *
+ * There are the following basic ways to create a flow:
+ *
+ * - [flowOf(...)][flowOf] functions to create a flow from a fixed set of values.
+ * - [asFlow()][asFlow] extension functions on various types to convert them into flows.
+ * - [flow { ... }][flow] builder function to construct arbitrary flows from
+ *   sequential calls to [emit][FlowCollector.emit] function.
+ * - [channelFlow { ... }][channelFlow] builder function to construct arbitrary flows from
+ *   potentially concurrent calls to the [send][kotlinx.coroutines.channels.SendChannel.send] function.
+ * - [MutableStateFlow] and [MutableSharedFlow] define the corresponding constructor functions to create
+ *   a _hot_ flow that can be directly updated.
+ *
  * ### Flow constraints
  *
  * All implementations of the `Flow` interface must adhere to two key properties described in detail below:
@@ -67,23 +78,98 @@ namespace flow {
  * it downstream, thus making reasoning about the execution context of particular transformations or terminal
  * operations trivial.
  *
- * There is only one way to change the context of a flow: the [flowOn] operator
+ * There is only one way to change the context of a flow: the [flowOn][Flow.flowOn] operator
  * that changes the upstream context ("everything above the `flowOn` operator").
  * For additional information refer to its documentation.
+ *
+ * This reasoning can be demonstrated in practice:
+ *
+ * ```cpp
+ * auto flowA = flowOf(1, 2, 3)
+ *     ->map([](int it) { return it + 1; }) // Will be executed in ctxA
+ *     ->flowOn(ctxA); // Changes the upstream context: flowOf and map
+ *
+ * // Now we have a context-preserving flow: it is executed somewhere but this information is encapsulated in the flow itself
+ *
+ * auto filtered = flowA // ctxA is encapsulated in flowA
+ *    ->filter([](int it) { return it == 3; }); // Pure operator without a context yet
+ *
+ * withContext(Dispatchers::Main(), [&] {
+ *     // All non-encapsulated operators will be executed in Main: filter and single
+ *     auto result = filtered->single();
+ *     myUi->text = result;
+ * });
+ * ```
+ *
+ * From the implementation point of view, it means that all flow implementations should
+ * only emit from the same coroutine context.
+ * This constraint is efficiently enforced by the default [flow] builder.
+ * The [flow] builder should be used if the flow implementation does not start any coroutines.
+ * Its implementation prevents most of the development mistakes:
+ *
+ * ```cpp
+ * auto myFlow = flow([](auto& collector) {
+ *     // GlobalScope.launch { // is prohibited
+ *     // launch(Dispatchers.IO) { // is prohibited
+ *     // withContext(CoroutineName("myFlow")) { // is prohibited
+ *     collector.emit(1); // OK
+ *     coroutineScope([&] {
+ *         collector.emit(2); // OK -- still the same coroutine
+ *     });
+ * });
+ * ```
+ *
+ * Use [channelFlow] if the collection and emission of a flow are to be separated into multiple coroutines.
+ * It encapsulates all the context preservation work and allows you to focus on your
+ * domain-specific problem, rather than invariant implementation details.
+ * It is possible to use any combination of coroutine builders from within [channelFlow].
+ *
+ * If you are looking for performance and are sure that no concurrent emits and context jumps will happen,
+ * the [flow] builder can be used alongside a [coroutineScope] or [supervisorScope] instead:
+ * - Scoped primitive should be used to provide a [CoroutineScope].
+ * - Changing the context of emission is prohibited, no matter whether it is `withContext(ctx)` or
+ *   a builder argument (e.g. `launch(ctx)`).
+ * - Collecting another flow from a separate context is allowed, but it has the same effect as
+ *   applying the [flowOn] operator to that flow, which is more efficient.
  *
  * ### Exception transparency
  *
  * When `emit` or `emitAll` throws, the Flow implementations must immediately stop emitting new values and finish with an exception.
  * For diagnostics or application-specific purposes, the exception may be different from the one thrown by the emit operation,
  * suppressing the original exception as discussed below.
- * If there is a need to emit values after the downstream failed, please use the [catch] operator.
+ * If there is a need to emit values after the downstream failed, please use the [catch][Flow.catch] operator.
  *
- * The [catch] operator only catches upstream exceptions, but passes
- * all downstream exceptions. Similarly, terminal operators like [collect]
- * throw any unhandled exceptions that occur in their code or in upstream flows.
+ * The [catch][Flow.catch] operator only catches upstream exceptions, but passes
+ * all downstream exceptions. Similarly, terminal operators like [collect][Flow.collect]
+ * throw any unhandled exceptions that occur in their code or in upstream flows, for example:
+ *
+ * ```cpp
+ * flow([](auto& c) { emitData(); })
+ *     ->map([](auto it) { return computeOne(it); })
+ *     ->catch_exception([](auto _e) { ... }) // catches exceptions in emitData and computeOne
+ *     ->map([](auto it) { return computeTwo(it); })
+ *     ->collect([](auto it) { process(it); }); // throws exceptions from process and computeTwo
+ * ```
+ * The same reasoning can be applied to the [onCompletion] operator that is a declarative replacement for the `finally` block.
+ *
+ * All exception-handling Flow operators follow the principle of exception suppression:
+ *
+ * If the upstream flow throws an exception during its completion when the downstream exception has been thrown,
+ * the downstream exception becomes superseded and suppressed by the upstream exception, being a semantic
+ * equivalent of throwing from `finally` block. However, this doesn't affect the operation of the exception-handling operators,
+ * which consider the downstream exception to be the root cause and behave as if the upstream didn't throw anything.
+ *
+ * Failure to adhere to the exception transparency requirement can lead to strange behaviors which make
+ * it hard to reason about the code because an exception in the `collect { ... }` could be somehow "caught"
+ * by an upstream flow, limiting the ability of local reasoning about the code.
  *
  * Flow machinery enforces exception transparency at runtime and throws [IllegalStateException] on any attempt to emit a value,
  * if an exception has been thrown on previous attempt.
+ *
+ * ### Reactive streams
+ *
+ * Flow is [Reactive Streams](http://www.reactive-streams.org/) compliant, you can safely interop it with
+ * reactive streams using [Flow.asPublisher] and [Publisher.asFlow] from `kotlinx-coroutines-reactive` module.
  *
  * ### Not stable for inheritance
  *
@@ -101,60 +187,20 @@ struct Flow {
     /**
      * Accepts the given [collector] and [emits][FlowCollector.emit] values into it.
      *
-     * This is a terminal operator that triggers the execution of the flow. The flow
-     * starts emitting values into the collector and completes normally or with an exception.
-     *
-     * @param collector The collector that receives emitted values
-     * @param continuation The continuation for suspension support
-     * @return Pointer to suspension state/result (Kotlin-style suspend function)
-     *
-     * @note **CURRENT LIMITATION**: This method signature is designed for suspension but
-     *       the current implementation does not properly suspend. The emit() calls in
-     *       collectors are not suspending, breaking backpressure guarantees.
-     *
-     * @note **INTENDED BEHAVIOR**: Should be a suspending function that can pause when
-     *       downstream is not ready to receive values, providing proper backpressure.
-     *
-     * ### Usage Example
+     * This method can be used along with SAM-conversion of [FlowCollector]:
      * ```cpp
-     * try {
-     *     flow->collect([](auto value) { 
-     *         std::cout << "Received " << value << std::endl; 
-     *     }, continuation);
-     * } catch (const std::exception& e) {
-     *     std::cout << "Flow exception: " << e.what() << std::endl;
-     * }
+     * myFlow->collect([](auto value) { std::cout << "Collected " << value << std::endl; });
      * ```
      *
-     * ### Thread Safety
-     * Flow collection is sequential by default. All emissions happen in the same
-     * coroutine context unless explicitly modified by operators like buffer() or
-     * flatMapMerge(). Concurrent collection of the same flow is not supported.
-     *
-     * ### Backpressure
-     * In the intended design, this method provides backpressure by suspending
-     * when the collector cannot keep up. Currently, backpressure is broken due
-     * to non-suspending emit() implementations.
-     *
      * ### Method inheritance
+     *
      * To ensure the context preservation property, it is not recommended implementing this method directly.
      * Instead, [AbstractFlow] can be used as the base type to properly ensure flow's properties.
+     *
+     * All default flow implementations ensure context preservation and exception transparency properties on a best-effort basis
+     * and throw [IllegalStateException] if a violation was detected.
      */
     virtual void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) = 0;
-};
-
-/**
- * Internal marker interface for flows that are cancellable.
- *
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Context.kt
- *
- * Flows implementing this interface check for cancellation on each emission.
- * AbstractFlow implements this interface, so all flows built with the flow {}
- * builder are cancellable by default.
- */
-template<typename T>
-struct CancellableFlow : public virtual Flow<T> {
-    virtual ~CancellableFlow() = default;
 };
 
 /**
@@ -162,7 +208,7 @@ struct CancellableFlow : public virtual Flow<T> {
  * It tracks all the properties required for context preservation and throws an [IllegalStateException]
  * if any of the properties are violated.
  * 
- * Example of the implementation (C++):
+ * Example of the implementation:
  *
  * ```cpp
  * // list.asFlow() + collect counter
@@ -172,10 +218,10 @@ struct CancellableFlow : public virtual Flow<T> {
  * public:
  *     CountingListFlow(std::vector<int> v) : values(v), collectedCounter(0) {}
  *
- *     void collectSafely(FlowCollector<int>* collector) override {
+ *     void collectSafely(FlowCollector<int>* collector, Continuation<void*>* continuation) override {
  *         collectedCounter++; // Increment collected counter
  *         for (auto& it : values) { // Emit all the values
- *             collector->emit(it);
+ *             collector->emit(it, continuation);
  *         }
  *     }
  *
@@ -187,19 +233,16 @@ struct CancellableFlow : public virtual Flow<T> {
  * ```
  */
 template<typename T>
+struct CancellableFlow : public virtual Flow<T> {
+    virtual ~CancellableFlow() = default;
+};
+
+template<typename T>
 class AbstractFlow : public CancellableFlow<T> {
 public:
-    /**
-     * Collects the flow with context preservation guarantees.
-     *
-     * Transliterated from: AbstractFlow.collect() in Flow.kt
-     *
-     * Wraps the collector in SafeCollector to ensure context preservation
-     * and exception transparency, then delegates to collect_safely().
-     */
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
-        // TODO(semantics): Get actual coroutineContext from continuation for context preservation
-        auto collect_context = kotlinx::coroutines::EmptyCoroutineContext::instance();
+        // Context preservation: use the collector's context or the continuation's context
+        auto collect_context = continuation ? continuation->context() : EmptyCoroutineContext::instance();
         internal::SafeCollector<T> safe_collector(collector, collect_context);
 
         void* result = nullptr;
@@ -214,30 +257,15 @@ public:
     }
 
     /**
-     * Accepts the given collector and emits values into it safely.
+     * Accepts the given [collector] and [emits][FlowCollector.emit] values into it.
      *
-     * This method is called by the default collect() implementation after ensuring
-     * context preservation. Implementations should focus solely on emitting values.
-     *
-     * @param collector The collector that receives emitted values
-     * @param continuation The continuation for suspension support
-     * @return Pointer to suspension state/result
-     *
-     * @note **CURRENT LIMITATION**: Context preservation is not fully implemented.
-     *       The current stub implementation just delegates to this method without
-     *       proper context tracking or SafeCollector wrapping.
-     *
-     * ### Implementation Constraints
      * A valid implementation of this method has the following constraints:
-     * 1) It should not change the coroutine context when emitting values.
-     *    The emission should happen in the context of the collect() call.
-     *    Please refer to the top-level Flow documentation for more details.
-     * 2) It should serialize calls to emit() as FlowCollector implementations are not
+     * 1) It should not change the coroutine context (e.g. with `withContext(Dispatchers.IO)`) when emitting values.
+     *    The emission should happen in the context of the [collect] call.
+     *    Please refer to the top-level [Flow] documentation for more details.
+     * 2) It should serialize calls to [emit][FlowCollector.emit] as [FlowCollector] implementations are not
      *    thread-safe by default.
-     *    To automatically serialize emissions, channelFlow builder can be used instead of flow.
-     *
-     * @note **INTENDED BEHAVIOR**: Should be wrapped with SafeCollector to ensure
-     *       context preservation and exception transparency automatically.
+     *    To automatically serialize emissions [channelFlow] builder can be used instead of [flow]
      *
      * @throws IllegalStateException if any of the invariants are violated.
      */
