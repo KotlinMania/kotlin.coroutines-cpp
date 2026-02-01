@@ -1,3 +1,4 @@
+// port-lint: source kotlinx-coroutines-core/native/src/internal/CoroutineExceptionHandlerImpl.kt
 /**
  * @file CoroutineExceptionHandlerImpl.cpp
  * @brief Native platform implementation of exception handler
@@ -5,21 +6,18 @@
  * Transliterated from: kotlinx-coroutines-core/native/src/internal/CoroutineExceptionHandlerImpl.kt
  *
  * Platform-specific (native) implementation of coroutine exception handling.
- *
- * TODO:
- * - Implement platform exception handler registration
- * - Implement exception propagation to native platform
- * - Implement DiagnosticCoroutineContextException
+ * The common functionality is in CoroutineExceptionHandlerImpl.hpp.
  */
 
-#include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
-#include <vector>
+#include "kotlinx/coroutines/internal/CoroutineExceptionHandlerImpl.hpp"
 
 namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // TODO: Implement native platform exception handling
-            // This requires integration with native threading and exception mechanisms
-        } // namespace internal
-    } // namespace coroutines
+namespace coroutines {
+namespace internal {
+
+// Native platform has minimal additional implementation beyond the common code.
+// All functionality is provided by the header's inline functions.
+
+} // namespace internal
+} // namespace coroutines
 } // namespace kotlinx
