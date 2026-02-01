@@ -201,6 +201,8 @@ void generate_reports(const Codebase& source, const Codebase& target,
                       int incomplete_count,
                       int total_src_doc_lines,
                       int total_tgt_doc_lines) {
+    // Suppress unused parameter warnings
+    (void)incomplete_count;
     
     std::cout << "\n=== Generating Reports ===\n\n";
     

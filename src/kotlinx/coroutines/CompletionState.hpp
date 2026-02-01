@@ -1,4 +1,11 @@
 #pragma once
+// port-lint: source CompletionState.kt
+/**
+ * @file CompletionState.hpp
+ * @brief Completion state utilities and functions
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/CompletionState.kt
+ */
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"

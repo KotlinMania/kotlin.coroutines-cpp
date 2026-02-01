@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source channels/Channel.kt
 /**
  * @file Channel.hpp
  * @brief Channel interfaces and types.

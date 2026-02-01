@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/internal/NullSurrogate.kt
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt
  */

@@ -1,9 +1,10 @@
 #pragma once
+// port-lint: source CompletionState.kt
 /**
  * @file CompletedExceptionally.hpp
  * @brief Job state representation for exceptional completion
  *
- * Transliterated from: kotlinx-coroutines-core/common/src/CompletedExceptionally.kt
+ * Transliterated from: kotlinx-coroutines-core/common/src/CompletionState.kt
  */
 
 #include <exception>

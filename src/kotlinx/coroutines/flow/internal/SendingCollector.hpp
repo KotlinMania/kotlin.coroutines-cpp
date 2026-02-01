@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/internal/SendingCollector.kt
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"

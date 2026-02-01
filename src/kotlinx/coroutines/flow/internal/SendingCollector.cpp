@@ -1,3 +1,4 @@
+// port-lint: source flow/internal/SendingCollector.kt
 /**
  * @file SendingCollector.cpp
  * @brief Implementation of SendingCollector.

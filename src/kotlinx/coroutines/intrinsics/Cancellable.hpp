@@ -178,10 +178,12 @@ void start_coroutine_cancellable(std::function<void*(R, Continuation<T>*)> block
  * [fatalCompletion] is used only when interception machinery throws an exception
  */
 inline void start_coroutine_cancellable(Continuation<void*>* continuation, Continuation<void*>* fatal_completion) {
-    auto shared_fatal = std::dynamic_pointer_cast<Continuation<void*>>(fatal_completion->shared_from_this());
+    // Note: We use raw pointers here since the caller manages lifetime.
+    // The Kotlin version uses implicit shared ownership through the coroutine machinery.
     
     run_safely(fatal_completion, [continuation]() {
-        auto impl = std::dynamic_pointer_cast<ContinuationImpl>(continuation->shared_from_this());
+        // Try to cast to ContinuationImpl to get intercepted continuation
+        auto impl = dynamic_cast<ContinuationImpl*>(continuation);
         if (impl) {
             auto intercepted = impl->intercepted();
             resume_cancellable_with(intercepted, Result<void*>::success(nullptr));

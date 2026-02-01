@@ -1,3 +1,4 @@
+// port-lint: source NonCancellable.kt
 #include "kotlinx/coroutines/Continuation.hpp"
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/NonCancellable.kt

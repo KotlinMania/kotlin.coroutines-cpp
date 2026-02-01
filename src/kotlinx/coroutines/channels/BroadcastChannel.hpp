@@ -1,5 +1,5 @@
 #pragma once
-// Transliterated from: kotlinx-coroutines-core/common/src/channels/BroadcastChannel.kt
+// port-lint: source channels/BroadcastChannel.kt
 //
 // @file:Suppress("FunctionName", "DEPRECATION", "DEPRECATION_ERROR")
 //

@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source sync/Semaphore.kt
 /**
  * @file Semaphore.hpp
  * @brief Counting semaphore for coroutines.

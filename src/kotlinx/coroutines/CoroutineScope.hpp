@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source CoroutineScope.kt
 /**
  * @file CoroutineScope.hpp
  * @brief Scope interface for structured concurrency

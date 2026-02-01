@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source internal/ConcurrentLinkedList.kt
 /**
  * @file ConcurrentLinkedList.hpp
  * @brief Lock-free concurrent linked list infrastructure.

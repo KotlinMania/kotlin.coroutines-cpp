@@ -1,4 +1,4 @@
-// Kotlin source: kotlinx-coroutines-core/common/src/channels/Channel.kt
+// port-lint: source channels/Channel.kt
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include <string>
 

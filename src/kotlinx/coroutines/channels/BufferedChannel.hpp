@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source channels/BufferedChannel.kt
 /**
  * @file BufferedChannel.hpp
  * @brief The buffered channel implementation

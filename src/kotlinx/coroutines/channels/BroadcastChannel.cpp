@@ -1,3 +1,4 @@
+// port-lint: source channels/BroadcastChannel.kt
 /**
  * @file BroadcastChannel.cpp
  * @brief Implementation of BroadcastChannel.

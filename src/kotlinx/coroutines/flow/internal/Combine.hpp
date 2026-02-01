@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/internal/Combine.kt
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"

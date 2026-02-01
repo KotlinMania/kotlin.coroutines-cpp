@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source Delay.kt
 /**
  * @file Delay.hpp
  * @brief Delay interface and functions for coroutine timing

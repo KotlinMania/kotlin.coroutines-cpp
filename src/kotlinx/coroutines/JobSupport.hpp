@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source JobSupport.kt
 /**
  * @file JobSupport.hpp
  * @brief Core job implementation base class

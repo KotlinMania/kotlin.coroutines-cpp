@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/internal/NopCollector.kt
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 
 namespace kotlinx {

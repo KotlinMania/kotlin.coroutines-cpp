@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/SharedFlow.kt
 /**
  * @file SharedFlow.hpp
  * @brief SharedFlow and MutableSharedFlow interfaces and implementation

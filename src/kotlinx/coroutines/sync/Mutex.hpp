@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source sync/Mutex.kt
 /**
  * @file Mutex.hpp
  * @brief Mutual exclusion for coroutines.

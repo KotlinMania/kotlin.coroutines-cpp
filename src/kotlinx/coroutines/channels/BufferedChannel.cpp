@@ -1,3 +1,4 @@
+// port-lint: source channels/BufferedChannel.kt
 /**
  * @file BufferedChannel.cpp
  * @brief Implementation of BufferedChannel.

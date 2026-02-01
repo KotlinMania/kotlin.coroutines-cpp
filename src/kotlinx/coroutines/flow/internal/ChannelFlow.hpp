@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/internal/ChannelFlow.kt
 /**
  * @file ChannelFlow.hpp
  * @brief Channel-backed Flow operator skeletons and fusion utilities.
@@ -13,7 +14,7 @@
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
-#include "kotlinx/coroutines/flow/Channels.hpp"
+// Note: Channels.hpp includes ChannelFlow.hpp, so we use forward declarations instead
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/channels/ProducerScope.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"

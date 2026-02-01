@@ -1,5 +1,5 @@
 #pragma once
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/AbstractSharedFlow.kt
+// port-lint: source flow/internal/AbstractSharedFlow.kt
 //
 // Kotlin imports:
 // - kotlinx.coroutines.*

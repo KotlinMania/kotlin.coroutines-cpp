@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source CancellableContinuation.kt
 /**
  * @file CancellableContinuation.hpp
  * @brief Cancellable continuation interface with prompt cancellation guarantee
