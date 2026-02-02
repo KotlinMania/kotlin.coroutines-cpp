@@ -4,6 +4,7 @@
 #include "codebase.hpp"
 #include "porting_utils.hpp"
 #include "task_manager.hpp"
+#include "symbol_analysis.hpp"
 #include <iostream>
 #include <filesystem>
 #include <iomanip>
@@ -52,6 +53,15 @@ void print_usage(const char* program) {
     std::cerr << "      Run lint checks (unused params, missing guards)\n\n";
     std::cerr << "  " << program << " --stats <directory>\n";
     std::cerr << "      Show file statistics (line counts, stubs, TODOs)\n\n";
+    std::cerr << "Symbol Analysis:\n";
+    std::cerr << "  " << program << " --symbols <kotlin_root> <cpp_root>\n";
+    std::cerr << "      Run symbol analysis (duplicates + stubs)\n\n";
+    std::cerr << "  " << program << " --symbols-duplicates <kotlin_root> <cpp_root>\n";
+    std::cerr << "      Show duplicate class/struct definitions\n\n";
+    std::cerr << "  " << program << " --symbols-stubs <kotlin_root> <cpp_root>\n";
+    std::cerr << "      Show stub files/classes\n\n";
+    std::cerr << "  " << program << " --symbols-symbol <kotlin_root> <cpp_root> <symbol> [--json]\n";
+    std::cerr << "      Analyze a specific symbol (optionally output JSON)\n\n";
     std::cerr << "Swarm Task Management:\n";
     std::cerr << "  " << program << " --init-tasks <src_dir> <src_lang> <tgt_dir> <tgt_lang> <task_file>\n";
     std::cerr << "      Generate task file from missing/incomplete ports\n\n";
@@ -201,16 +211,19 @@ void generate_reports(const Codebase& source, const Codebase& target,
                       int incomplete_count,
                       int total_src_doc_lines,
                       int total_tgt_doc_lines) {
-    // Suppress unused parameter warnings
-    (void)incomplete_count;
     
     std::cout << "\n=== Generating Reports ===\n\n";
     
     // Calculate statistics
     int total_source = source.files.size();
-    int total_target = target.files.size();
+    int total_target_logical = target.files.size();
+    int total_target_physical = 0;
+    for (auto const& [key, val] : target.files) {
+        total_target_physical += val.paths.size();
+    }
+    
     int matched = comp.matches.size();
-    float completion_pct = (static_cast<float>(total_target) / static_cast<float>(total_source)) * 100.0f;
+    float completion_pct = (static_cast<float>(matched) / static_cast<float>(total_source)) * 100.0f;
     
     // Count quality distribution
     int excellent = 0, good = 0, critical = 0;
@@ -242,11 +255,11 @@ void generate_reports(const Codebase& source, const Codebase& target,
         report << "| Metric | Count | Percentage |\n";
         report << "|--------|-------|------------|\n";
         report << "| Total source files | " << total_source << " | 100% |\n";
-        report << "| Ported to target | " << total_target << " | " 
-               << std::fixed << std::setprecision(1) << completion_pct << "% |\n";
-        report << "| Matched files | " << matched << " | "
+        report << "| Target units (paired) | " << total_target_logical << " | - |\n";
+        report << "| Target files (total) | " << total_target_physical << " | - |\n";
+        report << "| Porting progress | " << matched << " | "
                << std::fixed << std::setprecision(1) 
-               << (static_cast<float>(matched) / total_source * 100.0f) << "% |\n";
+               << completion_pct << "% (matched) |\n";
         report << "| Missing files | " << comp.unmatched_source.size() << " | "
                << std::fixed << std::setprecision(1)
                << (static_cast<float>(comp.unmatched_source.size()) / total_source * 100.0f) << "% |\n\n";
@@ -371,7 +384,7 @@ void generate_reports(const Codebase& source, const Codebase& target,
         
         report << "## Summary\n\n";
         report << "- **Current Progress:** " << std::fixed << std::setprecision(1) 
-               << completion_pct << "% (" << total_target << "/" << total_source << " files)\n";
+               << completion_pct << "% (" << total_target_physical << "/" << total_source << " files)\n";
         report << "- **Matched Files:** " << matched << "\n";
         report << "- **Average Similarity:** " << std::fixed << std::setprecision(2) 
                << avg_similarity << "\n";
@@ -1226,6 +1239,28 @@ int main(int argc, char* argv[]) {
 
         } else if (mode == "--stats" && argc >= 3) {
             cmd_stats(argv[2]);
+
+        } else if (mode == "--symbols" && argc >= 4) {
+            SymbolAnalysisOptions options;
+            cmd_symbols(argv[2], argv[3], options);
+
+        } else if (mode == "--symbols-duplicates" && argc >= 4) {
+            SymbolAnalysisOptions options;
+            options.duplicates = true;
+            cmd_symbols(argv[2], argv[3], options);
+
+        } else if (mode == "--symbols-stubs" && argc >= 4) {
+            SymbolAnalysisOptions options;
+            options.stubs = true;
+            cmd_symbols(argv[2], argv[3], options);
+
+        } else if (mode == "--symbols-symbol" && argc >= 5) {
+            SymbolAnalysisOptions options;
+            options.symbol = argv[4];
+            if (argc >= 6 && std::string(argv[5]) == "--json") {
+                options.json = true;
+            }
+            cmd_symbol_lookup(argv[2], argv[3], options);
 
         // Swarm task management commands
         } else if (mode == "--init-tasks" && argc >= 7) {

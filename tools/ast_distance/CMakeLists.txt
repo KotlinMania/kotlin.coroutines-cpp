@@ -84,6 +84,7 @@ add_executable(ast_distance
     src/ast_parser.cpp
     src/ast_normalizer.cpp
     src/similarity.cpp
+    src/symbol_analysis.cpp
 )
 
 target_include_directories(ast_distance PRIVATE
