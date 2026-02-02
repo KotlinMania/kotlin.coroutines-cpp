@@ -35,10 +35,7 @@ namespace kotlinx {
         // ============================================================================
 
         namespace {
-            struct Symbol {
-                const char *name;
-                std::string to_string() const { return name; }
-            };
+            using internal::Symbol;
 
             Symbol COMPLETING_ALREADY_SYMBOL{"COMPLETING_ALREADY"};
             Symbol COMPLETING_WAITING_CHILDREN_SYMBOL{"COMPLETING_WAITING_CHILDREN"};

@@ -182,17 +182,25 @@ public:
     }
 
     /**
+     * Parse multiple source files into a single normalized AST by concatenating them.
+     */
+    TreePtr parse_file(const std::vector<std::string>& filepaths, Language lang) {
+        std::stringstream unified_buffer;
+        for (const auto& filepath : filepaths) {
+            std::ifstream file(filepath);
+            if (!file.is_open()) {
+                throw std::runtime_error("Cannot open file: " + filepath);
+            }
+            unified_buffer << file.rdbuf() << "\n\n";
+        }
+        return parse_string(unified_buffer.str(), lang);
+    }
+
+    /**
      * Parse a source file into a normalized AST.
      */
     TreePtr parse_file(const std::string& filepath, Language lang) {
-        std::ifstream file(filepath);
-        if (!file.is_open()) {
-            throw std::runtime_error("Cannot open file: " + filepath);
-        }
-
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        return parse_string(buffer.str(), lang);
+        return parse_file(std::vector<std::string>{filepath}, lang);
     }
 
     /**
@@ -260,17 +268,24 @@ public:
     }
 
     /**
+     * Extract comment statistics from multiple files combined.
+     */
+    CommentStats extract_comments_from_file(const std::vector<std::string>& filepaths, Language lang) {
+        std::stringstream unified_buffer;
+        for (const auto& filepath : filepaths) {
+            std::ifstream file(filepath);
+            if (file.is_open()) {
+                unified_buffer << file.rdbuf() << "\n\n";
+            }
+        }
+        return extract_comments(unified_buffer.str(), lang);
+    }
+
+    /**
      * Extract comment statistics from a file.
      */
     CommentStats extract_comments_from_file(const std::string& filepath, Language lang) {
-        std::ifstream file(filepath);
-        if (!file.is_open()) {
-            return CommentStats{};
-        }
-
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        return extract_comments(buffer.str(), lang);
+        return extract_comments_from_file(std::vector<std::string>{filepath}, lang);
     }
 
     /**
@@ -308,17 +323,24 @@ public:
     }
 
     /**
+     * Extract identifier statistics from multiple files combined.
+     */
+    IdentifierStats extract_identifiers_from_file(const std::vector<std::string>& filepaths, Language lang) {
+        std::stringstream unified_buffer;
+        for (const auto& filepath : filepaths) {
+            std::ifstream file(filepath);
+            if (file.is_open()) {
+                unified_buffer << file.rdbuf() << "\n\n";
+            }
+        }
+        return extract_identifiers(unified_buffer.str(), lang);
+    }
+
+    /**
      * Extract identifier statistics from a file.
      */
     IdentifierStats extract_identifiers_from_file(const std::string& filepath, Language lang) {
-        std::ifstream file(filepath);
-        if (!file.is_open()) {
-            return IdentifierStats{};
-        }
-
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        return extract_identifiers(buffer.str(), lang);
+        return extract_identifiers_from_file(std::vector<std::string>{filepath}, lang);
     }
 
     /**

@@ -21,12 +21,12 @@ namespace ast_distance {
  * Represents a source file with its metadata.
  */
 struct SourceFile {
-    std::string path;              // Full path
-    std::string relative_path;     // Relative to root
-    std::string filename;          // Just the filename (e.g., "Block.kt")
-    std::string stem;              // Filename without extension (e.g., "Block")
-    std::string qualified_name;    // Disambiguated name (e.g., "widgets.Block")
-    std::string extension;         // File extension
+    std::vector<std::string> paths; // All physical paths (e.g., .hpp and .cpp)
+    std::string relative_path;     // Representative relative path
+    std::string filename;          // Representative filename
+    std::string stem;              // Stem shared by all paths
+    std::string qualified_name;    // Logical name for matching
+    std::string extension;         // Representative extension
 
     PackageDecl package;           // Package/module declaration from source
     std::vector<Import> imports;   // Imports in this file
@@ -144,16 +144,16 @@ public:
             // Handle single file input
             if (has_valid_ext(root_path)) {
                 SourceFile sf;
-                sf.path = root_path;
-                sf.relative_path = fs::path(root_path).filename().string(); // Use filename as relative path
+                sf.paths.push_back(root_path);
+                sf.relative_path = fs::path(root_path).filename().string();
                 sf.filename = fs::path(root_path).filename().string();
                 sf.stem = fs::path(root_path).stem().string();
                 sf.extension = fs::path(root_path).extension().string();
                 sf.qualified_name = SourceFile::make_qualified_name(sf.relative_path);
 
-                files[sf.relative_path] = sf;
-                by_stem[sf.stem].push_back(sf.relative_path);
-                by_qualified[sf.qualified_name] = sf.relative_path;
+                files[sf.stem] = sf;
+                by_stem[sf.stem].push_back(sf.stem);
+                by_qualified[sf.qualified_name] = sf.stem;
             }
             return;
         }
@@ -164,24 +164,42 @@ public:
             std::string path = entry.path().string();
             if (!has_valid_ext(path)) continue;
 
-            // Skip test files and build artifacts
-            if (path.find("/test") != std::string::npos ||
-                path.find("/target/") != std::string::npos ||
+            // Skip build artifacts
+            if (path.find("/target/") != std::string::npos ||
                 path.find("/build/") != std::string::npos) {
                 continue;
             }
 
-            SourceFile sf;
-            sf.path = path;
-            sf.relative_path = fs::relative(path, root_path).string();
-            sf.filename = entry.path().filename().string();
-            sf.stem = entry.path().stem().string();
-            sf.extension = entry.path().extension().string();
-            sf.qualified_name = SourceFile::make_qualified_name(sf.relative_path);
+            std::string rel_path = fs::relative(path, root_path).string();
+            std::string stem = entry.path().stem().string();
+            std::string filename = entry.path().filename().string();
+            std::string extension = entry.path().extension().string();
 
-            files[sf.relative_path] = sf;
-            by_stem[sf.stem].push_back(sf.relative_path);
-            by_qualified[sf.qualified_name] = sf.relative_path;
+            // Logical grouping for C++: same stem in same directory
+            std::string directory = fs::path(rel_path).parent_path().string();
+            std::string logical_key = directory.empty() ? stem : directory + "/" + stem;
+
+            if (files.count(logical_key)) {
+                files[logical_key].paths.push_back(path);
+                // Prefer .hpp as the representative extension/filename if pairing
+                if (extension == ".hpp" || extension == ".h") {
+                    files[logical_key].filename = filename;
+                    files[logical_key].extension = extension;
+                    files[logical_key].relative_path = rel_path;
+                }
+            } else {
+                SourceFile sf;
+                sf.paths.push_back(path);
+                sf.relative_path = rel_path;
+                sf.filename = filename;
+                sf.stem = stem;
+                sf.extension = extension;
+                sf.qualified_name = SourceFile::make_qualified_name(rel_path);
+
+                files[logical_key] = sf;
+                by_stem[sf.stem].push_back(logical_key);
+                by_qualified[sf.qualified_name] = logical_key;
+            }
         }
 
         // Handle duplicates - if multiple files have same stem, use qualified names
@@ -234,8 +252,15 @@ public:
         ImportExtractor extractor;
 
         for (auto& [path, sf] : files) {
-            sf.imports = extractor.extract_from_file(sf.path);
-            sf.package = extractor.extract_package_from_file(sf.path);
+            for (const auto& p : sf.paths) {
+                auto file_imports = extractor.extract_from_file(p);
+                sf.imports.insert(sf.imports.end(), file_imports.begin(), file_imports.end());
+                
+                // Also aggregate package if not set
+                if (sf.package.parts.empty()) {
+                    sf.package = extractor.extract_package_from_file(p);
+                }
+            }
             sf.dependency_count = sf.imports.size();
         }
     }
@@ -245,18 +270,29 @@ public:
      */
     void extract_porting_data() {
         for (auto& [path, sf] : files) {
-            // Extract "Transliterated from:" header
-            sf.transliterated_from = PortingAnalyzer::extract_transliterated_from(sf.path);
+            for (const auto& p : sf.paths) {
+                // Extract "Transliterated from:" header (first one wins or aggregate)
+                if (sf.transliterated_from.empty()) {
+                    sf.transliterated_from = PortingAnalyzer::extract_transliterated_from(p);
+                }
 
-            // Get file stats
-            FileStats stats = PortingAnalyzer::analyze_file(sf.path);
-            sf.line_count = stats.line_count;
-            sf.code_lines = stats.code_lines;
-            sf.is_stub = stats.is_stub;
-            sf.todos = stats.todos;
+                // Get file stats and aggregate
+                FileStats stats = PortingAnalyzer::analyze_file(p);
+                sf.line_count += stats.line_count;
+                sf.code_lines += stats.code_lines;
+                sf.is_stub = sf.is_stub || stats.is_stub; // If any part is NOT a stub, maybe it's not a stub? 
+                                                         // Actually, usually if BOTH are stubs it's a stub.
+                                                         // Let's say if ALL are stubs, it's a stub.
+                
+                sf.todos.insert(sf.todos.end(), stats.todos.begin(), stats.todos.end());
 
-            // Run lint checks
-            sf.lint_errors = PortingAnalyzer::lint_file(sf.path);
+                // Run lint checks
+                auto lints = PortingAnalyzer::lint_file(p);
+                sf.lint_errors.insert(sf.lint_errors.end(), lints.begin(), lints.end());
+            }
+            
+            // Refine stub detection: if we have significant code lines across both, it's not a stub
+            if (sf.code_lines > 50) sf.is_stub = false;
         }
     }
 
@@ -717,14 +753,13 @@ public:
 
         for (auto& m : matches) {
             try {
-                std::string src_path = source.root_path + "/" + m.source_path;
-                std::string tgt_path = target.root_path + "/" + m.target_path;
+                const auto& src_file = source.files.at(m.source_path);
+                const auto& tgt_file = target.files.at(m.target_path);
 
-                auto src_tree = parser.parse_file(src_path, string_to_language(source.language));
-                auto tgt_tree = parser.parse_file(tgt_path, string_to_language(target.language));
+                auto src_tree = parser.parse_file(src_file.paths, string_to_language(source.language));
+                auto tgt_tree = parser.parse_file(tgt_file.paths, string_to_language(target.language));
 
                 // Normalize ASTs: Flatten namespaces/packages to reduce structural noise
-                // Node type 82 is PACKAGE (includes C++ namespaces)
                 if (src_tree) src_tree->flatten_node_type(82);
                 if (tgt_tree) tgt_tree->flatten_node_type(82);
 
@@ -732,8 +767,8 @@ public:
                     src_tree.get(), tgt_tree.get());
 
                 // Extract documentation statistics
-                auto src_docs = parser.extract_comments_from_file(src_path, string_to_language(source.language));
-                auto tgt_docs = parser.extract_comments_from_file(tgt_path, string_to_language(target.language));
+                auto src_docs = parser.extract_comments_from_file(src_file.paths, string_to_language(source.language));
+                auto tgt_docs = parser.extract_comments_from_file(tgt_file.paths, string_to_language(target.language));
 
                 m.source_doc_lines = src_docs.total_doc_lines;
                 m.target_doc_lines = tgt_docs.total_doc_lines;

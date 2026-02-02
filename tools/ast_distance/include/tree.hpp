@@ -111,6 +111,7 @@ struct Tree {
         });
         return hist;
     }
+
     // Flatten nodes of specific type (replacing them with their children)
     void flatten_node_type(int type_to_flatten) {
         if (children.empty()) return;

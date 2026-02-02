@@ -10,16 +10,17 @@ namespace fs = std::filesystem;
 
 /**
  * Port-lint support for tracking Rust -> Kotlin provenance.
- * 
+ *
  * Supports these comment annotations:
- * 
+ *
  * PROVENANCE:
  *   // port-lint: source core/src/codex.rs
- *   
+ *   // port-lint: tests core/src/codex.rs (for test files)
+ *
  * SUPPRESSION:
  *   // port-lint: ignore-duplicate
  *   // port-lint: ignore
- * 
+ *
  * Based on tools/port_linter.py
  */
 
@@ -27,10 +28,11 @@ namespace port_lint {
 
 /**
  * Extract port-lint source annotation from a Kotlin file.
- * 
+ *
  * Searches the first 50 lines for:
  *   // port-lint: source <path>
- * 
+ *   // port-lint: tests <path>
+ *
  * Returns the Rust source path if found (e.g., "core/src/codex.rs")
  */
 inline std::optional<std::string> extract_source_annotation(const fs::path& file_path) {
@@ -38,9 +40,9 @@ inline std::optional<std::string> extract_source_annotation(const fs::path& file
     if (!file.is_open()) {
         return std::nullopt;
     }
-    
-    // Regex: // port-lint: source <path>
-    std::regex pattern(R"(//\s*port-lint:\s*source\s+(.+))", std::regex::icase);
+
+    // Regex: // port-lint: source <path> OR // port-lint: tests <path>
+    std::regex pattern(R"(//\s*port-lint:\s*(?:source|tests)\s+(.+))", std::regex::icase);
     
     std::string line;
     int line_count = 0;

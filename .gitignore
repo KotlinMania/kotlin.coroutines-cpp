@@ -150,6 +150,8 @@ Desktop.ini
 
 # ast_distance build artifacts
 tools/ast_distance/build/
-tools/ast_distance/ast_distance
 tasks.json
 tasks.json.lock
+
+# Local tool binaries
+ast_distance

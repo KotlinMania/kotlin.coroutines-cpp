@@ -1,20 +1,19 @@
+// port-lint: source flow/terminal/Count.kt
 /**
  * @file Count.cpp
  * @brief Terminal flow operators for counting: count, count with predicate
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Count.kt
  *
- * Note: Template functions are in the header file. This file is for documentation
- * and any non-template implementations.
+ * Template implementations live in Count.hpp.
  */
 
-#include "kotlinx/coroutines/flow/Flow.hpp"
+#include "kotlinx/coroutines/flow/Count.hpp"
 
 namespace kotlinx {
-    namespace coroutines {
-        namespace flow {
-            // Template functions (count) are defined in headers
-            // since they are templates and need to be visible at the point of use.
-        } // namespace flow
-    } // namespace coroutines
-} // namespace kotlinx
+namespace coroutines {
+namespace flow {
+// No non-template implementations.
+}
+}
+}

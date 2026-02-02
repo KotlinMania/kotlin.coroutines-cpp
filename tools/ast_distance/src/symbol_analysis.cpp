@@ -16,6 +16,15 @@ namespace ast_distance {
 
 namespace {
 
+bool should_skip_path(const std::string& path) {
+    return path.find("/test") != std::string::npos ||
+           path.find("/build/") != std::string::npos ||
+           path.find("/CMakeFiles/") != std::string::npos ||
+           path.find("/cmake-build") != std::string::npos ||
+           path.find("/target/") != std::string::npos ||
+           path.find("/_deps/") != std::string::npos;
+}
+
 struct CppClassDef {
     std::string name;
     std::string kind;
@@ -69,7 +78,7 @@ std::vector<CppClassDef> extract_cpp_class_definitions(const fs::path& path) {
     std::string clean = remove_cpp_comments(content);
 
     std::regex class_def_re(
-        R"((?:template\s*<[^>]*>\s*)?(class|struct)\s+(\w+)(?:\s*:\s*[^{]+)?\s*\{)",
+        R"((?:template\s*<[^>]*>\s*)?(class|struct)\s+([A-Za-z_][\w:]*)\s*(?:\s*:\s*[^{]+)?\s*\{)",
         std::regex::multiline);
 
     std::sregex_iterator begin(clean.begin(), clean.end(), class_def_re);
@@ -200,7 +209,7 @@ void cmd_symbols(const std::string& kotlin_root,
     for (const auto& entry : fs::recursive_directory_iterator(cpp_root)) {
         if (!entry.is_regular_file()) continue;
         std::string path = entry.path().string();
-        if (path.find("test") != std::string::npos) continue;
+        if (should_skip_path(path)) continue;
         if (!path.ends_with(".hpp") && !path.ends_with(".cpp") &&
             !path.ends_with(".h") && !path.ends_with(".cc")) {
             continue;
@@ -234,7 +243,7 @@ void cmd_symbols(const std::string& kotlin_root,
     for (const auto& entry : fs::recursive_directory_iterator(cpp_root)) {
         if (!entry.is_regular_file()) continue;
         std::string path = entry.path().string();
-        if (path.find("test") != std::string::npos) continue;
+        if (should_skip_path(path)) continue;
         if (path.ends_with(".cpp") || path.ends_with(".cc")) {
             if (is_stub_file(entry.path())) {
                 stubs.push_back({fs::relative(entry.path(), cpp_root).string(),
@@ -376,7 +385,7 @@ void cmd_symbol_lookup(const std::string& kotlin_root,
     for (const auto& entry : fs::recursive_directory_iterator(cpp_root)) {
         if (!entry.is_regular_file()) continue;
         std::string path = entry.path().string();
-        if (path.find("test") != std::string::npos) continue;
+        if (should_skip_path(path)) continue;
         if (!path.ends_with(".hpp") && !path.ends_with(".cpp") &&
             !path.ends_with(".h") && !path.ends_with(".cc")) {
             continue;
