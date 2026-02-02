@@ -1,5 +1,5 @@
+// port-lint: source internal/InternalAnnotations.common.kt
 // Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/InternalAnnotations.common.kt
 //
 // TODO: This is a mechanical transliteration - semantics not fully implemented
 // TODO: Annotations in Kotlin don't have direct C++ equivalents

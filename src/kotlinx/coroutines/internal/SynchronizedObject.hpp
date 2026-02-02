@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source internal/Synchronized.common.kt
 /**
  * @file SynchronizedObject.hpp
  * @brief Synchronization primitive for K/N compatibility

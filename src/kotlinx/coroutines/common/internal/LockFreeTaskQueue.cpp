@@ -1,5 +1,5 @@
+// port-lint: source internal/LockFreeTaskQueue.kt
 // Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/LockFreeTaskQueue.kt
 //
 // TODO: This is a mechanical transliteration - semantics not fully implemented
 // TODO: atomicfu library needs C++ atomic equivalent

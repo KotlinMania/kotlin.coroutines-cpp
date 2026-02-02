@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/operators/Limit.kt
 /**
  * @file Limit.hpp
  * @brief Flow operators that limit emissions: drop, dropWhile, take, takeWhile, transformWhile

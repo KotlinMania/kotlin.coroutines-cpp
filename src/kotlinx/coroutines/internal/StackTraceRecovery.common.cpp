@@ -1,5 +1,5 @@
+// port-lint: source internal/StackTraceRecovery.common.kt
 // Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.kt
 //
 // This is a mechanical transliteration; common/native actuals are mostly no-ops.
 // expect functions still need platform-specific implementations.

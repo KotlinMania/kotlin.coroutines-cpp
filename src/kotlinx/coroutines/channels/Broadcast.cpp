@@ -1,4 +1,4 @@
-// Transliterated from: kotlinx-coroutines-core/common/src/channels/Broadcast.kt
+// port-lint: source channels/Broadcast.kt
 //
 // Kotlin imports:
 // - kotlinx.coroutines.*

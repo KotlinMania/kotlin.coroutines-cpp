@@ -1,3 +1,4 @@
+// port-lint: source Guidance.kt
 #include <functional>
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
 // Original: kotlinx-coroutines-core/common/src/Guidance.kt

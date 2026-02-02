@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source internal/LimitedDispatcher.kt
 /**
  * @file LimitedDispatcher.hpp
  * @brief Limited parallelism dispatcher

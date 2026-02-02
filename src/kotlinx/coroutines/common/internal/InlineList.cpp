@@ -1,5 +1,5 @@
+// port-lint: source internal/InlineList.kt
 // Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/InlineList.kt
 //
 // TODO: This is a mechanical transliteration - semantics not fully implemented
 // TODO: @JvmInline value class needs C++ equivalent (std::variant or union)

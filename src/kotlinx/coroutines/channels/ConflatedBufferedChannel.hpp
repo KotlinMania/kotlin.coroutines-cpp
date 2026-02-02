@@ -1,5 +1,5 @@
 #pragma once
-// Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt
+// port-lint: source channels/ConflatedBufferedChannel.kt
 //
 // Kotlin imports:
 // - kotlinx.coroutines.channels.BufferOverflow.*

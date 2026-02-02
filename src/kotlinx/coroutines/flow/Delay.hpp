@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/operators/Delay.kt
 /**
  * @file Delay.hpp
  * @brief Time-based flow operators: debounce, sample, timeout

@@ -1,3 +1,4 @@
+// port-lint: source flow/internal/SafeCollector.common.kt
 /**
  * @file SafeCollector.common.cpp
  * @brief Implementation of SafeCollector.

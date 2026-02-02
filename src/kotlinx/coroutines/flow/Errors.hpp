@@ -1,3 +1,4 @@
+// port-lint: source flow/operators/Errors.kt
 /**
  * @file Errors.hpp
  * @brief Error handling operators for flows: catch_, retry, retry_when

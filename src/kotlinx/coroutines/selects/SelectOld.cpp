@@ -1,3 +1,4 @@
+// port-lint: source selects/SelectOld.kt
 /**
  * @file SelectOld.cpp
  * @brief Legacy select implementations for binary compatibility

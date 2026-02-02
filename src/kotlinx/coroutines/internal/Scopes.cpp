@@ -1,3 +1,4 @@
+// port-lint: source internal/Scopes.kt
 /**
  * @file Scopes.cpp
  * @brief Implementation of ScopeCoroutine and ContextScope.

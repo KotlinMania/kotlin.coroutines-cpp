@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source CloseableCoroutineDispatcher.kt
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 
 namespace kotlinx {

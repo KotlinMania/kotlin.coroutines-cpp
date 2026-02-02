@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/internal/Merge.kt
 /**
  * @file Merge.hpp
  * @brief Internal flow merge operators (ChannelFlowMerge, ChannelLimitedFlowMerge, ChannelFlowTransformLatest).

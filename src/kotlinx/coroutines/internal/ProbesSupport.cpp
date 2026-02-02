@@ -1,3 +1,4 @@
+// port-lint: source internal/ProbesSupport.common.kt
 /**
  * @file ProbesSupport.cpp
  * @brief Native platform implementation of probes support

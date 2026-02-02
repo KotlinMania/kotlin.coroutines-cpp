@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/terminal/Reduce.kt
 /**
  * @file Reduce.hpp
  * @brief Terminal flow operators for reduction: reduce, fold, first, last, single

@@ -1,3 +1,4 @@
+// port-lint: source channels/Deprecated.kt
 #include "kotlinx/coroutines/channels/Channels.hpp"
 
 namespace kotlinx {

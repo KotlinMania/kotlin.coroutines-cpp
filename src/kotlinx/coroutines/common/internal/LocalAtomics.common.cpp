@@ -1,5 +1,5 @@
+// port-lint: source internal/LocalAtomics.common.kt
 // Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/LocalAtomics.common.kt
 //
 // TODO: This is a mechanical transliteration - semantics not fully implemented
 // TODO: expect class needs platform-specific implementation

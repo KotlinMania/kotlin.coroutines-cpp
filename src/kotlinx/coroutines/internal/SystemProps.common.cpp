@@ -1,3 +1,4 @@
+// port-lint: source internal/SystemProps.common.kt
 /**
  * @file SystemProps.common.cpp
  * @brief System property access utilities

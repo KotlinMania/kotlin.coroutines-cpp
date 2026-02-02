@@ -1,5 +1,5 @@
+// port-lint: source CoroutineContext.common.kt
 // Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/CoroutineContext.common.kt
 //
 // TODO: expect functions - platform-specific implementations needed
 // TODO: @InternalCoroutinesApi, @PublishedApi - no C++ equivalents

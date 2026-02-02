@@ -1,3 +1,4 @@
+// port-lint: source internal/ThreadContext.common.kt
 #include "kotlinx/coroutines/internal/ThreadContext.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 

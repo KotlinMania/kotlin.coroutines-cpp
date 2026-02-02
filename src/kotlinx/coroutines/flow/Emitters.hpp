@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/operators/Emitters.kt
 /**
  * @file Emitters.hpp
  * @brief Flow operators that emit values: transform, onStart, onCompletion, onEmpty

@@ -1,3 +1,4 @@
+// port-lint: source Debug.common.kt
 #include <string>
 #include <functional>
 // Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)

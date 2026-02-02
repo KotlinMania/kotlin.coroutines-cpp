@@ -1,3 +1,4 @@
+// port-lint: source Exceptions.common.kt
 /**
  * @file Exceptions.common.cpp
  * @brief Implementation of Exceptions.

@@ -1,6 +1,6 @@
 #pragma once
+// port-lint: source channels/Channels.common.kt
 // Transliterated from:
-// - kotlinx-coroutines-core/common/src/channels/Channels.common.kt
 // - kotlinx-coroutines-core/concurrent/src/channels/Channels.kt
 // - Channel factory from kotlinx-coroutines-core/common/src/channels/Channel.kt (lines 1373-1456)
 //

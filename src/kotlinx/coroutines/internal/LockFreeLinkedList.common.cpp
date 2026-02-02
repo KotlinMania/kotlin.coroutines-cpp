@@ -1,3 +1,4 @@
+// port-lint: source internal/LockFreeLinkedList.common.kt
 /**
  * @file LockFreeLinkedList.common.cpp
  * @brief Implementation of LockFreeLinkedList.
