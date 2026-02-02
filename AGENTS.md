@@ -28,6 +28,7 @@
 - Public vs private split:
     - Put public interfaces, abstract bases, public constants, and forward declarations in `.hpp`.
     - Put implementations, helper classes, and non-public functions in `.cpp`.
+- **Templates:** Do not place templates in `.cpp` unless you add explicit instantiations for every use. Prefer header-only templates (`.hpp`).
 - Kotlin companions/extensions:
     - Companion object members → `static` methods or free functions in the same namespace.
     - Extension functions → free functions in the corresponding namespace.
@@ -174,6 +175,14 @@
 - Don’t dump large implementations into headers; keep headers slim.
 - Don’t introduce templates unless the Kotlin API requires it at the public surface.
 - Don’t paper over semantic gaps without a `TODO` — call them out explicitly.
+- Don’t change ownership semantics (raw vs `shared_ptr`/`unique_ptr`) unless the API already uses that pattern or you are explicitly instructed to.
+
+---
+
+### Coordination & file safety (multi‑agent guardrails)
+- **Single-file focus:** If assigned a specific file, do not touch other files unless required for correctness. If a change elsewhere is required, **open and read the file first** to confirm no conflicting edits exist and note the reason in your response.
+- **Always read before edit:** Open the file you are about to change and look for existing in‑flight edits. Do not overwrite or revert unrelated work.
+- **Check before creating files:** Before adding a new file, search the repo to ensure it doesn’t already exist (or wasn’t created by another agent). Prefer `rg --files` or `find` and re-use or extend existing files when appropriate.
 
 ---
 
@@ -186,6 +195,17 @@
 6. Insert specific `TODO`s for any algorithmic gap (see taxonomy), and remove obsolete TODOs.
 7. Leave a short file header linking the original Kotlin path.
 8. Update the audit tables with the new status and file:line references.
+9. **Function provenance:** Add a `// Transliterated from: <Kotlin path>:<line-range>` comment above each translated function or class. If a function is synthesized from multiple Kotlin functions, list all sources.
+10. **Documentation parity:** Ensure comments and examples reflect the actual translated behavior. If behavior is stubbed or simplified, update the comment and add a tagged `TODO` noting the gap.
+
+---
+
+### Documentation quality & provenance (required)
+- **Per-file provenance:** Keep `Transliterated from:` at file header with the Kotlin path.
+- **Per-function provenance:** Every translated function/class must have a `Transliterated from:` line with Kotlin path + line range.
+- **No stale comments:** If a comment no longer matches the implementation (e.g., stubbed, simplified, or TODO), update or remove it.
+- **Mark deliberate deviations:** Use `// NOTE(port):` when you intentionally diverge from Kotlin to keep the port buildable.
+- **Keep KDoc tight:** Prefer accurate, minimal KDoc over long doc blocks that may go stale.
 
 ---
 
@@ -202,6 +222,9 @@
 - **Run `make ast-lint`** — no new lint errors in modified files.
 - **Run `make ast-todos-summary`** — no untagged TODOs.
 - **Run `make ast-deep`** — similarity scores for modified files are acceptable (>0.60).
+- **Run `ast_distance --symbols`** for symbol collisions before committing when touching class/type definitions.
+  - Use `ast_distance --symbols-duplicates` to detect duplicate class names.
+  - Use `ast_distance --symbols-stubs` to detect stubbed classes.
 - Headers contain only the public surface and minimal ABI-critical code.
 - Methods and enums follow naming rules; no camelCase methods remain in C++.
 - All new gaps are called out with a specific, tagged `TODO`.
