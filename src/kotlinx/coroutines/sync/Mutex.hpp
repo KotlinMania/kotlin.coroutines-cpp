@@ -11,6 +11,11 @@
 #include "kotlinx/coroutines/selects/Select.hpp"
 #include <functional>
 #include <memory>
+#include <atomic>
+#include <thread>
+#include <cassert>
+#include <string>
+#include <stdexcept>
 
 namespace kotlinx {
 namespace coroutines {
@@ -146,6 +151,216 @@ void with_lock_void(Mutex& mutex, ActionFunc&& action) {
     with_lock_void(mutex, nullptr, std::forward<ActionFunc>(action));
 }
 
+// ============================================================================
+// MutexImpl - Line 130-302: Concrete implementation of Mutex
+// ============================================================================
+
+// Private constants (Lines 304-313)
+namespace detail {
+    // TryLock result codes
+    constexpr int TRY_LOCK_SUCCESS = 0;
+    constexpr int TRY_LOCK_FAILED = 1;
+    constexpr int TRY_LOCK_ALREADY_LOCKED_BY_OWNER = 2;
+
+    // HoldsLock result codes
+    constexpr int HOLDS_LOCK_UNLOCKED = 0;
+    constexpr int HOLDS_LOCK_YES = 1;
+    constexpr int HOLDS_LOCK_ANOTHER_OWNER = 2;
+
+    // Sentinel value for "no owner"
+    inline void* NO_OWNER() {
+        static int sentinel = 0;
+        return &sentinel;
+    }
+}
+
+/**
+ * Line 130-302: MutexImpl
+ *
+ * Concrete implementation of Mutex interface.
+ * Implements fair locking with owner tracking for debugging.
+ *
+ * After the lock is acquired, the corresponding owner is stored in owner_.
+ * The unlock operation checks the owner and either re-sets it to NO_OWNER,
+ * if there is no waiting request, or to the owner of the suspended lock
+ * operation to be resumed, otherwise.
+ */
+class MutexImpl : public Mutex {
+public:
+    /**
+     * Constructor - creates mutex in specified initial state.
+     * @param locked If true, mutex starts in locked state
+     */
+    explicit MutexImpl(bool locked = false)
+        : available_permits_(locked ? 0 : 1)
+        , owner_(locked ? nullptr : detail::NO_OWNER())
+    {}
+
+    ~MutexImpl() override = default;
+
+    // Line 144-145: isLocked property
+    bool is_locked() const override {
+        return available_permits_.load(std::memory_order_acquire) == 0;
+    }
+
+    // Line 147: holdsLock
+    bool holds_lock(void* owner) override {
+        return holds_lock_impl(owner) == detail::HOLDS_LOCK_YES;
+    }
+
+    // Line 166-169: lock with tryLock fast-path
+    void lock(void* owner = nullptr) override {
+        if (try_lock(owner)) return;
+        lock_suspend(owner);
+    }
+
+    // Line 176-181: tryLock
+    bool try_lock(void* owner = nullptr) override {
+        int result = try_lock_impl(owner);
+        switch (result) {
+            case detail::TRY_LOCK_SUCCESS:
+                return true;
+            case detail::TRY_LOCK_FAILED:
+                return false;
+            case detail::TRY_LOCK_ALREADY_LOCKED_BY_OWNER:
+                throw std::logic_error(
+                    "This mutex is already locked by the specified owner");
+            default:
+                throw std::logic_error("unexpected tryLock result");
+        }
+    }
+
+    // Line 206-221: unlock
+    void unlock(void* owner = nullptr) override {
+        while (true) {
+            // Is this mutex locked?
+            if (!is_locked()) {
+                throw std::logic_error("This mutex is not locked");
+            }
+            // Read the owner, waiting until it is set in a spin-loop if required
+            void* cur_owner = owner_.load(std::memory_order_acquire);
+            if (cur_owner == detail::NO_OWNER()) continue; // spin-wait
+
+            // Check the owner
+            if (cur_owner != owner && owner != nullptr) {
+                throw std::logic_error(
+                    "This mutex is locked by another owner, but different owner expected");
+            }
+
+            // Try to clean the owner first using CAS to synchronize
+            void* expected = cur_owner;
+            if (!owner_.compare_exchange_weak(expected, detail::NO_OWNER(),
+                    std::memory_order_release, std::memory_order_relaxed)) {
+                continue; // retry
+            }
+
+            // Release the semaphore permit at the end
+            available_permits_.fetch_add(1, std::memory_order_release);
+            return;
+        }
+    }
+
+    // Line 224-229: onLock select clause (deprecated)
+    selects::SelectClause2<void*, Mutex*>& get_on_lock() override {
+        // TODO: Implement select clause support
+        throw std::runtime_error("onLock is deprecated and not implemented");
+    }
+
+    // Line 301: toString
+    std::string to_string() const {
+        void* cur_owner = owner_.load(std::memory_order_relaxed);
+        return std::string("Mutex[isLocked=") +
+               (is_locked() ? "true" : "false") +
+               ",owner=" +
+               (cur_owner == detail::NO_OWNER() ? "NO_OWNER" : "set") + "]";
+    }
+
+private:
+    // Semaphore-like permit tracking (base class would be SemaphoreAndMutexImpl)
+    std::atomic<int> available_permits_;
+
+    // Line 137: Owner tracking for debugging
+    std::atomic<void*> owner_;
+
+    /**
+     * Line 154-164: holdsLockImpl
+     *
+     * @return HOLDS_LOCK_UNLOCKED if mutex is unlocked
+     *         HOLDS_LOCK_YES if mutex is held with the specified owner
+     *         HOLDS_LOCK_ANOTHER_OWNER if mutex is held with a different owner
+     */
+    int holds_lock_impl(void* owner) {
+        while (true) {
+            // Is this mutex locked?
+            if (!is_locked()) return detail::HOLDS_LOCK_UNLOCKED;
+
+            void* cur_owner = owner_.load(std::memory_order_acquire);
+            // Wait in a spin-loop until the owner is set
+            if (cur_owner == detail::NO_OWNER()) continue; // spin-wait
+
+            // Check the owner
+            return (cur_owner == owner) ?
+                   detail::HOLDS_LOCK_YES : detail::HOLDS_LOCK_ANOTHER_OWNER;
+        }
+    }
+
+    /**
+     * Line 183-204: tryLockImpl
+     *
+     * Attempts to acquire the lock atomically.
+     */
+    int try_lock_impl(void* owner) {
+        while (true) {
+            // Try to acquire the semaphore permit
+            int expected = 1;
+            if (available_permits_.compare_exchange_weak(expected, 0,
+                    std::memory_order_acquire, std::memory_order_relaxed)) {
+                // Successfully acquired
+                assert(owner_.load(std::memory_order_relaxed) == detail::NO_OWNER());
+                owner_.store(owner, std::memory_order_release);
+                return detail::TRY_LOCK_SUCCESS;
+            } else {
+                // Permit acquisition failed
+                // Check if locked by our owner
+                if (owner == nullptr) return detail::TRY_LOCK_FAILED;
+
+                switch (holds_lock_impl(owner)) {
+                    case detail::HOLDS_LOCK_YES:
+                        return detail::TRY_LOCK_ALREADY_LOCKED_BY_OWNER;
+                    case detail::HOLDS_LOCK_ANOTHER_OWNER:
+                        return detail::TRY_LOCK_FAILED;
+                    case detail::HOLDS_LOCK_UNLOCKED:
+                        continue; // retry
+                }
+            }
+        }
+    }
+
+    /**
+     * Line 171-174: Suspending lock operation
+     * TODO: Implement proper coroutine suspension with waiter queue
+     */
+    void lock_suspend(void* owner) {
+        // Spin-wait fallback (proper implementation would use coroutine suspension)
+        while (!try_lock(owner)) {
+            std::this_thread::yield();
+        }
+    }
+};
+
+// ============================================================================
+// Factory functions implementation
+// ============================================================================
+
+inline Mutex* create_mutex(bool locked) {
+    return new MutexImpl(locked);
+}
+
+inline std::shared_ptr<Mutex> make_mutex(bool locked) {
+    return std::make_shared<MutexImpl>(locked);
+}
+
 } // namespace sync
 } // namespace coroutines
 } // namespace kotlinx
+

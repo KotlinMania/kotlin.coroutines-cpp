@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/operators/Merge.kt
 /**
  * @file Merge.hpp
  * @brief Flow merge operators: merge, flatten_merge, transform_latest, map_latest

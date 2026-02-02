@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source flow/Channels.kt
 
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt
@@ -292,6 +293,39 @@ std::shared_ptr<Flow<T>> consume_as_flow(std::shared_ptr<channels::ReceiveChanne
     return std::make_shared<detail::ChannelAsFlow<T>>(channel, true);
 }
 
+// ============================================================================
+// Line 154-157: produceIn function
+// ============================================================================
 
+/**
+ * Creates a [produce] coroutine that collects the given flow.
+ *
+ * This transformation is **stateful**, it launches a [produce] coroutine
+ * that collects the given flow, and has the same behavior:
+ *
+ * - if collecting the flow throws, the channel will be closed with that exception
+ * - if the ReceiveChannel is cancelled, the collection of the flow will be cancelled
+ * - if collecting the flow completes normally, the ReceiveChannel will be closed normally
+ *
+ * A channel with default buffer size is created.
+ * Use buffer operator on the flow before calling produce_in to specify a value other than
+ * default and to control what happens when data is produced faster than it is consumed,
+ * that is to control backpressure behavior.
+ *
+ * Transliterated from:
+ * public fun <T> Flow<T>.produceIn(scope: CoroutineScope): ReceiveChannel<T>
+ */
+template <typename T>
+std::shared_ptr<channels::ReceiveChannel<T>> produce_in(Flow<T>* flow, CoroutineScope* scope) {
+    // Convert flow to ChannelFlow and produce
+    auto channel_flow = dynamic_cast<internal::ChannelFlow<T>*>(flow);
+    if (channel_flow) {
+        return channel_flow->produce_impl(scope);
+    }
+    // For non-ChannelFlow, wrap in a ChannelFlow first
+    // TODO: Implement as_channel_flow() helper
+    throw std::runtime_error("produce_in not implemented for non-ChannelFlow");
+}
 
 } // namespace kotlinx::coroutines::flow
+

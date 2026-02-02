@@ -179,5 +179,160 @@ public:
     std::shared_ptr<CoroutineContext> get_coroutine_context() const override;
 };
 
+// ============================================================================
+// Line 99-100: CoroutineScope plus operator
+// ============================================================================
+
+/**
+ * Adds the specified coroutine context to this scope, overriding existing elements
+ * in the current scope's context with the corresponding keys.
+ *
+ * This is a shorthand for `create_coroutine_scope(this_scope.context + context)`.
+ */
+std::shared_ptr<CoroutineScope> operator+(
+    const CoroutineScope& scope,
+    const CoroutineContext& context
+);
+
+// ============================================================================
+// Line 157-158: isActive property
+// ============================================================================
+
+/**
+ * Returns `true` when the current [Job] is still active (has not completed and was not cancelled yet).
+ *
+ * This function returns `true` if there is no [job][Job] in the scope's context.
+ *
+ * Transliterated from:
+ * public val CoroutineScope.isActive: Boolean get() = coroutineContext[Job]?.isActive ?: true
+ */
+inline bool is_active(const CoroutineScope& scope) {
+    auto job = scope.get_job();
+    return job ? job->is_active() : true;
+}
+
+// ============================================================================
+// Line 307-310: cancel function
+// ============================================================================
+
+/**
+ * Cancels this scope, including its job and all its children with an optional cancellation cause.
+ *
+ * A cause can be used to specify an error message or to provide other details on
+ * a cancellation reason for debugging purposes.
+ *
+ * Throws std::logic_error if the scope does not have a job in it.
+ *
+ * Transliterated from:
+ * public fun CoroutineScope.cancel(cause: CancellationException? = null)
+ */
+inline void cancel(CoroutineScope& scope, std::exception_ptr cause = nullptr) {
+    auto job = scope.get_job();
+    if (!job) {
+        throw std::logic_error("Scope cannot be cancelled because it does not have a job");
+    }
+    job->cancel(cause);
+}
+
+/**
+ * Cancels this scope with a specified diagnostic error message.
+ *
+ * Transliterated from:
+ * public fun CoroutineScope.cancel(message: String, cause: Throwable? = null)
+ */
+inline void cancel(CoroutineScope& scope, const std::string& message) {
+    cancel(scope, std::make_exception_ptr(std::runtime_error(message)));
+}
+
+// ============================================================================
+// Line 352: ensureActive function
+// ============================================================================
+
+/**
+ * Throws the CancellationException that was the scope's cancellation cause
+ * if the scope is no longer active.
+ *
+ * Coroutine cancellation is cooperative and normally checked when a coroutine suspends.
+ * ensureActive() is for code that wants to be cooperative without suspending.
+ *
+ * This function does nothing if there is no Job in the scope's context.
+ *
+ * Transliterated from:
+ * public fun CoroutineScope.ensureActive(): Unit = coroutineContext.ensureActive()
+ */
+inline void ensure_active(const CoroutineScope& scope) {
+    auto job = scope.get_job();
+    if (job && !job->is_active()) {
+        throw std::runtime_error("Coroutine was cancelled");  // Would be CancellationException
+    }
+}
+
+// ============================================================================
+// Line 298-299: CoroutineScope factory function
+// ============================================================================
+
+class ContextScope;  // Forward declaration
+
+/**
+ * Creates a [CoroutineScope] that wraps the given coroutine [context].
+ *
+ * If the given context does not contain a Job element, then a default Job() is created.
+ * This way, failure of any child coroutine in this scope or cancellation of the scope itself
+ * cancels all the scope's children, just like inside coroutine_scope block.
+ *
+ * Transliterated from:
+ * public fun CoroutineScope(context: CoroutineContext): CoroutineScope
+ */
+std::shared_ptr<CoroutineScope> create_coroutine_scope(std::shared_ptr<CoroutineContext> context);
+
+// ============================================================================
+// Line 121-122: MainScope factory function
+// ============================================================================
+
+/**
+ * Creates the main CoroutineScope for UI components.
+ *
+ * Example of use:
+ * ```cpp
+ * class MyAndroidActivity {
+ *     std::shared_ptr<CoroutineScope> scope = main_scope();
+ *
+ *     void on_destroy() {
+ *         cancel(*scope);
+ *     }
+ * };
+ * ```
+ *
+ * The resulting scope has SupervisorJob and Dispatchers::Main context elements.
+ *
+ * Transliterated from:
+ * public fun MainScope(): CoroutineScope = ContextScope(SupervisorJob() + Dispatchers.Main)
+ */
+std::shared_ptr<CoroutineScope> main_scope();
+
+// ============================================================================
+// ContextScope implementation
+// ============================================================================
+
+/**
+ * Simple CoroutineScope implementation that wraps a context.
+ *
+ * Transliterated from: internal class ContextScope (Scopes.kt)
+ */
+class ContextScope : public CoroutineScope {
+public:
+    explicit ContextScope(std::shared_ptr<CoroutineContext> context)
+        : context_(std::move(context))
+    {}
+
+    std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
+        return context_;
+    }
+
+private:
+    std::shared_ptr<CoroutineContext> context_;
+};
+
 } // namespace coroutines
 } // namespace kotlinx
+
