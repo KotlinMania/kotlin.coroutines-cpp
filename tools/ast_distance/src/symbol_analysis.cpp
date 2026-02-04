@@ -147,6 +147,7 @@ void build_kotlin_index(const std::string& kotlin_root,
                         std::unordered_map<std::string, int>& usage_count_by_file,
                         std::unordered_map<std::string, int>& usage_count_by_class,
                         std::unordered_map<std::string, int>& usage_count_by_stem) {
+    (void)kotlin_root;
     kotlin.scan();
     kotlin.extract_imports();
     kotlin.build_dependency_graph();

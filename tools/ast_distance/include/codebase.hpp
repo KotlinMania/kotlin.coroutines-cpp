@@ -177,7 +177,21 @@ public:
 
             // Logical grouping for C++: same stem in same directory
             std::string directory = fs::path(rel_path).parent_path().string();
-            std::string logical_key = directory.empty() ? stem : directory + "/" + stem;
+            
+            // Normalize stem by stripping common platform/variant suffixes
+            std::string normalized_stem = stem;
+            static const std::vector<std::string> suffixes = {
+                ".common", ".concurrent", ".native", ".common_native", ".darwin", ".apple"
+            };
+            for (const auto& suffix : suffixes) {
+                if (normalized_stem.size() > suffix.size() && 
+                    normalized_stem.compare(normalized_stem.size() - suffix.size(), suffix.size(), suffix) == 0) {
+                    normalized_stem = normalized_stem.substr(0, normalized_stem.size() - suffix.size());
+                    break;
+                }
+            }
+
+            std::string logical_key = directory.empty() ? normalized_stem : directory + "/" + normalized_stem;
 
             if (files.count(logical_key)) {
                 files[logical_key].paths.push_back(path);

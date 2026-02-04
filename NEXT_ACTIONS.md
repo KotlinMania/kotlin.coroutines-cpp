@@ -4,10 +4,10 @@ Based on AST analysis, here are the concrete next steps.
 
 ## Summary
 
-- **Current Progress:** 100.0% (273/111 files)
+- **Current Progress:** 100.0% (275/111 files)
 - **Matched Files:** 111
-- **Average Similarity:** 0.61
-- **Critical Issues:** 38 files with <0.60 similarity
+- **Average Similarity:** 0.62
+- **Critical Issues:** 34 files with <0.60 similarity
 
 ## Priority 1: Fix Incomplete High-Dependency Files
 
@@ -42,7 +42,7 @@ For each file to be considered "complete":
 ```bash
 # Initialize task queue for systematic porting
 cd tools/ast_distance
-./ast_distance --init-tasks ../../tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src kotlin ../../src/kotlinx/coroutines cpp tasks.json ../../AGENTS.md
+./ast_distance --init-tasks ../..//Volumes/stuff/Projects/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src kotlin ../..//Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines cpp tasks.json ../../AGENTS.md
 
 # Get next high-priority task
 ./ast_distance --assign tasks.json <agent-id>
