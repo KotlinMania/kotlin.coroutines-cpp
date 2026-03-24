@@ -1,88 +1,85 @@
-package kotlinx
-.
-coroutines
-.
-flow import kotlinx.coroutines.testing.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlin.test.*
+// Transliterated from Kotlin to C++
+// Original: kotlinx-coroutines-core/common/test/flow/terminal/ReduceTest.kt
+// TODO(port): runTest wrapper not yet wired for suspend semantics
 
-class ReduceTest : TestBase()  {
-    @
-    Test
-    fun testReduce() = runTest
+#include "kotlinx/coroutines/testing/TestBase.hpp"
+#include "kotlinx/coroutines/flow/Flow.hpp"
+#include "kotlinx/coroutines/flow/FlowBuilders.hpp"
+#include "kotlinx/coroutines/flow/Reduce.hpp"
 
- {
-        val flow = flow {
-            emit(1)
-            emit(2)
+namespace kotlinx {
+namespace coroutines {
+
+using namespace flow;
+using namespace testing;
+
+class ReduceTest : public TestBase {
+public:
+    // @Test
+    void test_reduce() {
+        // TODO(port): runTest { ... }
+        auto f = flow::flow<int>([](FlowCollector<int>* collector, Continuation<void*>* cont) -> void* {
+            collector->emit(1, cont);
+            collector->emit(2, cont);
+            return nullptr;
+        });
+
+        void* result = reduce<int>(f, [](int acc, int value) { return acc + value; }, nullptr);
+        assert(*static_cast<int*>(result) == 3);
+        delete static_cast<int*>(result);
+    }
+
+    // @Test
+    void test_empty_reduce() {
+        // TODO(port): runTest { ... }
+        auto f = empty_flow<int>();
+        // assertFailsWith<NoSuchElementException>
+        bool caught = false;
+        try {
+            reduce<int>(f, [](int acc, int value) { return acc + value; }, nullptr);
+        } catch (const std::out_of_range&) {
+            caught = true;
         }
-
-        val result = flow.reduce { value, acc -> value + acc }
-        assertEquals(3, result)
+        assert(caught);
     }
 
-    @
-    Test
-    fun testEmptyReduce() = runTest
+    // @Test
+    // TODO(port): Nullable types — flowOf(1, null, null, 2) requires void* boxing
+    // void test_nullable_reduce() { ... }
 
- {
-        val flow = emptyFlow<Int>()
-        assertFailsWith<NoSuchElementException> { flow.reduce { acc, value -> value + acc } }
-    }
+    // @Test
+    // TODO(port): Nullable types — flowOf(null).reduce requires void* boxing
+    // void test_reduce_nulls() { ... }
 
-    @
-    Test
-    fun testNullableReduce() = runTest
+    // @Test
+    void test_error_cancels_upstream() {
+        // TODO(port): runTest { ... } — requires coroutineScope, launch, Channel
+        // TODO(port): Channel<Unit> latch pattern requires channel infrastructure
+        expect(1);
 
- {
-        val flow = flowOf(1, null, null, 2)
-        var invocations = 0
-        val sum = flow.reduce { _, value ->
-            ++invocations
-            value
+        auto f = flow::flow<int>([this](FlowCollector<int>* collector, Continuation<void*>* cont) -> void* {
+            // TODO(port): coroutineScope + launch + Channel latch
+            expect(2);
+            collector->emit(1, cont);
+            collector->emit(2, cont);
+            return nullptr;
+        });
+
+        bool caught = false;
+        try {
+            reduce<int>(f, [this](int /*acc*/, int /*value*/) -> int {
+                // TODO(port): latch.receive()
+                expect(4);
+                throw TestException();
+                return 0;
+            }, nullptr);
+        } catch (const TestException&) {
+            caught = true;
         }
-        assertEquals(2, sum)
-        assertEquals(3, invocations)
+        assert(caught);
+        finish(6);
     }
+};
 
-    @
-    Test
-    fun testReduceNulls() = runTest
-
- {
-        assertNull(flowOf(null).reduce { _, value -> value })
-        assertNull(flowOf(null, null).reduce { _, value -> value })
-        assertFailsWith<NoSuchElementException> { flowOf<Nothing?>().reduce { _, value -> value } }
-    }
-
-    @
-    Test
-    fun testErrorCancelsUpstream() = runTest
-
- {
-        val latch = Channel<Unit>()
-        val flow = flow {
-            coroutineScope {
-                launch {
-                    latch.send(Unit)
-                    expect(3)
-                    hang { expect(5) }
-                }
-                expect(2)
-                emit(1)
-                emit(2)
-            }
-        }
-
-        expect(1)
-        assertFailsWith<TestException> {
-            flow.reduce { _, _ ->
-                latch.receive()
-                expect(4)
-                throw TestException()
-            }
-        }
-        finish(6)
-    }
-}
+} // namespace coroutines
+} // namespace kotlinx
