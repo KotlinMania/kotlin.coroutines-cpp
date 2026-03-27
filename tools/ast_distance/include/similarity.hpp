@@ -3,6 +3,7 @@
 #include "tree.hpp"
 #include "tensor.hpp"
 #include "node_types.hpp"
+#include "ast_parser.hpp"
 #include <cmath>
 #include <algorithm>
 
@@ -152,6 +153,11 @@ public:
 
     /**
      * Combined similarity score using multiple metrics.
+     * SHAPE-ONLY version (no identifier content). Used as a structural baseline.
+     *
+     * WARNING: This metric cannot distinguish real code from placeholder stubs.
+     * A file of `fun x() = null` scores the same as `fun computeHash() = ...`.
+     * Use combined_similarity_with_content() for real porting assessment.
      */
     static float combined_similarity(Tree* tree1, Tree* tree2,
                                      float hist_weight = 0.5f,
@@ -164,6 +170,37 @@ public:
         return hist_weight * hist_sim +
                struct_weight * struct_sim +
                jaccard_weight * jaccard_sim;
+    }
+
+    /**
+     * Content-aware combined similarity.
+     * Uses identifier comparison as the DOMINANT signal.
+     *
+     * A real port reuses the same identifiers (with naming convention changes).
+     * A file of stubs has completely different identifiers and scores near 0.
+     *
+     * Weights:
+     *   0.50 - Canonical identifier cosine (the killer metric)
+     *   0.15 - Canonical identifier jaccard (set overlap)
+     *   0.15 - AST histogram cosine (structural shape)
+     *   0.10 - Node type jaccard
+     *   0.10 - Structure similarity (tree size/depth)
+     */
+    static float combined_similarity_with_content(
+            Tree* tree1, Tree* tree2,
+            const IdentifierStats& ids1, const IdentifierStats& ids2) {
+
+        float id_cosine = ids1.canonical_cosine_similarity(ids2);
+        float id_jaccard = ids1.canonical_jaccard_similarity(ids2);
+        float hist_sim = histogram_cosine_similarity(tree1, tree2);
+        float jaccard_sim = node_type_jaccard(tree1, tree2);
+        float struct_sim = structure_similarity(tree1, tree2);
+
+        return 0.50f * id_cosine +
+               0.15f * id_jaccard +
+               0.15f * hist_sim +
+               0.10f * jaccard_sim +
+               0.10f * struct_sim;
     }
 
     /**
