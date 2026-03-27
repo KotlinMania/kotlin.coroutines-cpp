@@ -367,20 +367,24 @@ public:
         return buffer.str();
     }
 
-    /**
-     * Print task assignment details for an agent.
-     */
-    void print_assignment(const PortTask& task) const {
-        std::cout << "=== TASK ASSIGNMENT ===\n\n";
+	    /**
+	     * Print task assignment details for an agent.
+	     */
+	    void print_assignment(const PortTask& task, int agent_number) const {
+	        std::cout << "=== TASK ASSIGNMENT ===\n\n";
+	        std::cout << "You are agent #" << agent_number << "\n";
+	        std::cout << "Reminder: all ast_distance commands require: --agent "
+	                  << agent_number << "\n\n";
 
-        std::cout << "Source File:\n";
-        std::cout << "  Path:      " << source_root << "/" << task.source_path << "\n";
-        std::cout << "  Qualified: " << task.source_qualified << "\n";
+	        std::cout << "Source File:\n";
+	        std::cout << "  Path:      " << source_root << "/" << task.source_path << "\n";
+	        std::cout << "  Qualified: " << task.source_qualified << "\n";
         std::cout << "  Dependents: " << task.dependent_count << " files depend on this\n\n";
 
         std::cout << "Target File:\n";
         std::cout << "  Path:      " << target_root << "/" << task.target_path << "\n";
-        std::cout << "  Add header: // port-lint: source " << task.source_path << "\n\n";
+        std::cout << "  Add header: " << port_lint_comment_prefix(target_lang)
+                  << " port-lint: source " << task.source_path << "\n\n";
 
         std::cout << "Priority: " << task.dependent_count << " (higher = more critical)\n\n";
 
@@ -392,17 +396,25 @@ public:
         }
 
         std::cout << "=== INSTRUCTIONS ===\n\n";
-        std::cout << "1. Read the source Rust file thoroughly\n";
-        std::cout << "2. Create the Kotlin file at the target path\n";
+        std::cout << "1. Read the source file thoroughly\n";
+        std::cout << "2. Create the target file at the target path\n";
         std::cout << "3. Add the port-lint header as the first line\n";
-        std::cout << "4. Transliterate the Rust code to idiomatic Kotlin\n";
-        std::cout << "5. Match documentation comments from the source\n";
-        std::cout << "6. Run: ast_distance <source> rust <target> kotlin\n";
-        std::cout << "   to verify similarity (aim for >0.85)\n";
-        std::cout << "7. When complete, run: ast_distance --complete " << task.source_qualified << "\n\n";
-    }
+	        std::cout << "4. Transliterate the source code to idiomatic target language\n";
+	        std::cout << "5. Match documentation comments from the source\n";
+	        std::cout << "6. Run: ast_distance --agent " << agent_number << " <source> " << source_lang
+	                  << " <target> " << target_lang << "\n";
+	        std::cout << "   to verify similarity (aim for >0.85)\n";
+	        std::cout << "7. When complete, run: ast_distance --agent " << agent_number
+	                  << " --complete " << task_file_path << " " << task.source_qualified << "\n\n";
+	    }
 
 private:
+    static const char* port_lint_comment_prefix(const std::string& lang) {
+        // Use a visually-distinct prefix for Python to avoid confusion with ordinary comments.
+        if (lang == "python") return "##";
+        return "//";
+    }
+
     static std::string status_to_string(TaskStatus s) {
         switch (s) {
             case TaskStatus::PENDING: return "pending";

@@ -26,4 +26,6 @@ void cmd_symbol_lookup(const std::string& kotlin_root,
                        const std::string& cpp_root,
                        const SymbolAnalysisOptions& options);
 
+// Symbol parity analysis (Rust → Kotlin) is in symbol_extraction.hpp
+
 }  // namespace ast_distance

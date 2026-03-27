@@ -162,7 +162,8 @@ inline NodeType rust_node_to_type(const std::string& node_type) {
         {"struct_item", NodeType::STRUCT},
         {"enum_item", NodeType::ENUM},
         {"trait_item", NodeType::INTERFACE},
-        {"impl_item", NodeType::CLASS},
+        {"impl_item", NodeType::BLOCK},     // Treat like block (matches Kotlin class_body → BLOCK)
+        {"declaration_list", NodeType::BLOCK}, // impl body — maps to Kotlin class_body (also BLOCK)
         {"let_declaration", NodeType::VAR_DECL},
         {"parameter", NodeType::PARAM},
         {"type_parameter", NodeType::TYPE_PARAM},
@@ -364,6 +365,62 @@ inline NodeType cpp_node_to_type(const std::string& node_type) {
         {"template_argument_list", NodeType::GENERIC_TYPE},
         {"field_declaration", NodeType::VAR_DECL},
         {"alias_declaration", NodeType::TYPE_REF},
+    };
+
+    auto it = mapping.find(node_type);
+    return it != mapping.end() ? it->second : NodeType::UNKNOWN;
+}
+
+/**
+ * Python AST node type mappings (from tree-sitter-python)
+ */
+inline NodeType python_node_to_type(const std::string& node_type) {
+    static const std::unordered_map<std::string, NodeType> mapping = {
+        // Statements / control flow
+        {"module", NodeType::BLOCK},
+        {"block", NodeType::BLOCK},
+        {"if_statement", NodeType::IF},
+        {"for_statement", NodeType::FOR},
+        {"while_statement", NodeType::WHILE},
+        {"match_statement", NodeType::SWITCH},
+        {"return_statement", NodeType::RETURN},
+        {"continue_statement", NodeType::CONTINUE},
+        {"break_statement", NodeType::BREAK},
+        {"try_statement", NodeType::TRY},
+        {"raise_statement", NodeType::THROW},
+
+        // Assignments
+        {"assignment", NodeType::ASSIGN},
+        {"augmented_assignment", NodeType::ASSIGN},
+
+        // Operators / expressions
+        {"binary_operator", NodeType::UNKNOWN},       // operator captured by unnamed children
+        {"unary_operator", NodeType::UNKNOWN},        // operator captured by unnamed children
+        {"boolean_operator", NodeType::UNKNOWN},      // operator captured by unnamed children
+        {"comparison_operator", NodeType::UNKNOWN},   // operator captured by unnamed children
+        {"call", NodeType::CALL},
+        {"attribute", NodeType::FIELD_ACCESS},
+        {"subscript", NodeType::INDEX},
+        {"lambda", NodeType::LAMBDA},
+        {"conditional_expression", NodeType::TERNARY},
+
+        // Literals / identifiers
+        {"identifier", NodeType::VARIABLE},
+        {"integer", NodeType::NUMBER},
+        {"float", NodeType::NUMBER},
+        {"string", NodeType::STRING},
+        {"true", NodeType::BOOLEAN},
+        {"false", NodeType::BOOLEAN},
+        {"none", NodeType::NULL_LIT},
+
+        // Declarations
+        {"function_definition", NodeType::FUNCTION},
+        {"class_definition", NodeType::CLASS},
+
+        // Imports / comments
+        {"import_statement", NodeType::IMPORT},
+        {"import_from_statement", NodeType::IMPORT},
+        {"comment", NodeType::COMMENT},
     };
 
     auto it = mapping.find(node_type);

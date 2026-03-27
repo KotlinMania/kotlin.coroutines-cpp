@@ -180,18 +180,19 @@ public:
     /**
      * Extract source path header from a file.
      * Recognizes formats:
-     *   - "Transliterated from: path/to/file.kt"
-     *   - "// port-lint: source path/to/file.rs"
-     *   - "// port-lint: source codex-rs/path/to/file.rs"
+     *   - "Transliterated from: path/to/file.<ext>"
+     *   - "// port-lint: source path/to/file.<ext>"
+     *   - "// port-lint: tests path/to/file.<ext>"
+     *   - "// port-lint: source codex-rs/path/to/file.<ext>"
      * Returns the source path if found.
      */
     static std::string extract_transliterated_from(const std::string& filepath) {
         std::ifstream file(filepath);
         if (!file.is_open()) return "";
 
-        // Match "Transliterated from: *.kt" or "port-lint: source *.rs"
-        std::regex trans_re(R"(Transliterated from:\s*(.+\.kt))", std::regex::icase);
-        std::regex portlint_re(R"(port-lint:\s*source\s+(.+\.rs))", std::regex::icase);
+        // Match "Transliterated from: <path>" or "port-lint: source/tests <path>"
+        std::regex trans_re(R"(Transliterated from:\s*(.+))", std::regex::icase);
+        std::regex portlint_re(R"(port-lint:\s*(?:source|tests)\s+(.+))", std::regex::icase);
         std::string line;
         int line_count = 0;
 
@@ -228,6 +229,7 @@ public:
         // Get relative path (simple: just filename for now)
         std::filesystem::path p(filepath);
         stats.relative_path = p.filename().string();
+        std::string ext = p.extension().string();
 
         std::ifstream file(filepath);
         if (!file.is_open()) return stats;
@@ -288,7 +290,11 @@ public:
         clean.erase(std::remove_if(clean.begin(), clean.end(),
                    [](unsigned char c) { return std::isspace(c); }), clean.end());
 
-        stats.is_stub = (clean.length() < 50);
+        // Length-based stub detection is only reliable for C/C++ skeleton files.
+        // For other languages we rely on AST-based stub detection (TODO()/pass/unimplemented!/etc).
+        bool is_cpp_like = (ext == ".cpp" || ext == ".cc" || ext == ".cxx" ||
+                            ext == ".hpp" || ext == ".h" || ext == ".hxx" || ext == ".hh");
+        stats.is_stub = is_cpp_like && (clean.length() < 50);
 
         // Extract transliterated from
         stats.transliterated_from = extract_transliterated_from(filepath);

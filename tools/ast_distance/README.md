@@ -1,20 +1,27 @@
-# ASTDistance
+# AST Distance
 
-Cross-language AST similarity measurement tool for verifying source code ports.
+Cross-language AST similarity measurement and porting analysis tool.
 
 Inspired by the [ASTERIA paper](https://arxiv.org/abs/2108.06082) which uses Tree-LSTM for binary code similarity detection, this tool measures similarity between Rust and Kotlin source files to help verify porting accuracy.
 
 ## Features
 
-- **Tree-sitter parsing** for Rust and Kotlin ASTs
+- **Tree-sitter parsing** for Rust, Kotlin, and C++ ASTs
 - **Normalized node types** that map across languages
 - **Multiple similarity metrics**:
   - Cosine similarity of node type histograms
   - Structure similarity (size, depth)
   - Jaccard similarity of node sets
   - Normalized tree edit distance
-- **Function-level comparison** with similarity matrix
-- **Tree-LSTM encoder** (C++ port from Stanford TreeLSTM)
+- **Codebase-level analysis**:
+  - Dependency graph building
+  - File matching by port-lint headers or name similarity
+  - Porting priority ranking
+  - Documentation gap detection
+- **Quality checks**:
+  - TODO scanning with context
+  - Lint error detection
+  - Stub file identification
 
 ## Building
 
@@ -28,59 +35,100 @@ cmake --build .
 
 ### Compare two files
 ```bash
-./ast_distance <rust_file> <kotlin_file>
+./ast_distance <file1> <lang1> <file2> <lang2>
 ```
 
-### Compare functions between files
+### Full codebase analysis
 ```bash
-./ast_distance --compare-functions <rust_file> <kotlin_file>
+./ast_distance --deep <src_dir> <src_lang> <tgt_dir> <tgt_lang>
 ```
 
-### Dump AST structure
+### Show missing files
 ```bash
-./ast_distance --dump <file> <rust|kotlin>
+./ast_distance --missing <src_dir> <src_lang> <tgt_dir> <tgt_lang>
 ```
+
+### Scan for TODOs
+```bash
+./ast_distance --todos <directory>
+```
+
+### Run lint checks
+```bash
+./ast_distance --lint <directory>
+```
+
+## Port-Lint Headers
+
+Add a header comment to each ported file to enable accurate source tracking:
+
+```kotlin
+// port-lint: source core/src/config.rs
+package com.example.config
+
+data class Config(...)
+```
+
+The header must appear in the first 50 lines. When present, the tool will:
+- Match files explicitly instead of by name similarity
+- Compare documentation coverage between source and target
+- Report "Matched by header" vs "Matched by name" statistics
 
 ## Example Output
 
+### File Comparison
 ```
 === AST Similarity Report ===
-Tree 1: size=3377, depth=23
-Tree 2: size=1102, depth=25
+Tree 1: size=148, depth=8
+Tree 2: size=162, depth=10
 
 Similarity Metrics:
-  Cosine (histogram):    0.9901
-  Structure:             0.6232
-  Jaccard:               0.3228
-  Edit Distance (norm):  0.2615
-  Combined Score:        0.5647
+  Cosine (histogram):    0.9836
+  Structure:             0.8568
+  Combined Score:        0.7737
+
+=== Documentation Comparison ===
+Doc comment count: 2 vs 2 (diff: 0)
+Doc lines:         4 vs 2 (diff: 2)
+Doc text cosine:   100.00%
 ```
 
-Function comparison shows which Rust functions map to which Kotlin functions:
-- `render_sparkline ↔ renderSparkline`: 0.916 (excellent match)
-- `symbol_for_height ↔ symbolForHeight`: 0.815 (good match)
+### Deep Analysis
+```
+=== Porting Quality Summary ===
+
+Matched by header:    103 / 107
+Matched by name:      4 / 107
+Total TODOs in target: 56
+Total lint errors:    356
+
+=== Porting Recommendations ===
+
+Top priority to create:
+  core.error                     deps=51
+  render.renderable              deps=19
+  state.session                  deps=18
+```
 
 ## Architecture
 
 ```
 include/
-  tree.hpp          - Tree data structure
-  tensor.hpp        - Lightweight tensor ops
-  tree_lstm.hpp     - Binary Tree-LSTM (ported from Stanford)
-  node_types.hpp    - Normalized AST node types
-  ast_parser.hpp    - Tree-sitter based parser
-  similarity.hpp    - Similarity metrics
+  ast_parser.hpp      - Tree-sitter based parser
+  codebase.hpp        - Codebase scanning and comparison
+  imports.hpp         - Import/dependency extraction
+  porting_utils.hpp   - TODO/lint/header analysis
+  similarity.hpp      - Similarity metrics
+  tree.hpp            - Tree data structure
+  tree_lstm.hpp       - Binary Tree-LSTM encoder
 
 src/
-  main.cpp          - CLI tool
-
-vendor/
-  treelstm/         - Stanford TreeLSTM (Lua reference)
+  main.cpp            - CLI tool
 ```
 
 ## References
 
-- [ASTERIA: Deep Learning-based AST-Encoding for Cross-platform Binary Code Similarity Detection](https://arxiv.org/abs/2108.06082)
+- [ASTERIA: Deep Learning-based AST-Encoding](https://arxiv.org/abs/2108.06082)
 - [Stanford TreeLSTM](https://github.com/stanfordnlp/treelstm)
 - [tree-sitter](https://tree-sitter.github.io/tree-sitter/)
 

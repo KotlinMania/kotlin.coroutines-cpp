@@ -7,12 +7,15 @@
 #include <fstream>
 #include <sstream>
 #include <regex>
+#include <filesystem>
+#include <cctype>
 
 // External declarations for tree-sitter language functions
 extern "C" {
     const TSLanguage* tree_sitter_rust();
     const TSLanguage* tree_sitter_kotlin();
     const TSLanguage* tree_sitter_cpp();
+    const TSLanguage* tree_sitter_python();
 }
 
 namespace ast_distance {
@@ -182,6 +185,26 @@ public:
     }
 
     /**
+     * Extract all imports from a Python file.
+     */
+    std::vector<Import> extract_python_imports(const std::string& source) {
+        std::vector<Import> imports;
+
+        if (!ts_parser_set_language(parser_, tree_sitter_python())) {
+            return imports;
+        }
+
+        TSTree* tree = ts_parser_parse_string(parser_, nullptr, source.c_str(), source.length());
+        if (!tree) return imports;
+
+        TSNode root = ts_tree_root_node(tree);
+        extract_python_imports_recursive(root, source, imports);
+
+        ts_tree_delete(tree);
+        return imports;
+    }
+
+    /**
      * Extract imports from a file (auto-detect language by extension).
      */
     std::vector<Import> extract_from_file(const std::string& filepath) {
@@ -201,6 +224,8 @@ public:
         } else if (filepath.ends_with(".cpp") || filepath.ends_with(".hpp") ||
                    filepath.ends_with(".cc") || filepath.ends_with(".h")) {
             return extract_cpp_imports(source);
+        } else if (filepath.ends_with(".py")) {
+            return extract_python_imports(source);
         }
 
         return {};
@@ -306,6 +331,36 @@ public:
     }
 
     /**
+     * Extract module path from a Python file (derive from file path).
+     */
+    PackageDecl extract_python_module(const std::string& source, const std::string& file_path) {
+        (void)source;
+        PackageDecl pkg;
+
+        std::filesystem::path p(file_path);
+        std::vector<std::string> parts;
+
+        for (const auto& part : p.parent_path()) {
+            std::string s = part.string();
+            if (!s.empty() && s != "." && s != "src" && s != "lib") {
+                parts.push_back(s);
+            }
+        }
+
+        std::string stem = p.stem().string();
+        if (!stem.empty() && stem != "__init__") {
+            parts.push_back(stem);
+        }
+
+        pkg.parts = parts;
+        for (size_t i = 0; i < parts.size(); ++i) {
+            if (i > 0) pkg.path += ".";
+            pkg.path += parts[i];
+        }
+        return pkg;
+    }
+
+    /**
      * Extract package from file (auto-detect language).
      */
     PackageDecl extract_package_from_file(const std::string& filepath) {
@@ -325,6 +380,8 @@ public:
         } else if (filepath.ends_with(".cpp") || filepath.ends_with(".hpp") ||
                    filepath.ends_with(".cc") || filepath.ends_with(".h")) {
             return extract_cpp_namespace(source, filepath);
+        } else if (filepath.ends_with(".py")) {
+            return extract_python_module(source, filepath);
         }
 
         return {};
@@ -617,6 +674,125 @@ private:
         uint32_t child_count = ts_node_child_count(node);
         for (uint32_t i = 0; i < child_count && pkg.path.empty(); ++i) {
             extract_cpp_namespace_recursive(ts_node_child(node, i), source, pkg);
+        }
+    }
+
+    static std::string strip_python_import_prefix(const std::string& raw) {
+        std::string s = raw;
+        // Collapse whitespace/newlines to spaces for simpler parsing.
+        for (auto& c : s) {
+            if (c == '\n' || c == '\r' || c == '\t') c = ' ';
+        }
+        return s;
+    }
+
+    static void trim_in_place(std::string& s) {
+        while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front()))) s.erase(s.begin());
+        while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back()))) s.pop_back();
+    }
+
+    static std::vector<std::string> split_csv(const std::string& s) {
+        std::vector<std::string> out;
+        std::string cur;
+        int paren = 0;
+        for (char c : s) {
+            if (c == '(') paren++;
+            if (c == ')') paren = std::max(0, paren - 1);
+            if (c == ',' && paren == 0) {
+                trim_in_place(cur);
+                if (!cur.empty()) out.push_back(cur);
+                cur.clear();
+            } else {
+                cur.push_back(c);
+            }
+        }
+        trim_in_place(cur);
+        if (!cur.empty()) out.push_back(cur);
+        return out;
+    }
+
+    static Import make_python_import(const std::string& module, const std::string& item, bool wildcard, const std::string& raw) {
+        Import imp;
+        imp.raw = raw;
+        imp.is_wildcard = wildcard;
+        imp.item = item;
+        imp.module_path = module;
+        return imp;
+    }
+
+    void parse_python_import_raw(const std::string& raw, std::vector<Import>& imports) {
+        std::string s = strip_python_import_prefix(raw);
+        trim_in_place(s);
+        if (s.rfind("import ", 0) == 0) {
+            // import a, b as c
+            std::string rest = s.substr(7);
+            auto parts = split_csv(rest);
+            for (auto part : parts) {
+                // Remove "as alias"
+                size_t as_pos = part.find(" as ");
+                if (as_pos != std::string::npos) {
+                    part = part.substr(0, as_pos);
+                    trim_in_place(part);
+                }
+                if (part.empty()) continue;
+                std::string module = part;
+                // Item = last dotted component
+                size_t last_dot = module.rfind('.');
+                std::string item = (last_dot == std::string::npos) ? module : module.substr(last_dot + 1);
+                imports.push_back(make_python_import(module, item, false, raw));
+            }
+            return;
+        }
+
+        if (s.rfind("from ", 0) == 0) {
+            // from a.b import x, y as z
+            size_t import_pos = s.find(" import ");
+            if (import_pos == std::string::npos) return;
+            std::string module = s.substr(5, import_pos - 5);
+            std::string items = s.substr(import_pos + 8);
+            trim_in_place(module);
+            trim_in_place(items);
+
+            // Handle parentheses: from x import (a, b)
+            if (!items.empty() && items.front() == '(' && items.back() == ')') {
+                items = items.substr(1, items.size() - 2);
+                trim_in_place(items);
+            }
+
+            if (items == "*") {
+                imports.push_back(make_python_import(module, "*", true, raw));
+                return;
+            }
+
+            auto parts = split_csv(items);
+            for (auto part : parts) {
+                // Remove "as alias"
+                size_t as_pos = part.find(" as ");
+                if (as_pos != std::string::npos) {
+                    part = part.substr(0, as_pos);
+                    trim_in_place(part);
+                }
+                if (part.empty()) continue;
+                std::string full = module + "." + part;
+                imports.push_back(make_python_import(full, part, false, raw));
+            }
+            return;
+        }
+    }
+
+    void extract_python_imports_recursive(TSNode node, const std::string& source,
+                                         std::vector<Import>& imports) {
+        const char* type = ts_node_type(node);
+        std::string type_s(type);
+
+        if (type_s == "import_statement" || type_s == "import_from_statement") {
+            std::string raw = get_node_text(node, source);
+            parse_python_import_raw(raw, imports);
+        }
+
+        uint32_t child_count = ts_node_child_count(node);
+        for (uint32_t i = 0; i < child_count; ++i) {
+            extract_python_imports_recursive(ts_node_child(node, i), source, imports);
         }
     }
 };

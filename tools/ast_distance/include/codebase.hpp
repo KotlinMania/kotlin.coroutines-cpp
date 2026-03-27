@@ -22,10 +22,10 @@ namespace ast_distance {
  */
 struct SourceFile {
     std::vector<std::string> paths; // All physical paths (e.g., .hpp and .cpp)
-    std::string relative_path;     // Representative relative path
-    std::string filename;          // Representative filename
-    std::string stem;              // Stem shared by all paths
-    std::string qualified_name;    // Logical name for matching
+    std::string relative_path;     // Relative to root
+    std::string filename;          // Representative filename (e.g., header if paired)
+    std::string stem;              // Filename stem (logical unit name)
+    std::string qualified_name;    // Disambiguated name (e.g., "widgets.Block")
     std::string extension;         // Representative extension
 
     PackageDecl package;           // Package/module declaration from source
@@ -117,9 +117,9 @@ class Codebase {
 public:
     std::string root_path;
     std::string language;  // "rust" or "kotlin"
-    std::map<std::string, SourceFile> files;  // keyed by relative path
+    std::map<std::string, SourceFile> files;  // keyed by logical key
     std::map<std::string, std::vector<std::string>> by_stem;  // stem -> list of files
-    std::map<std::string, std::string> by_qualified;  // qualified_name -> relative_path
+    std::map<std::string, std::string> by_qualified;  // qualified_name -> logical key
 
     Codebase(const std::string& root, const std::string& lang)
         : root_path(root), language(lang) {}
@@ -136,6 +136,8 @@ public:
             } else if (language == "cpp") {
                 return path.ends_with(".cpp") || path.ends_with(".hpp") ||
                        path.ends_with(".cc") || path.ends_with(".h");
+            } else if (language == "python") {
+                return path.ends_with(".py");
             }
             return false;
         };
@@ -145,15 +147,15 @@ public:
             if (has_valid_ext(root_path)) {
                 SourceFile sf;
                 sf.paths.push_back(root_path);
-                sf.relative_path = fs::path(root_path).filename().string();
+                sf.relative_path = fs::path(root_path).filename().string(); // Use filename as relative path
                 sf.filename = fs::path(root_path).filename().string();
                 sf.stem = fs::path(root_path).stem().string();
                 sf.extension = fs::path(root_path).extension().string();
                 sf.qualified_name = SourceFile::make_qualified_name(sf.relative_path);
 
-                files[sf.stem] = sf;
-                by_stem[sf.stem].push_back(sf.stem);
-                by_qualified[sf.qualified_name] = sf.stem;
+                files[sf.relative_path] = sf;
+                by_stem[sf.stem].push_back(sf.relative_path);
+                by_qualified[sf.qualified_name] = sf.relative_path;
             }
             return;
         }
@@ -164,9 +166,11 @@ public:
             std::string path = entry.path().string();
             if (!has_valid_ext(path)) continue;
 
-            // Skip build artifacts
+            // Skip build artifacts (but NOT test files - they need parity too)
             if (path.find("/target/") != std::string::npos ||
-                path.find("/build/") != std::string::npos) {
+                path.find("/build/") != std::string::npos ||
+                path.find("/build_") != std::string::npos ||
+                path.find("/_deps/") != std::string::npos) {
                 continue;
             }
 
@@ -175,13 +179,25 @@ public:
             std::string filename = entry.path().filename().string();
             std::string extension = entry.path().extension().string();
 
-            // Logical grouping for C++: same stem in same directory
+            // Logical grouping: keep paired translation units together
+            // (e.g., .hpp + .cpp, or platform suffix variants).
             std::string directory = fs::path(rel_path).parent_path().string();
-            std::string logical_key = directory.empty() ? stem : directory + "/" + stem;
+            std::string normalized_stem = stem;
+            static const std::vector<std::string> suffixes = {
+                ".common", ".concurrent", ".native", ".common_native", ".darwin", ".apple"
+            };
+            for (const auto& suffix : suffixes) {
+                if (normalized_stem.size() > suffix.size() &&
+                    normalized_stem.compare(normalized_stem.size() - suffix.size(), suffix.size(), suffix) == 0) {
+                    normalized_stem = normalized_stem.substr(0, normalized_stem.size() - suffix.size());
+                    break;
+                }
+            }
+            std::string logical_key = directory.empty() ? normalized_stem : directory + "/" + normalized_stem;
 
             if (files.count(logical_key)) {
                 files[logical_key].paths.push_back(path);
-                // Prefer .hpp as the representative extension/filename if pairing
+                // Prefer header as representative entry when paired.
                 if (extension == ".hpp" || extension == ".h") {
                     files[logical_key].filename = filename;
                     files[logical_key].extension = extension;
@@ -255,9 +271,13 @@ public:
             for (const auto& p : sf.paths) {
                 auto file_imports = extractor.extract_from_file(p);
                 sf.imports.insert(sf.imports.end(), file_imports.begin(), file_imports.end());
-                
-                // Also aggregate package if not set
-                if (sf.package.parts.empty()) {
+
+                if (language == "python") {
+                    // Derive Python package from representative relative path.
+                    if (sf.package.parts.empty()) {
+                        sf.package = derive_python_module(sf.relative_path);
+                    }
+                } else if (sf.package.parts.empty()) {
                     sf.package = extractor.extract_package_from_file(p);
                 }
             }
@@ -270,29 +290,25 @@ public:
      */
     void extract_porting_data() {
         for (auto& [path, sf] : files) {
+            bool all_parts_stub = !sf.paths.empty();
             for (const auto& p : sf.paths) {
-                // Extract "Transliterated from:" header (first one wins or aggregate)
                 if (sf.transliterated_from.empty()) {
                     sf.transliterated_from = PortingAnalyzer::extract_transliterated_from(p);
                 }
 
-                // Get file stats and aggregate
                 FileStats stats = PortingAnalyzer::analyze_file(p);
                 sf.line_count += stats.line_count;
                 sf.code_lines += stats.code_lines;
-                sf.is_stub = sf.is_stub || stats.is_stub; // If any part is NOT a stub, maybe it's not a stub? 
-                                                         // Actually, usually if BOTH are stubs it's a stub.
-                                                         // Let's say if ALL are stubs, it's a stub.
-                
                 sf.todos.insert(sf.todos.end(), stats.todos.begin(), stats.todos.end());
 
-                // Run lint checks
                 auto lints = PortingAnalyzer::lint_file(p);
                 sf.lint_errors.insert(sf.lint_errors.end(), lints.begin(), lints.end());
+
+                all_parts_stub = all_parts_stub && stats.is_stub;
             }
-            
-            // Refine stub detection: if we have significant code lines across both, it's not a stub
-            if (sf.code_lines > 50) sf.is_stub = false;
+
+            // If any part has meaningful code, treat logical unit as non-stub.
+            sf.is_stub = all_parts_stub && sf.code_lines <= 50;
         }
     }
 
@@ -403,6 +419,32 @@ public:
     }
 
 private:
+    static PackageDecl derive_python_module(const std::string& rel_path) {
+        PackageDecl pkg;
+        fs::path p(rel_path);
+
+        std::vector<std::string> parts;
+        for (const auto& part : p.parent_path()) {
+            std::string s = part.string();
+            if (!s.empty() && s != "." && s != "src" && s != "lib") {
+                parts.push_back(s);
+            }
+        }
+
+        std::string stem = p.stem().string();
+        if (!stem.empty() && stem != "__init__") {
+            parts.push_back(stem);
+        }
+
+        pkg.parts = parts;
+        for (size_t i = 0; i < parts.size(); ++i) {
+            if (i > 0) pkg.path += ".";
+            pkg.path += parts[i];
+        }
+
+        return pkg;
+    }
+
     std::string resolve_import(const Import& imp) {
         // Try to match import path to a file
         std::string module = imp.module_path;
@@ -443,6 +485,17 @@ public:
     Codebase& source;  // e.g., Rust
     Codebase& target;  // e.g., Kotlin
 
+    struct FunctionComparisonResult {
+        float score = -1.0f;
+        int matched_pairs = 0;
+        int source_total = 0;
+        int target_total = 0;
+        int unmatched_source = 0;
+        int unmatched_target = 0;
+        bool has_source_stub = false;
+        bool has_target_stub = false;
+    };
+
     struct Match {
         std::string source_path;
         std::string target_path;
@@ -457,6 +510,12 @@ public:
         int lint_count = 0;
         bool is_stub = false;
         bool matched_by_header = false;  // True if matched via "Transliterated from:"
+
+        // Function parity (name-based) within a file. Used to prevent "signature-only" stubs.
+        int source_function_count = 0;
+        int target_function_count = 0;
+        int matched_function_count = 0;
+        float function_coverage = 1.0f;  // matched / source
 
         // Documentation statistics
         int source_doc_lines = 0;
@@ -618,7 +677,12 @@ public:
                 }
                 // Loose check - transliterated_from ends with stem (stricter than find)
                 else if (tgt_file.transliterated_from.ends_with("/" + src_file.stem + ".kt") ||
-                         tgt_file.transliterated_from.ends_with("/" + src_file.stem + ".rs")) {
+                         tgt_file.transliterated_from.ends_with("/" + src_file.stem + ".rs") ||
+                         tgt_file.transliterated_from.ends_with("/" + src_file.stem + ".py") ||
+                         tgt_file.transliterated_from.ends_with("/" + src_file.stem + ".cpp") ||
+                         tgt_file.transliterated_from.ends_with("/" + src_file.stem + ".cc") ||
+                         tgt_file.transliterated_from.ends_with("/" + src_file.stem + ".hpp") ||
+                         tgt_file.transliterated_from.ends_with("/" + src_file.stem + ".h")) {
                     match_score = 0.3f;  // Stem found but not as confident
                 }
 
@@ -745,7 +809,126 @@ public:
         if (lang == "rust") return Language::RUST;
         if (lang == "kotlin") return Language::KOTLIN;
         if (lang == "cpp") return Language::CPP;
+        if (lang == "python") return Language::PYTHON;
         return Language::KOTLIN;  // default
+    }
+
+    static FunctionComparisonResult compare_function_sets(
+            const std::vector<FunctionInfo>& source_functions,
+            const std::vector<FunctionInfo>& target_functions) {
+        FunctionComparisonResult result;
+        result.source_total = static_cast<int>(source_functions.size());
+        result.target_total = static_cast<int>(target_functions.size());
+
+        for (const auto& func : source_functions) {
+            if (func.has_stub_markers) {
+                result.has_source_stub = true;
+            }
+        }
+        for (const auto& func : target_functions) {
+            if (func.has_stub_markers) {
+                result.has_target_stub = true;
+            }
+        }
+
+        if (source_functions.empty() || target_functions.empty()) {
+            return result;
+        }
+
+        struct FunctionMatchCandidate {
+            float score;
+            int source_index;
+            int target_index;
+        };
+
+        std::vector<FunctionMatchCandidate> candidates;
+        candidates.reserve(source_functions.size() * target_functions.size());
+
+        for (int i = 0; i < static_cast<int>(source_functions.size()); ++i) {
+            const auto& source_func = source_functions[i];
+            for (int j = 0; j < static_cast<int>(target_functions.size()); ++j) {
+                const auto& target_func = target_functions[j];
+
+                float sim = 0.0f;
+                if (!source_func.has_stub_markers && !target_func.has_stub_markers) {
+                    sim = ASTSimilarity::combined_similarity_with_content(
+                        source_func.body_tree.get(),
+                        target_func.body_tree.get(),
+                        source_func.identifiers,
+                        target_func.identifiers);
+                }
+
+                candidates.push_back({sim, i, j});
+            }
+        }
+
+        std::sort(candidates.begin(), candidates.end(),
+            [](const FunctionMatchCandidate& a, const FunctionMatchCandidate& b) {
+                return a.score > b.score;
+            });
+
+        std::vector<bool> source_used(source_functions.size(), false);
+        std::vector<bool> target_used(target_functions.size(), false);
+
+        float total_score = 0.0f;
+        for (const auto& candidate : candidates) {
+            if (source_used[candidate.source_index] || target_used[candidate.target_index]) {
+                continue;
+            }
+            source_used[candidate.source_index] = true;
+            target_used[candidate.target_index] = true;
+            total_score += candidate.score;
+            result.matched_pairs += 1;
+        }
+
+        int denominator = std::max(result.source_total, result.target_total);
+        result.unmatched_source = result.source_total - result.matched_pairs;
+        result.unmatched_target = result.target_total - result.matched_pairs;
+        if (denominator > 0) {
+            result.score = total_score / static_cast<float>(denominator);
+        } else {
+            result.score = 0.0f;
+        }
+
+        return result;
+    }
+
+    struct FunctionNameCoverage {
+        int source_total = 0;
+        int target_total = 0;
+        int matched = 0;
+        float ratio = 1.0f;
+    };
+
+    static FunctionNameCoverage function_name_coverage(
+            const std::vector<FunctionInfo>& source_functions,
+            const std::vector<FunctionInfo>& target_functions) {
+        // How many source functions exist in target, by canonicalized name.
+        // This is a parity signal: ports should preserve the function set within a file.
+        FunctionNameCoverage cov;
+        std::multiset<std::string> tgt_names;
+        for (const auto& f : target_functions) {
+            if (f.name.empty() || f.name == "<anonymous>") continue;
+            tgt_names.insert(IdentifierStats::canonicalize(f.name));
+            cov.target_total++;
+        }
+
+        for (const auto& f : source_functions) {
+            if (f.name.empty() || f.name == "<anonymous>") continue;
+            cov.source_total++;
+            std::string key = IdentifierStats::canonicalize(f.name);
+            auto it = tgt_names.find(key);
+            if (it != tgt_names.end()) {
+                cov.matched++;
+                tgt_names.erase(it);
+            }
+        }
+
+        if (cov.source_total > 0) {
+            cov.ratio = static_cast<float>(cov.matched) /
+                        static_cast<float>(cov.source_total);
+        }
+        return cov;
     }
 
     void compute_similarities() {
@@ -755,20 +938,52 @@ public:
             try {
                 const auto& src_file = source.files.at(m.source_path);
                 const auto& tgt_file = target.files.at(m.target_path);
+                auto src_lang = string_to_language(source.language);
+                auto tgt_lang = string_to_language(target.language);
 
-                auto src_tree = parser.parse_file(src_file.paths, string_to_language(source.language));
-                auto tgt_tree = parser.parse_file(tgt_file.paths, string_to_language(target.language));
+                bool has_stubs = parser.has_stub_bodies_in_files(
+                    tgt_file.paths, tgt_lang);
 
-                // Normalize ASTs: Flatten namespaces/packages to reduce structural noise
-                if (src_tree) src_tree->flatten_node_type(82);
-                if (tgt_tree) tgt_tree->flatten_node_type(82);
+                if (has_stubs) {
+                    m.similarity = 0.0f;
+                    m.is_stub = true;
+                } else {
+                    // Whole-document similarity is the default metric.
+                    auto src_tree = parser.parse_file(src_file.paths, src_lang);
+                    auto tgt_tree = parser.parse_file(tgt_file.paths, tgt_lang);
 
-                m.similarity = ASTSimilarity::combined_similarity(
-                    src_tree.get(), tgt_tree.get());
+                    // Normalize ASTs: Flatten namespaces/packages to reduce structural noise
+                    // Node type 82 is PACKAGE (includes C++ namespaces)
+                    if (src_tree) src_tree->flatten_node_type(82);
+                    if (tgt_tree) tgt_tree->flatten_node_type(82);
+
+                    auto src_ids = parser.extract_identifiers_from_file(
+                        src_file.paths, src_lang);
+                    auto tgt_ids = parser.extract_identifiers_from_file(
+                        tgt_file.paths, tgt_lang);
+
+                    float file_sim = ASTSimilarity::combined_similarity_with_content(
+                        src_tree.get(), tgt_tree.get(), src_ids, tgt_ids);
+
+                    // Parity penalty: if target is missing functions (by name),
+                    // reduce the score even if the file-level shape looks similar.
+                    auto source_functions = parser.extract_function_infos_from_files(
+                        src_file.paths, src_lang);
+                    auto target_functions = parser.extract_function_infos_from_files(
+                        tgt_file.paths, tgt_lang);
+                    auto fn_cov = function_name_coverage(source_functions, target_functions);
+
+                    m.source_function_count = fn_cov.source_total;
+                    m.target_function_count = fn_cov.target_total;
+                    m.matched_function_count = fn_cov.matched;
+                    m.function_coverage = fn_cov.ratio;
+
+                    m.similarity = file_sim * fn_cov.ratio;
+                }
 
                 // Extract documentation statistics
-                auto src_docs = parser.extract_comments_from_file(src_file.paths, string_to_language(source.language));
-                auto tgt_docs = parser.extract_comments_from_file(tgt_file.paths, string_to_language(target.language));
+                auto src_docs = parser.extract_comments_from_file(src_file.paths, src_lang);
+                auto tgt_docs = parser.extract_comments_from_file(tgt_file.paths, tgt_lang);
 
                 m.source_doc_lines = src_docs.total_doc_lines;
                 m.target_doc_lines = tgt_docs.total_doc_lines;
@@ -812,35 +1027,61 @@ public:
                   << unmatched_target.size() << " target\n\n";
 
         if (!matches.empty()) {
-            std::cout << "=== Matched Files (by porting priority) ===\n\n";
-            std::cout << std::setw(30) << std::left << "Source"
-                      << std::setw(30) << "Target"
-                      << std::setw(10) << "Sim"
-                      << std::setw(8) << "Deps"
-                      << std::setw(10) << "Priority\n";
-            std::cout << std::string(88, '-') << "\n";
+		            std::cout << "=== Matched Files (by porting priority) ===\n\n";
+		            std::cout << std::setw(30) << std::left << "Source"
+		                      << std::setw(30) << "Target"
+		                      << std::setw(10) << "Similarity"
+		                      << std::setw(11) << "Dependents"
+		                      << std::setw(14) << "FunctionParity"
+		                      << std::setw(10) << "Priority\n";
+		            std::cout << std::string(110, '-') << "\n";
 
-            auto ranked = ranked_for_porting();
-            for (const auto& m : ranked) {
-                float priority = m.source_dependents * (1.0f - m.similarity);
-                std::cout << std::setw(30) << std::left << m.source_qualified.substr(0, 28)
-                          << std::setw(30) << m.target_qualified.substr(0, 28)
-                          << std::setw(10) << std::fixed << std::setprecision(2) << m.similarity
-                          << std::setw(8) << m.source_dependents
-                          << std::setw(10) << std::fixed << std::setprecision(1) << priority
-                          << "\n";
-            }
-        }
+	            auto ranked = ranked_for_porting();
+	            for (const auto& m : ranked) {
+	                std::string funcs = "-";
+	                if (m.source_function_count > 0) {
+	                    funcs = std::to_string(m.matched_function_count) + "/" +
+	                            std::to_string(m.source_function_count);
+	                }
+	                float priority = m.source_dependents * (1.0f - m.similarity);
+		                std::cout << std::setw(30) << std::left << m.source_qualified.substr(0, 28)
+		                          << std::setw(30) << m.target_qualified.substr(0, 28)
+		                          << std::setw(10) << std::fixed << std::setprecision(2) << m.similarity
+		                          << std::setw(11) << m.source_dependents
+		                          << std::setw(14) << funcs
+		                          << std::setw(10) << std::fixed << std::setprecision(1) << priority
+		                          << "\n";
+		            }
+		        }
 
-        if (!unmatched_source.empty()) {
-            std::cout << "\n=== Missing from Target (need to port) ===\n";
-            for (const auto& path : unmatched_source) {
-                const auto& sf = source.files.at(path);
-                std::cout << "  " << std::setw(30) << std::left << sf.qualified_name
-                          << " (" << sf.dependent_count << " dependents)\n";
-            }
-        }
-    }
-};
+	        if (!unmatched_source.empty()) {
+	            std::cout << "\n=== Missing from Target (need to port) ===\n\n";
+	            std::vector<const SourceFile*> missing;
+	            missing.reserve(unmatched_source.size());
+	            for (const auto& path : unmatched_source) {
+	                missing.push_back(&source.files.at(path));
+	            }
+	            std::sort(missing.begin(), missing.end(),
+	                      [](const SourceFile* a, const SourceFile* b) {
+	                          return a->dependent_count > b->dependent_count;
+	                      });
+
+	            std::cout << std::setw(30) << std::left << "File"
+	                      << std::setw(8) << "Deps"
+	                      << "Path\n";
+	            std::cout << std::string(78, '-') << "\n";
+	            int shown = 0;
+	            for (const auto* sf : missing) {
+	                if (shown++ >= 20) {
+	                    std::cout << "... and " << (missing.size() - 20) << " more missing files\n";
+	                    break;
+	                }
+	                std::cout << std::setw(30) << std::left << sf->qualified_name.substr(0, 28)
+	                          << std::setw(8) << sf->dependent_count
+	                          << sf->relative_path << "\n";
+	            }
+	        }
+	    }
+	};
 
 } // namespace ast_distance
