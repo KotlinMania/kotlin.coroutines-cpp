@@ -174,7 +174,7 @@ public:
 
     /**
      * Content-aware combined similarity.
-     * Uses identifier comparison as the DOMINANT signal.
+     * Uses identifier comparison as the DOMINANT signal at the function level.
      *
      * A real port reuses the same identifiers (with naming convention changes).
      * A file of stubs has completely different identifiers and scores near 0.
@@ -196,11 +196,55 @@ public:
         float jaccard_sim = node_type_jaccard(tree1, tree2);
         float struct_sim = structure_similarity(tree1, tree2);
 
-        return 0.50f * id_cosine +
-               0.15f * id_jaccard +
-               0.15f * hist_sim +
-               0.10f * jaccard_sim +
-               0.10f * struct_sim;
+        float base =
+            0.50f * id_cosine +
+            0.15f * id_jaccard +
+            0.15f * hist_sim +
+            0.10f * jaccard_sim +
+            0.10f * struct_sim;
+
+        // Module-marker heuristic:
+        //
+        // Rust module root files are often "just mod declarations" with little to no executable
+        // logic. Kotlin transliterations frequently represent these as empty `object` markers
+        // (see ast_parser.hpp: object_declaration -> PACKAGE when empty).
+        //
+        // For these files, identifier agreement (module names) should dominate; otherwise we
+        // systematically underrate good transliterations because Rust `mod_item` and Kotlin
+        // declarations differ structurally.
+        auto h1 = tree1->node_type_histogram(NUM_NODE_TYPES);
+        auto h2 = tree2->node_type_histogram(NUM_NODE_TYPES);
+
+        int structural1 =
+            h1[static_cast<int>(NodeType::CLASS)] +
+            h1[static_cast<int>(NodeType::STRUCT)] +
+            h1[static_cast<int>(NodeType::FUNCTION)] +
+            h1[static_cast<int>(NodeType::INTERFACE)] +
+            h1[static_cast<int>(NodeType::ENUM)];
+        int structural2 =
+            h2[static_cast<int>(NodeType::CLASS)] +
+            h2[static_cast<int>(NodeType::STRUCT)] +
+            h2[static_cast<int>(NodeType::FUNCTION)] +
+            h2[static_cast<int>(NodeType::INTERFACE)] +
+            h2[static_cast<int>(NodeType::ENUM)];
+
+        int pkg1 = h1[static_cast<int>(NodeType::PACKAGE)];
+        int pkg2 = h2[static_cast<int>(NodeType::PACKAGE)];
+
+        int max_size = std::max(tree1->size(), tree2->size());
+        if (max_size <= 250 && structural1 == 0 && structural2 == 0 && (pkg1 + pkg2) >= 2) {
+            // Blend identifiers, then remap [0.70, 1.00] -> [0.85, 1.00] to avoid over-boosting
+            // weak matches while allowing strong module-name matches to clear the "complete port"
+            // threshold.
+            float marker = 0.70f * id_cosine + 0.30f * id_jaccard;
+            float boosted = marker;
+            if (marker >= 0.70f) {
+                boosted = 0.85f + 0.15f * ((marker - 0.70f) / 0.30f);
+            }
+            return std::max(base, boosted);
+        }
+
+        return base;
     }
 
     /**

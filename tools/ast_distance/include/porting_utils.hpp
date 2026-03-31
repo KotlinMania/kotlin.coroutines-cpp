@@ -113,8 +113,127 @@ public:
         "sizeof", "alignof", "decltype", "static_assert", "constexpr", "template",
         "void", "int", "bool", "float", "double", "char", "short", "long", "unsigned",
         "auto", "const", "static", "virtual", "override", "final", "explicit",
-        "inline", "noexcept", "nullptr", "true", "false", "this", "new", "delete"
+        "inline", "noexcept", "nullptr", "true", "false", "this", "new", "delete",
+        // Kotlin keywords that look like function calls
+        "check", "require", "assert"
     };
+
+    static bool is_kotlin_file(const std::string& filepath) {
+        return filepath.size() >= 3 &&
+               filepath.substr(filepath.size() - 3) == ".kt";
+    }
+
+    /**
+     * Convert camelCase / PascalCase to snake_case.
+     * e.g. "endArg" -> "end_arg", "ForwardHeapKind" -> "forward_heap_kind"
+     */
+    static std::string camel_to_snake(const std::string& camel) {
+        std::string snake;
+        for (size_t i = 0; i < camel.size(); i++) {
+            unsigned char uc = static_cast<unsigned char>(camel[i]);
+            if (std::isupper(uc)) {
+                if (i > 0) snake += '_';
+                snake += static_cast<char>(std::tolower(uc));
+            } else {
+                snake += static_cast<char>(uc);
+            }
+        }
+        return snake;
+    }
+
+    /**
+     * Find the project root from a Kotlin file path by locating src/commonMain or src/commonTest.
+     * Handles both absolute and relative paths. Returns empty string if not found.
+     */
+    static std::string find_project_root(const std::string& filepath) {
+        size_t pos = filepath.find("/src/commonMain/");
+        if (pos == std::string::npos) {
+            pos = filepath.find("/src/commonTest/");
+        }
+        if (pos == std::string::npos) {
+            pos = filepath.find("src/commonMain/");
+            if (pos == 0) return ".";
+        }
+        if (pos == std::string::npos) {
+            pos = filepath.find("src/commonTest/");
+            if (pos == 0) return ".";
+        }
+        if (pos != std::string::npos) {
+            return filepath.substr(0, pos);
+        }
+        return "";
+    }
+
+    /**
+     * Load the Rust source file for a Kotlin port file.
+     *
+     * Uses the port-lint header to find the Rust source path, then tries to resolve it under
+     * the project's tmp/ directory. Supports multiple layouts:
+     * - <root>/tmp/<source_path>
+     * - <root>/tmp/src/<source_path>
+     * - <root>/tmp/<crate>/<source_path>
+     * - <root>/tmp/<crate>/src/<source_path>
+     */
+    static std::string load_rust_source_for_port(const std::string& kotlin_filepath) {
+        std::string source_path = extract_transliterated_from(kotlin_filepath);
+        if (source_path.empty()) return "";
+
+        std::string root = find_project_root(kotlin_filepath);
+        if (root.empty()) return "";
+
+        std::filesystem::path root_path(root);
+        std::filesystem::path tmp_dir = root_path / "tmp";
+        if (!std::filesystem::exists(tmp_dir) || !std::filesystem::is_directory(tmp_dir)) return "";
+
+        std::vector<std::filesystem::path> candidates;
+        candidates.push_back(tmp_dir / source_path);
+        candidates.push_back(tmp_dir / "src" / source_path);
+
+        for (const auto& entry : std::filesystem::directory_iterator(tmp_dir)) {
+            if (!entry.is_directory()) continue;
+            const auto dir = entry.path();
+            candidates.push_back(dir / source_path);
+            candidates.push_back(dir / "src" / source_path);
+        }
+
+        for (const auto& p : candidates) {
+            std::error_code ec;
+            if (!std::filesystem::exists(p, ec) || !std::filesystem::is_regular_file(p, ec)) continue;
+            std::ifstream file(p.string());
+            if (!file.is_open()) continue;
+            std::stringstream buf;
+            buf << file.rdbuf();
+            return buf.str();
+        }
+
+        return "";
+    }
+
+    /**
+     * Check if a Rust source file has a given parameter name as unused (prefixed with _).
+     * Converts Kotlin camelCase to Rust snake_case.
+     *
+     * e.g. for Kotlin "_endArg", checks if Rust has "_end_arg" as a word boundary match.
+     */
+    static bool rust_has_unused_param(const std::string& rust_content,
+                                      const std::string& kotlin_param) {
+        if (rust_content.empty()) return false;
+
+        std::string bare = kotlin_param;
+        if (!bare.empty() && bare[0] == '_') {
+            bare = bare.substr(1);
+        }
+
+        std::string snake = camel_to_snake(bare);
+        std::string pattern = "_" + snake;
+
+        try {
+            std::regex rust_re("\\b" + pattern + "\\b");
+            return std::regex_search(rust_content, rust_re);
+        } catch (...) {
+            return false;
+        }
+    }
 
     /**
      * Scan a file for TODO comments.
@@ -274,27 +393,39 @@ public:
             stats.has_header_guard = true;  // Not applicable for .cpp
         }
 
-        // Stub detection - remove comments and includes, check remaining content
+        // Stub detection - remove boilerplate, check remaining content.
+        // Works for C++, Kotlin, Rust, and Python.
         std::string clean = content;
         // Remove line comments
         clean = std::regex_replace(clean, std::regex(R"(//[^\n]*)"), "");
         // Remove block comments
         clean = std::regex_replace(clean, std::regex(R"(/\*[\s\S]*?\*/)"), "");
-        // Remove includes
+        // Remove C++ includes
         clean = std::regex_replace(clean, std::regex(R"(#include[^\n]*)"), "");
-        // Remove namespace declarations
+        // Remove C++ namespace declarations
         clean = std::regex_replace(clean, std::regex(R"(namespace[^\{]*\{?)"), "");
-        // Remove pragma
+        // Remove C++ pragma
         clean = std::regex_replace(clean, std::regex(R"(#pragma[^\n]*)"), "");
+        // Remove Kotlin/Java package declarations
+        clean = std::regex_replace(clean, std::regex(R"(package\s+[^\n]*)"), "");
+        // Remove Kotlin/Java/Rust import/use statements
+        clean = std::regex_replace(clean, std::regex(R"(import\s+[^\n]*)"), "");
+        clean = std::regex_replace(clean, std::regex(R"(use\s+[^\n]*)"), "");
+        // Remove Rust mod declarations
+        clean = std::regex_replace(clean, std::regex(R"(mod\s+\w+\s*;)"), "");
+        // Remove Python import statements
+        clean = std::regex_replace(clean, std::regex(R"(from\s+[^\n]*)"), "");
+        // Remove license/copyright blocks (common multi-line pattern)
+        clean = std::regex_replace(clean, std::regex(R"(Copyright[^\n]*)"), "");
+        clean = std::regex_replace(clean, std::regex(R"(Licensed under[^\n]*)"), "");
+        clean = std::regex_replace(clean, std::regex(R"(Apache License[^\n]*)"), "");
         // Remove whitespace
         clean.erase(std::remove_if(clean.begin(), clean.end(),
                    [](unsigned char c) { return std::isspace(c); }), clean.end());
 
-        // Length-based stub detection is only reliable for C/C++ skeleton files.
-        // For other languages we rely on AST-based stub detection (TODO()/pass/unimplemented!/etc).
-        bool is_cpp_like = (ext == ".cpp" || ext == ".cc" || ext == ".cxx" ||
-                            ext == ".hpp" || ext == ".h" || ext == ".hxx" || ext == ".hh");
-        stats.is_stub = is_cpp_like && (clean.length() < 50);
+        // If after stripping all boilerplate less than 100 chars remain,
+        // this file has no real implementation.
+        stats.is_stub = (clean.length() < 100);
 
         // Extract transliterated from
         stats.transliterated_from = extract_transliterated_from(filepath);
@@ -306,9 +437,106 @@ public:
     }
 
     /**
-     * Check for unused parameters in functions.
-     * Simple heuristic-based checker.
+     * Extract parameter names from a Kotlin function parameter list.
+     *
+     * In Kotlin, parameters are declared as `name: Type` (name before colon),
+     * unlike C++ where the type comes first. This extracts the identifier
+     * immediately before each `:` separator, skipping annotations and modifiers.
+     *
+     * Collects ALL params including _-prefixed ones. In a port context, _-prefixed
+     * params can hide incomplete translations and should be cross-referenced with
+     * the Rust source (see check_unused_params()).
      */
+    static std::vector<std::string> extract_kotlin_param_names(const std::string& args_str) {
+        std::vector<std::string> params;
+
+        // Split by commas (respecting angle brackets for generics)
+        std::vector<std::string> segments;
+        int angle_depth = 0;
+        std::string current;
+        for (char c : args_str) {
+            if (c == '<') { angle_depth++; current += c; }
+            else if (c == '>') { angle_depth--; current += c; }
+            else if (c == ',' && angle_depth == 0) {
+                segments.push_back(current);
+                current.clear();
+            } else {
+                current += c;
+            }
+        }
+        if (!current.empty()) segments.push_back(current);
+
+        // For each segment, find `name:` pattern (Kotlin param syntax)
+        std::regex kotlin_param_re(R"(\b(\w+)\s*:)");
+        for (const auto& seg : segments) {
+            // Strip default value
+            std::string s = seg;
+            // Find '=' not inside angle brackets
+            int adepth = 0;
+            size_t eq_pos = std::string::npos;
+            for (size_t i = 0; i < s.size(); i++) {
+                if (s[i] == '<') adepth++;
+                else if (s[i] == '>') adepth--;
+                else if (s[i] == '=' && adepth == 0) { eq_pos = i; break; }
+            }
+            if (eq_pos != std::string::npos) {
+                s = s.substr(0, eq_pos);
+            }
+
+            // Find the last `name:` pattern (to skip modifiers like vararg)
+            std::string last_name;
+            auto tok_begin = std::sregex_iterator(s.begin(), s.end(), kotlin_param_re);
+            auto tok_end = std::sregex_iterator();
+            for (auto tok_it = tok_begin; tok_it != tok_end; ++tok_it) {
+                last_name = (*tok_it)[1].str();
+            }
+
+            if (!last_name.empty() &&
+                !IGNORED_KEYWORDS.count(last_name)) {
+                params.push_back(last_name);
+            }
+        }
+
+        return params;
+    }
+
+    /**
+     * Extract parameter names from a C/C++ function parameter list.
+     *
+     * In C/C++, parameters are declared as `Type name` (name is last token),
+     * so we extract the last identifier from each comma-separated segment.
+     */
+    static std::vector<std::string> extract_cpp_param_names(const std::string& args_str) {
+        std::vector<std::string> params;
+        std::stringstream ss(args_str);
+        std::string param;
+
+        while (std::getline(ss, param, ',')) {
+            // Extract parameter name (last token before = if present)
+            size_t eq_pos = param.find('=');
+            if (eq_pos != std::string::npos) {
+                param = param.substr(0, eq_pos);
+            }
+
+            // Tokenize and get last identifier
+            std::regex token_re(R"(\b(\w+)\b)");
+            std::string last_token;
+            auto tok_begin = std::sregex_iterator(param.begin(), param.end(), token_re);
+            auto tok_end = std::sregex_iterator();
+            for (auto tok_it = tok_begin; tok_it != tok_end; ++tok_it) {
+                last_token = (*tok_it)[1].str();
+            }
+
+            if (!last_token.empty() &&
+                !IGNORED_KEYWORDS.count(last_token) &&
+                last_token[0] != '_') {  // Allow _unused pattern
+                params.push_back(last_token);
+            }
+        }
+
+        return params;
+    }
+
     static std::vector<LintError> check_unused_params(const std::string& filepath) {
         std::vector<LintError> errors;
 
@@ -319,8 +547,20 @@ public:
         buffer << file.rdbuf();
         std::string content = buffer.str();
 
-        // Simple function pattern: name(params) { or name(params) const {
-        std::regex func_re(R"((\w+)\s*\(([^)]*)\)\s*(?:const\s*)?(?:noexcept\s*)?(?:override\s*)?(?:final\s*)?\{)");
+        bool kotlin = is_kotlin_file(filepath);
+
+        // For Kotlin port files, load the Rust source for cross-referencing.
+        // This prevents hiding incomplete translations by adding _ prefixes to params.
+        std::string rust_content;
+        if (kotlin) {
+            rust_content = load_rust_source_for_port(filepath);
+        }
+
+        // For Kotlin files, require 'fun' keyword before the function name.
+        // For C/C++ files, use the original heuristic pattern.
+        std::regex func_re = kotlin
+            ? std::regex(R"(\bfun\s+(?:<[^>]*>\s+)?(\w+)\s*\(([^)]*)\)\s*(?::\s*\w+(?:<[^>]*>)?\s*)?\{)")
+            : std::regex(R"((\w+)\s*\(([^)]*)\)\s*(?:const\s*)?(?:noexcept\s*)?(?:override\s*)?(?:final\s*)?\{)");
 
         auto begin = std::sregex_iterator(content.begin(), content.end(), func_re);
         auto end = std::sregex_iterator();
@@ -351,51 +591,40 @@ public:
             // Parse parameters
             if (args_str.empty() || args_str.find("void") == 0) continue;
 
-            std::vector<std::string> params;
-            std::stringstream ss(args_str);
-            std::string param;
-
-            while (std::getline(ss, param, ',')) {
-                // Extract parameter name (last token before = if present)
-                size_t eq_pos = param.find('=');
-                if (eq_pos != std::string::npos) {
-                    param = param.substr(0, eq_pos);
-                }
-
-                // Tokenize and get last identifier
-                std::regex token_re(R"(\b(\w+)\b)");
-                std::string last_token;
-                auto tok_begin = std::sregex_iterator(param.begin(), param.end(), token_re);
-                auto tok_end = std::sregex_iterator();
-                for (auto tok_it = tok_begin; tok_it != tok_end; ++tok_it) {
-                    last_token = (*tok_it)[1].str();
-                }
-
-                if (!last_token.empty() &&
-                    !IGNORED_KEYWORDS.count(last_token) &&
-                    last_token[0] != '_') {  // Allow _unused pattern
-                    params.push_back(last_token);
-                }
-            }
+            std::vector<std::string> params = kotlin
+                ? extract_kotlin_param_names(args_str)
+                : extract_cpp_param_names(args_str);
 
             // Check usage in body
             for (const auto& p : params) {
                 std::regex usage_re("\\b" + p + "\\b");
                 if (!std::regex_search(body, usage_re)) {
-                    // Check for (void)param pattern
-                    std::string void_cast1 = "(void)" + p;
-                    std::string void_cast2 = "(void) " + p;
-                    if (body.find(void_cast1) == std::string::npos &&
-                        body.find(void_cast2) == std::string::npos) {
-
-                        LintError err;
-                        err.file_path = filepath;
-                        err.line_num = static_cast<int>(
-                            std::count(content.begin(), content.begin() + match.position(), '\n') + 1);
-                        err.type = "unused_param";
-                        err.message = "Unused parameter '" + p + "' in function '" + func_name + "'";
-                        errors.push_back(err);
+                    // For _-prefixed params in Kotlin port files: only suppress if the Rust
+                    // source also has the param as unused (_param). This prevents agents
+                    // from hiding incomplete translations with _ prefix.
+                    if (kotlin && !p.empty() && p[0] == '_') {
+                        if (rust_has_unused_param(rust_content, p)) {
+                            continue;
+                        }
                     }
+
+                    // Check for (void)param pattern (C/C++ only)
+                    if (!kotlin) {
+                        std::string void_cast1 = "(void)" + p;
+                        std::string void_cast2 = "(void) " + p;
+                        if (body.find(void_cast1) != std::string::npos ||
+                            body.find(void_cast2) != std::string::npos) {
+                            continue;
+                        }
+                    }
+
+                    LintError err;
+                    err.file_path = filepath;
+                    err.line_num = static_cast<int>(
+                        std::count(content.begin(), content.begin() + match.position(), '\n') + 1);
+                    err.type = "unused_param";
+                    err.message = "Unused parameter '" + p + "' in function '" + func_name + "'";
+                    errors.push_back(err);
                 }
             }
         }

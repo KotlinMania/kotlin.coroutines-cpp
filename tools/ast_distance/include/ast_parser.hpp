@@ -65,6 +65,8 @@ struct IdentifierStats {
             {"self", "this"},
             {"crate", ""},          // Rust path component, no Kotlin equivalent
             {"super", "super"},
+            // Visibility: Rust `pub(crate)` most closely matches Kotlin `internal`
+            {"internal", "public"},
             // Collections
             {"vec", "list"},
             {"mutablelist", "list"},
@@ -1001,6 +1003,52 @@ public:
             case Language::KOTLIN: normalized_type = kotlin_node_to_type(type_str); break;
             case Language::CPP: normalized_type = cpp_node_to_type(type_str); break;
             case Language::PYTHON: normalized_type = python_node_to_type(type_str); break;
+        }
+
+        // Special-case: Kotlin `object` declarations used as Rust `mod` markers.
+        //
+        // Many Rust module root files are just `mod foo;` declarations. In Kotlin, the
+        // closest line-by-line transliteration is often a set of empty `object` markers
+        // (sometimes with backticked names). These carry module structure but no runtime
+        // semantics.
+        //
+        // Treat such empty `object_declaration` nodes as PACKAGE-like to avoid overweighting
+        // them as CLASS nodes (which hurts similarity scoring for module root files).
+        if (lang == Language::KOTLIN && std::string(type_str) == "object_declaration") {
+            bool has_class_body = false;
+            bool body_has_named_children = false;
+
+            uint32_t oc_child_count = ts_node_child_count(node);
+            for (uint32_t i = 0; i < oc_child_count; ++i) {
+                TSNode child = ts_node_child(node, i);
+                if (!ts_node_is_named(child)) {
+                    continue;
+                }
+
+                std::string child_type(ts_node_type(child));
+                if (child_type == "class_body") {
+                    has_class_body = true;
+
+                    uint32_t body_child_count = ts_node_child_count(child);
+                    for (uint32_t j = 0; j < body_child_count; ++j) {
+                        TSNode body_child = ts_node_child(child, j);
+                        if (ts_node_is_named(body_child)) {
+                            body_has_named_children = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (body_has_named_children) {
+                    break;
+                }
+            }
+
+            // If there's no class body at all (e.g. `object Foo`) OR the class body is empty
+            // (e.g. `object Foo {}`), we treat it as a module marker.
+            if (!has_class_body || !body_has_named_children) {
+                normalized_type = NodeType::PACKAGE;
+            }
         }
 
         // Track unmapped node types for diagnostics
