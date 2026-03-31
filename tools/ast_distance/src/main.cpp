@@ -1025,6 +1025,39 @@ void generate_reports(const Codebase& source, const Codebase& target,
             }
         }
 	        report << "\n";
+
+	        report << "## Incorrect Ports (Missing Types)\n\n";
+	        report << "These files are matched (often via `// port-lint`) but appear to be missing one or more type declarations\n";
+	        report << "present in the Rust source file.\n\n";
+	        report << "| Source | Target | Missing types | Examples |\n";
+	        report << "|--------|--------|---------------|----------|\n";
+	        int shown_incorrect = 0;
+	        for (const auto& m : ranked) {
+	            if (m.source_type_count == 0) continue;
+	            if (m.type_coverage >= 1.0f) continue;
+	            if (shown_incorrect++ >= 25) break;
+	            report << "| `" << m.source_qualified << "` | `" << m.target_qualified << "` | "
+	                   << (m.source_type_count - m.matched_type_count) << "/" << m.source_type_count << " | ";
+	            if (!m.missing_types.empty()) {
+	                // Show up to 3 missing type names
+	                int shown_names = 0;
+	                for (const auto& name : m.missing_types) {
+	                    if (shown_names++ >= 3) break;
+	                    if (shown_names > 1) report << ", ";
+	                    report << "`" << name << "`";
+	                }
+	                if (static_cast<int>(m.missing_types.size()) > 3) {
+	                    report << " …";
+	                }
+	            } else {
+	                report << "-";
+	            }
+	            report << " |\n";
+	        }
+	        if (shown_incorrect == 0) {
+	            report << "| _None detected_ | | | |\n";
+	        }
+	        report << "\n";
 	        
 	        report << "## High Priority Missing Files\n\n";
 	        if (missing.empty()) {

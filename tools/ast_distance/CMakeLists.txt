@@ -101,6 +101,7 @@ add_executable(ast_distance
     src/ast_parser.cpp
     src/ast_normalizer.cpp
     src/similarity.cpp
+    src/symbol_extractor.cpp
     src/symbol_analysis.cpp
     src/symbol_extraction.cpp
 )

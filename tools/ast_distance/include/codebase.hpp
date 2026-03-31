@@ -4,6 +4,7 @@
 #include "ast_parser.hpp"
 #include "similarity.hpp"
 #include "porting_utils.hpp"
+#include "symbol_extractor.hpp"
 #include <filesystem>
 #include <map>
 #include <set>
@@ -11,6 +12,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <sstream>
 #include <regex>
 
 namespace fs = std::filesystem;
@@ -546,6 +548,14 @@ public:
         int matched_function_count = 0;
         float function_coverage = 1.0f;  // matched / source
 
+        // Type/class parity (name-based) within a file. This prevents a file from
+        // "matching" by AST shape while missing key type declarations.
+        int source_type_count = 0;
+        int target_type_count = 0;
+        int matched_type_count = 0;
+        float type_coverage = 1.0f;  // matched / source
+        std::vector<std::string> missing_types;  // source-defined types missing from target file
+
         // Documentation statistics
         int source_doc_lines = 0;
         int target_doc_lines = 0;
@@ -999,8 +1009,100 @@ public:
         return cov;
     }
 
+    static std::string read_file_to_string(const std::string& path) {
+        std::ifstream in(path);
+        if (!in) return {};
+        std::stringstream ss;
+        ss << in.rdbuf();
+        return ss.str();
+    }
+
+    struct TypeNameCoverage {
+        int source_total = 0;
+        int target_total = 0;
+        int matched = 0;
+        float ratio = 1.0f;
+        std::vector<std::string> missing;
+    };
+
+    static TypeNameCoverage type_name_coverage(
+            TSParser* src_parser,
+            TSParser* tgt_parser,
+            Language src_lang,
+            Language tgt_lang,
+            const SourceFile& src_file,
+            const SourceFile& tgt_file) {
+        TypeNameCoverage cov;
+
+        // Only compute type parity for Rust/C++ -> Kotlin comparisons.
+        // For other language pairs, keep coverage neutral.
+        if (!((src_lang == Language::RUST || src_lang == Language::CPP) &&
+              tgt_lang == Language::KOTLIN)) {
+            return cov;
+        }
+
+        std::string src_text = src_file.paths.empty() ? "" : read_file_to_string(src_file.paths.front());
+        std::string tgt_text = tgt_file.paths.empty() ? "" : read_file_to_string(tgt_file.paths.front());
+        if (src_text.empty() || tgt_text.empty()) {
+            return cov;
+        }
+
+        TSTree* src_tree = ts_parser_parse_string(src_parser, nullptr, src_text.c_str(), src_text.size());
+        TSTree* tgt_tree = ts_parser_parse_string(tgt_parser, nullptr, tgt_text.c_str(), tgt_text.size());
+        if (!src_tree || !tgt_tree) {
+            if (src_tree) ts_tree_delete(src_tree);
+            if (tgt_tree) ts_tree_delete(tgt_tree);
+            return cov;
+        }
+
+        TSNode src_root = ts_tree_root_node(src_tree);
+        TSNode tgt_root = ts_tree_root_node(tgt_tree);
+
+        std::vector<SymbolDefinition> src_syms =
+            SymbolExtractor::extract_symbols(src_root, src_text, src_file.package.path, src_file.relative_path);
+        std::vector<SymbolDefinition> tgt_syms =
+            SymbolExtractor::extract_symbols(tgt_root, tgt_text, tgt_file.package.path, tgt_file.relative_path);
+
+        std::set<std::string> tgt_names;
+        for (const auto& s : tgt_syms) {
+            if (s.name.empty()) continue;
+            tgt_names.insert(IdentifierStats::canonicalize(s.name));
+        }
+
+        std::set<std::string> src_seen;
+        for (const auto& s : src_syms) {
+            if (s.name.empty()) continue;
+            std::string key = IdentifierStats::canonicalize(s.name);
+            if (!src_seen.insert(key).second) continue;  // Deduplicate by canonical name
+            cov.source_total++;
+            if (tgt_names.count(key)) {
+                cov.matched++;
+            } else {
+                cov.missing.push_back(s.name);
+            }
+        }
+        cov.target_total = static_cast<int>(tgt_names.size());
+
+        if (cov.source_total > 0) {
+            cov.ratio = static_cast<float>(cov.matched) /
+                        static_cast<float>(cov.source_total);
+        }
+
+        ts_tree_delete(src_tree);
+        ts_tree_delete(tgt_tree);
+        return cov;
+    }
+
     void compute_similarities() {
         ASTParser parser;
+        TSParser* symbol_src = ts_parser_new();
+        TSParser* symbol_tgt = ts_parser_new();
+        if (source.language == "rust") {
+            ts_parser_set_language(symbol_src, tree_sitter_rust());
+        } else {
+            ts_parser_set_language(symbol_src, tree_sitter_cpp());
+        }
+        ts_parser_set_language(symbol_tgt, tree_sitter_kotlin());
 
         for (auto& m : matches) {
             try {
@@ -1046,7 +1148,15 @@ public:
                     m.matched_function_count = fn_cov.matched;
                     m.function_coverage = fn_cov.ratio;
 
-                    m.similarity = file_sim * fn_cov.ratio;
+                    auto ty_cov = type_name_coverage(
+                        symbol_src, symbol_tgt, src_lang, tgt_lang, src_file, tgt_file);
+                    m.source_type_count = ty_cov.source_total;
+                    m.target_type_count = ty_cov.target_total;
+                    m.matched_type_count = ty_cov.matched;
+                    m.type_coverage = ty_cov.ratio;
+                    m.missing_types = std::move(ty_cov.missing);
+
+                    m.similarity = file_sim * fn_cov.ratio * m.type_coverage;
                 }
 
                 // Extract documentation statistics
@@ -1062,6 +1172,9 @@ public:
                 m.similarity = -1.0f;  // Error
             }
         }
+
+        ts_parser_delete(symbol_src);
+        ts_parser_delete(symbol_tgt);
     }
 
     /**
@@ -1101,8 +1214,9 @@ public:
 		                      << std::setw(10) << "Similarity"
 		                      << std::setw(11) << "Dependents"
 		                      << std::setw(14) << "FunctionParity"
+		                      << std::setw(12) << "TypeParity"
 		                      << std::setw(10) << "Priority\n";
-		            std::cout << std::string(110, '-') << "\n";
+		            std::cout << std::string(122, '-') << "\n";
 
 	            auto ranked = ranked_for_porting();
 	            for (const auto& m : ranked) {
@@ -1111,12 +1225,18 @@ public:
 	                    funcs = std::to_string(m.matched_function_count) + "/" +
 	                            std::to_string(m.source_function_count);
 	                }
+	                std::string types = "-";
+	                if (m.source_type_count > 0) {
+	                    types = std::to_string(m.matched_type_count) + "/" +
+	                            std::to_string(m.source_type_count);
+	                }
 	                float priority = m.source_dependents * (1.0f - m.similarity);
 		                std::cout << std::setw(30) << std::left << m.source_qualified.substr(0, 28)
 		                          << std::setw(30) << m.target_qualified.substr(0, 28)
 		                          << std::setw(10) << std::fixed << std::setprecision(2) << m.similarity
 		                          << std::setw(11) << m.source_dependents
 		                          << std::setw(14) << funcs
+		                          << std::setw(12) << types
 		                          << std::setw(10) << std::fixed << std::setprecision(1) << priority
 		                          << "\n";
 		            }
