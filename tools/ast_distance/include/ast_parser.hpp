@@ -43,8 +43,13 @@ struct IdentifierStats {
      * Canonicalize an identifier for cross-language comparison.
      * "foo_bar" and "fooBar" and "FooBar" all become "foobar".
      * This lets snake_case Rust match camelCase Kotlin.
+     *
+     * Also normalizes cross-language equivalents:
+     *   self/this → "this", Option/nullable → "option",
+     *   Vec/List/MutableList → "list", etc.
      */
     static std::string canonicalize(const std::string& name) {
+        // First: lowercase + strip underscores
         std::string result;
         result.reserve(name.size());
         for (char c : name) {
@@ -53,6 +58,77 @@ struct IdentifierStats {
                     std::tolower(static_cast<unsigned char>(c)));
             }
         }
+
+        // Cross-language equivalents (applied after lowering)
+        static const std::vector<std::pair<std::string, std::string>> equivalents = {
+            // Keywords
+            {"self", "this"},
+            {"crate", ""},          // Rust path component, no Kotlin equivalent
+            {"super", "super"},
+            // Collections
+            {"vec", "list"},
+            {"mutablelist", "list"},
+            {"arraylist", "list"},
+            {"hashmap", "map"},
+            {"mutablemap", "map"},
+            {"hashset", "set"},
+            {"mutableset", "set"},
+            {"btreemap", "map"},
+            {"btreeset", "set"},
+            // Types
+            {"option", "nullable"},
+            {"some", "notnull"},
+            {"none", "null"},
+            {"box", "boxed"},
+            {"arc", "arc"},
+            {"string", "string"},
+            {"str", "string"},
+            {"i32", "int"},
+            {"i64", "long"},
+            {"u32", "uint"},
+            {"u64", "ulong"},
+            {"usize", "uint"},
+            {"isize", "int"},
+            {"f32", "float"},
+            {"f64", "double"},
+            {"bool", "boolean"},
+            // Error handling
+            {"result", "result"},
+            {"err", "error"},
+            {"ok", "success"},
+            // Rust trait methods -> Kotlin equivalents
+            {"fmt", "tostring"},          // Display::fmt -> toString
+            {"eq", "equals"},             // PartialEq::eq -> equals
+            {"partialeq", "equals"},
+            {"cmp", "compareto"},         // Ord::cmp -> compareTo
+            {"partialcmp", "compareto"},  // PartialOrd::partial_cmp -> compareTo
+            {"hash", "hashcode"},         // Hash::hash -> hashCode
+            {"clone", "copy"},            // Clone::clone -> copy (data class)
+            {"default", "invoke"},        // Default::default -> companion invoke
+            {"fromstr", "parse"},         // FromStr -> parse
+            {"intoiter", "iterator"},     // IntoIterator::into_iter -> iterator
+            {"intoiterator", "iterator"},
+            {"next", "next"},             // Iterator::next (same name)
+            {"serialize", "serialize"},   // serde (same name)
+            {"deserialize", "deserialize"},
+            {"deref", "get"},             // Deref::deref -> get/value
+            {"drop", "close"},            // Drop::drop -> close/Closeable
+            {"freeze", "freeze"},         // project-specific (same name)
+            {"trace", "trace"},           // project-specific (same name)
+            // Common prefixes
+            {"fn", "fun"},
+            {"impl", "class"},
+            {"pub", "public"},
+            {"mut", "var"},
+            {"let", "val"},
+        };
+
+        for (const auto& [from, to] : equivalents) {
+            if (result == from) {
+                return to;
+            }
+        }
+
         return result;
     }
 
@@ -222,6 +298,7 @@ struct FunctionInfo {
     TreePtr body_tree;
     IdentifierStats identifiers;
     bool has_stub_markers = false;
+    bool is_test = false;  // true if #[test] or inside #[cfg(test)] mod
 };
 
 /**
@@ -660,8 +737,16 @@ public:
         return false;
     }
 
+    // Get unmapped node type counts (for diagnostics)
+    const std::map<std::string, int>& get_unmapped_node_types() const {
+        return unmapped_node_types_;
+    }
+
+    void clear_unmapped() { unmapped_node_types_.clear(); }
+
     private:
     TSParser* parser_;
+    std::map<std::string, int> unmapped_node_types_;
 
     int count_lines(const std::string& text) {
         if (text.empty()) return 0;
@@ -783,35 +868,64 @@ public:
         }
     }
 
-    void extract_identifiers_recursive(TSNode node, const std::string& source, IdentifierStats& stats) {
+    /**
+     * Check if a node is an import/use declaration whose path-segment
+     * identifiers should be excluded from similarity scoring.
+     *
+     * Import paths (e.g. `use crate::values::layout::Foo` in Rust,
+     * `import io.github.kotlinmania.starlark_kotlin.values.Foo` in Kotlin)
+     * introduce high-frequency namespace identifiers ("crate", "io",
+     * "github", "kotlinmania") that are pure noise for cross-language
+     * comparison.  Filtering them dramatically improves canonical cosine
+     * similarity for faithful ports.
+     */
+    static bool is_import_node(const std::string& node_type) {
+        return node_type == "use_declaration" ||       // Rust
+               node_type == "import_header" ||          // Kotlin
+               node_type == "import_list" ||             // Kotlin (import with alias)
+               node_type == "import_from_statement" ||   // Python
+               node_type == "import_statement" ||        // Python
+               node_type == "preproc_include" ||         // C++
+               node_type == "using_declaration" ||       // C++
+               node_type == "package_header";            // Kotlin package declaration
+    }
+
+    void extract_identifiers_recursive(TSNode node, const std::string& source,
+                                        IdentifierStats& stats, bool skip_identifiers = false) {
         const char* type_str = ts_node_type(node);
         std::string node_type(type_str);
 
-        // Check if this is an identifier node
-        // Different languages use different node type names for identifiers
-        bool is_identifier = (node_type == "identifier" ||
-                             node_type == "simple_identifier" ||
-                             node_type == "type_identifier" ||
-                             node_type == "field_identifier" ||
-                             node_type == "property_identifier");
+        // If we enter an import/use/package node, switch to skip mode
+        // so its path-segment identifiers are not counted.
+        bool should_skip = skip_identifiers || is_import_node(node_type);
 
-        if (is_identifier) {
-            uint32_t start = ts_node_start_byte(node);
-            uint32_t end = ts_node_end_byte(node);
-            if (end > start && end <= source.length()) {
-                std::string identifier = source.substr(start, end - start);
-                // Filter out very common/boilerplate identifiers
-                if (identifier.length() > 1 && identifier != "it" && identifier != "this") {
-                    stats.add_identifier(identifier);
+        if (!should_skip) {
+            // Check if this is an identifier node
+            // Different languages use different node type names for identifiers
+            bool is_identifier = (node_type == "identifier" ||
+                                 node_type == "simple_identifier" ||
+                                 node_type == "type_identifier" ||
+                                 node_type == "field_identifier" ||
+                                 node_type == "property_identifier");
+
+            if (is_identifier) {
+                uint32_t start = ts_node_start_byte(node);
+                uint32_t end = ts_node_end_byte(node);
+                if (end > start && end <= source.length()) {
+                    std::string identifier = source.substr(start, end - start);
+                    // Filter out very common/boilerplate identifiers
+                    if (identifier.length() > 1 && identifier != "it" && identifier != "this") {
+                        stats.add_identifier(identifier);
+                    }
                 }
             }
         }
 
-        // Recurse into children
+        // Recurse into children, propagating skip mode
         uint32_t child_count = ts_node_child_count(node);
         for (uint32_t i = 0; i < child_count; ++i) {
             TSNode child = ts_node_child(node, i);
-            extract_identifiers_recursive(child, source, stats);
+            extract_identifiers_recursive(child, source, stats, should_skip);
         }
     }
 
@@ -889,6 +1003,11 @@ public:
             case Language::PYTHON: normalized_type = python_node_to_type(type_str); break;
         }
 
+        // Track unmapped node types for diagnostics
+        if (normalized_type == NodeType::UNKNOWN) {
+            unmapped_node_types_[type_str]++;
+        }
+
         auto tree_node = std::make_shared<Tree>(
             static_cast<int>(normalized_type), type_str);
 
@@ -964,6 +1083,80 @@ public:
             (lang == Language::CPP &&
              (type_s == "function_definition" || type_s == "function_declarator")) ||
             (lang == Language::PYTHON && type_s == "function_definition");
+    }
+
+    /**
+     * Check if a Rust node has a #[test] attribute or a #[cfg(test)] attribute.
+     * Works for both function_item and mod_item nodes.
+     *
+     * In tree-sitter-rust, attributes appear as siblings BEFORE the function:
+     *   (attribute_item (attribute (path) ...))   // for outer #[...]
+     *   (function_item ...)
+     *
+     * Or for #[cfg(test)]:
+     *   (attribute_item
+     *     (attribute
+     *       (path)                               // "cfg"
+     *       (token_tree "(" "test" ")")))
+     */
+    bool has_test_attribute(TSNode node, const std::string& source) const {
+        // Look at preceding siblings for attribute_item nodes
+        TSNode parent = ts_node_parent(node);
+        if (ts_node_is_null(parent)) return false;
+
+        uint32_t child_count = ts_node_child_count(parent);
+        // Find our index among siblings
+        uint32_t our_index = UINT32_MAX;
+        for (uint32_t i = 0; i < child_count; ++i) {
+            TSNode child = ts_node_child(parent, i);
+            if (ts_node_start_byte(child) == ts_node_start_byte(node) &&
+                ts_node_end_byte(child) == ts_node_end_byte(node)) {
+                our_index = i;
+                break;
+            }
+        }
+
+        if (our_index == UINT32_MAX || our_index == 0) return false;
+
+        // Scan backwards through preceding siblings for attribute_item
+        for (uint32_t i = our_index; i > 0; --i) {
+            TSNode sibling = ts_node_child(parent, i - 1);
+            std::string sib_type(ts_node_type(sibling));
+
+            if (sib_type != "attribute_item") break;  // stop at non-attribute
+
+            // Extract the attribute text and check for #[test] or #[cfg(test)]
+            uint32_t start = ts_node_start_byte(sibling);
+            uint32_t end = ts_node_end_byte(sibling);
+            if (end > start && end <= source.length()) {
+                std::string attr_text = source.substr(start, end - start);
+                // #[test]
+                if (attr_text.find("#[test]") != std::string::npos) return true;
+                // #[cfg(test)]
+                if (attr_text.find("cfg(test)") != std::string::npos) return true;
+                if (attr_text.find("cfg( test )") != std::string::npos) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if a node is inside a #[cfg(test)] mod block.
+     * Walks up the tree looking for mod_item ancestors with #[cfg(test)].
+     */
+    bool is_inside_cfg_test_mod(TSNode node, const std::string& source) const {
+        TSNode current = ts_node_parent(node);
+        while (!ts_node_is_null(current)) {
+            std::string type_s(ts_node_type(current));
+            if (type_s == "mod_item") {
+                if (has_test_attribute(current, source)) {
+                    return true;
+                }
+            }
+            current = ts_node_parent(current);
+        }
+        return false;
     }
 
     std::string extract_function_name(TSNode node, Language lang, const std::string& source) const {
@@ -1135,6 +1328,12 @@ public:
             info.body_tree = convert_node(body_node, source, lang);
             info.identifiers = ids;
             info.has_stub_markers = has_stub_markers_in_node(body_node, source, lang);
+
+            // Tag Rust test functions: #[test] attribute or inside #[cfg(test)] mod
+            if (lang == Language::RUST) {
+                info.is_test = has_test_attribute(node, source) ||
+                               is_inside_cfg_test_mod(node, source);
+            }
 
             functions.push_back(info);
         }
