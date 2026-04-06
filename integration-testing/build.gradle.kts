@@ -40,7 +40,6 @@ buildscript {
 
     if (usingSnapshotVersion) {
         repositories {
-            mavenLocal()
             maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
         }
     }
@@ -54,7 +53,6 @@ repositories {
     if (extra["using_snapshot_version"] == true) {
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
     }
-    mavenLocal()
     mavenCentral()
 }
 

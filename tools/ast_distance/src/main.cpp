@@ -61,8 +61,7 @@ const char* language_name(Language lang) {
 void print_usage(const char* program) {
     std::cerr << "AST Distance - Cross-language AST comparison and porting analysis\n\n";
     std::cerr << "Usage:\n";
-    std::cerr << "  " << program << " [--agent <number>] [--task-file <tasks.json>] [--override] <command>\n";
-    std::cerr << "      Guardrails: when a task system is initialized, commands require --agent.\n\n";
+    std::cerr << "  " << program << " <command>\n\n";
     std::cerr << "  " << program << " <file1> <lang1> <file2> <lang2>\n";
     std::cerr << "      Compare AST similarity between two files\n\n";
     std::cerr << "  " << program << " --compare-functions <file1> <lang1> <file2> <lang2>\n";
@@ -123,19 +122,6 @@ void print_usage(const char* program) {
     std::cerr << "      Output as JSON\n\n";
     std::cerr << "  " << program << " --compiler-fixup <kotlin_root> <error_file> --verbose\n";
     std::cerr << "      Show alternative imports for ambiguous references\n\n";
-    std::cerr << "Swarm Task Management:\n";
-    std::cerr << "  " << program << " --init-tasks <src_dir> <src_lang> <tgt_dir> <tgt_lang> <task_file>\n";
-    std::cerr << "      Generate task file from missing/incomplete ports\n\n";
-    std::cerr << "  " << program << " --tasks <task_file>\n";
-    std::cerr << "      Show task status summary\n\n";
-    std::cerr << "  " << program << " --assign <task_file> [agent_number]\n";
-    std::cerr << "      Assign highest-priority pending task to an agent session\n";
-    std::cerr << "      If agent_number is omitted, a new one is allocated and printed\n";
-    std::cerr << "      Outputs complete porting instructions and AGENTS.md guidelines\n\n";
-    std::cerr << "  " << program << " --complete <task_file> <source_qualified>\n";
-    std::cerr << "      Mark a task as completed\n\n";
-    std::cerr << "  " << program << " --release <task_file> <source_qualified>\n";
-    std::cerr << "      Release an assigned task back to pending\n\n";
     std::cerr << "  Languages: rust, kotlin, cpp, python\n\n";
     std::cerr << "Port-Lint Headers:\n";
     std::cerr << "  Add a header comment to each ported file to enable accurate source tracking.\n";
@@ -153,6 +139,23 @@ void print_usage(const char* program) {
     std::cerr << "    - Match files explicitly instead of by name similarity\n";
     std::cerr << "    - Compare documentation coverage between source and target\n";
     std::cerr << "    - Report 'Matched by header' vs 'Matched by name' statistics\n\n";
+}
+
+static bool argv_contains_disabled_task_feature_flags(int argc, char* argv[]) {
+    static const std::unordered_set<std::string> disabled = {
+        "--agent",
+        "--task-file",
+        "--override",
+        "--init-tasks",
+        "--tasks",
+        "--assign",
+        "--complete",
+        "--release",
+    };
+    for (int i = 1; i < argc; ++i) {
+        if (disabled.find(argv[i]) != disabled.end()) return true;
+    }
+    return false;
 }
 
 void dump_tree(Tree* node, int indent = 0) {
@@ -2877,6 +2880,13 @@ int main(int argc, char* argv[]) {
             write(STDERR_FILENO, msg, sizeof(msg) - 1);
             return 2;
         }
+    }
+
+    if (argv_contains_disabled_task_feature_flags(argc, argv)) {
+        std::cerr
+            << "Error: ast_distance task assignment features are disabled in this fork.\n"
+            << "Disabled flags: --init-tasks, --tasks, --assign, --complete, --release, --agent, --task-file, --override\n";
+        return 2;
     }
 
     int agent = 0;
