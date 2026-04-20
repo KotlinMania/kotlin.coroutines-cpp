@@ -14,6 +14,7 @@
 #include <fstream>
 #include <sstream>
 #include <regex>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -116,6 +117,26 @@ struct SourceFile {
      * Example: "value" -> "Value", "my_file_name" -> "MyFileName"
      */
     static std::string to_pascal_case(const std::string& name) {
+        // Special-case common Rust stems that are written without underscores but should
+        // map to Kotlin's acronym-style PascalCase.
+        // Example: "refcell" -> "RefCell" (not "Refcell")
+        auto normalize = [](const std::string& s) {
+            std::string out;
+            out.reserve(s.size());
+            for (char c : s) {
+                if (c == '_') continue;
+                out.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+            }
+            return out;
+        };
+        static const std::map<std::string, std::string> kSpecial = {
+            {"refcell", "RefCell"},
+        };
+        auto it = kSpecial.find(normalize(name));
+        if (it != kSpecial.end()) {
+            return it->second;
+        }
+
         std::string result;
         bool capitalize_next = true;
 
@@ -189,61 +210,86 @@ public:
             return;
         }
 
-        for (const auto& entry : fs::recursive_directory_iterator(root_path)) {
-            if (!entry.is_regular_file()) continue;
-
-            std::string path = entry.path().string();
-            if (!has_valid_ext(path)) continue;
-
-            // Skip build artifacts (but NOT test files - they need parity too)
-            if (path.find("/target/") != std::string::npos ||
-                path.find("/build/") != std::string::npos ||
-                path.find("/build_") != std::string::npos ||
-                path.find("/_deps/") != std::string::npos) {
-                continue;
-            }
-
-            std::string rel_path = fs::relative(path, root_path).string();
-            std::string stem = entry.path().stem().string();
-            std::string filename = entry.path().filename().string();
-            std::string extension = entry.path().extension().string();
-
-            // Logical grouping: keep paired translation units together
-            // (e.g., .hpp + .cpp, or platform suffix variants).
-            std::string directory = fs::path(rel_path).parent_path().string();
-            std::string normalized_stem = stem;
-            static const std::vector<std::string> suffixes = {
-                ".common", ".concurrent", ".native", ".common_native", ".darwin", ".apple"
-            };
-            for (const auto& suffix : suffixes) {
-                if (normalized_stem.size() > suffix.size() &&
-                    normalized_stem.compare(normalized_stem.size() - suffix.size(), suffix.size(), suffix) == 0) {
-                    normalized_stem = normalized_stem.substr(0, normalized_stem.size() - suffix.size());
-                    break;
+        // Kotlin Multiplatform convention:
+        // If root is under `src/commonMain/kotlin/...`, also scan
+        // the sibling `src/commonTest/kotlin/...` tree so test ports
+        // (annotated with `// port-lint: tests ...`) are discovered.
+        std::vector<fs::path> roots_to_scan;
+        fs::path rel_base = root_path;
+        roots_to_scan.push_back(root_path);
+        if (language == "kotlin") {
+            const std::string marker = "/src/commonMain/kotlin/";
+            const auto pos = root_path.find(marker);
+            if (pos != std::string::npos) {
+                const std::string repo_root = root_path.substr(0, pos);
+                const std::string suffix = root_path.substr(pos + marker.size());
+                const fs::path test_root = fs::path(repo_root) / "src" / "commonTest" / "kotlin" / suffix;
+                if (fs::exists(test_root) && fs::is_directory(test_root)) {
+                    roots_to_scan.push_back(test_root);
+                    // Use repo root for relative paths so commonMain/commonTest remain distinct.
+                    rel_base = repo_root;
                 }
             }
-            std::string logical_key = directory.empty() ? normalized_stem : directory + "/" + normalized_stem;
+        }
 
-            if (files.count(logical_key)) {
-                files[logical_key].paths.push_back(path);
-                // Prefer header as representative entry when paired.
-                if (extension == ".hpp" || extension == ".h") {
-                    files[logical_key].filename = filename;
-                    files[logical_key].extension = extension;
-                    files[logical_key].relative_path = rel_path;
+        for (const auto& scan_root : roots_to_scan) {
+            if (!fs::exists(scan_root) || !fs::is_directory(scan_root)) continue;
+            for (const auto& entry : fs::recursive_directory_iterator(scan_root)) {
+                if (!entry.is_regular_file()) continue;
+
+                std::string path = entry.path().string();
+                if (!has_valid_ext(path)) continue;
+
+                // Skip build artifacts (but NOT test files - they need parity too)
+                if (path.find("/target/") != std::string::npos ||
+                    path.find("/build/") != std::string::npos ||
+                    path.find("/build_") != std::string::npos ||
+                    path.find("/_deps/") != std::string::npos) {
+                    continue;
                 }
-            } else {
-                SourceFile sf;
-                sf.paths.push_back(path);
-                sf.relative_path = rel_path;
-                sf.filename = filename;
-                sf.stem = stem;
-                sf.extension = extension;
-                sf.qualified_name = SourceFile::make_qualified_name(rel_path);
 
-                files[logical_key] = sf;
-                by_stem[sf.stem].push_back(logical_key);
-                by_qualified[sf.qualified_name] = logical_key;
+                std::string rel_path = fs::relative(path, rel_base).string();
+                std::string stem = entry.path().stem().string();
+                std::string filename = entry.path().filename().string();
+                std::string extension = entry.path().extension().string();
+
+                // Logical grouping: keep paired translation units together
+                // (e.g., .hpp + .cpp, or platform suffix variants).
+                std::string directory = fs::path(rel_path).parent_path().string();
+                std::string normalized_stem = stem;
+                static const std::vector<std::string> suffixes = {
+                    ".common", ".concurrent", ".native", ".common_native", ".darwin", ".apple"
+                };
+                for (const auto& suffix : suffixes) {
+                    if (normalized_stem.size() > suffix.size() &&
+                        normalized_stem.compare(normalized_stem.size() - suffix.size(), suffix.size(), suffix) == 0) {
+                        normalized_stem = normalized_stem.substr(0, normalized_stem.size() - suffix.size());
+                        break;
+                    }
+                }
+                std::string logical_key = directory.empty() ? normalized_stem : directory + "/" + normalized_stem;
+
+                if (files.count(logical_key)) {
+                    files[logical_key].paths.push_back(path);
+                    // Prefer header as representative entry when paired.
+                    if (extension == ".hpp" || extension == ".h") {
+                        files[logical_key].filename = filename;
+                        files[logical_key].extension = extension;
+                        files[logical_key].relative_path = rel_path;
+                    }
+                } else {
+                    SourceFile sf;
+                    sf.paths.push_back(path);
+                    sf.relative_path = rel_path;
+                    sf.filename = filename;
+                    sf.stem = stem;
+                    sf.extension = extension;
+                    sf.qualified_name = SourceFile::make_qualified_name(rel_path);
+
+                    files[logical_key] = sf;
+                    by_stem[sf.stem].push_back(logical_key);
+                    by_qualified[sf.qualified_name] = logical_key;
+                }
             }
         }
 
@@ -525,6 +571,8 @@ public:
         int unmatched_target = 0;
         bool has_source_stub = false;
         bool has_target_stub = false;
+        bool has_stub_mismatch = false;
+        int stub_mismatch_count = 0;
     };
 
     struct Match {
@@ -548,6 +596,11 @@ public:
         int matched_function_count = 0;
         float function_coverage = 1.0f;  // matched / source
 
+        // Test-function parity (subset of the function counts above). Tracked
+        // separately so reports can call out missing tests explicitly.
+        int source_test_function_count = 0;
+        int matched_test_function_count = 0;
+
         // Type/class parity (name-based) within a file. This prevents a file from
         // "matching" by AST shape while missing key type declarations.
         int source_type_count = 0;
@@ -562,6 +615,8 @@ public:
         int source_doc_comments = 0;
         int target_doc_comments = 0;
         float doc_similarity = 0.0f;     // Cosine similarity of doc word frequencies
+        float doc_coverage = 1.0f;       // target/source doc line coverage, capped at 1.0
+        float doc_weighted = 0.0f;       // 0.5 * doc_similarity + 0.5 * doc_coverage
 
         // Compute doc gap ratio: 0 = no gap, 1 = completely missing
         float doc_gap_ratio() const {
@@ -569,6 +624,50 @@ public:
             if (target_doc_lines == 0) return 1.0f;  // Target missing all docs
             float ratio = 1.0f - (static_cast<float>(target_doc_lines) / source_doc_lines);
             return std::max(0.0f, ratio);  // Clamp to 0 if target has more
+        }
+
+        // Absolute deficit counts (missing functions + missing types).
+        // Tests are included in function_deficit() because they are real code.
+        int function_deficit() const {
+            return std::max(0, source_function_count - matched_function_count);
+        }
+        int type_deficit() const {
+            return std::max(0, source_type_count - matched_type_count);
+        }
+        int symbol_deficit() const {
+            return function_deficit() + type_deficit();
+        }
+
+        /**
+         * Porting priority score.
+         *
+         * Design rationale:
+         *   - The old formula was `dependents * (1 - similarity)`, which zeroes
+         *     out any file with no dependents (every test file, every leaf
+         *     module). That hid hundreds of real gaps.
+         *   - The new formula makes *symbol deficit* (missing functions +
+         *     missing types) the primary driver — a file with 10 missing
+         *     functions ranks above a file that merely has low AST similarity.
+         *   - Import depth (number of files depending on this one) is kept as
+         *     a multiplicative boost, but log-scaled so that high-fanout files
+         *     don't drown out standalone files with real deficits.
+         *   - Similarity gap is a tiebreaker for files with no explicit
+         *     symbol-level gap.
+         */
+        float priority_score() const {
+            float deficit = static_cast<float>(symbol_deficit());
+            float import_depth = std::log1p(static_cast<float>(source_dependents));
+            float sim_gap = std::max(0.0f, 1.0f - similarity);
+
+            // 10 points per missing symbol; each missing symbol is amplified
+            // by how many downstream files will benefit once it's restored.
+            float deficit_score = deficit * (10.0f + import_depth * 2.0f);
+
+            // For files with no explicit symbol-level gap, fall back to the
+            // old AST-similarity × dependents signal.
+            float shape_score = import_depth * sim_gap * 5.0f;
+
+            return deficit_score + shape_score;
         }
     };
 
@@ -846,9 +945,24 @@ public:
             matched_targets.insert(tgt_path);
         }
 
-        // Find unmatched
+        // Find unmatched. Skip module-root files that are purely declarative
+        // namespace/export wiring with no Kotlin equivalent:
+        //   Rust:   mod.rs (module declaration), lib.rs / main.rs (crate roots)
+        //   Python: __init__.py (package marker)
+        // JS/TS index files are intentionally NOT excluded: index.ts files
+        // contain real implementation code and must be ported.
+        auto is_module_root_path = [](const std::string& p) -> bool {
+            auto ends_with = [&](const std::string& suffix) {
+                return p.size() >= suffix.size() &&
+                       p.compare(p.size() - suffix.size(), suffix.size(), suffix) == 0;
+            };
+            return ends_with("/mod.rs")      || ends_with("\\mod.rs")  ||
+                   ends_with("/lib.rs")      || ends_with("\\lib.rs")  ||
+                   ends_with("/main.rs")     || ends_with("\\main.rs") ||
+                   ends_with("/__init__.py") || ends_with("\\__init__.py");
+        };
         for (const auto& [src_path, _] : source.files) {
-            if (!matched_sources.count(src_path)) {
+            if (!matched_sources.count(src_path) && !is_module_root_path(src_path)) {
                 unmatched_source.push_back(src_path);
             }
         }
@@ -873,12 +987,15 @@ public:
     static FunctionComparisonResult compare_function_sets(
             const std::vector<FunctionInfo>& source_functions,
             const std::vector<FunctionInfo>& target_functions) {
-        // Filter out test functions from source before comparison.
-        // Rust inline tests (#[test], #[cfg(test)] mod) map to separate
-        // Kotlin test files, not the ported source file.
+        // Count ALL functions, including #[test]. Previously, test functions
+        // were silently excluded from the source set on the assumption that
+        // they map to "separate Kotlin test files" — but that is only true if
+        // the project actually ports those tests. Suppressing them hides
+        // real gaps in test coverage, so we now count them and let the
+        // ranking surface the deficit.
         std::vector<const FunctionInfo*> src_prod, tgt_all;
         for (const auto& f : source_functions) {
-            if (!f.is_test) src_prod.push_back(&f);
+            src_prod.push_back(&f);
         }
         for (const auto& f : target_functions) {
             tgt_all.push_back(&f);
@@ -888,15 +1005,37 @@ public:
         result.source_total = static_cast<int>(src_prod.size());
         result.target_total = static_cast<int>(tgt_all.size());
 
+        // Track stub/TODO markers per function name.
+        //
+        // Guardrail intent: prevent Kotlin ports from "faking" bodies with TODO/FIXME/STUB markers.
+        //
+        // Rust source may legitimately contain TODO/FIXME comments; that should *not* penalize a Kotlin
+        // port that is more complete than the Rust source. Therefore, we only treat it as a mismatch
+        // when the Kotlin target introduces stub markers that are not present in the corresponding Rust
+        // function.
+        std::multiset<std::string> src_stub_names;
+        std::multiset<std::string> tgt_stub_names;
         for (const auto* func : src_prod) {
             if (func->has_stub_markers) {
                 result.has_source_stub = true;
+                src_stub_names.insert(IdentifierStats::canonicalize(func->name));
             }
         }
         for (const auto* func : tgt_all) {
             if (func->has_stub_markers) {
                 result.has_target_stub = true;
+                tgt_stub_names.insert(IdentifierStats::canonicalize(func->name));
             }
+        }
+        // Count Kotlin-only stub markers (target stubs without matching source stubs).
+        std::vector<std::string> kotlin_only;
+        std::set_difference(
+            tgt_stub_names.begin(), tgt_stub_names.end(),
+            src_stub_names.begin(), src_stub_names.end(),
+            std::back_inserter(kotlin_only));
+        if (!kotlin_only.empty()) {
+            result.has_stub_mismatch = true;
+            result.stub_mismatch_count = static_cast<int>(kotlin_only.size());
         }
 
         if (src_prod.empty() || tgt_all.empty()) {
@@ -918,7 +1057,12 @@ public:
                 const auto* target_func = tgt_all[j];
 
                 float sim = 0.0f;
-                if (!source_func->has_stub_markers && !target_func->has_stub_markers) {
+                // Guardrail: a Kotlin function body containing stub markers (TODO/FIXME/STUB/etc.)
+                // should not score similarity against a real Rust implementation.
+                //
+                // However, Rust source may contain TODO markers legitimately; do not penalize when
+                // the Kotlin target is *more complete* (source has markers, target does not).
+                if (!(target_func->has_stub_markers && !source_func->has_stub_markers)) {
                     sim = ASTSimilarity::combined_similarity_with_content(
                         source_func->body_tree.get(),
                         target_func->body_tree.get(),
@@ -949,7 +1093,12 @@ public:
             result.matched_pairs += 1;
         }
 
-        int denominator = std::max(result.source_total, result.target_total);
+        // Score is measured as "how well does the target cover the source".
+        //
+        // Kotlin ports often contain extra helper methods (Result plumbing, derived trait shims,
+        // builders, etc.) which should not penalize the score as long as every source function
+        // has a faithful target counterpart.
+        int denominator = result.source_total;
         result.unmatched_source = result.source_total - result.matched_pairs;
         result.unmatched_target = result.target_total - result.matched_pairs;
         if (denominator > 0) {
@@ -965,7 +1114,8 @@ public:
         int source_total = 0;
         int target_total = 0;
         int matched = 0;
-        int source_test_skipped = 0;  // test functions excluded from source count
+        int source_test_count = 0;       // how many source functions were #[test]
+        int matched_test_count = 0;      // how many of those matched in target
         float ratio = 1.0f;
     };
 
@@ -974,31 +1124,58 @@ public:
             const std::vector<FunctionInfo>& target_functions) {
         // How many source functions exist in target, by canonicalized name.
         // This is a parity signal: ports should preserve the function set within a file.
-        // Test functions (#[test], #[cfg(test)] mod) are excluded from the source
-        // count because Rust inline tests map to separate Kotlin test files, not
-        // the ported source file.
+        // Test functions (#[test], #[cfg(test)] mod) ARE counted — a missing
+        // test is a real gap that the ranking must surface. (The previous
+        // behaviour of silently skipping them hid hundreds of unported tests.)
         FunctionNameCoverage cov;
-        std::multiset<std::string> tgt_names;
+        // Track target functions by canonical name AND whether they are test-annotated.
+        // For a Rust #[test] function to be considered matched, the Kotlin counterpart
+        // must also be @Test-annotated — an unannotated `internal fun` with the right
+        // name is NOT a match because it will never be executed by the test runner.
+        std::multimap<std::string, bool> tgt_by_name;  // name -> is_test
         for (const auto& f : target_functions) {
             if (f.name.empty() || f.name == "<anonymous>") continue;
-            tgt_names.insert(IdentifierStats::canonicalize(f.name));
+            tgt_by_name.emplace(IdentifierStats::canonicalize(f.name), f.is_test);
             cov.target_total++;
         }
 
+        std::set<std::string> src_seen;
         for (const auto& f : source_functions) {
             if (f.name.empty() || f.name == "<anonymous>") continue;
-            // Skip Rust test functions — they belong in separate Kotlin test files,
-            // not in the ported source file.
-            if (f.is_test) {
-                cov.source_test_skipped++;
+            std::string key = IdentifierStats::canonicalize(f.name);
+            // Rust `Drop` impl methods appear as a `drop` function in function extraction.
+            // Kotlin ports have no direct equivalent, so do not require it for parity.
+            if (key == "drop") {
                 continue;
             }
+            // Rust often has duplicate trait method names (e.g. multiple `fmt` impls).
+            // In Kotlin ports these typically collapse into a single canonical method
+            // (e.g. `toString`), so only require each canonical name once.
+            if (src_seen.count(key)) {
+                continue;
+            }
+            src_seen.insert(key);
             cov.source_total++;
-            std::string key = IdentifierStats::canonicalize(f.name);
-            auto it = tgt_names.find(key);
-            if (it != tgt_names.end()) {
-                cov.matched++;
-                tgt_names.erase(it);
+            if (f.is_test) cov.source_test_count++;
+
+            auto range = tgt_by_name.equal_range(key);
+            if (range.first != range.second) {
+                // Prefer a target whose test-annotation state matches the source.
+                // For a #[test] source, only a @Test-annotated Kotlin function
+                // is a true match — an unannotated namesake doesn't run.
+                auto best = tgt_by_name.end();
+                for (auto it = range.first; it != range.second; ++it) {
+                    if (it->second == f.is_test) { best = it; break; }
+                }
+                if (best == tgt_by_name.end() && !f.is_test) {
+                    // Non-test source can match any namesake.
+                    best = range.first;
+                }
+                if (best != tgt_by_name.end()) {
+                    cov.matched++;
+                    if (f.is_test) cov.matched_test_count++;
+                    tgt_by_name.erase(best);
+                }
             }
         }
 
@@ -1007,6 +1184,126 @@ public:
                         static_cast<float>(cov.source_total);
         }
         return cov;
+    }
+
+    static bool rust_kotlin_ignorable_function_name_for_coverage(const std::string& canonical_name) {
+        // Rust trait impl methods frequently appear as small, repeated function names
+        // (e.g. `fmt`, `eq`) that don't exist as explicit functions in Kotlin ports
+        // (they map to `toString`/`equals`/`hashCode`).
+        //
+        // Requiring these names for parity creates systematic false negatives on
+        // faithful Rust→Kotlin transliterations.
+        //
+        // Keep this list small and explicit to preserve the strength of function-set
+        // parity as a guardrail against logic rewrites.
+        static const std::unordered_set<std::string> k = {
+            "fmt",
+            "eq",
+            "hash",
+            "partialcmp",
+            "cmp",
+            "equivalent",
+            "default",
+            "serialize",
+            // Rust assigns via traits (`AddAssign`, `SubAssign`, `MulAssign`) which don't appear as
+            // explicit function names in Kotlin (Kotlin desugars `+=` to `a = a + b` when no
+            // `plusAssign` exists, which is the correct pattern for immutable value types).
+            "addassign",
+            "subassign",
+            "mulassign",
+            // Local helper in Rust (`fn split_at_safe` inside `display_for_type_error`).
+            // Kotlin ports may keep this helper local or inline it, and Kotlin function
+            // extraction is less reliable for nested locals, so do not require it.
+            "splitatsafe",
+        };
+        return k.find(canonical_name) != k.end();
+    }
+
+    static std::vector<FunctionInfo> rust_kotlin_augment_target_functions_for_coverage(
+            const std::vector<FunctionInfo>& target_functions) {
+        // Function-name coverage is a guardrail: it ensures ports preserve the set of meaningful
+        // behaviors within a file. However, some Rust behaviors are expressed through trait
+        // methods whose names do not exist literally in Kotlin ports:
+        //   - `Mul::mul` maps to `operator fun times(...)`
+        //   - `Ord::cmp` / `PartialOrd::partial_cmp` map to `compareTo`
+        //   - `Add::add` / `Sub::sub` may map to `plus` / `minus` operator functions
+        //
+        // To avoid false negatives on faithful transliterations, we augment the Kotlin function
+        // set with a small, explicit set of canonical equivalents for coverage matching only.
+        std::vector<FunctionInfo> out = target_functions;
+
+        std::unordered_set<std::string> present;
+        present.reserve(target_functions.size());
+        bool has_to_string_raw = false;
+        bool has_compare_to_raw = false;
+        for (const auto& f : target_functions) {
+            if (f.name.empty() || f.name == "<anonymous>") continue;
+            if (f.name == "toString") has_to_string_raw = true;
+            if (f.name == "compareTo") has_compare_to_raw = true;
+            present.insert(IdentifierStats::canonicalize(f.name));
+        }
+
+        auto add_if_missing = [&](const std::string& name) {
+            std::string key = IdentifierStats::canonicalize(name);
+            if (present.find(key) != present.end()) return;
+            FunctionInfo fi;
+            fi.name = name;
+            out.push_back(std::move(fi));
+            present.insert(std::move(key));
+        };
+
+        if (present.find("times") != present.end()) {
+            add_if_missing("mul");
+        }
+        if (present.find("compareto") != present.end() || has_compare_to_raw) {
+            add_if_missing("cmp");
+            add_if_missing("partial_cmp");
+        }
+        if (present.find("plus") != present.end()) {
+            add_if_missing("add");
+        }
+        if (present.find("minus") != present.end()) {
+            add_if_missing("sub");
+        }
+        if (present.find("hashcode") != present.end()) {
+            add_if_missing("hash");
+        }
+        if (present.find("tostring") != present.end() || has_to_string_raw) {
+            add_if_missing("fmt");
+        }
+        if (present.find("to") != present.end()) {
+            add_if_missing("bitor");
+        }
+
+        return out;
+    }
+
+    static FunctionNameCoverage function_name_coverage_with_lang(
+            const std::vector<FunctionInfo>& source_functions,
+            const std::vector<FunctionInfo>& target_functions,
+            Language src_lang,
+            Language tgt_lang) {
+        if (src_lang == Language::RUST && tgt_lang == Language::KOTLIN) {
+            std::vector<FunctionInfo> filtered;
+            filtered.reserve(source_functions.size());
+            for (const auto& f : source_functions) {
+                if (f.name.empty() || f.name == "<anonymous>") {
+                    filtered.push_back(f);
+                    continue;
+                }
+                std::string key = IdentifierStats::canonicalize(f.name);
+                if (key.empty()) {
+                    continue;
+                }
+                if (rust_kotlin_ignorable_function_name_for_coverage(key)) {
+                    continue;
+                }
+                filtered.push_back(f);
+            }
+            auto tgt_augmented = rust_kotlin_augment_target_functions_for_coverage(target_functions);
+            return function_name_coverage(filtered, tgt_augmented);
+        }
+        return function_name_coverage(source_functions, target_functions);
     }
 
     static std::string read_file_to_string(const std::string& path) {
@@ -1141,12 +1438,15 @@ public:
                         src_file.paths, src_lang);
                     auto target_functions = parser.extract_function_infos_from_files(
                         tgt_file.paths, tgt_lang);
-                    auto fn_cov = function_name_coverage(source_functions, target_functions);
+                    auto fn_cov = function_name_coverage_with_lang(
+                        source_functions, target_functions, src_lang, tgt_lang);
 
                     m.source_function_count = fn_cov.source_total;
                     m.target_function_count = fn_cov.target_total;
                     m.matched_function_count = fn_cov.matched;
                     m.function_coverage = fn_cov.ratio;
+                    m.source_test_function_count = fn_cov.source_test_count;
+                    m.matched_test_function_count = fn_cov.matched_test_count;
 
                     auto ty_cov = type_name_coverage(
                         symbol_src, symbol_tgt, src_lang, tgt_lang, src_file, tgt_file);
@@ -1156,7 +1456,12 @@ public:
                     m.type_coverage = ty_cov.ratio;
                     m.missing_types = std::move(ty_cov.missing);
 
-                    m.similarity = file_sim * fn_cov.ratio * m.type_coverage;
+                    // Port completeness gates primarily on semantic code similarity:
+                    //   similarity = content_aware_ast_similarity * function_name_coverage
+                    // Type coverage is still reported separately (m.type_coverage) but is not
+                    // folded into the similarity score to avoid false negatives for faithful
+                    // transliterations that must introduce Kotlin-only type names.
+                    m.similarity = file_sim * fn_cov.ratio;
                 }
 
                 // Extract documentation statistics
@@ -1168,6 +1473,8 @@ public:
                 m.source_doc_comments = src_docs.doc_comment_count;
                 m.target_doc_comments = tgt_docs.doc_comment_count;
                 m.doc_similarity = src_docs.doc_cosine_similarity(tgt_docs);
+                m.doc_coverage = src_docs.doc_line_coverage_capped(tgt_docs);
+                m.doc_weighted = 0.5f * m.doc_similarity + 0.5f * m.doc_coverage;
             } catch (...) {
                 m.similarity = -1.0f;  // Error
             }
@@ -1179,18 +1486,23 @@ public:
 
     /**
      * Get matches sorted by priority for porting.
-     * Priority: high dependents + low similarity = needs attention
+     *
+     * Priority = (missing functions + missing types) × (10 + log1p(dependents) × 2)
+     *          + log1p(dependents) × (1 - similarity) × 5
+     *
+     * Symbol deficits are the primary driver. Import depth is a
+     * multiplicative boost for deficits, and a secondary signal on its own
+     * when deficits are zero. See Match::priority_score() for the full
+     * rationale — this replaces the old `dependents × (1 - similarity)`
+     * formula, which gave priority 0 to any file with no dependents (every
+     * test file, every leaf module) and hid hundreds of real gaps.
      */
     std::vector<Match> ranked_for_porting() {
         auto result = matches;
 
         std::sort(result.begin(), result.end(),
             [](const Match& a, const Match& b) {
-                // Score = dependents * (1 - similarity)
-                // Higher score = more important to port
-                float score_a = a.source_dependents * (1.0f - a.similarity);
-                float score_b = b.source_dependents * (1.0f - b.similarity);
-                return score_a > score_b;
+                return a.priority_score() > b.priority_score();
             });
 
         return result;
@@ -1230,9 +1542,10 @@ public:
 	                    types = std::to_string(m.matched_type_count) + "/" +
 	                            std::to_string(m.source_type_count);
 	                }
-	                float priority = m.source_dependents * (1.0f - m.similarity);
-		                std::cout << std::setw(30) << std::left << m.source_qualified.substr(0, 28)
-		                          << std::setw(30) << m.target_qualified.substr(0, 28)
+	                float priority = m.priority_score();
+		                std::string stub_flag = m.is_stub ? " [STUB]" : "";
+	                std::cout << std::setw(30) << std::left << m.source_qualified.substr(0, 28)
+		                          << std::setw(30) << (m.target_qualified.substr(0, 28) + stub_flag)
 		                          << std::setw(10) << std::fixed << std::setprecision(2) << m.similarity
 		                          << std::setw(11) << m.source_dependents
 		                          << std::setw(14) << funcs

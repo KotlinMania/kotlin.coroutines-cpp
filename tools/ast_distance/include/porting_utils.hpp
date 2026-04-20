@@ -311,7 +311,9 @@ public:
 
         // Match "Transliterated from: <path>" or "port-lint: source/tests <path>"
         std::regex trans_re(R"(Transliterated from:\s*(.+))", std::regex::icase);
-        std::regex portlint_re(R"(port-lint:\s*(?:source|tests)\s+(.+))", std::regex::icase);
+        // NOTE: Some ports append qualifiers after the path (e.g. "(tests)").
+        // For matching purposes we only want the first path token.
+        std::regex portlint_re(R"(port-lint:\s*(?:source|tests)\s+([^\s]+))", std::regex::icase);
         std::string line;
         int line_count = 0;
 
@@ -424,8 +426,30 @@ public:
                    [](unsigned char c) { return std::isspace(c); }), clean.end());
 
         // If after stripping all boilerplate less than 100 chars remain,
-        // this file has no real implementation.
-        stats.is_stub = (clean.length() < 100);
+        // this file usually has no real implementation.
+        //
+        // However, some legitimately small files are "module roots" (Rust `mod foo;` + `pub use`)
+        // or Kotlin marker files made up of a few empty `object` declarations. Those are real
+        // transliterations and should not be blocked by guardrails.
+        bool has_real_declarations = false;
+        if (ext == ".kt" || ext == ".kts") {
+            int object_hits = 0;
+            for (size_t pos = 0; (pos = clean.find("object", pos)) != std::string::npos; pos += 6) {
+                object_hits++;
+            }
+            if (object_hits >= 2 ||
+                clean.find("fun") != std::string::npos ||
+                clean.find("class") != std::string::npos ||
+                clean.find("interface") != std::string::npos ||
+                clean.find("enum") != std::string::npos ||
+                clean.find("typealias") != std::string::npos ||
+                clean.find("val") != std::string::npos ||
+                clean.find("var") != std::string::npos) {
+                has_real_declarations = true;
+            }
+        }
+
+        stats.is_stub = (clean.length() < 100) && !has_real_declarations;
 
         // Extract transliterated from
         stats.transliterated_from = extract_transliterated_from(filepath);

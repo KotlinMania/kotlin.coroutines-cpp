@@ -42,7 +42,10 @@ inline std::optional<std::string> extract_source_annotation(const fs::path& file
     }
 
     // Regex: // port-lint: source <path> OR // port-lint: tests <path>
-    std::regex pattern(R"(//\s*port-lint:\s*(?:source|tests)\s+(.+))", std::regex::icase);
+    //
+    // NOTE: Some ports append extra qualifiers after the path (e.g. "(tests)").
+    // For matching purposes we only want the path token.
+    std::regex pattern(R"(//\s*port-lint:\s*(?:source|tests)\s+([^\s]+))", std::regex::icase);
     
     std::string line;
     int line_count = 0;

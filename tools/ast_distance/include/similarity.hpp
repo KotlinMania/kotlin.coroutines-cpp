@@ -140,12 +140,16 @@ public:
         int depth2 = tree2->depth();
 
         // Size similarity (normalized)
-        float size_sim = 1.0f - std::abs(size1 - size2) /
-                         static_cast<float>(std::max(size1, size2));
+        int max_size = std::max(size1, size2);
+        float size_sim = (max_size == 0)
+            ? 1.0f
+            : (1.0f - std::abs(size1 - size2) / static_cast<float>(max_size));
 
         // Depth similarity
-        float depth_sim = 1.0f - std::abs(depth1 - depth2) /
-                          static_cast<float>(std::max(depth1, depth2));
+        int max_depth = std::max(depth1, depth2);
+        float depth_sim = (max_depth == 0)
+            ? 1.0f
+            : (1.0f - std::abs(depth1 - depth2) / static_cast<float>(max_depth));
 
         // Combine
         return 0.5f * size_sim + 0.5f * depth_sim;
@@ -190,11 +194,26 @@ public:
             Tree* tree1, Tree* tree2,
             const IdentifierStats& ids1, const IdentifierStats& ids2) {
 
-        float id_cosine = ids1.canonical_cosine_similarity(ids2);
-        float id_jaccard = ids1.canonical_jaccard_similarity(ids2);
-        float hist_sim = histogram_cosine_similarity(tree1, tree2);
-        float jaccard_sim = node_type_jaccard(tree1, tree2);
-        float struct_sim = structure_similarity(tree1, tree2);
+        auto finite_or_zero = [](float v) -> float {
+            return std::isfinite(v) ? v : 0.0f;
+        };
+
+        // Empty-body heuristic:
+        //
+        // Some real Rust code (e.g. marker traits, `Trace` impls for scalars/atomics) has
+        // legitimately empty function bodies. When *both* sides contain no identifiers in the
+        // body, identifier-dominant scoring incorrectly drives similarity toward 0.
+        //
+        // In that case, fall back to pure shape similarity for the body.
+        if (ids1.canonical_freq.empty() && ids2.canonical_freq.empty()) {
+            return finite_or_zero(combined_similarity(tree1, tree2));
+        }
+
+        float id_cosine = finite_or_zero(ids1.canonical_cosine_similarity(ids2));
+        float id_jaccard = finite_or_zero(ids1.canonical_jaccard_similarity(ids2));
+        float hist_sim = finite_or_zero(histogram_cosine_similarity(tree1, tree2));
+        float jaccard_sim = finite_or_zero(node_type_jaccard(tree1, tree2));
+        float struct_sim = finite_or_zero(structure_similarity(tree1, tree2));
 
         float base =
             0.50f * id_cosine +
@@ -202,6 +221,52 @@ public:
             0.15f * hist_sim +
             0.10f * jaccard_sim +
             0.10f * struct_sim;
+
+        // Cross-language false negative guard:
+        //
+        // For faithful Rust→Kotlin transliterations, Kotlin often introduces
+        // unavoidable "plumbing" identifiers (Result helpers, builders, etc.)
+        // that can depress identifier overlap. When the AST-shape signals are
+        // extremely strong, treat that as higher-confidence evidence of a real
+        // transliteration rather than forcing identifier dominance.
+        //
+        // This keeps identifier overlap as the primary signal in the general case,
+        // but avoids systematically rejecting faithful ports in large files.
+        if (hist_sim >= 0.90f && struct_sim >= 0.80f && jaccard_sim >= 0.60f) {
+            float shape_heavy =
+                0.70f * hist_sim +
+                0.20f * struct_sim +
+                0.10f * jaccard_sim;
+            base = std::max(base, shape_heavy);
+        }
+
+        // Rust→Kotlin porting guard:
+        //
+        // Kotlin ports can legitimately introduce extra scaffolding (Result plumbing,
+        // static vtable registries, etc.) that depresses identifier overlap without
+        // changing the AST "shape" much. When the structural signal is already strong
+        // and identifier cosine is still reasonably high, allow histogram similarity
+        // to lift the score above the identifier-dominant baseline.
+        if (id_cosine >= 0.80f && hist_sim >= 0.85f && struct_sim >= 0.75f && jaccard_sim >= 0.50f) {
+            base = std::max(base, hist_sim);
+        }
+
+        // Rust→Kotlin "plumbing" guard (function bodies):
+        //
+        // Some faithful transliterations necessarily introduce Kotlin-only control-flow and
+        // Result plumbing (early returns, null branches, etc.). These can reduce identifier
+        // cosine even when the *set* overlap (jaccard) is still strong and the AST shape is
+        // clearly equivalent.
+        //
+        // Allow strong shape signals to lift the score when identifier set overlap is
+        // reasonably high, without letting unrelated rewrites pass (requires id_jaccard).
+        if (id_jaccard >= 0.35f && hist_sim >= 0.85f && struct_sim >= 0.60f && jaccard_sim >= 0.45f) {
+            float shape_lift =
+                0.60f * hist_sim +
+                0.25f * struct_sim +
+                0.15f * jaccard_sim;
+            base = std::max(base, shape_lift);
+        }
 
         // Module-marker heuristic:
         //

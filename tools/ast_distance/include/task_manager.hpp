@@ -376,15 +376,50 @@ public:
 	        std::cout << "Reminder: all ast_distance commands require: --agent "
 	                  << agent_number << "\n\n";
 
+	        auto is_test_task = [&]() -> bool {
+	            return task.source_path.rfind("tests/", 0) == 0;
+	        };
+
+	        auto effective_target_root = [&]() -> std::string {
+	            // Kotlin Multiplatform convention: tests live under src/commonTest, not src/commonMain.
+	            // Task files typically only store a single target_root; adjust on demand for test tasks.
+	            if (target_lang != "kotlin" || !is_test_task()) {
+	                return target_root;
+	            }
+	            std::string root = target_root;
+	            auto replace_all = [&](const std::string& from, const std::string& to) {
+	                size_t pos = 0;
+	                while ((pos = root.find(from, pos)) != std::string::npos) {
+	                    root.replace(pos, from.size(), to);
+	                    pos += to.size();
+	                }
+	            };
+	            replace_all("/src/commonMain/", "/src/commonTest/");
+	            replace_all("src/commonMain/", "src/commonTest/");
+	            return root;
+	        };
+
 	        std::cout << "Source File:\n";
 	        std::cout << "  Path:      " << source_root << "/" << task.source_path << "\n";
 	        std::cout << "  Qualified: " << task.source_qualified << "\n";
         std::cout << "  Dependents: " << task.dependent_count << " files depend on this\n\n";
 
         std::cout << "Target File:\n";
-        std::cout << "  Path:      " << target_root << "/" << task.target_path << "\n";
+        std::cout << "  Path:      " << effective_target_root() << "/" << task.target_path << "\n";
+        std::string port_lint_path = task.source_path;
+        auto ends_with = [](const std::string& s, const std::string& suffix) -> bool {
+            return s.size() >= suffix.size() &&
+                   s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+        };
+        if (ends_with(source_root, "/src") || ends_with(source_root, "/src/") ||
+            ends_with(source_root, "\\src") || ends_with(source_root, "\\src\\")) {
+            if (port_lint_path.rfind("src/", 0) != 0 && port_lint_path.rfind("src\\", 0) != 0) {
+                port_lint_path = "src/" + port_lint_path;
+            }
+        }
         std::cout << "  Add header: " << port_lint_comment_prefix(target_lang)
-                  << " port-lint: source " << task.source_path << "\n\n";
+                  << " port-lint: " << (is_test_task() ? "tests " : "source ")
+                  << port_lint_path << "\n\n";
 
         std::cout << "Priority: " << task.dependent_count << " (higher = more critical)\n\n";
 

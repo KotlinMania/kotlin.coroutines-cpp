@@ -276,6 +276,8 @@ inline NodeType rust_node_to_type(const std::string& node_type) {
         {"line_comment", NodeType::COMMENT},
         {"block_comment", NodeType::COMMENT},
         {"token_tree", NodeType::OTHER},   // macro body tokens
+        // Tree-sitter-rust internal placeholder nodes which are not semantically meaningful.
+        {"removed_trait_bound", NodeType::OTHER},
     };
 
     auto it = mapping.find(node_type);
@@ -309,6 +311,7 @@ inline NodeType kotlin_node_to_type(const std::string& node_type) {
 
         // Expressions
         {"parenthesized_expression", NodeType::OTHER},
+        {"parenthesized_type", NodeType::TYPE_REF},
         {"as_expression", NodeType::CAST},
         {"is_expression", NodeType::OTHER},
         {"check_expression", NodeType::OTHER},       // in, !in, is, !is
@@ -393,6 +396,7 @@ inline NodeType kotlin_node_to_type(const std::string& node_type) {
         // Other
         {"import_header", NodeType::IMPORT},
         {"import_list", NodeType::IMPORT},
+        {"import_alias", NodeType::IMPORT},
         {"package_header", NodeType::PACKAGE},
         {"annotation", NodeType::ANNOTATION},
         {"single_annotation", NodeType::ANNOTATION},
