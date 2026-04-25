@@ -155,3 +155,8 @@ tasks.json.lock
 
 # Local tool binaries
 ast_distance
+
+# AST distance generated reports
+NEXT_ACTIONS.md
+high_priority_ports.md
+port_status_report.md
