@@ -5,40 +5,35 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Fetch tree-sitter
-include(FetchContent)
+# Use vendored tree-sitter sources. Builds must not clone or fetch grammars
+# during configure.
+set(AST_DISTANCE_VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
+set(tree-sitter_SOURCE_DIR "${AST_DISTANCE_VENDOR_DIR}/tree-sitter")
+set(tree-sitter-rust_SOURCE_DIR "${AST_DISTANCE_VENDOR_DIR}/tree-sitter-rust")
+set(tree-sitter-kotlin_SOURCE_DIR "${AST_DISTANCE_VENDOR_DIR}/tree-sitter-kotlin")
+set(tree-sitter-cpp_SOURCE_DIR "${AST_DISTANCE_VENDOR_DIR}/tree-sitter-cpp")
+set(tree-sitter-python_SOURCE_DIR "${AST_DISTANCE_VENDOR_DIR}/tree-sitter-python")
+set(tree-sitter-typescript_SOURCE_DIR "${AST_DISTANCE_VENDOR_DIR}/tree-sitter-typescript")
 
-FetchContent_Declare(
-    tree-sitter
-    GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter.git
-    GIT_TAG v0.22.6
+foreach(required_tree_sitter_source
+    "${tree-sitter_SOURCE_DIR}/lib/src/lib.c"
+    "${tree-sitter_SOURCE_DIR}/lib/include/tree_sitter/api.h"
+    "${tree-sitter-rust_SOURCE_DIR}/src/parser.c"
+    "${tree-sitter-rust_SOURCE_DIR}/src/scanner.c"
+    "${tree-sitter-kotlin_SOURCE_DIR}/src/parser.c"
+    "${tree-sitter-kotlin_SOURCE_DIR}/src/scanner.c"
+    "${tree-sitter-cpp_SOURCE_DIR}/src/parser.c"
+    "${tree-sitter-cpp_SOURCE_DIR}/src/scanner.c"
+    "${tree-sitter-python_SOURCE_DIR}/src/parser.c"
+    "${tree-sitter-python_SOURCE_DIR}/src/scanner.c"
+    "${tree-sitter-typescript_SOURCE_DIR}/typescript/src/parser.c"
+    "${tree-sitter-typescript_SOURCE_DIR}/typescript/src/scanner.c"
+    "${tree-sitter-typescript_SOURCE_DIR}/common/scanner.h"
 )
-
-FetchContent_Declare(
-    tree-sitter-rust
-    GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter-rust.git
-    GIT_TAG v0.21.2
-)
-
-FetchContent_Declare(
-    tree-sitter-kotlin
-    GIT_REPOSITORY https://github.com/fwcd/tree-sitter-kotlin.git
-    GIT_TAG 0.3.8
-)
-
-FetchContent_Declare(
-    tree-sitter-cpp
-    GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter-cpp.git
-    GIT_TAG v0.22.3
-)
-
-FetchContent_Declare(
-    tree-sitter-python
-    GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter-python.git
-    GIT_TAG v0.21.0
-)
-
-FetchContent_MakeAvailable(tree-sitter tree-sitter-rust tree-sitter-kotlin tree-sitter-cpp tree-sitter-python)
+    if(NOT EXISTS "${required_tree_sitter_source}")
+        message(FATAL_ERROR "Missing vendored tree-sitter source: ${required_tree_sitter_source}")
+    endif()
+endforeach()
 
 # Build tree-sitter core as a library
 # Disable warnings for third-party C code (they use old-style prototypes)
@@ -95,6 +90,17 @@ target_include_directories(tree-sitter-python-parser PUBLIC
 )
 target_compile_options(tree-sitter-python-parser PRIVATE -w)
 
+# Build tree-sitter-typescript parser
+add_library(tree-sitter-typescript-parser STATIC
+    ${tree-sitter-typescript_SOURCE_DIR}/typescript/src/parser.c
+    ${tree-sitter-typescript_SOURCE_DIR}/typescript/src/scanner.c
+)
+target_include_directories(tree-sitter-typescript-parser PUBLIC
+    ${tree-sitter_SOURCE_DIR}/lib/include
+    ${tree-sitter-typescript_SOURCE_DIR}/typescript/src
+)
+target_compile_options(tree-sitter-typescript-parser PRIVATE -w)
+
 # Main executable
 add_executable(ast_distance
     src/main.cpp
@@ -117,6 +123,13 @@ target_link_libraries(ast_distance PRIVATE
     tree-sitter-kotlin-parser
     tree-sitter-cpp-parser
     tree-sitter-python-parser
+    tree-sitter-typescript-parser
+)
+
+add_custom_command(TARGET ast_distance POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_CURRENT_SOURCE_DIR}/ast_distance
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ast_distance> ${CMAKE_CURRENT_SOURCE_DIR}/ast_distance
+    COMMENT "Refreshing source-tree ast_distance executable"
 )
 
 # ----------------------------
@@ -133,6 +146,34 @@ if (Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_doc_comment_parsing.py"
             "$<TARGET_FILE:ast_distance>"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/kotlin_doc_comments.kt"
+    )
+    add_test(
+        NAME kotlin_comment_contamination
+        COMMAND
+            "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_kotlin_comment_contamination.py"
+            "$<TARGET_FILE:ast_distance>"
+    )
+    add_test(
+        NAME mod_rs_reexport_hints
+        COMMAND
+            "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_mod_rs_reexport_hints.py"
+            "$<TARGET_FILE:ast_distance>"
+    )
+    add_test(
+        NAME cli_filter_guard
+        COMMAND
+            "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_cli_filter_guard.py"
+            "$<TARGET_FILE:ast_distance>"
+    )
+    add_test(
+        NAME provenance_fallback_report
+        COMMAND
+            "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_provenance_fallback_report.py"
+            "$<TARGET_FILE:ast_distance>"
     )
 endif()
 

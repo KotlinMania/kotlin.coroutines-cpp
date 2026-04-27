@@ -600,6 +600,122 @@ inline NodeType python_node_to_type(const std::string& node_type) {
 }
 
 /**
+ * TypeScript AST node type mappings (from tree-sitter-typescript)
+ */
+inline NodeType typescript_node_to_type(const std::string& node_type) {
+    static const std::unordered_map<std::string, NodeType> mapping = {
+        // Statements
+        {"source_file", NodeType::BLOCK},
+        {"program", NodeType::BLOCK},
+        {"block", NodeType::BLOCK},
+        {"statement_block", NodeType::BLOCK},
+        {"if_statement", NodeType::IF},
+        {"for_statement", NodeType::FOR},
+        {"for_in_statement", NodeType::FOR},
+        {"for_of_statement", NodeType::FOR},
+        {"while_statement", NodeType::WHILE},
+        {"do_statement", NodeType::WHILE},
+        {"switch_statement", NodeType::SWITCH},
+        {"switch_case", NodeType::SWITCH},
+        {"case", NodeType::SWITCH},
+        {"break_statement", NodeType::BREAK},
+        {"continue_statement", NodeType::CONTINUE},
+        {"return_statement", NodeType::RETURN},
+        {"throw_statement", NodeType::THROW},
+        {"try_statement", NodeType::TRY},
+        {"catch_clause", NodeType::TRY},
+        {"finally_clause", NodeType::BLOCK},
+        {"expression_statement", NodeType::OTHER},
+        {"empty_statement", NodeType::OTHER},
+
+        // Assignments
+        {"assignment_expression", NodeType::ASSIGN},
+        {"augmented_assignment_expression", NodeType::ASSIGN},
+
+        // Expressions
+        {"binary_expression", NodeType::UNKNOWN},
+        {"unary_expression", NodeType::OTHER},
+        {"update_expression", NodeType::OTHER},
+        {"ternary_expression", NodeType::TERNARY},
+        {"parenthesized_expression", NodeType::OTHER},
+        {"as_expression", NodeType::CAST},
+
+        // Literals
+        {"identifier", NodeType::VARIABLE},
+        {"property_identifier", NodeType::VARIABLE},
+        {"type_identifier", NodeType::TYPE_REF},
+        {"shorthand_property_identifier", NodeType::VARIABLE},
+        {"number", NodeType::NUMBER},
+        {"string", NodeType::STRING},
+        {"template_string", NodeType::STRING},
+        {"regex", NodeType::STRING},
+        {"true", NodeType::BOOLEAN},
+        {"false", NodeType::BOOLEAN},
+        {"null", NodeType::NULL_LIT},
+        {"undefined", NodeType::NULL_LIT},
+        {"this", NodeType::VARIABLE},
+        {"super", NodeType::VARIABLE},
+
+        // Function/Method calls
+        {"call_expression", NodeType::CALL},
+        {"new_expression", NodeType::CALL},
+        {"member_expression", NodeType::FIELD_ACCESS},
+        {"subscript_expression", NodeType::INDEX},
+
+        // Declarations
+        {"function_declaration", NodeType::FUNCTION},
+        {"function_expression", NodeType::FUNCTION},
+        {"arrow_function", NodeType::FUNCTION},
+        {"method_definition", NodeType::FUNCTION},
+        {"method_signature", NodeType::FUNCTION},
+        {"class_declaration", NodeType::CLASS},
+        {"class_expression", NodeType::CLASS},
+        {"interface_declaration", NodeType::INTERFACE},
+        {"type_alias_declaration", NodeType::VAR_DECL},
+        {"enum_declaration", NodeType::ENUM},
+        {"lexical_declaration", NodeType::VAR_DECL},
+        {"variable_declaration", NodeType::VAR_DECL},
+        {"variable_declarator", NodeType::VAR_DECL},
+        {"namespace_declaration", NodeType::PACKAGE},
+        {"formal_parameters", NodeType::OTHER},
+        {"required_parameter", NodeType::PARAM},
+        {"optional_parameter", NodeType::PARAM},
+        {"rest_parameter", NodeType::PARAM},
+        {"type_parameter", NodeType::TYPE_PARAM},
+
+        // Types
+        {"type_annotation", NodeType::TYPE_REF},
+        {"predefined_type", NodeType::TYPE_REF},
+        {"union_type", NodeType::TYPE_REF},
+        {"intersection_type", NodeType::TYPE_REF},
+        {"array_type", NodeType::ARRAY_TYPE},
+        {"generic_type", NodeType::GENERIC_TYPE},
+        {"type_arguments", NodeType::GENERIC_TYPE},
+        {"object_type", NodeType::TYPE_REF},
+
+        // Import/Export
+        {"import_statement", NodeType::IMPORT},
+        {"export_statement", NodeType::OTHER},
+        {"import_clause", NodeType::IMPORT},
+        {"export_clause", NodeType::OTHER},
+
+        // Comments
+        {"comment", NodeType::COMMENT},
+        {"line_comment", NodeType::COMMENT},
+        {"block_comment", NodeType::COMMENT},
+
+        // Other
+        {"property_signature", NodeType::VAR_DECL},
+        {"property_definition", NodeType::VAR_DECL},
+        {"class_body", NodeType::BLOCK},
+        {"decorator", NodeType::ANNOTATION},
+    };
+
+    auto it = mapping.find(node_type);
+    return it != mapping.end() ? it->second : NodeType::UNKNOWN;
+}
+
+/**
  * Get human-readable name for a node type
  */
 inline const char* node_type_name(NodeType type) {

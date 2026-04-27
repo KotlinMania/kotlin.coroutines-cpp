@@ -161,7 +161,7 @@ public:
      *
      * WARNING: This metric cannot distinguish real code from placeholder stubs.
      * A file of `fun x() = null` scores the same as `fun computeHash() = ...`.
-     * Use combined_similarity_with_content() for real porting assessment.
+     * Use function_parameter_body_cosine_similarity() for Rust -> Kotlin port reports.
      */
     static float combined_similarity(Tree* tree1, Tree* tree2,
                                      float hist_weight = 0.5f,
@@ -313,6 +313,31 @@ public:
     }
 
     /**
+     * Strict function comparison used for transliteration reports.
+     *
+     * The caller supplies a synthetic tree containing only the function
+     * parameters and body, plus identifiers extracted from those same regions.
+     * This deliberately avoids whole-file shape rescue: if the implementation
+     * and parameters do not line up, the file score must fall.
+     */
+    static float function_parameter_body_cosine_similarity(
+            Tree* tree1, Tree* tree2,
+            const IdentifierStats& ids1, const IdentifierStats& ids2) {
+        auto finite_or_zero = [](float v) -> float {
+            return std::isfinite(v) ? v : 0.0f;
+        };
+
+        float ast_cosine = finite_or_zero(histogram_cosine_similarity(tree1, tree2));
+
+        if (ids1.canonical_freq.empty() && ids2.canonical_freq.empty()) {
+            return ast_cosine;
+        }
+
+        float identifier_cosine = finite_or_zero(ids1.canonical_cosine_similarity(ids2));
+        return 0.70f * identifier_cosine + 0.30f * ast_cosine;
+    }
+
+    /**
      * Maximum nodes for full edit distance. Beyond this, use strided sampling.
      * 2000 × 2000 two-row DP = 16KB — safe everywhere.
      */
@@ -345,6 +370,21 @@ public:
         return prev[m];
     }
 
+    static std::vector<Tree*> collect_postorder_sample(Tree* tree, int stride, int reserve_hint) {
+        std::vector<Tree*> nodes;
+        nodes.reserve(static_cast<size_t>(std::max(1, reserve_hint)));
+
+        int index = 0;
+        tree->traverse_postorder([&](Tree* n) {
+            if (index % stride == 0) {
+                nodes.push_back(n);
+            }
+            index++;
+        });
+
+        return nodes;
+    }
+
     /**
      * Tree edit distance with OOM protection.
      *
@@ -353,25 +393,23 @@ public:
      * Two-row DP keeps memory at O(min(n,m)) regardless.
      */
     static int tree_edit_distance(Tree* tree1, Tree* tree2) {
-        std::vector<Tree*> nodes1, nodes2;
-        tree1->traverse_postorder([&nodes1](Tree* n) { nodes1.push_back(n); });
-        tree2->traverse_postorder([&nodes2](Tree* n) { nodes2.push_back(n); });
-
-        int full_n = static_cast<int>(nodes1.size());
-        int full_m = static_cast<int>(nodes2.size());
+        int full_n = tree1->size();
+        int full_m = tree2->size();
 
         if (full_n <= MAX_EDIT_DISTANCE_NODES && full_m <= MAX_EDIT_DISTANCE_NODES) {
+            auto nodes1 = collect_postorder_sample(tree1, 1, full_n);
+            auto nodes2 = collect_postorder_sample(tree2, 1, full_m);
             return edit_distance_dp(nodes1, nodes2);
         }
 
-        // Strided sampling
         int stride1 = (full_n + MAX_EDIT_DISTANCE_NODES - 1) / MAX_EDIT_DISTANCE_NODES;
         int stride2 = (full_m + MAX_EDIT_DISTANCE_NODES - 1) / MAX_EDIT_DISTANCE_NODES;
         int stride = std::max(stride1, stride2);
 
-        std::vector<Tree*> s1, s2;
-        for (int i = 0; i < full_n; i += stride) s1.push_back(nodes1[i]);
-        for (int i = 0; i < full_m; i += stride) s2.push_back(nodes2[i]);
+        auto s1 = collect_postorder_sample(
+            tree1, stride, (full_n + stride - 1) / stride);
+        auto s2 = collect_postorder_sample(
+            tree2, stride, (full_m + stride - 1) / stride);
 
         return edit_distance_dp(s1, s2) * stride;
     }
