@@ -576,6 +576,9 @@ static int reject_redirected_comparison_output_if_needed(const std::string& mode
     if (parent_lower == "script" || parent_lower.find("/script") != std::string::npos) {
         reasons.push_back("parent process appears to be `script`; PTY wrapping is not allowed");
     }
+    if (reasons.empty() && isatty(STDOUT_FILENO)) {
+        return 0;
+    }
     auto filter_reasons = visible_filter_pipeline_reasons();
     reasons.insert(reasons.end(), filter_reasons.begin(), filter_reasons.end());
 
