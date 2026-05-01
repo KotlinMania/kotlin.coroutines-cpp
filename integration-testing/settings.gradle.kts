@@ -7,7 +7,11 @@ pluginManagement {
 }
 
 include("smokeTest")
-include("java8Test")
-include(":jpmsTest")
+
+listOf("java8Test", "jpmsTest").forEach { projectName ->
+    if (file(projectName).isDirectory) {
+        include(projectName)
+    }
+}
 
 rootProject.name = "kotlinx-coroutines-integration-testing"

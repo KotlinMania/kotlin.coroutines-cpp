@@ -204,10 +204,10 @@ tasks {
             "mavenTest",
             "debugAgentTest",
             "coreAgentTest",
-            ":jpmsTest:check",
             "smokeTest:build",
-            "java8Test:check"
         )
+        project.findProject(":jpmsTest")?.let { dependsOn(":jpmsTest:check") }
+        project.findProject(":java8Test")?.let { dependsOn(":java8Test:check") }
     }
 
     // Drop this when node js version become stable

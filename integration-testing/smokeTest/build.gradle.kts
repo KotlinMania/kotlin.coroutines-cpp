@@ -1,8 +1,6 @@
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.dsl.HasConfigurableKotlinCompilerOptions
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompilerOptions
-import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
@@ -24,7 +22,6 @@ kotlin {
     }
 
     macosArm64()
-    macosX64()
     linuxArm64()
     linuxX64()
     mingwX64()
@@ -68,20 +65,10 @@ kotlin {
         }
     }
 
-    targets.all {
-        val kotlinCompilerTaskName = compilations.getByName("main").compileKotlinTaskName
-        @Suppress("UNCHECKED_CAST")
-        val kotlinCompilerTask = tasks.getByName(kotlinCompilerTaskName) as? HasConfigurableKotlinCompilerOptions<KotlinJvmCompilerOptions>
-        kotlinCompilerTask?.compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_1_8)
-        }
-    }
 }
 
-// Drop this configuration when the Node.JS version in KGP will support wasm gc milestone 4
-// check it here:
-// https://github.com/JetBrains/kotlin/blob/master/libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/targets/js/nodejs/NodeJsRootExtension.kt
-rootProject.extensions.findByType(NodeJsRootExtension::class.java)?.apply {
-    nodeVersion = "21.0.0-v8-canary202309167e82ab1fa2"
-    nodeDownloadBaseUrl = "https://nodejs.org/download/v8-canary"
+tasks.withType<KotlinJvmCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_1_8)
+    }
 }
