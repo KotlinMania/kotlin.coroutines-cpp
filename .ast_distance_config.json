@@ -1,0 +1,22 @@
+{
+  "type": "port",
+  "name": "kotlin.coroutines-cpp",
+  "source": {
+    "path": "tmp/kotlin.coroutines-cpp-rs/src",
+    "lang": "rust"
+  },
+  "target": {
+    "path": "src/commonMain/kotlin",
+    "lang": "kotlin"
+  },
+  "checks": {
+    "deep": true,
+    "missing": true,
+    "todos": true,
+    "lint": true
+  },
+  "reexport_modules": [
+    "mod.rs",
+    "lib.rs"
+  ]
+}

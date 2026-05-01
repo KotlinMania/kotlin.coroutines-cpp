@@ -7,6 +7,7 @@
 #include "task_manager.hpp"
 #include "symbol_analysis.hpp"
 #include "symbol_extraction.hpp"
+#include "symbol_extractor.hpp"
 #include "reexport_config.hpp"
 #include <iostream>
 #include <fstream>
@@ -795,6 +796,42 @@ static std::vector<RustModReexportHint> rust_mod_reexport_hints(
     return hints;
 }
 
+// Extract the names of all type-alias declarations in a single source file
+// using the existing SymbolExtractor / tree-sitter infrastructure.
+//
+// Rust `pub type X = ...` parses as `type_item` and SymbolExtractor labels
+// it `"type"`. Kotlin `typealias X = ...` parses as `type_alias` and is
+// labeled `"typealias"`. We accept either label.
+static std::vector<std::string> extract_type_alias_names(
+    const std::string& source_text,
+    const TSLanguage* ts_lang
+) {
+    std::vector<std::string> names;
+    if (!ts_lang || source_text.empty()) return names;
+
+    TSParser* parser = ts_parser_new();
+    if (!parser) return names;
+    if (!ts_parser_set_language(parser, ts_lang)) {
+        ts_parser_delete(parser);
+        return names;
+    }
+    TSTree* tree = ts_parser_parse_string(
+        parser, nullptr, source_text.c_str(), source_text.size());
+    if (tree) {
+        TSNode root = ts_tree_root_node(tree);
+        auto symbols = ast_distance::SymbolExtractor::extract_symbols(
+            root, source_text, "", "");
+        for (const auto& sym : symbols) {
+            if (sym.type == "type" || sym.type == "typealias") {
+                if (!sym.name.empty()) names.push_back(sym.name);
+            }
+        }
+        ts_tree_delete(tree);
+    }
+    ts_parser_delete(parser);
+    return names;
+}
+
 static void warn_kotlin_suspicious_constructs(
     const std::filesystem::path& source_path,
     Language source_lang,
@@ -805,16 +842,12 @@ static void warn_kotlin_suspicious_constructs(
         return;
     }
 
-    std::ifstream in(target_path);
-    if (!in.is_open()) {
+    std::string content = CodebaseComparator::read_file_to_string(target_path.string());
+    if (content.empty()) {
         return;
     }
 
-    std::string content(
-        (std::istreambuf_iterator<char>(in)),
-        std::istreambuf_iterator<char>());
-
-    auto warn = [&](const char* what) {
+    auto warn = [&](const std::string& what) {
         std::cerr
             << "Warning: Kotlin-only " << what << " detected in target file: "
             << target_path.string() << "\n"
@@ -828,10 +861,34 @@ static void warn_kotlin_suspicious_constructs(
         warn("suppression annotation (@Suppress/@file:Suppress/SuppressWarnings)");
     }
 
-    if (content.find("typealias ") != std::string::npos ||
-        content.find("typealias\t") != std::string::npos ||
-        content.find("\ntypealias") != std::string::npos) {
-        warn("typealias");
+    // Match Kotlin typealiases against Rust `pub type` declarations.
+    // A Kotlin `typealias X = Y` paired with Rust `pub type X = Y` is the
+    // faithful 1:1 port of a Rust type alias and should not warn. Only warn
+    // for Kotlin typealiases that have no matching name on the Rust side --
+    // those are Kotlin-only inventions that hide unfinished transliteration
+    // (or worse, are wrapper-class shims rebranded as typealiases).
+    //
+    // Matching is by canonicalized name (snake_case <-> camelCase via
+    // IdentifierStats::canonicalize), per the rest of the parity logic.
+    std::vector<std::string> kotlin_aliases =
+        extract_type_alias_names(content, tree_sitter_kotlin());
+    if (!kotlin_aliases.empty()) {
+        std::string source_content =
+            CodebaseComparator::read_file_to_string(source_path.string());
+        std::vector<std::string> rust_aliases =
+            extract_type_alias_names(source_content, tree_sitter_rust());
+
+        std::set<std::string> rust_canon;
+        for (const auto& n : rust_aliases) {
+            rust_canon.insert(IdentifierStats::canonicalize(n));
+        }
+
+        for (const auto& kotlin_name : kotlin_aliases) {
+            std::string canon = IdentifierStats::canonicalize(kotlin_name);
+            if (rust_canon.find(canon) == rust_canon.end()) {
+                warn("typealias `" + kotlin_name + "` (no matching `pub type` in Rust source)");
+            }
+        }
     }
 }
 
@@ -2525,12 +2582,26 @@ void generate_reports(const Codebase& source, const Codebase& target,
         report << "# Immediate Actions - High-Value Files\n\n";
         report << "Based on AST analysis, here are the concrete next steps.\n\n";
         
+        // File presence is the only file-level metric retained. Everything
+        // else is function-level / type-level / symbol-level parity using
+        // the totals already aggregated above (total_matched_functions,
+        // total_source_functions, etc.) and the existing parity helpers.
+        // The previous "Average Similarity" line averaged file-level scores
+        // and obscured cases where a file appeared ported (matching imports,
+        // doc strings) while its actual functions/classes were missing.
         report << "## Summary\n\n";
-        report << "- **Current Progress:** " << std::fixed << std::setprecision(1) 
-               << completion_pct << "% (" << total_target_physical << "/" << total_source << " files)\n";
-        report << "- **Matched Files:** " << matched << "\n";
-        report << "- **Average Similarity:** " << std::fixed << std::setprecision(2) 
-               << avg_similarity << "\n";
+        report << "- **Files Present:** " << matched << "/" << total_source
+               << " (" << std::fixed << std::setprecision(1) << completion_pct << "%)\n";
+        report << "- **Function parity:** "
+               << parity_count_cell(total_matched_functions, total_source_functions, total_target_functions)
+               << " — " << parity_pct_cell(total_matched_functions, total_source_functions) << "\n";
+        report << "- **Class/type parity:** "
+               << parity_count_cell(total_matched_types, total_source_types, total_target_types)
+               << " — " << parity_pct_cell(total_matched_types, total_source_types) << "\n";
+        report << "- **Combined symbol parity:** "
+               << parity_count_cell(total_matched_symbols, total_source_symbols, total_target_symbols)
+               << " — " << parity_pct_cell(total_matched_symbols, total_source_symbols) << "\n";
+        report << "- **Cheat-zeroed Files:** " << zeroed_files << "\n";
         report << "- **Critical Issues:** " << critical << " files with <0.60 function similarity\n\n";
         
         report << "## Priority 1: Fix Incomplete High-Dependency Files\n\n";
@@ -4982,6 +5053,47 @@ int main(int argc, char* argv[]) {
                 }
             }
 
+            // Iterator-trait equivalence (Rust impl Iterator <-> Kotlin : Iterator).
+            //
+            // Kotlin's kotlin.collections.Iterator interface forces a `hasNext():
+            // Boolean` method that has no Rust counterpart -- Rust's
+            // `Iterator::next() -> Option<T>` folds the "is there a next?"
+            // question into the return value. When a Kotlin class is the
+            // faithful port of a Rust `impl Iterator for X`, the forced
+            // `hasNext` should not count as an unmatched Kotlin-only extra.
+            //
+            // Laser-focused rule: suppress `hasNext` from unmatched-target
+            // ONLY when:
+            //   - Rust source contains at least one `impl Iterator for ...`
+            //     (or `impl<...> Iterator for ...`)
+            //   - Kotlin target declares a class implementing Iterator<...>
+            //     or MutableIterator<...>
+            //
+            // Both sides must show the iterator pattern. A unilateral Kotlin
+            // Iterator extension without a Rust counterpart is still a
+            // Kotlin-only invention and is reported as before.
+            const bool both_sides_have_iterator_pattern = [&]() -> bool {
+                if (lang1 != Language::RUST || lang2 != Language::KOTLIN) {
+                    return false;
+                }
+                static const std::regex rust_impl_iter(
+                    R"(\bimpl(?:\s*<[^{>]*>)?\s+(?:[A-Za-z0-9_:]+\s*::\s*)?Iterator\b\s+for\b)");
+                static const std::regex kotlin_extends_iter(
+                    R"(:\s*(?:[A-Za-z_][A-Za-z0-9_.]*\s*\.)?(?:Mutable)?Iterator\s*<)");
+                return std::regex_search(file1_text, rust_impl_iter)
+                    && std::regex_search(file2_text, kotlin_extends_iter);
+            }();
+
+            int suppressed_hasnext = 0;
+            if (both_sides_have_iterator_pattern) {
+                for (int j = 0; j < static_cast<int>(funcs2.size()); ++j) {
+                    if (!target_used[j] && funcs2[j].name == "hasNext") {
+                        target_used[j] = true;
+                        ++suppressed_hasnext;
+                    }
+                }
+            }
+
             int unmatched_source = 0;
             int unmatched_target = 0;
             for (bool used : source_used) {
@@ -5074,6 +5186,13 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
+            if (suppressed_hasnext > 0) {
+                std::cout << "\nIterator-trait equivalence: suppressed "
+                          << suppressed_hasnext
+                          << " forced `hasNext` method(s) (Kotlin Iterator interface "
+                             "requires it; Rust's Iterator::next folds the check into "
+                             "Option<T>).\n";
+            }
 
             auto line_reports = reports;
             std::sort(line_reports.begin(), line_reports.end(),
@@ -5126,27 +5245,13 @@ int main(int argc, char* argv[]) {
                           << (report.stub_guarded ? "yes" : "no") << "\n";
             }
 
-            size_t pair_count = funcs1.size() * funcs2.size();
-            if (pair_count > 10000) {
-                std::cout << "\nFunction similarity matrix omitted: " << pair_count
-                          << " all-pairs cells would obscure the strict per-function parity report.\n";
-            } else {
-                std::cout << "\n=== Function Similarity Matrix ===\n\n";
-                std::cout << std::setw(20) << "";
-                for (const auto& func2 : funcs2) {
-                    std::cout << std::setw(12) << func2.name.substr(0, 10);
-                }
-                std::cout << "\n";
+            // Per-function parity is 1:1 — each Rust function paired with its
+            // strict-name Kotlin counterpart, one line per pair. The
+            // unmatched-source / unmatched-target lists above already surface
+            // the gaps. An N x M Cartesian product of "every Rust function vs
+            // every Kotlin function" is not a faithfulness check and is not
+            // emitted: this is a gap tester, not a cross-similarity explorer.
 
-                for (const auto& func1 : funcs1) {
-                    std::cout << std::setw(20) << func1.name.substr(0, 18);
-                    for (const auto& func2 : funcs2) {
-                        std::cout << std::setw(12) << std::fixed << std::setprecision(3)
-                                  << guarded_combined_similarity(func1, func2);
-                    }
-                    std::cout << "\n";
-                }
-            }
             write_missing_config_after_comparison(
                 {file1, language_config_name(lang1)},
                 {file2, language_config_name(lang2)});

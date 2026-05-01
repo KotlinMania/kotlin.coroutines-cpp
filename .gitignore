@@ -84,6 +84,8 @@ benchmarks.jar
 # =============================================================================
 # Temporary directories
 /tmp/
+/tmp/kotlin/
+/tmp/kotlinx.coroutines/
 __pycache__/
 *.pyc
 *.tmp
@@ -100,7 +102,6 @@ hpp_files.txt
 
 # Reference files (not part of C++ build)
 *.kt
-!tmp/**/*.kt
 
 # CMake generated
 CMakeCache.txt
