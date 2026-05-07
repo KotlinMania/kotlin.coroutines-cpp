@@ -1,6 +1,6 @@
 # port-lint Proposed Changes
 
-**Generated:** 2026-04-29
+**Generated:** 2026-05-07
 **Source:** tmp/kotlin.coroutines-cpp-rs/src
 **Target:** src/commonMain/kotlin
 

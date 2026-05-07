@@ -22,7 +22,7 @@ buildscript {
     fun checkIsSnapshotVersion(): Boolean {
         var usingSnapshotVersion = checkIsSnapshotTrainProperty()
         rootProject.properties.forEach { (key, value) ->
-            if (key.endsWith("_version") && value is String && value.endsWith("-SNAPSHOT")) {
+            if (key.endsWith("_version") && value is String && value.endsWith("")) {
                 println("NOTE: USING SNAPSHOT VERSION: $key=$value")
                 usingSnapshotVersion = true
             }
