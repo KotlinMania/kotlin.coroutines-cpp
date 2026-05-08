@@ -6,8 +6,8 @@ name: CodeQL
 # JVM `kotlinc` invocations; Kotlin/Native and Kotlin/JS compilations
 # produce no traced events, so `database finalize` aborts with
 # "CodeQL could not process any code written in Java/Kotlin" on KMP
-# projects without a JVM target. `actions` covers workflow files;
-# `javascript-typescript` covers any JS/TS in the repo.
+# projects without a JVM target. This repo has no maintained JavaScript or
+# TypeScript source for CodeQL to extract, so `actions` covers workflow files.
 
 on:
   push:
@@ -32,8 +32,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - language: javascript-typescript
-            build-mode: none
           - language: actions
             build-mode: none
 
