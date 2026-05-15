@@ -1,3 +1,5 @@
+#include <atomic>
+#include <vector>
 #include <string>
 #include <functional>
 // Transliterated from Kotlin to C++

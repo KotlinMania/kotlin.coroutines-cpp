@@ -1,0 +1,9 @@
+test_timeout 1 0
+AsyncTest 0 0
+test_suspension_core 2 0.00106791
+test_channel_as_flow_smoke 0 0
+test_sync 1 0.00838826
+---
+test_timeout
+AsyncTest
+test_channel_as_flow_smoke

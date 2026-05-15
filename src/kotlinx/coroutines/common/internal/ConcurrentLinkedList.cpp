@@ -15,6 +15,7 @@
 #include <atomic>
 #include <functional>
 #include <cassert>
+#include <stdexcept>
 
 namespace kotlinx {
     namespace coroutines {

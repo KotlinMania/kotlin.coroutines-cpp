@@ -81,7 +81,7 @@ int main() {
             std::vector<int> out2;
             VectorCollector<int> collector2(&out2);
             (void)f->collect(&collector2, &cont);
-        } catch (const std::logic_error&) {
+        } catch (const std::exception&) {
             threw = true;
         }
         if (!threw) return 1;

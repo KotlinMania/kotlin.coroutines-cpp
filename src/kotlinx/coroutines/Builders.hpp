@@ -53,12 +53,28 @@ namespace coroutines {
     private:
         std::shared_ptr<CoroutineContext> parent_context_ref;
         bool active_flag;
+        CoroutineStart start_strategy_{CoroutineStart::DEFAULT};
+        std::function<T(CoroutineScope*)> start_block_;
 
     public:
         DeferredCoroutine(std::shared_ptr<CoroutineContext> parent_context, bool active)
             : AbstractCoroutine<T>(parent_context, true, active),
               parent_context_ref(std::move(parent_context)),
               active_flag(active) {}
+
+        void set_start_block(CoroutineStart start, std::function<T(CoroutineScope*)> block) {
+            start_strategy_ = start;
+            start_block_ = std::move(block);
+        }
+
+        void ensure_started() {
+            if (!start_block_) return;
+
+            auto block = std::move(start_block_);
+            start_block_ = nullptr;
+
+            AbstractCoroutine<T>::start(start_strategy_, static_cast<CoroutineScope*>(this), std::move(block));
+        }
 
         /**
          * Returns completed value or throws if completed exceptionally
@@ -90,10 +106,12 @@ namespace coroutines {
          * Transliterated from: override suspend fun await(): T = awaitInternal() as T
          */
         void* await(Continuation<void*>* continuation) override {
+            ensure_started();
             return AbstractCoroutine<T>::await_internal(continuation);
         }
 
         T await_blocking() override {
+            ensure_started();
             auto* state = AbstractCoroutine<T>::await_internal_blocking();
             // Check for exception first
             if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
@@ -118,8 +136,14 @@ namespace coroutines {
          std::shared_ptr<struct Job> get_parent() const override { return AbstractCoroutine<T>::get_parent(); }
          std::vector<std::shared_ptr<struct Job>> get_children() const override { return AbstractCoroutine<T>::get_children(); }
          std::shared_ptr<ChildHandle> attach_child(std::shared_ptr<ChildJob> child) override { return AbstractCoroutine<T>::attach_child(child); }
-         void* join(Continuation<void*>* continuation) override { return AbstractCoroutine<T>::join(continuation); }
-         void join_blocking() override { AbstractCoroutine<T>::join_blocking(); }
+         void* join(Continuation<void*>* continuation) override {
+             ensure_started();
+             return AbstractCoroutine<T>::join(continuation);
+         }
+         void join_blocking() override {
+             ensure_started();
+             AbstractCoroutine<T>::join_blocking();
+         }
          std::shared_ptr<DisposableHandle> invoke_on_completion(std::function<void(std::exception_ptr)> handler) override { return AbstractCoroutine<T>::invoke_on_completion(handler); }
          std::shared_ptr<DisposableHandle> invoke_on_completion(bool on_cancelling, bool invoke_immediately, std::function<void(std::exception_ptr)> handler) override { return AbstractCoroutine<T>::invoke_on_completion(on_cancelling, invoke_immediately, handler); }
          CoroutineContext::Key* key() const override { return AbstractCoroutine<T>::key(); }
@@ -191,8 +215,13 @@ namespace coroutines {
 
         std::shared_ptr<DeferredCoroutine<T>> coroutine;
         coroutine = std::make_shared<DeferredCoroutine<T>>(new_context, true);
-        // Cast to CoroutineScope* to match the block signature
-        coroutine->start(start, static_cast<CoroutineScope*>(coroutine.get()), block);
+        // NOTE(port): For DEFAULT/ATOMIC we delay running the block until the first await/join
+        // to avoid deadlocks in the current "runBlocking executes inline" model.
+        if (start == CoroutineStart::UNDISPATCHED) {
+            coroutine->start(start, static_cast<CoroutineScope*>(coroutine.get()), block);
+        } else if (start != CoroutineStart::LAZY) {
+            coroutine->set_start_block(start, std::move(block));
+        }
         return coroutine;
     }
 

@@ -1,0 +1,107 @@
+Start testing: May 15 12:12 UTC
+----------------------------------------------------------
+1/5 Testing: test_timeout
+1/5 Test: test_timeout
+Command: "/home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/build_clang1/bin/test_timeout"
+Directory: /home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/build_clang1/src/tests
+"test_timeout" start time: May 15 12:12 UTC
+Output:
+----------------------------------------------------------
+=== test_timeout ===
+test_timeout: /home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/src/tests/src/suspend/test_timeout.cpp:57: void test_timeout_no_suspend(): Assertion `*(int*)result == 42' failed.
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Failed.
+"test_timeout" end time: May 15 12:12 UTC
+"test_timeout" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/5 Testing: AsyncTest
+2/5 Test: AsyncTest
+Command: "/home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/build_clang1/bin/AsyncTest"
+Directory: /home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/build_clang1/src/tests
+"AsyncTest" start time: May 15 12:12 UTC
+Output:
+----------------------------------------------------------
+=== AsyncTest ===
+Running test_simple...
+  FAILED: bad_weak_ptr
+terminate called after throwing an instance of 'std::logic_error'
+  what():  Expected `finish(2)` to be called, but the test finished
+<end of output>
+Test time =   0.08 sec
+----------------------------------------------------------
+Test Failed.
+"AsyncTest" end time: May 15 12:12 UTC
+"AsyncTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/5 Testing: test_suspension_core
+3/5 Test: test_suspension_core
+Command: "/home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/build_clang1/bin/test_suspension_core"
+Directory: /home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/build_clang1/src/tests
+"test_suspension_core" start time: May 15 12:12 UTC
+Output:
+----------------------------------------------------------
+=== test_suspension_core ===
+test_simple_yield... PASSED
+test_conditional_suspend... PASSED
+test_loop_suspend... PASSED
+test_yield_value_resume_result... PASSED
+test_resume_with_value... PASSED
+test_start_with_exception_throws... PASSED
+=== All tests passed ===
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_suspension_core" end time: May 15 12:12 UTC
+"test_suspension_core" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/5 Testing: test_channel_as_flow_smoke
+4/5 Test: test_channel_as_flow_smoke
+Command: "/home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/build_clang1/bin/test_channel_as_flow_smoke"
+Directory: /home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/build_clang1/src/tests
+"test_channel_as_flow_smoke" start time: May 15 12:12 UTC
+Output:
+----------------------------------------------------------
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  ReceiveChannel.consumeAsFlow can be collected just once
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Failed.
+"test_channel_as_flow_smoke" end time: May 15 12:12 UTC
+"test_channel_as_flow_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/5 Testing: test_sync
+5/5 Test: test_sync
+Command: "/home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/build_clang1/bin/test_sync"
+Directory: /home/runner/work/kotlin.coroutines-cpp/kotlin.coroutines-cpp/build_clang1/src/tests
+"test_sync" start time: May 15 12:12 UTC
+Output:
+----------------------------------------------------------
+=== Sync Module Tests ===
+test_mutex_basic... PASSED
+test_mutex_owner... PASSED
+test_mutex_reentrant... PASSED
+test_mutex_created_locked... PASSED
+test_semaphore_basic... PASSED
+test_semaphore_acquired... PASSED
+test_semaphore_overflow... PASSED
+test_mutex_concurrent... PASSED
+test_semaphore_concurrent... PASSED (max_active=2)
+
+All tests passed!
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"test_sync" end time: May 15 12:12 UTC
+"test_sync" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: May 15 12:12 UTC

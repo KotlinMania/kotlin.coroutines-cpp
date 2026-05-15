@@ -10,6 +10,7 @@
 #include "kotlinx/coroutines/context_impl.hpp"
 #include <iostream>
 #include <cassert>
+#include <cstdlib>
 #include <vector>
 
 using namespace kotlinx::coroutines;
@@ -42,15 +43,13 @@ void test_timeout_no_suspend() {
     auto completion = std::make_shared<TestCompletion>();
     
     // Test block that returns immediate result
-    auto block = [](CoroutineScope& scope) -> void* {
-        // Return boxed integer 42
-        static int val = 42;
-        return &val;
+    auto block = [](CoroutineScope& scope) -> int {
+        return 42;
     };
     
     // Call with_timeout
     // We expect it to return the result immediately because block doesn't suspend
-    void* result = with_timeout<void*>(1000, block, completion);
+    void* result = with_timeout<int>(1000, block, completion);
     
     assert(!is_coroutine_suspended(result));
     assert(*(int*)result == 42);
@@ -74,6 +73,7 @@ void test_timeout_throws_exception() {
         caught = true;
     }
     
+    if (!caught) std::abort();
     assert(caught);
     
     std::cout << "PASSED" << std::endl;

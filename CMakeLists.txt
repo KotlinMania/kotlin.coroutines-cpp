@@ -6,6 +6,18 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# -----------------------------------------------------------------------------
+# Toolchain policy
+# -----------------------------------------------------------------------------
+# This repo relies on computed goto and other Clang-specific behavior in C++.
+# Fail early at configure time to avoid confusing compile-time errors.
+if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR
+        "kotlinx.coroutines-cpp requires Clang (CMAKE_CXX_COMPILER=clang++). "
+        "Detected compiler: ${CMAKE_CXX_COMPILER_ID}"
+    )
+endif()
+
 # =============================================================================
 # Build Output Directory Structure
 # =============================================================================
@@ -70,7 +82,7 @@ endif()
 # -----------------------------------------------------------------------------
 # Optional compiler tooling (Clang suspend DSL plugin)
 # -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build Clang suspend DSL plugin (Apple-focused)" ON)
+option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build Clang suspend DSL plugin (Apple-focused)" OFF)
 if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     add_subdirectory(src/kotlinx/coroutines/tools/clang_suspend_plugin)
 endif()
@@ -79,8 +91,14 @@ endif()
 # kxs-inject: LLVM IR transformation tool (Kotlin/Native-style IR lowering)
 # See: docs/IR_SUSPEND_LOWERING_SPEC.md
 # -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_KXS_INJECT "Build kxs-inject IR transformation tool" ON)
+option(KOTLINX_BUILD_KXS_INJECT "Build kxs-inject IR transformation tool" OFF)
 if(KOTLINX_BUILD_KXS_INJECT)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/llvm-project/llvm")
+        message(FATAL_ERROR
+            "Vendored LLVM not found at ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llvm-project/llvm. "
+            "Disable with -DKOTLINX_BUILD_KXS_INJECT=OFF or populate vendor/llvm-project."
+        )
+    endif()
     add_subdirectory(src/kotlinx/coroutines/tools/kxs_inject)
 endif()
 
@@ -156,8 +174,14 @@ install(EXPORT KotlinxCoroutinesTargets
 # -----------------------------------------------------------------------------
 # AST Distance Tool (porting analysis)
 # -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_AST_DISTANCE "Build AST distance/porting analysis tool" ON)
+option(KOTLINX_BUILD_AST_DISTANCE "Build AST distance/porting analysis tool" OFF)
 if(KOTLINX_BUILD_AST_DISTANCE)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/ast_distance/vendor/tree-sitter/lib/src/lib.c")
+        message(FATAL_ERROR
+            "Missing vendored tree-sitter sources under tools/ast_distance/vendor. "
+            "Disable with -DKOTLINX_BUILD_AST_DISTANCE=OFF or populate tools/ast_distance/vendor."
+        )
+    endif()
     add_subdirectory(tools/ast_distance)
 endif()
 

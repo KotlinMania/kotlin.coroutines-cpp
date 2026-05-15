@@ -80,7 +80,8 @@ namespace kotlinx::coroutines {
         AbstractCoroutine(std::shared_ptr<CoroutineContext> parent_context, bool init_parent_job = true, bool active = true)
             : JobSupport(active),
               parent_context(parent_context),
-              context(parent_context) { // Initial assignment, will be overwritten or used correctly
+              context(parent_context),
+              pending_parent_job_element_(init_parent_job && parent_context ? parent_context->get(Job::type_key) : nullptr) { // Initial assignment, will be overwritten or used correctly
 
             // context = parent_context + this
             // "this" is Job, Job implements Element.
@@ -91,9 +92,7 @@ namespace kotlinx::coroutines {
             // Usually context is used later.
             // We can just store parent_context and construct CombinedContext on demand or in start()?
 
-            if (init_parent_job) {
-                init_parent_job_internal(parent_context->get(Job::type_key));
-            }
+            // NOTE(port): parent/child wiring must be delayed until shared_from_this() is available.
         }
 
         virtual ~AbstractCoroutine() = default;
@@ -242,6 +241,10 @@ namespace kotlinx::coroutines {
 
         template <typename R>
         void start(CoroutineStart start_strategy, R receiver, std::function<T(R)> block) {
+            if (pending_parent_job_element_) {
+                init_parent_job_internal(std::move(pending_parent_job_element_));
+                pending_parent_job_element_.reset();
+            }
             invoke(start_strategy, block, receiver, std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
         }
 
@@ -260,6 +263,9 @@ namespace kotlinx::coroutines {
                 }
             }
         }
+
+    private:
+        std::shared_ptr<CoroutineContext::Element> pending_parent_job_element_;
     };
 
 }
