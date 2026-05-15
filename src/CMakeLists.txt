@@ -38,8 +38,6 @@ list(FILTER CORE_SOURCES EXCLUDE REGEX "/tools/")
 list(FILTER CORE_SOURCES EXCLUDE REGEX "/examples/")
 list(FILTER CORE_SOURCES EXCLUDE REGEX "/test/")
 list(FILTER CORE_SOURCES EXCLUDE REGEX "/integration/")
-list(FILTER CORE_SOURCES EXCLUDE REGEX "/sync/Mutex\\.cpp$")
-list(FILTER CORE_SOURCES EXCLUDE REGEX "/sync/Semaphore\\.cpp$")
 
 
 # Create the core library

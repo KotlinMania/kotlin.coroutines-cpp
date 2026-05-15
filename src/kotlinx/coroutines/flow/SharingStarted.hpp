@@ -149,7 +149,7 @@ struct SharingStarted {
 class StartedEagerly : public SharingStarted {
 public:
     Flow<SharingCommand>* command(StateFlow<int>* subscription_count) override;
-    std::string to_string() const;
+    std::string to_string() const override;
 };
 
 /**
@@ -161,7 +161,7 @@ public:
 class StartedLazily : public SharingStarted {
 public:
     Flow<SharingCommand>* command(StateFlow<int>* subscription_count) override;
-    std::string to_string() const;
+    std::string to_string() const override;
 };
 
 /**
@@ -181,7 +181,7 @@ public:
     );
 
     Flow<SharingCommand>* command(StateFlow<int>* subscription_count) override;
-    std::string to_string() const;
+    std::string to_string() const override;
     bool operator==(const StartedWhileSubscribed& other) const;
     size_t hash() const;
 
