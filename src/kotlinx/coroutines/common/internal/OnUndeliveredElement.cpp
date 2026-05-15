@@ -12,8 +12,8 @@
 
 #include <functional>
 #include <exception>
-#include <string>
 #include <stdexcept>
+#include <string>
 
 namespace kotlinx {
     namespace coroutines {

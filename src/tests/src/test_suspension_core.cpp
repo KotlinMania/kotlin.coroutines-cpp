@@ -250,6 +250,7 @@ void test_loop_suspend() {
     // Loop done, completion
     r = coro->invoke_suspend(Result<void*>::success(nullptr));
     assert(!is_coroutine_suspended(r));
+    (void)r;
 
     std::cout << "PASSED" << std::endl;
 }

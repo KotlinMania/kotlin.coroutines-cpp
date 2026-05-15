@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.16)
 project(kotlinx-coroutines-cpp VERSION 1.0.0 LANGUAGES CXX C)
 
+# -----------------------------------------------------------------------------
+# Toolchain requirements
+# -----------------------------------------------------------------------------
+# This repository relies on Clang-only features (e.g. computed goto).
+if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
+    message(FATAL_ERROR
+        "kotlinx.coroutines-cpp requires Clang for computed goto support.\n"
+        "Re-configure with `-DCMAKE_CXX_COMPILER=clang++` (and optionally `-DCMAKE_C_COMPILER=clang`).")
+endif()
+
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -93,13 +103,11 @@ endif()
 # -----------------------------------------------------------------------------
 option(KOTLINX_BUILD_KXS_INJECT "Build kxs-inject IR transformation tool" OFF)
 if(KOTLINX_BUILD_KXS_INJECT)
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/llvm-project/llvm")
-        message(FATAL_ERROR
-            "Vendored LLVM not found at ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llvm-project/llvm. "
-            "Disable with -DKOTLINX_BUILD_KXS_INJECT=OFF or populate vendor/llvm-project."
-        )
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/llvm-project/llvm/CMakeLists.txt")
+        add_subdirectory(src/kotlinx/coroutines/tools/kxs_inject)
+    else()
+        message(WARNING "KOTLINX_BUILD_KXS_INJECT=ON but vendored LLVM is missing at vendor/llvm-project/llvm; skipping kxs-inject.")
     endif()
-    add_subdirectory(src/kotlinx/coroutines/tools/kxs_inject)
 endif()
 
 # =============================================================================
@@ -176,13 +184,11 @@ install(EXPORT KotlinxCoroutinesTargets
 # -----------------------------------------------------------------------------
 option(KOTLINX_BUILD_AST_DISTANCE "Build AST distance/porting analysis tool" OFF)
 if(KOTLINX_BUILD_AST_DISTANCE)
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/ast_distance/vendor/tree-sitter/lib/src/lib.c")
-        message(FATAL_ERROR
-            "Missing vendored tree-sitter sources under tools/ast_distance/vendor. "
-            "Disable with -DKOTLINX_BUILD_AST_DISTANCE=OFF or populate tools/ast_distance/vendor."
-        )
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/ast_distance/vendor/tree-sitter/lib/src/lib.c")
+        add_subdirectory(tools/ast_distance)
+    else()
+        message(WARNING "KOTLINX_BUILD_AST_DISTANCE=ON but vendored tree-sitter is missing; skipping ast_distance.")
     endif()
-    add_subdirectory(tools/ast_distance)
 endif()
 
 # -----------------------------------------------------------------------------
@@ -235,7 +241,7 @@ endif()
 # -----------------------------------------------------------------------------
 # AST-based porting analysis targets (requires ast_distance tool)
 # -----------------------------------------------------------------------------
-if(KOTLINX_BUILD_AST_DISTANCE)
+if(TARGET ast_distance)
     # Lint check using AST analysis
     add_custom_target(ast-lint
         COMMAND $<TARGET_FILE:ast_distance> --lint ${CMAKE_SOURCE_DIR}/src

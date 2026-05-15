@@ -12,6 +12,7 @@
 #include <thread>
 #include <vector>
 #include <atomic>
+#include <stdexcept>
 
 #include "kotlinx/coroutines/sync/Mutex.hpp"
 #include "kotlinx/coroutines/sync/Semaphore.hpp"
