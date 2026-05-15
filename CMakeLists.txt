@@ -70,7 +70,7 @@ endif()
 # -----------------------------------------------------------------------------
 # Optional compiler tooling (Clang suspend DSL plugin)
 # -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build Clang suspend DSL plugin (Apple-focused)" ON)
+option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build Clang suspend DSL plugin (Apple-focused)" OFF)
 if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     add_subdirectory(src/kotlinx/coroutines/tools/clang_suspend_plugin)
 endif()
@@ -79,9 +79,13 @@ endif()
 # kxs-inject: LLVM IR transformation tool (Kotlin/Native-style IR lowering)
 # See: docs/IR_SUSPEND_LOWERING_SPEC.md
 # -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_KXS_INJECT "Build kxs-inject IR transformation tool" ON)
+option(KOTLINX_BUILD_KXS_INJECT "Build kxs-inject IR transformation tool" OFF)
 if(KOTLINX_BUILD_KXS_INJECT)
-    add_subdirectory(src/kotlinx/coroutines/tools/kxs_inject)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/llvm-project/llvm/CMakeLists.txt")
+        add_subdirectory(src/kotlinx/coroutines/tools/kxs_inject)
+    else()
+        message(WARNING "KOTLINX_BUILD_KXS_INJECT=ON but vendored LLVM is missing at vendor/llvm-project/llvm; skipping kxs-inject.")
+    endif()
 endif()
 
 # =============================================================================
@@ -156,9 +160,13 @@ install(EXPORT KotlinxCoroutinesTargets
 # -----------------------------------------------------------------------------
 # AST Distance Tool (porting analysis)
 # -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_AST_DISTANCE "Build AST distance/porting analysis tool" ON)
+option(KOTLINX_BUILD_AST_DISTANCE "Build AST distance/porting analysis tool" OFF)
 if(KOTLINX_BUILD_AST_DISTANCE)
-    add_subdirectory(tools/ast_distance)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/ast_distance/vendor/tree-sitter/lib/src/lib.c")
+        add_subdirectory(tools/ast_distance)
+    else()
+        message(WARNING "KOTLINX_BUILD_AST_DISTANCE=ON but vendored tree-sitter is missing; skipping ast_distance.")
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------
