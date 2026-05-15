@@ -12,6 +12,7 @@
 #include "kotlinx/coroutines/context_impl.hpp"
 #include <iostream>
 #include <cassert>
+#include <cstdlib>
 #include <vector>
 
 using namespace kotlinx::coroutines;
@@ -227,18 +228,21 @@ void test_loop_suspend() {
 
     // iteration 0: sum = 0, iteration = 1
     void* r = coro->invoke_suspend(Result<void*>::success(nullptr));
+    if (!is_coroutine_suspended(r)) std::abort();
     assert(is_coroutine_suspended(r));
     assert(coro->iteration == 1);
     assert(coro->sum == 0);
 
     // iteration 1: sum = 1, iteration = 2
     r = coro->invoke_suspend(Result<void*>::success(nullptr));
+    if (!is_coroutine_suspended(r)) std::abort();
     assert(is_coroutine_suspended(r));
     assert(coro->iteration == 2);
     assert(coro->sum == 1);
 
     // iteration 2: sum = 3, iteration = 3
     r = coro->invoke_suspend(Result<void*>::success(nullptr));
+    if (!is_coroutine_suspended(r)) std::abort();
     assert(is_coroutine_suspended(r));
     assert(coro->iteration == 3);
     assert(coro->sum == 3);
@@ -302,9 +306,7 @@ void test_start_with_exception_throws() {
         threw = true;
     }
 
-    if (!threw) {
-        throw std::runtime_error("Expected runtime_error from failed invoke_suspend");
-    }
+    if (!threw) std::abort();
     assert(threw);
     assert(execution_log.empty());
     std::cout << "PASSED" << std::endl;

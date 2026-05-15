@@ -10,6 +10,7 @@
 // - EmptyCoroutineContext needs implementation
 // - Default parameter values need overload functions
 
+#include <memory>
 #include <stdexcept>
 
 namespace kotlinx {

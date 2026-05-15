@@ -16,6 +16,18 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# -----------------------------------------------------------------------------
+# Toolchain policy
+# -----------------------------------------------------------------------------
+# This repo relies on computed goto and other Clang-specific behavior in C++.
+# Fail early at configure time to avoid confusing compile-time errors.
+if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR
+        "kotlinx.coroutines-cpp requires Clang (CMAKE_CXX_COMPILER=clang++). "
+        "Detected compiler: ${CMAKE_CXX_COMPILER_ID}"
+    )
+endif()
+
 # =============================================================================
 # Build Output Directory Structure
 # =============================================================================

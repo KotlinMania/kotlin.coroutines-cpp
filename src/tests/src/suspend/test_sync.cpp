@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cstdlib>
 #include <thread>
 #include <vector>
 #include <atomic>
@@ -65,9 +66,7 @@ void test_mutex_reentrant() {
     } catch (const std::logic_error& e) {
         threw = true;
     }
-    if (!threw) {
-        throw std::runtime_error("Expected mutex reentrant lock to throw");
-    }
+    if (!threw) std::abort();
     assert(threw);
 
     mutex->unlock(owner);
@@ -135,9 +134,7 @@ void test_semaphore_overflow() {
     } catch (const std::logic_error& e) {
         threw = true;
     }
-    if (!threw) {
-        throw std::runtime_error("Expected semaphore overflow release to throw");
-    }
+    if (!threw) std::abort();
     assert(threw);
 
     std::cout << "PASSED\n";
