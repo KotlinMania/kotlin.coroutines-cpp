@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.16)
 project(kotlinx-coroutines-cpp VERSION 1.0.0 LANGUAGES CXX C)
 
+# -----------------------------------------------------------------------------
+# Toolchain requirements
+# -----------------------------------------------------------------------------
+# This repository relies on Clang-only features (e.g. computed goto).
+if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
+    message(FATAL_ERROR
+        "kotlinx.coroutines-cpp requires Clang for computed goto support.\n"
+        "Re-configure with `-DCMAKE_CXX_COMPILER=clang++` (and optionally `-DCMAKE_C_COMPILER=clang`).")
+endif()
+
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
