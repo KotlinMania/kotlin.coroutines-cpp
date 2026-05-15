@@ -11,6 +11,7 @@
 #include <thread>
 #include <vector>
 #include <atomic>
+#include <stdexcept>
 
 #include "kotlinx/coroutines/sync/Mutex.hpp"
 #include "kotlinx/coroutines/sync/Semaphore.hpp"
@@ -63,6 +64,9 @@ void test_mutex_reentrant() {
         mutex->try_lock(owner); // Should throw
     } catch (const std::logic_error& e) {
         threw = true;
+    }
+    if (!threw) {
+        throw std::runtime_error("Expected mutex reentrant lock to throw");
     }
     assert(threw);
 
@@ -130,6 +134,9 @@ void test_semaphore_overflow() {
         sem->release(); // More releases than acquires
     } catch (const std::logic_error& e) {
         threw = true;
+    }
+    if (!threw) {
+        throw std::runtime_error("Expected semaphore overflow release to throw");
     }
     assert(threw);
 

@@ -219,7 +219,7 @@ endif()
 # -----------------------------------------------------------------------------
 # AST-based porting analysis targets (requires ast_distance tool)
 # -----------------------------------------------------------------------------
-if(KOTLINX_BUILD_AST_DISTANCE)
+if(TARGET ast_distance)
     # Lint check using AST analysis
     add_custom_target(ast-lint
         COMMAND $<TARGET_FILE:ast_distance> --lint ${CMAKE_SOURCE_DIR}/src

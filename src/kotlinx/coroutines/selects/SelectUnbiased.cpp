@@ -33,7 +33,7 @@ namespace selects {
  * Transliterated from: private object PARAM_CLAUSE_0
  */
 struct PARAM_CLAUSE_0_t {};
-inline constexpr PARAM_CLAUSE_0_t PARAM_CLAUSE_0{};
+inline constexpr PARAM_CLAUSE_0_t PARAM_CLAUSE_0_SENTINEL{};
 
 /**
  * Data structure to hold clause registration information.
@@ -92,7 +92,7 @@ public:
             &clause,
             [&clause, this]() { SelectImplementation<R>::invoke(clause, {}); },
             nullptr,
-            const_cast<PARAM_CLAUSE_0_t*>(&PARAM_CLAUSE_0),
+            const_cast<PARAM_CLAUSE_0_t*>(&PARAM_CLAUSE_0_SENTINEL),
             [block]() -> void* { return new R(block()); },
             nullptr
         });

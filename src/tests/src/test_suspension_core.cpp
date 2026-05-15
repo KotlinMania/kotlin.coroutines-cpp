@@ -246,6 +246,7 @@ void test_loop_suspend() {
     // Loop done, completion
     r = coro->invoke_suspend(Result<void*>::success(nullptr));
     assert(!is_coroutine_suspended(r));
+    (void)r;
 
     std::cout << "PASSED" << std::endl;
 }
@@ -301,6 +302,9 @@ void test_start_with_exception_throws() {
         threw = true;
     }
 
+    if (!threw) {
+        throw std::runtime_error("Expected runtime_error from failed invoke_suspend");
+    }
     assert(threw);
     assert(execution_log.empty());
     std::cout << "PASSED" << std::endl;

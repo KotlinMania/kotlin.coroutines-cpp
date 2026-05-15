@@ -74,6 +74,9 @@ void test_timeout_throws_exception() {
         caught = true;
     }
     
+    if (!caught) {
+        throw std::runtime_error("Expected timeout block to throw runtime_error");
+    }
     assert(caught);
     
     std::cout << "PASSED" << std::endl;
