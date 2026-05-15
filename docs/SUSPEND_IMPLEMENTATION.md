@@ -22,6 +22,8 @@ This document describes **how suspend functions work** in kotlinx.coroutines-cpp
 - **kxs-inject** tool finds `__kxs_suspend_point()` calls in LLVM IR
 - Performs liveness analysis and automatic spill generation
 - Removes marker calls from final output
+- CMake optional tooling targets are **OFF by default**; enable explicitly with
+  `-DKOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=ON` and/or `-DKOTLINX_BUILD_KXS_INJECT=ON`
 
 ---
 
