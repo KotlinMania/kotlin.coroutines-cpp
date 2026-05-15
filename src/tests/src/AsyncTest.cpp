@@ -161,33 +161,33 @@ public:
     }
 
     // @Test
-	    void test_parallel_decomposition_caught_exception_with_inherited_parent() {
-	        run_test([this](CoroutineScope* scope) {
-	            expect(1);
-	            auto deferred = async<int>(scope, non_cancellable(), [this](CoroutineScope* inner_scope) -> int {
-	                expect(2);
-	                auto decomposed = async<int>(inner_scope, [this](CoroutineScope*) -> int { // inherits parent job!
-	                    expect(3);
-	                    throw testing::TestException();
-	                    return 1;
-	                });
-	                try {
-	                    return decomposed->await_blocking();
-	                } catch (const testing::TestException&) {
-	                    expect(4);
-	                    return 42;
-	                }
-	            });
-	            try {
-	                assert_equals(42, deferred->await_blocking());
-	                finish(5);
-	            } catch (const std::exception& e) {
-	                // Current implementation may cancel the parent job on child failure even if caught.
-	                assert_true(dynamic_cast<const testing::TestException*>(&e) != nullptr);
-	                finish(5);
-	            }
-	        });
-	    }
+    void test_parallel_decomposition_caught_exception_with_inherited_parent() {
+        run_test([this](CoroutineScope* scope) {
+            expect(1);
+            auto deferred = async<int>(scope, non_cancellable(), [this](CoroutineScope* inner_scope) -> int {
+                expect(2);
+                auto decomposed = async<int>(inner_scope, [this](CoroutineScope*) -> int { // inherits parent job!
+                    expect(3);
+                    throw testing::TestException();
+                    return 1;
+                });
+                try {
+                    return decomposed->await_blocking();
+                } catch (const testing::TestException&) {
+                    expect(4);
+                    return 42;
+                }
+            });
+            try {
+                assert_equals(42, deferred->await_blocking());
+                finish(5);
+            } catch (const std::exception& e) {
+                // Current implementation may cancel the parent job on child failure even if caught.
+                assert_true(dynamic_cast<const testing::TestException*>(&e) != nullptr);
+                finish(5);
+            }
+        });
+    }
 
     // @Test
     void test_parallel_decomposition_uncaught_exception_with_inherited_parent() {

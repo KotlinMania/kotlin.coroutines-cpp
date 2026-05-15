@@ -207,10 +207,10 @@ namespace kotlinx::coroutines {
                 return;
             }
 
-	            if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
-	                on_completed(completed->value);
-	                return;
-	            }
+            if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
+                on_completed(std::move(completed->value));
+                return;
+            }
 
             // Unknown completion state shape.
             // TODO(semantics): Handle additional completion state wrappers from JobSupport (e.g., boxed values, idempotent results).

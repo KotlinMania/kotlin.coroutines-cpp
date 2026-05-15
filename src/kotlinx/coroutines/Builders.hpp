@@ -68,23 +68,23 @@ namespace coroutines {
             start_block_ = std::move(block);
         }
 
-	        void ensure_started() {
-	            if (!start_block_) return;
+        void ensure_started() {
+            if (!start_block_) return;
 
-	            if (start_strategy_ == CoroutineStart::DEFAULT &&
-	                AbstractCoroutine<T>::is_cancelled() &&
-	                !AbstractCoroutine<T>::is_completed()) {
-	                start_block_ = nullptr;
-	                AbstractCoroutine<T>::resume_with(Result<T>(
-	                    std::make_exception_ptr(CancellationException("Cancelled"))));
-	                return;
-	            }
+            if (start_strategy_ == CoroutineStart::DEFAULT &&
+                AbstractCoroutine<T>::is_cancelled() &&
+                !AbstractCoroutine<T>::is_completed()) {
+                start_block_ = nullptr;
+                AbstractCoroutine<T>::resume_with(Result<T>(
+                    std::make_exception_ptr(CancellationException("Cancelled"))));
+                return;
+            }
 
-	            auto block = std::move(start_block_);
-	            start_block_ = nullptr;
+            auto block = std::move(start_block_);
+            start_block_ = nullptr;
 
-	            AbstractCoroutine<T>::start(start_strategy_, static_cast<CoroutineScope*>(this), std::move(block));
-	        }
+            AbstractCoroutine<T>::start(start_strategy_, static_cast<CoroutineScope*>(this), std::move(block));
+        }
 
         /**
          * Returns completed value or throws if completed exceptionally
