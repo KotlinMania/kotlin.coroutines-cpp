@@ -28,14 +28,6 @@ namespace selects {
 // ============================================================================
 
 /**
- * Sentinel value for SelectClause0 param (no-argument clause).
- *
- * Transliterated from: private object PARAM_CLAUSE_0
- */
-struct PARAM_CLAUSE_0_t {};
-inline constexpr PARAM_CLAUSE_0_t PARAM_CLAUSE_0{};
-
-/**
  * Data structure to hold clause registration information.
  *
  * Transliterated from:
@@ -92,7 +84,7 @@ public:
             &clause,
             [&clause, this]() { SelectImplementation<R>::invoke(clause, {}); },
             nullptr,
-            const_cast<PARAM_CLAUSE_0_t*>(&PARAM_CLAUSE_0),
+            PARAM_CLAUSE_0(),
             [block]() -> void* { return new R(block()); },
             nullptr
         });

@@ -14,10 +14,17 @@
 namespace kotlinx {
     namespace coroutines {
         std::shared_ptr<CoroutineContext> CoroutineContext::operator+(std::shared_ptr<CoroutineContext> other) const {
-            if (!other) return std::const_pointer_cast<CoroutineContext>(shared_from_this());
+            std::shared_ptr<CoroutineContext> self;
+            try {
+                self = std::const_pointer_cast<CoroutineContext>(shared_from_this());
+            } catch (const std::bad_weak_ptr&) {
+                self = std::shared_ptr<CoroutineContext>(const_cast<CoroutineContext*>(this), [](CoroutineContext*) {});
+            }
+
+            if (!other) return self;
 
             return other->fold<std::shared_ptr<CoroutineContext> >(
-                std::const_pointer_cast<CoroutineContext>(shared_from_this()),
+                self,
                 [](std::shared_ptr<CoroutineContext> acc, std::shared_ptr<Element> element) {
                     auto removed = acc->minus_key(element->key());
                     if (!removed) {

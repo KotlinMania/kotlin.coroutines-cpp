@@ -80,7 +80,8 @@ namespace kotlinx::coroutines {
         AbstractCoroutine(std::shared_ptr<CoroutineContext> parent_context, bool init_parent_job = true, bool active = true)
             : JobSupport(active),
               parent_context(parent_context),
-              context(parent_context) { // Initial assignment, will be overwritten or used correctly
+              context(parent_context),
+              pending_parent_job_element_(init_parent_job && parent_context ? parent_context->get(Job::type_key) : nullptr) { // Initial assignment, will be overwritten or used correctly
 
             // context = parent_context + this
             // "this" is Job, Job implements Element.
@@ -91,9 +92,7 @@ namespace kotlinx::coroutines {
             // Usually context is used later.
             // We can just store parent_context and construct CombinedContext on demand or in start()?
 
-            if (init_parent_job) {
-                init_parent_job_internal(parent_context->get(Job::type_key));
-            }
+            // NOTE(port): parent/child wiring must be delayed until shared_from_this() is available.
         }
 
         virtual ~AbstractCoroutine() = default;
@@ -208,10 +207,10 @@ namespace kotlinx::coroutines {
                 return;
             }
 
-            if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
-                on_completed(std::move(completed->value));
-                return;
-            }
+	            if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
+	                on_completed(completed->value);
+	                return;
+	            }
 
             // Unknown completion state shape.
             // TODO(semantics): Handle additional completion state wrappers from JobSupport (e.g., boxed values, idempotent results).
@@ -240,26 +239,35 @@ namespace kotlinx::coroutines {
             return "\"" + name + "\":" + JobSupport::name_string();
         }
 
-        template <typename R>
-        void start(CoroutineStart start_strategy, R receiver, std::function<T(R)> block) {
-            invoke(start_strategy, block, receiver, std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
-        }
+	        template <typename R>
+	        void start(CoroutineStart start_strategy, R receiver, std::function<T(R)> block) {
+	            ensure_parent_job_initialized();
+	            invoke(start_strategy, block, receiver, std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
+	        }
 
-        // Helper for parent init
-        void init_parent_job_internal(std::shared_ptr<CoroutineContext::Element> parent_element) {
-            // We need to cast Element to Job
-            if (parent_element) {
-                // In C++ we can't easily dynamic_cast from Element to Job if they are related via multiple inheritance nicely
+	        void ensure_parent_job_initialized() {
+	            if (!pending_parent_job_element_) return;
+	            init_parent_job_internal(std::move(pending_parent_job_element_));
+	            pending_parent_job_element_.reset();
+	        }
+
+	        // Helper for parent init
+	        void init_parent_job_internal(std::shared_ptr<CoroutineContext::Element> parent_element) {
+	            // We need to cast Element to Job
+	            if (parent_element) {
+	                // In C++ we can't easily dynamic_cast from Element to Job if they are related via multiple inheritance nicely
                 // But Job inherits Element.
                 // We need to check if Element Key is Job::Key?
                 // Actually parentContext.get(Job::Key) returns Element which IS a Job.
-                auto parent_job = std::dynamic_pointer_cast<Job>(parent_element);
-                if (parent_job) {
-                    parent_job->start();
-                    auto handle = parent_job->attach_child(std::dynamic_pointer_cast<ChildJob>(JobSupport::shared_from_this()));
-                }
-            }
-        }
+	                auto parent_job = std::dynamic_pointer_cast<Job>(parent_element);
+	                if (parent_job) {
+	                    JobSupport::init_parent_job(std::move(parent_job));
+	                }
+	            }
+	        }
+
+    private:
+        std::shared_ptr<CoroutineContext::Element> pending_parent_job_element_;
     };
 
 }
