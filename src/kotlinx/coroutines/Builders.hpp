@@ -7,6 +7,7 @@
 #include "kotlinx/coroutines/Deferred.hpp"
 #include "kotlinx/coroutines/AbstractCoroutine.hpp"
 #include "kotlinx/coroutines/EventLoop.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
 #include <functional>
@@ -67,14 +68,23 @@ namespace coroutines {
             start_block_ = std::move(block);
         }
 
-        void ensure_started() {
-            if (!start_block_) return;
+	        void ensure_started() {
+	            if (!start_block_) return;
 
-            auto block = std::move(start_block_);
-            start_block_ = nullptr;
+	            if (start_strategy_ == CoroutineStart::DEFAULT &&
+	                AbstractCoroutine<T>::is_cancelled() &&
+	                !AbstractCoroutine<T>::is_completed()) {
+	                start_block_ = nullptr;
+	                AbstractCoroutine<T>::resume_with(Result<T>(
+	                    std::make_exception_ptr(CancellationException("Cancelled"))));
+	                return;
+	            }
 
-            AbstractCoroutine<T>::start(start_strategy_, static_cast<CoroutineScope*>(this), std::move(block));
-        }
+	            auto block = std::move(start_block_);
+	            start_block_ = nullptr;
+
+	            AbstractCoroutine<T>::start(start_strategy_, static_cast<CoroutineScope*>(this), std::move(block));
+	        }
 
         /**
          * Returns completed value or throws if completed exceptionally
@@ -169,17 +179,18 @@ namespace coroutines {
         if (!context) context = empty_context();
         auto new_context = scope->get_coroutine_context()->operator+(context); 
 
-        std::shared_ptr<StandaloneCoroutine> coroutine;
-        if (start == CoroutineStart::LAZY) {
-             coroutine = std::make_shared<LazyStandaloneCoroutine>(new_context, block);
-        } else {
-             coroutine = std::make_shared<StandaloneCoroutine>(new_context, true);
-        }
-        
-        // Wrap block to return Unit
-        std::function<Unit(CoroutineScope*)> wrapped_block = [block](CoroutineScope* s) -> Unit {
-            if (block) block(s);
-            return Unit();
+	        std::shared_ptr<StandaloneCoroutine> coroutine;
+	        if (start == CoroutineStart::LAZY) {
+	             coroutine = std::make_shared<LazyStandaloneCoroutine>(new_context, block);
+	        } else {
+	             coroutine = std::make_shared<StandaloneCoroutine>(new_context, true);
+	        }
+	        coroutine->ensure_parent_job_initialized();
+	        
+	        // Wrap block to return Unit
+	        std::function<Unit(CoroutineScope*)> wrapped_block = [block](CoroutineScope* s) -> Unit {
+	            if (block) block(s);
+	            return Unit();
         };
 
         coroutine->start(start, static_cast<CoroutineScope*>(coroutine.get()), wrapped_block);
@@ -213,12 +224,13 @@ namespace coroutines {
         if (!context) context = empty_context();
         auto new_context = scope->get_coroutine_context()->operator+(context);
 
-        std::shared_ptr<DeferredCoroutine<T>> coroutine;
-        coroutine = std::make_shared<DeferredCoroutine<T>>(new_context, true);
-        // NOTE(port): For DEFAULT/ATOMIC we delay running the block until the first await/join
-        // to avoid deadlocks in the current "runBlocking executes inline" model.
-        if (start == CoroutineStart::UNDISPATCHED) {
-            coroutine->start(start, static_cast<CoroutineScope*>(coroutine.get()), block);
+	        std::shared_ptr<DeferredCoroutine<T>> coroutine;
+	        coroutine = std::make_shared<DeferredCoroutine<T>>(new_context, true);
+	        coroutine->ensure_parent_job_initialized();
+	        // NOTE(port): For DEFAULT/ATOMIC we delay running the block until the first await/join
+	        // to avoid deadlocks in the current "runBlocking executes inline" model.
+	        if (start == CoroutineStart::UNDISPATCHED) {
+	            coroutine->start(start, static_cast<CoroutineScope*>(coroutine.get()), block);
         } else if (start != CoroutineStart::LAZY) {
             coroutine->set_start_block(start, std::move(block));
         }

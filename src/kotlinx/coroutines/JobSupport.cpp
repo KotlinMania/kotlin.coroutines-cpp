@@ -538,17 +538,29 @@ namespace kotlinx {
             return COROUTINE_SUSPENDED;
         }
 
-        JobState *JobSupport::await_internal_blocking() {
-            // Blocking version for non-coroutine contexts
-            while (!is_completed()) {
-                std::this_thread::yield();
-            }
-            auto *s = impl_->state.load(std::memory_order_acquire);
-            if (auto *ex = dynamic_cast<CompletedExceptionally *>(s)) {
-                std::rethrow_exception(ex->cause);
-            }
-            return s;
-        }
+	        JobState *JobSupport::await_internal_blocking() {
+	            // Blocking version for non-coroutine contexts
+	            while (true) {
+	                auto *s = impl_->state.load(std::memory_order_acquire);
+	                if (!dynamic_cast<Incomplete *>(s)) {
+	                    // Completed
+	                    break;
+	                }
+	                if (auto *finishing = dynamic_cast<Finishing *>(s)) {
+	                    // If cancellation already has a root cause, propagate it rather than spin forever.
+	                    auto root = finishing->get_root_cause();
+	                    if (root) {
+	                        std::rethrow_exception(root);
+	                    }
+	                }
+	                std::this_thread::yield();
+	            }
+	            auto *s = impl_->state.load(std::memory_order_acquire);
+	            if (auto *ex = dynamic_cast<CompletedExceptionally *>(s)) {
+	                std::rethrow_exception(ex->cause);
+	            }
+	            return s;
+	        }
 
         std::vector<std::shared_ptr<Job> > JobSupport::get_children() const {
             std::vector<std::shared_ptr<Job> > result;
