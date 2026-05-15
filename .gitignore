@@ -37,6 +37,8 @@ xcuserdata/
 
 # Alternative build directory names
 /build-*/
+/build_*/
+/build*/
 /cmake-build-*/
 /out/
 /target/
