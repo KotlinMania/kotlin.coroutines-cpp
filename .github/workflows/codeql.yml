@@ -10,13 +10,10 @@ name: CodeQL
 # TypeScript source for CodeQL to extract, so `actions` covers workflow files.
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
   schedule:
     - cron: "27 4 * * 1"
 
+  workflow_dispatch:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
