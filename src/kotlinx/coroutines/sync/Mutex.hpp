@@ -260,10 +260,53 @@ public:
         }
     }
 
-    // Line 224-229: onLock select clause (deprecated)
+    /**
+     * Upstream:
+     *   override val onLock: SelectClause2<Any?, Mutex> get() = SelectClause2Impl(
+     *       clauseObject = this,
+     *       regFunc = MutexImpl::onLockRegFunction as RegistrationFunction,
+     *       processResFunc = MutexImpl::onLockProcessResult as ProcessResultFunction,
+     *   )
+     */
     selects::SelectClause2<void*, Mutex*>& get_on_lock() override {
-        // TODO: Implement select clause support
-        throw std::runtime_error("onLock is deprecated and not implemented");
+        if (!on_lock_clause_) {
+            on_lock_clause_ = std::make_unique<selects::SelectClause2Impl<void*, Mutex*>>(
+                /*clauseObject=*/this,
+                /*regFunc=*/[this](void* /*clause*/, void* select, void* owner) {
+                    this->on_lock_reg_function(
+                        static_cast<selects::SelectInstance<void*>*>(select), owner);
+                },
+                /*processResFunc=*/[this](void* /*clause*/, void* owner, void* result) {
+                    return this->on_lock_process_result(owner, result);
+                });
+        }
+        return *on_lock_clause_;
+    }
+
+    /**
+     * Upstream:
+     *   protected open fun onLockRegFunction(select: SelectInstance<*>, owner: Any?) { ... }
+     */
+    void on_lock_reg_function(selects::SelectInstance<void*>* select, void* owner) {
+        // Delegate to the same fast/slow path the suspend `lock(owner)` uses.
+        if (try_lock(owner)) {
+            select->select_in_registration_phase(nullptr);
+            return;
+        }
+        // The full upstream registration enqueues the waiter onto the mutex's segment list;
+        // until the segment-list integration is exposed here, route via the standard
+        // suspending `lock` path through a small adapter continuation.
+        auto continuation =
+            std::make_shared<selects::detail::SelectSuspendingClauseContinuation>(select);
+        this->lock(owner, continuation.get());
+    }
+
+    /**
+     * Upstream:
+     *   protected open fun onLockProcessResult(owner: Any?, result: Any?): Any? = this
+     */
+    void* on_lock_process_result(void* /*owner*/, void* /*result*/) {
+        return static_cast<void*>(this);
     }
 
     // Line 301: toString
@@ -281,6 +324,11 @@ private:
 
     // Line 137: Owner tracking for debugging
     std::atomic<void*> owner_;
+
+    // Lazily-built select clause exposed by get_on_lock(). Upstream uses Kotlin's per-call
+    // `get()` to allocate a fresh SelectClause2Impl each time; we cache one instance per
+    // mutex since the clause object's identity is `this` either way.
+    std::unique_ptr<selects::SelectClause2Impl<void*, Mutex*>> on_lock_clause_;
 
     /**
      * Line 154-164: holdsLockImpl

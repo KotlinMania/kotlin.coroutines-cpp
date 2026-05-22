@@ -129,15 +129,32 @@ namespace kotlinx {
  * @param scope the coroutine scope in which sharing is started.
  * @throws NoSuchElementException if the upstream flow does not emit any value.
  *
- * TODO: Implement suspending stateIn
+ * Upstream:
+ *   public suspend fun <T> Flow<T>.stateIn(scope: CoroutineScope): StateFlow<T> {
+ *       val config = configureSharing(1)
+ *       val result = CompletableDeferred<Result<StateFlow<T>>>(scope.coroutineContext[Job])
+ *       scope.launchSharingDeferred(config.context, config.upstream, result)
+ *       return result.await().getOrThrow()
+ *   }
  */
             template<typename T>
-            std::shared_ptr<StateFlow<T> > state_in(
+            [[suspend]]
+            void* state_in(
                 std::shared_ptr<Flow<T> > upstream,
-                CoroutineScope *scope
+                CoroutineScope *scope,
+                std::shared_ptr<Continuation<void*>> completion
             ) {
-                // TODO: Implement suspending stateIn that waits for first value
-                throw std::runtime_error("Suspending stateIn not yet implemented");
+                auto config = configure_sharing<T>(upstream, /*replay=*/1);
+                auto job_element = scope->get_coroutine_context()->get(Job::type_key());
+                auto parent_job = std::dynamic_pointer_cast<Job>(job_element);
+                auto result = make_completable_deferred<Result<std::shared_ptr<StateFlow<T>>>>(parent_job);
+                launch_sharing_deferred<T>(scope, config.context, config.upstream, result);
+                void* awaited = dsl::suspend(result->await(completion.get()));
+                if (intrinsics::is_coroutine_suspended(awaited)) {
+                    return intrinsics::get_COROUTINE_SUSPENDED();
+                }
+                auto* outcome = static_cast<Result<std::shared_ptr<StateFlow<T>>>*>(awaited);
+                return new std::shared_ptr<StateFlow<T>>(outcome->get_or_throw());
             }
 
             // -------------------------------- asSharedFlow/asStateFlow --------------------------------
