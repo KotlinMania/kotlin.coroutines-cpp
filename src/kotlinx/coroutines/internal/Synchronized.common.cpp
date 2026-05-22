@@ -1,52 +1,66 @@
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/Synchronized.common.kt
-//
-// TODO: This is a mechanical transliteration - semantics not fully implemented
-// TODO: expect open class needs platform-specific implementation
-// TODO: expect inline function needs platform-specific implementation
-// TODO: @InternalCoroutinesApi annotation - translate to comment
-// TODO: @OptIn(ExperimentalContracts) - Kotlin contracts not applicable in C++
-// TODO: Contracts (callsInPlace) not directly translatable to C++
-
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            /**
- * @suppress **This an API and should not be used from general code.**
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/Synchronized.common.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
+ *
+ * Upstream:
+ *   @InternalCoroutinesApi public expect open class SynchronizedObject()
+ *   @InternalCoroutinesApi public expect inline fun <T> synchronizedImpl(
+ *       lock: SynchronizedObject, block: () -> T): T
+ *   @InternalCoroutinesApi public inline fun <T> synchronized(
+ *       lock: SynchronizedObject, block: () -> T): T = synchronizedImpl(lock, block)
+ *
+ * The C++ port resolves both `expect`s: `SynchronizedObject` owns a recursive_mutex, and
+ * `synchronized_impl` is a std::lock_guard scope. Kotlin's
+ * `contract { callsInPlace(block, EXACTLY_ONCE) }` is an invocation-count hint with no
+ * C++ equivalent — std::lock_guard already enforces exactly-once entry/exit dynamically.
  */
-            // TODO: @InternalCoroutinesApi annotation
-            // TODO: expect open class - needs platform-specific implementation (e.g., std::mutex)
-            class SynchronizedObject {
-            public:
-                SynchronizedObject() {
-                }
 
-                virtual ~SynchronizedObject() = default;
-            };
+#include <mutex>
+#include <utility>
 
-            /**
- * @suppress **This an API and should not be used from general code.**
+namespace kotlinx::coroutines::internal {
+
+/**
+ * Upstream:
+ *   @InternalCoroutinesApi public expect open class SynchronizedObject()
  */
-            // TODO: @InternalCoroutinesApi annotation
-            // TODO: expect inline function - needs platform-specific implementation
-            template<typename T, typename Block>
-            inline T synchronized_impl(SynchronizedObject *lock, Block block) {
-                // Platform-specific synchronization needed (e.g., std::lock_guard)
-                return block();
-            }
+class SynchronizedObject {
+public:
+    SynchronizedObject() = default;
+    virtual ~SynchronizedObject() = default;
 
-            /**
- * @suppress **This an API and should not be used from general code.**
+    SynchronizedObject(const SynchronizedObject&) = delete;
+    SynchronizedObject& operator=(const SynchronizedObject&) = delete;
+
+    void lock() { mutex_.lock(); }
+    void unlock() { mutex_.unlock(); }
+    bool try_lock() { return mutex_.try_lock(); }
+
+private:
+    std::recursive_mutex mutex_;
+};
+
+/**
+ * Upstream:
+ *   @InternalCoroutinesApi public expect inline fun <T> synchronizedImpl(
+ *       lock: SynchronizedObject, block: () -> T): T
  */
-            // TODO: @OptIn(ExperimentalContracts::class)
-            // TODO: @InternalCoroutinesApi annotation
-            template<typename T, typename Block>
-            inline T synchronized(SynchronizedObject *lock, Block block) {
-                // TODO: contract {
-                //     callsInPlace(block, InvocationKind.EXACTLY_ONCE)
-                // }
-                return synchronized_impl<T>(lock, block);
-            }
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx
+template <typename T, typename Block>
+inline T synchronized_impl(SynchronizedObject* lock, Block block) {
+    std::lock_guard<SynchronizedObject> guard(*lock);
+    return block();
+}
+
+/**
+ * Upstream:
+ *   @InternalCoroutinesApi public inline fun <T> synchronized(
+ *       lock: SynchronizedObject, block: () -> T): T = synchronizedImpl(lock, block)
+ */
+template <typename T, typename Block>
+inline T synchronized(SynchronizedObject* lock, Block block) {
+    return synchronized_impl<T>(lock, std::move(block));
+}
+
+} // namespace kotlinx::coroutines::internal
