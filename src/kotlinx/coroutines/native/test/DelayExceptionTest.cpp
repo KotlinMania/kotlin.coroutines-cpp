@@ -1,37 +1,49 @@
-// Original file: kotlinx-coroutines-core/native/test/DelayExceptionTest.kt
-// TODO: Remove or convert import statements
-// TODO: Convert @Test annotation to appropriate test framework
-// TODO: Convert suspend functions (runBlocking, launch, delay, yield)
-// TODO: Handle TestBase inheritance
+/**
+ * Transliterated from: kotlinx-coroutines-core/native/test/DelayExceptionTest.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines
+ *   imports: kotlinx.coroutines.testing.*, kotlin.coroutines.*, kotlin.test.*
+ *
+ * Verifies that a launch that delays for Long.MAX_VALUE can be cancelled cleanly without
+ * the delay timer surfacing an exception into the cancelled scope. The Kotlin
+ * `runBlocking { ... }` wrapper drives the suspending body to completion; the C++ port
+ * uses `run_blocking(...)` which performs the same in-place suspension drive.
+ */
 
-#include <future>
-#include <thread>
+#include "kotlinx/coroutines/Builders.hpp"
+#include "kotlinx/coroutines/Delay.hpp"
+#include "kotlinx/coroutines/Yield.hpp"
+#include "kotlinx/coroutines/test/TestBase.hpp"
 
-namespace kotlinx {
-    namespace coroutines {
-        // TODO: import kotlinx.coroutines.testing.*
-        // TODO: import kotlin.coroutines.*
-        // TODO: import kotlin.test.*
+#include <climits>
 
-        class DelayExceptionTest : public TestBase {
-        public:
-            // TODO: @Test
-            void test_max_delay() {
-                // TODO: runBlocking is a suspend function
-                // runBlocking {
-                expect(1);
-                // TODO: launch is a coroutine builder
-                auto job = std::launch([this]() {
-                    expect(2);
-                    // TODO: delay is a suspend function
-                    delay(LONG_MAX);
-                });
-                // TODO: yield is a suspend function
-                std::this_thread::yield();
-                job.cancel();
-                finish(3);
-                // }
-            }
-        };
-    } // namespace coroutines
-} // namespace kotlinx
+namespace kotlinx::coroutines {
+
+class DelayExceptionTest : public test::TestBase {
+public:
+    /**
+     * Upstream:
+     *   @Test fun testMaxDelay() = runBlocking {
+     *       expect(1)
+     *       val job = launch { expect(2); delay(Long.MAX_VALUE) }
+     *       yield()
+     *       job.cancel()
+     *       finish(3)
+     *   }
+     */
+    void test_max_delay() {
+        run_blocking([this]() {
+            expect(1);
+            auto job = launch([this]() {
+                expect(2);
+                delay(LONG_MAX, nullptr);
+            });
+            yield(nullptr);
+            job->cancel();
+            finish(3);
+        });
+    }
+};
+
+} // namespace kotlinx::coroutines
