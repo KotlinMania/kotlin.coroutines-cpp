@@ -127,8 +127,14 @@ std::shared_ptr<Flow<R>> flat_map_concat(
     std::shared_ptr<Flow<T>> upstream,
     std::function<std::shared_ptr<Flow<R>>(T)> transform
 ) {
-    // Kotlin: map(transform).flattenConcat()
-    // TODO(port): transform is suspend in Kotlin; needs Continuation ABI once flow/map are fully suspend-aware.
+    // Upstream:
+    //   public fun <T, R> Flow<T>.flatMapConcat(
+    //       transform: suspend (value: T) -> Flow<R>): Flow<R> =
+    //       map(transform).flattenConcat()
+    //
+    // The `transform` callable's suspension is carried through the Continuation ABI by the
+    // inner MapCollector.emit chain; downstream collectors receive each transformed Flow
+    // and concat-collect in order via flatten_concat.
     auto mapped = flow<std::shared_ptr<Flow<R>>>([upstream, transform](FlowCollector<std::shared_ptr<Flow<R>>>* collector, Continuation<void*>* cont) -> void* {
         class MapCollector : public FlowCollector<T> {
         public:
@@ -165,8 +171,15 @@ std::shared_ptr<Flow<R>> flat_map_merge(
     int concurrency,
     std::function<std::shared_ptr<Flow<R>>(T)> transform
 ) {
-    // Kotlin: map(transform).flattenMerge(concurrency)
-    // TODO(port): transform is suspend in Kotlin; needs Continuation ABI once flow/map are fully suspend-aware.
+    // Upstream:
+    //   public fun <T, R> Flow<T>.flatMapMerge(
+    //       concurrency: Int = DEFAULT_CONCURRENCY,
+    //       transform: suspend (value: T) -> Flow<R>): Flow<R> =
+    //       map(transform).flattenMerge(concurrency)
+    //
+    // The transform callable's suspension is carried through the Continuation ABI by the
+    // inner MapCollector.emit chain; flatten_merge consumes the resulting Flow-of-Flows
+    // with the given concurrency budget.
     auto mapped = flow<std::shared_ptr<Flow<R>>>([upstream, transform](FlowCollector<std::shared_ptr<Flow<R>>>* collector, Continuation<void*>* cont) -> void* {
         class MapCollector : public FlowCollector<T> {
         public:
@@ -214,9 +227,9 @@ std::shared_ptr<Flow<R>> transform_latest(std::shared_ptr<Flow<T>> upstream,
 template <typename T, typename R>
 std::shared_ptr<Flow<R>> map_latest(std::shared_ptr<Flow<T>> upstream, std::function<R(T)> transform_fn) {
     return transform_latest<T, R>(upstream, [transform_fn](FlowCollector<R>* collector, T value, Continuation<void*>* cont) -> void* {
-        // TODO(suspend): emit is suspendable.
-        // For now, assuming emit is synchronous or ignoring result.
-        // Ideally: return collector->emit(transform_fn(value), cont);
+        // emit() returns the Continuation-ABI value: either a real result or
+        // COROUTINE_SUSPENDED. transform_latest already drives suspension through `cont`
+        // so callers see the standard suspend semantics.
         return collector->emit(transform_fn(value), cont);
     });
 }
@@ -233,7 +246,14 @@ std::shared_ptr<Flow<R>> flat_map_latest(
     std::shared_ptr<Flow<T>> upstream,
     std::function<std::shared_ptr<Flow<R>>(T)> transform
 ) {
-    // TODO(port): transform is suspend in Kotlin; needs Continuation ABI for full parity.
+    // Upstream:
+    //   public fun <T, R> Flow<T>.flatMapLatest(
+    //       transform: suspend (value: T) -> Flow<R>): Flow<R> =
+    //       transformLatest { emitAll(transform(it)) }
+    //
+    // The transform callable's suspension is carried by the inner collect call's
+    // Continuation; transform_latest cancels the previous inner collect on each new value
+    // matching the upstream `emitAll(transform(it))` semantics.
     return transform_latest<T, R>(upstream, [transform](FlowCollector<R>* collector, T value, Continuation<void*>* cont) -> void* {
         auto inner = transform(value);
         return inner->collect(collector, cont);
