@@ -108,10 +108,32 @@ public:
         }
     }
 
+    /**
+     * Upstream:
+     *   override val onLock: SelectClause2<Any?, Mutex> get() = SelectClause2Impl(
+     *       clauseObject = this,
+     *       regFunc = MutexImpl::onLockRegFunction as RegistrationFunction,
+     *       processResFunc = MutexImpl::onLockProcessResult as ProcessResultFunction)
+     */
     selects::SelectClause2<void*, Mutex*>& get_on_lock() override {
-        static selects::SelectClause2<void*, Mutex*>* dummy = nullptr;
-        throw std::logic_error("Mutex.onLock is deprecated and not implemented");
-        return *dummy;
+        if (!on_lock_clause_) {
+            on_lock_clause_ = std::make_unique<selects::SelectClause2Impl<void*, Mutex*>>(
+                /*clauseObject=*/this,
+                /*regFunc=*/[this](void* /*clause*/, void* select, void* owner) {
+                    auto* sel = static_cast<selects::SelectInstance<void*>*>(select);
+                    if (this->try_lock(owner)) {
+                        sel->select_in_registration_phase(nullptr);
+                    } else {
+                        auto cont = std::make_shared<
+                            selects::detail::SelectSuspendingClauseContinuation>(sel);
+                        this->lock(owner, cont.get());
+                    }
+                },
+                /*processResFunc=*/[this](void* /*clause*/, void* /*owner*/, void* /*res*/) {
+                    return static_cast<void*>(this);
+                });
+        }
+        return *on_lock_clause_;
     }
 
     std::string to_string() const {
@@ -123,6 +145,9 @@ public:
     }
 
 private:
+    // Lazy clause cache for the on_lock select clause override. See get_on_lock above.
+    std::unique_ptr<selects::SelectClause2Impl<void*, Mutex*>> on_lock_clause_;
+
     int holds_lock_impl(void* owner) {
         while (true) {
             if (!is_locked()) return HOLDS_LOCK_UNLOCKED;

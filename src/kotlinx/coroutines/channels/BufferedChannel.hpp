@@ -1780,19 +1780,76 @@ public:
     // Lines 1469-1567: Select Expression
     // =========================================================================
 
+    /**
+     * Upstream:
+     *   override val onSend: SelectClause2<E, BufferedChannel<E>>
+     *       get() = SelectClause2Impl(
+     *           clauseObject = this,
+     *           regFunc = BufferedChannel<*>::registerSelectForSend as RegistrationFunction,
+     *           processResFunc = BufferedChannel<*>::processResultSelectSend as ProcessResultFunction)
+     */
     selects::SelectClause2<E, SendChannel<E>*>& on_send() override {
-        // Select support not yet implemented
-        throw std::logic_error("BufferedChannel::on_send select clause not yet implemented");
+        if (!on_send_clause_) {
+            on_send_clause_ = std::make_unique<selects::SelectClause2Impl<E, SendChannel<E>*>>(
+                /*clauseObject=*/this,
+                /*regFunc=*/[this](void* /*clause*/, void* select, void* element) {
+                    this->register_select_for_send(
+                        static_cast<selects::SelectInstance<void*>*>(select),
+                        static_cast<E*>(element));
+                },
+                /*processResFunc=*/[this](void* /*clause*/, void* ignored, void* result) {
+                    return this->process_result_select_send(ignored, result);
+                });
+        }
+        return *on_send_clause_;
     }
 
+    /**
+     * Upstream:
+     *   override val onReceive: SelectClause1<E>
+     *       get() = SelectClause1Impl(
+     *           clauseObject = this,
+     *           regFunc = BufferedChannel<*>::registerSelectForReceive as RegistrationFunction,
+     *           processResFunc = BufferedChannel<*>::processResultSelectReceive as ProcessResultFunction,
+     *           onCancellationConstructor = onUndeliveredElementReceiveCancellationConstructor)
+     */
     selects::SelectClause1<E>& on_receive() override {
-        // Select support not yet implemented
-        throw std::logic_error("BufferedChannel::on_receive select clause not yet implemented");
+        if (!on_receive_clause_) {
+            on_receive_clause_ = std::make_unique<selects::SelectClause1Impl<E>>(
+                /*clauseObject=*/this,
+                /*regFunc=*/[this](void* /*clause*/, void* select, void* ignored) {
+                    this->register_select_for_receive(
+                        static_cast<selects::SelectInstance<void*>*>(select), ignored);
+                },
+                /*processResFunc=*/[this](void* /*clause*/, void* ignored, void* result) {
+                    return this->process_result_select_receive(ignored, result);
+                });
+        }
+        return *on_receive_clause_;
     }
 
+    /**
+     * Upstream:
+     *   override val onReceiveCatching: SelectClause1<ChannelResult<E>>
+     *       get() = SelectClause1Impl(
+     *           clauseObject = this, regFunc = registerSelectForReceive,
+     *           processResFunc = processResultSelectReceiveCatching,
+     *           onCancellationConstructor = onUndeliveredElementReceiveCancellationConstructor)
+     */
     selects::SelectClause1<ChannelResult<E>>& on_receive_catching() override {
-        // Select support not yet implemented
-        throw std::logic_error("BufferedChannel::on_receive_catching select clause not yet implemented");
+        if (!on_receive_catching_clause_) {
+            on_receive_catching_clause_ =
+                std::make_unique<selects::SelectClause1Impl<ChannelResult<E>>>(
+                    /*clauseObject=*/this,
+                    /*regFunc=*/[this](void* /*clause*/, void* select, void* ignored) {
+                        this->register_select_for_receive(
+                            static_cast<selects::SelectInstance<void*>*>(select), ignored);
+                    },
+                    /*processResFunc=*/[this](void* /*clause*/, void* ignored, void* result) {
+                        return this->process_result_select_receive_catching(ignored, result);
+                    });
+        }
+        return *on_receive_catching_clause_;
     }
 
     // =========================================================================
@@ -1871,6 +1928,14 @@ protected:
     }
 
 private:
+    // Lazy clause caches for the on_send / on_receive / on_receive_catching overrides.
+    // Upstream's `val onSend: SelectClause2 get() = SelectClause2Impl(...)` allocates a fresh
+    // clause object on every access; we cache one per channel since the clause's identity is
+    // always `this`.
+    std::unique_ptr<selects::SelectClause2Impl<E, SendChannel<E>*>> on_send_clause_;
+    std::unique_ptr<selects::SelectClause1Impl<E>> on_receive_clause_;
+    std::unique_ptr<selects::SelectClause1Impl<ChannelResult<E>>> on_receive_catching_clause_;
+
     // =========================================================================
     // Lines 63-91: Counters and state
     // =========================================================================
