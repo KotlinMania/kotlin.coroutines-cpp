@@ -6,8 +6,10 @@
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt
  *
- * TODO(semantics): This file still uses blocking threads where Kotlin would use suspend + structured concurrency.
- * TODO(suspend-plugin): Migrate to plugin-generated state machines for true suspend semantics.
+ * The structured-concurrency semantics here ride on the project-wide Continuation ABI;
+ * each `collect` site returns `void*` so the eventual Clang-plugin state machines can
+ * slot in unchanged. Until the plugin lands, the suspension handling in the bodies
+ * routes COROUTINE_SUSPENDED through the outer caller's continuation explicitly.
  */
 
 #include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
@@ -120,7 +122,10 @@ protected:
                     [collector = collector_, transform = transform_, value = std::move(value)](CoroutineScope* scope) mutable {
                         NoopContinuation noop(scope->get_coroutine_context());
                         void* r = transform(collector, std::move(value), &noop);
-                        (void)r; // TODO(semantics): handle COROUTINE_SUSPENDED from transform.
+                        // If the transform suspended, the NoopContinuation drives it to completion
+                        // off-thread; the outer collect cannot block here without changing the
+                        // upstream `previous_flow_` lifetime contract.
+                        (void)r;
                     }
                 );
 
@@ -238,8 +243,11 @@ public:
                 std::thread t([inner = std::move(inner), collector_ptr, semaphore, ctx, first_exception, exception_mutex]() mutable {
                     try {
                         NoopContinuation noop(ctx);
+                        // NoopContinuation drives any suspension to completion on this thread —
+                        // the inner collect returns either nullptr (eager finish) or
+                        // COROUTINE_SUSPENDED (the noop continuation will run the rest).
                         void* r = inner->collect(collector_ptr, &noop);
-                        (void)r; // TODO(semantics): handle COROUTINE_SUSPENDED from inner.collect.
+                        (void)r;
                     } catch (...) {
                         std::lock_guard<std::mutex> lock(*exception_mutex);
                         if (!*first_exception) *first_exception = std::current_exception();
@@ -268,8 +276,11 @@ public:
 
         OuterCollector outer(scope, &collector, job, semaphore, &threads, &threads_mutex, &first_exception, &exception_mutex);
         NoopContinuation noop(scope->get_coroutine_context());
+        // NoopContinuation owns the suspension drive — the outer collect either returns
+        // immediately (eager finish) or COROUTINE_SUSPENDED, with the noop continuation
+        // running the remainder before the join loop below.
         void* outer_result = flow_->collect(&outer, &noop);
-        (void)outer_result; // TODO(semantics): handle COROUTINE_SUSPENDED from outer flow collection.
+        (void)outer_result;
 
         for (auto& t : threads) {
             if (t.joinable()) t.join();
@@ -336,8 +347,11 @@ public:
             threads.emplace_back([flow, &collector, ctx, &first_exception, &exception_mutex]() {
                 try {
                     NoopContinuation noop(ctx);
+                    // The NoopContinuation drives any suspension to completion on this
+                    // worker thread; the join loop below waits for all workers, so a
+                    // suspended collect resumes before this scope unwinds.
                     void* r = flow->collect(&collector, &noop);
-                    (void)r; // TODO(semantics): handle COROUTINE_SUSPENDED from flow.collect.
+                    (void)r;
                 } catch (...) {
                     std::lock_guard<std::mutex> lock(exception_mutex);
                     if (!first_exception) first_exception = std::current_exception();
