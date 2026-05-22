@@ -11,7 +11,7 @@
 ### What to do (high level)
 - For every existing or newly created C++ file, find and open the matching Kotlin `.kt` source and mirror its public API and structure.
 - Move private/internal logic into `.cpp` files; keep public interfaces, public types, and constants in `.hpp`.
-- Insert new `TODO(...)` comments for any algorithmic/parameter/signature issue found; remove `TODO`s that are clearly resolved by your change.
+- Close every algorithmic/parameter/signature gap you find by porting the missing piece. `TODO` / `FIXME` / `XXX` / `HACK` comments are banned in source.
 - Prefer concrete types for non-public code; avoid templates/generics unless absolutely necessary or required by public API parity.
 - Maintain naming, file layout, and ABI rules listed below.
 
@@ -51,7 +51,7 @@
     - Continue transliteration using the current Continuation ABI; annotate code paths that will migrate to the plugin with `TODO(suspend-plugin): migrate`.
 - GC/interoperability notes:
     - Keep boundaries explicit. Do not assume automatic GC; prefer `std::shared_ptr`/`std::unique_ptr` for lifetimes.
-    - When returning heap-allocated results via `void*`, add `TODO(abi-ownership): document/delete policy` if ownership is not yet defined.
+    - When returning heap-allocated results via `void*`, define the delete policy at the call site (which side owns the unbox/free). If ownership is unclear, port the dependency that makes it clear.
 
 ---
 
@@ -96,41 +96,29 @@
     - Suspend functions → `void* name(args..., Continuation<void*>* cont)`.
 4. Non-public/internal items → `.cpp` implementation with strong/concrete types.
 5. Map exceptions to `std::exception_ptr` patterns where Kotlin uses `Throwable`.
-6. Add missing overloads/defaults to match Kotlin signatures (note `TODO(defaults)` if default args need scaffolding).
-7. Insert `TODO` for any unresolved semantic/algorithmic gap (see TODO taxonomy below).
-8. Remove any stale/resolved `TODO`s in the edited region.
-9. Update audit references (file:line) in `docs/audits/*` if you changed API presence.
+6. Add missing overloads/defaults to match Kotlin signatures. Don't substitute a `TODO` — add the overload.
+7. If you find an unresolved semantic/algorithmic gap, close it: port the missing piece. `TODO` / `FIXME` / `XXX` / `HACK` comments are banned in source.
+8. Update audit references (file:line) in `docs/audits/*` if you changed API presence.
 
 ---
 
-### TODO taxonomy and format
-- Use tagged TODOs to make searches precise. Format:
-    - `// TODO(port): <short issue>` — direct transliteration needed or missing element.
-    - `// TODO(semantics): <race/cancellation/algorithm risk>` — correctness not yet mirrored.
-    - `// TODO(suspend-plugin): <migration note>` — will be handled by the Clang plugin.
-    - `// TODO(abi-ownership): <who deletes boxed result?>` — define ownership of `void*` return boxes.
-    - `// TODO(perf): <hot path issue>` — known perf gaps.
-- Remove TODOs you resolve; never leave contradictory TODOs in place.
-
----
-
-### Common patterns to watch and flag (insert TODOs)
+### Common patterns to watch
 - Parameter parity:
-    - Default arguments present in Kotlin but not yet reflected in C++ (overloads needed). Mark `TODO(port): default args parity`.
-    - Nullability vs pointers/references — mark `TODO(semantics): null handling parity` when unclear.
+    - Default arguments present in Kotlin but not yet reflected in C++ — add the missing C++ overloads.
+    - Nullability vs pointers/references — resolve the type against upstream usage and pick the right C++ signature.
 - Exceptions/cancellation:
-    - Kotlin `CancellationException` → `std::exception_ptr` with `CancellationException` type. If not implemented, add `TODO(port): CancellationException type`.
-    - Prompt cancellation guarantee (e.g., `Deferred.await`, `Job.join`, `delay`) — add `TODO(semantics): prompt cancellation race`.
+    - Kotlin `CancellationException` → `std::exception_ptr` with `CancellationException` type.
+    - Prompt cancellation guarantee (e.g., `Deferred.await`, `Job.join`, `delay`) — surface the cancellation through the Continuation ABI.
 - Concurrency and state machines:
-    - Missing `decisionAndIndex` logic in `CancellableContinuationImpl` — ensure it’s tagged: `TODO(semantics): decision state machine parity`.
-    - Reusable continuation reset paths — `TODO(semantics): reset_state_reusable`.
+    - `decisionAndIndex` logic in `CancellableContinuationImpl` — port the state machine as upstream specifies.
+    - Reusable continuation reset paths — port `reset_state_reusable` against the upstream loop.
 - Dispatcher/Delay wiring:
-    - `CoroutineDispatcher` interception must recognize plugin frames — `TODO(suspend-plugin): intercept plugin frames`.
-    - `Delay` fallback path captures continuation by reference (e.g., `Delay.cpp`) — add `TODO(semantics): capture shared handle, avoid dangling ref`.
+    - `CoroutineDispatcher` interception must recognize plugin frames — port the plugin-frame predicate alongside the dispatch override.
+    - `Delay` fallback path captures continuation by reference (e.g., `Delay.cpp`) — switch the capture to a shared handle so the timer thread keeps the continuation alive across the sleep.
 - Ownership/boxing:
-    - Non-void `suspend_cancellable_coroutine<T>` allocates `T` on heap and returns as `void*` — add `TODO(abi-ownership): define deleter path` near the adapter.
+    - Non-void `suspend_cancellable_coroutine<T>` allocates `T` on heap and returns as `void*` — every adapter call site must own the unbox + free.
 - Select support:
-    - `on_join`, `on_await` — add `TODO(port): select clauses` where applicable.
+    - `on_join`, `on_await` — wire the SelectClause through SelectClause0Impl / SelectClause1Impl when adding the surface; the registration + processing functions are already defined on JobSupport.
 
 ---
 
@@ -192,7 +180,7 @@
 3. Move non-public helpers into the `.cpp` and prefer concrete typing.
 4. Reconcile parameters and defaults; add overloads or `TODO(port): defaults parity`.
 5. For suspend points, use the Continuation ABI form and tag `TODO(suspend-plugin)` for migration.
-6. Insert specific `TODO`s for any algorithmic gap (see taxonomy), and remove obsolete TODOs.
+6. Close every algorithmic gap you find by porting the missing piece. No `TODO` / `FIXME` / `XXX` / `HACK` in source.
 7. Leave a short file header linking the original Kotlin path.
 8. Update the audit tables with the new status and file:line references.
 9. **Function provenance:** Add a `// Transliterated from: <Kotlin path>:<line-range>` comment above each translated function or class. If a function is synthesized from multiple Kotlin functions, list all sources.
