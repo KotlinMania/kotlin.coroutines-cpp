@@ -95,19 +95,13 @@ namespace coroutines {
  * public suspend fun yield(): Unit
  */
 
-/*
- * TODO(semantics): STUB - yield_coroutine() yields thread instead of suspending coroutine
- *
- * What's missing:
- * - Should be a suspend function: suspend fun yield()
- * - Should check cancellation, then suspend and re-dispatch coroutine
- * - Allows other coroutines on same dispatcher to run
- * - See Yield.cpp for full TODO details
- *
- * Current behavior: Calls std::this_thread::yield() - OS level thread yield
- * Correct behavior: Suspend coroutine, re-enqueue to dispatcher for cooperative scheduling
+/**
+ * Thread-yield fallback for tests / non-suspend callers that cannot thread a
+ * `Continuation<void*>` through. This is intentionally an OS-level
+ * `std::this_thread::yield()` and is **not** the upstream `yield()` semantics — the
+ * real Kotlin `yield()` lives in the suspend-ABI overload below. See `Yield.cpp`.
  */
-[[deprecated("Use yield(completion) instead")]]
+[[deprecated("Use yield(completion) for the upstream suspend semantics")]]
 void yield_coroutine();
 
 /**
