@@ -1,204 +1,199 @@
 #pragma once
-// port-lint: source flow/operators/Zip.kt
 /**
- * @file Zip.hpp
- * @brief Flow zip and combine operators
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt
+ *
+ * Kotlin file header (translated):
+ *   @file:JvmMultifileClass
+ *   @file:JvmName("FlowKt")
+ *   package kotlinx.coroutines.flow
  */
 
+#include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
+#include "kotlinx/coroutines/flow/FlowCollector.hpp"
+#include "kotlinx/coroutines/flow/internal/Combine.hpp"
+#include "kotlinx/coroutines/flow/internal/Zip.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+
+#include <any>
 #include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
-#include <queue>
-#include <mutex>
-#include <optional>
-#include <algorithm>
 
-namespace kotlinx {
-namespace coroutines {
-namespace flow {
+namespace kotlinx::coroutines::flow {
 
-// Alias for the flow builder to avoid shadowing issues with parameters
-template<typename T>
-inline std::shared_ptr<Flow<T>> make_flow(std::function<void(FlowCollector<T>*)> block) {
-    return flow<T>(block);
+/**
+ * Zips values from the current flow (this) with [other] using provided [transform].
+ *
+ * The resulting flow completes as soon as one of the flows completes and cancels the
+ * remaining one.
+ *
+ * Upstream:
+ *   public fun <T1, T2, R> Flow<T1>.zip(other: Flow<T2>, transform: suspend (T1, T2) -> R): Flow<R> =
+ *       zipImpl(this, other, transform)
+ */
+template <typename T1, typename T2, typename R>
+inline std::shared_ptr<Flow<R>> zip(
+    std::shared_ptr<Flow<T1>> first,
+    std::shared_ptr<Flow<T2>> other,
+    std::function<R(T1, T2)> transform) {
+    return internal::zip_impl<T1, T2, R>(std::move(first), std::move(other), std::move(transform));
 }
 
 /**
- * Zips values from the current flow (flow1) with other flow (flow2) using provided transform.
- *
- * The resulting flow completes as soon as one of the flows completes and cancels
- * the remaining one.
- *
- * It can be demonstrated with the following example:
- * ```cpp
- * auto flow1 = flow_of({1, 2, 3}); // with delay(10)
- * auto flow2 = flow_of({"a", "b", "c", "d"}); // with delay(15)
- * auto zipped = zip(flow1, flow2, [](int i, std::string s) { return std::to_string(i) + s; });
- * // Will produce: "1a", "2b", "3c"
- * ```
- *
- * Transliterated from:
- * public fun <T1, T2, R> Flow<T1>.zip(other: Flow<T2>, transform: suspend (T1, T2) -> R): Flow<R>
+ * Upstream:
+ *   @JvmName("flowCombine")
+ *   public fun <T1, T2, R> Flow<T1>.combine(flow: Flow<T2>, transform: suspend (T1, T2) -> R): Flow<R> = flow {
+ *       combineInternal(arrayOf(this@combine, flow), nullArrayFactory(),
+ *           { emit(transform(it[0] as T1, it[1] as T2)) })
+ *   }
  */
 template <typename T1, typename T2, typename R>
-std::shared_ptr<Flow<R>> zip(std::shared_ptr<Flow<T1>> flow1, std::shared_ptr<Flow<T2>> flow2, std::function<R(T1, T2)> transform_fn) {
-    // TODO: Implement proper concurrent zip using channels
-    // For now, collect both flows first (not correct but compiles)
-    return make_flow<R>([flow1, flow2, transform_fn](FlowCollector<R>* collector) {
-        std::vector<T1> values1;
-        std::vector<T2> values2;
-
-        flow1->collect([&values1](T1 value) {
-            values1.push_back(value);
-        });
-
-        flow2->collect([&values2](T2 value) {
-            values2.push_back(value);
-        });
-
-        size_t count = std::min(values1.size(), values2.size());
-        for (size_t i = 0; i < count; ++i) {
-            collector->emit(transform_fn(values1[i], values2[i]));
-        }
-    });
-}
-
-// ============================================================================
-// Line 27-48: 2-way combine
-// ============================================================================
-
-/**
- * Returns a Flow whose values are generated with transform function by combining
- * the most recently emitted values by each flow.
- *
- * It can be demonstrated with the following example:
- * ```cpp
- * auto flow1 = flow_of({1, 2}); // with onEach { delay(10) }
- * auto flow2 = flow_of({"a", "b", "c"}); // with onEach { delay(15) }
- * auto combined = combine(flow1, flow2, [](int i, std::string s) { return std::to_string(i) + s; });
- * // Will produce: "1a", "2a", "2b", "2c"
- * ```
- *
- * This function is a shorthand for `flow.combineTransform(flow2) { a, b -> emit(transform(a, b)) }`.
- *
- * Transliterated from:
- * public fun <T1, T2, R> Flow<T1>.combine(flow: Flow<T2>, transform: suspend (a: T1, b: T2) -> R): Flow<R>
- */
-template <typename T1, typename T2, typename R>
-std::shared_ptr<Flow<R>> combine(
-    std::shared_ptr<Flow<T1>> flow1,
-    std::shared_ptr<Flow<T2>> flow2,
-    std::function<R(T1, T2)> transform_fn
-) {
-    // Uses combineInternal with two flows
-    // TODO: Implement proper concurrent combine with most-recently-emitted semantics
-    // For now, simplified implementation that doesn't have proper concurrency
-    return make_flow<R>([flow1, flow2, transform_fn](FlowCollector<R>* collector) {
-        std::optional<T1> latest1;
-        std::optional<T2> latest2;
-        std::mutex mutex;
-        
-        // This is a simplified sequential implementation
-        // Real implementation would use channels for concurrent collection
-        std::vector<T1> values1;
-        std::vector<T2> values2;
-
-        flow1->collect([&values1](T1 value) {
-            values1.push_back(value);
-        });
-
-        flow2->collect([&values2](T2 value) {
-            values2.push_back(value);
-        });
-
-        // Emit combined values as they would be in combine semantics
-        // This is a simplification - real combine uses most recent from each
-        if (!values1.empty() && !values2.empty()) {
-            for (size_t i2 = 0; i2 < values2.size(); ++i2) {
-                // Find the latest value1 at this point
-                size_t i1 = std::min(i2, values1.size() - 1);
-                collector->emit(transform_fn(values1[i1], values2[i2]));
-            }
-        }
+inline std::shared_ptr<Flow<R>> combine(
+    std::shared_ptr<Flow<T1>> first,
+    std::shared_ptr<Flow<T2>> second,
+    std::function<R(T1, T2)> transform) {
+    return flow_builder<R>([first, second, transform](
+                               FlowCollector<R>* collector,
+                               std::shared_ptr<Continuation<void*>> completion) -> void* {
+        std::vector<std::shared_ptr<Flow<std::any>>> sources;
+        sources.push_back(internal::as_any_flow<T1>(first));
+        sources.push_back(internal::as_any_flow<T2>(second));
+        return internal::combine_internal<R>(
+            collector, sources,
+            [transform](FlowCollector<R>* sink,
+                        const std::vector<std::any>& values,
+                        Continuation<void*>* cont) {
+                R r = transform(std::any_cast<T1>(values[0]), std::any_cast<T2>(values[1]));
+                return sink->emit(std::move(r), cont);
+            },
+            completion);
     });
 }
 
 /**
- * Returns a Flow whose values are generated by transform function that process
- * the most recently emitted values by each flow.
- *
- * TODO: Implement combineTransform with proper emission semantics
+ * Upstream:
+ *   public fun <T1, T2, R> combine(flow: Flow<T1>, flow2: Flow<T2>, transform: suspend (T1, T2) -> R): Flow<R> =
+ *       flow.combine(flow2, transform)
  */
 template <typename T1, typename T2, typename R>
-std::shared_ptr<Flow<R>> combine_transform(
-    std::shared_ptr<Flow<T1>> flow1,
-    std::shared_ptr<Flow<T2>> flow2,
-    std::function<void(FlowCollector<R>*, T1, T2)> transform_fn
-) {
-    // TODO: Implement combineTransform with proper concurrency
-    return nullptr;
+inline std::shared_ptr<Flow<R>> combine_free(
+    std::shared_ptr<Flow<T1>> first,
+    std::shared_ptr<Flow<T2>> second,
+    std::function<R(T1, T2)> transform) {
+    return combine<T1, T2, R>(std::move(first), std::move(second), std::move(transform));
 }
 
 /**
- * Returns a Flow whose values are generated with transform function by combining
- * the most recently emitted values by each flow.
- *
- * 3-way combine.
- *
- * TODO: Implement 3-way combine
+ * Upstream:
+ *   @JvmName("flowCombineTransform")
+ *   public fun <T1, T2, R> Flow<T1>.combineTransform(
+ *       flow: Flow<T2>,
+ *       transform: suspend FlowCollector<R>.(T1, T2) -> Unit
+ *   ): Flow<R> = combineTransformUnsafe(this, flow) { args: Array<*> ->
+ *       transform(args[0] as T1, args[1] as T2)
+ *   }
+ */
+template <typename T1, typename T2, typename R>
+inline std::shared_ptr<Flow<R>> combine_transform(
+    std::shared_ptr<Flow<T1>> first,
+    std::shared_ptr<Flow<T2>> second,
+    std::function<void*(FlowCollector<R>*, T1, T2, Continuation<void*>*)> transform) {
+    std::vector<std::shared_ptr<Flow<std::any>>> sources;
+    sources.push_back(internal::as_any_flow<T1>(first));
+    sources.push_back(internal::as_any_flow<T2>(second));
+    return internal::combine_transform_unsafe<R>(
+        std::move(sources),
+        [transform](FlowCollector<R>* sink,
+                    const std::vector<std::any>& values,
+                    Continuation<void*>* cont) {
+            return transform(sink,
+                             std::any_cast<T1>(values[0]),
+                             std::any_cast<T2>(values[1]),
+                             cont);
+        });
+}
+
+/**
+ * Upstream:
+ *   public fun <T1, T2, T3, R> combine(flow, flow2, flow3, transform: suspend (T1, T2, T3) -> R): Flow<R> =
+ *       combineUnsafe(flow, flow2, flow3) { args: Array<*> ->
+ *           transform(args[0] as T1, args[1] as T2, args[2] as T3)
+ *       }
  */
 template <typename T1, typename T2, typename T3, typename R>
-std::shared_ptr<Flow<R>> combine(
-    std::shared_ptr<Flow<T1>> f1,
-    std::shared_ptr<Flow<T2>> f2,
-    std::shared_ptr<Flow<T3>> f3,
-    std::function<R(T1, T2, T3)> transform_fn
-) {
-    // TODO: Implement 3-way combine (requires internal::combine_impl support for N-arity)
-    return nullptr;
+inline std::shared_ptr<Flow<R>> combine(
+    std::shared_ptr<Flow<T1>> flow1,
+    std::shared_ptr<Flow<T2>> flow2,
+    std::shared_ptr<Flow<T3>> flow3,
+    std::function<R(T1, T2, T3)> transform) {
+    std::vector<std::shared_ptr<Flow<std::any>>> sources;
+    sources.push_back(internal::as_any_flow<T1>(flow1));
+    sources.push_back(internal::as_any_flow<T2>(flow2));
+    sources.push_back(internal::as_any_flow<T3>(flow3));
+    return internal::combine_unsafe<R>(
+        std::move(sources),
+        [transform](const std::vector<std::any>& values) {
+            return transform(std::any_cast<T1>(values[0]),
+                             std::any_cast<T2>(values[1]),
+                             std::any_cast<T3>(values[2]));
+        });
 }
 
 /**
- * Returns a Flow whose values are generated with transform function by combining
- * the most recently emitted values by each flow.
- *
- * 4-way combine.
- *
- * TODO: Implement 4-way combine
+ * Upstream:
+ *   public fun <T1, T2, T3, T4, R> combine(flow, flow2, flow3, flow4, transform): Flow<R> =
+ *       combineUnsafe(flow, flow2, flow3, flow4) { args -> transform(args[0..3]) }
  */
 template <typename T1, typename T2, typename T3, typename T4, typename R>
-std::shared_ptr<Flow<R>> combine(
-    std::shared_ptr<Flow<T1>> f1,
-    std::shared_ptr<Flow<T2>> f2,
-    std::shared_ptr<Flow<T3>> f3,
-    std::shared_ptr<Flow<T4>> f4,
-    std::function<R(T1, T2, T3, T4)> transform_fn
-) {
-    // TODO: Implement 4-way combine
-    return nullptr;
+inline std::shared_ptr<Flow<R>> combine(
+    std::shared_ptr<Flow<T1>> flow1,
+    std::shared_ptr<Flow<T2>> flow2,
+    std::shared_ptr<Flow<T3>> flow3,
+    std::shared_ptr<Flow<T4>> flow4,
+    std::function<R(T1, T2, T3, T4)> transform) {
+    std::vector<std::shared_ptr<Flow<std::any>>> sources;
+    sources.push_back(internal::as_any_flow<T1>(flow1));
+    sources.push_back(internal::as_any_flow<T2>(flow2));
+    sources.push_back(internal::as_any_flow<T3>(flow3));
+    sources.push_back(internal::as_any_flow<T4>(flow4));
+    return internal::combine_unsafe<R>(
+        std::move(sources),
+        [transform](const std::vector<std::any>& values) {
+            return transform(std::any_cast<T1>(values[0]),
+                             std::any_cast<T2>(values[1]),
+                             std::any_cast<T3>(values[2]),
+                             std::any_cast<T4>(values[3]));
+        });
 }
 
 /**
- * Returns a Flow whose values are generated with transform function by combining
- * the most recently emitted values by each flow.
+ * Vector-based N-arity combine.
  *
- * Vector-based combine for N flows of the same type.
- *
- * TODO: Implement vector-based combine
+ * Upstream:
+ *   public inline fun <reified T, R> combine(
+ *       vararg flows: Flow<T>,
+ *       crossinline transform: suspend (Array<T>) -> R
+ *   ): Flow<R> = combineUnsafe(*flows) { args -> transform(args as Array<T>) }
  */
 template <typename T, typename R>
-std::shared_ptr<Flow<R>> combine_all(
+inline std::shared_ptr<Flow<R>> combine_all(
     std::vector<std::shared_ptr<Flow<T>>> flows,
-    std::function<R(std::vector<T>)> transform_fn
-) {
-    // TODO: Implement vector-based combine (combineInternal)
-    return nullptr;
+    std::function<R(std::vector<T>)> transform) {
+    std::vector<std::shared_ptr<Flow<std::any>>> sources;
+    sources.reserve(flows.size());
+    for (auto& f : flows) sources.push_back(internal::as_any_flow<T>(f));
+    return internal::combine_unsafe<R>(
+        std::move(sources),
+        [transform](const std::vector<std::any>& values) {
+            std::vector<T> typed;
+            typed.reserve(values.size());
+            for (const auto& v : values) typed.push_back(std::any_cast<T>(v));
+            return transform(std::move(typed));
+        });
 }
 
-} // namespace flow
-} // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines::flow
