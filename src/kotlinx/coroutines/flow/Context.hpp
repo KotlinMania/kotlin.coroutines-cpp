@@ -119,10 +119,45 @@ private:
  * Transliterated from:
  * public fun <T> Flow<T>.buffer(capacity: Int = BUFFERED, onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND): Flow<T>
  */
-template<typename T>
-Flow<T>* buffer(Flow<T>* flow, int capacity = -1, BufferOverflow onBufferOverflow = BufferOverflow::SUSPEND) {
-    // TODO(port): Implement Fusion or ChannelFlow wrapper
-    return flow;
+/**
+ * Upstream:
+ *   public fun <T> Flow<T>.buffer(capacity: Int = BUFFERED,
+ *                                  onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND): Flow<T> {
+ *       require(capacity >= 0 || capacity == BUFFERED || capacity == CONFLATED) { ... }
+ *       require(capacity != CONFLATED || onBufferOverflow == SUSPEND) { ... }
+ *       if (capacity == CONFLATED) { capacity = 0; onBufferOverflow = DROP_OLDEST }
+ *       return when (this) {
+ *           is FusibleFlow -> fuse(capacity = capacity, onBufferOverflow = onBufferOverflow)
+ *           else -> ChannelFlowOperatorImpl(this, capacity = capacity, onBufferOverflow = onBufferOverflow)
+ *       }
+ *   }
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> buffer(
+    std::shared_ptr<Flow<T>> flow,
+    int capacity = channels::CHANNEL_BUFFERED,
+    BufferOverflow on_buffer_overflow = BufferOverflow::SUSPEND) {
+    if (!(capacity >= 0 || capacity == channels::CHANNEL_BUFFERED ||
+          capacity == channels::CHANNEL_CONFLATED)) {
+        throw std::invalid_argument(
+            "Buffer size should be non-negative, BUFFERED, or CONFLATED, but was " +
+            std::to_string(capacity));
+    }
+    if (capacity == channels::CHANNEL_CONFLATED && on_buffer_overflow != BufferOverflow::SUSPEND) {
+        throw std::invalid_argument(
+            "CONFLATED capacity cannot be used with non-default onBufferOverflow");
+    }
+    // desugar CONFLATED capacity to (0, DROP_OLDEST)
+    if (capacity == channels::CHANNEL_CONFLATED) {
+        capacity = 0;
+        on_buffer_overflow = BufferOverflow::DROP_OLDEST;
+    }
+    // Dispatch on FusibleFlow vs default ChannelFlowOperatorImpl.
+    if (auto fusible = std::dynamic_pointer_cast<internal::FusibleFlow<T>>(flow)) {
+        return fusible->fuse(EmptyCoroutineContext::instance(), capacity, on_buffer_overflow);
+    }
+    return std::make_shared<internal::ChannelFlowOperatorImpl<T>>(
+        flow, EmptyCoroutineContext::instance(), capacity, on_buffer_overflow);
 }
 
 /**
@@ -168,10 +203,13 @@ Flow<T>* buffer(Flow<T>* flow, int capacity = -1, BufferOverflow onBufferOverflo
  * Transliterated from:
  * public fun <T> Flow<T>.conflate(): Flow<T> = buffer(CONFLATED)
  */
-template<typename T>
-Flow<T>* conflate(Flow<T>* flow) {
-    // TODO(port): Implement conflate
-    return buffer(flow, 0, BufferOverflow::DROP_OLDEST);
+/**
+ * Upstream:
+ *   public fun <T> Flow<T>.conflate(): Flow<T> = buffer(CONFLATED)
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> conflate(std::shared_ptr<Flow<T>> flow) {
+    return buffer<T>(std::move(flow), channels::CHANNEL_CONFLATED);
 }
 
 /**
@@ -228,10 +266,30 @@ Flow<T>* conflate(Flow<T>* flow) {
  * Transliterated from:
  * public fun <T> Flow<T>.flowOn(context: CoroutineContext): Flow<T>
  */
-template<typename T>
-Flow<T>* flow_on(Flow<T>* flow, std::shared_ptr<CoroutineContext> context) {
-    // TODO(port): Implement flow_on (ChannelFlow operator)
-    return flow;
+/**
+ * Upstream:
+ *   public fun <T> Flow<T>.flowOn(context: CoroutineContext): Flow<T> {
+ *       checkFlowContext(context)
+ *       return when {
+ *           context == EmptyCoroutineContext -> this
+ *           this is FusibleFlow -> fuse(context = context)
+ *           else -> ChannelFlowOperatorImpl(this, context = context)
+ *       }
+ *   }
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> flow_on(
+    std::shared_ptr<Flow<T>> flow,
+    std::shared_ptr<CoroutineContext> context) {
+    internal::check_flow_context(*context);
+    if (!context || context == EmptyCoroutineContext::instance()) {
+        return flow;
+    }
+    if (auto fusible = std::dynamic_pointer_cast<internal::FusibleFlow<T>>(flow)) {
+        return fusible->fuse(context, channels::CHANNEL_OPTIONAL, BufferOverflow::SUSPEND);
+    }
+    return std::make_shared<internal::ChannelFlowOperatorImpl<T>>(
+        flow, context, channels::CHANNEL_OPTIONAL, BufferOverflow::SUSPEND);
 }
 
 /**
