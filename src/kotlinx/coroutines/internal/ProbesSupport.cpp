@@ -1,23 +1,17 @@
-// port-lint: source internal/ProbesSupport.common.kt
 /**
- * @file ProbesSupport.cpp
- * @brief Native platform implementation of probes support
- *
  * Transliterated from: kotlinx-coroutines-core/native/src/internal/ProbesSupport.kt
  *
- * Platform-specific (native) implementation of coroutine probes for debugging.
- * These are typically no-ops on native platforms (probes are mainly for JVM debugging).
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
  *
- * TODO:
- * - Implement probeCoroutineCreated hook
- * - Implement probeCoroutineResumed hook
+ * Upstream is two no-op actual declarations — Kotlin/Native has no debug-probe
+ * machinery, the JVM hooks are stubbed away.
+ *
+ *   internal actual inline fun <T> probeCoroutineCreated(completion: Continuation<T>): Continuation<T> = completion
+ *   internal actual inline fun <T> probeCoroutineResumed(completion: Continuation<T>) { }
+ *
+ * Both end up inlined and the symbols don't normally need a definition; this file is the
+ * inventory companion only so the build system has the matching translation unit.
  */
 
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // On native platforms, probe functions are typically no-ops
-            // Probe support is mainly used for JVM debugging tooling
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx
+#include "kotlinx/coroutines/Continuation.hpp"
