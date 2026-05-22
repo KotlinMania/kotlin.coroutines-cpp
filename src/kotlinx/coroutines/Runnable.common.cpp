@@ -1,27 +1,30 @@
-// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
-// Original: kotlinx-coroutines-core/common/src/Runnable.common.kt
-//
-// TODO:
-// - expect fun struct needs platform-specific implementation
-// - On JVM this should map to java.lang.Runnable
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/Runnable.common.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines
+ *
+ * Upstream:
+ *   public expect fun interface Runnable { fun run() }
+ *
+ * On the JVM target this maps to `java.lang.Runnable` (a typealias); on K/N and the C++
+ * port it is a plain virtual interface. See native/Runnable.cpp for the matching actual
+ * declaration and the templated `make_runnable` factory.
+ */
 
-namespace kotlinx {
-    namespace coroutines {
-        /**
+namespace kotlinx::coroutines {
+
+/**
  * A runnable task for [CoroutineDispatcher.dispatch].
  *
- * It is equivalent to the type `() -> Unit`, but on the JVM, it is represented as a `java.lang.Runnable`,
- * making it easier to wrap the interfaces that expect `java.lang.Runnable` into a [CoroutineDispatcher].
+ * It is equivalent to the type `() -> Unit`. On the JVM it would map to `java.lang.Runnable`
+ * so it interoperates with existing JVM dispatcher integrations; in the C++ port the
+ * matching `make_runnable<F>` factory adapts any callable to this interface.
  */
-        // TODO: expect fun struct - needs platform-specific implementation (e.g., java.lang.Runnable on JVM)
-        class Runnable {
-        public:
-            /**
-     * @suppress
-     */
-            virtual void run() = 0;
+class Runnable {
+public:
+    virtual ~Runnable() = default;
+    virtual void run() = 0;
+};
 
-            virtual ~Runnable() = default;
-        };
-    } // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines

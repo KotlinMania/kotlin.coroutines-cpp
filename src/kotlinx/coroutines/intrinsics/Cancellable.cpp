@@ -1,20 +1,14 @@
 /**
- * @file Cancellable.cpp
- * @brief Cancellable coroutine start functions
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt
  *
- * Kotlin imports:
- * - kotlinx.coroutines.*
- * - kotlinx.coroutines.internal.*
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.intrinsics
+ *   imports: kotlinx.coroutines.*, kotlinx.coroutines.internal.*
  *
- * Use these functions to start coroutines in a cancellable way, so that they can be cancelled
- * while waiting to be dispatched.
- *
- * TODO:
- * - Implement startCoroutineCancellable for suspend functions
- * - Implement runSafely wrapper for exception handling
- * - Implement dispatcherFailure for handling dispatcher exceptions
+ * Cancellable coroutine start entries. The `startCoroutineCancellable` overloads and
+ * `runSafely` exception wrapper live in the matching header
+ * (intrinsics/Cancellable.hpp); this translation unit owns `dispatcher_failure`, the
+ * Kotlin `dispatcherFailure` actual.
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"

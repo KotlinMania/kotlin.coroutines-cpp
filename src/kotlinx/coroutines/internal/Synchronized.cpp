@@ -1,23 +1,14 @@
 /**
- * @file Synchronized.cpp
- * @brief Native platform implementation of synchronization primitives
- *
  * Transliterated from: kotlinx-coroutines-core/native/src/internal/Synchronized.kt
  *
- * Platform-specific (native) implementation of synchronization utilities.
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
  *
- * TODO:
- * - Implement SynchronizedObject using native mutex
- * - Implement synchronized block pattern
+ * The native-side `SynchronizedObject` and `synchronizedImpl` are owned by the common
+ * companion (internal/Synchronized.common.cpp), which backs them with
+ * std::recursive_mutex and std::lock_guard. This translation unit is the per-platform
+ * inventory companion for the file pair; the native actual delegates to the common
+ * implementation because the C++ port's mutex primitive is already cross-platform.
  */
 
 #include <mutex>
-
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // TODO: Implement native synchronization primitives
-            // Use std::mutex or platform-specific primitives
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx

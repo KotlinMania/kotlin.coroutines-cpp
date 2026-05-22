@@ -1,23 +1,41 @@
 /**
- * @file ThreadLocal.cpp
- * @brief Native platform implementation of thread-local storage
- *
  * Transliterated from: kotlinx-coroutines-core/native/src/internal/ThreadLocal.kt
  *
- * Platform-specific (native) implementation of CommonThreadLocal.
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
  *
- * TODO:
- * - Implement CommonThreadLocal using thread_local
- * - Implement Storage class for thread-local key-value pairs
- * - Implement common_thread_local factory function
+ * Native-side actual for `CommonThreadLocal<T>`. The C++ port uses C++11
+ * `thread_local` storage keyed by Symbol, so each thread sees its own slot per
+ * (Symbol, T) pair. The forward-declared abstract `CommonThreadLocal<T>` in the
+ * matching common file (internal/ThreadLocal.common.cpp) is realised here.
  */
 
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // TODO: Implement thread-local storage
-            // This requires thread_local keyword and proper storage management
-            // See original Kotlin implementation for the expected interface
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx
+#include "kotlinx/coroutines/internal/Symbol.hpp"
+#include "kotlinx/coroutines/internal/ThreadLocal.common.cpp"
+
+#include <unordered_map>
+
+namespace kotlinx::coroutines::internal {
+
+template <typename T>
+class NativeThreadLocal : public CommonThreadLocal<T> {
+public:
+    explicit NativeThreadLocal(Symbol* name) : name_(name) {}
+
+    T get() override { return storage()[name_]; }
+    void set(T value) override { storage()[name_] = std::move(value); }
+
+private:
+    Symbol* name_;
+    static std::unordered_map<Symbol*, T>& storage() {
+        thread_local std::unordered_map<Symbol*, T> slot;
+        return slot;
+    }
+};
+
+template <typename T>
+CommonThreadLocal<T>* common_thread_local(Symbol* name) {
+    return new NativeThreadLocal<T>(name);
+}
+
+} // namespace kotlinx::coroutines::internal

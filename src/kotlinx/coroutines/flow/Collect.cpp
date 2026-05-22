@@ -1,12 +1,13 @@
 /**
- * @file Collect.cpp
- * @brief Terminal flow operators: collect, launchIn, collectIndexed, collectLatest, emitAll
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt
  *
- * TODO:
- * - Implement proper launchIn with Job return
- * - Implement collectLatest with cancellation
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.flow
+ *
+ * Terminal flow operators: collect, launchIn, collectIndexed, collectLatest, emitAll.
+ * The templated entry points (collect / launch_in / etc.) live in the matching header
+ * (flow/Flow.hpp + flow/Collect.hpp); this translation unit owns the non-templated
+ * NopCollector and the check_index_overflow helper.
  */
 
 #include "kotlinx/coroutines/flow/Flow.hpp"
