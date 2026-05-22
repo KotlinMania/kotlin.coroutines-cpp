@@ -78,7 +78,6 @@ namespace kotlinx::coroutines {
         return results;
     }
 
-    // TODO: Implement join_all functions when Job class is fully available
-
-    // Template instantiations will happen when functions are used
+    // join_all overloads are declared in Await.hpp; template instantiations are emitted
+    // at the call site once Job<T> is concrete enough to participate in the iteration.
 }

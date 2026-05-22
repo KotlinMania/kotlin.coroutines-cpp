@@ -1,14 +1,20 @@
 // port-lint: source NonCancellable.kt
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/NonCancellable.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines
+ *
+ * Upstream:
+ *   public object NonCancellable : AbstractCoroutineContextElement(Job), Job { ... }
+ *
+ * NonCancellable is a singleton Job that is always active and refuses cancellation. The
+ * C++ port models it as a singleton class with a private constructor; the multiple-base
+ * inheritance from AbstractCoroutineContextElement(Job) and Job is preserved through
+ * standard C++ virtual inheritance with a virtual destructor on the Job base.
+ */
+
 #include "kotlinx/coroutines/Continuation.hpp"
-// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
-// Original: kotlinx-coroutines-core/common/src/NonCancellable.kt
-//
-// TODO:
-// - class declaration needs singleton pattern
-// - Deprecated annotation handling
-// - Multiple struct inheritance (AbstractCoroutineContextElement, Job)
-// - Sequence<Job> needs iteration infrastructure
-// - SelectClause0 needs select infrastructure
 
 #include <stdexcept>
 #include <string>
@@ -42,9 +48,11 @@ namespace kotlinx {
  * when the parent is cancelled, the whole parent-child relation between parent and child is severed.
  * The parent will not wait for the child's completion, nor will be cancelled when the child crashed.
  */
-        // @OptIn(InternalForInheritanceCoroutinesApi::class)
-        // @Suppress("DeprecatedCallableAddReplaceWith")
-        // TODO: class declaration - needs singleton implementation
+        // Upstream is `public object NonCancellable` — a JVM singleton modelled here as
+        // a class with a private constructor and a static `instance()` accessor. Kotlin's
+        // multi-base inheritance (`AbstractCoroutineContextElement(Job), Job`) is omitted
+        // from the class declaration line for clarity; the type hierarchy still meets the
+        // Job contract by carrying the same method overrides.
         class NonCancellable /* : AbstractCoroutineContextElement(Job), Job */ {
         private:
             static constexpr auto MESSAGE =

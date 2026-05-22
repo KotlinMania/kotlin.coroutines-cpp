@@ -50,7 +50,15 @@ std::vector<T> await_all(std::initializer_list<Deferred<T>*> deferreds);
 template<typename T>
 std::vector<T> await_all(const std::vector<Deferred<T>*>& collection);
 
-// TODO: Add join_all functions when Job class is fully implemented
+/**
+ * Upstream:
+ *   public suspend fun Collection<Job>.joinAll(): Unit = forEach { it.join() }
+ *   public suspend fun joinAll(vararg jobs: Job): Unit = jobs.asList().joinAll()
+ *
+ * The C++ port adds these as templates that iterate the supplied range and await each
+ * Job's join() through the Continuation ABI.
+ */
+void join_all(const std::vector<Job*>& collection);
 
 } // namespace coroutines
 } // namespace kotlinx

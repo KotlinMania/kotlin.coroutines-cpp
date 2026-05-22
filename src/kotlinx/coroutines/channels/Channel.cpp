@@ -9,8 +9,10 @@ namespace kotlinx {
 
             namespace detail {
                 int get_default_buffer_capacity_impl() {
-                    // TODO: Read implementation from system property/environment variable if needed
-                    // For now hardcoded 64
+                    // Upstream reads `kotlinx.coroutines.channels.defaultBuffer` from the
+                    // JVM system properties with a default of 64. Native targets ignore
+                    // the property and always return 64; the C++ port matches the K/N
+                    // behavior exactly.
                     return 64;
                 }
             }

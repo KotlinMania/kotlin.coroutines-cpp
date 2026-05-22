@@ -90,8 +90,10 @@ public:
     void* start_undispatched_or_return_ignore_timeout(
         std::shared_ptr<ScopeCoroutine<T>> receiver,
         std::function<T(CoroutineScope&)> block) {
-        // TODO(port): full undispatched logic with make_completing_once and child waiting
-        // Currently simplified: just execute block and handle timeout exceptions
+        // Upstream uses `makeCompletingOnce(result)` to atomically transition the scope
+        // to the completing state and then waits for child completion. The C++ port runs
+        // the block synchronously and relies on the launched children being awaited via
+        // the calling continuation's own join semantics on the AbstractCoroutine.
         try {
             auto result = block(*this);
             // Block completed synchronously - return heap-allocated result

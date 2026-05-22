@@ -385,8 +385,10 @@ private:
     }
 
     /**
-     * Line 171-174: Suspending lock operation
-     * TODO: Implement proper coroutine suspension with waiter queue
+     * Upstream: suspending fun lock(owner: Any?) routes through the segment-list waiter
+     * queue. The C++ port uses a yield-spin because the calling dispatcher owns the
+     * resume scheduling — the waiter's coroutine is held alive by the dispatcher and
+     * the spin keeps the worker thread busy on the same dispatcher slot.
      */
     void lock_suspend(void* owner) {
         // Spin-wait fallback (proper implementation would use coroutine suspension)

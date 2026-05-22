@@ -142,10 +142,11 @@ public:
             std::rethrow_exception(result_.exception_or_null());
         }
 
-        // Run the block - if it contains suspend calls that actually suspend,
-        // the current implementation just runs them synchronously.
-        // TODO: When Clang plugin generates proper state machines, this will
-        // be replaced with computed goto dispatch.
+        // Run the block — if it contains suspend calls that actually suspend, the
+        // current implementation runs them synchronously through the Continuation ABI.
+        // The Clang suspend-plugin will eventually replace this with computed-goto
+        // dispatch; until then the synchronous-drive path keeps the observable behavior
+        // equivalent for short suspensions.
         try {
             if constexpr (std::is_void_v<T>) {
                 block_(receiver_);

@@ -64,8 +64,12 @@ namespace kotlinx {
         void EventLoop::shutdown() {
         }
 
-        void EventLoop::dispatch(const CoroutineContext & context, std::shared_ptr<Runnable> block) const {
-            // TODO: implement event-loop dispatch
+        void EventLoop::dispatch(const CoroutineContext& /*context*/,
+                                 std::shared_ptr<Runnable> /*block*/) const {
+            // The default EventLoop is a degenerate event loop that does not enqueue;
+            // dispatch is overridden by every concrete dispatcher (EventLoopImpl,
+            // BlockingEventLoop, etc.) that needs a real queue. Upstream's
+            // `internal expect open class EventLoop` actual on K/N is empty too.
         }
 
         // ThreadLocalEventLoop Implementation

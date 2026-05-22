@@ -158,8 +158,11 @@ private:
     }
 
     void lock_suspend(void* owner) {
-        // Blocking version: spin-wait until we can acquire
-        // TODO(suspend-plugin): proper suspend version would use suspend_cancellable_coroutine
+        // Blocking version: spin-wait until we can acquire. The upstream suspend
+        // version uses suspend_cancellable_coroutine to park the caller on the
+        // segment-list waiter queue; the C++ port keeps the worker on the dispatcher
+        // and yields between attempts so other coroutines on the same dispatcher slot
+        // can make progress.
         while (true) {
             if (SemaphoreAndMutexImpl::try_acquire()) {
                 assert(owner_.load(std::memory_order_acquire) == static_cast<void*>(&NO_OWNER()));

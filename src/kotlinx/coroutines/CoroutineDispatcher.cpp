@@ -109,8 +109,10 @@ namespace kotlinx {
                     try {
                         wrapped->run();
                     } catch (const std::exception& e) {
-                        // Uncaught exception in dispatched task - report to stderr
-                        // TODO(port): Forward to CoroutineExceptionHandler when available
+                        // Uncaught exception in a dispatched task. Upstream forwards to
+                        // the context's CoroutineExceptionHandler; the C++ port falls
+                        // back to stderr until the handler-resolution path is wired in,
+                        // because LimitedDispatcher does not own a context of its own.
                         std::cerr << "Uncaught exception in LimitedDispatcher task: " << e.what() << std::endl;
                     } catch (...) {
                         std::cerr << "Uncaught unknown exception in LimitedDispatcher task" << std::endl;

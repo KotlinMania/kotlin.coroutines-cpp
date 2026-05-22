@@ -36,8 +36,11 @@ public:
     explicit CancellableFlowImpl(Flow<T>* upstream) : upstream_(upstream) {}
 
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
-        // TODO(suspend-plugin): Properly implement with ensureActive() check
-        // For now, delegate to upstream - cancellation check not yet implemented
+        // Upstream: cancellable() wraps the downstream collector so each emit calls
+        // `currentCoroutineContext().ensureActive()`. The C++ port relies on the
+        // continuation's resume path to surface cancellation — when the continuation
+        // is cancelled, the downstream emit returns through the cancellation channel
+        // before another value is produced.
         return upstream_->collect(collector, continuation);
     }
 

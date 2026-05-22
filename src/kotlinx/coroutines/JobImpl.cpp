@@ -65,9 +65,11 @@ namespace kotlinx {
             // Walk up the parent chain to find if any parent handles exceptions
             std::shared_ptr<Job> current = parent;
             while (current) {
-                // If the current job handles exceptions, return true
-                // NOTE: We need to check if it's a JobSupport to access get_handles_exception
-                // TODO(port): This cast chain mirrors Kotlin's (parentHandle as? ChildHandleNode)?.job
+                // Upstream: `(parentHandle as? ChildHandleNode)?.job?.handlesException ?: false`
+                // — the Kotlin smartcast pattern walks the ChildHandleNode chain to the
+                // JobSupport that owns the handles-exception predicate. The C++ port uses
+                // a dynamic_cast on the same shape because the JobSupport identity is the
+                // bearer of `handles_exception` here.
                 if (auto* job_support = dynamic_cast<JobSupport*>(current.get())) {
                     if (job_support->get_handles_exception()) {
                         return true;

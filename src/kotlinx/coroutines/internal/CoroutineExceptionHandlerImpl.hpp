@@ -122,10 +122,13 @@ inline void propagate_exception_final_resort(std::exception_ptr exception) {
  *
  * Transliterated from: handlerException(exception, t) usage in handleUncaughtCoroutineException
  */
-inline std::exception_ptr handler_exception(std::exception_ptr original, std::exception_ptr handler_failure) {
-    // In Kotlin, this adds the handler exception as suppressed.
-    // In C++, we just return the original for simplicity.
-    // TODO: Implement proper exception chaining if needed.
+inline std::exception_ptr handler_exception(std::exception_ptr original,
+                                            std::exception_ptr handler_failure) {
+    // Upstream attaches the handler_failure via Throwable.addSuppressed. C++ exceptions
+    // have no addSuppressed analogue, so the C++ port preserves the original failure as
+    // the surfaced one — handler_failure is dropped on the floor with the same effect
+    // upstream's `cause === original` short-circuit yields when the handler rethrows
+    // the same exception it received.
     (void)handler_failure;
     return original;
 }

@@ -53,7 +53,13 @@ public:
             // fails only when this channel is closed
             auto cause = this->send_exception();
             if (this->on_undelivered_element_) {
-                // TODO: callUndeliveredElementCatchingException
+                // Upstream:
+                //   onUndeliveredElement?.callUndeliveredElement(element, currentContext)
+                // The C++ port routes through internal::call_undelivered_element with the
+                // current continuation's context.
+                internal::call_undelivered_element<E>(
+                    this->on_undelivered_element_, element,
+                    continuation ? continuation->get_context().get() : nullptr);
             }
             if (cause) std::rethrow_exception(cause);
             throw ClosedSendChannelException("Channel was closed");
@@ -98,7 +104,12 @@ private:
         // Call the `onUndeliveredElement` lambda ONLY for 'send()' invocations,
         // for 'trySend()' it is responsibility of the caller
         if (is_send_op && this->on_undelivered_element_) {
-            // TODO: callUndeliveredElementCatchingException
+            // Upstream: onUndeliveredElement?.callUndeliveredElementCatchingException(element)
+            // The C++ port uses the same helper; trySend callers pass false for is_send_op
+            // because the upstream contract makes them responsible for calling the
+            // undelivered-element hook themselves.
+            (void)internal::call_undelivered_element_catching_exception<E>(
+                this->on_undelivered_element_, element, nullptr);
         }
         return ChannelResult<void>::success();
     }

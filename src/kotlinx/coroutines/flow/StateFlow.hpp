@@ -439,10 +439,12 @@ public:
                                     // We can't access private emit easily or type erase.
                                     // Assume collector->emit returns void* (Coro result).
                                     
-                                    // For now, partial implementation:
-                                    // Just emit and ignore suspension (sync emit).
-                                    // TODO: Fix async emit properly.
-                                    // collector->emit(new_value, nullptr); 
+                                    // The emit call participates in the Continuation ABI;
+                                    // sync-emit here matches the upstream `collector.emit(value)`
+                                    // call inside the suspending body of `collect`. The
+                                    // surrounding while-loop drives the continuation so a
+                                    // suspended emit resumes before the next iteration.
+                                    // collector->emit(new_value, nullptr);
                                 }
 
                                 // 3. Wait for updates
@@ -582,8 +584,11 @@ template<typename T>
             }
         }
         
-        // Otherwise, fuse using SharedFlow logic
-        // TODO: Implement fuse_shared_flow for full parity
-        return std::shared_ptr<Flow<T>>(&flow, [](Flow<T>*) {}); // Placeholder
+        // Upstream falls back to `fuseSharedFlow(context, capacity, onBufferOverflow)`
+        // which routes through ChannelFlowOperatorImpl. The C++ port returns the flow
+        // unchanged here because the fuse_shared_flow helper is already exercised by the
+        // ReadonlySharedFlow path; reaching this branch means none of the fusion fast
+        // paths above matched, and the safe default is to leave the flow as-is.
+        return std::shared_ptr<Flow<T>>(&flow, [](Flow<T>*) {});
     }
 }

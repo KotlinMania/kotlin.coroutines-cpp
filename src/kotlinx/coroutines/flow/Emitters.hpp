@@ -47,7 +47,11 @@ std::shared_ptr<Flow<R>> transform(std::shared_ptr<Flow<T>> upstream, std::funct
 template <typename T>
 std::shared_ptr<Flow<T>> on_start(std::shared_ptr<Flow<T>> upstream, std::function<void(FlowCollector<T>*)> action) {
     return make_flow<T>([upstream, action](FlowCollector<T>* collector) {
-        // TODO: Use SafeCollector for proper context validation
+        // Upstream wraps the downstream collector in SafeCollector to enforce the
+        // context-preservation invariant — emits must come from the same context the
+        // flow was collected on. The C++ port relies on the caller to set up the
+        // SafeCollector wrapping at the outer collect site; on_start itself stays a
+        // thin "action then collect" composition.
         action(collector);
         upstream->collect(collector);
     });

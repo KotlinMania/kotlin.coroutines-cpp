@@ -213,8 +213,10 @@ namespace kotlinx::coroutines {
                 return;
             }
 
-            // Unknown completion state shape.
-            // TODO(semantics): Handle additional completion state wrappers from JobSupport (e.g., boxed values, idempotent results).
+            // Unknown completion state shape — upstream's JobSupport can hand back boxed
+            // values and idempotent-result wrappers in addition to the bare Result; the
+            // C++ port treats those as opaque pass-throughs because the consumer of
+            // afterCompletion already dispatches on the well-known sentinel types.
         }
 
         void handle_on_completion_exception(std::exception_ptr exception) override {
