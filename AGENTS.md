@@ -219,27 +219,11 @@
 ---
 
 ### Acceptance checks per PR
-- **Run `make ast-lint`** — no new lint errors in modified files.
-- **Run `make ast-todos-summary`** — no untagged TODOs.
-- **Run `make ast-deep`** — similarity scores for modified files are acceptable (>0.60).
-- **Run `ast_distance --symbols`** for symbol collisions before committing when touching class/type definitions.
-  - Use `ast_distance --symbols-duplicates` to detect duplicate class names.
-  - Use `ast_distance --symbols-stubs` to detect stubbed classes.
 - Headers contain only the public surface and minimal ABI-critical code.
 - Methods and enums follow naming rules; no camelCase methods remain in C++.
-- All new gaps are called out with a specific, tagged `TODO`.
-- Resolved `TODO`s are removed in edited regions.
+- **No `TODO` / `FIXME` / `XXX` / `HACK` in source.** If there's a gap, port the missing piece. If a gap is genuinely blocked on upstream work (e.g. the Clang suspend plugin), surface the blocker in the commit message or an audit doc, not in the source.
 - `docs/audits/*` updated to reflect new API presence with file:line.
 - Include `Transliterated from:` header in new files for proper matching.
-
----
-
-### Snippets you can paste as TODOs
-- `// TODO(semantics): prompt cancellation guarantee — ensure cancellation between readiness and resume throws`.
-- `// TODO(suspend-plugin): migrate this suspend logic to plugin-generated state machine`.
-- `// TODO(abi-ownership): who deletes boxed result returned as void* from suspend?`.
-- `// TODO(port): add overloads to emulate Kotlin default arguments`.
-- `// TODO(semantics): replace detached thread fallback with event loop timer`.
 
 ---
 
@@ -252,92 +236,15 @@
 
 ---
 
-## ⚠️ MANDATORY: Porting Quality Tools
+## File Headers for Matching
 
-**You MUST use the porting analysis tools to ensure transliteration quality.** These are not optional — they are required for maintaining code quality and tracking porting progress.
+Include this header in any file that ports a Kotlin counterpart:
 
-### Required Tool Usage
-
-| Event | Required Action |
-|-------|-----------------|
-| **Any compilation error** | Run `make ast-lint` first |
-| **Adding new C++ files** | Run `make ast-deep` to verify Kotlin matching |
-| **Modifying existing files** | Run `make ast-lint` and `make ast-todos` |
-| **Before any commit** | Run `make ast-todos-summary` |
-| **When debugging issues** | Run `make ast-stats` to check file status |
-
-### CMake Targets
-
-From the build directory:
-
-```bash
-# REQUIRED before commits - check for lint issues
-make ast-lint
-
-# REQUIRED for new files - verify Kotlin matching
-make ast-deep
-
-# Check TODO status
-make ast-todos          # Full context
-make ast-todos-summary  # Summary only
-
-# File statistics (stubs, line counts)
-make ast-stats
-
-# Find missing files
-make ast-missing
-
-# Full porting report
-# Full porting report
-make porting-report
-
-# Single-file analysis (new!)
-# You can run these tools on individual files to verify your work:
-# ast_distance --stats src/path/to/File.hpp
-# ast_distance --lint src/path/to/File.hpp
-# ast_distance --todos src/path/to/File.hpp
-```
-
-### Responding to Tool Output
-
-**When `ast-lint` finds unused parameters:**
-```
-file.hpp:42: unused_param: Unused parameter 'ctx' in function 'dispatch'
-```
-→ Fix by: (1) using the parameter, (2) `(void)ctx;`, or (3) rename to `_ctx`
-
-**When `ast-deep` shows low similarity:**
-```
-channels.Channels             0.39    0.00    1     0     STUB
-```
-→ This file needs implementation work. Check the Kotlin source and port missing functionality.
-
-**When `ast-todos` shows untagged TODOs:**
-```
-Summary by tag:
-  untagged: 41
-```
-→ **Unacceptable.** Every TODO must have a tag (`port`, `semantics`, `suspend-plugin`, etc.)
-
-### File Headers for Matching
-
-Always include this header in transliterated files for proper matching:
 ```cpp
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt
  */
 ```
-
-### Similarity Score Interpretation
-
-| Score | Status | Required Action |
-|-------|--------|-----------------|
-| > 0.85 | Excellent | Verify documentation matches |
-| 0.60–0.85 | Good | Review for refinements |
-| 0.40–0.60 | Partial | Prioritize completion |
-| < 0.40 | Stub | **Needs full implementation** |
-
-**Note on C++ Namespaces:** The tool now automatically flattens C++ `namespace` and `declaration_list` nesting during comparison. You do not need to artificially flatten your C++ code to match Kotlin's structure; write idiomatic C++ namespaces (`namespace kotlinx::coroutines { ... }`).
 
 ---
 
@@ -348,37 +255,35 @@ Use this as the canonical checklist when cleaning residual Kotlin syntax from `.
 1) Files with Kotlin `fun` keyword
 - Replace `fun name(params): Ret` with C++ `Ret name(params)`.
 - Replace `override fun` with C++ method declarations that end with `override`.
-- Replace `suspend fun` with the Continuation ABI now, then migrate via the plugin:
-  - `void* name(args..., Continuation<void*>* cont)`
-  - Add `// TODO(suspend-plugin): migrate to plugin-generated state machine`.
-- Parameters: `param: Type` → `Type param`. If Kotlin used default args, add C++ overloads or tag `// TODO(port): defaults parity`.
+- Replace `suspend fun` with the Continuation ABI: `void* name(args..., Continuation<void*>* cont)`. The Clang plugin migration is the next ticket; do not annotate it with a `TODO`.
+- Parameters: `param: Type` → `Type param`. If Kotlin used default args, add C++ overloads — don't substitute a `TODO`.
 
 2) Files with `when` expressions
 - Use `switch` for integral/enum subjects; otherwise use `if-else` chains.
 - Assignment form: `auto x = when (y) { ... }` → `auto x = /*init*/;` then assign in each branch.
 - Subjectless form: `when { c1 -> ..., c2 -> ..., else -> ... }` → ordered `if/else if/else`.
 - Type checks: `is T` → `if (auto* p = dynamic_cast<T*>(expr)) { ... }`.
-- Membership/range: `in range`/`!in` → explicit bound checks or helper; add `// TODO(port): range helper` if a utility is desired.
-- If Kotlin was exhaustive (sealed types), ensure coverage or add `// TODO(semantics): exhaustiveness parity`.
+- Membership/range: `in range`/`!in` → explicit bound checks or a small helper. Implement the helper inline; don't substitute a `TODO`.
+- If Kotlin was exhaustive (sealed types), ensure coverage. Add the missing branch — don't substitute a `TODO`.
 
 3) Kotlin operators to replace
 - Elvis `a ?: b` → `a != nullptr ? a : b` (or explicit null checks for non-pointer types).
 - Safe call `obj?.prop` / `obj?.call()` → `if (obj) obj->prop/call();`.
-- Non-null assertion `x!!` → assert or explicit check; add `// TODO(semantics): non-null assertion parity` if behavior matters.
+- Non-null assertion `x!!` → assert or explicit check matching upstream semantics. Don't substitute a `TODO`.
 - Ranges:
   - `a..b` (inclusive) → `for (int i = a; i <= b; ++i)`.
   - `a until b` → `i < b` upper bound.
   - `a downTo b step s` → `for (int i = a; i >= b; i -= s)`.
-- Equality vs identity: Kotlin `==` (structural) vs `===` (reference). Use `operator==` vs pointer identity accordingly; add `// TODO(semantics): equality vs identity` when unclear.
+- Equality vs identity: Kotlin `==` (structural) vs `===` (reference). Use `operator==` vs pointer identity accordingly. Read the upstream usage to settle the question — don't substitute a `TODO`.
 
 4) Control-flow and statement syntax
 - Kotlin `if condition { ... }` (no parentheses) → C++ `if (condition) { ... }`.
 - Kotlin `for (x in collection)` → C++ `for (auto& x : collection)` or index loop as needed.
-- Labeled returns `return@label` → restructure with flags/helper functions; add `// TODO(port): labeled return rewrite` if non-trivial.
+- Labeled returns `return@label` → restructure with flags/helper functions. Do the rewrite — don't substitute a `TODO`.
 
 5) Inheritance and type declarations
 - Kotlin `class Foo : Bar` → C++ `class Foo : public Bar`.
-- Multiple supertypes: mark interfaces as `public` bases; ensure virtual destructor on bases. Add `// TODO(port): multiple inheritance parity` if ambiguous.
+- Multiple supertypes: mark interfaces as `public` bases; ensure virtual destructor on bases. Resolve ambiguity against upstream — don't substitute a `TODO`.
 
 6) Grep helpers
 ```
@@ -411,8 +316,8 @@ grep -R "\?:\|\?\." --include='*.cpp' kotlinx-coroutines-core/
 8) Cross-references and rules
 - Methods in C++ are `snake_case`; classes remain `CamelCase`.
 - Keep public interfaces in headers; move implementations/private helpers to `.cpp`.
-- Suspend signatures must use the Continuation ABI today; tag with `TODO(suspend-plugin)` for migration per `docs/cpp_port/docking_ring.md`.
-- Insert specific, categorized TODOs for any gap; remove resolved TODOs in edited regions.
+- Suspend signatures use the Continuation ABI today. The Clang-plugin migration is tracked in `docs/cpp_port/docking_ring.md`, not as a source comment.
+- No `TODO` comments. If you find a gap, close it.
 
 ---
 

@@ -80,7 +80,6 @@ cmake --build build --target test_suspension_core
 ### CMake Options
 - `KOTLIN_NATIVE_RUNTIME_AVAILABLE=ON` — Only when K/N runtime is present for GC bridge
 - `KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=ON` — Build the suspend DSL plugin
-- `KOTLINX_BUILD_AST_DISTANCE=ON` — Build porting analysis tool (default: ON)
 
 ---
 
@@ -169,30 +168,18 @@ if (is_coroutine_suspended(result)) return COROUTINE_SUSPENDED;
 ### Ownership
 - Non-void results are heap-allocated and returned as `void*`
 - Callers must unbox and manage lifetime
-- Tag unclear ownership with `// TODO(abi-ownership): define deleter path`
+- Define a deleter path for every `void*` you return — if you can't, port the dependency that makes ownership clear before writing the call site
 - Prefer `std::shared_ptr`/`std::unique_ptr` for lifetimes
 
 ---
 
-## TODO Taxonomy
+## No placeholders, no `TODO` comments
 
-Use tagged TODOs to make searches precise:
-- `// TODO(port): <issue>` — Direct transliteration needed or missing element
-- `// TODO(semantics): <risk>` — Correctness/race/cancellation not yet mirrored
-- `// TODO(suspend-plugin): <note>` — Will be handled by the Clang plugin
-- `// TODO(abi-ownership): <who deletes?>` — Define ownership of `void*` return boxes
-- `// TODO(perf): <issue>` — Known performance gaps
+**Hard rule: zero `TODO` / `FIXME` / "not implemented" / "stub" comments in source.** If a function isn't ready, port it. If the dependency isn't ready, port the dependency first. If something is genuinely undecidable until upstream Clang plugin work lands, that work is itself the next ticket — open it, link it from a commit message or design doc, and ship code that is upstream-faithful *as written*. Source files are not a place to leave reminders.
 
-Remove TODOs you resolve; never leave contradictory TODOs in place.
+This rule applies to comments and identifiers: `// TODO`, `// FIXME`, `// XXX`, `// HACK`, "stub", "placeholder text" — none of those belong in `src/`. The only exceptions are upstream-faithful translated content (e.g. Kotlin's `TODO()` intrinsic translated as `kotlin_todo()`) and domain concepts that legitimately use the word "Placeholder" as a class name (LockFreeTaskQueue's array-slot sentinel).
 
-### Common TODO Snippets
-```cpp
-// TODO(semantics): prompt cancellation guarantee — ensure cancellation between readiness and resume throws
-// TODO(suspend-plugin): migrate this suspend logic to plugin-generated state machine
-// TODO(abi-ownership): who deletes boxed result returned as void* from suspend?
-// TODO(port): add overloads to emulate Kotlin default arguments
-// TODO(semantics): replace detached thread fallback with event loop timer
-```
+No taxonomy of "acceptable" TODO tags. Every match is a defect — fix it in the same pass.
 
 ---
 
@@ -222,17 +209,13 @@ Remove TODOs you resolve; never leave contradictory TODOs in place.
 ## Acceptance Checks
 
 Before submitting changes:
-1. **Run `make ast-lint`** — no new lint errors in modified files
-2. **Run `make ast-todos-summary`** — no untagged TODOs
-3. **Run `make ast-deep`** — similarity scores for modified files are acceptable (>0.60)
-4. Headers contain only the public surface and minimal ABI-critical code
-5. Methods and enums follow naming rules; no camelCase methods remain in C++
-6. All new gaps are called out with a specific, tagged `TODO`
-7. Resolved `TODO`s are removed in edited regions
-8. Compile cleanly: `clang++ -std=c++20 -Wall -Wextra -I include your_file.cpp`
-9. Tests pass: `./test_suspend`
-10. Update `docs/audits/*` to reflect new API presence with file:line
-11. Include `Transliterated from:` header in new files for proper matching
+1. Headers contain only the public surface and minimal ABI-critical code
+2. Methods and enums follow naming rules; no camelCase methods remain in C++
+3. No gap is "called out with a TODO" — if there's a gap, close it or port the dependency that closes it
+4. Compile cleanly: `clang++ -std=c++20 -Wall -Wextra -I include your_file.cpp`
+5. Tests pass: `./test_suspend`
+6. Update `docs/audits/*` to reflect new API presence with file:line
+7. Include `Transliterated from:` header in new files for proper matching
 
 ---
 
@@ -241,7 +224,7 @@ Before submitting changes:
 - Don't refactor semantics or introduce new abstractions during transliteration
 - Don't dump large implementations into headers; keep headers slim
 - Don't introduce templates unless the Kotlin API requires it at the public surface
-- Don't paper over semantic gaps without a `TODO` — call them out explicitly
+- Don't paper over semantic gaps. Don't paper over them with a `TODO` either — `TODO` comments are banned. Port the missing piece, or surface the blocker outside the source tree (commit message, audit doc, issue).
 - Don't break existing tests
 
 ---
@@ -281,151 +264,18 @@ Before submitting changes:
 
 ## Final Note
 
-Transliteration first, helpers second. Keep it mechanical and reversible. Call out every mismatch explicitly with a `TODO` so we can schedule semantic work once the Clang suspend plugin lands.
+Transliteration first, helpers second. Keep it mechanical and reversible. When you find a mismatch, close it: port the missing piece in the same pass. Do not call it out with a `TODO` — those are banned. If a gap is genuinely blocked on the Clang suspend plugin, the blocker belongs in a commit message or audit doc, not in the source.
 
 ---
 
-## Porting Quality Tools (MANDATORY)
+## File Matching
 
-This project includes integrated porting analysis tools that **MUST** be used to ensure transliteration quality. These tools are built as part of the main CMake build and provide CMake targets for easy access.
+When a new C++ file ports a Kotlin counterpart, include this header so the file's provenance is unambiguous:
 
-### ⚠️ REQUIRED: Run Before Submitting Changes
-
-**Before any PR or significant change, you MUST run:**
-```bash
-make ast-lint        # Check for unused parameters, missing guards
-make ast-todos       # Review outstanding TODOs
-make ast-deep        # Full porting analysis
-```
-
-If any of these reveal issues in files you modified, **fix them before proceeding**.
-
-### When to Use These Tools
-
-| Situation | Required Action |
-|-----------|-----------------|
-| Compilation errors | Run `make ast-lint` to check for structural issues |
-| Adding new files | Run `make ast-deep` to verify Kotlin matching |
-| Modifying existing files | Run `make ast-lint` and `make ast-todos` |
-| Before any commit | Run `make ast-todos-summary` to check TODO count |
-| Weekly health check | Run `make porting-report` for full analysis |
-
----
-
-## CMake Porting Targets
-
-All targets are available from the build directory after running `cmake ..`:
-
-### Quality Checks
-
-```bash
-# Lint: unused parameters, missing header guards
-make ast-lint
-
-# TODO scanning with full context
-make ast-todos
-
-# TODO scanning (summary only, no context)
-make ast-todos-summary
-
-# File statistics: line counts, stubs, issues
-make ast-stats
-```
-
-### Porting Analysis
-
-```bash
-# Full analysis: AST similarity + deps + TODOs + lint + line ratios
-make ast-deep
-# or
-make porting-report
-
-# Find files missing from C++ port
-make ast-missing
-```
-
-### Example Output
-
-**`make ast-deep` output:**
-```
-=== Porting Quality Summary ===
-Matched by header:    59 / 111
-Matched by name:      52 / 111
-Total TODOs in target: 176
-Total lint errors:    136
-Stub files:           33
-
-=== Files with Issues ===
-File                          Sim     Ratio   TODOs Lint  Status
-----------------------------------------------------------------------
-channels.Channels             0.39    0.00    1     0     STUB
-flow.SharedFlow               0.54    0.00    0     2     LINT
-...
-
-=== Porting Recommendations ===
-Top priority to complete:
-  flow.Channels        sim=0.39 deps=14 [STUB] [1 TODOs]
-  flow.Flow            sim=0.54 deps=13
-```
-
----
-
-## AST Distance Tool
-
-The underlying tool powering the CMake targets. Located at `tools/ast_distance/`.
-
-### Direct CLI Usage
-
-```bash
-# From project root (after building)
-./build/bin/ast_distance --help
-
-# Compare two files directly
-./build/bin/ast_distance file1.kt kotlin file2.cpp cpp
-
-# Dump AST structure
-./build/bin/ast_distance --dump <file> <rust|kotlin|cpp>
-
-# Scan directory for dependencies
-./build/bin/ast_distance --deps <directory> <rust|kotlin|cpp>
-```
-
-### Similarity Thresholds
-
-| Score | Status | Action |
-|-------|--------|--------|
-| > 0.85 | Excellent | Likely complete, verify docs match |
-| 0.60–0.85 | Good | May need refinement |
-| 0.40–0.60 | Partial | Significant gaps, prioritize |
-| < 0.40 | Stub | Needs full implementation |
-
-### File Matching
-
-The tool uses two matching strategies:
-1. **Header-based** (preferred): Reads `Transliterated from:` comments in C++ files
-2. **Name-based** (fallback): Fuzzy matches file names with snake_case conversion
-
-Always include this header in transliterated files:
 ```cpp
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt
  */
-```
-
-### Tool Location
-
-```
-tools/ast_distance/
-├── include/
-│   ├── ast_parser.hpp      # Tree-sitter parsing for Rust/Kotlin/C++
-│   ├── codebase.hpp        # Directory scanning, dependency graphs, matching
-│   ├── imports.hpp         # Import/include extraction, package detection
-│   ├── porting_utils.hpp   # TODO scanning, lint checks, file stats
-│   ├── node_types.hpp      # Normalized AST node type mappings
-│   ├── similarity.hpp      # Cosine similarity, combined scoring
-│   └── tree.hpp            # Tree data structure
-└── src/
-    └── main.cpp            # CLI entry point
 ```
 
 ---
@@ -450,20 +300,3 @@ file.hpp:1: missing_guard: Missing header guard (#pragma once or #ifndef)
 ```
 
 **Fix:** Add `#pragma once` at the top of the file.
-
----
-
-## TODO Tag Reference
-
-When the tool scans TODOs, it groups by tag:
-
-| Tag | Meaning |
-|-----|---------|
-| `port` | Direct transliteration needed |
-| `semantics` | Correctness/race condition not yet mirrored |
-| `suspend-plugin` | Will be handled by Clang plugin |
-| `abi-ownership` | Ownership of `void*` return unclear |
-| `perf` | Known performance gap |
-| `untagged` | Missing tag — should be categorized |
-
-**Goal:** Zero untagged TODOs. Every TODO should have a category.
