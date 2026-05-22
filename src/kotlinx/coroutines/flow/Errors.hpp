@@ -54,10 +54,31 @@ namespace flow {
  * Transliterated from:
  * public fun <T> Flow<T>.catch(action: suspend FlowCollector<T>.(cause: Throwable) -> Unit): Flow<T>
  */
-template<typename T>
-Flow<T>* catch_(Flow<T>* flow, std::function<void(FlowCollector<T>*, std::exception_ptr)> action) {
-    // TODO(port): Implement catch operator using catch_impl
-    return flow;
+/**
+ * Upstream:
+ *   public fun <T> Flow<T>.catch(action: suspend FlowCollector<T>.(cause: Throwable) -> Unit): Flow<T> =
+ *       flow {
+ *           val exception = catchImpl(this)
+ *           if (exception != null) action(exception)
+ *       }
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> catch_(
+    std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(FlowCollector<T>*, std::exception_ptr, Continuation<void*>*)> action) {
+    return flow_builder<T>(
+        [upstream, action](FlowCollector<T>* collector,
+                           std::shared_ptr<Continuation<void*>> completion) -> void* {
+            void* exception_handle = internal::catch_impl<T>(upstream, collector, completion.get());
+            if (intrinsics::is_coroutine_suspended(exception_handle)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
+            auto* exception = static_cast<std::exception_ptr*>(exception_handle);
+            if (exception && *exception) {
+                return action(collector, *exception, completion.get());
+            }
+            return nullptr;
+        });
 }
 
 /**
@@ -100,10 +121,36 @@ Flow<T>* catch_(Flow<T>* flow, std::function<void(FlowCollector<T>*, std::except
  * Transliterated from:
  * public fun <T> Flow<T>.retry(retries: Long = Long.MAX_VALUE, predicate: suspend (cause: Throwable) -> Boolean): Flow<T>
  */
-template<typename T>
-Flow<T>* retry(Flow<T>* flow, long retries = -1, std::function<bool(std::exception_ptr)> predicate = [](std::exception_ptr){ return true; }) {
-    // TODO(port): Implement retry logic using retry_when
-    return flow;
+/**
+ * Upstream:
+ *   public fun <T> Flow<T>.retry(
+ *       retries: Long = Long.MAX_VALUE,
+ *       predicate: suspend (cause: Throwable) -> Boolean = { true }
+ *   ): Flow<T> {
+ *       require(retries > 0) { "Expected positive amount of retries, but had $retries" }
+ *       return retryWhen { cause, attempt -> attempt < retries && predicate(cause) }
+ *   }
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> retry(
+    std::shared_ptr<Flow<T>> upstream,
+    std::int64_t retries = std::numeric_limits<std::int64_t>::max(),
+    std::function<void*(std::exception_ptr, Continuation<void*>*)> predicate =
+        [](std::exception_ptr, Continuation<void*>*) -> void* {
+            return new bool(true);
+        }) {
+    if (retries <= 0) {
+        throw std::invalid_argument(
+            "Expected positive amount of retries, but had " + std::to_string(retries));
+    }
+    return retry_when<T>(
+        std::move(upstream),
+        [retries, predicate = std::move(predicate)](
+            FlowCollector<T>* /*sink*/, std::exception_ptr cause, std::int64_t attempt,
+            Continuation<void*>* cont) -> void* {
+            if (attempt >= retries) return new bool(false);
+            return predicate(cause, cont);
+        });
 }
 
 /**
@@ -152,10 +199,62 @@ Flow<T>* retry(Flow<T>* flow, long retries = -1, std::function<bool(std::excepti
  * Transliterated from:
  * public fun <T> Flow<T>.retryWhen(predicate: suspend FlowCollector<T>.(cause: Throwable, attempt: Long) -> Boolean): Flow<T>
  */
-template<typename T>
-Flow<T>* retry_when(Flow<T>* flow, std::function<bool(FlowCollector<T>*, std::exception_ptr, long)> predicate) {
-    // TODO(port): Implement retry_when
-    return flow;
+/**
+ * Upstream:
+ *   public fun <T> Flow<T>.retryWhen(
+ *       predicate: suspend FlowCollector<T>.(cause: Throwable, attempt: Long) -> Boolean
+ *   ): Flow<T> = flow {
+ *       var attempt = 0L
+ *       var shallRetry: Boolean
+ *       do {
+ *           shallRetry = false
+ *           val cause = catchImpl(this)
+ *           if (cause != null) {
+ *               if (predicate(cause, attempt)) {
+ *                   shallRetry = true
+ *                   attempt++
+ *               } else {
+ *                   throw cause
+ *               }
+ *           }
+ *       } while (shallRetry)
+ *   }
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> retry_when(
+    std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(FlowCollector<T>*, std::exception_ptr, std::int64_t,
+                        Continuation<void*>*)>
+        predicate) {
+    return flow_builder<T>([upstream, predicate](
+                               FlowCollector<T>* collector,
+                               std::shared_ptr<Continuation<void*>> completion) -> void* {
+        std::int64_t attempt = 0;
+        bool shall_retry = false;
+        do {
+            shall_retry = false;
+            void* exception_handle =
+                internal::catch_impl<T>(upstream, collector, completion.get());
+            if (intrinsics::is_coroutine_suspended(exception_handle)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
+            auto* exception = static_cast<std::exception_ptr*>(exception_handle);
+            if (exception && *exception) {
+                void* outcome = predicate(collector, *exception, attempt, completion.get());
+                if (intrinsics::is_coroutine_suspended(outcome)) {
+                    return intrinsics::get_COROUTINE_SUSPENDED();
+                }
+                bool retry_now = outcome && *static_cast<bool*>(outcome);
+                if (retry_now) {
+                    shall_retry = true;
+                    ++attempt;
+                } else {
+                    std::rethrow_exception(*exception);
+                }
+            }
+        } while (shall_retry);
+        return nullptr;
+    });
 }
 
 } // namespace flow
