@@ -51,10 +51,14 @@ private:
  *       collect { value -> destination.add(value) }
  *       return destination
  *   }
+ *
+ * Suspend ABI: returns `void*` per the project convention — the boxed destination pointer on
+ * completion, or `COROUTINE_SUSPENDED` when the underlying `collect` suspends. Callers unbox
+ * with `static_cast<Container*>(result)` once `is_coroutine_suspended(result)` is false.
  */
 template <typename T, typename Container>
 [[suspend]]
-inline Container* to_collection(
+inline void* to_collection(
     Flow<T>* flow,
     Container* destination,
     std::shared_ptr<Continuation<void*>> completion) {
@@ -62,9 +66,9 @@ inline Container* to_collection(
     void* collect_result =
         dsl::suspend(flow->collect(&collector, completion.get()));
     if (intrinsics::is_coroutine_suspended(collect_result)) {
-        return reinterpret_cast<Container*>(intrinsics::get_COROUTINE_SUSPENDED());
+        return intrinsics::get_COROUTINE_SUSPENDED();
     }
-    return destination;
+    return static_cast<void*>(destination);
 }
 
 /**
@@ -74,7 +78,7 @@ inline Container* to_collection(
  */
 template <typename T>
 [[suspend]]
-inline std::vector<T>* to_list(
+inline void* to_list(
     Flow<T>* flow,
     std::vector<T>* destination,
     std::shared_ptr<Continuation<void*>> completion) {
@@ -84,15 +88,18 @@ inline std::vector<T>* to_list(
 /**
  * Default-destination overload, matching the Kotlin
  * `destination: MutableList<T> = ArrayList()` default parameter value.
+ *
+ * Allocates the default `ArrayList()` on entry, forwards to the destination-taking suspend
+ * overload, and routes the eventual collection through the same `Continuation` so the boxed
+ * destination is delivered exactly once.
  */
 template <typename T>
 [[suspend]]
-inline std::shared_ptr<std::vector<T>> to_list(
+inline void* to_list(
     Flow<T>* flow,
     std::shared_ptr<Continuation<void*>> completion) {
     auto destination = std::make_shared<std::vector<T>>();
-    to_collection<T, std::vector<T>>(flow, destination.get(), std::move(completion));
-    return destination;
+    return to_collection<T, std::vector<T>>(flow, destination.get(), std::move(completion));
 }
 
 /**
@@ -102,7 +109,7 @@ inline std::shared_ptr<std::vector<T>> to_list(
  */
 template <typename T>
 [[suspend]]
-inline std::set<T>* to_set(
+inline void* to_set(
     Flow<T>* flow,
     std::set<T>* destination,
     std::shared_ptr<Continuation<void*>> completion) {
@@ -115,12 +122,11 @@ inline std::set<T>* to_set(
  */
 template <typename T>
 [[suspend]]
-inline std::shared_ptr<std::set<T>> to_set(
+inline void* to_set(
     Flow<T>* flow,
     std::shared_ptr<Continuation<void*>> completion) {
     auto destination = std::make_shared<std::set<T>>();
-    to_collection<T, std::set<T>>(flow, destination.get(), std::move(completion));
-    return destination;
+    return to_collection<T, std::set<T>>(flow, destination.get(), std::move(completion));
 }
 
 } // namespace kotlinx::coroutines::flow

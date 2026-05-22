@@ -346,23 +346,12 @@ inline std::shared_ptr<Flow<T>> consume_as_flow(
     return std::make_shared<ChannelAsFlow<T>>(std::move(channel), /*consume=*/true);
 }
 
-// Upstream calls `asChannelFlow()` (defined in internal/ChannelFlow.kt) to wrap any non-ChannelFlow
-// before delegating to `produceImpl`. The C++ port currently relies on the runtime type of `flow`
-// already being a ChannelFlow; the explicit wrapper is tracked separately as part of the
-// internal/ChannelFlow.kt port.
 template <typename T>
 inline std::shared_ptr<channels::ReceiveChannel<T>> produce_in(
     std::shared_ptr<Flow<T>> flow,
     CoroutineScope* scope) {
     // Upstream: asChannelFlow().produceImpl(scope)
-    auto as_channel_flow =
-        std::dynamic_pointer_cast<internal::ChannelFlow<T>>(flow);
-    if (!as_channel_flow) {
-        throw std::logic_error(
-            "produce_in: Flow is not a ChannelFlow; the upstream asChannelFlow() wrapper"
-            " ships in internal/ChannelFlow.kt and must be invoked before this call.");
-    }
-    return as_channel_flow->produce_impl(scope);
+    return internal::as_channel_flow(std::move(flow))->produce_impl(scope);
 }
 
 } // namespace kotlinx::coroutines::flow

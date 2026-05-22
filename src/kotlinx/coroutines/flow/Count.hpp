@@ -47,8 +47,8 @@ public:
         : counter_(counter), predicate_(std::move(predicate)) {}
 
     void* emit(T value, Continuation<void*>* continuation) override {
-        // Upstream predicate is `suspend (T) -> Boolean`. The C++ predicate signature
-        // mirrors the suspend ABI: a non-null result is a boxed boolean payload, and
+        // Upstream predicate is `suspend (T) -> Boolean`. The C++ predicate signature mirrors
+        // the suspend ABI: a non-null result is a boxed boolean payload, and
         // `is_coroutine_suspended` indicates suspension at the predicate site.
         void* predicate_result =
             dsl::suspend(predicate_(std::move(value), continuation));
@@ -77,10 +77,14 @@ private:
  *       collect { ++i }
  *       return i
  *   }
+ *
+ * Suspend ABI: returns `void*` per the project convention — a heap-boxed `int` on completion,
+ * or `COROUTINE_SUSPENDED` when the underlying `collect` suspends. Callers unbox the boxed
+ * int and own the returned pointer.
  */
 template <typename T>
 [[suspend]]
-inline int count(
+inline void* count(
     Flow<T>* flow,
     std::shared_ptr<Continuation<void*>> completion) {
     int i = 0;
@@ -88,9 +92,9 @@ inline int count(
     void* collect_result =
         dsl::suspend(flow->collect(&collector, completion.get()));
     if (intrinsics::is_coroutine_suspended(collect_result)) {
-        return -1; // Sentinel; caller must consult `completion` for the real result.
+        return intrinsics::get_COROUTINE_SUSPENDED();
     }
-    return i;
+    return new int(i);
 }
 
 /**
@@ -105,7 +109,7 @@ inline int count(
  */
 template <typename T>
 [[suspend]]
-inline int count(
+inline void* count(
     Flow<T>* flow,
     std::function<void*(T, Continuation<void*>*)> predicate,
     std::shared_ptr<Continuation<void*>> completion) {
@@ -114,9 +118,9 @@ inline int count(
     void* collect_result =
         dsl::suspend(flow->collect(&collector, completion.get()));
     if (intrinsics::is_coroutine_suspended(collect_result)) {
-        return -1; // See bare `count()` above for the suspension sentinel rationale.
+        return intrinsics::get_COROUTINE_SUSPENDED();
     }
-    return i;
+    return new int(i);
 }
 
 } // namespace kotlinx::coroutines::flow
