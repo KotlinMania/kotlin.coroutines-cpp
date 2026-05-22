@@ -120,10 +120,14 @@ std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
  */
 template <typename T>
 std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
+    // Upstream:
+    //   public fun <T> Iterable<T>.asFlow(): Flow<T> = flow { forEach { value -> emit(value) } }
     return flow<T>([iterable](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
-        // TODO: Implement state machine for suspending loop
         for (const auto& value : iterable) {
-            collector->emit(value, cont);
+            void* emit_result = collector->emit(value, cont);
+            if (intrinsics::is_coroutine_suspended(emit_result)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
         }
         return nullptr;
     });
@@ -235,11 +239,20 @@ std::shared_ptr<Flow<R>> scoped_flow(std::function<void(CoroutineScope&, FlowCol
      });
 }
 
-// channelFlow stub
-template<typename T>
-std::shared_ptr<Flow<T>> channel_flow(std::function<void(void*)> block) { // void* as placeholder for ProducerScope
-    // TODO: Implement ChannelFlow logic with produce
-    return nullptr;
+/**
+ * Upstream:
+ *   public fun <T> channelFlow(@BuilderInference block: suspend ProducerScope<T>.() -> Unit): Flow<T> =
+ *       ChannelFlowBuilder(block)
+ *
+ * `ChannelFlowBuilder` lives in flow/internal/Builders.kt; the C++ port routes through
+ * `internal::ChannelFlowBuilder<T>` which keeps the producer block and replays it once per
+ * collector.
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> channel_flow(
+    std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)>
+        block) {
+    return std::make_shared<internal::ChannelFlowBuilder<T>>(std::move(block));
 }
 
 
