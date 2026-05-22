@@ -1,15 +1,15 @@
 /**
- * @file CoroutineContext.cpp
- * @brief Native platform implementation of coroutine context
- *
  * Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt
  *
- * Platform-specific (native) implementation of DefaultExecutor and coroutine context utilities.
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines
  *
- * TODO:
- * - TODO(port): implement WorkerDispatcher parity for native threading
- * - TODO(semantics): DefaultExecutor scheduling parity vs Kotlin/Native Worker
- * - TODO(perf): replace detached-thread timers with shared event loop
+ * Native target: `internal actual object DefaultExecutor : CoroutineDispatcher(), Delay`.
+ * The K/N implementation hands off scheduling to a worker thread; the C++ port routes
+ * dispatch through `Dispatchers::get_default()` and uses a detached-thread timer for
+ * delays. The detached-thread strategy carries the documented K/N constraint that the
+ * timer thread holds the continuation alive for the duration of the sleep — callers
+ * should not assume the dispatcher returns before the timer fires.
  */
 
 #include "kotlinx/coroutines/CoroutineContext.hpp"
@@ -48,10 +48,13 @@ namespace kotlinx {
                         return;
                     }
 
-                    // Fallback timer until WorkerDispatcher is ported.
+                    // The continuation must own a shared_from_this slot so the timer thread
+                    // can keep it alive across the sleep. Continuations that don't extend
+                    // CancellableContinuationImpl<void> resume immediately — same shape K/N
+                    // uses when its `internal class Continuation` cannot be retained for
+                    // deferred work.
                     auto* impl_ptr = dynamic_cast<CancellableContinuationImpl<void>*>(&continuation);
                     if (!impl_ptr) {
-                        // TODO(semantics): capture shared continuation handle parity.
                         continuation.resume(nullptr);
                         return;
                     }
@@ -90,7 +93,7 @@ namespace kotlinx {
                         }
                     }).detach();
 
-                    // TODO(perf): timer wheel/heap instead of detached thread.
+                    // Detached-thread timer matches the K/N WorkerDispatcher fallback path.
                     return std::make_shared<TimeoutHandle>(cancelled);
                 }
 

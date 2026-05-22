@@ -1,55 +1,43 @@
 // port-lint: source Runnable.common.kt
 /**
- * @file Runnable.cpp
- * @brief A runnable task for CoroutineDispatcher.dispatch
- *
- * Equivalent to the type `() -> Unit`.
- *
  * Transliterated from: kotlinx-coroutines-core/native/src/Runnable.kt
  *
- * TODO(port): actual fun struct - SAM conversion in Kotlin
- * TODO(port): @Deprecated annotation with custom parameters
- * TODO(port): inline function with crossinline
- */
-
-#include <functional>
-
-namespace kotlinx {
-    namespace coroutines {
-        /**
- * A runnable task for CoroutineDispatcher.dispatch.
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines
  *
- * Equivalent to the type `() -> Unit`.
+ * Upstream:
+ *   public actual fun interface Runnable { fun run() }
+ *   @Deprecated(...) public inline fun Runnable(crossinline block: () -> Unit): Runnable =
+ *       object : Runnable { override fun run() { block() } }
+ *
+ * Kotlin's `fun interface` is SAM-convertible; in C++ that role is filled by a virtual
+ * interface plus a templated factory `make_runnable` that captures any callable. The
+ * upstream `Runnable(block)` constructor is marked HIDDEN for binary compatibility — we
+ * keep it as the templated factory so it does not pollute the public API namespace but
+ * remains callable from binary-compat-sensitive call sites.
  */
-        // TODO(port): actual fun struct - use std::function or function pointer
-        class Runnable {
-        public:
-            /**
- * @suppress
- */
-            virtual void run() = 0;
 
-            virtual ~Runnable() = default;
-        };
+#include <utility>
 
-        // TODO(port): @Deprecated annotation - Preserved for binary compatibility,
-        // see https://github.com/Kotlin/kotlinx.coroutines/issues/4309
-        // TODO(port): inline function with crossinline
-        template<typename F>
-        Runnable *make_runnable(F block) {
-            class RunnableImpl : public Runnable {
-            private:
-                F block;
+namespace kotlinx::coroutines {
 
-            public:
-                RunnableImpl(F block) : block(block) {
-                }
+class Runnable {
+public:
+    virtual ~Runnable() = default;
+    virtual void run() = 0;
+};
 
-                void run() override {
-                    block();
-                }
-            };
-            return new RunnableImpl(block);
-        }
-    } // namespace coroutines
-} // namespace kotlinx
+template <typename F>
+Runnable* make_runnable(F block) {
+    class RunnableImpl : public Runnable {
+    public:
+        explicit RunnableImpl(F block) : block_(std::move(block)) {}
+        void run() override { block_(); }
+
+    private:
+        F block_;
+    };
+    return new RunnableImpl(std::move(block));
+}
+
+} // namespace kotlinx::coroutines
