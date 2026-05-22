@@ -1,7 +1,13 @@
 #pragma once
-
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.intrinsics
+ *
+ * The two free helpers `runSafely` and `dispatcherFailure` are kept as inline functions in
+ * this header; the three `startCoroutineCancellable` overloads (no-receiver, with-receiver,
+ * and pre-built continuation) follow exactly the Kotlin file's structure.
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -29,9 +35,7 @@ public:
         std::function<void*(Continuation<T>*)> block,
         std::shared_ptr<Continuation<T>> completion
     ) : ContinuationImpl(std::make_shared<Continuation<void>>(), completion->get_context()),
-        block_(block), completion_(completion) {
-        (void)completion; // Supress lint if needed, though used in init list
-    }
+        block_(block), completion_(completion) {}
 
     void* invoke_suspend(Result<void*> result) override {
         if (result.is_failure()) {
@@ -59,9 +63,7 @@ public:
         R receiver,
         std::shared_ptr<Continuation<T>> completion
     ) : ContinuationImpl(std::make_shared<Continuation<void>>(), completion->get_context()),
-        block_(block), receiver_(receiver), completion_(completion) {
-        (void)completion; 
-    }
+        block_(block), receiver_(receiver), completion_(completion) {}
 
     void* invoke_suspend(Result<void*> result) override {
         if (result.is_failure()) {

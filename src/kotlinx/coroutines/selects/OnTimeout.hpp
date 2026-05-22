@@ -1,110 +1,85 @@
 #pragma once
 /**
- * @file OnTimeout.hpp
- * @brief Select clause for timeout handling
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.selects
  */
 
-#include "kotlinx/coroutines/selects/Select.hpp"
 #include "kotlinx/coroutines/Delay.hpp"
+#include "kotlinx/coroutines/DisposableHandle.hpp"
 #include "kotlinx/coroutines/Runnable.hpp"
+#include "kotlinx/coroutines/Unit.hpp"
+#include "kotlinx/coroutines/selects/Select.hpp"
+
+#include <chrono>
+#include <cstdint>
 #include <functional>
 #include <memory>
+#include <utility>
 
-namespace kotlinx {
-namespace coroutines {
-namespace selects {
-
-class OnTimeout; // Forward decl
+namespace kotlinx::coroutines::selects {
 
 /**
- * We implement SelectBuilder.on_timeout as a clause, so each invocation creates
- * an instance of OnTimeout that specifies the registration part according to
- * the timeout (time_millis) parameter.
+ * We implement [SelectBuilder.onTimeout] as a clause, so each invocation creates
+ * an instance of [OnTimeout] that specifies the registration part according to the
+ * [timeout][time_millis] parameter.
  *
- * Transliterated from:
- * private class OnTimeout(private val timeMillis: Long)
+ * Upstream:
+ *   private class OnTimeout(private val timeMillis: Long) {
+ *       val selectClause: SelectClause0 get() = SelectClause0Impl(this, OnTimeout::register)
+ *       private fun register(select: SelectInstance<*>, ignoredParam: Any?) { ... }
+ *   }
  */
-    explicit OnTimeout(long long time_millis) : time_millis_(time_millis) {
-        (void)time_millis;
-    }
+class OnTimeout : public std::enable_shared_from_this<OnTimeout> {
+public:
+    explicit OnTimeout(std::int64_t time_millis) : time_millis_(time_millis) {}
 
     /**
-     * Get the SelectClause0 for this timeout.
-     *
-     * Transliterated from:
-     * val selectClause: SelectClause0
-     *     get() = SelectClause0Impl(
-     *         clauseObject = this@OnTimeout,
-     *         regFunc = OnTimeout::register as RegistrationFunction
-     *     )
+     * Upstream:
+     *   val selectClause: SelectClause0 get() =
+     *       SelectClause0Impl(clauseObject = this@OnTimeout,
+     *                         regFunc = OnTimeout::register as RegistrationFunction)
      */
     std::unique_ptr<SelectClause0> select_clause() {
-        // Capture shared_ptr to keep this object alive during select registration/handling
         auto self = shared_from_this();
         return std::make_unique<SelectClause0Impl>(
             static_cast<void*>(this),
             [self](void* clause_obj, void* select_ptr, void* param) {
-                self->do_register(clause_obj, select_ptr, param);
-            }
-        );
+                self->register_clause(clause_obj, select_ptr, param);
+            });
     }
 
 private:
-    long long time_millis_;
+    std::int64_t time_millis_;
 
     /**
-     * Registration function for the timeout clause.
-     *
-     * Transliterated from:
-     * private fun register(select: SelectInstance<*>, ignoredParam: Any?) {
-     *     // Should this clause complete immediately?
-     *     if (timeMillis <= 0) {
-     *         select.selectInRegistrationPhase(Unit)
-     *         return
-     *     }
-     *     // Invoke `trySelect` after the timeout is reached.
-     *     val action = Runnable {
-     *         select.trySelect(this@OnTimeout, Unit)
-     *     }
-     *     select as SelectImplementation<*>
-     *     val context = select.context
-     *     val disposableHandle = context.delay.invokeOnTimeout(timeMillis, action, context)
-     *     // Do not forget to clean-up when this `select` is completed or cancelled.
-     *     select.disposeOnCompletion(disposableHandle)
-     * }
+     * Upstream:
+     *   private fun register(select: SelectInstance<*>, ignoredParam: Any?) {
+     *       if (timeMillis <= 0) { select.selectInRegistrationPhase(Unit); return }
+     *       val action = Runnable { select.trySelect(this@OnTimeout, Unit) }
+     *       select as SelectImplementation<*>
+     *       val context = select.context
+     *       val disposableHandle = context.delay.invokeOnTimeout(timeMillis, action, context)
+     *       select.disposeOnCompletion(disposableHandle)
+     *   }
      */
-    void do_register(void* clause_obj, void* select_ptr, void* /*ignored_param*/) {
+    void register_clause(void* /*clause_obj*/, void* select_ptr, void* /*ignored_param*/) {
+        auto* select = static_cast<SelectInstance<void*>*>(select_ptr);
+
         // Should this clause complete immediately?
         if (time_millis_ <= 0) {
-            // Cast to SelectInstance to call selectInRegistrationPhase
-            auto* select = static_cast<SelectInstance<void*>*>(select_ptr);
-            select->select_in_registration_phase(nullptr);  // Unit
+            select->select_in_registration_phase(nullptr); // Unit
             return;
         }
 
-        // Invoke `trySelect` after the timeout is reached.
-        // We need to keep 'this' alive for the action callback too
+        // Invoke `try_select` after the timeout is reached.
         auto self = shared_from_this();
-        auto action = std::make_shared<LambdaRunnable>([select_ptr, self]() {
-            auto* select = static_cast<SelectInstance<void*>*>(select_ptr);
-            // Pass 'self.get()' (address of this OnTimeout object) as clauseObject identity
-            select->try_select(self.get(), nullptr);  // Unit
+        auto action = std::make_shared<LambdaRunnable>([select, self]() {
+            select->try_select(self.get(), nullptr); // Unit
         });
 
-        // Get context and schedule timeout
-        // We know select is SelectImplementation
-        // Cast via void* is safe per design (SelectInstance* -> SelectImplementation*)
-        // But SelectInstance has try_select (virtual) but not dispose_on_completion (virtual).
-        // Wait, SelectInstance HAS dispose_on_completion virtual.
-        // But get_context is on SelectInstance too.
-        
-        auto* select = static_cast<SelectInstance<void*>*>(select_ptr);
         auto context = select->get_context();
-        
-        // We need to access Delay. In Kotlin it's context.delay (extension).
-        // Here we use global get_default_delay() or similar for now.
         auto& delay = get_default_delay();
         auto handle = delay.invoke_on_timeout(time_millis_, action, *context);
 
@@ -112,12 +87,14 @@ private:
         select->dispose_on_completion(handle);
     }
 
-    // Helper class for lambda-based Runnable
+    /** Internal lambda-as-Runnable adapter. */
     class LambdaRunnable : public Runnable {
-        std::function<void()> func_;
     public:
-        explicit LambdaRunnable(std::function<void()> f) : func_(std::move(f)) {}
+        explicit LambdaRunnable(std::function<void()> func) : func_(std::move(func)) {}
         void run() override { func_(); }
+
+    private:
+        std::function<void()> func_;
     };
 };
 
@@ -125,20 +102,42 @@ private:
  * Clause that selects the given [block] after a specified timeout passes.
  * If timeout is negative or zero, [block] is selected immediately.
  *
- * **Note: This is an experimental api.** It may be replaced with light-weight timer/timeout channels in the future.
+ * **Note: This is an experimental api.** It may be replaced with light-weight timer/timeout
+ * channels in the future.
+ *
+ * Upstream:
+ *   @ExperimentalCoroutinesApi
+ *   @Suppress("EXTENSION_SHADOWED_BY_MEMBER")
+ *   public fun <R> SelectBuilder<R>.onTimeout(timeMillis: Long, block: suspend () -> R): Unit =
+ *       OnTimeout(timeMillis).selectClause.invoke(block)
  *
  * @param time_millis timeout time in milliseconds.
  */
-template<typename R>
-void on_timeout(SelectBuilder<R>& builder, long long time_millis, std::function<void*(Continuation<void*>*)> block) {
-    // Create OnTimeout object managed by shared_ptr
+template <typename R>
+inline void on_timeout(
+    SelectBuilder<R>& builder,
+    std::int64_t time_millis,
+    std::function<void*(Continuation<void*>*)> block) {
     auto timeout = std::make_shared<OnTimeout>(time_millis);
-    // Create the clause (which captures the shared_ptr)
     auto clause = timeout->select_clause();
-    // Register it
     builder.invoke(*clause, std::move(block));
 }
 
-} // namespace selects
-} // namespace coroutines
-} // namespace kotlinx
+/**
+ * Clause that selects the given [block] after the specified [timeout] passes.
+ *
+ * Upstream:
+ *   @ExperimentalCoroutinesApi
+ *   public fun <R> SelectBuilder<R>.onTimeout(timeout: Duration, block: suspend () -> R): Unit =
+ *       onTimeout(timeout.toDelayMillis(), block)
+ */
+template <typename R, typename Rep, typename Period>
+inline void on_timeout(
+    SelectBuilder<R>& builder,
+    std::chrono::duration<Rep, Period> timeout,
+    std::function<void*(Continuation<void*>*)> block) {
+    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
+    on_timeout<R>(builder, static_cast<std::int64_t>(millis), std::move(block));
+}
+
+} // namespace kotlinx::coroutines::selects
