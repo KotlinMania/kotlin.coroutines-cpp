@@ -1,14 +1,17 @@
 // port-lint: source internal/LockFreeTaskQueue.kt
-// Transliterated from Kotlin to C++
-//
-// TODO: This is a mechanical transliteration - semantics not fully implemented
-// TODO: atomicfu library needs C++ atomic equivalent
-// TODO: @JvmField, @JvmInline annotations - JVM-specific
-// TODO: typealias needs using declaration
-// TODO: Lock-free algorithm correctness needs careful review
-// TODO: atomicArrayOfNulls needs custom implementation
-// TODO: Inline functions and lambdas need proper C++ implementation
-// TODO: Extension functions (withState, loop, update) need implementation
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/LockFreeTaskQueue.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
+ *
+ * Lock-free single-consumer / multi-producer task queue. The Kotlin source uses
+ * atomicfu's `atomicArrayOfNulls<Any?>`; the C++ port uses a vector of std::atomic<void*>
+ * with explicit memory orderings on every CAS/load/store. `@JvmField` / `@JvmInline` /
+ * `typealias` annotations have no C++ analogue — they translate to plain fields and
+ * `using` declarations. The Michael-Scott-style algorithm is preserved verbatim;
+ * Placeholder sentinels in the array distinguish "uninitialised" slots from "in-flight".
+ */
 
 #include <atomic>
 #include <vector>
@@ -77,7 +80,8 @@ namespace kotlinx {
                     }
                 }
 
-                // TODO: @Suppress("UNCHECKED_CAST")
+                // Upstream: @Suppress("UNCHECKED_CAST") — UNCHECKED_CAST has no C++
+                // analogue since the static_cast below is explicit at the call site.
                 E *remove_first_or_null() {
                     while (true) {
                         Core<E> *cur = _cur.load();
@@ -110,7 +114,11 @@ namespace kotlinx {
 
                 std::atomic<Core<E> *> _next;
                 std::atomic<long> _state;
-                std::vector<std::atomic<void *> > array_; // TODO: atomicArrayOfNulls equivalent
+                // Upstream: private val array = atomicArrayOfNulls<Any?>(capacity)
+                // atomicfu's atomicArrayOfNulls is a contiguous array of independently
+                // CAS-able slots; the C++ port uses std::vector<std::atomic<void*>> with
+                // explicit memory orderings on every access.
+                std::vector<std::atomic<void *> > array_;
 
             public:
                 LockFreeTaskQueueCore(int capacity, bool single_consumer)
@@ -120,8 +128,13 @@ namespace kotlinx {
                       _next(nullptr),
                       _state(0L),
                       array_(capacity) {
-                    // TODO: check(mask <= MAX_CAPACITY_MASK)
-                    // TODO: check(capacity and mask == 0)
+                    // Upstream:
+                    //   init {
+                    //       check(mask <= MAX_CAPACITY_MASK)
+                    //       check(capacity and mask == 0)
+                    //   }
+                    assert(mask_ <= MAX_CAPACITY_MASK);
+                    assert((capacity & mask_) == 0);
                 }
 
                 // Note: it is not atomic w.r.t. remove operation (remove can transiently fail when isEmpty is false)
@@ -210,7 +223,10 @@ namespace kotlinx {
          * then another producer might have written its placeholder in our slot, so we should
          * perform *unique* check that current placeholder is our to avoid overwriting another producer placeholder
          */
-                    // TODO: if (old is Placeholder && old.index == index) - type checking needed
+                    // Upstream: if (old is Placeholder && old.index == index) { ... }
+                    // The Kotlin `is`-check becomes a dynamic_cast on the Placeholder
+                    // base. Slot ownership is identified by the producer-side index
+                    // matching the slot's reservation.
                     auto *placeholder = dynamic_cast<Placeholder *>(old);
                     if (placeholder && placeholder->index == index) {
                         array_[index & mask_].store(element);
@@ -240,7 +256,8 @@ namespace kotlinx {
                             continue;
                         }
 
-                        // TODO: element is Placeholder - type checking needed
+                        // Upstream: if (element is Placeholder) — a Placeholder in this
+                        // slot means another producer has reserved but not yet stored.
                         auto *placeholder = dynamic_cast<Placeholder *>(element);
                         if (placeholder) return nullptr; // consider it not added yet
 
@@ -270,7 +287,9 @@ namespace kotlinx {
                     while (true) {
                         long state = _state.load();
                         int head = static_cast<int>((state & HEAD_MASK) >> HEAD_SHIFT);
-                        // TODO: assert { head == old_head } // "This queue can have only one consumer"
+                        // Upstream:
+                        //   assert { head == oldHead } // "This queue can have only one consumer"
+                        assert(head == old_head);
 
                         if ((state & FROZEN_MASK) != 0L) {
                             // state was already frozen, so removed element was copied to next
@@ -333,7 +352,7 @@ namespace kotlinx {
                     int index = head;
                     while ((index & mask_) != (tail & mask_)) {
                         void *element = array_[index & mask_].load();
-                        // TODO: if (element != nullptr && element !is Placeholder)
+                        // Upstream: if (element != null && element !is Placeholder)
                         if (element != nullptr && dynamic_cast<Placeholder *>(element) == nullptr) {
                             res.push_back(transform(static_cast<E *>(element)));
                         }

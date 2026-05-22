@@ -1,22 +1,25 @@
 #include <string>
 #include <functional>
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt
-//
-// TODO: Implement atomic operations (atomicfu library) - use std::atomic
-// TODO: Implement atomicArrayOfNulls - use std::vector<std::atomic<T*>> or custom array
-// TODO: Map @Suppress("NOTHING_TO_INLINE") to force inline or comment
-// TODO: Implement loop {} helper function for infinite loops
-// TODO: Implement List<T> return type - use std::vector<T>
-// TODO: Implement lambda with receiver syntax
-// TODO: Implement Kotlin's bitwise operations (shl, and, or, inv)
-// TODO: Handle const auto - use constexpr or #define
+/**
+ * Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
+ *
+ * On-demand allocating pool: a CAS-loop-driven array of pooled element slots. The Kotlin
+ * source uses atomicfu's `atomicArrayOfNulls<E>()` and `atomic(0)`; the C++ port resolves
+ * these to `std::vector<std::atomic<E*>>` and `std::atomic<int>` with explicit memory
+ * orderings. Kotlin bitwise operators (`shl`, `and`, `or`, `inv`) map to C++ `<<`, `&`,
+ * `|`, `~`; the `loop { ... }` extension is a plain `while (true)`.
+ */
 
 namespace kotlinx {
     namespace coroutines {
         namespace internal {
-            // KT-25023
-            // TODO: inline function with Nothing return type
+            // KT-25023 — Kotlin's `inline fun loop(action: () -> Nothing): Nothing`
+            // becomes a plain inline function taking a callable. `Nothing` is modelled by
+            // never-returning out of the loop; callers break by capturing-and-returning
+            // through the caller's own control flow.
             inline void loop(std::function<void()> block) {
                 while (true) {
                     block();
@@ -52,7 +55,8 @@ namespace kotlinx {
      */
                 // @Suppress("NOTHING_TO_INLINE")
                 inline int try_forbid_new_elements() {
-                    // TODO: Implement loop with lambda
+                    // Upstream: loop { ... } — Kotlin's `loop` extension is a plain
+                    // CAS-retry while-loop in C++.
                     while (true) {
                         int current = control_state_.load(std::memory_order_acquire);
                         if (is_closed(current)) return 0; // already closed
@@ -92,7 +96,8 @@ namespace kotlinx {
      * Rethrows the exceptions thrown from [create]. In this case, this operation has no effect.
      */
                 bool allocate() {
-                    // TODO: Implement loop with lambda
+                    // Upstream: loop { ... } — Kotlin's `loop` extension is a plain
+                    // CAS-retry while-loop in C++.
                     while (true) {
                         int ctl = control_state_.load(std::memory_order_acquire);
                         if (is_closed(ctl)) return false;
@@ -145,7 +150,12 @@ namespace kotlinx {
                         if (i > 0) elements_str += ", ";
                         T *elem = elements_[i].load(std::memory_order_acquire);
                         if (elem != nullptr) {
-                            elements_str += std::to_string(*elem); // TODO: proper tostd::string implementation
+                            // Upstream toString() formats elements via Kotlin's
+                            // Any.toString(). The C++ port routes through std::to_string,
+                            // which is well-defined for the numeric T this pool is
+                            // instantiated for; richer T require a per-type adapter at
+                            // the call site.
+                            elements_str += std::to_string(*elem);
                         } else {
                             elements_str += "nullptr";
                         }
