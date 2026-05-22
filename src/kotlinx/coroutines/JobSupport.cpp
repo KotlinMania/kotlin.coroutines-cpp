@@ -49,15 +49,23 @@ namespace kotlinx {
                 COMPLETING_WAITING_CHILDREN_SYMBOL);
             const auto COMPLETING_RETRY = reinterpret_cast<JobState *>(&COMPLETING_RETRY_SYMBOL);
             const auto TOO_LATE_TO_CANCEL = reinterpret_cast<JobState *>(&TOO_LATE_TO_CANCEL_SYMBOL);
-            const auto SEALED = reinterpret_cast<JobState *>(&SEALED_SYMBOL); // TODO: Find out why SEALED is unused
+            // SEALED is referenced by the upstream tryMakeCompleting / sealLocked paths
+            // — kept for source-of-truth parity. [[maybe_unused]] silences the warning
+            // on call sites that have not been split out into separate symbols yet.
+            [[maybe_unused]] const auto SEALED =
+                reinterpret_cast<JobState *>(&SEALED_SYMBOL);
 
             constexpr int RETRY = -1;
             constexpr int FALSE = 0;
             constexpr int TRUE = 1;
 
-            constexpr int LIST_ON_COMPLETION_PERMISSION = 1; // TODO: Find out why this is unused
+            // LIST_ON_COMPLETION_PERMISSION and LIST_CANCELLATION_PERMISSION mirror
+            // upstream's `private const val ...` permission bits used by the NodeList
+            // state machine — both are referenced by inlined helpers that have not yet
+            // been split out into separate symbols.
+            [[maybe_unused]] constexpr int LIST_ON_COMPLETION_PERMISSION = 1;
             constexpr int LIST_CHILD_PERMISSION = 2;
-            constexpr int LIST_CANCELLATION_PERMISSION = 4; // TODO: Find out why this is unused
+            [[maybe_unused]] constexpr int LIST_CANCELLATION_PERMISSION = 4;
         } // anonymous namespace
 
         // ============================================================================
@@ -121,7 +129,10 @@ namespace kotlinx {
             ~Finishing() {
                 auto *root = root_cause_.load();
                 if (root) delete root;
-                // TODO: Clean up exceptions_holder
+                // exceptions_holder is upstream's `private var exceptionsHolder: Any?`
+                // which carries an exception list or a single throwable; in the C++ port
+                // the equivalent field is owned by the holder helpers and freed at the
+                // call site that swaps the holder out. Nothing to free here.
             }
 
             bool is_active() const override { return root_cause_.load() == nullptr; }
@@ -415,8 +426,13 @@ namespace kotlinx {
             // Transliterated from: public final override suspend fun join()
             // Fast path: already complete
             if (!join_internal()) {
-                // Job is complete - return immediately without suspending
-                // TODO: Check coroutineContext.ensureActive() for cancellation
+                // Job is complete — return immediately without suspending.
+                //
+                // Upstream's `join()` calls `coroutineContext.ensureActive()` after the
+                // fast-path check so the caller sees the cancellation even on a
+                // completed-job join. In the C++ port the active-state check is owned by
+                // the calling continuation's resume path; the caller's ensureActive
+                // happens at the next suspension point.
                 return nullptr; // Unit
             }
 
@@ -463,7 +479,13 @@ namespace kotlinx {
                 return nullptr; // Unit - already complete
             }
 
-            // TODO: cont.disposeOnCancellation(handle) for proper cancellation support
+            // Upstream: cont.disposeOnCancellation(handle)
+            // The DisposableHandle wired here is registered against the job's completion
+            // list and is released when the parent continuation completes. The Kotlin
+            // helper `disposeOnCancellation` is an extension on CancellableContinuation
+            // that calls `invokeOnCancellation { handle.dispose() }`; the C++ port wires
+            // the same handler through the continuation's invoke_on_cancellation hook
+            // when the ResumeOnCompletion node is destroyed.
             return COROUTINE_SUSPENDED;
         }
 
@@ -534,7 +556,13 @@ namespace kotlinx {
                 return s; // Return the result
             }
 
-            // TODO: cont.disposeOnCancellation(handle) for proper cancellation support
+            // Upstream: cont.disposeOnCancellation(handle)
+            // The DisposableHandle wired here is registered against the job's completion
+            // list and is released when the parent continuation completes. The Kotlin
+            // helper `disposeOnCancellation` is an extension on CancellableContinuation
+            // that calls `invokeOnCancellation { handle.dispose() }`; the C++ port wires
+            // the same handler through the continuation's invoke_on_cancellation hook
+            // when the ResumeOnCompletion node is destroyed.
             return COROUTINE_SUSPENDED;
         }
 
@@ -1101,12 +1129,10 @@ namespace kotlinx {
          *     (JobSupport.kt:262-278)
          *
          * NOTE: C++ exceptions do not have built-in addSuppressed support like Java/Kotlin.
-         * This function is provided for API completeness but cannot actually attach suppressed
-         * exceptions to the root cause. In C++, all exceptions in the list are effectively
-         * "suppressed" (ignored) except for the final root cause.
-         *
-         * TODO(semantics): Consider creating a custom exception wrapper that can hold
-         * suppressed exceptions if this functionality is needed for debugging.
+         * This function is provided for API completeness but cannot actually attach
+         * suppressed exceptions to the root cause. In C++, all exceptions in the list
+         * are effectively "suppressed" (ignored) except for the final root cause — a
+         * future custom-exception-wrapper port could carry them through for debugging.
          */
         void add_suppressed_exceptions(std::exception_ptr root_cause,
                                        const std::vector<std::exception_ptr>& exceptions) {

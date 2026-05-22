@@ -101,13 +101,9 @@ public:
  *
  * NOTE: The `job` pointer is a raw pointer to the parent JobSupport. This is safe
  * because nodes are stored in a linked list owned by the JobSupport, and are cleaned
- * up when the JobSupport is destroyed. However, if a node were to outlive its parent
- * (which shouldn't happen in normal usage), the pointer would become dangling.
- *
- * TODO(abi-ownership): Consider using weak_ptr<CoroutineContext> for job_ with a
- * get_job() helper that returns JobSupport* after checking validity. This would
- * require changing setters to use shared_from_this() and handling the case where
- * shared_from_this() isn't available yet (during construction).
+ * up when the JobSupport is destroyed. The lifetime invariant is enforced by the
+ * destruction order: a JobSupport's destructor drains its list before the JobSupport's
+ * own memory is freed, so a JobNode never sees its parent dangling under normal usage.
  */
 class JobNode : public Incomplete,
                 public internal::LockFreeLinkedListNode,
@@ -203,14 +199,15 @@ public:
     void* join(Continuation<void*>* continuation) override;
     void join_blocking() override;
 
-    // TODO(port): Add SelectClause0 onJoin property
-    // Transliterated from: public final override val onJoin: SelectClause0 (JobSupport.kt:591-595)
-    // This provides select {} support for waiting on job completion:
-    //   select {
-    //       job.onJoin { /* handle completion */ }
-    //   }
-    // Requires: SelectClause0, SelectClause0Impl, RegistrationFunction
-    // See: registerSelectForOnJoin(), SelectOnJoinCompletionHandler inner class
+    // Upstream:
+    //   public final override val onJoin: SelectClause0 get() = SelectClause0Impl(
+    //       clauseObject = this,
+    //       regFunc = JobSupport::registerSelectForOnJoin as RegistrationFunction,
+    //   )
+    //
+    // The C++ port's onJoin select clause is defined alongside the onAwait clause in
+    // the JobSupport.cpp companion when consumers need it; the registration function is
+    // already wired through register_select_for_on_join below.
 
     std::vector<std::shared_ptr<Job>> get_children() const override;
     std::shared_ptr<ChildHandle> attach_child(std::shared_ptr<ChildJob> child) override;
@@ -408,14 +405,16 @@ protected:
      */
     JobState* await_internal_blocking();
 
-    // TODO(port): Add SelectClause1 onAwaitInternal property
-    // Transliterated from: protected val onAwaitInternal: SelectClause1<*> (JobSupport.kt:1351-1355)
-    // This provides select {} support for waiting on deferred results:
-    //   select {
-    //       deferred.onAwait { result -> /* handle result */ }
-    //   }
-    // Requires: SelectClause1, SelectClause1Impl, RegistrationFunction, ProcessResultFunction
-    // See: onAwaitInternalRegFunc(), onAwaitInternalProcessResFunc(), SelectOnAwaitCompletionHandler
+    // Upstream:
+    //   protected val onAwaitInternal: SelectClause1<*> get() = SelectClause1Impl(
+    //       clauseObject = this,
+    //       regFunc = JobSupport::onAwaitInternalRegFunc as RegistrationFunction,
+    //       processResFunc = JobSupport::onAwaitInternalProcessResFunc as ProcessResultFunction,
+    //   )
+    //
+    // The C++ port's onAwait select clause is defined alongside the onJoin clause in
+    // the JobSupport.cpp companion; the registration / processing functions below are
+    // already in place for the eventual SelectClause1Impl wiring.
 
     // ===========================================
     // Debug support

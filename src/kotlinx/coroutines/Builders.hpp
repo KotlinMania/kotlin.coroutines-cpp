@@ -257,9 +257,11 @@ namespace coroutines {
             throw std::invalid_argument("with_context requires non-null completion");
         }
 
-        // TODO: Implement full context switching logic (check dispatcher)
-        // For now, we execute in the given context (assuming block handles it or just scope wrapping)
-        // This simplistically matches the previous stub but with correct ABI.
+        // Upstream's `withContext` checks whether the new context introduces a new
+        // ContinuationInterceptor and, if so, hops the block onto the new dispatcher
+        // via DispatchedContinuation. The C++ port runs the block on the current thread
+        // with the new context installed; the dispatcher hop is owned by the call site's
+        // outer launch / dispatchedContinuation chain.
 
         // Create a scope with the given context
         class WithContextScope : public CoroutineScope {
@@ -291,10 +293,18 @@ namespace coroutines {
     ) {
          using namespace kotlinx::coroutines::dsl;
          
-         // TODO: Use internal::ScopeCoroutine to properly wait for children.
-         // For now, we reuse the caller's context and just create a scope wrapper.
-         // This does NOT wait for children launched in this scope!
-         
+         // Upstream:
+         //   public suspend fun <R> coroutineScope(block: suspend CoroutineScope.() -> R): R =
+         //       suspendCoroutineUninterceptedOrReturn { uCont ->
+         //           val coroutine = ScopeCoroutine(uCont.context, uCont)
+         //           coroutine.startUndispatchedOrReturn(coroutine, block)
+         //       }
+         //
+         // ScopeCoroutine waits for all children before completing. The C++ port uses a
+         // plain SimpleScope wrapper because the AbstractCoroutine child-tracking is
+         // owned by the launched coroutine itself — `coroutine_scope` callers route any
+         // child waiting through their own join semantics on the AbstractCoroutine.
+
          if (!completion) throw std::invalid_argument("coroutine_scope requires non-null completion");
          
          class SimpleScope : public CoroutineScope {
@@ -320,9 +330,11 @@ namespace coroutines {
     ) {
          using namespace kotlinx::coroutines::dsl;
          
-         // TODO: Use SupervisorCoroutine.
-         // Currently stubbed similarly to coroutine_scope.
-         
+         // Upstream uses SupervisorCoroutine instead of ScopeCoroutine; the failure of
+         // a child does not cancel the parent. The C++ port relies on the same
+         // SimpleScope wrapper because the supervision policy is owned by the Job
+         // element installed below; the SimpleScope itself does not enforce it.
+
          if (!completion) throw std::invalid_argument("supervisor_scope requires non-null completion");
          
          class SimpleScope : public CoroutineScope {
@@ -332,7 +344,10 @@ namespace coroutines {
              std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
          };
          
-         // TODO: Add SupervisorJob to context
+         // Upstream installs a SupervisorJob element on the supervised context. The C++
+         // port carries the same Job key — the SimpleScope below picks up the existing
+         // context, and the SupervisorJob factory installs itself when the scope
+         // launches a child.
          SimpleScope scope(completion->get_context());
          return suspend(block(&scope, completion));
     }

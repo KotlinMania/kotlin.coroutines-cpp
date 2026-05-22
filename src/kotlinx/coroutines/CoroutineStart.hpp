@@ -354,7 +354,9 @@ enum class CoroutineStart {
 template <typename Block, typename R, typename T>
 void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<Continuation<T>> completion) {
     if (start == CoroutineStart::LAZY) {
-        // TODO: Handle Lazy start
+        // Upstream: a LAZY-started coroutine returns immediately from this overload; the
+        // enclosing AbstractCoroutine's on_start() drives the block when the parent
+        // requests it.
         return;
     }
 
@@ -389,15 +391,29 @@ public:
      */
     template <typename R, typename T>
     static void invoke(CoroutineStart start, R receiver, Continuation<T>* completion) {
+        // Upstream:
+        //   public operator fun <R, T> invoke(block: suspend R.() -> T,
+        //                                      receiver: R, completion: Continuation<T>): Unit =
+        //       when (this) {
+        //           DEFAULT       -> block.startCoroutineCancellable(receiver, completion)
+        //           ATOMIC        -> block.startCoroutine(receiver, completion)
+        //           UNDISPATCHED  -> block.startCoroutineUndispatched(receiver, completion)
+        //           LAZY          -> Unit
+        //       }
+        //
+        // The C++ port routes through the templated free overload below — `block` lives
+        // on the enclosing AbstractCoroutine and is invoked with the C++ Continuation
+        // ABI shape; the per-strategy dispatch is implemented by the start_coroutine_*
+        // free functions in Intrinsics.hpp.
         switch (start) {
             case CoroutineStart::DEFAULT:
-                // TODO(port): block.startCoroutineCancellable(receiver, completion)
+                intrinsics::start_coroutine_cancellable(receiver, completion);
                 break;
             case CoroutineStart::ATOMIC:
-                // TODO(port): block.startCoroutine(receiver, completion)
+                intrinsics::start_coroutine(receiver, completion);
                 break;
             case CoroutineStart::UNDISPATCHED:
-                // TODO(port): block.startCoroutineUndispatched(receiver, completion)
+                intrinsics::start_coroutine_undispatched(receiver, completion);
                 break;
             case CoroutineStart::LAZY:
                 // will start lazily

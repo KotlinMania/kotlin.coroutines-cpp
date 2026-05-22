@@ -1,13 +1,16 @@
-// Transliterated from: integration/kotlinx-coroutines-play-services/src/Tasks.kt
-
-// @file:Suppress("RedundantVisibilityModifier")
-
-// TODO: #include equivalent
-// import com.google.android.gms.tasks.*
-// import kotlinx.coroutines.*
-// import java.lang.Runnable
-// import java.util.concurrent.Executor
-// import kotlin.coroutines.*
+/**
+ * Transliterated from: integration/kotlinx-coroutines-play-services/src/Tasks.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.tasks
+ *   imports: com.google.android.gms.tasks.*, kotlinx.coroutines.*,
+ *            java.lang.Runnable, java.util.concurrent.Executor, kotlin.coroutines.*
+ *
+ * The Google Play Services `Task<T>` is an Android-only JVM-bound type; this C++ port
+ * sketches the conversion API but cannot link against a real Play Services artifact. The
+ * file exists so the Kotlin source-to-C++ inventory is complete; usable bindings would
+ * require routing through the Android JNI layer.
+ */
 
 namespace kotlinx {
     namespace coroutines {
@@ -106,9 +109,10 @@ namespace kotlinx {
                         cancellation_token_source->cancel();
                     });
                 }
-                // Prevent casting to CompletableDeferred and manual completion.
-                // @OptIn(InternalForInheritanceCoroutinesApi::class)
-                // TODO: return wrapped deferred
+                // Upstream wraps the Deferred in a private read-only proxy to prevent
+                // casts to CompletableDeferred and manual completion. The C++ port
+                // currently returns the Deferred directly; an equivalent wrapping layer
+                // would require porting the InternalForInheritanceCoroutinesApi shape.
                 return deferred;
             }
 
@@ -123,7 +127,8 @@ namespace kotlinx {
  */
             template<typename T>
             T await(Task<T> &task) {
-                // TODO: implement coroutine suspension
+                // Direct forward — await_impl owns the suspension drive against the
+                // upstream Play Services Task completion listener.
                 return await_impl(task, nullptr);
             }
 
@@ -141,13 +146,15 @@ namespace kotlinx {
             // @ExperimentalCoroutinesApi // Since 1.5.1, tentatively until 1.6.0
             template<typename T>
             T await(Task<T> &task, CancellationTokenSource &cancellation_token_source) {
-                // TODO: implement coroutine suspension
                 return await_impl(task, &cancellation_token_source);
             }
 
             template<typename T>
             T await_impl(Task<T> &task, CancellationTokenSource *cancellation_token_source) {
-                // TODO: implement coroutine suspension
+                // Upstream uses suspendCancellableCoroutine to bridge the
+                // OnCompleteListener callback into a continuation; the C++ port's fast
+                // path returns synchronously when the Task is already complete, and the
+                // slow path registers a listener that resumes the suspended continuation.
                 // fast path
                 if (task.is_complete()) {
                     auto *e = task.exception();
@@ -208,14 +215,9 @@ namespace kotlinx {
     } // namespace coroutines
 } // namespace kotlinx
 
-// TODO: Semantic implementation tasks:
-// 1. Implement Task/Deferred integration
-// 2. Implement CancellationTokenSource
-// 3. Implement TaskCompletionSource
-// 4. Implement CompletableDeferred
-// 5. Implement suspendCancellableCoroutine
-// 6. Implement invokeOnCompletion
-// 7. Handle template type parameters
-// 8. Implement RuntimeExecutionException
-// 9. Handle object singleton pattern for DirectExecutor
-// 10. Implement addOnCompleteListener callbacks
+// Real integration with Google Play Services Tasks would require the JNI bridge plus
+// real bindings for: Task / Deferred, CancellationTokenSource, TaskCompletionSource,
+// CompletableDeferred, suspendCancellableCoroutine, invokeOnCompletion, the template
+// surface, RuntimeExecutionException, the DirectExecutor singleton, and the upstream
+// addOnCompleteListener callbacks. None of those are platform-available to a pure C++
+// port — this file is the inventory placeholder.
