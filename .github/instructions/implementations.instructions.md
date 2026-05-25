@@ -15,7 +15,7 @@ When implementing state machines and logic in `.cpp` files:
    - Call `suspend_cancellable_coroutine<T>(...)` where applicable and check `is_coroutine_suspended(result)`.
    - Return `intrinsics::COROUTINE_SUSPENDED` to signal suspension from suspend entry points.
    - The legacy `SUSPEND_*` macro DSL is still present in some files for backward compatibility; avoid introducing new usages and add a deprecation note if you must touch them.
-   - We are migrating to a Clang plugin that rewrites a minimal suspend DSL into state machines; annotate code with `// TODO(suspend-plugin): migrate` where plugin takeover is planned. See `docs/cpp_port/docking_ring.md`.
+   - We are migrating to a Clang plugin that rewrites a minimal suspend DSL into state machines; track migration notes in audit docs / PR text (not source comments). See `docs/cpp_port/docking_ring.md`.
 
    Example pattern:
    ```cpp
@@ -28,7 +28,7 @@ When implementing state machines and logic in `.cpp` files:
 
 4. **Continuation ownership**:
    - Store continuation as `std::shared_ptr<Continuation<void*>>`
-   - Use `dynamic_cast` or `static_cast` as needed (tag ownership gaps with `TODO(abi-ownership)`) 
+   - Use `dynamic_cast` or `static_cast` as needed (track ownership gaps in audit docs / PR text)
    - Release intercepted continuations via `release_intercepted()`
 
 5. **Exception handling**:
@@ -36,12 +36,10 @@ When implementing state machines and logic in `.cpp` files:
    - Map Kotlin `Throwable` to C++ exceptions
    - Propagate via `Result<void*>::failure(...)`
 
-6. **TODO discipline**:
-   - Tag all semantic gaps: `// TODO(semantics): ...`
-   - Mark performance issues: `// TODO(perf): ...`
-   - Remove resolved TODOs from edited regions
+6. **No TODOs in source**:
+   - Do not add `TODO` / `FIXME` / `XXX` / `HACK` comments.
+   - If there is a gap, either port the missing piece or document the blocker in audit docs / PR text.
 
 7. **Testing**:
    - After implementing, ensure `./test_suspend` passes
    - Compile without real errors: `g++ -std=c++17 -Wall -Wextra -I include your_file.cpp`
-

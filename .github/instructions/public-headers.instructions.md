@@ -49,7 +49,7 @@ When modifying or creating public API headers in `include/kotlinx/coroutines/**/
    - Must return `void*` (type-erased result pointer or `COROUTINE_SUSPENDED` sentinel)
    - Must accept `Continuation<void*>* cont` as the last parameter
    - Declare signatures in .hpp; implement details in .cpp using the Continuation ABI helpers
-   - Migration: annotate implementations that will move to the Clang suspend plugin with `// TODO(suspend-plugin): migrate` (see `docs/cpp_port/docking_ring.md`)
+   - Migration: track suspend-plugin takeover notes in audit docs / PR text (not in source comments); see `docs/cpp_port/docking_ring.md`
    - Example in .hpp: `virtual void* await(Continuation<void*>* cont) = 0;`
 
 4. **Keep headers slim**:
@@ -60,7 +60,7 @@ When modifying or creating public API headers in `include/kotlinx/coroutines/**/
 5. **Documentation**:
    - Convert Kotlin KDoc to C++ doxygen comments
    - Include reference to original Kotlin source file path at top
-   - Mark unresolved semantic gaps with tagged TODOs
+   - Do not add `TODO` / `FIXME` / `XXX` / `HACK` comments; port the missing piece or document blockers in audit docs / PR text
    - Do NOT document private/implementation details in .hpp
 
 6. **Update audit** - After changes, update `docs/API_AUDIT.md` and `docs/audits/*.md` with file:line references.
@@ -103,4 +103,3 @@ void* JobImpl::await(Continuation<void*>* cont) {
 - `include/kotlinx/coroutines/Continuation.hpp` - Clean interface
 - `include/kotlinx/coroutines/Job.hpp` - Shows suspend function patterns
 - `include/kotlinx/coroutines/CoroutineDispatcher.hpp` - Scheduler interface
-
