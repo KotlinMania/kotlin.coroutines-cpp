@@ -1,27 +1,15 @@
 /**
- * @file SafeCollector.cpp
- * @brief SafeCollector implementation for flow context validation
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.kt
  *
- * TODO:
- * - Implement proper context validation
- * - Job hierarchy checking
- * - Context size tracking
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.flow.internal
+ *
+ * SafeCollector wraps a downstream FlowCollector and enforces the upstream context
+ * preservation contract: a flow may only emit from the context it was collected on.
+ * The full SafeCollectorBase / SafeCollector implementation lives as templates in the
+ * matching header (flow/internal/SafeCollector.hpp); this translation unit is the
+ * inventory companion for the file pair.
  */
 
-#include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
 #include "kotlinx/coroutines/Job.hpp"
-#include <stdexcept>
-
-namespace kotlinx {
-    namespace coroutines {
-        namespace flow {
-            namespace internal {
-                // TODO: Implement SafeCollectorBase properly
-                // This requires CoroutineContext::fold and Element access
-                // For now, provide minimal stub to allow compilation
-            } // namespace internal
-        } // namespace flow
-    } // namespace coroutines
-} // namespace kotlinx
+#include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"

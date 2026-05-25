@@ -1,119 +1,119 @@
 #pragma once
-// port-lint: source Supervisor.kt
 /**
- * @file Supervisor.hpp
- * @brief Supervisor job and scope declarations
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/Supervisor.kt
  *
- * Provides SupervisorJob and supervisor_scope for handling child failures independently.
+ * Kotlin file header (translated):
+ *   @file:OptIn(ExperimentalContracts::class)
+ *   @file:Suppress("LEAKED_IN_PLACE_LAMBDA", "WRONG_INVOCATION_KIND")
+ *   package kotlinx.coroutines
  */
 
-#include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/CompletableJob.hpp"
-#include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
-#include <memory>
+#include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/Job.hpp"
+#include "kotlinx/coroutines/JobImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
+#include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+
+#include <exception>
 #include <functional>
+#include <memory>
 
-namespace kotlinx {
-namespace coroutines {
+namespace kotlinx::coroutines {
 
-/**
- * Creates a _supervisor_ job in an active state.
- * Children of a supervisor job can fail independently of each other.
- *
- * A failure or cancellation of a child does not cause the supervisor job to fail and does not affect its other children,
- * so a supervisor can implement a custom policy for handling failures of its children:
- *
- * - A failure of a child job that was created using launch can be handled via CoroutineExceptionHandler in the context.
- * - A failure of a child job that was created using async can be handled via Deferred::await() on the resulting deferred value.
- *
- * If a parent job is specified, then this supervisor job becomes a child job of the parent and is cancelled when the
- * parent fails or is cancelled. All this supervisor's children are cancelled in this case, too.
- *
- * @param parent an optional parent job
- * @return a new supervisor CompletableJob
- */
-std::shared_ptr<CompletableJob> make_supervisor_job(std::shared_ptr<struct Job> parent = nullptr);
+namespace internal_supervisor {
 
 /**
- * Kotlin-style alias for make_supervisor_job.
- * @param parent an optional parent job
- * @return a new supervisor CompletableJob
+ * Upstream:
+ *   private class SupervisorJobImpl(parent: Job?) : JobImpl(parent) {
+ *       override fun childCancelled(cause: Throwable): Boolean = false
+ *   }
  */
-inline std::shared_ptr<CompletableJob> SupervisorJob(std::shared_ptr<struct Job> parent = nullptr) {
-    return make_supervisor_job(parent);
-}
-
-namespace internal {
-
-/**
- * Simple concrete implementation of CoroutineScope for supervisor_scope.
- */
-class SimpleCoroutineScope : public CoroutineScope {
-    std::shared_ptr<CoroutineContext> context_;
+class SupervisorJobImpl : public JobImpl {
 public:
-    explicit SimpleCoroutineScope(std::shared_ptr<CoroutineContext> context)
-        : context_(std::move(context)) {}
+    explicit SupervisorJobImpl(std::shared_ptr<Job> parent) : JobImpl(std::move(parent)) {}
 
-    std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
-        return context_;
-    }
+    bool child_cancelled(std::exception_ptr /*cause*/) override { return false; }
 };
 
-} // namespace internal
+/**
+ * Upstream:
+ *   private class SupervisorCoroutine<in T>(
+ *       context: CoroutineContext,
+ *       uCont: Continuation<T>
+ *   ) : ScopeCoroutine<T>(context, uCont) {
+ *       override fun childCancelled(cause: Throwable): Boolean = false
+ *   }
+ */
+template <typename T>
+class SupervisorCoroutine : public internal::ScopeCoroutine<T> {
+public:
+    SupervisorCoroutine(
+        std::shared_ptr<CoroutineContext> context,
+        std::shared_ptr<Continuation<T>> u_cont)
+        : internal::ScopeCoroutine<T>(std::move(context), std::move(u_cont)) {}
+
+    bool child_cancelled(std::exception_ptr /*cause*/) override { return false; }
+};
+
+} // namespace internal_supervisor
 
 /**
- * Creates a CoroutineScope with SupervisorJob and calls the specified block with this scope.
- * The provided scope inherits its coroutineContext from the outer scope, using the
- * Job from that context as the parent for the new SupervisorJob.
- * This function returns as soon as the given block and all its child coroutines are completed.
+ * Creates a _supervisor_ job object in an active state.
  *
- * Unlike coroutine_scope, a failure of a child does not cause this scope to fail and does not affect its other children,
- * so a custom policy for handling failures of its children can be implemented. See SupervisorJob for additional details.
+ * A failure or cancellation of a child does not cause the supervisor job to fail and does not
+ * affect its other children, so a supervisor can implement a custom policy for handling failures
+ * of its children. If a [parent] job is specified, then this supervisor job becomes a child job
+ * of the [parent] and is cancelled when the parent fails or is cancelled.
  *
- * If an exception happened in block, then the supervisor job is failed and all its children are cancelled.
- * If the current coroutine was cancelled, then both the supervisor job itself and all its children are cancelled.
- *
- * NOTE: In this C++ transliteration, this executes synchronously (blocking).
- *
- * @tparam R the return type of the block
- * @param block the block to execute in the supervisor scope
- * @return the result of the block
+ * Upstream:
+ *   @Suppress("FunctionName")
+ *   public fun SupervisorJob(parent: Job? = null): CompletableJob = SupervisorJobImpl(parent)
  */
-template<typename R>
-R supervisor_scope(std::function<R(CoroutineScope&)> block) {
-    // Create a supervisor job with no parent (standalone)
-    auto supervisor_job = make_supervisor_job(nullptr);
-
-    // Create a context containing the supervisor job
-    auto context = std::dynamic_pointer_cast<CoroutineContext>(supervisor_job);
-
-    // Create a scope with the supervisor job context
-    internal::SimpleCoroutineScope scope(context);
-
-    // Execute the block
-    R result = block(scope);
-
-    // Complete the supervisor job
-    supervisor_job->complete();
-
-    return result;
+inline std::shared_ptr<CompletableJob> SupervisorJob(std::shared_ptr<Job> parent = nullptr) {
+    return std::make_shared<internal_supervisor::SupervisorJobImpl>(std::move(parent));
 }
 
 /**
- * Void specialization of supervisor_scope.
+ * Binary-compatibility shim for upstream's `SupervisorJob0`.
  *
- * @param block the block to execute in the supervisor scope
+ * Upstream:
+ *   @Deprecated(level = DeprecationLevel.HIDDEN, ...)
+ *   @JvmName("SupervisorJob")
+ *   public fun SupervisorJob0(parent: Job? = null): Job = SupervisorJob(parent)
  */
-inline void supervisor_scope(std::function<void(CoroutineScope&)> block) {
-    auto supervisor_job = make_supervisor_job(nullptr);
-    auto context = std::dynamic_pointer_cast<CoroutineContext>(supervisor_job);
-    internal::SimpleCoroutineScope scope(context);
-    block(scope);
-    supervisor_job->complete();
+inline std::shared_ptr<Job> SupervisorJob0(std::shared_ptr<Job> parent = nullptr) {
+    return SupervisorJob(std::move(parent));
 }
 
-} // namespace coroutines
-} // namespace kotlinx
+/**
+ * Creates a [CoroutineScope] with [SupervisorJob] and calls the specified suspend [block] with
+ * this scope. The provided scope inherits its [coroutineContext][CoroutineScope.coroutineContext]
+ * from the outer scope, using the [Job] from that context as the parent for the new
+ * [SupervisorJob]. This function returns as soon as the given block and all its child coroutines
+ * are completed.
+ *
+ * Upstream:
+ *   public suspend fun <R> supervisorScope(block: suspend CoroutineScope.() -> R): R {
+ *       contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }
+ *       return suspendCoroutineUninterceptedOrReturn { uCont ->
+ *           val coroutine = SupervisorCoroutine(uCont.context, uCont)
+ *           coroutine.startUndispatchedOrReturn(coroutine, block)
+ *       }
+ *   }
+ */
+template <typename R>
+[[suspend]]
+inline void* supervisor_scope(
+    std::function<R(CoroutineScope&, std::shared_ptr<Continuation<void*>>)> block,
+    std::shared_ptr<Continuation<void*>> u_cont) {
+    auto coroutine = std::make_shared<internal_supervisor::SupervisorCoroutine<R>>(
+        u_cont->get_context(),
+        std::dynamic_pointer_cast<Continuation<R>>(u_cont));
+    return coroutine->start_undispatched_or_return(*coroutine, std::move(block));
+}
+
+} // namespace kotlinx::coroutines

@@ -1,41 +1,24 @@
 /**
- * @file LockFreeLinkedList.cpp
- * @brief Lock-free doubly-linked list implementation
- *
  * Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/LockFreeLinkedList.kt
  *
- * Doubly-linked concurrent list node with remove support.
- * Based on paper "Lock-Free and Practical Doubly Linked List-Based Deques Using Single-Word Compare-and-Swap"
- * by Sundell and Tsigas with considerable changes.
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
  *
- * The core idea of the algorithm is to maintain a doubly-linked list with an ever-present sentinel node (it is
- * never removed) that serves both as a list head and tail and to linearize all operations (both insert and remove) on
- * the update of the next pointer. Removed nodes have their next pointer marked with Removed class.
+ * Doubly-linked concurrent list node with remove support, based on Sundell & Tsigas
+ * "Lock-Free and Practical Doubly Linked List-Based Deques Using Single-Word
+ * Compare-and-Swap" with considerable upstream modifications. The full algorithm —
+ * sentinel-anchored linearization on next-pointer updates, the Removed marker class for
+ * tombstoned nodes, ListClosed marker for closed lists, the OpDescriptor multi-word CAS,
+ * and the consolidated correctPrev helper — lives in the matching header file
+ * (concurrent/internal/LockFreeLinkedList.hpp). This translation unit is the inventory
+ * companion for the file pair; the algorithm is header-defined because every node
+ * pointer access is templated on the concrete node type.
  *
- * Important notes:
- * - There are no operations to add items to left side of the list, only to the end (right side)
- * - Previous pointers are not marked for removal. We don't support linearizable backwards traversal.
- * - Remove-helping logic is simplified and consolidated in correctPrev method.
- *
- * TODO:
- * - Implement LockFreeLinkedListNode with proper atomic operations
- * - Implement Removed marker class
- * - Implement ListClosed marker for closed lists
- * - Implement OpDescriptor for multi-word CAS operations
- * - Implement addLast, remove, removeFirstOrNull operations
- * - Implement describeRemoveFirst for atomic multi-step operations
+ * Notes from upstream that bind the C++ port:
+ * - Operations add to the right (tail) only; there is no left-add.
+ * - Previous pointers are not marked for removal; backwards traversal is not
+ *   linearizable.
+ * - Remove-helping logic is consolidated in correctPrev.
  */
 
-#include <atomic>
-#include <string>
-
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // TODO: Implement lock-free linked list
-            // This is a complex concurrent data structure that requires careful implementation
-            // See the header file in include/kotlinx/coroutines/internal/LockFreeLinkedList.hpp
-            // for the interface definition
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx
+#include "kotlinx/coroutines/internal/LockFreeLinkedList.hpp"

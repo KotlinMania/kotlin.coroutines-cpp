@@ -1,74 +1,73 @@
 // port-lint: source internal/StackTraceRecovery.common.kt
-// Transliterated from Kotlin to C++
-//
-// This is a mechanical transliteration; common/native actuals are mostly no-ops.
-// expect functions still need platform-specific implementations.
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
+ *
+ * Upstream:
+ *   internal expect fun <E : Throwable> recoverStackTrace(exception: E, continuation: Continuation<*>): E
+ *   internal expect fun <E : Throwable> recoverStackTrace(exception: E): E
+ *   internal expect suspend inline fun recoverAndThrow(exception: Throwable): Nothing
+ *   @PublishedApi internal expect fun <E : Throwable> unwrap(exception: E): E
+ *   internal expect fun Throwable.initCause(cause: Throwable)
+ *   internal expect interface CoroutineStackFrame {
+ *       val callerFrame: CoroutineStackFrame?
+ *       fun getStackTraceElement(): StackTraceElement?
+ *   }
+ *   internal expect typealias StackTraceElement = ...
+ *
+ * Recovery / cause / stack-augmentation is a JVM-debug-mode feature. K/N actuals are
+ * identity-functions (no augmentation). The C++ port matches the K/N behavior; the
+ * matching `CoroutineStackFrame` interface is declared in `CoroutineStackFrame.hpp` and
+ * `StackTraceElement` is a void* opaque.
+ */
 
 #include "kotlinx/coroutines/internal/CoroutineStackFrame.hpp"
+
 #include <exception>
 
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // Forward declarations
-            template<typename T>
-            class Continuation;
+namespace kotlinx::coroutines::internal {
 
-            /**
- * Tries to recover stacktrace for given [exception] and [continuation].
- * Stacktrace recovery tries to restore [continuation] stack frames using its debug metadata with [CoroutineStackFrame] API
- * and then reflectively instantiate exception of given type with original exception as a cause and
- * sets new stacktrace for wrapping exception.
- * Some frames may be missing due to tail-call elimination.
+template <typename T>
+class Continuation;
+
+/**
+ * Upstream:
+ *   internal expect fun <E : Throwable> recoverStackTrace(exception: E, continuation: Continuation<*>): E
+ */
+template <typename E>
+inline E* recover_stack_trace(E* exception, Continuation<void>* /*continuation*/) {
+    return exception;
+}
+
+/**
+ * Upstream:
+ *   internal expect fun <E : Throwable> recoverStackTrace(exception: E): E
+ */
+template <typename E>
+inline E* recover_stack_trace(E* exception) {
+    return exception;
+}
+
+/**
+ * Upstream:
+ *   internal expect fun Throwable.initCause(cause: Throwable)
  *
- * Works only on JVM with enabled debug-mode.
+ * No JVM-style cause chain on K/N — identity for compatibility with the API surface.
  */
-            // TODO: expect function - needs platform-specific implementation
-            template<typename E>
-            E *recover_stack_trace(E *exception, Continuation<void> *continuation) {
-                return exception;
-            }
+inline void init_cause(std::exception* /*self*/, std::exception* /*cause*/) {}
 
-            /**
- * initCause on JVM, nop on other platforms
- */
-            // TODO: expect function - needs platform-specific implementation
-            // TODO: @Suppress("EXTENSION_SHADOWED_BY_MEMBER")
-            inline void init_cause(std::exception *self, std::exception *cause) {
-                // No-op in common implementation
-            }
-
-            /**
- * Tries to recover stacktrace for given [exception]. Used in non-suspendable points of awaiting.
- * Stacktrace recovery tries to instantiate exception of given type with original exception as a cause.
- * Wrapping exception will have proper stacktrace as it's instantiated in the right context.
+/**
+ * Upstream:
+ *   @PublishedApi internal expect fun <E : Throwable> unwrap(exception: E): E
  *
- * Works only on JVM with enabled debug-mode.
+ * Guarantee: `unwrap(recoverStackTrace(e)) === e`. K/N's `recoverStackTrace` is identity,
+ * so `unwrap` is identity too.
  */
-            // TODO: expect function - needs platform-specific implementation
-            template<typename E>
-            E *recover_stack_trace(E *exception) {
-                return exception;
-            }
+template <typename E>
+inline E* unwrap(E* exception) {
+    return exception;
+}
 
-            // Name conflict with recoverStackTrace
-            // TODO: expect suspend inline function - not directly translatable
-            // [[noreturn]] inline void recover_and_throw(std::exception* exception) {
-            //     throw *exception;
-            // }
-
-            /**
- * The opposite of [recoverStackTrace].
- * It is guaranteed that `unwrap(recoverStackTrace(e)) === e`
- */
-            // TODO: @PublishedApi annotation
-            // TODO: expect function - needs platform-specific implementation
-            template<typename E>
-            E *unwrap(E *exception) {
-                return exception;
-            }
-
-            // StackTraceElement and CoroutineStackFrame are declared in CoroutineStackFrame.hpp
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines::internal

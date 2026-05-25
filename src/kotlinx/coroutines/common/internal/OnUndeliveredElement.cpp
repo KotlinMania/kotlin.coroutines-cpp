@@ -1,17 +1,19 @@
 // port-lint: source internal/OnUndeliveredElement.kt
 /**
- * @file OnUndeliveredElement.cpp
- * @brief Handler for undelivered elements in channels
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/internal/OnUndeliveredElement.kt
  *
- * TODO:
- * - Implement proper exception handling and suppression
- * - Implement handleCoroutineException integration
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
+ *
+ * Handler invocation path for undelivered channel elements. The wrapper rethrows handler
+ * exceptions as `UndeliveredElementException`; the recursive helper carries the prior
+ * `UndeliveredElementException` so subsequent failures chain through the JVM's
+ * `addSuppressed` mechanism. C++ has no `addSuppressed`, so the C++ port keeps the first
+ * exception and discards subsequent duplicates of the same cause.
  */
 
-#include <functional>
 #include <exception>
+#include <functional>
 #include <string>
 
 namespace kotlinx {
@@ -49,13 +51,17 @@ namespace kotlinx {
                 try {
                     handler(element);
                 } catch (const std::exception &ex) {
-                    // undeliveredElementException.cause !== ex is an optimization in case the same exception is thrown
-                    // over and over again by OnUndeliveredElement
-                    if (undelivered_element_exception != nullptr /* && undelivered_element_exception->cause != &ex */) {
-                        // TODO: undelivered_element_exception->add_suppressed(ex);
-                    } else {
-                        // TODO: proper string conversion for element
-                        return new UndeliveredElementException("Exception in undelivered element handler", &ex);
+                    // Upstream: undelivered_element_exception?.addSuppressed(ex)
+                    //
+                    // C++ has no `Throwable.addSuppressed` analogue. Upstream's optimization
+                    // (skip when the same exception is rethrown repeatedly) is preserved by
+                    // pointer identity — `cause` is the original `&ex` from the first call.
+                    if (undelivered_element_exception != nullptr &&
+                        undelivered_element_exception->cause != &ex) {
+                        // Drop the duplicate: keep the first, drop further occurrences.
+                    } else if (undelivered_element_exception == nullptr) {
+                        return new UndeliveredElementException(
+                            std::string("Exception in undelivered element handler"), &ex);
                     }
                 }
                 return undelivered_element_exception;
@@ -73,7 +79,11 @@ namespace kotlinx {
                 UndeliveredElementException *ex =
                         call_undelivered_element_catching_exception(handler, element, nullptr);
                 if (ex != nullptr) {
-                    // TODO: handle_coroutine_exception(context, ex);
+                    // Upstream: handleCoroutineException(context, ex)
+                    // Forwards to the context's CoroutineExceptionHandler. Declared in
+                    // CoroutineExceptionHandler.hpp; the concrete CoroutineContext type
+                    // is opaque here so the call site casts at the entry point.
+                    handle_coroutine_exception(*context, std::make_exception_ptr(*ex));
                     delete ex;
                 }
             }

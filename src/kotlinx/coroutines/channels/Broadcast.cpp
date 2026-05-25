@@ -38,12 +38,22 @@ namespace kotlinx::coroutines::channels {
                 bool is_active() const override { return AbstractCoroutine<Unit>::is_active(); }
 
                 // AbstractCoroutine overrides
-                void on_completed(Unit value) override {
-                    // _channel->close(); // TODO
+                //
+                // Upstream:
+                //   override fun onCompleted(value: Unit) { _channel.close() }
+                //   override fun onCancelled(cause: Throwable, handled: Boolean) {
+                //       val processed = _channel.close(cause)
+                //       if (!processed && !handled) handleCoroutineException(context, cause)
+                //   }
+                void on_completed(Unit /*value*/) override {
+                    _channel->close(nullptr);
                 }
 
                 void on_cancelled(std::exception_ptr cause, bool handled) override {
-                    // _channel->close(cause); // TODO
+                    const bool processed = _channel->close(cause);
+                    if (!processed && !handled && cause) {
+                        handle_coroutine_exception(*get_context(), cause);
+                    }
                 }
 
                 // ProducerScope overrides (SendChannel)

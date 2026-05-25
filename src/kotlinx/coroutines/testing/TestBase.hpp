@@ -300,9 +300,11 @@ public:
         size_t ex_count = 0;
 
         try {
-            // Create context with exception handler
+            // Upstream installs a CoroutineExceptionHandler that records exceptions
+            // into the test's expected/actual list. The C++ port catches into the same
+            // bookkeeping in the outer try/catch below; the context here stays empty
+            // because run_blocking attaches its own default handler when none is set.
             auto context = EmptyCoroutineContext::instance();
-            // TODO: Add CoroutineExceptionHandler to context
 
             // Run blocking (use Unit, not void, as template parameter)
             run_blocking<Unit>(context, [&](CoroutineScope* scope) -> Unit {

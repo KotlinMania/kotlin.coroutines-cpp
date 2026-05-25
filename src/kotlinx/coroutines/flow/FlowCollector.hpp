@@ -1,44 +1,41 @@
 #pragma once
-// port-lint: source flow/FlowCollector.kt
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/FlowCollector.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.flow
+ */
 
 #include "kotlinx/coroutines/Continuation.hpp"
 
-namespace kotlinx {
-namespace coroutines {
-namespace flow {
+namespace kotlinx::coroutines::flow {
 
+/**
+ * [FlowCollector] is used as an intermediate or a terminal collector of the flow and represents
+ * an entity that accepts values emitted by the [Flow].
+ *
+ * This interface should usually not be implemented directly, but rather used as a receiver in a
+ * [flow] builder when implementing a custom operator, or with SAM-conversion. Implementations
+ * of this interface are not thread-safe.
+ *
+ * Upstream:
+ *   public fun interface FlowCollector<in T> {
+ *       public suspend fun emit(value: T)
+ *   }
+ */
 template <typename T>
 struct FlowCollector {
     virtual ~FlowCollector() = default;
-    
+
     /**
-     * Collects the value emitted by the upstream.
+     * Collects the value emitted by the upstream. This method is not thread-safe and should
+     * not be invoked concurrently.
      *
-     * This method is called by flow implementations to emit values to the collector.
-     * In the intended design, this should be a suspending function that provides
-     * backpressure by pausing when the collector cannot keep up.
-     *
-     * @param value The value to emit
-     * @param continuation The continuation for suspension support
-     * @return Pointer to suspension state/result
-     *
-     * @note **CURRENT LIMITATION**: While this method signature supports suspension,
-     *       most implementations do not actually suspend. This breaks backpressure
-     *       guarantees and can lead to unbounded memory usage or dropped values.
-     *
-     * @note **INTENDED BEHAVIOR**: Should suspend when downstream is not ready,
-     *       providing proper flow control and preventing buffer overflow.
-     *
-     * @throws Exception Any exception thrown by the collector will propagate
-     *                   upstream and stop further emissions.
-     *
-     * ### Thread Safety
-     * FlowCollector implementations are not thread-safe by default. Emissions
-     * must be serialized unless the collector explicitly documents thread safety.
+     * The Kotlin signature `suspend fun emit(value: T)` translates here to the project's
+     * suspend ABI: a `Continuation<void*>*` is threaded through as the last parameter and the
+     * return is `void*` with `COROUTINE_SUSPENDED` indicating suspension.
      */
     virtual void* emit(T value, Continuation<void*>* continuation) = 0;
 };
 
-} // namespace flow
-} // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines::flow

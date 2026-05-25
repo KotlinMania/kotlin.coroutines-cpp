@@ -1,62 +1,58 @@
 // port-lint: source Guidance.kt
-#include <functional>
-// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
-// Original: kotlinx-coroutines-core/common/src/Guidance.kt
-//
-// TODO:
-// - Deprecated annotations need to be represented as comments or static_assert
-// - Suspend lambda types need coroutine infrastructure
-// - EmptyCoroutineContext needs implementation
-// - Default parameter values need overload functions
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/Guidance.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines
+ *
+ * Upstream provides two `@Deprecated(level = ERROR)` overloads of `launch` and `async`
+ * that exist only to give compile-time guidance to users who try to call those builders
+ * without a CoroutineScope receiver. Both throw at runtime ("Should never be called").
+ *
+ * The C++ port keeps both as runtime-throwing stubs so the same calls compile and fail
+ * loudly with the same upstream message. `@Deprecated`, `@Suppress`, and
+ * `@kotlin.internal.LowPriorityInOverloadResolution` have no C++ analogues — the
+ * compile-time error mechanism is a documentation-only concern here.
+ */
 
+#include <functional>
+#include <memory>
 #include <stdexcept>
 
-namespace kotlinx {
-    namespace coroutines {
-        struct CoroutineContext;
-        struct CoroutineScope;
-        struct CoroutineStart;
-        struct Job;
-        template<typename T>
-        class Deferred;
+namespace kotlinx::coroutines {
 
-        /**
- * @suppress this is a function that should help users who are trying to use 'launch'
- * without the corresponding coroutine scope. It is not supposed to be called.
- */
-        // @Deprecated("'launch' can not be called without the corresponding coroutine scope. " +
-        //     "Consider wrapping 'launch' in 'coroutineScope { }', using 'runBlocking { }', " +
-        //     "or using some other 'CoroutineScope'", level = DeprecationLevel.ERROR)
-        // @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-        // @kotlin.internal.LowPriorityInOverloadResolution
-        // TODO: suspend lambda parameter needs coroutine infrastructure
-        // Note: This function exists only for Kotlin's @Deprecated(level=ERROR) guidance.
-        // In C++ there's no equivalent - consider removing this file entirely.
-        Job *launch(
-            const std::shared_ptr<CoroutineContext>& context,
-            const std::shared_ptr<CoroutineStart>& start,
-            std::function<void(CoroutineScope &)> block
-        ) {
-            throw std::logic_error("Should never be called, was introduced to help with incomplete code");
-        }
+struct CoroutineContext;
+struct CoroutineScope;
+struct CoroutineStart;
+struct Job;
+template <typename T>
+class Deferred;
 
-        /**
- * @suppress this is a function that should help users who are trying to use 'launch'
- * without the corresponding coroutine scope. It is not supposed to be called.
+/**
+ * Upstream:
+ *   @Deprecated(level = DeprecationLevel.ERROR)
+ *   public fun CoroutineScope?.launch(...): Job =
+ *       error("Should never be called, was introduced to help with incomplete code")
  */
-        // @Deprecated("'async' can not be called without the corresponding coroutine scope. " +
-        //     "Consider wrapping 'async' in 'coroutineScope { }', using 'runBlocking { }', " +
-        //     "or using some other 'CoroutineScope'", level = DeprecationLevel.ERROR)
-        // @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-        // @kotlin.internal.LowPriorityInOverloadResolution
-        // TODO: suspend lambda parameter needs coroutine infrastructure
-        template<typename T>
-        Deferred<T> *async(
-            const std::shared_ptr<CoroutineContext>& context,
-            const std::shared_ptr<CoroutineStart>& start,
-            std::function<T(CoroutineScope &)> block
-        ) {
-            throw std::logic_error("Should never be called, was introduced to help with incomplete code");
-        }
-    } // namespace coroutines
-} // namespace kotlinx
+Job *launch(const std::shared_ptr<CoroutineContext>& /*context*/,
+            const std::shared_ptr<CoroutineStart>& /*start*/,
+            std::function<void(CoroutineScope &)> /*block*/) {
+    throw std::logic_error(
+        "Should never be called, was introduced to help with incomplete code");
+}
+
+/**
+ * Upstream:
+ *   @Deprecated(level = DeprecationLevel.ERROR)
+ *   public fun <T> CoroutineScope?.async(...): Deferred<T> =
+ *       error("Should never be called, was introduced to help with incomplete code")
+ */
+template <typename T>
+Deferred<T> *async(const std::shared_ptr<CoroutineContext>& /*context*/,
+                   const std::shared_ptr<CoroutineStart>& /*start*/,
+                   std::function<T(CoroutineScope &)> /*block*/) {
+    throw std::logic_error(
+        "Should never be called, was introduced to help with incomplete code");
+}
+
+} // namespace kotlinx::coroutines

@@ -1,41 +1,48 @@
-#include <string>
+/**
+ * Transliterated from: kotlinx-coroutines-core/native/src/Debug.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines
+ *
+ * Upstream:
+ *   internal actual val DEBUG: Boolean = false
+ *   internal actual val Any.hexAddress: String
+ *       get() = identityHashCode().toUInt().toString(16)
+ *   internal actual val Any.classSimpleName: String
+ *       get() = this::class.simpleName ?: "Unknown"
+ *   internal actual inline fun assert(value: () -> Boolean) {}
+ *
+ * K/N evaluates `DEBUG = false` at runtime. The C++ port mirrors all four, using
+ * `typeid(...).name()` for `class_simple_name` (matches Kotlin's `KClass.simpleName` as
+ * closely as the host RTTI allows) and the object address for `hex_address`. The
+ * `assert(predicate)` overload is intentionally a no-op (upstream K/N is too — debug
+ * assertions ship only on the JVM target).
+ */
+
+#include <cstdint>
 #include <functional>
 #include <sstream>
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/native/src/Debug.kt
-//
-// TODO: actual keyword - platform-specific implementation marker
-// TODO: Extension properties (hexAddress, classSimpleName) need alternative approach
-// TODO: inline functions
+#include <string>
+#include <typeinfo>
 
-namespace kotlinx {
-    namespace coroutines {
-        // TODO: Remove imports, fully qualify or add includes:
-        // import kotlin.math.*
-        // import kotlin.native.*
+namespace kotlinx::coroutines {
 
-        // TODO: actual auto const bool kDebug = false;
+constexpr bool DEBUG = false;
 
-        // TODO: Extension property - implement as template or free function
-        template<typename T>
-        std::string hex_address(const T &obj) {
-            // TODO: identityHashCode equivalent
-            unsigned int hash = 0; // std::hash or identity hash
-            std::stringstream ss;
-            ss << std::hex << hash;
-            return ss.str();
-        }
+template <typename T>
+std::string hex_address(const T& obj) {
+    auto address = reinterpret_cast<std::uintptr_t>(&obj);
+    std::ostringstream out;
+    out << std::hex << address;
+    return out.str();
+}
 
-        // TODO: Extension property - implement as template or free function
-        template<typename T>
-        std::string class_simple_name(const T &obj) {
-            // TODO: this::class.simpleName or typeid
-            return "Unknown";
-        }
+template <typename T>
+std::string class_simple_name(const T& obj) {
+    const char* name = typeid(obj).name();
+    return name ? name : "Unknown";
+}
 
-        // TODO: actual inline - empty in release builds
-        inline void assert(std::function<bool()> value) {
-            // Empty implementation
-        }
-    } // namespace coroutines
-} // namespace kotlinx
+inline void assert_predicate(const std::function<bool()>& /*value*/) {}
+
+} // namespace kotlinx::coroutines

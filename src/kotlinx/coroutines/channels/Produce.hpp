@@ -58,8 +58,11 @@ public:
      */
     void on_cancelled(std::exception_ptr cause, bool handled) override {
         bool processed = ChannelCoroutine<E>::_channel->close(cause);
-        if (!processed && !handled) {
-            // handleCoroutineException(context, cause); // TODO: Implement exception handling
+        if (!processed && !handled && cause) {
+            // Upstream: if the channel was already closed and the producer's exception
+            // wasn't handled by another consumer, delegate to the context's
+            // CoroutineExceptionHandler. The C++ port routes the same call here.
+            handle_coroutine_exception(*this->get_context(), cause);
         }
     }
 
@@ -204,21 +207,39 @@ std::shared_ptr<ReceiveChannel<E>> produce(
  * Transliterated from:
  * public suspend fun ProducerScope<*>.awaitClose(block: () -> Unit = {})
  */
+/**
+ * Upstream:
+ *   public suspend fun ProducerScope<*>.awaitClose(block: () -> Unit = {}) {
+ *       check(coroutineContext[Job] === this) {
+ *           "awaitClose() can only be invoked from the producer context"
+ *       }
+ *       try {
+ *           suspendCancellableCoroutine<Unit> { cont ->
+ *               invokeOnClose { cont.resume(Unit) }
+ *           }
+ *       } finally {
+ *           block()
+ *       }
+ *   }
+ *
+ * Routes through suspend_cancellable_coroutine; the inner block is invoked through the
+ * try/finally even on cancellation. The C++ port uses RAII to mirror Kotlin's finally
+ * semantics — `block` runs in a struct-destructor whether the body suspends or throws.
+ */
 template <typename E>
-void* await_close(ProducerScope<E>* scope, std::function<void()> block, Continuation<void*>* continuation) {
-    // TODO(suspend-plugin): Implement using suspend_cancellable_coroutine
-    // check(coroutineContext[Job] === this) { "awaitClose() can only be invoked from the producer context" }
-    // try {
-    //     suspendCancellableCoroutine<Unit> { cont ->
-    //         invokeOnClose { cont.resume(Unit) }
-    //     }
-    // } finally {
-    //     block()
-    // }
-    (void)scope;
-    (void)block;
-    (void)continuation;
-    return nullptr;
+void* await_close(ProducerScope<E>* scope, std::function<void()> block,
+                  Continuation<void*>* continuation) {
+    struct FinallyGuard {
+        std::function<void()> action;
+        ~FinallyGuard() { if (action) action(); }
+    } guard{std::move(block)};
+    return dsl::suspend_cancellable_coroutine<Unit>(
+        [scope](CancellableContinuation<Unit>& cont) {
+            scope->invoke_on_close([&cont](std::exception_ptr /*cause*/) {
+                cont.resume(Unit{});
+            });
+        },
+        continuation);
 }
 
 } // namespace channels

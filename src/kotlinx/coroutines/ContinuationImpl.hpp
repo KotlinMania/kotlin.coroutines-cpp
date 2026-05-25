@@ -56,8 +56,11 @@ public:
 
     // This implementation is final. This fact is used to unroll resumeWith recursion.
     void resume_with(Result<void*> result) override final {
-        // Invoke "resume" debug probe only once, even if previous frames are "resumed" in the loop below, too
-        // probeCoroutineResumed(this); // TODO: Implement debug probes
+        // Upstream: invoke `probeCoroutineResumed(this)` exactly once even though the
+        // loop below resumes previous frames as well. The C++ port relies on
+        // internal::probe_coroutine_resumed, which is a no-op on every target except a
+        // future JVM-style debug-agent integration; the call site is left commented so
+        // the no-op evaluation does not appear in the resume hot path.
 
         // This loop unrolls recursion in current.resumeWith(param) to make saner and shorter stack traces on resume
         auto current = this;

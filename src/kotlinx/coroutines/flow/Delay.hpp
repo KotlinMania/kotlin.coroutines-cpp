@@ -122,37 +122,50 @@ std::shared_ptr<Flow<T>> debounce_internal(std::shared_ptr<Flow<T>> upstream, Fn
                 }
             }
 
-            // TODO(port): Full implementation requires select { onTimeout { } onReceiveCatching { } }
-            // which is not yet available in C++ port. See Select.hpp on_timeout().
-            //
-            // The Kotlin implementation:
-            // select<Unit> {
-            //     if (lastValue != null) {
-            //         onTimeout(timeoutMillis) {
-            //             downstream.emit(NULL.unbox(lastValue))
-            //             lastValue = null
-            //         }
-            //     }
-            //     values.onReceiveCatching { value ->
-            //         value.onSuccess { lastValue = it }
-            //              .onFailure { ... lastValue = DONE }
-            //     }
-            // }
-
-            // Temporary: just receive without timeout (breaks debounce semantics)
-            auto result = values->try_receive();
-            if (result.is_success()) {
+            /**
+             * Upstream:
+             *   select<Unit> {
+             *       if (lastValue != null) {
+             *           onTimeout(timeoutMillis) {
+             *               downstream.emit(NULL.unbox(lastValue))
+             *               lastValue = null
+             *           }
+             *       }
+             *       values.onReceiveCatching { value ->
+             *           value.onSuccess { lastValue = it }
+             *                .onFailure {
+             *                    it?.let { throw it }
+             *                    if (lastValue != null) downstream.emit(NULL.unbox(lastValue))
+             *                    lastValue = DONE
+             *                }
+             *       }
+             *   }
+             */
+            selects::select<void>([&](selects::SelectBuilder<void>& sel) {
                 if (last_value != nullptr) {
-                    delete static_cast<T*>(last_value);
+                    sel.on_timeout(timeout_millis, [&]() {
+                        downstream->emit(*static_cast<T*>(last_value), nullptr);
+                        delete static_cast<T*>(last_value);
+                        last_value = nullptr;
+                    });
                 }
-                last_value = new T(result.get_or_throw());
-            } else if (result.is_closed()) {
-                if (last_value != nullptr) {
-                    downstream->emit(*static_cast<T*>(last_value), nullptr);
-                    delete static_cast<T*>(last_value);
-                }
-                done = true;
-            }
+                values->on_receive_catching(sel, [&](const channels::ChannelResult<T>& value) {
+                    if (value.is_success()) {
+                        if (last_value != nullptr) delete static_cast<T*>(last_value);
+                        last_value = new T(value.get_or_throw());
+                    } else {
+                        if (auto cause = value.exception_or_null()) {
+                            std::rethrow_exception(cause);
+                        }
+                        if (last_value != nullptr) {
+                            downstream->emit(*static_cast<T*>(last_value), nullptr);
+                            delete static_cast<T*>(last_value);
+                        }
+                        last_value = DONE_SENTINEL();
+                        done = true;
+                    }
+                });
+            });
         }
     });
 }
@@ -192,37 +205,57 @@ std::shared_ptr<Flow<T>> sample(std::shared_ptr<Flow<T>> upstream, long period_m
                 delete collector;
             });
 
-        // TODO(port): Full implementation requires:
-        // 1. fixedPeriodTicker(period_millis) - a produce channel that emits Unit at intervals
-        // 2. select { values.onReceiveCatching { } ticker.onReceive { } }
-        //
-        // Transliterated from Kotlin:
-        // var lastValue: Any? = null
-        // val ticker = fixedPeriodTicker(periodMillis)
-        // while (lastValue !== DONE) {
-        //     select<Unit> {
-        //         values.onReceiveCatching { result -> ... }
-        //         ticker.onReceive { ... emit lastValue ... }
-        //     }
-        // }
-
-        // Temporary: pass-through (breaks sample semantics)
+        /**
+         * Upstream:
+         *   var lastValue: Any? = null
+         *   val ticker = fixedPeriodTicker(periodMillis)
+         *   while (lastValue !== DONE) {
+         *       select<Unit> {
+         *           values.onReceiveCatching { result ->
+         *               result.onSuccess { lastValue = it }
+         *                     .onFailure {
+         *                         it?.let { throw it }
+         *                         ticker.cancel(ChildCancelledException())
+         *                         lastValue = DONE
+         *                     }
+         *           }
+         *           ticker.onReceive {
+         *               val value = lastValue ?: return@onReceive
+         *               lastValue = null
+         *               downstream.emit(NULL.unbox(value))
+         *           }
+         *       }
+         *   }
+         */
         void* last_value = nullptr;
         bool done = false;
+        auto ticker = fixed_period_ticker(&scope, period_millis);
         while (!done) {
-            auto result = values->try_receive();
-            if (result.is_success()) {
-                if (last_value != nullptr) {
+            selects::select<void>([&](selects::SelectBuilder<void>& sel) {
+                values->on_receive_catching(sel, [&](const channels::ChannelResult<T>& result) {
+                    if (result.is_success()) {
+                        if (last_value != nullptr) delete static_cast<T*>(last_value);
+                        last_value = new T(result.get_or_throw());
+                    } else {
+                        if (auto cause = result.exception_or_null()) {
+                            std::rethrow_exception(cause);
+                        }
+                        ticker->cancel(std::make_exception_ptr(
+                            ChildCancelledException()));
+                        last_value = DONE_SENTINEL();
+                        done = true;
+                    }
+                });
+                ticker->on_receive(sel, [&](Unit) {
+                    if (last_value == nullptr || last_value == DONE_SENTINEL()) return;
+                    T value = *static_cast<T*>(last_value);
                     delete static_cast<T*>(last_value);
-                }
-                last_value = new T(result.get_or_throw());
-                // In real impl, only emit on ticker, not on every receive
-                downstream->emit(*static_cast<T*>(last_value), nullptr);
-            } else if (result.is_closed()) {
-                done = true;
-            }
+                    last_value = nullptr;
+                    downstream->emit(value, nullptr);
+                });
+            });
         }
-        if (last_value != nullptr) {
+        if (last_value != nullptr && last_value != DONE_SENTINEL()) {
             delete static_cast<T*>(last_value);
         }
     });
@@ -258,32 +291,40 @@ std::shared_ptr<Flow<T>> timeout(std::shared_ptr<Flow<T>> upstream, long timeout
                 delete collector;
             });
 
-        // TODO(port): Full implementation requires whileSelect with onTimeout:
-        // whileSelect {
-        //     values.onReceiveCatching { value ->
-        //         value.onSuccess { downStream.emit(it) }
-        //              .onClosed { it?.let { throw it }; return false }
-        //         return true
-        //     }
-        //     onTimeout(timeout) {
-        //         throw TimeoutCancellationException("Timed out waiting for $timeout")
-        //     }
-        // }
-
-        // Temporary: collect without timeout (breaks timeout semantics)
-        bool done = false;
-        while (!done) {
-            auto result = values->try_receive();
-            if (result.is_success()) {
-                downstream->emit(result.get_or_throw(), nullptr);
-            } else if (result.is_closed()) {
-                auto cause = result.exception_or_null();
-                if (cause) {
-                    std::rethrow_exception(cause);
-                }
-                done = true;
-            }
-        }
+        /**
+         * Upstream:
+         *   whileSelect {
+         *       values.onReceiveCatching { value ->
+         *           value.onSuccess { downStream.emit(it) }
+         *                .onClosed { it?.let { throw it }; return@onReceiveCatching false }
+         *           return@onReceiveCatching true
+         *       }
+         *       onTimeout(timeout) {
+         *           throw TimeoutCancellationException("Timed out waiting for $timeout")
+         *       }
+         *   }
+         */
+        selects::while_select([&]() -> bool {
+            bool keep_going = false;
+            selects::select<void>([&](selects::SelectBuilder<void>& sel) {
+                values->on_receive_catching(sel, [&](const channels::ChannelResult<T>& value) {
+                    if (value.is_success()) {
+                        downstream->emit(value.get_or_throw(), nullptr);
+                        keep_going = true;
+                    } else {
+                        if (auto cause = value.exception_or_null()) {
+                            std::rethrow_exception(cause);
+                        }
+                        keep_going = false;
+                    }
+                });
+                sel.on_timeout(timeout_millis, [&]() {
+                    throw TimeoutCancellationException(
+                        "Timed out waiting for " + std::to_string(timeout_millis) + "ms");
+                });
+            });
+            return keep_going;
+        });
     });
 }
 
@@ -292,24 +333,26 @@ std::shared_ptr<Flow<T>> timeout(std::shared_ptr<Flow<T>> upstream, long timeout
 // =============================================================================
 
 /**
- * Creates a channel that emits Unit at fixed intervals.
- *
- * Transliterated from: internal fun CoroutineScope.fixedPeriodTicker(delayMillis: Long)
- *
- * TODO(port): Requires delay() suspend function to work properly.
+ * Upstream:
+ *   internal fun CoroutineScope.fixedPeriodTicker(delayMillis: Long): ReceiveChannel<Unit> {
+ *       return produce(capacity = 0) {
+ *           delay(delayMillis)
+ *           while (true) {
+ *               channel.send(Unit)
+ *               delay(delayMillis)
+ *           }
+ *       }
+ *   }
  */
 inline std::shared_ptr<ReceiveChannel<Unit>> fixed_period_ticker(
     CoroutineScope* scope,
-    long delay_millis
-) {
-    (void)delay_millis;  // Used when delay() is implemented
+    long delay_millis) {
     return produce<Unit>(scope, nullptr, 0, BufferOverflow::SUSPEND, CoroutineStart::DEFAULT,
-        [](ProducerScope<Unit>* producer) {
-            // TODO(port): Initial delay(delay_millis) here
-
+        [delay_millis](ProducerScope<Unit>* producer) {
+            ::kotlinx::coroutines::delay(delay_millis, nullptr);
             while (true) {
                 producer->send(Unit{}, nullptr);
-                // TODO(port): delay(delay_millis) here
+                ::kotlinx::coroutines::delay(delay_millis, nullptr);
             }
         });
 }

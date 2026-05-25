@@ -27,8 +27,12 @@ namespace kotlinx::coroutines::flow::internal {
             auto c1 = channels::create_channel<T1>(channels::Channel<T1>::BUFFERED);
             auto c2 = channels::create_channel<T2>(channels::Channel<T2>::BUFFERED);
 
-            // Threads for concurrent collection
-            // TODO: Use CoroutineScope.launch when available
+            // Upstream uses `coroutineScope { launch { ... } launch { ... } }` so the
+            // two upstream collectors run as structured-concurrency children of the
+            // outer collect's coroutine. The C++ port spawns std::thread workers
+            // because the dispatcher's launch primitive is owned by the calling
+            // coroutine and is not in scope inside this raw collect adapter; the
+            // surrounding join loop below mirrors the structured-concurrency wait.
             std::thread t1([&](){
                 try {
                     SendingCollector<T1> sc(c1.get());

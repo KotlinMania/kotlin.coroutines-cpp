@@ -1,91 +1,154 @@
 // port-lint: source internal/Concurrent.common.kt
-#include <unordered_set>
-#include <atomic>
-#include <mutex>
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/Concurrent.common.kt
-//
-// TODO: This is a mechanical transliteration - semantics not fully implemented
-// TODO: expect/actual constructs need platform-specific implementations
-// TODO: Annotations (@OptionalExpectation, @Target) need C++ equivalents or comments
-// TODO: Extension properties and inline functions need proper C++ implementations
-// TODO: Template constraints and concepts may be needed for generic functions
-
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // TODO: expect class - needs platform-specific implementation
-            class ReentrantLock {
-            public:
-                ReentrantLock();
-
-                bool try_lock();
-
-                void unlock();
-            };
-
-            // TODO: expect inline function - template implementation needed
-            template<typename T>
-            T with_lock(ReentrantLock &lock, T (*action)()) {
-                // TODO: Implement lock guard pattern
-                return action();
-            }
-
-            // TODO: expect function - needs platform-specific implementation
-            template<typename E>
-            std::unordered_set<E *> identity_set(int expected_size);
-
-            /**
- * Annotation indicating that the marked property is the subject of benign data race.
- * LLVM does not support this notion, so on K/N platforms we alias it into `@Volatile` to prevent potential OoTA.
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/Concurrent.common.kt
  *
- * The purpose of this annotation is not to save an extra-volatile on JVM platform, but rather to explicitly emphasize
- * that data-race is benign.
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
+ *
+ * Upstream declares five `expect` shapes:
+ *
+ *   internal expect class ReentrantLock() { fun tryLock(): Boolean; fun unlock() }
+ *   internal expect inline fun <T> ReentrantLock.withLock(action: () -> T): T
+ *   internal expect fun <E> identitySet(expectedSize: Int): MutableSet<E>
+ *   @OptionalExpectation @Target(FIELD) internal expect annotation class BenignDataRace()
+ *   internal expect class WorkaroundAtomicReference<V>(value: V) { ... }
+ *
+ * The C++ port resolves each `expect` to a real std-backed implementation. `BenignDataRace`
+ * is a JVM/native code-generation annotation with no C++ equivalent; in C++ memory ordering
+ * is expressed on the access site via std::atomic and std::memory_order, so the annotation
+ * has no companion declaration here.
  */
-            // TODO: @OptionalExpectation annotation - translate to C++ attribute or comment
-            // TODO: @Target(AnnotationTarget.FIELD) - field-level annotation
-            // TODO: expect annotation class - needs platform-specific implementation or macro
-            // #define BENIGN_DATA_RACE // placeholder
 
-            // Used **only** as a workaround for #3820 in StateFlow. Do not use anywhere else
-            // TODO: expect class - needs platform-specific implementation
-            template<typename V>
-            class WorkaroundAtomicReference {
-            private:
-                V value_;
+#include <atomic>
+#include <cstddef>
+#include <mutex>
+#include <unordered_set>
+#include <utility>
 
-            public:
-                explicit WorkaroundAtomicReference(V value) : value_(value) {
-                }
+namespace kotlinx::coroutines::internal {
 
-                V get();
+/**
+ * Upstream:
+ *   internal expect class ReentrantLock() { fun tryLock(): Boolean; fun unlock() }
+ */
+class ReentrantLock {
+public:
+    ReentrantLock() = default;
+    ReentrantLock(const ReentrantLock&) = delete;
+    ReentrantLock& operator=(const ReentrantLock&) = delete;
 
-                void set(V value);
+    bool try_lock() { return mutex_.try_lock(); }
+    void unlock() { mutex_.unlock(); }
+    void lock() { mutex_.lock(); }
 
-                V get_and_set(V value);
+private:
+    std::recursive_mutex mutex_;
+};
 
-                bool compare_and_set(V expected, V value);
-            };
+/**
+ * Upstream:
+ *   internal expect inline fun <T> ReentrantLock.withLock(action: () -> T): T
+ *
+ * The Kotlin `inline fun` becomes a C++ function template — the call site still pays no
+ * abstraction cost beyond the std::lock_guard itself.
+ */
+template <typename T, typename Action>
+inline T with_lock(ReentrantLock& lock, Action action) {
+    std::lock_guard<ReentrantLock> guard(lock);
+    return action();
+}
 
-            // TODO: Extension property - implement as free functions or template specialization
-            template<typename T>
-            T get_value(WorkaroundAtomicReference<T> &ref) {
-                return ref.get();
-            }
+/**
+ * Upstream:
+ *   internal expect fun <E> identitySet(expectedSize: Int): MutableSet<E>
+ *
+ * Identity comparison on Kotlin's JVM uses an IdentityHashMap-backed set; on K/N the
+ * default `==` is already reference equality. In C++ the "identity set" is a hash set of
+ * raw pointers with the default pointer-hash.
+ */
+template <typename E>
+inline std::unordered_set<E*> identity_set(std::size_t expected_size) {
+    std::unordered_set<E*> set;
+    set.reserve(expected_size);
+    return set;
+}
 
-            template<typename T>
-            void set_value(WorkaroundAtomicReference<T> &ref, T value) {
-                ref.set(value);
-            }
+/**
+ * Upstream:
+ *   internal expect class WorkaroundAtomicReference<V>(value: V) {
+ *       fun get(): V
+ *       fun set(value: V)
+ *       fun getAndSet(value: V): V
+ *       fun compareAndSet(expected: V, value: V): Boolean
+ *   }
+ *
+ * Used as a StateFlow workaround for kotlinx.coroutines#3820. The compare-and-set semantics
+ * are acquire/release on a value-equality match — StateFlow's call sites rely on the
+ * happens-before edge between the write that publishes the value and the read that
+ * observes it.
+ */
+template <typename V>
+class WorkaroundAtomicReference {
+public:
+    explicit WorkaroundAtomicReference(V value) : slot_(std::move(value)) {}
 
-            // TODO: inline function with lambda parameter
-            template<typename T, typename Action>
-            inline void loop(WorkaroundAtomicReference<T> &ref, Action action) {
-                while (true) {
-                    T current_value = get_value(ref);
-                    action(ref, current_value);
-                }
-            }
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx
+    V get() const {
+        std::lock_guard<std::mutex> guard(mutex_);
+        return slot_;
+    }
+
+    void set(V value) {
+        std::lock_guard<std::mutex> guard(mutex_);
+        slot_ = std::move(value);
+    }
+
+    V get_and_set(V value) {
+        std::lock_guard<std::mutex> guard(mutex_);
+        V previous = std::move(slot_);
+        slot_ = std::move(value);
+        return previous;
+    }
+
+    bool compare_and_set(const V& expected, V value) {
+        std::lock_guard<std::mutex> guard(mutex_);
+        if (!(slot_ == expected)) return false;
+        slot_ = std::move(value);
+        return true;
+    }
+
+private:
+    mutable std::mutex mutex_;
+    V slot_;
+};
+
+/**
+ * Upstream:
+ *   internal var <T> WorkaroundAtomicReference<T>.value: T
+ *       get() = this.get(); set(value) = this.set(value)
+ */
+template <typename T>
+inline T get_value(const WorkaroundAtomicReference<T>& ref) {
+    return ref.get();
+}
+
+template <typename T>
+inline void set_value(WorkaroundAtomicReference<T>& ref, T value) {
+    ref.set(std::move(value));
+}
+
+/**
+ * Upstream:
+ *   internal inline fun <T> WorkaroundAtomicReference<T>.loop(
+ *       action: WorkaroundAtomicReference<T>.(value: T) -> Unit
+ *   ) {
+ *       while (true) { action(value) }
+ *   }
+ */
+template <typename T, typename Action>
+inline void loop(WorkaroundAtomicReference<T>& ref, Action action) {
+    while (true) {
+        action(ref, get_value(ref));
+    }
+}
+
+} // namespace kotlinx::coroutines::internal

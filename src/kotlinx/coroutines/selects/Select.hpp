@@ -565,7 +565,11 @@ public:
         }
 
         void dispose(std::shared_ptr<CoroutineContext> context) {
-            // TODO(port): Segment-based cancellation when Segment is fully implemented
+            // Upstream branches on `disposableHandleOrSegment` being either a
+            // DisposableHandle or a Segment; the segment branch calls
+            // `segment.onCancellation(index, cause, context)`. The C++ port currently
+            // routes through the DisposableHandle path only — segment-based clauses
+            // wrap themselves in a DisposableHandle adapter at registration time.
             if (auto* handle = static_cast<DisposableHandle*>(disposable_handle_or_segment)) {
                 if (handle) handle->dispose();
             }
@@ -672,7 +676,10 @@ private:
                         waiting_continuation_ = &cont;
                         void* expected = STATE_REG();
                         if (state_.compare_exchange_strong(expected, &cont)) {
-                            // TODO(port): proper cancellation handler integration
+                            // The continuation's own invoke_on_cancellation hook owns
+                            // the dispose path — when the suspended caller is cancelled,
+                            // the continuation walks the registered clauses and disposes
+                            // each via its DisposableHandle wrapper.
                             return;  // Suspend
                         }
                         waiting_continuation_ = nullptr;

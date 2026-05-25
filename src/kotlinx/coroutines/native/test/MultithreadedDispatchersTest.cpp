@@ -1,109 +1,123 @@
-// Original file: kotlinx-coroutines-core/native/test/MultithreadedDispatchersTest.kt
-// TODO: Remove or convert import statements
-// TODO: Convert @Test annotation to appropriate test framework
-// TODO: Convert atomic operations and channels
-// TODO: Convert suspend functions and coroutine builders
-// TODO: Handle Worker and SynchronizedObject
+/**
+ * Transliterated from: kotlinx-coroutines-core/native/test/MultithreadedDispatchersTest.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines
+ *   imports: kotlinx.atomicfu.*, kotlinx.coroutines.channels.*, kotlinx.coroutines.internal.*,
+ *            kotlin.native.concurrent.*, kotlin.test.*, kotlin.time.Duration.Companion.seconds
+ *
+ * Smoke tests for the multithreaded dispatchers: that newFixedThreadPoolContext does not
+ * allocate more dispatchers than required, and that newSingleThreadContext does not block
+ * on cancelled scheduled coroutines during close. The Kotlin `runBlocking { ... }`
+ * wrapper drives the suspending body to completion; the C++ port uses the Continuation
+ * ABI directly via `run_blocking(...)` which performs the same in-place suspension drive.
+ */
 
-namespace kotlinx {
-    namespace coroutines {
-        // TODO: import kotlinx.atomicfu.*
-        // TODO: import kotlinx.coroutines.channels.*
-        // TODO: import kotlinx.coroutines.internal.*
-        // TODO: import kotlin.native.concurrent.*
-        // TODO: import kotlin.test.*
-        // TODO: import kotlin.time.Duration.Companion.seconds
+#include "kotlinx/coroutines/Builders.hpp"
+#include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/Delay.hpp"
+#include "kotlinx/coroutines/Dispatchers.hpp"
+#include "kotlinx/coroutines/MultithreadedDispatchers.hpp"
+#include "kotlinx/coroutines/Timeout.hpp"
+#include "kotlinx/coroutines/Yield.hpp"
+#include "kotlinx/coroutines/channels/Channel.hpp"
+#include "kotlinx/coroutines/internal/Synchronized.common.cpp"
 
-        class BlockingBarrier {
-        private:
-            int n_;
-            std::atomic<int> counter_;
-            Channel<void> wake_up_;
+#include <atomic>
+#include <cassert>
+#include <chrono>
+#include <set>
 
-        public:
-            BlockingBarrier(int n) : n_(n), counter_(0), wake_up_(n - 1) {
+namespace kotlinx::coroutines {
+
+/**
+ * Upstream:
+ *   private class BlockingBarrier(val n: Int) {
+ *       val counter = atomic(0)
+ *       val wakeUp = Channel<Unit>(n - 1)
+ *       fun await() { ... }
+ *   }
+ */
+class BlockingBarrier {
+public:
+    explicit BlockingBarrier(int n)
+        : n_(n), counter_(0), wake_up_(channels::make_channel<Unit>(n - 1)) {}
+
+    void await() {
+        int count = counter_.fetch_add(1) + 1;
+        if (count == n_) {
+            for (int i = 0; i < n_ - 1; ++i) {
+                run_blocking([&]() { wake_up_->send(Unit{}, nullptr); });
             }
+        } else if (count < n_) {
+            run_blocking([&]() { wake_up_->receive(nullptr); });
+        }
+    }
 
-            void await() {
-                int count = counter_.fetch_add(1) + 1;
-                if (count == n_) {
-                    for (int i = 0; i < n_ - 1; ++i) {
-                        // TODO: runBlocking is a suspend function
-                        // runBlocking {
-                        wake_up_.send();
-                        // }
-                    }
-                } else if (count < n_) {
-                    // TODO: runBlocking is a suspend function
-                    // runBlocking {
-                    wake_up_.receive();
-                    // }
-                }
+private:
+    int n_;
+    std::atomic<int> counter_;
+    std::shared_ptr<channels::Channel<Unit>> wake_up_;
+};
+
+class MultithreadedDispatchersTest {
+public:
+    /**
+     * Upstream:
+     *   @Test
+     *   fun testNotAllocatingExtraDispatchers() { ... }
+     */
+    void test_not_allocating_extra_dispatchers() {
+        BlockingBarrier barrier(2);
+        internal::SynchronizedObject lock;
+        auto spin = [&](std::set<Worker*>& set) {
+            for (int i = 0; i < 100; ++i) {
+                internal::synchronized<void>(&lock, [&]() {
+                    set.insert(Worker::current());
+                });
+                delay(1, nullptr);
             }
         };
-
-        class MultithreadedDispatchersTest {
-        public:
-            /**
-     * Test that [newFixedThreadPoolContext] does not allocate more dispatchers than it needs to.
-     * Incidentally also tests that it will allocate enough workers for its needs. Otherwise, the test will hang.
-     */
-            // TODO: @Test
-            void test_not_allocating_extra_dispatchers() {
-                BlockingBarrier barrier(2);
-                SynchronizedObject lock;
-                auto spin = [&](std::set<Worker *> &set) {
-                    // TODO: suspend function
-                    for (int i = 0; i < 100; ++i) {
-                        synchronized(lock)
-                        {
-                            set.insert(Worker::current);
-                        }
-                        delay(1);
-                    }
-                };
-                auto dispatcher = new_fixed_thread_pool_context(64, "test");
-                try {
-                    // TODO: runBlocking is a suspend function
-                    // runBlocking {
-                    std::set<Worker *> encountered_workers;
-                    auto coroutine1 = launch(dispatcher, [&]() {
-                        barrier.await();
-                        spin(encountered_workers);
-                    });
-                    auto coroutine2 = launch(dispatcher, [&]() {
-                        barrier.await();
-                        spin(encountered_workers);
-                    });
-                    std::vector{coroutine1, coroutine2}.join_all();
-                    assert(encountered_workers.size() == 2);
-                    // }
-                }
-                finally{
-                    dispatcher.close();
-        
-                }
-            }
-
-            /**
-     * Test that [newSingleThreadContext] will not wait for the cancelled scheduled coroutines before closing.
-     */
-            // TODO: @Test
-            void timeouts_not_preventing_closing() {
-                // TODO: runBlocking is a suspend function
-                // runBlocking {
-                auto dispatcher = WorkerDispatcher("test");
-                with_context(dispatcher, [&]() {
-                    // TODO: withTimeout is a suspend function
-                    with_timeout(5000ms, [&]() {
-                    });
+        auto dispatcher = new_fixed_thread_pool_context(64, "test");
+        try {
+            run_blocking([&]() {
+                std::set<Worker*> encountered_workers;
+                auto coroutine1 = launch(dispatcher, [&]() {
+                    barrier.await();
+                    spin(encountered_workers);
                 });
-                with_timeout(1000ms, [&]() {
-                    dispatcher.close(); // should not wait for the timeout
-                    yield();
+                auto coroutine2 = launch(dispatcher, [&]() {
+                    barrier.await();
+                    spin(encountered_workers);
                 });
-                // }
-            }
-        };
-    } // namespace coroutines
-} // namespace kotlinx
+                join_all({coroutine1, coroutine2});
+                assert(encountered_workers.size() == 2);
+            });
+        } catch (...) {
+            dispatcher->close();
+            throw;
+        }
+        dispatcher->close();
+    }
+
+    /**
+     * Upstream:
+     *   @Test
+     *   fun timeoutsNotPreventingClosing(): Unit = runBlocking { ... }
+     */
+    void timeouts_not_preventing_closing() {
+        run_blocking([&]() {
+            auto dispatcher = std::make_shared<WorkerDispatcher>("test");
+            with_context(dispatcher, [&]() {
+                with_timeout(std::chrono::seconds(5), [&]() {});
+            });
+            with_timeout(std::chrono::seconds(1), [&]() {
+                dispatcher->close();  // should not wait for the timeout
+                yield(nullptr);
+            });
+        });
+    }
+};
+
+} // namespace kotlinx::coroutines

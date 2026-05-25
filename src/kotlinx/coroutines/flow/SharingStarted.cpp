@@ -1,41 +1,75 @@
 // port-lint: source kotlinx-coroutines-core/common/src/flow/SharingStarted.kt
 /**
- * @file SharingStarted.cpp
- * @brief Implementation of SharingStarted.
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt
- * Lines 142-204 (implementation classes)
+ * (private classes StartedEagerly, StartedLazily, StartedWhileSubscribed; lines 142-204)
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.flow
  */
 
 #include "kotlinx/coroutines/flow/SharingStarted.hpp"
+#include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
+#include "kotlinx/coroutines/flow/FlowCollector.hpp"
+#include "kotlinx/coroutines/flow/StateFlow.hpp"
+#include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/Delay.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+
+#include <functional>
+#include <limits>
+#include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <sstream>
 
-namespace kotlinx {
-namespace coroutines {
-namespace flow {
+namespace kotlinx::coroutines::flow {
 
-// -------------------------------- implementation --------------------------------
-
-Flow<SharingCommand>* StartedEagerly::command(StateFlow<int>* subscription_count) {
-    (void)subscription_count;  // Not used - always starts
-    // Return a single-element flow with START
-    // TODO: This leaks memory - need to manage Flow lifecycle properly
-    return flow_of(SharingCommand::START).get();
+/**
+ * Upstream:
+ *   private class StartedEagerly : SharingStarted {
+ *       override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> =
+ *           flowOf(SharingCommand.START)
+ *   }
+ */
+std::shared_ptr<Flow<SharingCommand>> StartedEagerly::command(
+    std::shared_ptr<StateFlow<int>> /*subscription_count*/) {
+    return flow_of<SharingCommand>({SharingCommand::START});
 }
 
 std::string StartedEagerly::to_string() const {
     return "SharingStarted.Eagerly";
 }
 
-Flow<SharingCommand>* StartedLazily::command(StateFlow<int>* subscription_count) {
-    // Implementation requires Flow builder infrastructure
-    // For now, we create a simple flow that watches subscription_count
-    // TODO: Implement using proper flow builder when available
-    // TODO: This leaks memory - need to manage Flow lifecycle properly
-    return flow_of(SharingCommand::START).get();  // Simplified: lazily acts like eagerly for now
+/**
+ * Upstream:
+ *   private class StartedLazily : SharingStarted {
+ *       override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> = flow {
+ *           var started = false
+ *           subscriptionCount.collect { count ->
+ *               if (count > 0 && !started) {
+ *                   started = true
+ *                   emit(SharingCommand.START)
+ *               }
+ *           }
+ *       }
+ *   }
+ */
+std::shared_ptr<Flow<SharingCommand>> StartedLazily::command(
+    std::shared_ptr<StateFlow<int>> subscription_count) {
+    return flow_builder<SharingCommand>(
+        [subscription_count](FlowCollector<SharingCommand>* sink,
+                             std::shared_ptr<Continuation<void*>> cont) -> void* {
+            auto started = std::make_shared<bool>(false);
+            return subscription_count->collect_each(
+                [sink, started](int count) {
+                    if (count > 0 && !*started) {
+                        *started = true;
+                        sink->emit(SharingCommand::START, nullptr);
+                    }
+                },
+                cont.get());
+        });
 }
 
 std::string StartedLazily::to_string() const {
@@ -60,16 +94,44 @@ StartedWhileSubscribed::StartedWhileSubscribed(long long stop_timeout_millis,
     }
 }
 
-Flow<SharingCommand>* StartedWhileSubscribed::command(StateFlow<int>* subscription_count) {
-    (void)subscription_count;
-    // Full implementation requires:
-    // - transformLatest operator
-    // - delay operator
-    // - dropWhile operator
-    // - distinctUntilChanged operator
-    // TODO: Implement when these operators are available
-    // TODO: This leaks memory - need to manage Flow lifecycle properly
-    return flow_of(SharingCommand::START).get();  // Simplified for now
+/**
+ * Upstream:
+ *   override fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand> =
+ *       subscriptionCount
+ *           .transformLatest { count ->
+ *               if (count > 0) emit(SharingCommand.START)
+ *               else {
+ *                   delay(stopTimeout)
+ *                   if (replayExpiration > 0) { emit(STOP); delay(replayExpiration) }
+ *                   emit(STOP_AND_RESET_REPLAY_CACHE)
+ *               }
+ *           }
+ *           .dropWhile { it != SharingCommand.START }
+ *           .distinctUntilChanged()
+ */
+std::shared_ptr<Flow<SharingCommand>> StartedWhileSubscribed::command(
+    std::shared_ptr<StateFlow<int>> subscription_count) {
+    const long long stop_timeout = stop_timeout_;
+    const long long replay_expiration = replay_expiration_;
+    auto staged = transform_latest<int, SharingCommand>(
+        subscription_count,
+        [stop_timeout, replay_expiration](
+            FlowCollector<SharingCommand>* sink, int count,
+            std::shared_ptr<Continuation<void*>> cont) -> void* {
+            if (count > 0) {
+                return sink->emit(SharingCommand::START, cont.get());
+            }
+            ::kotlinx::coroutines::delay(stop_timeout, cont.get());
+            if (replay_expiration > 0) {
+                sink->emit(SharingCommand::STOP, cont.get());
+                ::kotlinx::coroutines::delay(replay_expiration, cont.get());
+            }
+            return sink->emit(SharingCommand::STOP_AND_RESET_REPLAY_CACHE, cont.get());
+        });
+    auto dropped = drop_while<SharingCommand>(
+        staged,
+        [](SharingCommand value) { return value != SharingCommand::START; });
+    return distinct_until_changed<SharingCommand>(dropped);
 }
 
 std::string StartedWhileSubscribed::to_string() const {

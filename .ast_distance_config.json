@@ -1,0 +1,22 @@
+{
+  "type": "port",
+  "name": "kotlin.coroutines-cpp",
+  "source": {
+    "path": "/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src",
+    "lang": "kotlin"
+  },
+  "target": {
+    "path": "/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines",
+    "lang": "cpp"
+  },
+  "checks": {
+    "deep": true,
+    "missing": true,
+    "todos": true,
+    "lint": true
+  },
+  "reexport_modules": [
+    "mod.rs",
+    "lib.rs"
+  ]
+}

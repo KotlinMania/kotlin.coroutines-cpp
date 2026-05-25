@@ -1,31 +1,22 @@
 // port-lint: source internal/InternalAnnotations.common.kt
-// Transliterated from Kotlin to C++
-//
-// TODO: This is a mechanical transliteration - semantics not fully implemented
-// TODO: Annotations in Kotlin don't have direct C++ equivalents
-// TODO: @Target, @OptionalExpectation are Kotlin-specific
-// TODO: expect annotation needs platform-specific implementation or macro
-// TODO: This file is primarily for metadata - may be implemented as comments or attributes
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/InternalAnnotations.common.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
+ *
+ * Upstream:
+ *   @OptionalExpectation
+ *   @Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY, ...)
+ *   internal expect annotation class IgnoreJreRequirement()
+ *
+ * The annotation exists only to silence the JVM animal-sniffer compileOnly dependency
+ * during Kotlin compilation. It carries no runtime behavior. In C++ the equivalent role
+ * is filled by a tag macro that expands to nothing — call sites can leave it in place as
+ * documentation, and there is no analogue of @OptionalExpectation since the annotation
+ * has no per-platform actuals.
+ */
 
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // Ignore JRE requirements for animal-sniffer, compileOnly dependency
-            // TODO: @Target annotation - multiple targets
-            // TODO: @OptionalExpectation - expect declaration
-            // TODO: expect annotation class - needs platform-specific implementation or preprocessor macro
-
-            // C++ doesn't have a direct equivalent to Kotlin annotations
-            // This would typically be implemented as:
-            // 1. Compiler attributes (e.g., [[deprecated]], [[nodiscard]])
-            // 2. Preprocessor macros
-            // 3. Comments for documentation purposes
-
-            // Placeholder implementation as a macro:
-#define IGNORE_JRE_REQUIREMENT
-
-            // Or as a C++11 attribute (non-standard):
-            // [[ignore_jre_requirement]]
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx
+#ifndef KOTLINX_COROUTINES_IGNORE_JRE_REQUIREMENT
+#define KOTLINX_COROUTINES_IGNORE_JRE_REQUIREMENT
+#endif

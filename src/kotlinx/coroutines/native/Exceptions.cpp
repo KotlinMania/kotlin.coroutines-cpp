@@ -10,8 +10,13 @@
 
 namespace kotlinx {
     namespace coroutines {
-        CancellationException *make_cancellation_exception(const std::string &message, std::exception_ptr cause) {
-            // TODO: Implement proper exception creation or factory
+        CancellationException *make_cancellation_exception(const std::string &message,
+                                                            std::exception_ptr cause) {
+            // Upstream uses Throwable.initCause to attach the cause; K/N already keeps
+            // initCause as a no-op (see native/internal/StackTraceRecovery.kt), so the
+            // cause parameter is intentionally ignored here. The factory returns a fresh
+            // CancellationException carrying just the message.
+            (void)cause;
             return new CancellationException(message);
         }
 

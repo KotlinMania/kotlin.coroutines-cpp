@@ -18,12 +18,17 @@ public:
         : kotlinx::coroutines::internal::ScopeCoroutine<T>(context, uCont) {}
 
     bool child_cancelled(std::exception_ptr cause) override {
-        // Kotlin: if (cause is ChildCancelledException) return true
-        // TODO(semantics): check exception type properly
-        // For now we assume typical cancellation propagation
+        // Upstream: `if (cause is ChildCancelledException) return true`
+        // The C++ port uses an exception_ptr rethrow + catch to discriminate, since
+        // dynamic_cast doesn't work through exception_ptr alone.
         if (cause) {
-            // Placeholder type check
-             // if (is_child_cancelled_exception(cause)) return true;
+            try {
+                std::rethrow_exception(cause);
+            } catch (const ChildCancelledException&) {
+                return true;
+            } catch (...) {
+                // not a ChildCancelledException — fall through
+            }
         }
         return this->cancel_impl(cause);
     }

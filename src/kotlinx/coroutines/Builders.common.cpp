@@ -26,21 +26,16 @@ StandaloneCoroutine::StandaloneCoroutine(std::shared_ptr<CoroutineContext> paren
     : AbstractCoroutine<Unit>(parentContext, true, active),
       parent_context_ref(parentContext) {}
 
+/**
+ * Upstream:
+ *   override fun handleJobException(exception: Throwable): Boolean {
+ *       handleCoroutineException(context, exception)
+ *       return true
+ *   }
+ */
 bool StandaloneCoroutine::handle_job_exception(std::exception_ptr exception) {
-    /*
-     * TODO: STUB - Exception handling not implemented
-     *
-     * Kotlin source: StandaloneCoroutine.handleJobException() in Builders.common.kt
-     *
-     * What's missing:
-     * - Should call handleCoroutineException(context, exception) to propagate
-     *   the exception to the CoroutineExceptionHandler in the context
-     * - handleCoroutineException() needs to be implemented first
-     *
-     * Current behavior: Silently swallows exception and returns true (handled)
-     * Correct behavior: Propagate to CoroutineExceptionHandler, then return true
-     */
-    (void)exception;
+    auto ctx = this->get_context();
+    handle_coroutine_exception(*ctx, exception);
     return true;
 }
 
@@ -54,23 +49,19 @@ LazyStandaloneCoroutine::LazyStandaloneCoroutine(
 ) : StandaloneCoroutine(parentContext, false),
     block(block_param) {}
 
+/**
+ * Upstream:
+ *   private val continuation = block.createCoroutineUnintercepted(this, this)
+ *   override fun onStart() {
+ *       continuation.startCoroutineCancellable(this)
+ *   }
+ */
 void LazyStandaloneCoroutine::on_start() {
-    /*
-     * TODO: STUB - Lazy coroutine startup not implemented
-     *
-     * Kotlin source: LazyStandaloneCoroutine.onStart() in Builders.common.kt
-     *
-     * What's missing:
-     * - Should call: continuation.startCoroutineCancellable(this)
-     * - startCoroutineCancellable() wraps the block in a CancellableContinuation
-     *   and dispatches it through the coroutine's dispatcher
-     * - Requires: CancellableContinuationImpl, DispatchedContinuation integration
-     *
-     * Current behavior: Does nothing - lazy coroutine never actually starts
-     * Correct behavior: Start the coroutine block with cancellation support
-     *
-     * Workaround: Use CoroutineStart::DEFAULT instead of LAZY for now
-     */
+    auto continuation = intrinsics::create_coroutine_unintercepted<CoroutineScope*, Unit>(
+        block,
+        this->shared_from_this_as<Continuation<Unit>>(),
+        this);
+    intrinsics::start_coroutine_cancellable(continuation, this);
 }
 
 } // namespace kotlinx::coroutines

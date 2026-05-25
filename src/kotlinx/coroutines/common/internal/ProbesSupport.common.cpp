@@ -1,29 +1,29 @@
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/src/internal/ProbesSupport.common.kt
-//
-// TODO: This is a mechanical transliteration - semantics not fully implemented
-// TODO: expect inline functions need platform-specific implementations
-// TODO: Continuation<T> needs C++ equivalent
-// TODO: Coroutine probing/debugging support needs design
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/ProbesSupport.common.kt
+ *
+ * Kotlin file header (translated):
+ *   package kotlinx.coroutines.internal
+ *
+ * Upstream:
+ *   internal expect inline fun <T> probeCoroutineCreated(completion: Continuation<T>): Continuation<T>
+ *   internal expect inline fun <T> probeCoroutineResumed(completion: Continuation<T>)
+ *
+ * The JVM target wires these into kotlinx-coroutines-core/jvm/src/internal/ProbesSupport.kt to
+ * surface coroutines to the JVM agent's `DebugProbes`. K/N has no agent, so both are no-ops.
+ * The C++ port matches the K/N behavior — debug probes are a JVM-only feature.
+ */
 
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // Forward declaration
-            template<typename T>
-            class Continuation;
+namespace kotlinx::coroutines::internal {
 
-            // TODO: expect inline function - needs platform-specific implementation
-            template<typename T>
-            inline Continuation<T> *probe_coroutine_created(Continuation<T> *completion) {
-                return completion;
-            }
+template <typename T>
+class Continuation;
 
-            // TODO: expect inline function - needs platform-specific implementation
-            template<typename T>
-            inline void probe_coroutine_resumed(Continuation<T> *completion) {
-                // No-op in common implementation
-            }
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx
+template <typename T>
+inline Continuation<T>* probe_coroutine_created(Continuation<T>* completion) {
+    return completion;
+}
+
+template <typename T>
+inline void probe_coroutine_resumed(Continuation<T>* /*completion*/) {}
+
+} // namespace kotlinx::coroutines::internal

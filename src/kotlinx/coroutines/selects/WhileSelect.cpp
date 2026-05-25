@@ -1,26 +1,9 @@
-// port-lint: source selects/WhileSelect.kt
 /**
- * @file WhileSelect.cpp
- * @brief Looping select expression implementation
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/selects/WhileSelect.kt
  *
- * Loops while select expression returns true.
- *
- * Note: This is an experimental api. It may be replaced with a higher-performance DSL for selection from loops.
- *
- * TODO:
- * - Implement while_select using the select infrastructure
- * - Integrate with coroutine infrastructure for proper suspension
+ * The upstream Kotlin file declares a single `inline suspend fun whileSelect` and no other
+ * runtime state. The C++ port keeps the entire body inline in the matching header; this
+ * source file exists only so the build system has a translation unit to compile when the
+ * header is included via the inventory pass.
  */
-
-#include "kotlinx/coroutines/selects/Select.hpp"
-
-namespace kotlinx {
-    namespace coroutines {
-        namespace selects {
-            // TODO: Implement while_select
-            // Template function that loops while select<bool> returns true
-        } // namespace selects
-    } // namespace coroutines
-} // namespace kotlinx
+#include "kotlinx/coroutines/selects/WhileSelect.hpp"

@@ -1,58 +1,36 @@
-// port-lint: source Unconfined.kt
-// Transliterated from Kotlin to C++ (first-pass, mechanical syntax mapping)
-//
-// TODO:
-// - class declaration needs singleton pattern
-// - CoroutineContext.Key infrastructure
-// - YieldContext integration with coroutine context
-// - @JvmField annotation (affects JVM bytecode generation only)
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/Unconfined.kt
+ */
+
+#include "kotlinx/coroutines/Unconfined.hpp"
 
 #include <stdexcept>
-#include <string>
 
-namespace kotlinx {
-    namespace coroutines {
-        class CoroutineContext;
-        class CoroutineDispatcher;
-        class Runnable;
-        class AbstractCoroutineContextElement;
+namespace kotlinx::coroutines {
 
-        /**
- * A coroutine dispatcher that is not confined to any specific thread.
- */
-        // object
-        class Unconfined /* : CoroutineDispatcher() */ {
-        private:
-            Unconfined() = default; // Private constructor for singleton
+namespace {
 
-        public:
-            static Unconfined &instance();
+/** Singleton key instance for YieldContext, mirroring Kotlin's `companion object Key`. */
+struct YieldContextKey : public CoroutineContext::Key {};
+const YieldContextKey k_yield_context_key{};
 
-            CoroutineDispatcher &limited_parallelism(int parallelism, const std::string *name);
+} // namespace
 
-            bool is_dispatch_needed(const CoroutineContext &context) { return false; }
+const CoroutineContext::Key* YieldContext::type_key() { return &k_yield_context_key; }
 
-            void dispatch(const CoroutineContext &context, Runnable &block);
+void Unconfined::dispatch(const CoroutineContext& context, Runnable& /*block*/) {
+    /** Upstream: It can only be called by the [yield] function. */
+    auto* element = context.get(*YieldContext::type_key());
+    auto* yield_context = dynamic_cast<YieldContext*>(element);
+    if (yield_context != nullptr) {
+        // report to "yield" that it is an unconfined dispatcher and don't call "block.run()"
+        yield_context->dispatcher_was_unconfined = true;
+        return;
+    }
+    throw std::logic_error(
+        "Dispatchers.Unconfined.dispatch function can only be used by the yield function. "
+        "If you wrap Unconfined dispatcher in your code, make sure you properly delegate "
+        "isDispatchNeeded and dispatch calls.");
+}
 
-            std::string to_string() const { return "Dispatchers.Unconfined"; }
-        };
-
-        /**
- * Used to detect calls to [Unconfined.dispatch] from [yield] function.
- */
-        // @PublishedApi
-        // internal
-        class YieldContext /* : AbstractCoroutineContextElement(Key) */ {
-        public:
-            // companion object Key : CoroutineContext.Key<YieldContext>
-            struct Key {
-                // TODO: Implement CoroutineContext.Key interface
-            };
-
-            // @JvmField
-            bool dispatcher_was_unconfined = false;
-
-            YieldContext() = default;
-        };
-    } // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines
