@@ -28,10 +28,10 @@ this tutorial works similarly for any other libraries that support coroutines.
 2. Clone the [project template](http://github.com/kotlin-hands-on/intro-coroutines) by choosing **Get from VCS** on the
    Welcome screen or selecting **File | New | Project from Version Control**.
 
-   You can also clone it from the command line:
+   Start from a prepared checkout:
 
    ```Bash
-   git clone https://github.com/kotlin-hands-on/intro-coroutines
+   cd intro-coroutines
    ```
 
 ### Generate a GitHub developer token
