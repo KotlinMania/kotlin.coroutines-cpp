@@ -9,9 +9,8 @@ buildscript {
         These property group is used to build kotlinx.coroutines against Kotlin compiler snapshot.
         How does it work:
         When build_snapshot_train is set to true, kotlin_version property is overridden with kotlin_snapshot_version,
-        atomicfu_version is overwritten by TeamCity environment (AFU is built with snapshot and published to mavenLocal
-        as previous step or the snapshot build).
-        Additionally, mavenLocal and Sonatype snapshots are added to repository list and stress tests are disabled.
+        atomicfu_version is overwritten by TeamCity environment.
+        Additionally, Sonatype snapshots are added to repository list and stress tests are disabled.
         DO NOT change the name of these properties without adapting kotlinx.train build chain.
     */
     fun checkIsSnapshotTrainProperty(): Boolean {
@@ -40,7 +39,6 @@ buildscript {
 
     if (usingSnapshotVersion) {
         repositories {
-            mavenLocal()
             maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
         }
     }
@@ -54,7 +52,6 @@ repositories {
     if (extra["using_snapshot_version"] == true) {
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
     }
-    mavenLocal()
     mavenCentral()
 }
 
