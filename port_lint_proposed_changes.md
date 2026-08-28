@@ -1,6 +1,6 @@
 # port-lint Proposed Changes
 
-**Generated:** 2026-05-22
+**Generated:** 2026-08-28
 **Source:** tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src
 **Target:** src/kotlinx/coroutines
 
