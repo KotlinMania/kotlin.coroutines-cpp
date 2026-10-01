@@ -93,6 +93,8 @@ public:
     NodeList* get_list() const override { return const_cast<NodeList*>(this); }
 
     void notify_completion(std::exception_ptr cause);
+    std::string get_string(const std::string& state) const;
+    std::string to_string() const;
 };
 
 /**
@@ -128,6 +130,7 @@ public:
     NodeList* get_list() const override { return nullptr; }
 
     void dispose() override;
+    virtual std::string to_string() const;
 };
 
 /**
@@ -196,6 +199,8 @@ public:
     std::exception_ptr get_cancellation_exception() override;
     bool start() override;
     void cancel(std::exception_ptr cause = nullptr) override;
+    virtual void cancel_internal(std::exception_ptr cause);
+    bool cancel_impl(std::exception_ptr cause);
     void* join(Continuation<void*>* continuation) override;
     void join_blocking() override;
 
@@ -208,6 +213,7 @@ public:
     // The C++ port's onJoin select clause is defined alongside the onAwait clause in
     // the JobSupport.cpp companion when consumers need it; the registration function is
     // already wired through register_select_for_on_join below.
+    void register_select_for_on_join(void* select, void* ignored_param);
 
     std::vector<std::shared_ptr<Job>> get_children() const override;
     std::shared_ptr<ChildHandle> attach_child(std::shared_ptr<ChildJob> child) override;
@@ -220,6 +226,10 @@ public:
         bool invoke_immediately,
         std::function<void(std::exception_ptr)> handler) override;
 
+    std::shared_ptr<DisposableHandle> invoke_on_completion_internal(
+        bool invoke_immediately,
+        JobNode* node);
+
     // disposeOnCompletion extension function equivalent
     std::shared_ptr<DisposableHandle> dispose_on_completion(std::shared_ptr<DisposableHandle> handle);
 
@@ -229,6 +239,7 @@ public:
 
     CoroutineContext::Key* key() const override;
     std::shared_ptr<CoroutineContext::Element> get(CoroutineContext::Key* k) const override;
+    std::string to_string() const override;
 
     // ===========================================
     // ParentJob interface
@@ -333,6 +344,18 @@ protected:
     virtual std::string cancellation_exception_message() const;
 
     /**
+     * Converts a cause into a CancellationException.
+     * Transliterated from: protected fun Throwable.toCancellationException(message: String? = null): CancellationException (JobSupport.kt:421-422)
+     */
+    std::exception_ptr to_cancellation_exception(std::exception_ptr cause, const char* message = nullptr);
+
+    /**
+     * Creates default JobCancellationException.
+     * Transliterated from: internal inline fun defaultCancellationException(message: String? = null, cause: Throwable? = null) (JobSupport.kt:733-734)
+     */
+    std::exception_ptr default_cancellation_exception(const char* message = nullptr, std::exception_ptr cause = nullptr);
+
+    /**
      * Returns true if completing this job should cancel it.
      * Used by CompletableJob implementations.
      */
@@ -415,6 +438,8 @@ protected:
     // The C++ port's onAwait select clause is defined alongside the onJoin clause in
     // the JobSupport.cpp companion; the registration / processing functions below are
     // already in place for the eventual SelectClause1Impl wiring.
+    void on_await_internal_reg_func(void* select, void* ignored_param);
+    static void* on_await_internal_process_res_func(void* clause_object, void* ignored_param, void* result);
 
     // ===========================================
     // Debug support
@@ -445,6 +470,9 @@ private:
     friend class ChildCompletion;
     friend class ResumeOnCompletion;
     friend class ResumeAwaitOnCompletion;
+    friend class SelectOnJoinCompletionHandler;
+    friend class SelectOnAwaitCompletionHandler;
+    template <typename T> friend class AwaitContinuation;
 };
 
 } // namespace coroutines

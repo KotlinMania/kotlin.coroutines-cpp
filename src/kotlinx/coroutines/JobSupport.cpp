@@ -19,9 +19,11 @@
 #include "kotlinx/coroutines/internal/LockFreeLinkedList.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
 #include "kotlinx/coroutines/internal/ConcurrentLinkedList.hpp"
-#include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
+#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/internal/DispatchedTask.hpp"
 // kotlinx.coroutines.selects.* (from Kotlin)
 #include "kotlinx/coroutines/selects/Select.hpp"
+#include <sstream>
 #include <atomic>
 #include <mutex>
 #include <thread>
@@ -154,6 +156,8 @@ namespace kotlinx {
             std::vector<std::exception_ptr> seal_locked(std::exception_ptr proposed);
 
             void add_exception_locked(std::exception_ptr exception);
+
+            std::vector<std::exception_ptr> allocate_list();
         };
 
         // ============================================================================
@@ -276,6 +280,75 @@ namespace kotlinx {
             }
         };
 
+        /**
+         * SelectOnJoinCompletionHandler - completion handler for onJoin select clause
+         * Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:607-614
+         */
+        class SelectOnJoinCompletionHandler : public JobNode {
+            selects::SelectInstance<void *> *select_;
+        public:
+            explicit SelectOnJoinCompletionHandler(selects::SelectInstance<void *> *select)
+                : select_(select) {}
+
+            bool get_on_cancelling() const override { return false; }
+
+            void invoke(std::exception_ptr /*cause*/) override {
+                select_->try_select(job, nullptr);
+            }
+        };
+
+        /**
+         * SelectOnAwaitCompletionHandler - completion handler for onAwait select clause
+         * Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1378-1387
+         */
+        class SelectOnAwaitCompletionHandler : public JobNode {
+            selects::SelectInstance<void *> *select_;
+        public:
+            explicit SelectOnAwaitCompletionHandler(selects::SelectInstance<void *> *select)
+                : select_(select) {}
+
+            bool get_on_cancelling() const override { return false; }
+
+            void invoke(std::exception_ptr /*cause*/) override {
+                auto *state = job->get_state_for_await();
+                void *result = nullptr;
+                if (auto *ex = dynamic_cast<CompletedExceptionally *>(state)) {
+                    result = static_cast<void *>(ex);
+                } else {
+                    result = static_cast<void *>(unbox_state(state));
+                }
+                select_->try_select(job, result);
+            }
+        };
+
+        /**
+         * AwaitContinuation - custom CancellableContinuationImpl for await
+         * Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1272-1289
+         */
+        template <typename T>
+        class AwaitContinuation : public CancellableContinuationImpl<T> {
+            JobSupport *job_;
+        public:
+            AwaitContinuation(std::shared_ptr<Continuation<T>> delegate, JobSupport *job)
+                : CancellableContinuationImpl<T>(delegate, MODE_CANCELLABLE), job_(job) {}
+
+            std::exception_ptr get_continuation_cancellation_cause(Job &parent) override {
+                auto *state = job_->get_state_for_await();
+                if (auto *finishing = dynamic_cast<Finishing *>(state)) {
+                    auto root = finishing->get_root_cause();
+                    if (root) return root;
+                }
+                if (auto *ex = dynamic_cast<CompletedExceptionally *>(state)) {
+                    return ex->cause;
+                }
+                return parent.get_cancellation_exception();
+            }
+
+            std::string name_string() const override {
+                return "AwaitContinuation";
+            }
+        };
+
         // ============================================================================
         // JobSupport::Impl - Private Implementation
         // ============================================================================
@@ -315,10 +388,21 @@ namespace kotlinx {
                 return false;
             }
 
+            // State loop helper
+            // Transliterated from: private inline fun loopOnState(block: (Any?) -> Unit): Nothing (JobSupport.kt:168-172)
+            template <typename F>
+            void loop_on_state(F&& block) {
+                while (true) {
+                    block(state.load(std::memory_order_acquire));
+                }
+            }
+
             // State transition helpers
             int start_internal(JobSupport *job);
 
             JobState *make_cancelling(JobSupport *job, std::exception_ptr cause);
+
+            JobState *cancel_make_completing(JobSupport *job, std::exception_ptr cause);
 
             bool try_make_cancelling(JobSupport *job, Incomplete *state, std::exception_ptr root_cause);
 
@@ -329,6 +413,9 @@ namespace kotlinx {
             void promote_single_to_node_list(JobNode *node);
 
             void notify_cancelling(JobSupport *job, NodeList *list, std::exception_ptr cause);
+
+            template <typename Predicate>
+            void notify_handlers(JobSupport *job, NodeList *list, std::exception_ptr cause, Predicate&& predicate);
 
             bool cancel_parent(std::exception_ptr cause);
 
@@ -346,7 +433,7 @@ namespace kotlinx {
 
             JobState *finalize_finishing_state(JobSupport *job, Finishing *state, JobState *proposed);
 
-            std::exception_ptr get_final_root_cause(Finishing *state,
+            std::exception_ptr get_final_root_cause(JobSupport *job, Finishing *state,
                                                     const std::vector<std::exception_ptr> &exceptions);
 
             bool try_finalize_simple_state(JobSupport *job, Incomplete *state, JobState *update);
@@ -361,9 +448,10 @@ namespace kotlinx {
             void continue_completing(JobSupport *job, Finishing *state, ChildHandleNode *last_child,
                                      JobState *proposed);
 
-            std::exception_ptr create_cause_exception(std::exception_ptr cause);
+            std::exception_ptr create_cause_exception(JobSupport *job, std::exception_ptr cause);
 
-            std::exception_ptr default_cancellation_exception(const char *message);
+            std::exception_ptr default_cancellation_exception(JobSupport *job, const char *message,
+                                                              std::exception_ptr cause = nullptr);
         };
 
         // ============================================================================
@@ -391,22 +479,37 @@ namespace kotlinx {
             return impl_->is_cancelled();
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:421-422
+        std::exception_ptr JobSupport::to_cancellation_exception(std::exception_ptr cause, const char *message) {
+            if (cause && is_cancellation_exception(cause)) {
+                return cause;
+            }
+            return default_cancellation_exception(message, cause);
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:733-734
+        std::exception_ptr JobSupport::default_cancellation_exception(const char *message, std::exception_ptr cause) {
+            std::string msg = message ? std::string(message) : cancellation_exception_message();
+            return std::make_exception_ptr(JobCancellationException(msg, cause, this));
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:412-420
         std::exception_ptr JobSupport::get_cancellation_exception() {
             auto *s = impl_->state.load(std::memory_order_acquire);
 
             if (auto *finishing = dynamic_cast<Finishing *>(s)) {
                 auto root = finishing->get_root_cause();
-                if (root) return root;
+                if (root) return to_cancellation_exception(root, "Job is cancelling");
                 throw std::logic_error("Job is still new or active: " + to_debug_string());
             }
             if (dynamic_cast<Incomplete *>(s)) {
                 throw std::logic_error("Job is still new or active: " + to_debug_string());
             }
             if (auto *ex = dynamic_cast<CompletedExceptionally *>(s)) {
-                return ex->cause;
+                return to_cancellation_exception(ex->cause);
             }
-            return std::make_exception_ptr(CancellationException(
-                cancellation_exception_message() + " has completed normally"));
+            return std::make_exception_ptr(JobCancellationException(
+                cancellation_exception_message() + " has completed normally", nullptr, this));
         }
 
         bool JobSupport::start() {
@@ -418,8 +521,36 @@ namespace kotlinx {
             }
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:647-649
         void JobSupport::cancel(std::exception_ptr cause) {
-            impl_->make_cancelling(this, cause ? cause : impl_->default_cancellation_exception(nullptr));
+            cancel_internal(cause ? cause : default_cancellation_exception(nullptr, nullptr));
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:662-664
+        void JobSupport::cancel_internal(std::exception_ptr cause) {
+            cancel_impl(cause);
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:693-713
+        bool JobSupport::cancel_impl(std::exception_ptr cause) {
+            JobState *final_state = COMPLETING_ALREADY;
+            if (get_on_cancel_complete()) {
+                final_state = impl_->cancel_make_completing(this, cause);
+                if (final_state == COMPLETING_WAITING_CHILDREN) return true;
+            }
+            if (final_state == COMPLETING_ALREADY) {
+                final_state = impl_->make_cancelling(this, cause);
+            }
+            if (final_state == COMPLETING_ALREADY) {
+                return true;
+            } else if (final_state == COMPLETING_WAITING_CHILDREN) {
+                return true;
+            } else if (final_state == TOO_LATE_TO_CANCEL) {
+                return false;
+            } else {
+                after_completion(final_state);
+                return true;
+            }
         }
 
         void *JobSupport::join(Continuation<void *> *continuation) {
@@ -620,11 +751,13 @@ namespace kotlinx {
             return std::shared_ptr<ChildHandle>(nullptr);
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:451-459
         std::shared_ptr<DisposableHandle> JobSupport::invoke_on_completion(
             std::function<void(std::exception_ptr)> handler) {
             return invoke_on_completion(false, true, std::move(handler));
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:451-459
         std::shared_ptr<DisposableHandle> JobSupport::invoke_on_completion(
             bool on_cancelling,
             bool invoke_immediately,
@@ -632,31 +765,37 @@ namespace kotlinx {
             JobNode *node = on_cancelling
                                 ? static_cast<JobNode *>(new InvokeOnCancelling(std::move(handler)))
                                 : static_cast<JobNode *>(new InvokeOnCompletion(std::move(handler)));
-            node->job = this;
+            return invoke_on_completion_internal(invoke_immediately, node);
+        }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:461-519
+        std::shared_ptr<DisposableHandle> JobSupport::invoke_on_completion_internal(
+            bool invoke_immediately,
+            JobNode *node) {
+            node->job = this;
             bool added = impl_->try_put_node_into_list(this, node,
-                                                       [on_cancelling, invoke_immediately, node](
+                                                       [invoke_immediately, node](
                                                    Incomplete *state, NodeList *list) -> bool {
-                                                           if (on_cancelling) {
+                                                           if (node->get_on_cancelling()) {
                                                                auto *finishing = dynamic_cast<Finishing *>(state);
                                                                auto root_cause = finishing
                                                                    ? finishing->get_root_cause()
                                                                    : nullptr;
-                                                               if (root_cause) {
+                                                               if (root_cause == nullptr) {
+                                                                   return list->add_last(node);
+                                                               } else {
                                                                    if (invoke_immediately) node->invoke(root_cause);
                                                                    return false;
                                                                }
+                                                           } else {
+                                                               return list->add_last(node);
                                                            }
-                                                           return list->add_last(node);
                                                        });
-
             if (added) {
-                return std::shared_ptr<DisposableHandle>(node, [](DisposableHandle *) {
-                });
+                return std::shared_ptr<DisposableHandle>(node, [](DisposableHandle *) {});
             }
-
             if (invoke_immediately) {
-                auto *s = impl_->state.load();
+                auto *s = impl_->state.load(std::memory_order_acquire);
                 auto *ex = dynamic_cast<CompletedExceptionally *>(s);
                 node->invoke(ex ? ex->cause : nullptr);
             }
@@ -684,12 +823,21 @@ namespace kotlinx {
             return nullptr;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1161-1162
+        std::string JobSupport::to_string() const {
+            std::ostringstream oss;
+            oss << to_debug_string() << "@" << std::hex << reinterpret_cast<uintptr_t>(this);
+            return oss.str();
+        }
+
         std::exception_ptr JobSupport::get_child_job_cancellation_cause() {
             return get_cancellation_exception();
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:667-669
         void JobSupport::parent_cancelled(ParentJob *parent) {
-            cancel(impl_->default_cancellation_exception("Parent cancelled"));
+            std::exception_ptr cause = parent ? parent->get_child_job_cancellation_cause() : nullptr;
+            cancel_impl(cause);
         }
 
         void JobSupport::handle_on_completion_exception(std::exception_ptr exception) {
@@ -700,28 +848,15 @@ namespace kotlinx {
             return "Job was cancelled";
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:680-683
         bool JobSupport::child_cancelled(std::exception_ptr cause) {
-            // Check if it's a CancellationException
-            if (cause) {
-                try {
-                    std::rethrow_exception(cause);
-                } catch (const CancellationException &) {
-                    return true;
-                } catch (...) {
-                    // Not a CancellationException
-                }
-            }
-
-            // Cancel this job and return whether we handle exceptions
-            impl_->make_cancelling(this, cause);
-            return get_handles_exception();
+            if (cause && is_cancellation_exception(cause)) return true;
+            return cancel_impl(cause) && get_handles_exception();
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:689
         bool JobSupport::cancel_coroutine(std::exception_ptr cause) {
-            // Transliterated from: public fun cancelCoroutine(cause: Throwable?): Boolean
-            // This is essentially the same as cancel() but returns whether cancellation was initiated
-            auto result = impl_->make_cancelling(this, cause ? cause : impl_->default_cancellation_exception(nullptr));
-            return result != TOO_LATE_TO_CANCEL;
+            return cancel_impl(cause);
         }
 
         std::exception_ptr JobSupport::get_completion_cause() const {
@@ -870,6 +1005,7 @@ namespace kotlinx {
             return FALSE; // Already active or completed
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:761-800
         JobState *JobSupport::Impl::make_cancelling(JobSupport *job, std::exception_ptr cause) {
             std::exception_ptr cause_cache;
 
@@ -882,7 +1018,7 @@ namespace kotlinx {
 
                     bool was_cancelling = finishing->is_cancelling();
                     if (cause || !was_cancelling) {
-                        if (!cause_cache) cause_cache = create_cause_exception(cause);
+                        if (!cause_cache) cause_cache = create_cause_exception(job, cause);
                         finishing->add_exception_locked(cause_cache);
                     }
 
@@ -894,22 +1030,51 @@ namespace kotlinx {
                 }
 
                 if (auto *incomplete = dynamic_cast<Incomplete *>(s)) {
-                    if (!cause_cache) cause_cache = create_cause_exception(cause);
+                    if (!cause_cache) cause_cache = create_cause_exception(job, cause);
                     if (incomplete->is_active()) {
                         if (try_make_cancelling(job, incomplete, cause_cache)) {
                             return COMPLETING_ALREADY;
                         }
                     } else {
                         // Start completing from inactive state
-                        if (job->make_completing(new CompletedExceptionally(cause_cache))) {
-                            return COMPLETING_ALREADY;
+                        auto *proposed = new CompletedExceptionally(cause_cache);
+                        auto *final_state = try_make_completing(job, incomplete, proposed);
+                        if (final_state == COMPLETING_RETRY) {
+                            delete proposed;
+                            continue;
                         }
+                        if (final_state == COMPLETING_ALREADY) {
+                            delete proposed;
+                            throw std::logic_error("Cannot happen in " + job->to_string());
+                        }
+                        return final_state;
                     }
                     continue; // Retry
                 }
 
                 // Already completed
                 return TOO_LATE_TO_CANCEL;
+            }
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:720-730
+        JobState *JobSupport::Impl::cancel_make_completing(JobSupport *job, std::exception_ptr cause) {
+            while (true) {
+                auto *s = state.load(std::memory_order_acquire);
+                auto *incomplete = dynamic_cast<Incomplete *>(s);
+                auto *finishing = dynamic_cast<Finishing *>(s);
+                if (!incomplete || (finishing && finishing->is_completing.load())) {
+                    return COMPLETING_ALREADY;
+                }
+                auto *proposed_update = new CompletedExceptionally(create_cause_exception(job, cause));
+                auto *final_state = try_make_completing(job, s, proposed_update);
+                if (final_state != COMPLETING_RETRY) {
+                    if (final_state == COMPLETING_ALREADY) {
+                        delete proposed_update;
+                    }
+                    return final_state;
+                }
+                delete proposed_update;
             }
         }
 
@@ -973,27 +1138,39 @@ namespace kotlinx {
             delete list;
         }
 
-        void JobSupport::Impl::notify_cancelling(JobSupport *job, NodeList *list, std::exception_ptr cause) {
-            job->on_cancelling(cause);
-
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:360-374
+        template <typename Predicate>
+        void JobSupport::Impl::notify_handlers(JobSupport *job, NodeList *list, std::exception_ptr cause, Predicate&& predicate) {
             std::exception_ptr handler_exception;
             list->for_each([&](internal::LockFreeLinkedListNode *raw_node) {
                 if (auto *node = dynamic_cast<JobNode *>(raw_node)) {
-                    if (node->get_on_cancelling()) {
+                    if (predicate(node)) {
                         try {
                             node->invoke(cause);
                         } catch (...) {
-                            if (!handler_exception) handler_exception = std::current_exception();
+                            if (!handler_exception) {
+                                try {
+                                    throw CompletionHandlerException(
+                                        "Exception in completion handler " + node->to_string() + " for " + job->to_string(),
+                                        std::current_exception());
+                                } catch (...) {
+                                    handler_exception = std::current_exception();
+                                }
+                            }
                         }
                     }
                 }
             });
-
-            cancel_parent(cause);
-
             if (handler_exception) {
                 job->handle_on_completion_exception(handler_exception);
             }
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:976-997
+        void JobSupport::Impl::notify_cancelling(JobSupport *job, NodeList *list, std::exception_ptr cause) {
+            job->on_cancelling(cause);
+            notify_handlers(job, list, cause, [](JobNode *node) { return node->get_on_cancelling(); });
+            cancel_parent(cause);
         }
 
         bool JobSupport::Impl::cancel_parent(std::exception_ptr cause) {
@@ -1168,7 +1345,7 @@ namespace kotlinx {
                 std::lock_guard<std::recursive_mutex> lock(finishing->mutex);
                 was_cancelling = finishing->is_cancelling();
                 exceptions = finishing->seal_locked(proposed_exception);
-                final_exception = get_final_root_cause(finishing, exceptions);
+                final_exception = get_final_root_cause(job, finishing, exceptions);
                 // Add suppressed exceptions (semantic no-op in C++, see note above)
                 if (final_exception) {
                     add_suppressed_exceptions(final_exception, exceptions);
@@ -1211,7 +1388,7 @@ namespace kotlinx {
             return final_state;
         }
 
-        std::exception_ptr JobSupport::Impl::get_final_root_cause(Finishing *finishing,
+        std::exception_ptr JobSupport::Impl::get_final_root_cause(JobSupport *job, Finishing *finishing,
                                                                   const std::vector<std::exception_ptr> &exceptions) {
             // Transliterated from: private fun getFinalRootCause(state: Finishing, exceptions: List<Throwable>): Throwable?
             //     (JobSupport.kt:237-260)
@@ -1220,7 +1397,7 @@ namespace kotlinx {
             if (exceptions.empty()) {
                 // materialize cancellation exception if it was not materialized yet
                 if (finishing->is_cancelling()) {
-                    return default_cancellation_exception(nullptr);
+                    return default_cancellation_exception(job, nullptr, nullptr);
                 }
                 return nullptr;
             }
@@ -1305,7 +1482,8 @@ namespace kotlinx {
                     job->handle_on_completion_exception(std::current_exception());
                 }
             } else if (auto *list = s->get_list()) {
-                list->notify_completion(cause);
+                list->close(LIST_ON_COMPLETION_PERMISSION);
+                notify_handlers(job, list, cause, [](JobNode *) { return true; });
             }
 
             job->after_completion(update);
@@ -1360,18 +1538,30 @@ namespace kotlinx {
             job->after_completion(final_state);
         }
 
-        std::exception_ptr JobSupport::Impl::create_cause_exception(std::exception_ptr cause) {
-            if (!cause) return default_cancellation_exception(nullptr);
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:749-752
+        std::exception_ptr JobSupport::Impl::create_cause_exception(JobSupport *job, std::exception_ptr cause) {
+            if (!cause) return default_cancellation_exception(job, nullptr, nullptr);
             return cause;
         }
 
-        std::exception_ptr JobSupport::Impl::default_cancellation_exception(const char *message) {
-            return std::make_exception_ptr(CancellationException(message ? message : "Job was cancelled"));
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:733-734
+        std::exception_ptr JobSupport::Impl::default_cancellation_exception(JobSupport *job, const char *message,
+                                                                          std::exception_ptr cause) {
+            if (job) return job->default_cancellation_exception(message, cause);
+            std::string msg = message ? std::string(message) : "Job was cancelled";
+            return std::make_exception_ptr(CancellationException(msg));
         }
 
         // ============================================================================
         // Finishing Methods
         // ============================================================================
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1250
+        std::vector<std::exception_ptr> Finishing::allocate_list() {
+            std::vector<std::exception_ptr> list;
+            list.reserve(4);
+            return list;
+        }
 
         std::vector<std::exception_ptr> Finishing::seal_locked(std::exception_ptr proposed) {
             std::vector<std::exception_ptr> result;
@@ -1418,6 +1608,35 @@ namespace kotlinx {
             }
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1476
+        std::string JobNode::to_string() const {
+            std::ostringstream oss;
+            oss << "JobNode@" << std::hex << reinterpret_cast<uintptr_t>(this)
+                << "[job@" << (job ? reinterpret_cast<uintptr_t>(job) : 0) << "]";
+            return oss.str();
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1505-1518
+        std::string NodeList::get_string(const std::string& state) const {
+            std::ostringstream oss;
+            oss << "List{" << state << "}[";
+            bool first = true;
+            const_cast<NodeList*>(this)->for_each([&](internal::LockFreeLinkedListNode* node) {
+                if (auto* job_node = dynamic_cast<JobNode*>(node)) {
+                    if (first) first = false;
+                    else oss << ", ";
+                    oss << job_node->to_string();
+                }
+            });
+            oss << "]";
+            return oss.str();
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1520
+        std::string NodeList::to_string() const {
+            return get_string("Active");
+        }
+
         void NodeList::notify_completion(std::exception_ptr cause) {
             close(LIST_ON_COMPLETION_PERMISSION);
 
@@ -1428,7 +1647,13 @@ namespace kotlinx {
                         node->invoke(cause);
                     } catch (...) {
                         if (!handler_exception) {
-                            handler_exception = std::current_exception();
+                            try {
+                                throw CompletionHandlerException(
+                                    "Exception in completion handler " + node->to_string(),
+                                    std::current_exception());
+                            } catch (...) {
+                                handler_exception = std::current_exception();
+                            }
                         }
                     }
                 }
@@ -1441,6 +1666,50 @@ namespace kotlinx {
 
         void ChildCompletion::invoke(std::exception_ptr cause) {
             parent->impl_->continue_completing(parent, state, child, proposed_update);
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:598-605
+        void JobSupport::register_select_for_on_join(void* select_ptr, void* /*ignored_param*/) {
+            auto* select = static_cast<selects::SelectInstance<void*>*>(select_ptr);
+            if (!join_internal()) {
+                select->select_in_registration_phase(nullptr);
+                return;
+            }
+            auto* node = new SelectOnJoinCompletionHandler(select);
+            auto handle = invoke_on_completion_internal(true, node);
+            select->dispose_on_completion(handle);
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1358-1370
+        void JobSupport::on_await_internal_reg_func(void* select_ptr, void* /*ignored_param*/) {
+            auto* select = static_cast<selects::SelectInstance<void*>*>(select_ptr);
+            while (true) {
+                auto* state = impl_->state.load(std::memory_order_acquire);
+                if (!dynamic_cast<Incomplete*>(state)) {
+                    void* result = nullptr;
+                    if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
+                        result = static_cast<void*>(ex);
+                    } else {
+                        result = static_cast<void*>(unbox_state(state));
+                    }
+                    select->select_in_registration_phase(result);
+                    return;
+                }
+                if (impl_->start_internal(this) >= 0) break;
+            }
+            auto* node = new SelectOnAwaitCompletionHandler(select);
+            auto handle = invoke_on_completion_internal(true, node);
+            select->dispose_on_completion(handle);
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1373-1376
+        void* JobSupport::on_await_internal_process_res_func(void* /*clause_object*/, void* /*ignored_param*/, void* result) {
+            if (auto* ex = static_cast<CompletedExceptionally*>(result)) {
+                if (dynamic_cast<CompletedExceptionally*>(ex)) {
+                    std::rethrow_exception(ex->cause);
+                }
+            }
+            return result;
         }
     } // namespace coroutines
 } // namespace kotlinx

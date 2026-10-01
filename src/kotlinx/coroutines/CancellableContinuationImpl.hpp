@@ -511,7 +511,7 @@ public:
         }
     }
     
-    std::exception_ptr get_continuation_cancellation_cause(Job& parent) {
+    virtual std::exception_ptr get_continuation_cancellation_cause(Job& parent) {
         return parent.get_cancellation_exception();
     }
     
@@ -1105,7 +1105,7 @@ public:
     std::shared_ptr<Continuation<void>> get_delegate() override { return delegate; }
 
     // getContinuationCancellationCause - Kotlin lines 266-267
-    std::exception_ptr get_continuation_cancellation_cause(Job& parent) {
+    virtual std::exception_ptr get_continuation_cancellation_cause(Job& parent) {
         return parent.get_cancellation_exception();
     }
 
