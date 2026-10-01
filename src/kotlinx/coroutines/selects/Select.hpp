@@ -922,13 +922,6 @@ public:
 
 
 
-    // Helper class for lambda-based Runnable
-    class LambdaRunnable : public Runnable {
-        std::function<void()> func_;
-    public:
-        explicit LambdaRunnable(std::function<void()> f) : func_(std::move(f)) {}
-        void run() override { func_(); }
-    };
 
 private:
     // ==========================================================================

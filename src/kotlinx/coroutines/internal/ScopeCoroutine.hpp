@@ -112,13 +112,7 @@ public:
     }
 };
 
-class ContextScope : public CoroutineScope {
-    std::shared_ptr<CoroutineContext> context_;
-public:
-    explicit ContextScope(std::shared_ptr<CoroutineContext> context) : context_(context) {}
-    std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return context_; }
-};
-
 } // namespace internal
 } // namespace coroutines
 } // namespace kotlinx
+

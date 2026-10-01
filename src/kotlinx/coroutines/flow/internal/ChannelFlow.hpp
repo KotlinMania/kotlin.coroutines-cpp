@@ -14,6 +14,7 @@
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/internal/Scopes.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 // Note: Channels.hpp includes ChannelFlow.hpp, so we use forward declarations instead
 #include "kotlinx/coroutines/channels/Channel.hpp"
@@ -201,18 +202,8 @@ inline void* ChannelFlow<T>::collect(FlowCollector<T>* collector, Continuation<v
     // Kotlin:
     // coroutineScope { collector.emitAll(produceImpl(this)) }
     //
-    // We don't have coroutineScope lowering here yet; create a minimal scope that carries the current context.
-    class SimpleScope : public CoroutineScope {
-    public:
-        explicit SimpleScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(std::move(ctx)) {}
-        std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
-
-    private:
-        std::shared_ptr<CoroutineContext> ctx_;
-    };
-
     auto ctx = continuation ? continuation->get_context() : EmptyCoroutineContext::instance();
-    SimpleScope scope(ctx);
+    kotlinx::coroutines::internal::ContextScope scope(ctx);
     auto channel = produce_impl(&scope);
     return kotlinx::coroutines::flow::emit_all(collector, channel.get(), continuation);
 }

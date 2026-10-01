@@ -35,7 +35,8 @@ public:
     explicit ContextScope(std::shared_ptr<CoroutineContext> context)
         : context_(std::move(context)) {}
 
-    std::shared_ptr<CoroutineContext> coroutine_context() const override { return context_; }
+    std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return context_; }
+    std::shared_ptr<CoroutineContext> coroutine_context() const { return context_; }
 
     std::string to_string() const {
         return std::string("CoroutineScope(coroutineContext=") +

@@ -85,24 +85,14 @@ protected:
         //   }
         // }
 
-        // We don't model coroutineScope here yet; emulate the structure with a local scope and blocking joins.
-        class SimpleScope : public CoroutineScope {
-        public:
-            explicit SimpleScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(std::move(ctx)) {}
-            std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
-
-        private:
-            std::shared_ptr<CoroutineContext> ctx_;
-        };
-
         auto ctx = continuation ? continuation->get_context() : EmptyCoroutineContext::instance();
-        SimpleScope scope(ctx);
+        kotlinx::coroutines::internal::ContextScope scope(ctx);
 
         std::shared_ptr<Job> previous_flow;
 
         class ValueCollector : public FlowCollector<T> {
         public:
-            ValueCollector(SimpleScope* scope,
+            ValueCollector(CoroutineScope* scope,
                            FlowCollector<R>* collector,
                            TransformType transform,
                            std::shared_ptr<Job>* previous_flow)
@@ -133,7 +123,7 @@ protected:
             }
 
         private:
-            SimpleScope* scope_;
+            CoroutineScope* scope_;
             FlowCollector<R>* collector_;
             TransformType transform_;
             std::shared_ptr<Job>* previous_flow_;

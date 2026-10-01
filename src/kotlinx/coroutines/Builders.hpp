@@ -9,6 +9,7 @@
 #include "kotlinx/coroutines/EventLoop.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
+#include "kotlinx/coroutines/internal/Scopes.hpp"
 #include <functional>
 #include <thread>
 #include <memory>
@@ -307,14 +308,7 @@ namespace coroutines {
 
          if (!completion) throw std::invalid_argument("coroutine_scope requires non-null completion");
          
-         class SimpleScope : public CoroutineScope {
-             std::shared_ptr<CoroutineContext> ctx_;
-         public:
-             explicit SimpleScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(ctx) {}
-             std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
-         };
-         
-         SimpleScope scope(completion->get_context());
+         internal::ContextScope scope(completion->get_context());
          return suspend(block(&scope, completion));
     }
 
@@ -330,25 +324,9 @@ namespace coroutines {
     ) {
          using namespace kotlinx::coroutines::dsl;
          
-         // Upstream uses SupervisorCoroutine instead of ScopeCoroutine; the failure of
-         // a child does not cancel the parent. The C++ port relies on the same
-         // SimpleScope wrapper because the supervision policy is owned by the Job
-         // element installed below; the SimpleScope itself does not enforce it.
-
          if (!completion) throw std::invalid_argument("supervisor_scope requires non-null completion");
          
-         class SimpleScope : public CoroutineScope {
-             std::shared_ptr<CoroutineContext> ctx_;
-         public:
-             explicit SimpleScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(ctx) {}
-             std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
-         };
-         
-         // Upstream installs a SupervisorJob element on the supervised context. The C++
-         // port carries the same Job key — the SimpleScope below picks up the existing
-         // context, and the SupervisorJob factory installs itself when the scope
-         // launches a child.
-         SimpleScope scope(completion->get_context());
+         internal::ContextScope scope(completion->get_context());
          return suspend(block(&scope, completion));
     }
 

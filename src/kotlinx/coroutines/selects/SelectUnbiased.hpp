@@ -28,7 +28,7 @@ inline constexpr ParamClause0 PARAM_CLAUSE_0{};
  * Mirrors upstream's internal `ClauseData(clauseObject, regFunc, processResFunc, param,
  * block, onCancellationConstructor)`.
  */
-struct ClauseData {
+struct UnbiasedClauseData {
     void* clause_object = nullptr;
     std::function<void()> reg_func;
     std::function<void*()> process_res_func;
@@ -64,11 +64,11 @@ public:
     /**
      * Upstream:
      *   override fun SelectClause0.invoke(block: suspend () -> R) {
-     *       clausesToRegister += ClauseData(clauseObject, regFunc, processResFunc, PARAM_CLAUSE_0, block, onCancellationConstructor)
+     *       clausesToRegister += UnbiasedClauseData(clauseObject, regFunc, processResFunc, PARAM_CLAUSE_0, block, onCancellationConstructor)
      *   }
      */
     void invoke(SelectClause0& clause, std::function<R()> block) override {
-        clauses_to_register_.push_back(ClauseData{
+        clauses_to_register_.push_back(UnbiasedClauseData{
             clause.clause_object(),
             [&clause, this]() { SelectImplementation<R>::invoke(clause, {}); },
             nullptr,
@@ -84,7 +84,7 @@ public:
      */
     template <typename Q>
     void invoke(SelectClause1<Q>& clause, std::function<R(Q)> block) {
-        clauses_to_register_.push_back(ClauseData{
+        clauses_to_register_.push_back(UnbiasedClauseData{
             clause.clause_object(),
             [&clause, this]() { SelectImplementation<R>::template invoke_clause1(clause); },
             nullptr,
@@ -101,7 +101,7 @@ public:
      */
     template <typename P, typename Q>
     void invoke(SelectClause2<P, Q>& clause, P param, std::function<R(Q)> block) {
-        clauses_to_register_.push_back(ClauseData{
+        clauses_to_register_.push_back(UnbiasedClauseData{
             clause.clause_object(),
             [&clause, param, this]() {
                 SelectImplementation<R>::template invoke_clause2(clause, param);
@@ -128,7 +128,7 @@ public:
     }
 
 private:
-    std::vector<ClauseData> clauses_to_register_;
+    std::vector<UnbiasedClauseData> clauses_to_register_;
     std::mt19937 rng_;
 
     /**

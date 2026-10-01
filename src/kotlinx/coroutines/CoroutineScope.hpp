@@ -310,29 +310,7 @@ std::shared_ptr<CoroutineScope> create_coroutine_scope(std::shared_ptr<Coroutine
  */
 std::shared_ptr<CoroutineScope> main_scope();
 
-// ============================================================================
-// ContextScope implementation
-// ============================================================================
-
-/**
- * Simple CoroutineScope implementation that wraps a context.
- *
- * Transliterated from: internal class ContextScope (Scopes.kt)
- */
-class ContextScope : public CoroutineScope {
-public:
-    explicit ContextScope(std::shared_ptr<CoroutineContext> context)
-        : context_(std::move(context))
-    {}
-
-    std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
-        return context_;
-    }
-
-private:
-    std::shared_ptr<CoroutineContext> context_;
-};
-
 } // namespace coroutines
 } // namespace kotlinx
+
 

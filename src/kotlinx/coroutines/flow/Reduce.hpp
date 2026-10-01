@@ -10,6 +10,7 @@
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/flow/internal/NullSurrogate.hpp"
+#include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include <functional>
 #include <stdexcept>
@@ -188,14 +189,14 @@ void* first(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
 
         void* emit(T value, Continuation<void*>*) override {
             *result_ = new T(std::move(value));
-            throw AbortFlowException();  // Cancel collection after first element
+            throw internal::AbortFlowException(this);  // Cancel collection after first element
         }
     };
 
     try {
         FirstCollector collector(&result);
         flow->collect(&collector, continuation);
-    } catch (const AbortFlowException&) {
+    } catch (const internal::AbortFlowException&) {
         // Expected - flow was aborted after first element
     }
 
@@ -223,14 +224,14 @@ void* first_or_null(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continua
 
         void* emit(T value, Continuation<void*>*) override {
             *result_ = new T(std::move(value));
-            throw AbortFlowException();
+            throw internal::AbortFlowException(this);
         }
     };
 
     try {
         FirstOrNullCollector collector(&result);
         flow->collect(&collector, continuation);
-    } catch (const AbortFlowException&) {
+    } catch (const internal::AbortFlowException&) {
         // Expected
     }
 
@@ -298,12 +299,7 @@ void* last_or_null(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuat
     return result;
 }
 
-// Exception used to abort flow collection early
-class AbortFlowException : public std::exception {
-public:
-    const char* what() const noexcept override { return "AbortFlowException"; }
-};
-
 } // namespace flow
 } // namespace coroutines
 } // namespace kotlinx
+
