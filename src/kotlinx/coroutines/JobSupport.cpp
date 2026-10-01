@@ -1214,7 +1214,7 @@ namespace kotlinx {
                             continue;
                         }
                     } else {
-                        return try_add(incomplete, list);
+                        if (try_add(incomplete, list)) return true;
                     }
                 } else {
                     return false; // Completed
