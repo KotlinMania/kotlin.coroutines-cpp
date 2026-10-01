@@ -1348,3 +1348,13 @@ For each file to be considered "complete":
 - Documentation ported
 - port-lint header present
 
+## Next Commands
+
+```bash
+# Initialize task queue for systematic porting
+cd tools/ast_distance
+./ast_distance --init-tasks ../../tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src kotlin ../../src/kotlinx/coroutines cpp tasks.json ../../AGENTS.md
+
+# Get next high-priority task
+./ast_distance --assign tasks.json <agent-id>
+```
