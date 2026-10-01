@@ -12,16 +12,16 @@ namespace {
 
 /** Singleton key instance for YieldContext, mirroring Kotlin's `companion object Key`. */
 struct YieldContextKey : public CoroutineContext::Key {};
-const YieldContextKey k_yield_context_key{};
+YieldContextKey k_yield_context_key{};
 
 } // namespace
 
-const CoroutineContext::Key* YieldContext::type_key() { return &k_yield_context_key; }
+CoroutineContext::Key* YieldContext::type_key() { return &k_yield_context_key; }
 
-void Unconfined::dispatch(const CoroutineContext& context, Runnable& /*block*/) {
+void Unconfined::dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> /*block*/) const {
     /** Upstream: It can only be called by the [yield] function. */
-    auto* element = context.get(*YieldContext::type_key());
-    auto* yield_context = dynamic_cast<YieldContext*>(element);
+    auto element = context.get(YieldContext::type_key());
+    auto yield_context = std::dynamic_pointer_cast<YieldContext>(element);
     if (yield_context != nullptr) {
         // report to "yield" that it is an unconfined dispatcher and don't call "block.run()"
         yield_context->dispatcher_was_unconfined = true;

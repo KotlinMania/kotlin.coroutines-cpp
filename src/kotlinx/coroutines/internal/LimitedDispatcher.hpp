@@ -86,6 +86,10 @@ public:
         return CoroutineDispatcher::limited_parallelism(parallelism, name);
     }
 
+    struct TaskItem {
+        std::shared_ptr<Runnable> runnable;
+    };
+
     /**
      * Transliterated from:
      * override fun dispatch(context: CoroutineContext, block: Runnable) {
@@ -94,9 +98,10 @@ public:
      *     }
      * }
      */
-    void dispatch(std::shared_ptr<CoroutineContext> context, std::shared_ptr<Runnable> block) override {
+    void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override {
+        (void)context;
         dispatch_internal(block, [this](std::shared_ptr<Runnable> worker) {
-            dispatcher_->dispatch(nullptr, worker);
+            dispatcher_->dispatch(*this, worker);
         });
     }
 
@@ -108,9 +113,10 @@ public:
      *     }
      * }
      */
-    void dispatch_yield(std::shared_ptr<CoroutineContext> context, std::shared_ptr<Runnable> block) {
+    void dispatch_yield(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override {
+        (void)context;
         dispatch_internal(block, [this](std::shared_ptr<Runnable> worker) {
-            dispatcher_->dispatch_yield(nullptr, worker);
+            dispatcher_->dispatch_yield(*this, worker);
         });
     }
 
@@ -118,7 +124,7 @@ public:
      * Transliterated from:
      * override fun toString() = name ?: "$dispatcher.limitedParallelism($parallelism)"
      */
-    std::string to_string() const {
+    std::string to_string() const override {
         if (!name_.empty()) {
             return name_;
         }
@@ -132,19 +138,19 @@ private:
 
     // Atomic is necessary here for the sake of K/N memory ordering,
     // there is no need in atomic operations for this property
-    std::atomic<int> running_workers_;
+    mutable std::atomic<int> running_workers_;
 
-    LockFreeTaskQueue<std::shared_ptr<Runnable>> queue_{false};  // singleConsumer = false
+    mutable LockFreeTaskQueue<TaskItem> queue_{false};  // singleConsumer = false
 
     // A separate object that we can synchronize on for K/N
-    SynchronizedObject worker_allocation_lock_;
+    mutable SynchronizedObject worker_allocation_lock_;
 
     /**
      * Returns this dispatcher with a name, or this if no name is provided.
      */
     std::shared_ptr<CoroutineDispatcher> named_or_this(const std::string& name) {
         if (!name.empty()) {
-            return std::make_shared<LimitedDispatcher>(dispatcher_, parallelism_, name);
+            return std::shared_ptr<CoroutineDispatcher>(new LimitedDispatcher(dispatcher_, parallelism_, name));
         }
         return std::shared_ptr<CoroutineDispatcher>(this, [](CoroutineDispatcher*){});
     }
@@ -157,9 +163,9 @@ private:
      * private inline fun dispatchInternal(block: Runnable, startWorker: (Worker) -> Unit)
      */
     template<typename StartWorkerFunc>
-    void dispatch_internal(std::shared_ptr<Runnable> block, StartWorkerFunc start_worker) {
+    void dispatch_internal(std::shared_ptr<Runnable> block, StartWorkerFunc start_worker) const {
         // Add task to queue so running workers will be able to see that
-        queue_.add_last(block);
+        queue_.add_last(new TaskItem{block});
         if (running_workers_.load() >= parallelism_) return;
         // allocation may fail if some workers were launched in parallel or a worker temporarily decreased
         // `runningWorkers` when they observed an empty queue.
@@ -167,13 +173,8 @@ private:
         auto task = obtain_task_or_deallocate_worker();
         if (!task) return;
         try {
-            start_worker(std::make_shared<Worker>(this, task));
+            start_worker(std::make_shared<Worker>(const_cast<LimitedDispatcher*>(this), task));
         } catch (...) {
-            /* If we failed to start a worker, we should decrement the counter.
-            The queue is in an inconsistent state--it's non-empty despite the target parallelism not having been
-            reached--but at least a properly functioning worker will have a chance to correct this if some future
-            dispatch does succeed.
-            If we don't decrement the counter, it will be impossible to ever reach the target parallelism again. */
             running_workers_.fetch_sub(1);
             throw;
         }
@@ -191,7 +192,7 @@ private:
      *     }
      * }
      */
-    bool try_allocate_worker() {
+    bool try_allocate_worker() const {
         std::lock_guard<SynchronizedObject> lock(worker_allocation_lock_);
         if (running_workers_.load() >= parallelism_) return false;
         running_workers_.fetch_add(1);
@@ -215,16 +216,18 @@ private:
      *     }
      * }
      */
-    std::shared_ptr<Runnable> obtain_task_or_deallocate_worker() {
+    std::shared_ptr<Runnable> obtain_task_or_deallocate_worker() const {
         while (true) {
-            auto next_task = queue_.remove_first_or_null();
+            auto* next_task = queue_.remove_first_or_null();
             if (!next_task) {
                 std::lock_guard<SynchronizedObject> lock(worker_allocation_lock_);
                 running_workers_.fetch_sub(1);
                 if (queue_.size() == 0) return nullptr;
                 running_workers_.fetch_add(1);
             } else {
-                return next_task;
+                auto res = next_task->runnable;
+                delete next_task;
+                return res;
             }
         }
     }
@@ -245,35 +248,6 @@ private:
         Worker(LimitedDispatcher* parent, std::shared_ptr<Runnable> current_task)
             : parent_(parent), current_task_(std::move(current_task)) {}
 
-        /**
-         * Transliterated from:
-         * override fun run() {
-         *     try {
-         *         var fairnessCounter = 0
-         *         while (true) {
-         *             try {
-         *                 currentTask.run()
-         *             } catch (e: Throwable) {
-         *                 handleCoroutineException(EmptyCoroutineContext, e)
-         *             }
-         *             currentTask = obtainTaskOrDeallocateWorker() ?: return
-         *             // 16 is our out-of-thin-air constant to emulate fairness. Used in JS dispatchers as well
-         *             if (++fairnessCounter >= 16 && dispatcher.safeIsDispatchNeeded(this@LimitedDispatcher)) {
-         *                 // Do "yield" to let other views execute their runnable as well
-         *                 // Note that we do not decrement 'runningWorkers' as we are still committed to our part of work
-         *                 dispatcher.safeDispatch(this@LimitedDispatcher, this)
-         *                 return
-         *             }
-         *         }
-         *     } catch (e: Throwable) {
-         *         // If the worker failed, we should deallocate its slot
-         *         synchronized(workerAllocationLock) {
-         *             runningWorkers.decrementAndGet()
-         *         }
-         *         throw e
-         *     }
-         * }
-         */
         void run() override {
             try {
                 int fairness_counter = 0;
@@ -281,16 +255,12 @@ private:
                     try {
                         current_task_->run();
                     } catch (...) {
-                        // handleCoroutineException(EmptyCoroutineContext, e)
-                        // For now, just swallow - proper handling requires exception handler infrastructure
                     }
                     current_task_ = parent_->obtain_task_or_deallocate_worker();
                     if (!current_task_) return;
                     // 16 is our out-of-thin-air constant to emulate fairness. Used in JS dispatchers as well
-                    if (++fairness_counter >= 16 && parent_->dispatcher_->is_dispatch_needed(nullptr)) {
-                        // Do "yield" to let other views execute their runnable as well
-                        // Note that we do not decrement 'runningWorkers' as we are still committed to our part of work
-                        parent_->dispatcher_->dispatch(nullptr, std::shared_ptr<Runnable>(this, [](Runnable*){}));
+                    if (++fairness_counter >= 16 && parent_->dispatcher_->is_dispatch_needed(*parent_)) {
+                        parent_->dispatcher_->dispatch(*parent_, std::shared_ptr<Runnable>(this, [](Runnable*){}));
                         return;
                     }
                 }

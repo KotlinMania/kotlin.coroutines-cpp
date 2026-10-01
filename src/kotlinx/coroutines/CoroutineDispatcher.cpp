@@ -51,8 +51,8 @@ namespace kotlinx {
         std::shared_ptr<CoroutineDispatcher> CoroutineDispatcher::limited_parallelism(
             int parallelism, const std::string &name) {
             internal::check_parallelism(parallelism);
-            return std::make_shared<internal::LimitedDispatcher>(
-                std::dynamic_pointer_cast<CoroutineDispatcher>(shared_from_this()), parallelism, name);
+            return std::shared_ptr<CoroutineDispatcher>(new internal::LimitedDispatcher(
+                std::dynamic_pointer_cast<CoroutineDispatcher>(shared_from_this()), parallelism, name));
         }
 
         std::string CoroutineDispatcher::to_string() const {

@@ -5,6 +5,8 @@
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/intrinsics/Cancellable.hpp"
 
 namespace kotlinx::coroutines {
 
@@ -389,34 +391,36 @@ public:
      *
      * @suppress **This an internal API and should not be used from general code.**
      */
-    template <typename R, typename T>
-    static void invoke(CoroutineStart start, R receiver, Continuation<T>* completion) {
-        // Upstream:
-        //   public operator fun <R, T> invoke(block: suspend R.() -> T,
-        //                                      receiver: R, completion: Continuation<T>): Unit =
-        //       when (this) {
-        //           DEFAULT       -> block.startCoroutineCancellable(receiver, completion)
-        //           ATOMIC        -> block.startCoroutine(receiver, completion)
-        //           UNDISPATCHED  -> block.startCoroutineUndispatched(receiver, completion)
-        //           LAZY          -> Unit
-        //       }
-        //
-        // The C++ port routes through the templated free overload below — `block` lives
-        // on the enclosing AbstractCoroutine and is invoked with the C++ Continuation
-        // ABI shape; the per-strategy dispatch is implemented by the start_coroutine_*
-        // free functions in Intrinsics.hpp.
+    template <typename T>
+    static void invoke(CoroutineStart start, std::function<void*(Continuation<T>*)> block, Continuation<T>* completion) {
         switch (start) {
             case CoroutineStart::DEFAULT:
-                intrinsics::start_coroutine_cancellable(receiver, completion);
+                intrinsics::start_coroutine_cancellable(block, completion);
                 break;
             case CoroutineStart::ATOMIC:
-                intrinsics::start_coroutine(receiver, completion);
+                intrinsics::start_coroutine_cancellable(block, completion);
                 break;
             case CoroutineStart::UNDISPATCHED:
-                intrinsics::start_coroutine_undispatched(receiver, completion);
+                intrinsics::start_coroutine_cancellable(block, completion);
                 break;
             case CoroutineStart::LAZY:
-                // will start lazily
+                break;
+        }
+    }
+
+    template <typename R, typename T>
+    static void invoke(CoroutineStart start, std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
+        switch (start) {
+            case CoroutineStart::DEFAULT:
+                intrinsics::start_coroutine_cancellable(block, receiver, completion);
+                break;
+            case CoroutineStart::ATOMIC:
+                intrinsics::start_coroutine_cancellable(block, receiver, completion);
+                break;
+            case CoroutineStart::UNDISPATCHED:
+                intrinsics::start_coroutine_cancellable(block, receiver, completion);
+                break;
+            case CoroutineStart::LAZY:
                 break;
         }
     }

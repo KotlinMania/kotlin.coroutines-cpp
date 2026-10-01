@@ -159,7 +159,7 @@ public:
 
     CoroutineContext::Key* key() const override { return Job::type_key; }
 
-    std::string to_string() const {
+    std::string to_string() const override {
         return "NonCancellable";
     }
 };

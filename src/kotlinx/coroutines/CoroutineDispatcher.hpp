@@ -181,7 +181,7 @@ public:
      */
     virtual std::shared_ptr<CoroutineDispatcher> limited_parallelism(int parallelism, const std::string& name = "");
 
-    virtual std::string to_string() const;
+    std::string to_string() const override;
 };
 
 } // namespace coroutines

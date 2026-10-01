@@ -57,11 +57,14 @@ LazyStandaloneCoroutine::LazyStandaloneCoroutine(
  *   }
  */
 void LazyStandaloneCoroutine::on_start() {
-    auto continuation = intrinsics::create_coroutine_unintercepted<CoroutineScope*, Unit>(
-        block,
-        this->shared_from_this_as<Continuation<Unit>>(),
-        this);
-    intrinsics::start_coroutine_cancellable(continuation, this);
+    try {
+        if (block) {
+            block(this);
+        }
+        this->resume_with(Result<Unit>::success(Unit()));
+    } catch (...) {
+        this->resume_with(Result<Unit>::failure(std::current_exception()));
+    }
 }
 
 } // namespace kotlinx::coroutines

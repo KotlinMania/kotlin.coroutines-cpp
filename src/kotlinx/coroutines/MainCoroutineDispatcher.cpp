@@ -55,10 +55,10 @@ std::shared_ptr<CoroutineDispatcher> MainCoroutineDispatcher::limited_parallelis
  *   }
  */
 std::optional<std::string> MainCoroutineDispatcher::to_string_internal_impl() const {
-    auto& main = Dispatchers::Main();
-    if (this == &main) return std::string("Dispatchers.Main");
+    auto& main_disp = Dispatchers::get_main();
+    if (this == &main_disp) return std::string("Dispatchers.Main");
     try {
-        auto& immediate_dispatcher = const_cast<MainCoroutineDispatcher&>(main).immediate();
+        auto& immediate_dispatcher = const_cast<MainCoroutineDispatcher&>(main_disp).immediate();
         if (this == &immediate_dispatcher) return std::string("Dispatchers.Main.immediate");
     } catch (const std::logic_error&) {
         // `immediate` is not supported on every platform — swallow and fall through.

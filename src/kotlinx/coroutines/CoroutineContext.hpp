@@ -124,6 +124,11 @@ public:
      * @return A new context without the specified element
      */
     virtual std::shared_ptr<CoroutineContext> minus_key(Key* key) const = 0;
+
+    /**
+     * Transliterated from: override fun toString(): String in CoroutineContext.kt
+     */
+    virtual std::string to_string() const;
 };
 
 /**
@@ -180,7 +185,26 @@ struct CoroutineContext::Element : public CoroutineContext {
         if (this->key() == k) return nullptr; // nullptr represents EmptyCoroutineContext here
         return std::const_pointer_cast<CoroutineContext>(shared_from_this());
     }
+
+    /**
+     * Transliterated from: override fun toString(): String in CoroutineContext.kt
+     */
+    std::string to_string() const override {
+        return key() && key()->name ? key()->name : "Element";
+    }
 };
+
+inline std::string CoroutineContext::to_string() const {
+    std::string result = "[";
+    bool first = true;
+    for_each([&](std::shared_ptr<Element> e) {
+        if (!first) result += ", ";
+        first = false;
+        result += e ? e->to_string() : "null";
+    });
+    result += "]";
+    return result;
+}
 
 /**
  * AbstractCoroutineContextElement - convenience base class for context elements.

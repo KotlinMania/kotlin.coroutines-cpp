@@ -45,12 +45,12 @@ public:
      *       throw UnsupportedOperationException("limitedParallelism is not supported for Dispatchers.Unconfined")
      *   }
      */
-    CoroutineDispatcher& limited_parallelism(int /*parallelism*/, const std::string* /*name*/) override {
+    std::shared_ptr<CoroutineDispatcher> limited_parallelism(int /*parallelism*/, const std::string& /*name*/ = "") override {
         throw std::logic_error("limitedParallelism is not supported for Dispatchers.Unconfined");
     }
 
     /** Upstream: override fun isDispatchNeeded(context: CoroutineContext): Boolean = false */
-    bool is_dispatch_needed(const CoroutineContext& /*context*/) override { return false; }
+    bool is_dispatch_needed(const CoroutineContext& /*context*/) const override { return false; }
 
     /**
      * Upstream:
@@ -60,7 +60,7 @@ public:
      *       throw UnsupportedOperationException("Dispatchers.Unconfined.dispatch ...")
      *   }
      */
-    void dispatch(const CoroutineContext& context, Runnable& block) override;
+    void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override;
 
     /** Upstream: override fun toString(): String = "Dispatchers.Unconfined" */
     std::string to_string() const override { return "Dispatchers.Unconfined"; }
@@ -84,7 +84,7 @@ private:
 class YieldContext : public AbstractCoroutineContextElement {
 public:
     /** Upstream: companion object Key : CoroutineContext.Key<YieldContext> */
-    static const CoroutineContext::Key* type_key();
+    static CoroutineContext::Key* type_key();
 
     YieldContext() : AbstractCoroutineContextElement(type_key()) {}
 
