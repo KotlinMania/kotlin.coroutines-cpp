@@ -40,7 +40,7 @@ public:
         dispatcher_->dispatch(context, std::move(block));
     }
 
-    std::string to_string() const { return name_; }
+    std::string to_string() const override { return name_; }
 
     // Delay by dispatcher: forward to underlying when it implements Delay, otherwise
     // delegate to DefaultDelay via the project-wide get_default_delay() shim.

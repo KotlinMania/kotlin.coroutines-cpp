@@ -9,6 +9,7 @@
 
 #include "kotlinx/coroutines/channels/BufferedChannel.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/internal/OnUndeliveredElement.hpp"
 
 namespace kotlinx {
 namespace coroutines {

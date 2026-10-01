@@ -369,9 +369,35 @@ inline void assert_null(void* ptr) {
     }
 }
 
+template<typename T>
+inline void assert_null(const std::shared_ptr<T>& ptr) {
+    if (ptr != nullptr) {
+        throw std::logic_error("Expected null shared_ptr");
+    }
+}
+
 inline void assert_null(std::exception_ptr ptr) {
     if (ptr != nullptr) {
         throw std::logic_error("Expected null exception_ptr");
+    }
+}
+
+inline void assert_not_null(void* ptr) {
+    if (ptr == nullptr) {
+        throw std::logic_error("Expected non-null");
+    }
+}
+
+template<typename T>
+inline void assert_not_null(const std::shared_ptr<T>& ptr) {
+    if (ptr == nullptr) {
+        throw std::logic_error("Expected non-null shared_ptr");
+    }
+}
+
+inline void assert_not_null(std::exception_ptr ptr) {
+    if (ptr == nullptr) {
+        throw std::logic_error("Expected non-null exception_ptr");
     }
 }
 
@@ -379,6 +405,18 @@ template<typename T, typename U>
 void assert_is(const U& value) {
     if (dynamic_cast<const T*>(&value) == nullptr) {
         throw std::logic_error("Type assertion failed");
+    }
+}
+
+template<typename T>
+void assert_is(std::exception_ptr ex) {
+    if (!ex) throw std::logic_error("Expected non-null exception");
+    try {
+        std::rethrow_exception(ex);
+    } catch (const T&) {
+        return;
+    } catch (...) {
+        throw std::logic_error("Type assertion failed for exception");
     }
 }
 

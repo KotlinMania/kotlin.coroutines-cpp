@@ -49,36 +49,12 @@ public:
 
     /**
      * Upstream:
-     *   @Deprecated(level = HIDDEN, ...) override fun cancel() { cancelInternal(defaultCancellationException()) }
-     */
-    void cancel() override {
-        cancel_internal(default_cancellation_exception());
-    }
-
-    /**
-     * Upstream:
-     *   final override fun cancel(cause: Throwable?): Boolean {
-     *       cancelInternal(defaultCancellationException())
-     *       return true
-     *   }
-     */
-    bool cancel(std::exception_ptr /*cause*/) override {
-        cancel_internal(default_cancellation_exception());
-        return true;
-    }
-
-    /**
-     * Upstream:
      *   final override fun cancel(cause: CancellationException?) {
      *       if (isCancelled) return
      *       cancelInternal(cause ?: defaultCancellationException())
      *   }
-     *
-     * The C++ port models `CancellationException?` as `std::exception_ptr` with nullptr as the
-     * sentinel for the upstream `null` branch (which falls back to the default cancellation
-     * exception).
      */
-    void cancel_cancellation(std::exception_ptr cause) {
+    void cancel(std::exception_ptr cause = nullptr) override {
         if (this->is_cancelled()) return;
         cancel_internal(cause ? cause : default_cancellation_exception());
     }

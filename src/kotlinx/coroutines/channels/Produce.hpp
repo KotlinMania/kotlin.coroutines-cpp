@@ -13,6 +13,7 @@
 #include "kotlinx/coroutines/channels/ChannelCoroutine.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include <functional>
 #include <memory>
@@ -233,10 +234,10 @@ void* await_close(ProducerScope<E>* scope, std::function<void()> block,
         std::function<void()> action;
         ~FinallyGuard() { if (action) action(); }
     } guard{std::move(block)};
-    return dsl::suspend_cancellable_coroutine<Unit>(
-        [scope](CancellableContinuation<Unit>& cont) {
+    return suspend_cancellable_coroutine<void>(
+        [scope](CancellableContinuation<void>& cont) {
             scope->invoke_on_close([&cont](std::exception_ptr /*cause*/) {
-                cont.resume(Unit{});
+                cont.resume();
             });
         },
         continuation);
