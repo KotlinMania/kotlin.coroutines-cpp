@@ -14,7 +14,6 @@
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/flow/internal/Combine.hpp"
-#include "kotlinx/coroutines/flow/internal/Zip.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
 #include <any>
@@ -56,9 +55,9 @@ inline std::shared_ptr<Flow<R>> combine(
     std::shared_ptr<Flow<T1>> first,
     std::shared_ptr<Flow<T2>> second,
     std::function<R(T1, T2)> transform) {
-    return flow_builder<R>([first, second, transform](
-                               FlowCollector<R>* collector,
-                               std::shared_ptr<Continuation<void*>> completion) -> void* {
+    return flow<R>([first, second, transform](
+                       FlowCollector<R>* collector,
+                       Continuation<void*>* completion) -> void* {
         std::vector<std::shared_ptr<Flow<std::any>>> sources;
         sources.push_back(internal::as_any_flow<T1>(first));
         sources.push_back(internal::as_any_flow<T2>(second));
@@ -66,11 +65,11 @@ inline std::shared_ptr<Flow<R>> combine(
             collector, sources,
             [transform](FlowCollector<R>* sink,
                         const std::vector<std::any>& values,
-                        Continuation<void*>* cont) {
+                        Continuation<void*>* cont) -> void* {
                 R r = transform(std::any_cast<T1>(values[0]), std::any_cast<T2>(values[1]));
                 return sink->emit(std::move(r), cont);
             },
-            completion);
+            nullptr);
     });
 }
 

@@ -120,17 +120,10 @@ public:
             on_lock_clause_ = std::make_unique<selects::SelectClause2Impl<void*, Mutex*>>(
                 /*clauseObject=*/this,
                 /*regFunc=*/[this](void* /*clause*/, void* select, void* owner) {
-                    auto* sel = static_cast<selects::SelectInstance<void*>*>(select);
-                    if (this->try_lock(owner)) {
-                        sel->select_in_registration_phase(nullptr);
-                    } else {
-                        auto cont = std::make_shared<
-                            selects::detail::SelectSuspendingClauseContinuation>(sel);
-                        this->lock(owner, cont.get());
-                    }
+                    this->on_lock_reg_function(static_cast<selects::SelectInstance<void*>*>(select), owner);
                 },
-                /*processResFunc=*/[this](void* /*clause*/, void* /*owner*/, void* /*res*/) {
-                    return static_cast<void*>(this);
+                /*processResFunc=*/[this](void* /*clause*/, void* owner, void* res) {
+                    return this->on_lock_process_result(owner, res);
                 });
         }
         return *on_lock_clause_;

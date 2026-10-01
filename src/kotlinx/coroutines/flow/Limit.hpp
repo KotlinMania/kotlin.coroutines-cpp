@@ -13,16 +13,11 @@
 #include <functional>
 #include <stdexcept>
 #include <memory>
+#include <utility>
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
-
-// Alias for the flow builder to avoid shadowing issues with parameters named 'upstream'
-template<typename T>
-inline std::shared_ptr<Flow<T>> make_flow(std::function<void(FlowCollector<T>*)> block) {
-    return flow<T>(block);
-}
 
 /**
  * Returns a flow that ignores first count elements.
@@ -34,28 +29,30 @@ inline std::shared_ptr<Flow<T>> make_flow(std::function<void(FlowCollector<T>*)>
  * @param count The number of elements to skip (must be non-negative)
  * @return A new flow that skips the first count elements
  *
- * @note **CURRENT LIMITATION**: The collect() call inside this operator does not
- *       properly handle suspension, which may break backpressure in complex flows.
- *
  * @throws std::invalid_argument if count is negative
- *
- * ### Thread Safety
- * This operator is thread-safe as long as the upstream flow is thread-safe.
- * The skipping logic is stateless and does not introduce additional concurrency concerns.
  */
 template<typename T>
 std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
     if (count < 0) throw std::invalid_argument("Drop count should be non-negative");
 
-    return make_flow<T>([upstream, count](FlowCollector<T>* collector) {
-        int skipped = 0;
-        upstream->collect([&](T value) {
-            if (skipped >= count) {
-                collector->emit(value);
-            } else {
-                skipped++;
+    return flow<T>([upstream, count](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+        class DropCollector : public FlowCollector<T> {
+        public:
+            FlowCollector<T>* collector_;
+            int count_;
+            int skipped_{0};
+            DropCollector(FlowCollector<T>* c, int cnt) : collector_(c), count_(cnt) {}
+            void* emit(T value, Continuation<void*>* c) override {
+                if (skipped_ >= count_) {
+                    return collector_->emit(std::move(value), c);
+                } else {
+                    ++skipped_;
+                    return nullptr;
+                }
             }
-        });
+        };
+        DropCollector drop_collector(collector, count);
+        return upstream->collect(&drop_collector, cont);
     });
 }
 
@@ -69,26 +66,28 @@ std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
  * @param upstream The flow to transform
  * @param predicate The predicate function to test elements
  * @return A new flow that skips elements while predicate is true
- *
- * @note **CURRENT LIMITATION**: The collect() call inside this operator does not
- *       properly handle suspension, which may break backpressure in complex flows.
- *
- * ### Thread Safety
- * This operator is thread-safe as long as the upstream flow is thread-safe.
- * The predicate is called sequentially for each element during collection.
  */
 template<typename T, typename Predicate>
 std::shared_ptr<Flow<T>> drop_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
-    return make_flow<T>([upstream, predicate](FlowCollector<T>* collector) {
-        bool matched = false;
-        upstream->collect([&](T value) {
-            if (matched) {
-                collector->emit(value);
-            } else if (!predicate(value)) {
-                matched = true;
-                collector->emit(value);
+    return flow<T>([upstream, predicate](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+        class DropWhileCollector : public FlowCollector<T> {
+        public:
+            FlowCollector<T>* collector_;
+            Predicate predicate_;
+            bool matched_{false};
+            DropWhileCollector(FlowCollector<T>* c, Predicate p) : collector_(c), predicate_(p) {}
+            void* emit(T value, Continuation<void*>* c) override {
+                if (matched_) {
+                    return collector_->emit(std::move(value), c);
+                } else if (!predicate_(value)) {
+                    matched_ = true;
+                    return collector_->emit(std::move(value), c);
+                }
+                return nullptr;
             }
-        });
+        };
+        DropWhileCollector dw_collector(collector, predicate);
+        return upstream->collect(&dw_collector, cont);
     });
 }
 
@@ -102,49 +101,36 @@ std::shared_ptr<Flow<T>> drop_while(std::shared_ptr<Flow<T>> upstream, Predicate
  * @param count The number of elements to take (must be positive)
  * @return A new flow that emits only the first count elements
  *
- * @note **CURRENT LIMITATION**: Uses AbortFlowException to stop upstream flow,
- *       which is not the most efficient approach. The collect() call does not
- *       properly handle suspension, which may break backpressure.
- *
  * @throws std::invalid_argument if count is not positive
- *
- * ### Thread Safety
- * This operator is thread-safe as long as the upstream flow is thread-safe.
- * The cancellation mechanism ensures no further emissions after the limit.
  */
 template<typename T>
 std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
     if (count <= 0) throw std::invalid_argument("Requested element count should be positive");
 
-    return make_flow<T>([upstream, count](FlowCollector<T>* collector) {
-        int consumed = 0;
-        // We use AbortFlowException logic if we need to stop upstream
-        // But since we control upstream somewhat via lambda, we can't easily "stop" without exception.
-        // Assuming AbortFlowException is defined and functional.
-
+    return flow<T>([upstream, count](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
         class TakeCollector : public FlowCollector<T> {
-            FlowCollector<T>* down;
-            int limit;
-            int& consumed;
+            FlowCollector<T>* down_;
+            int limit_;
+            int consumed_{0};
         public:
-            TakeCollector(FlowCollector<T>* d, int l, int& c) : down(d), limit(l), consumed(c) {}
-            void emit(T value) override {
-                consumed++;
-                if (consumed < limit) {
-                    down->emit(value);
+            TakeCollector(FlowCollector<T>* d, int l) : down_(d), limit_(l) {}
+            void* emit(T value, Continuation<void*>* c) override {
+                consumed_++;
+                if (consumed_ < limit_) {
+                    return down_->emit(std::move(value), c);
                 } else {
-                    down->emit(value);
+                    down_->emit(std::move(value), c);
                     throw internal::AbortFlowException(this);
                 }
             }
         };
 
+        TakeCollector tc(collector, count);
         try {
-            TakeCollector tc(collector, count, consumed);
-            upstream->collect(&tc);
+            return upstream->collect(&tc, cont);
         } catch (internal::AbortFlowException& e) {
-            // e.checkOwnership(owner); implementation detail usage
-            // simplified:
+            e.check_ownership(&tc);
+            return nullptr;
         }
     });
 }
@@ -157,27 +143,26 @@ std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
  *
  * @param upstream The flow to collect from
  * @param predicate The predicate function to test elements
- *
- * @note **CURRENT LIMITATION**: This is a helper function that uses exceptions
- *       for flow control, which is not optimal for performance.
  */
 template<typename T, typename Predicate>
-void collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
-     struct PredicateCollector : public FlowCollector<T> {
+void* collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<void*>* cont = nullptr) {
+    struct PredicateCollector : public FlowCollector<T> {
         Predicate pred;
         PredicateCollector(Predicate p) : pred(p) {}
-        void emit(T value) override {
+        void* emit(T value, Continuation<void*>*) override {
             if (!pred(value)) {
                 throw internal::AbortFlowException(this);
             }
+            return nullptr;
         }
     };
 
+    PredicateCollector collector(predicate);
     try {
-        PredicateCollector collector(predicate);
-        upstream->collect(&collector);
+        return upstream->collect(&collector, cont);
     } catch (internal::AbortFlowException& e) {
-        // e.checkOwnership(&collector);
+        e.check_ownership(&collector);
+        return nullptr;
     }
 }
 
@@ -190,25 +175,31 @@ void collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
  * @param upstream The flow to transform
  * @param predicate The predicate function to test elements
  * @return A new flow that emits elements while predicate is true
- *
- * @note **CURRENT LIMITATION**: Uses AbortFlowException for flow control and
- *       does not properly handle suspension, which may break backpressure.
- *
- * ### Thread Safety
- * This operator is thread-safe as long as the upstream flow is thread-safe.
- * The predicate is called sequentially for each element during collection.
  */
 template<typename T, typename Predicate>
 std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
-    return make_flow<T>([upstream, predicate](FlowCollector<T>* collector) {
-        collect_while(upstream, [&](T value) -> bool {
-            if (predicate(value)) {
-                collector->emit(value);
-                return true;
-            } else {
-                return false;
+    return flow<T>([upstream, predicate](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+        class TakeWhileCollector : public FlowCollector<T> {
+            FlowCollector<T>* down_;
+            Predicate pred_;
+        public:
+            TakeWhileCollector(FlowCollector<T>* d, Predicate p) : down_(d), pred_(p) {}
+            void* emit(T value, Continuation<void*>* c) override {
+                if (pred_(value)) {
+                    return down_->emit(std::move(value), c);
+                } else {
+                    throw internal::AbortFlowException(this);
+                }
             }
-        });
+        };
+
+        TakeWhileCollector twc(collector, predicate);
+        try {
+            return upstream->collect(&twc, cont);
+        } catch (internal::AbortFlowException& e) {
+            e.check_ownership(&twc);
+            return nullptr;
+        }
     });
 }
 
@@ -226,24 +217,34 @@ std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate
  * @tparam T The input element type
  * @tparam R The output element type
  * @tparam Transform The transform function type
- *
- * @note **CURRENT LIMITATION**: Does not properly handle suspension, which may
- *       break backpressure in complex flows.
- *
- * ### Thread Safety
- * This operator is thread-safe as long as the upstream flow is thread-safe.
- * The transform function is called sequentially for each element.
  */
 template<typename T, typename R, typename Transform>
 std::shared_ptr<Flow<R>> transform_while(std::shared_ptr<Flow<T>> upstream, Transform transform_fn) {
-    return make_flow<R>([upstream, transform_fn](FlowCollector<R>* collector) {
-        collect_while(upstream, [&](T value) -> bool {
-             return transform_fn(collector, value);
-        });
+    return flow<R>([upstream, transform_fn](FlowCollector<R>* collector, Continuation<void*>* cont) -> void* {
+        class TransformWhileCollector : public FlowCollector<T> {
+            FlowCollector<R>* down_;
+            Transform fn_;
+        public:
+            TransformWhileCollector(FlowCollector<R>* d, Transform fn) : down_(d), fn_(fn) {}
+            void* emit(T value, Continuation<void*>*) override {
+                if (fn_(down_, std::move(value))) {
+                    return nullptr;
+                } else {
+                    throw internal::AbortFlowException(this);
+                }
+            }
+        };
+
+        TransformWhileCollector twc(collector, transform_fn);
+        try {
+            return upstream->collect(&twc, cont);
+        } catch (internal::AbortFlowException& e) {
+            e.check_ownership(&twc);
+            return nullptr;
+        }
     });
 }
 
 } // namespace flow
 } // namespace coroutines
 } // namespace kotlinx
-

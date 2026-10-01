@@ -1369,6 +1369,30 @@ public:
      */
     virtual selects::SelectClause1<ChannelResult<E>>& on_receive_catching() = 0;
 
+    template <typename R, typename Handler>
+    void on_receive(selects::SelectBuilder<R>& builder, Handler&& handler) {
+        if constexpr (std::is_invocable_r_v<void*, Handler, E, Continuation<void*>*>) {
+            builder.invoke(on_receive(), std::forward<Handler>(handler));
+        } else {
+            builder.invoke(on_receive(), [h = std::forward<Handler>(handler)](E val, Continuation<void*>*) -> void* {
+                h(std::move(val));
+                return nullptr;
+            });
+        }
+    }
+
+    template <typename R, typename Handler>
+    void on_receive_catching(selects::SelectBuilder<R>& builder, Handler&& handler) {
+        if constexpr (std::is_invocable_r_v<void*, Handler, ChannelResult<E>, Continuation<void*>*>) {
+            builder.invoke(on_receive_catching(), std::forward<Handler>(handler));
+        } else {
+            builder.invoke(on_receive_catching(), [h = std::forward<Handler>(handler)](ChannelResult<E> val, Continuation<void*>*) -> void* {
+                h(std::move(val));
+                return nullptr;
+            });
+        }
+    }
+
     /**
      * Attempts to retrieve an element without waiting, removing it from
      * the channel.

@@ -13,12 +13,50 @@
 #pragma once
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <functional>
 #include <exception>
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
+
+namespace internal {
+
+template <typename T>
+inline void* catch_impl(
+    std::shared_ptr<Flow<T>> upstream,
+    FlowCollector<T>* collector,
+    Continuation<void*>* continuation) {
+    std::exception_ptr from_downstream = nullptr;
+    try {
+        class CatchCollector : public FlowCollector<T> {
+            FlowCollector<T>* collector_;
+            std::exception_ptr& from_downstream_;
+        public:
+            CatchCollector(FlowCollector<T>* c, std::exception_ptr& fd)
+                : collector_(c), from_downstream_(fd) {}
+            void* emit(T value, Continuation<void*>* cont) override {
+                try {
+                    return collector_->emit(std::move(value), cont);
+                } catch (...) {
+                    from_downstream_ = std::current_exception();
+                    throw;
+                }
+            }
+        };
+        CatchCollector catch_collector(collector, from_downstream);
+        upstream->collect(&catch_collector, continuation);
+    } catch (...) {
+        if (from_downstream) {
+            throw;
+        }
+        return new std::exception_ptr(std::current_exception());
+    }
+    return nullptr;
+}
+
+} // namespace internal
 
 /**
  * Catches exceptions in the flow completion and calls a specified action with

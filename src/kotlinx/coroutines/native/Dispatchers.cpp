@@ -69,7 +69,7 @@ namespace kotlinx {
                     delegate.dispatch_yield(context, block);
                 }
 
-                MainCoroutineDispatcher & get_immediate() override { return *this; }
+                MainCoroutineDispatcher & immediate() override { return *this; }
 
                 std::string to_string() const override { return "Dispatchers.Main[Default]"; }
 
@@ -125,10 +125,14 @@ namespace kotlinx {
 
         // MainCoroutineDispatcher base implementation
         std::string MainCoroutineDispatcher::to_string() const {
-            return to_string_internal_impl();
+            auto opt = to_string_internal_impl();
+            if (opt.has_value()) {
+                return *opt;
+            }
+            return "MainCoroutineDispatcher";
         }
 
-        std::string MainCoroutineDispatcher::to_string_internal_impl() const {
+        std::optional<std::string> MainCoroutineDispatcher::to_string_internal_impl() const {
             return "MainCoroutineDispatcher";
         }
 

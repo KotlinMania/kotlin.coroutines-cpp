@@ -11,9 +11,11 @@
  * `CoroutineScope(context).launch(start = UNDISPATCHED)`.
  */
 
+#include "kotlinx/coroutines/Builders.hpp"
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
@@ -42,10 +44,10 @@ namespace {
 template <typename T>
 void resume_undispatched(CancellableContinuation<T>* cont, T result) {
     auto ctx = cont->get_context();
-    auto* element = ctx ? ctx->get(CoroutineDispatcher::type_key()) : nullptr;
-    auto* dispatcher = dynamic_cast<CoroutineDispatcher*>(element);
+    auto element = ctx ? ctx->get(ContinuationInterceptor::type_key) : nullptr;
+    auto dispatcher = std::dynamic_pointer_cast<CoroutineDispatcher>(element);
     if (dispatcher) {
-        dispatcher->resume_undispatched(cont, std::move(result));
+        cont->resume_undispatched(dispatcher.get(), std::move(result));
     } else {
         cont->resume(std::move(result));
     }
@@ -63,10 +65,10 @@ template <typename T>
 void resume_undispatched_with_exception(CancellableContinuation<T>* cont,
                                         std::exception_ptr exception) {
     auto ctx = cont->get_context();
-    auto* element = ctx ? ctx->get(CoroutineDispatcher::type_key()) : nullptr;
-    auto* dispatcher = dynamic_cast<CoroutineDispatcher*>(element);
+    auto element = ctx ? ctx->get(ContinuationInterceptor::type_key) : nullptr;
+    auto dispatcher = std::dynamic_pointer_cast<CoroutineDispatcher>(element);
     if (dispatcher) {
-        dispatcher->resume_undispatched_with_exception(cont, exception);
+        cont->resume_undispatched_with_exception(dispatcher.get(), exception);
     } else {
         cont->resume_with_exception(exception);
     }
@@ -106,8 +108,8 @@ public:
      */
     void* get_result() {
         if (cont_->is_completed()) return cont_->get_result();
-        CoroutineScope scope(this->get_context());
-        scope.launch(CoroutineStart::UNDISPATCHED, [this]() {
+        auto scope = create_coroutine_scope(this->get_context());
+        launch(scope.get(), nullptr, CoroutineStart::UNDISPATCHED, [this](CoroutineScope*) {
             try {
                 R result = this->do_select();
                 resume_undispatched<R>(cont_.get(), std::move(result));
@@ -144,8 +146,8 @@ public:
     /** Upstream: @PublishedApi internal fun initSelectResult(): Any? { ... } */
     void* init_select_result() {
         if (cont_->is_completed()) return cont_->get_result();
-        CoroutineScope scope(this->get_context());
-        scope.launch(CoroutineStart::UNDISPATCHED, [this]() {
+        auto scope = create_coroutine_scope(this->get_context());
+        launch(scope.get(), nullptr, CoroutineStart::UNDISPATCHED, [this](CoroutineScope*) {
             try {
                 R result = this->do_select();
                 resume_undispatched<R>(cont_.get(), std::move(result));

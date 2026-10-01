@@ -23,6 +23,7 @@
 #include "kotlinx/coroutines/internal/DispatchedTask.hpp"
 // kotlinx.coroutines.selects.* (from Kotlin)
 #include "kotlinx/coroutines/selects/Select.hpp"
+#include "kotlinx/coroutines/EventLoop.hpp"
 #include <sstream>
 #include <atomic>
 #include <mutex>
@@ -622,7 +623,11 @@ namespace kotlinx {
 
         void JobSupport::join_blocking() {
             // Blocking version for non-coroutine contexts
+            auto loop = ThreadLocalEventLoop::current_or_null();
             while (!is_completed()) {
+                if (loop && loop->process_next_event() <= 0) {
+                    continue;
+                }
                 std::this_thread::yield();
             }
         }
@@ -699,7 +704,11 @@ namespace kotlinx {
 
         JobState *JobSupport::await_internal_blocking() {
             // Blocking version for non-coroutine contexts
+            auto loop = ThreadLocalEventLoop::current_or_null();
             while (!is_completed()) {
+                if (loop && loop->process_next_event() <= 0) {
+                    continue;
+                }
                 std::this_thread::yield();
             }
             auto *s = impl_->state.load(std::memory_order_acquire);
@@ -748,7 +757,7 @@ namespace kotlinx {
             node->invoke(ex ? ex->cause : nullptr);
             delete node;
             // Return a non-disposable ChildHandle (cast the NonDisposableHandle)
-            return std::shared_ptr<ChildHandle>(nullptr);
+            return std::shared_ptr<ChildHandle>(&NonDisposableHandle::instance(), [](ChildHandle*){});
         }
 
         // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:451-459

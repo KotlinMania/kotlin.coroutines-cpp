@@ -57,6 +57,11 @@ public:
      */
     virtual void* await(Continuation<void*>* continuation) = 0;
 
+    /**
+     * Blocks current thread until this deferred value is completed and returns result.
+     */
+    virtual T await_blocking() = 0;
+
     /** Upstream: public val onAwait: SelectClause1<T> */
     virtual selects::SelectClause1<T>& on_await() = 0;
 

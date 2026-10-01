@@ -7,6 +7,7 @@
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
+#include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
 #include <functional>
 
 namespace kotlinx::coroutines::flow::internal {

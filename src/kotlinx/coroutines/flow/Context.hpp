@@ -12,11 +12,21 @@
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
+#include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/Job.hpp"
+#include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
+
+namespace internal {
+inline void check_flow_context(const CoroutineContext& context) {
+    if (context.get(Job::type_key) != nullptr) {
+        throw std::invalid_argument("Flow context cannot contain job in it.");
+    }
+}
+} // namespace internal
 
 using channels::BufferOverflow;
 

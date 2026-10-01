@@ -12,6 +12,9 @@
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/flow/StateFlow.hpp"
+#include "kotlinx/coroutines/flow/Merge.hpp"
+#include "kotlinx/coroutines/flow/Limit.hpp"
+#include "kotlinx/coroutines/flow/Distinct.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Delay.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
@@ -57,18 +60,26 @@ std::string StartedEagerly::to_string() const {
  */
 std::shared_ptr<Flow<SharingCommand>> StartedLazily::command(
     std::shared_ptr<StateFlow<int>> subscription_count) {
-    return flow_builder<SharingCommand>(
+    return flow<SharingCommand>(
         [subscription_count](FlowCollector<SharingCommand>* sink,
-                             std::shared_ptr<Continuation<void*>> cont) -> void* {
+                             Continuation<void*>* cont) -> void* {
             auto started = std::make_shared<bool>(false);
-            return subscription_count->collect_each(
-                [sink, started](int count) {
-                    if (count > 0 && !*started) {
-                        *started = true;
-                        sink->emit(SharingCommand::START, nullptr);
+            class SubscriptionCollector : public FlowCollector<int> {
+            public:
+                FlowCollector<SharingCommand>* sink_;
+                std::shared_ptr<bool> started_;
+                SubscriptionCollector(FlowCollector<SharingCommand>* sink, std::shared_ptr<bool> started)
+                    : sink_(sink), started_(started) {}
+                void* emit(int count, Continuation<void*>* c) override {
+                    if (count > 0 && !*started_) {
+                        *started_ = true;
+                        return sink_->emit(SharingCommand::START, c);
                     }
-                },
-                cont.get());
+                    return nullptr;
+                }
+            };
+            auto collector = std::make_shared<SubscriptionCollector>(sink, started);
+            return subscription_count->collect(collector.get(), cont);
         });
 }
 
@@ -117,16 +128,16 @@ std::shared_ptr<Flow<SharingCommand>> StartedWhileSubscribed::command(
         subscription_count,
         [stop_timeout, replay_expiration](
             FlowCollector<SharingCommand>* sink, int count,
-            std::shared_ptr<Continuation<void*>> cont) -> void* {
+            Continuation<void*>* cont) -> void* {
             if (count > 0) {
-                return sink->emit(SharingCommand::START, cont.get());
+                return sink->emit(SharingCommand::START, cont);
             }
-            ::kotlinx::coroutines::delay(stop_timeout, cont.get());
+            ::kotlinx::coroutines::delay(stop_timeout, cont);
             if (replay_expiration > 0) {
-                sink->emit(SharingCommand::STOP, cont.get());
-                ::kotlinx::coroutines::delay(replay_expiration, cont.get());
+                sink->emit(SharingCommand::STOP, cont);
+                ::kotlinx::coroutines::delay(replay_expiration, cont);
             }
-            return sink->emit(SharingCommand::STOP_AND_RESET_REPLAY_CACHE, cont.get());
+            return sink->emit(SharingCommand::STOP_AND_RESET_REPLAY_CACHE, cont);
         });
     auto dropped = drop_while<SharingCommand>(
         staged,
@@ -182,6 +193,4 @@ SharingStarted* SharingStarted::while_subscribed(
     return new StartedWhileSubscribed(stop_timeout_millis, replay_expiration_millis);
 }
 
-} // namespace flow
-} // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines::flow

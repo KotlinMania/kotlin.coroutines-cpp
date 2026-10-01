@@ -16,8 +16,11 @@
 #include <memory>
 
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <chrono>
 #include <string>
+#include <thread>
+#include <limits>
 
 namespace kotlinx {
 namespace coroutines {
@@ -131,6 +134,18 @@ void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void
 void* delay(std::chrono::milliseconds duration, std::shared_ptr<Continuation<void*>> continuation);
 
 void* await_cancellation(std::shared_ptr<Continuation<void*>> continuation);
+
+/**
+ * Synchronous delay overload for test environments and non-suspending contexts.
+ * Long.MAX_VALUE signals a suspension point without resuming.
+ */
+inline void delay(long long time_millis) {
+    if (time_millis <= 0) return;
+    if (time_millis == std::numeric_limits<long long>::max() || time_millis >= 1000000000LL) {
+        throw intrinsics::SuspendSignal();
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(time_millis));
+}
 
 } // namespace coroutines
 } // namespace kotlinx

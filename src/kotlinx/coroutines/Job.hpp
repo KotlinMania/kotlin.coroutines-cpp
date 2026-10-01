@@ -313,6 +313,17 @@ struct Job : public virtual CoroutineContext::Element {
         bool invoke_immediately,
         std::function<void(std::exception_ptr)> handler) = 0;
 
+    std::shared_ptr<DisposableHandle> invoke_on_completion(
+        bool on_cancelling,
+        std::function<void(std::exception_ptr)> handler) {
+        return invoke_on_completion(on_cancelling, true, std::move(handler));
+    }
+
+    std::shared_ptr<DisposableHandle> invoke_on_completion(
+        std::function<void()> handler) {
+        return invoke_on_completion([h = std::move(handler)](std::exception_ptr) { h(); });
+    }
+
     // Key override
     CoroutineContext::Key* key() const override { return type_key; }
 };

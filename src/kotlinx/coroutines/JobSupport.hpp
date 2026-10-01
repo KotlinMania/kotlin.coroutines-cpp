@@ -438,6 +438,7 @@ protected:
     // The C++ port's onAwait select clause is defined alongside the onJoin clause in
     // the JobSupport.cpp companion; the registration / processing functions below are
     // already in place for the eventual SelectClause1Impl wiring.
+public:
     void on_await_internal_reg_func(void* select, void* ignored_param);
     static void* on_await_internal_process_res_func(void* clause_object, void* ignored_param, void* result);
 

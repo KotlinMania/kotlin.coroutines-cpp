@@ -10,10 +10,13 @@
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
 #include "kotlinx/coroutines/flow/internal/NullSurrogate.hpp"
+#include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/channels/Produce.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
+#include "kotlinx/coroutines/selects/OnTimeout.hpp"
+#include "kotlinx/coroutines/selects/WhileSelect.hpp"
 #include "kotlinx/coroutines/Timeout.hpp"
 #include <chrono>
 #include <stdexcept>
@@ -24,6 +27,14 @@ namespace coroutines {
 namespace flow {
 
 using namespace kotlinx::coroutines::channels;
+
+inline ::kotlinx::coroutines::internal::Symbol* DONE_SENTINEL() {
+    return &internal::DONE();
+}
+
+inline std::shared_ptr<ReceiveChannel<Unit>> fixed_period_ticker(
+    CoroutineScope* scope,
+    long delay_millis);
 
 // Helper: FlowCollector that forwards to a lambda
 template<typename T>
@@ -241,7 +252,7 @@ std::shared_ptr<Flow<T>> sample(std::shared_ptr<Flow<T>> upstream, long period_m
                             std::rethrow_exception(cause);
                         }
                         ticker->cancel(std::make_exception_ptr(
-                            ChildCancelledException()));
+                            internal::ChildCancelledException()));
                         last_value = DONE_SENTINEL();
                         done = true;
                     }
@@ -304,27 +315,23 @@ std::shared_ptr<Flow<T>> timeout(std::shared_ptr<Flow<T>> upstream, long timeout
          *       }
          *   }
          */
-        selects::while_select([&]() -> bool {
-            bool keep_going = false;
-            selects::select<void>([&](selects::SelectBuilder<void>& sel) {
-                values->on_receive_catching(sel, [&](const channels::ChannelResult<T>& value) {
-                    if (value.is_success()) {
-                        downstream->emit(value.get_or_throw(), nullptr);
-                        keep_going = true;
-                    } else {
-                        if (auto cause = value.exception_or_null()) {
-                            std::rethrow_exception(cause);
-                        }
-                        keep_going = false;
+        selects::while_select([&](selects::SelectBuilder<bool>& sel) {
+            values->on_receive_catching(sel, [&](const channels::ChannelResult<T>& value) {
+                if (value.is_success()) {
+                    downstream->emit(value.get_or_throw(), nullptr);
+                    return;
+                } else {
+                    if (auto cause = value.exception_or_null()) {
+                        std::rethrow_exception(cause);
                     }
-                });
-                sel.on_timeout(timeout_millis, [&]() {
-                    throw TimeoutCancellationException(
-                        "Timed out waiting for " + std::to_string(timeout_millis) + "ms");
-                });
+                    return;
+                }
             });
-            return keep_going;
-        });
+            sel.on_timeout(timeout_millis, [&]() {
+                throw TimeoutCancellationException(
+                    "Timed out waiting for " + std::to_string(timeout_millis) + "ms");
+            });
+        }, nullptr);
     });
 }
 

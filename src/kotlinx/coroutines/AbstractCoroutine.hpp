@@ -80,28 +80,30 @@ namespace kotlinx::coroutines {
         AbstractCoroutine(std::shared_ptr<CoroutineContext> parent_context, bool init_parent_job = true, bool active = true)
             : JobSupport(active),
               parent_context(parent_context),
-              context(parent_context) { // Initial assignment, will be overwritten or used correctly
-
-            // context = parent_context + this
-            // "this" is Job, Job implements Element.
-            // We cannot use shared_from_this() in constructor.
-            // So we delay context creation? no, Kotlin does it in constructor "val context = parentContext + this"
-            // In C++, we can't get shared_from_this in constructor.
-            // Logic: if we need fully constructed context in constructor, we have a problem.
-            // Usually context is used later.
-            // We can just store parent_context and construct CombinedContext on demand or in start()?
-
-            if (init_parent_job) {
-                init_parent_job_internal(parent_context->get(Job::type_key));
-            }
+              context(parent_context),
+              init_parent_job_flag(init_parent_job) {
         }
 
         virtual ~AbstractCoroutine() = default;
 
         std::shared_ptr<CoroutineContext> parent_context;
         std::shared_ptr<CoroutineContext> context;
+        bool init_parent_job_flag{true};
+        bool init_parent_job_done{false};
+
+        using JobSupport::init_parent_job;
+
+        void init_parent_job_if_needed() {
+            if (init_parent_job_flag && !init_parent_job_done) {
+                init_parent_job_done = true;
+                if (parent_context) {
+                    init_parent_job_internal(parent_context->get(Job::type_key));
+                }
+            }
+        }
 
         std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
+            const_cast<AbstractCoroutine<T>*>(this)->init_parent_job_if_needed();
             // Return fully constructed context (parent + this)
             // This is safe to call after construction
             // Note: shared_from_this() returns shared_ptr<JobSupport>, we need to cast
@@ -244,6 +246,7 @@ namespace kotlinx::coroutines {
 
         template <typename R>
         void start(CoroutineStart start_strategy, R receiver, std::function<T(R)> block) {
+            init_parent_job_if_needed();
             invoke(start_strategy, block, receiver, std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
         }
 

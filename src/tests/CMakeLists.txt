@@ -42,6 +42,7 @@ add_coroutine_test(test_timeout)
 
 # Transliterated Kotlin tests
 add_coroutine_test(AsyncTest)
+add_coroutine_test(JobTest)
 
 # Cancellable tests
 add_coroutine_test(test_cancellable)

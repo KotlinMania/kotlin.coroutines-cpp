@@ -18,10 +18,6 @@
 
 namespace kotlinx::coroutines::selects {
 
-/** Sentinel object matching upstream `private val PARAM_CLAUSE_0 = Any()`. */
-struct ParamClause0 {};
-inline constexpr ParamClause0 PARAM_CLAUSE_0{};
-
 /**
  * Data structure to hold clause registration information.
  *
@@ -67,13 +63,15 @@ public:
      *       clausesToRegister += UnbiasedClauseData(clauseObject, regFunc, processResFunc, PARAM_CLAUSE_0, block, onCancellationConstructor)
      *   }
      */
-    void invoke(SelectClause0& clause, std::function<R()> block) override {
+    void invoke(SelectClause0& clause, std::function<void*(Continuation<void*>*)> block) override {
         clauses_to_register_.push_back(UnbiasedClauseData{
-            clause.clause_object(),
-            [&clause, this]() { SelectImplementation<R>::invoke(clause, {}); },
+            clause.get_clause_object(),
+            [&clause, block, this]() {
+                SelectImplementation<R>::invoke(clause, block);
+            },
             nullptr,
-            const_cast<ParamClause0*>(&PARAM_CLAUSE_0),
-            [block = std::move(block)]() -> void* { return new R(block()); },
+            PARAM_CLAUSE_0(),
+            nullptr,
             nullptr,
         });
     }
@@ -83,16 +81,17 @@ public:
      *   override fun <Q> SelectClause1<Q>.invoke(block: suspend (Q) -> R) { clausesToRegister += ... }
      */
     template <typename Q>
-    void invoke(SelectClause1<Q>& clause, std::function<R(Q)> block) {
+    void invoke(SelectClause1<Q>& clause, std::function<void*(Q, Continuation<void*>*)> block) {
         clauses_to_register_.push_back(UnbiasedClauseData{
-            clause.clause_object(),
-            [&clause, this]() { SelectImplementation<R>::template invoke_clause1(clause); },
+            clause.get_clause_object(),
+            [&clause, block, this]() {
+                SelectImplementation<R>::template invoke<Q>(clause, block);
+            },
             nullptr,
             nullptr,
             nullptr,
             nullptr,
         });
-        (void)block;
     }
 
     /**
@@ -100,18 +99,17 @@ public:
      *   override fun <P, Q> SelectClause2<P, Q>.invoke(param: P, block: suspend (Q) -> R) { ... }
      */
     template <typename P, typename Q>
-    void invoke(SelectClause2<P, Q>& clause, P param, std::function<R(Q)> block) {
+    void invoke(SelectClause2<P, Q>& clause, P param, std::function<void*(Q, Continuation<void*>*)> block) {
         clauses_to_register_.push_back(UnbiasedClauseData{
-            clause.clause_object(),
-            [&clause, param, this]() {
-                SelectImplementation<R>::template invoke_clause2(clause, param);
+            clause.get_clause_object(),
+            [&clause, param, block, this]() {
+                SelectImplementation<R>::template invoke<P, Q>(clause, param, block);
             },
             nullptr,
-            reinterpret_cast<void*>(new P(param)),
+            nullptr,
             nullptr,
             nullptr,
         });
-        (void)block;
     }
 
     /**

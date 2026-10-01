@@ -21,9 +21,13 @@
 namespace kotlinx {
 namespace coroutines {
 
-// Legacy function - just does OS thread yield
+// Legacy function - just does OS thread yield or event loop step
 void yield_coroutine() {
-    std::this_thread::yield();
+    if (auto loop = ThreadLocalEventLoop::current_or_null()) {
+        loop->process_next_event();
+    } else {
+        std::this_thread::yield();
+    }
 }
 
 /**

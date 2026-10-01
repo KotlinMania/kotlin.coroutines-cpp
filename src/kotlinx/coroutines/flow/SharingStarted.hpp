@@ -88,7 +88,8 @@ struct SharingStarted {
      * Transliterated from:
      * public fun command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand>
      */
-    virtual Flow<SharingCommand>* command(StateFlow<int>* subscription_count) = 0;
+    virtual std::shared_ptr<Flow<SharingCommand>> command(std::shared_ptr<StateFlow<int>> subscription_count) = 0;
+    virtual std::string to_string() const { return "SharingStarted"; }
 
     /**
      * Sharing is started immediately and never stops.
@@ -147,7 +148,7 @@ struct SharingStarted {
  */
 class StartedEagerly : public SharingStarted {
 public:
-    Flow<SharingCommand>* command(StateFlow<int>* subscription_count) override;
+    std::shared_ptr<Flow<SharingCommand>> command(std::shared_ptr<StateFlow<int>> subscription_count) override;
     std::string to_string() const override;
 };
 
@@ -159,7 +160,7 @@ public:
  */
 class StartedLazily : public SharingStarted {
 public:
-    Flow<SharingCommand>* command(StateFlow<int>* subscription_count) override;
+    std::shared_ptr<Flow<SharingCommand>> command(std::shared_ptr<StateFlow<int>> subscription_count) override;
     std::string to_string() const override;
 };
 
@@ -179,7 +180,7 @@ public:
         long long replay_expiration_millis = std::numeric_limits<long long>::max()
     );
 
-    Flow<SharingCommand>* command(StateFlow<int>* subscription_count) override;
+    std::shared_ptr<Flow<SharingCommand>> command(std::shared_ptr<StateFlow<int>> subscription_count) override;
     std::string to_string() const override;
     bool operator==(const StartedWhileSubscribed& other) const;
     size_t hash() const;

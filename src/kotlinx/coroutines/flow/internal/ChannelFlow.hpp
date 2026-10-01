@@ -317,20 +317,59 @@ inline std::shared_ptr<ChannelFlow<T>> as_channel_flow(std::shared_ptr<Flow<T>> 
 
 } // namespace internal
 
-/**
- * Implementation of produce_in after as_channel_flow is available.
- * See Channels.hpp for documentation.
- */
-template <typename T>
-inline std::shared_ptr<channels::ReceiveChannel<T>> produce_in(
-    std::shared_ptr<Flow<T>> flow,
-    CoroutineScope* scope
-) {
-    auto channel_flow = internal::as_channel_flow(std::move(flow));
-    return channel_flow->produce_impl(scope);
-}
 
 namespace internal {
+
+template <typename T>
+class UndispatchedContextCollector : public FlowCollector<T> {
+private:
+    FlowCollector<T>* downstream_;
+    std::shared_ptr<CoroutineContext> emit_context_;
+
+public:
+    UndispatchedContextCollector(FlowCollector<T>* downstream, std::shared_ptr<CoroutineContext> emit_context)
+        : downstream_(downstream), emit_context_(std::move(emit_context)) {}
+
+    void* emit(T value, Continuation<void*>* continuation) override {
+        return downstream_->emit(std::move(value), continuation);
+    }
+};
+
+template <typename R, typename V, typename Block>
+inline R with_context_undispatched(
+    std::shared_ptr<CoroutineContext> /*new_context*/,
+    V value,
+    Block&& block,
+    Continuation<void*>* continuation) {
+    return block(value, continuation);
+}
+
+template <typename T>
+class ChannelFlowBuilder : public ChannelFlow<T> {
+private:
+    std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block_;
+
+public:
+    explicit ChannelFlowBuilder(
+        std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block,
+        std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance(),
+        int capacity = channels::Channel<T>::BUFFERED,
+        channels::BufferOverflow on_buffer_overflow = channels::BufferOverflow::SUSPEND
+    ) : ChannelFlow<T>(context, capacity, on_buffer_overflow), block_(std::move(block)) {}
+
+    ChannelFlow<T>* create(
+        std::shared_ptr<CoroutineContext> context,
+        int capacity,
+        channels::BufferOverflow on_buffer_overflow) override {
+        return new ChannelFlowBuilder<T>(block_, context, capacity, on_buffer_overflow);
+    }
+
+    void collect_to(channels::ProducerScope<T>* scope) override {
+        if (block_) {
+            block_(scope, nullptr);
+        }
+    }
+};
 
 template <typename S, typename T>
 inline void* ChannelFlowOperator<S, T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {

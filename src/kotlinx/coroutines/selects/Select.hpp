@@ -402,7 +402,8 @@ public:
     template<typename P, typename Q>
     void invoke(SelectClause2<P, Q>& clause, P param, std::function<void*(Q, Continuation<void*>*)> block);
 
-
+    template<typename Callback>
+    void on_timeout(std::int64_t time_millis, Callback&& block);
 };
 
 /**
@@ -623,6 +624,10 @@ public:
         return context_;
     }
 
+    std::string to_string() const override {
+        return "SelectImplementation";
+    }
+
     // ==========================================================================
     // ==========================================================================
     bool in_registration_phase() const {
@@ -701,7 +706,15 @@ private:
                     if (is_selected()) {
                         auto on_cancel = selected_clause_->create_on_cancellation_action(
                             this, internal_result_);
-                        cont.resume(on_cancel);
+                        if (on_cancel) {
+                            auto ctx = get_context();
+                            void* res = internal_result_;
+                            cont.resume([on_cancel, res, ctx](std::exception_ptr cause) {
+                                on_cancel(cause, res, ctx);
+                            });
+                        } else {
+                            cont.resume();
+                        }
                         return;  // Don't suspend
                     }
 
@@ -992,7 +1005,7 @@ private:
 template<typename R, typename BuilderFunc>
 void* select(BuilderFunc&& builder, Continuation<void*>* continuation) {
     auto context = continuation->get_context();
-    auto impl = std::make_shared<SelectImplementation<R>>(context);
+    auto impl = std::shared_ptr<SelectImplementation<R>>(new SelectImplementation<R>(context));
 
     builder(*impl);
 

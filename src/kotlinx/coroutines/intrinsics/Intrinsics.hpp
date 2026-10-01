@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cstdint>
+#include <exception>
 
 namespace kotlinx {
 namespace coroutines {
@@ -57,6 +58,15 @@ inline void* get_COROUTINE_SUSPENDED() {
 inline bool is_coroutine_suspended(void* result) {
     return result == get_COROUTINE_SUSPENDED();
 }
+
+/**
+ * Exception thrown by synchronous adapters (e.g. delay(Long.MAX_VALUE))
+ * to signal suspension to the caller without resuming completion.
+ */
+class SuspendSignal : public std::exception {
+public:
+    const char* what() const noexcept override { return "SuspendSignal"; }
+};
 
 } // namespace intrinsics
 } // namespace coroutines

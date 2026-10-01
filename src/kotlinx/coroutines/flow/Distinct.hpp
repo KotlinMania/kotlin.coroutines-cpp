@@ -77,7 +77,7 @@ public:
     [[suspend]]
     void* collect(
         FlowCollector<T>* collector,
-        std::shared_ptr<Continuation<void*>> completion) override {
+        Continuation<void*>* completion) override {
         bool has_key = false;
         std::any previous_key;
         // Upstream: upstream.collect { value ->
@@ -86,7 +86,7 @@ public:
         //           }
         auto inner = std::make_shared<DistinctInnerCollector>(
             collector, key_selector_, are_equivalent_, &has_key, &previous_key);
-        return upstream_->collect(inner.get(), completion.get());
+        return upstream_->collect(inner.get(), completion);
     }
 
 private:

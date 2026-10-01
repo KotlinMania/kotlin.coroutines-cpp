@@ -54,6 +54,7 @@ namespace coroutines {
     private:
         std::shared_ptr<CoroutineContext> parent_context_ref;
         bool active_flag;
+        std::unique_ptr<selects::SelectClause1Impl<T>> on_await_clause_;
 
     public:
         DeferredCoroutine(std::shared_ptr<CoroutineContext> parent_context, bool active)
@@ -105,6 +106,21 @@ namespace coroutines {
                 return completed->value;
             }
             throw std::logic_error("Unexpected await state");
+        }
+
+        selects::SelectClause1<T>& on_await() override {
+            if (!on_await_clause_) {
+                on_await_clause_ = std::make_unique<selects::SelectClause1Impl<T>>(
+                    this,
+                    [](void* clause_object, void* select, void* param) {
+                        static_cast<JobSupport*>(static_cast<DeferredCoroutine<T>*>(clause_object))->on_await_internal_reg_func(select, param);
+                    },
+                    [](void* clause_object, void* param, void* result) -> void* {
+                        return JobSupport::on_await_internal_process_res_func(clause_object, param, result);
+                    }
+                );
+            }
+            return *on_await_clause_;
         }
 
          // Bring template start method into scope (avoids shadowing)

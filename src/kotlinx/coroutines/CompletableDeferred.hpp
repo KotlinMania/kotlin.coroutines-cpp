@@ -117,9 +117,28 @@ public:
         return this->await_internal(continuation);
     }
 
+    T await_blocking() override {
+        void* state = this->await_internal_blocking();
+        if (auto* ex = dynamic_cast<CompletedExceptionally*>(static_cast<JobState*>(state))) {
+            std::rethrow_exception(ex->cause);
+        }
+        return this->get_completed();
+    }
+
     /** Upstream: override val onAwait: SelectClause1<T> get() = onAwaitInternal as SelectClause1<T> */
     selects::SelectClause1<T>& on_await() override {
-        return reinterpret_cast<selects::SelectClause1<T>&>(this->on_await_internal());
+        if (!on_await_clause_) {
+            on_await_clause_ = std::make_unique<selects::SelectClause1Impl<T>>(
+                this,
+                [](void* clause_object, void* select, void* param) {
+                    static_cast<JobSupport*>(static_cast<CompletableDeferredImpl<T>*>(clause_object))->on_await_internal_reg_func(select, param);
+                },
+                [](void* clause_object, void* param, void* result) -> void* {
+                    return JobSupport::on_await_internal_process_res_func(clause_object, param, result);
+                }
+            );
+        }
+        return *on_await_clause_;
     }
 
     /** Upstream: override fun complete(value: T): Boolean = makeCompleting(value) */
@@ -135,6 +154,9 @@ public:
     bool complete_exceptionally(std::exception_ptr exception) override {
         return this->make_completing(new CompletedExceptionally(exception));
     }
+
+private:
+    std::unique_ptr<selects::SelectClause1Impl<T>> on_await_clause_;
 };
 
 /**

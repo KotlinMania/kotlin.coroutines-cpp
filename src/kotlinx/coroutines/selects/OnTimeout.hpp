@@ -75,9 +75,9 @@ private:
 
         // Invoke `try_select` after the timeout is reached.
         auto self = shared_from_this();
-        auto action = make_runnable([select, self]() {
+        auto action = std::shared_ptr<Runnable>(make_runnable([select, self]() {
             select->try_select(self.get(), nullptr); // Unit
-        });
+        }));
 
         auto context = select->get_context();
         auto& delay = get_default_delay();
@@ -128,6 +128,19 @@ inline void on_timeout(
     std::function<void*(Continuation<void*>*)> block) {
     auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
     on_timeout<R>(builder, static_cast<std::int64_t>(millis), std::move(block));
+}
+
+template <typename R>
+template <typename Callback>
+inline void SelectBuilder<R>::on_timeout(std::int64_t time_millis, Callback&& block) {
+    if constexpr (std::is_invocable_v<Callback>) {
+        selects::on_timeout(*this, time_millis, [b = std::forward<Callback>(block)](Continuation<void*>*) -> void* {
+            b();
+            return nullptr;
+        });
+    } else {
+        selects::on_timeout(*this, time_millis, std::forward<Callback>(block));
+    }
 }
 
 } // namespace kotlinx::coroutines::selects

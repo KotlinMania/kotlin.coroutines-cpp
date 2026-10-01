@@ -5,6 +5,9 @@
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/CoroutineDispatcher.hpp"
+#include "kotlinx/coroutines/ContinuationInterceptor.hpp"
+#include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/intrinsics/Cancellable.hpp"
 
@@ -362,15 +365,44 @@ void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<C
         return;
     }
 
+    if ((start == CoroutineStart::DEFAULT || start == CoroutineStart::ATOMIC) && completion && completion->get_context()) {
+        auto interceptor = completion->get_context()->get(ContinuationInterceptor::type_key);
+        if (auto dispatcher = std::dynamic_pointer_cast<CoroutineDispatcher>(interceptor)) {
+            if (dispatcher->is_dispatch_needed(*completion->get_context())) {
+                std::function<void()> runner = [b = std::forward<Block>(block), rec = std::forward<R>(receiver), completion]() mutable {
+                    try {
+                        if constexpr (std::is_invocable_v<Block, R>) {
+                            auto result = std::invoke(b, rec);
+                            if (completion) {
+                                completion->resume_with(Result<T>(result));
+                            }
+                        }
+                    } catch (const intrinsics::SuspendSignal&) {
+                        // Coroutine suspended, do not resume completion
+                        return;
+                    } catch (...) {
+                        if (completion) {
+                            completion->resume_with(Result<T>(std::current_exception()));
+                        }
+                    }
+                };
+                dispatcher->dispatch(*completion->get_context(), std::make_shared<LambdaRunnable<std::function<void()>>>(std::move(runner)));
+                return;
+            }
+        }
+    }
+
     try {
-        // Execute the block immediately for DEFAULT/ATOMIC/UNDISPATCHED (synchronous simulation)
-        // In a real suspend world, this would start the state machine.
+        // Execute the block immediately for UNDISPATCHED (or unconfined/no-dispatch)
         if constexpr (std::is_invocable_v<Block, R>) {
             auto result = std::invoke(std::forward<Block>(block), std::forward<R>(receiver));
             if (completion) {
                 completion->resume_with(Result<T>(result));
             }
         }
+    } catch (const intrinsics::SuspendSignal&) {
+        // Coroutine suspended, do not resume completion
+        return;
     } catch (...) {
         if (completion) {
             completion->resume_with(Result<T>(std::current_exception()));
