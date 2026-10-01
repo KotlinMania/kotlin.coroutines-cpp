@@ -91,6 +91,23 @@ public:
     }
 };
 
+template <typename T>
+inline T* get_value(const WorkaroundAtomicReference<T>& ref) {
+    return ref.get();
+}
+
+template <typename T>
+inline void set_value(WorkaroundAtomicReference<T>& ref, T* value) {
+    ref.set(value);
+}
+
+template <typename T, typename Action>
+inline void loop(WorkaroundAtomicReference<T>& ref, Action action) {
+    while (true) {
+        action(ref, ref.get());
+    }
+}
+
 } // namespace internal
 } // namespace coroutines
 } // namespace kotlinx

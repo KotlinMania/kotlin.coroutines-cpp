@@ -13,10 +13,7 @@ namespace coroutines {
  */
 class CoroutineExceptionHandler : public virtual CoroutineContext::Element {
 public:
-    // Key for CoroutineExceptionHandler in CoroutineContext
-    // Key for CoroutineExceptionHandler in CoroutineContext
-    struct KeyType : CoroutineContext::Key {};
-    static inline KeyType key_instance;
+    inline static CoroutineContext::KeyTyped<CoroutineExceptionHandler> key_instance{"CoroutineExceptionHandler"};
     static constexpr CoroutineContext::Key* type_key = &key_instance;
 
     CoroutineContext::Key* key() const override { return type_key; }

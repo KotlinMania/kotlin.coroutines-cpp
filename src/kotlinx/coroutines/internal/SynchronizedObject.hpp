@@ -21,12 +21,18 @@ namespace internal {
  */
 class SynchronizedObject {
 public:
+    SynchronizedObject() = default;
+    virtual ~SynchronizedObject() = default;
+
+    SynchronizedObject(const SynchronizedObject&) = delete;
+    SynchronizedObject& operator=(const SynchronizedObject&) = delete;
+
     void lock() { mutex_.lock(); }
     void unlock() { mutex_.unlock(); }
     bool try_lock() { return mutex_.try_lock(); }
 
 private:
-    std::mutex mutex_;
+    std::recursive_mutex mutex_;
 };
 
 /**
@@ -39,6 +45,17 @@ template<typename T, typename Block>
 T synchronized(SynchronizedObject& lock, Block block) {
     std::lock_guard<SynchronizedObject> guard(lock);
     return block();
+}
+
+template<typename T, typename Block>
+T synchronized(SynchronizedObject* lock, Block block) {
+    std::lock_guard<SynchronizedObject> guard(*lock);
+    return block();
+}
+
+template<typename T, typename Block>
+inline T synchronized_impl(SynchronizedObject* lock, Block block) {
+    return synchronized<T>(lock, std::move(block));
 }
 
 } // namespace internal

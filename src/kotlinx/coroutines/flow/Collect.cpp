@@ -16,18 +16,11 @@
 #include <functional>
 #include <stdexcept>
 
+#include "kotlinx/coroutines/flow/internal/NopCollector.hpp"
+
 namespace kotlinx {
     namespace coroutines {
         namespace flow {
-            /**
- * A collector that ignores all values (for collect() with no action).
- */
-            template<typename T>
-            struct NopCollector : FlowCollector<T> {
-                void emit(T) override {
-                    // Do nothing
-                }
-            };
 
             /**
  * Helper to check for index overflow.

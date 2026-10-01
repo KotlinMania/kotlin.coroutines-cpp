@@ -75,7 +75,7 @@ private:
 
         // Invoke `try_select` after the timeout is reached.
         auto self = shared_from_this();
-        auto action = std::make_shared<LambdaRunnable>([select, self]() {
+        auto action = make_runnable([select, self]() {
             select->try_select(self.get(), nullptr); // Unit
         });
 
@@ -86,16 +86,6 @@ private:
         // Do not forget to clean-up when this `select` is completed or cancelled.
         select->dispose_on_completion(handle);
     }
-
-    /** Internal lambda-as-Runnable adapter. */
-    class LambdaRunnable : public Runnable {
-    public:
-        explicit LambdaRunnable(std::function<void()> func) : func_(std::move(func)) {}
-        void run() override { func_(); }
-
-    private:
-        std::function<void()> func_;
-    };
 };
 
 /**

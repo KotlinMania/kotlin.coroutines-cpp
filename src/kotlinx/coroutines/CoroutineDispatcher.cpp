@@ -16,119 +16,10 @@
 #include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
 #include "kotlinx/coroutines/internal/DispatchedTask.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
-#include <mutex>
-#include <queue>
-#include <atomic>
-#include <iostream>
+#include "kotlinx/coroutines/internal/LimitedDispatcher.hpp"
 
 namespace kotlinx {
     namespace coroutines {
-        // Internal LimitedDispatcher implementation
-        class LimitedDispatcher : public CoroutineDispatcher {
-            std::shared_ptr<CoroutineDispatcher> dispatcher;
-            int parallelism;
-            std::string name;
-
-            // Semantics:
-            // We need to limit concurrent tasks.
-            // Simplified implementation: internal queue + atomic counter.
-            // Real implementation would be more complex lock-free.
-
-            struct Task {
-                std::shared_ptr<Runnable> block;
-                std::shared_ptr<const CoroutineContext> context;
-            };
-
-            mutable std::mutex lock;
-            mutable std::queue<Task> queue;
-            mutable int running_workers = 0;
-
-        public:
-            LimitedDispatcher(std::shared_ptr<CoroutineDispatcher> dispatcher, int parallelism, std::string name)
-                : dispatcher(dispatcher), parallelism(parallelism), name(name) {
-            }
-
-            void dispatch(const CoroutineContext &context, std::shared_ptr<Runnable> block) const override {
-                {
-                    std::lock_guard<std::mutex> g(lock);
-                    if (running_workers < parallelism) {
-                        running_workers++;
-                        // Dispatch directly to the underlying dispatcher
-                        // wrapper to decrement on completion
-                        // Dispatch directly to the underlying dispatcher
-                        // wrapper to decrement on completion
-                        auto self = std::dynamic_pointer_cast<LimitedDispatcher>(
-                            const_cast<LimitedDispatcher *>(this)->shared_from_this());
-                        auto worker = std::make_shared<Worker>(self, block);
-                        dispatcher->dispatch(context, worker);
-                        return;
-                    }
-                    // Queue it
-                    queue.push({block, context.shared_from_this()}); // Capture context safely
-                }
-            }
-
-            void on_worker_complete() {
-                // Check queue for more work
-                std::shared_ptr<Runnable> next_block;
-                // next_context removed as it was trying to instantiate abstract class
-
-                {
-                    std::lock_guard<std::mutex> g(lock);
-                    if (queue.empty()) {
-                        running_workers--;
-                        return;
-                    }
-                    auto task = queue.front();
-                    queue.pop();
-                    next_block = task.block;
-                    // next_context = task.context; 
-                    // We need to dispatch this.
-
-                    // Re-dispatch:
-                    // running_workers stays same (we took one out, put one in)
-                    // Re-dispatch:
-                    // running_workers stays same (we took one out, put one in)
-                    // Re-dispatch:
-                    // running_workers stays same (we took one out, put one in)
-                    auto self = std::dynamic_pointer_cast<LimitedDispatcher>(shared_from_this());
-                    auto worker = std::make_shared<Worker>(self, next_block);
-                    dispatcher->dispatch(*task.context, worker);
-                }
-            }
-
-            struct Worker : public Runnable {
-                std::shared_ptr<CoroutineDispatcher> parent; // actually LimitedDispatcher
-                std::shared_ptr<Runnable> wrapped;
-
-                Worker(std::shared_ptr<CoroutineDispatcher> parent, std::shared_ptr<Runnable> wrapped)
-                    : parent(parent), wrapped(wrapped) {
-                }
-
-                void run() override {
-                    try {
-                        wrapped->run();
-                    } catch (const std::exception& e) {
-                        // Uncaught exception in a dispatched task. Upstream forwards to
-                        // the context's CoroutineExceptionHandler; the C++ port falls
-                        // back to stderr until the handler-resolution path is wired in,
-                        // because LimitedDispatcher does not own a context of its own.
-                        std::cerr << "Uncaught exception in LimitedDispatcher task: " << e.what() << std::endl;
-                    } catch (...) {
-                        std::cerr << "Uncaught unknown exception in LimitedDispatcher task" << std::endl;
-                    }
-                    // Notify completion
-                    // We need to cast back to LimitedDispatcher
-                    auto limited = std::static_pointer_cast<LimitedDispatcher>(parent);
-                    limited->on_worker_complete();
-                }
-            };
-
-            std::string to_string() const override {
-                return name.empty() ? "LimitedDispatcher" : name;
-            }
-        };
-
         // CoroutineDispatcher implementation
 
         CoroutineDispatcher::CoroutineDispatcher() : AbstractCoroutineContextElement(ContinuationInterceptor::type_key) {
@@ -159,9 +50,9 @@ namespace kotlinx {
 
         std::shared_ptr<CoroutineDispatcher> CoroutineDispatcher::limited_parallelism(
             int parallelism, const std::string &name) {
-            if (parallelism <= 0) throw std::invalid_argument("Parallelism must be positive");
-            return std::make_shared<LimitedDispatcher>(
-                std::dynamic_pointer_cast < CoroutineDispatcher > (shared_from_this()), parallelism, name);
+            internal::check_parallelism(parallelism);
+            return std::make_shared<internal::LimitedDispatcher>(
+                std::dynamic_pointer_cast<CoroutineDispatcher>(shared_from_this()), parallelism, name);
         }
 
         std::string CoroutineDispatcher::to_string() const {
