@@ -11,6 +11,7 @@
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
+#include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
@@ -18,7 +19,6 @@
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
-#include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
 #include "kotlinx/coroutines/flow/internal/SendingCollector.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
@@ -50,10 +50,20 @@ namespace kotlinx::coroutines::flow {
  */
 template <typename T>
 [[suspend]]
-void* emit_all(
+void* emit_all_impl(
     FlowCollector<T>* receiver,
     channels::ReceiveChannel<T>* channel,
-    Continuation<void*>* completion);
+    bool consume,
+    Continuation<void*>* completion = nullptr);
+
+template <typename T>
+[[suspend]]
+inline void* emit_all(
+    FlowCollector<T>* receiver,
+    channels::ReceiveChannel<T>* channel,
+    Continuation<void*>* completion) {
+    return emit_all_impl(receiver, channel, /*consume=*/true, completion);
+}
 
 /**
  * Private helper. Iterates the channel and emits to the collector; cancels the channel
@@ -77,11 +87,47 @@ void* emit_all(
  */
 template <typename T>
 [[suspend]]
-void* emit_all_impl(
+inline void* emit_all_impl(
     FlowCollector<T>* receiver,
     channels::ReceiveChannel<T>* channel,
     bool consume,
-    Continuation<void*>* completion = nullptr);
+    Continuation<void*>* completion) {
+    // Upstream: ensureActive()
+    if (completion) {
+        auto ctx = completion->get_context();
+        if (ctx) context_ensure_active(*ctx);
+    }
+    // Upstream: var cause: Throwable? = null
+    std::exception_ptr cause = nullptr;
+    try {
+        // Upstream: for (element in channel) { emit(element) }
+        auto iterator = channel->iterator();
+        while (true) {
+            void* has_next_result =
+                dsl::suspend(iterator->has_next(completion));
+            if (intrinsics::is_coroutine_suspended(has_next_result)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
+            bool has_next =
+                has_next_result && *static_cast<bool*>(has_next_result);
+            if (!has_next) break;
+            T element = iterator->next();
+            void* emit_result =
+                dsl::suspend(receiver->emit(std::move(element), completion));
+            if (intrinsics::is_coroutine_suspended(emit_result)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
+        }
+    } catch (...) {
+        // Upstream: catch (e: Throwable) { cause = e; throw e }
+        cause = std::current_exception();
+        if (consume) channels::cancel_consumed(channel, cause);
+        std::rethrow_exception(cause);
+    }
+    // Upstream: finally { if (consume) channel.cancelConsumed(cause) }
+    if (consume) channels::cancel_consumed(channel, cause);
+    return nullptr;
+}
 
 /**
  * Represents the given receive channel as a hot flow and [receives][ReceiveChannel.receive] from the channel
@@ -152,6 +198,12 @@ std::shared_ptr<Flow<T>> consume_as_flow(std::shared_ptr<channels::ReceiveChanne
  *       onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND
  *   ) : ChannelFlow<T>(context, capacity, onBufferOverflow)
  */
+} // namespace kotlinx::coroutines::flow
+
+#include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
+
+namespace kotlinx::coroutines::flow {
+
 template <typename T>
 class ChannelAsFlow : public internal::ChannelFlow<T> {
 public:
@@ -277,59 +329,6 @@ std::shared_ptr<channels::ReceiveChannel<T>> produce_in(
 // ============================================================================
 // Inline template implementations
 // ============================================================================
-
-template <typename T>
-[[suspend]]
-inline void* emit_all(
-    FlowCollector<T>* receiver,
-    channels::ReceiveChannel<T>* channel,
-    Continuation<void*>* completion) {
-    return emit_all_impl(receiver, channel, /*consume=*/true, completion);
-}
-
-template <typename T>
-[[suspend]]
-inline void* emit_all_impl(
-    FlowCollector<T>* receiver,
-    channels::ReceiveChannel<T>* channel,
-    bool consume,
-    Continuation<void*>* completion) {
-    // Upstream: ensureActive()
-    if (completion) {
-        auto ctx = completion->get_context();
-        if (ctx) context_ensure_active(*ctx);
-    }
-    // Upstream: var cause: Throwable? = null
-    std::exception_ptr cause = nullptr;
-    try {
-        // Upstream: for (element in channel) { emit(element) }
-        auto iterator = channel->iterator();
-        while (true) {
-            void* has_next_result =
-                dsl::suspend(iterator->has_next(completion));
-            if (intrinsics::is_coroutine_suspended(has_next_result)) {
-                return intrinsics::get_COROUTINE_SUSPENDED();
-            }
-            bool has_next =
-                has_next_result && *static_cast<bool*>(has_next_result);
-            if (!has_next) break;
-            T element = iterator->next();
-            void* emit_result =
-                dsl::suspend(receiver->emit(std::move(element), completion));
-            if (intrinsics::is_coroutine_suspended(emit_result)) {
-                return intrinsics::get_COROUTINE_SUSPENDED();
-            }
-        }
-    } catch (...) {
-        // Upstream: catch (e: Throwable) { cause = e; throw e }
-        cause = std::current_exception();
-        if (consume) channels::cancel_consumed(channel, cause);
-        std::rethrow_exception(cause);
-    }
-    // Upstream: finally { if (consume) channel.cancelConsumed(cause) }
-    if (consume) channels::cancel_consumed(channel, cause);
-    return nullptr;
-}
 
 template <typename T>
 inline std::shared_ptr<Flow<T>> receive_as_flow(

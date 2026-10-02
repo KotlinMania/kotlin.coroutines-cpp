@@ -9,8 +9,8 @@
 
 #include "kotlinx/coroutines/flow/SharedFlow.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
-#include "kotlinx/coroutines/internal/Symbol.hpp"
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
+#include "kotlinx/coroutines/flow/internal/SubscribedFlowCollector.hpp"
 #include <mutex>
 #include <atomic>
 #include <vector>
@@ -34,7 +34,7 @@ template<typename T> class MutableStateFlow;
  * public interface StateFlow<out T> : SharedFlow<T>
  */
 template<typename T>
-struct StateFlow : public SharedFlow<T> {
+struct StateFlow : public virtual SharedFlow<T> {
     virtual ~StateFlow() = default;
 
     /**
@@ -205,33 +205,31 @@ public:
  * private class StateFlowImpl<T>(initialState: Any) : AbstractSharedFlow<StateFlowSlot>(), ...
  */
 
-// SubscriptionCountStateFlow definition
-// Needed here so StateFlowImpl can use it (via AbstractSharedFlow dtor)
 class SubscriptionCountStateFlow : public SharedFlowImpl<int>, public StateFlow<int> {
 public:
     SubscriptionCountStateFlow(int initial_value)
-        : SharedFlowImpl<int>(1, 0, channels::BufferOverflow::DROP_OLDEST) {
+        : SharedFlowImpl<int>(1, std::numeric_limits<int>::max(), channels::BufferOverflow::DROP_OLDEST) {
         this->try_emit(initial_value);
     }
     
     // StateFlow overrides
     int value() const override {
-        // Kotlin: value getter uses lastReplayedLocked logic
-        // We can access protected get_last_replayed_locked from SharedFlowImpl
         std::lock_guard<std::recursive_mutex> lock(this->mutex());
         return this->get_last_replayed_locked();
     }
 
-    // MutableStateFlow set_value is NOT supported (it's read-only StateFlow view of count)
-    // But it inherits SharedFlowImpl which is MutableSharedFlow...
-    // SubscriptionCountStateFlow in Kotlin is just a StateFlow (read-only interface) backed by SharedFlowImpl.
-    // But here we inherit SharedFlowImpl directly.
-    // Ideally we should hide MutableSharedFlow methods if it's read-only.
-    // But for internal usage it's fine.
-    
-    // Helper to update count (Kotlin: Increment/Decrement logic done by SharedFlowImpl updateCollectorIndex)
-    // Actually Kotlin's SubscriptionCountStateFlow logic is handled within SharedFlowImpl's update methods
-    // which update this flow.
+    std::vector<int> get_replay_cache() const override {
+        return { value() };
+    }
+
+    void* collect(FlowCollector<int>* collector, Continuation<void*>* continuation) override {
+        return SharedFlowImpl<int>::collect(collector, continuation);
+    }
+
+    bool increment(int delta) {
+        std::lock_guard<std::recursive_mutex> lock(this->mutex());
+        return this->try_emit(this->get_last_replayed_locked() + delta);
+    }
 };
 
 template<typename T>
@@ -369,135 +367,65 @@ public:
 
     // SharedFlow collect
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
-        // Kotlin: override suspend fun collect(collector: FlowCollector<T>): Nothing
-        using namespace ::kotlinx::coroutines::dsl;
-
         auto* slot = this->allocate_slot();
-        
-        return suspend_cancellable_coroutine<void>(
-            [this, slot, collector](CancellableContinuation<void>& cont) {
-                // CollectLoop helper to manage the suspendable loop state
-                struct CollectLoop : public std::enable_shared_from_this<CollectLoop> {
-                    StateFlowImpl<T>* flow;
-                    StateFlowSlot* slot;
-                    FlowCollector<T>* collector;
-                    CancellableContinuation<void>* completion;
-                    T old_value;
-                    bool first = true;
-                    
-                    // Helpers for async callbacks
-                    struct LoopContinuation : public Continuation<void*> {
-                        std::shared_ptr<CollectLoop> loop;
-                        explicit LoopContinuation(std::shared_ptr<CollectLoop> l) : loop(l) {}
-                        std::shared_ptr<CoroutineContext> get_context() const override { return loop->completion->get_context(); }
-                        void resume_with(Result<void*> result) override {
-                            if (result.is_failure()) loop->finish(result.exception_or_null());
-                            else loop->step(); // Loop back
-                        }
-                    };
-
-                    CollectLoop(StateFlowImpl<T>* f, StateFlowSlot* s, FlowCollector<T>* c, CancellableContinuation<void>* comp)
-                        : flow(f), slot(s), collector(c), completion(comp) {}
-                    
-                    void start() {
-                        step();
+        try {
+            if (auto* sub = dynamic_cast<internal::SubscribedFlowCollector<T>*>(collector)) {
+                sub->on_subscription(continuation);
+            }
+            std::shared_ptr<Job> collector_job = nullptr;
+            if (continuation && continuation->get_context()) {
+                auto job_el = continuation->get_context()->get(Job::type_key);
+                collector_job = std::dynamic_pointer_cast<Job>(job_el);
+            }
+            bool first = true;
+            T old_value{};
+            while (true) {
+                if (collector_job) {
+                    ensure_active(*collector_job);
+                }
+                T new_value = this->value();
+                if (first || !(old_value == new_value)) {
+                    old_value = new_value;
+                    first = false;
+                    collector->emit(new_value, continuation);
+                }
+                if (!slot->take_pending()) {
+                    void* res = slot->await_pending(continuation);
+                    if (res == intrinsics::get_COROUTINE_SUSPENDED()) {
+                        return intrinsics::get_COROUTINE_SUSPENDED();
                     }
-
-                    void step() {
-                        try {
-                            while (true) {
-                                // 1. Check Cancellation
-                                if (completion->is_cancelled()) {
-                                    finish(std::make_exception_ptr(CancellationException("StateFlow collection cancelled")));
-                                    return;
-                                }
-
-                                T new_value = flow->value();
-                                
-                                // 2. Conflation & Emission
-                                if (first || !(old_value == new_value)) { // Equality check (assumes operator==)
-                                    old_value = new_value;
-                                    first = false;
-                                    
-                                    // collector->emit(value, cont) is suspendable.
-                                    // We need to provide a continuation that calls step() again.
-                                    auto loop_cont = new LoopContinuation(this->shared_from_this());
-                                    // Optimistic suspend check? 
-                                    // For parity, we assume it might suspend.
-                                    // Check if we can just call it? 
-                                    // void* res = collector->emit(new_value, loop_cont);
-                                    // If res == SUSPENDED, return. 
-                                    // Else loop continues (loop_cont leaked? No, LoopContinuation must handle sync return? No, Cont is for async).
-                                    // Standard C++ coroutines handles this, but here manual CPS.
-                                    // If emit returns immediately, we must manually proceed.
-                                    
-                                    // Simplified: Assume synchronous emit for now or risk leaks/recursion depth issues without trampoline.
-                                    // Ideally, we'd use a trampoline.
-                                    // For this iteration, let's implement the suspend check.
-                                    
-                                    // void* res = ... 
-                                    // We can't access private emit easily or type erase.
-                                    // Assume collector->emit returns void* (Coro result).
-                                    
-                                    // The emit call participates in the Continuation ABI;
-                                    // sync-emit here matches the upstream `collector.emit(value)`
-                                    // call inside the suspending body of `collect`. The
-                                    // surrounding while-loop drives the continuation so a
-                                    // suspended emit resumes before the next iteration.
-                                    // collector->emit(new_value, nullptr);
-                                }
-
-                                // 3. Wait for updates
-                                if (!slot->take_pending()) {
-                                    // slot->await_pending(cont) returns void*
-                                    auto await_cont = new LoopContinuation(this->shared_from_this());
-                                    void* res = slot->await_pending(await_cont);
-                                    if (res == COROUTINE_SUSPENDED) {
-                                        return; // Suspend loop
-                                    }
-                                    // If strict, await_pending only returns deferred?
-                                    // If immediate, delete cont and loop.
-                                    delete await_cont;
-                                }
-                            }
-                        } catch (...) {
-                            finish(std::current_exception());
-                        }
-                    }
-                    
-                    void finish(std::exception_ptr e) {
-                        flow->free_slot(slot);
-                        if (e) completion->resume_with(Result<void>::failure(e));
-                        // Else? Loop never completes normally.
-                    }
-                };
-                
-                auto loop = std::make_shared<CollectLoop>(this, slot, collector, &cont);
-                loop->start();
-            }, continuation);
-            
-         this->free_slot(slot);
-         return nullptr;
+                }
+            }
+        } catch (...) {
+            this->free_slot(slot);
+            throw;
+        }
+        this->free_slot(slot);
+        return nullptr;
     }
-    
+
     // AbstractSharedFlow requirements
     std::unique_ptr<StateFlowSlot> create_slot() override {
         return std::make_unique<StateFlowSlot>();
     }
-    
+
     std::unique_ptr<std::vector<std::unique_ptr<StateFlowSlot>>> create_slot_array(int size) override {
         return std::make_unique<std::vector<std::unique_ptr<StateFlowSlot>>>(size);
     }
-    
+
     StateFlowImpl<T>* as_flow() override { return this; }
-    StateFlow<int>* get_subscription_count() override {
-         return this->template AbstractSharedFlow<StateFlowSlot, StateFlowImpl<T>>::get_subscription_count();
+
+    std::shared_ptr<StateFlow<int>> subscription_count() const override {
+        return this->template AbstractSharedFlow<StateFlowSlot, StateFlowImpl<T>>::subscription_count();
     }
-    
-    // Helper to get mutex from AbstractSharedFlow
-    // (Assuming AbstractSharedFlow has get_mutex() or we cast up)
+
+    StateFlow<int>* get_subscription_count() const override {
+        auto sc = subscription_count();
+        return sc ? sc.get() : nullptr;
+    }
+
     std::recursive_mutex& get_mutex() const {
-        return this->mutex(); // AbstractSharedFlow::mutex() accessor
+        return this->mutex();
     }
 };
 
@@ -531,16 +459,88 @@ inline bool StateFlowSlot::take_pending() {
 }
 
 inline void* StateFlowSlot::await_pending(Continuation<void*>* cont) {
-     return suspend_cancellable_coroutine<Unit>(
+    if (!cont) {
+        while (!take_pending()) {
+            std::this_thread::yield();
+        }
+        return nullptr;
+    }
+    return suspend_cancellable_coroutine<Unit>(
         [this](CancellableContinuation<Unit>& c) {
             auto* none = get_none_symbol();
             void* expected = none;
             if (state_.compare_exchange_strong(expected, &c)) return; 
-            // Assert pending
             c.resume(Unit{});
         }, cont);
 }
 
+template<typename S, typename F>
+std::shared_ptr<StateFlow<int>> AbstractSharedFlow<S, F>::subscription_count() const {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    if (!subscription_count_) {
+        const_cast<AbstractSharedFlow<S, F>*>(this)->subscription_count_ =
+            std::make_shared<SubscriptionCountStateFlow>(n_collectors_);
+    }
+    return subscription_count_;
+}
+
+template<typename S, typename F>
+S* AbstractSharedFlow<S, F>::allocate_slot() {
+    std::shared_ptr<SubscriptionCountStateFlow> sub_count;
+    S* slot_ptr = nullptr;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        if (!slots_) {
+            slots_ = create_slot_array(2);
+        } else if (n_collectors_ >= static_cast<int>(slots_->size())) {
+            auto new_slots = create_slot_array(static_cast<int>(slots_->size()) * 2);
+            for (size_t i = 0; i < slots_->size(); ++i) {
+                (*new_slots)[i] = std::move((*slots_)[i]);
+            }
+            slots_ = std::move(new_slots);
+        }
+
+        int index = next_index_;
+        const int size = static_cast<int>(slots_->size());
+        while (true) {
+            if (!(*slots_)[index]) {
+                (*slots_)[index] = create_slot();
+            }
+            slot_ptr = (*slots_)[index].get();
+            index++;
+            if (index >= size) index = 0;
+            if (slot_ptr->allocate_locked(as_flow())) {
+                break;
+            }
+        }
+        next_index_ = index;
+        n_collectors_++;
+        sub_count = subscription_count_;
+    }
+    if (sub_count) {
+        sub_count->increment(1);
+    }
+    return slot_ptr;
+}
+
+template<typename S, typename F>
+void AbstractSharedFlow<S, F>::free_slot(S* slot) {
+    std::shared_ptr<SubscriptionCountStateFlow> sub_count;
+    std::vector<Continuation<Unit>*> resumes;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        n_collectors_--;
+        sub_count = subscription_count_;
+        if (n_collectors_ == 0) next_index_ = 0;
+        resumes = slot->free_locked(as_flow());
+    }
+    for (auto* cont : resumes) {
+        if (cont) cont->resume_with(Result<Unit>::success(Unit{}));
+    }
+    if (sub_count) {
+        sub_count->increment(-1);
+    }
+}
 
 // Factory implementation
 template<typename T>
@@ -553,42 +553,39 @@ std::shared_ptr<MutableStateFlow<T>> make_mutable_state_flow(T initial_value) {
 namespace kotlinx::coroutines::flow {
 
 template<typename T>
-    std::shared_ptr<MutableStateFlow<T>> MutableStateFlow_func(T value) {
-        return internal::make_mutable_state_flow(value);
-    }
+std::shared_ptr<MutableStateFlow<T>> make_mutable_state_flow(T initial_value) {
+    return internal::make_mutable_state_flow(initial_value);
+}
 
-    /**
-     * Fuses StateFlow with the given context, capacity, and overflow strategy.
-     * StateFlow is always conflated so additional conflation does not have any effect.
-     *
-     * Transliterated from:
-     * internal fun <T> StateFlow<T>.fuseStateFlow(
-     *     context: CoroutineContext,
-     *     capacity: Int,
-     *     onBufferOverflow: BufferOverflow
-     * ): Flow<T>
-     */
-    template<typename T>
-    std::shared_ptr<Flow<T>> fuse_state_flow(
-        StateFlow<T>& flow,
-        std::shared_ptr<CoroutineContext> context,
-        int capacity,
-        channels::BufferOverflow on_buffer_overflow
-    ) {
-        // State flow is always conflated so additional conflation does not have any effect.
-        // assert { capacity != Channel.CONFLATED } // should be desugared by callers
-        
-        if ((capacity >= 0 && capacity <= 1) || capacity == channels::CHANNEL_BUFFERED) {
-            if (on_buffer_overflow == channels::BufferOverflow::DROP_OLDEST) {
-                return std::shared_ptr<Flow<T>>(&flow, [](Flow<T>*) {}); // Return as-is (non-owning)
-            }
-        }
-        
-        // Upstream falls back to `fuseSharedFlow(context, capacity, onBufferOverflow)`
-        // which routes through ChannelFlowOperatorImpl. The C++ port returns the flow
-        // unchanged here because the fuse_shared_flow helper is already exercised by the
-        // ReadonlySharedFlow path; reaching this branch means none of the fusion fast
-        // paths above matched, and the safe default is to leave the flow as-is.
+template<typename T>
+std::shared_ptr<MutableStateFlow<T>> MutableStateFlow_func(T value) {
+    return internal::make_mutable_state_flow(value);
+}
+
+/**
+ * Fuses StateFlow with the given context, capacity, and overflow strategy.
+ * StateFlow is always conflated so additional conflation does not have any effect.
+ *
+ * Transliterated from:
+ * internal fun <T> StateFlow<T>.fuseStateFlow(
+ *     context: CoroutineContext,
+ *     capacity: Int,
+ *     onBufferOverflow: BufferOverflow
+ * ): Flow<T>
+ */
+template<typename T>
+std::shared_ptr<Flow<T>> fuse_state_flow(
+    StateFlow<T>& flow,
+    std::shared_ptr<CoroutineContext> context,
+    int capacity,
+    channels::BufferOverflow on_buffer_overflow
+) {
+    if (((capacity >= 0 && capacity <= 1) || capacity == channels::CHANNEL_BUFFERED) &&
+        on_buffer_overflow == channels::BufferOverflow::DROP_OLDEST) {
         return std::shared_ptr<Flow<T>>(&flow, [](Flow<T>*) {});
     }
+    auto shared_flow = std::shared_ptr<SharedFlow<T>>(&flow, [](Flow<T>*) {});
+    return fuse_shared_flow<T>(shared_flow, context, capacity, on_buffer_overflow);
 }
+
+} // namespace kotlinx::coroutines::flow

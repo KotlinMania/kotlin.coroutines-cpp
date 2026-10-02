@@ -94,7 +94,7 @@ protected:
     int next_index_ = 0;
 
     // Kotlin: private var _subscriptionCount: SubscriptionCountStateFlow? = null
-    std::unique_ptr<SubscriptionCountStateFlow> subscription_count_;
+    std::shared_ptr<SubscriptionCountStateFlow> subscription_count_;
 
     // Mutex for synchronization (replaces Kotlin's SynchronizedObject)
     mutable std::recursive_mutex mutex_;
@@ -144,7 +144,10 @@ public:
      *
      * Note: Implementation moved to end of file after SubscriptionCountStateFlow is defined
      */
-    virtual StateFlow<int>* get_subscription_count();
+    virtual std::shared_ptr<StateFlow<int>> subscription_count() const;
+    virtual StateFlow<int>* get_subscription_count() const {
+        return subscription_count().get();
+    }
 
 protected:
     /**

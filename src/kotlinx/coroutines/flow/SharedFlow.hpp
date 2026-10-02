@@ -17,6 +17,7 @@
 #include "kotlinx/coroutines/internal/Symbol.hpp"
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/flow/internal/SubscribedFlowCollector.hpp"
 #include <vector>
 #include <mutex>
 #include <memory>
@@ -59,6 +60,16 @@ public:
      * Kotlin: public val replayCache: List<T>
      */
     virtual std::vector<T> get_replay_cache() const = 0;
+    std::vector<T> replay_cache() const { return get_replay_cache(); }
+
+    /**
+     * The number of subscribers (active collectors) to this shared flow.
+     */
+    virtual std::shared_ptr<StateFlow<int>> subscription_count() const = 0;
+    virtual StateFlow<int>* get_subscription_count() const {
+        auto sc = subscription_count();
+        return sc ? sc.get() : nullptr;
+    }
 
     /**
      * Accepts the given collector and emits values into it.
@@ -83,7 +94,7 @@ public:
  *       Use the MutableSharedFlow(...) constructor function to create an implementation.
  */
 template<typename T>
-class MutableSharedFlow : public SharedFlow<T>, public FlowCollector<T> {
+class MutableSharedFlow : public virtual SharedFlow<T>, public FlowCollector<T> {
 public:
     virtual ~MutableSharedFlow() = default;
 
@@ -105,12 +116,6 @@ public:
      */
     virtual bool try_emit(T value) = 0;
 
-    /**
-     * The number of subscribers (active collectors) to this shared flow.
-     *
-     * Kotlin: public val subscriptionCount: StateFlow<Int>
-     */
-    virtual StateFlow<int>* get_subscription_count() = 0;
 
     /**
      * Resets the replayCache of this shared flow to an empty state.
@@ -305,10 +310,11 @@ public:
 
         SharedFlowSlot* slot = this->allocate_slot();
         try {
-            // Kotlin: if (collector is SubscribedFlowCollector) collector.onSubscription()
-            // NOTE: SubscribedFlowCollector is defined in Share.kt and will be ported there.
+            if (auto subscribed = dynamic_cast<internal::SubscribedFlowCollector<T>*>(collector)) {
+                subscribed->on_subscription(continuation);
+            }
 
-            auto ctx = continuation->get_context();
+            auto ctx = continuation ? continuation->get_context() : nullptr;
             std::shared_ptr<Job> collector_job = nullptr;
             if (ctx) {
                 auto job_element = ctx->get(Job::type_key);
@@ -380,8 +386,13 @@ public:
         );
     }
 
-    StateFlow<int>* get_subscription_count() override {
-        return this->template AbstractSharedFlow<SharedFlowSlot, SharedFlowImpl<T>>::get_subscription_count();
+    std::shared_ptr<StateFlow<int>> subscription_count() const override {
+        return this->template AbstractSharedFlow<SharedFlowSlot, SharedFlowImpl<T>>::subscription_count();
+    }
+
+    StateFlow<int>* get_subscription_count() const override {
+        auto sc = subscription_count();
+        return sc ? sc.get() : nullptr;
     }
 
     // AbstractSharedFlow overrides
@@ -737,6 +748,18 @@ private:
      * Kotlin: private suspend fun awaitValue(slot: SharedFlowSlot): Unit
      */
     void* await_value(SharedFlowSlot* slot, Continuation<void*>* continuation) {
+        if (!continuation) {
+            while (true) {
+                {
+                    std::lock_guard<std::recursive_mutex> lock(this->mutex());
+                    long long index = try_peek_locked(slot);
+                    if (index >= 0) {
+                        return nullptr;
+                    }
+                }
+                std::this_thread::yield();
+            }
+        }
         return suspend_cancellable_coroutine<Unit>(
             [this, slot](CancellableContinuation<Unit>& cont) {
                 std::lock_guard<std::recursive_mutex> lock(this->mutex());
@@ -756,6 +779,12 @@ private:
      * Kotlin: private suspend fun emitSuspend(value: T)
      */
     void* emit_suspend(T value, Continuation<void*>* continuation) {
+        if (!continuation) {
+            while (!try_emit(value)) {
+                std::this_thread::yield();
+            }
+            return nullptr;
+        }
         return suspend_cancellable_coroutine<Unit>(
             [this, value](CancellableContinuation<Unit>& cont) mutable {
                 std::vector<Continuation<Unit>*> resumes = internal::EMPTY_RESUMES;

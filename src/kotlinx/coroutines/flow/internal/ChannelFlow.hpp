@@ -36,10 +36,6 @@
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
-
-template <typename T>
-void* emit_all(FlowCollector<T>* collector, kotlinx::coroutines::channels::ReceiveChannel<T>* channel, kotlinx::coroutines::Continuation<void*>* continuation);
-
 namespace internal {
 
 // Forward declarations and using statements
@@ -112,20 +108,35 @@ public:
 
     virtual std::shared_ptr<ReceiveChannel<T>> produce_impl(CoroutineScope* scope);
 
+    std::shared_ptr<CoroutineContext> context() const { return context_; }
+    int capacity() const { return capacity_; }
+    BufferOverflow on_buffer_overflow() const { return on_overflow_; }
+
 protected:
     virtual ChannelFlow<T>* create(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_overflow) = 0;
     
     virtual void collect_to(ProducerScope<T>* scope) = 0;
-
-    std::shared_ptr<CoroutineContext> context() const { return context_; }
-    int capacity() const { return capacity_; }
-    BufferOverflow on_buffer_overflow() const { return on_overflow_; }
 
 private:
     std::shared_ptr<CoroutineContext> context_;
     int capacity_;
     BufferOverflow on_overflow_;
 };
+
+template <typename T>
+std::shared_ptr<ChannelFlow<T>> as_channel_flow(std::shared_ptr<Flow<T>> flow);
+
+} // namespace internal
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx
+
+#include "kotlinx/coroutines/flow/Channels.hpp"
+
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+namespace internal {
 
 template <typename T>
 inline Flow<T>* ChannelFlow<T>::fuse(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_overflow) {

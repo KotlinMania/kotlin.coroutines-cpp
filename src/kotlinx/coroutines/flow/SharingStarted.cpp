@@ -132,10 +132,24 @@ std::shared_ptr<Flow<SharingCommand>> StartedWhileSubscribed::command(
             if (count > 0) {
                 return sink->emit(SharingCommand::START, cont);
             }
-            ::kotlinx::coroutines::delay(stop_timeout, cont);
+            auto ctx = cont ? cont->get_context() : nullptr;
+            auto job = ctx ? std::dynamic_pointer_cast<Job>(ctx->get(Job::type_key)) : nullptr;
+
+            auto start_time = std::chrono::steady_clock::now();
+            while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count() < stop_timeout) {
+                if (job && !job->is_active()) return nullptr;
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            }
+            if (job && !job->is_active()) return nullptr;
+
             if (replay_expiration > 0) {
                 sink->emit(SharingCommand::STOP, cont);
-                ::kotlinx::coroutines::delay(replay_expiration, cont);
+                auto stop_time = std::chrono::steady_clock::now();
+                while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - stop_time).count() < replay_expiration) {
+                    if (job && !job->is_active()) return nullptr;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                }
+                if (job && !job->is_active()) return nullptr;
             }
             return sink->emit(SharingCommand::STOP_AND_RESET_REPLAY_CACHE, cont);
         });

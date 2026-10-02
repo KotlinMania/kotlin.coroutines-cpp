@@ -14,17 +14,23 @@
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/Builders.hpp"
+#include "kotlinx/coroutines/Dispatchers.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/flow/Distinct.hpp"
+#include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
+#include "kotlinx/coroutines/flow/internal/SubscribedFlowCollector.hpp"
 
 #include <algorithm>
 #include <exception>
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <utility>
 #include <stdexcept>
 
@@ -41,36 +47,6 @@ inline void* NO_VALUE_SENTINEL() {
 
 } // namespace detail
 
-namespace internal {
-
-template <typename T>
-class SubscribedFlowCollector : public FlowCollector<T> {
-private:
-    FlowCollector<T>* collector_;
-    std::function<void*(FlowCollector<T>*, std::shared_ptr<Continuation<void*>>)> action_;
-
-public:
-    SubscribedFlowCollector(
-        FlowCollector<T>* collector,
-        std::function<void*(FlowCollector<T>*, std::shared_ptr<Continuation<void*>>)> action)
-        : collector_(collector), action_(std::move(action)) {}
-
-    void* emit(T value, Continuation<void*>* cont) override {
-        return collector_->emit(std::move(value), cont);
-    }
-
-    void* on_subscription(Continuation<void*>* cont) {
-        if (action_) {
-            action_(collector_, nullptr);
-        }
-        if (auto* sub = dynamic_cast<SubscribedFlowCollector<T>*>(collector_)) {
-            return sub->on_subscription(cont);
-        }
-        return nullptr;
-    }
-};
-
-} // namespace internal
 
 template <typename T>
 inline std::shared_ptr<Flow<T>> fuse_shared_flow(
@@ -126,7 +102,7 @@ inline SharingConfig<T> configure_sharing(std::shared_ptr<Flow<T>> upstream, int
                 std::shared_ptr<Flow<T>>(upstream, dropped),
                 extra_capacity,
                 on_overflow,
-                channel_flow->get_context(),
+                channel_flow->context(),
             };
         }
     }
@@ -150,15 +126,19 @@ public:
         return delegate_->collect(collector, cont);
     }
 
-    const std::vector<T>& replay_cache() const override { return delegate_->replay_cache(); }
+    std::vector<T> get_replay_cache() const override { return delegate_->get_replay_cache(); }
+    std::vector<T> replay_cache() const { return get_replay_cache(); }
     std::shared_ptr<StateFlow<int>> subscription_count() const override {
         return delegate_->subscription_count();
     }
+    StateFlow<int>* get_subscription_count() const override {
+        return delegate_->get_subscription_count();
+    }
 
-    std::shared_ptr<Flow<T>> fuse(std::shared_ptr<CoroutineContext> context,
-                                  int capacity,
-                                  BufferOverflow on_buffer_overflow) override {
-        return fuse_shared_flow<T>(delegate_, context, capacity, on_buffer_overflow);
+    Flow<T>* fuse(std::shared_ptr<CoroutineContext> context,
+                  int capacity,
+                  BufferOverflow on_buffer_overflow) override {
+        return fuse_shared_flow<T>(delegate_, context, capacity, on_buffer_overflow).get();
     }
 
 private:
@@ -177,16 +157,20 @@ public:
     void* collect(FlowCollector<T>* collector, Continuation<void*>* cont) override {
         return delegate_->collect(collector, cont);
     }
-    const T& value() const override { return delegate_->value(); }
-    const std::vector<T>& replay_cache() const override { return delegate_->replay_cache(); }
+    T value() const override { return delegate_->value(); }
+    std::vector<T> get_replay_cache() const override { return delegate_->get_replay_cache(); }
+    std::vector<T> replay_cache() const { return get_replay_cache(); }
     std::shared_ptr<StateFlow<int>> subscription_count() const override {
         return delegate_->subscription_count();
     }
+    StateFlow<int>* get_subscription_count() const override {
+        return delegate_->get_subscription_count();
+    }
 
-    std::shared_ptr<Flow<T>> fuse(std::shared_ptr<CoroutineContext> context,
-                                  int capacity,
-                                  BufferOverflow on_buffer_overflow) override {
-        return fuse_state_flow<T>(delegate_, context, capacity, on_buffer_overflow);
+    Flow<T>* fuse(std::shared_ptr<CoroutineContext> context,
+                  int capacity,
+                  BufferOverflow on_buffer_overflow) override {
+        return fuse_state_flow<T>(*delegate_, context, capacity, on_buffer_overflow).get();
     }
 
 private:
@@ -201,17 +185,146 @@ inline std::shared_ptr<Job> launch_sharing(
     std::shared_ptr<Flow<T>> upstream,
     std::shared_ptr<MutableSharedFlow<T>> shared,
     SharingStarted* started,
-    T* initial_value) {
-    const CoroutineStart start = (started == SharingStarted::eagerly())
-                                     ? CoroutineStart::DEFAULT
-                                     : CoroutineStart::UNDISPATCHED;
-    return launch(scope, context, start, [upstream, shared, started, initial_value](CoroutineScope*) {
-        if (started == SharingStarted::eagerly()) {
-            upstream->collect(shared.get(), nullptr);
-        } else if (started == SharingStarted::lazily()) {
-            upstream->collect(shared.get(), nullptr);
+    std::optional<T> initial_value) {
+    const bool is_eager = (started == SharingStarted::eagerly() ||
+                           dynamic_cast<StartedEagerly*>(started) != nullptr);
+
+    auto sharing_context = context ? context : EmptyCoroutineContext::instance();
+    auto combined = scope->get_coroutine_context()->operator+(sharing_context);
+    if (!combined->get(ContinuationInterceptor::type_key)) {
+        sharing_context = sharing_context->operator+(std::shared_ptr<CoroutineContext>(
+            &Dispatchers::get_default(), [](CoroutineContext*) {}));
+    }
+
+    return launch(scope, sharing_context, CoroutineStart::DEFAULT, [upstream, shared, started, initial_value, is_eager](CoroutineScope* sharing_scope) {
+        if (is_eager) {
+            FunctionalContinuation<void*> cont(
+                sharing_scope ? sharing_scope->get_coroutine_context() : nullptr,
+                [](Result<void*>) {}
+            );
+            upstream->collect(shared.get(), &cont);
+        } else if (started == SharingStarted::lazily() ||
+                   dynamic_cast<StartedLazily*>(started) != nullptr) {
+            if (shared->subscription_count()->value() <= 0) {
+                try {
+                    class FirstSubscriberCollector : public FlowCollector<int> {
+                    public:
+                        void* emit(int count, Continuation<void*>*) override {
+                            if (count > 0) {
+                                throw internal::AbortFlowException(this);
+                            }
+                            return nullptr;
+                        }
+                    };
+                    FirstSubscriberCollector sub_collector;
+                    shared->subscription_count()->collect(&sub_collector, nullptr);
+                } catch (const internal::AbortFlowException&) {
+                    // First subscriber arrived
+                }
+            }
+            FunctionalContinuation<void*> cont(
+                sharing_scope ? sharing_scope->get_coroutine_context() : nullptr,
+                [](Result<void*>) {}
+            );
+            upstream->collect(shared.get(), &cont);
         } else {
-            upstream->collect(shared.get(), nullptr);
+            auto command_flow = distinct_until_changed<SharingCommand>(
+                started->command(shared->subscription_count()));
+
+            std::shared_ptr<Job> upstream_job = nullptr;
+            std::mutex job_mutex;
+
+            class CommandCollector : public FlowCollector<SharingCommand> {
+            private:
+                CoroutineScope* scope_;
+                std::shared_ptr<Flow<T>> upstream_;
+                std::shared_ptr<MutableSharedFlow<T>> shared_;
+                std::optional<T> initial_value_;
+                std::shared_ptr<Job>& upstream_job_;
+                std::mutex& job_mutex_;
+
+            public:
+                CommandCollector(CoroutineScope* scope,
+                                 std::shared_ptr<Flow<T>> upstream,
+                                 std::shared_ptr<MutableSharedFlow<T>> shared,
+                                 std::optional<T> initial_value,
+                                 std::shared_ptr<Job>& upstream_job,
+                                 std::mutex& job_mutex)
+                    : scope_(scope),
+                      upstream_(std::move(upstream)),
+                      shared_(std::move(shared)),
+                      initial_value_(std::move(initial_value)),
+                      upstream_job_(upstream_job),
+                      job_mutex_(job_mutex) {}
+
+                void* emit(SharingCommand cmd, Continuation<void*>*) override {
+                    std::unique_lock<std::mutex> lock(job_mutex_);
+                    if (upstream_job_) {
+                        upstream_job_->cancel(std::make_exception_ptr(CancellationException("Sharing command changed")));
+                        auto old_job = upstream_job_;
+                        upstream_job_ = nullptr;
+                        lock.unlock();
+                        old_job->join_blocking();
+                        lock.lock();
+                    }
+
+                    switch (cmd) {
+                        case SharingCommand::START: {
+                            upstream_job_ = kotlinx::coroutines::launch(
+                                scope_,
+                                nullptr,
+                                CoroutineStart::DEFAULT,
+                                [upstream = upstream_, shared = shared_](CoroutineScope* s) {
+                                    FunctionalContinuation<void*> cont(
+                                        s ? s->get_coroutine_context() : nullptr,
+                                        [](Result<void*>) {}
+                                    );
+                                    upstream->collect(shared.get(), &cont);
+                                }
+                            );
+                            break;
+                        }
+                        case SharingCommand::STOP: {
+                            break;
+                        }
+                        case SharingCommand::STOP_AND_RESET_REPLAY_CACHE: {
+                            if (!initial_value_.has_value()) {
+                                shared_->reset_replay_cache();
+                            } else {
+                                shared_->try_emit(*initial_value_);
+                            }
+                            break;
+                        }
+                    }
+                    return nullptr;
+                }
+            };
+
+            CommandCollector collector(sharing_scope, upstream, shared, initial_value, upstream_job, job_mutex);
+            FunctionalContinuation<void*> sharing_cont(
+                sharing_scope ? sharing_scope->get_coroutine_context() : nullptr,
+                [](Result<void*>) {}
+            );
+            try {
+                command_flow->collect(&collector, &sharing_cont);
+            } catch (...) {
+                std::unique_lock<std::mutex> lock(job_mutex);
+                if (upstream_job) {
+                    upstream_job->cancel(std::current_exception());
+                    auto old_job = upstream_job;
+                    upstream_job = nullptr;
+                    lock.unlock();
+                    old_job->join_blocking();
+                }
+                throw;
+            }
+            std::unique_lock<std::mutex> lock(job_mutex);
+            if (upstream_job) {
+                auto old_job = upstream_job;
+                upstream_job = nullptr;
+                lock.unlock();
+                old_job->join_blocking();
+            }
         }
     });
 }
@@ -238,11 +351,11 @@ inline void launch_sharing_deferred(
                     if (state_) {
                         state_->set_value(value);
                     } else {
-                        state_ = std::make_shared<MutableStateFlow<T>>(value);
+                        state_ = make_mutable_state_flow<T>(value);
                         auto job_el = scope_->get_coroutine_context()->get(Job::type_key);
                         auto job = std::dynamic_pointer_cast<Job>(job_el);
                         result_->complete(Result<std::shared_ptr<StateFlow<T>>>::success(
-                            std::make_shared<ReadonlyStateFlow<T>>(state_, job)));
+                            std::shared_ptr<ReadonlyStateFlow<T>>(new ReadonlyStateFlow<T>(state_, job))));
                     }
                     return nullptr;
                 }
@@ -271,9 +384,13 @@ public:
     SubscribedSharedFlow(std::shared_ptr<SharedFlow<T>> shared, ActionFn action)
         : shared_flow_(std::move(shared)), action_(std::move(action)) {}
 
-    const std::vector<T>& replay_cache() const override { return shared_flow_->replay_cache(); }
+    std::vector<T> get_replay_cache() const override { return shared_flow_->get_replay_cache(); }
+    std::vector<T> replay_cache() const { return get_replay_cache(); }
     std::shared_ptr<StateFlow<int>> subscription_count() const override {
         return shared_flow_->subscription_count();
+    }
+    StateFlow<int>* get_subscription_count() const override {
+        return shared_flow_->get_subscription_count();
     }
 
     void* collect(FlowCollector<T>* collector, Continuation<void*>* cont) override {
@@ -296,11 +413,11 @@ inline std::shared_ptr<SharedFlow<T>> share_in(
     SharingStarted* started,
     int replay = 0) {
     auto config = configure_sharing<T>(std::move(upstream), replay);
-    auto shared = std::make_shared<MutableSharedFlow<T>>(
+    auto shared = make_mutable_shared_flow<T>(
         replay, config.extra_buffer_capacity, config.on_buffer_overflow);
     auto job = launch_sharing<T>(
-        scope, config.context, config.upstream, shared, started, nullptr);
-    return std::make_shared<ReadonlySharedFlow<T>>(shared, std::move(job));
+        scope, config.context, config.upstream, shared, started, std::nullopt);
+    return std::shared_ptr<ReadonlySharedFlow<T>>(new ReadonlySharedFlow<T>(shared, std::move(job)));
 }
 
 // -------------------------------- stateIn --------------------------------
@@ -312,10 +429,10 @@ inline std::shared_ptr<StateFlow<T>> state_in(
     SharingStarted* started,
     T initial_value) {
     auto config = configure_sharing<T>(std::move(upstream), /*replay=*/1);
-    auto state = std::make_shared<MutableStateFlow<T>>(initial_value);
+    auto state = make_mutable_state_flow<T>(initial_value);
     auto job = launch_sharing<T>(
-        scope, config.context, config.upstream, state, started, &initial_value);
-    return std::make_shared<ReadonlyStateFlow<T>>(state, std::move(job));
+        scope, config.context, config.upstream, state, started, std::make_optional<T>(initial_value));
+    return std::shared_ptr<ReadonlyStateFlow<T>>(new ReadonlyStateFlow<T>(state, std::move(job)));
 }
 
 template <typename T>
@@ -342,12 +459,12 @@ inline void* state_in(
 
 template <typename T>
 inline std::shared_ptr<SharedFlow<T>> as_shared_flow(std::shared_ptr<MutableSharedFlow<T>> mutable_flow) {
-    return std::make_shared<ReadonlySharedFlow<T>>(std::move(mutable_flow), nullptr);
+    return std::shared_ptr<ReadonlySharedFlow<T>>(new ReadonlySharedFlow<T>(std::move(mutable_flow), nullptr));
 }
 
 template <typename T>
 inline std::shared_ptr<StateFlow<T>> as_state_flow(std::shared_ptr<MutableStateFlow<T>> mutable_flow) {
-    return std::make_shared<ReadonlyStateFlow<T>>(std::move(mutable_flow), nullptr);
+    return std::shared_ptr<ReadonlyStateFlow<T>>(new ReadonlyStateFlow<T>(std::move(mutable_flow), nullptr));
 }
 
 // -------------------------------- onSubscription --------------------------------

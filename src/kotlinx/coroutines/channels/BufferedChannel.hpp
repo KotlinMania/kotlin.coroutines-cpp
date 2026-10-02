@@ -3297,9 +3297,26 @@ public:
                 return new bool(false);
             }
 
-            // Would need to suspend - for now return false
-            (void)continuation;
-            return new bool(false);
+            auto ctx = continuation ? continuation->get_context() : nullptr;
+            auto job = ctx ? std::dynamic_pointer_cast<Job>(ctx->get(Job::type_key)) : nullptr;
+
+            while (true) {
+                if (job && !job->is_active()) {
+                    return new bool(false);
+                }
+                auto res = channel_->try_receive();
+                if (res.is_success()) {
+                    receive_result_ = new E(res.get_or_throw());
+                    return new bool(true);
+                }
+                if (res.is_closed()) {
+                    receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
+                    auto cause = channel_->close_cause();
+                    if (cause) std::rethrow_exception(cause);
+                    return new bool(false);
+                }
+                std::this_thread::yield();
+            }
         }
 
         E next() override {

@@ -21,7 +21,7 @@
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/channels/Produce.hpp" // For produce
-#include "kotlinx/coroutines/flow/internal/SendingCollector.hpp" // For SendingCollector
+#include "kotlinx/coroutines/Dispatchers.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <memory>
 #include <functional>
@@ -85,18 +85,22 @@ protected:
         //   }
         // }
 
-        auto ctx = continuation ? continuation->get_context() : EmptyCoroutineContext::instance();
-        kotlinx::coroutines::internal::ContextScope scope(ctx);
+        auto ctx = continuation ? continuation->get_context() : nullptr;
+        if (!ctx || !ctx->get(ContinuationInterceptor::type_key)) {
+            auto def_disp = std::shared_ptr<CoroutineContext>(&Dispatchers::get_default(), [](CoroutineContext*) {});
+            ctx = (ctx ? ctx : EmptyCoroutineContext::instance())->operator+(def_disp);
+        }
+        auto scope = std::make_shared<kotlinx::coroutines::internal::ContextScope>(ctx);
 
-        std::shared_ptr<Job> previous_flow;
+        auto previous_flow = std::make_shared<std::shared_ptr<Job>>(nullptr);
 
         class ValueCollector : public FlowCollector<T> {
         public:
-            ValueCollector(CoroutineScope* scope,
+            ValueCollector(std::shared_ptr<CoroutineScope> scope,
                            FlowCollector<R>* collector,
                            TransformType transform,
-                           std::shared_ptr<Job>* previous_flow)
-                : scope_(scope), collector_(collector), transform_(std::move(transform)), previous_flow_(previous_flow) {}
+                           std::shared_ptr<std::shared_ptr<Job>> previous_flow)
+                : scope_(std::move(scope)), collector_(collector), transform_(std::move(transform)), previous_flow_(std::move(previous_flow)) {}
 
             void* emit(T value, Continuation<void*>* cont) override {
                 if (*previous_flow_) {
@@ -104,17 +108,14 @@ protected:
                     (*previous_flow_)->join_blocking();
                 }
 
-                // Do not pay for dispatch here, it's never necessary.
+                // Dispatch transform concurrently so the collector loop is not blocked during delay/suspension.
                 *previous_flow_ = kotlinx::coroutines::launch(
-                    scope_,
+                    scope_.get(),
                     nullptr,
-                    CoroutineStart::UNDISPATCHED,
+                    CoroutineStart::DEFAULT,
                     [collector = collector_, transform = transform_, value = std::move(value)](CoroutineScope* scope) mutable {
-                        NoopContinuation noop(scope->get_coroutine_context());
-                        void* r = transform(collector, std::move(value), &noop);
-                        // If the transform suspended, the NoopContinuation drives it to completion
-                        // off-thread; the outer collect cannot block here without changing the
-                        // upstream `previous_flow_` lifetime contract.
+                        auto noop = std::make_shared<NoopContinuation>(scope->get_coroutine_context());
+                        void* r = transform(collector, std::move(value), noop.get());
                         (void)r;
                     }
                 );
@@ -123,18 +124,18 @@ protected:
             }
 
         private:
-            CoroutineScope* scope_;
+            std::shared_ptr<CoroutineScope> scope_;
             FlowCollector<R>* collector_;
             TransformType transform_;
-            std::shared_ptr<Job>* previous_flow_;
+            std::shared_ptr<std::shared_ptr<Job>> previous_flow_;
         };
 
-        ValueCollector value_collector(&scope, collector, transform_, &previous_flow);
+        ValueCollector value_collector(scope, collector, transform_, previous_flow);
         void* result = this->upstream()->collect(&value_collector, continuation);
 
         // coroutineScope waits for children; approximate by joining the last one when upstream completes synchronously.
-        if (result != intrinsics::get_COROUTINE_SUSPENDED() && previous_flow) {
-            previous_flow->join_blocking();
+        if (result != intrinsics::get_COROUTINE_SUSPENDED() && *previous_flow) {
+            (*previous_flow)->join_blocking();
         }
 
         return result;
