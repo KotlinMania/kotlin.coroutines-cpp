@@ -19,7 +19,9 @@ get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.."
 set(LLVM_SRC_DIR "${PROJECT_ROOT}/vendor/llvm-project/llvm")
 
 if(NOT EXISTS "${LLVM_SRC_DIR}/CMakeLists.txt")
-    message(FATAL_ERROR "Vendored LLVM not found at ${LLVM_SRC_DIR}")
+    message(WARNING "Vendored LLVM not found at ${LLVM_SRC_DIR}; skipping kxs-inject. "
+                    "To build kxs-inject, clone llvm-project into vendor/llvm-project.")
+    return()
 endif()
 
 message(STATUS "Using vendored LLVM from: ${LLVM_SRC_DIR}")

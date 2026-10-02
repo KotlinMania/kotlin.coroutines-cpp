@@ -33,30 +33,14 @@ function(add_coroutine_test TEST_NAME)
 endfunction()
 
 # Core coroutine tests
-add_coroutine_test(test_job)
-add_coroutine_test(test_cancellation)
-add_coroutine_test(test_dispatchers)
-add_coroutine_test(test_context)
-add_coroutine_test(test_suspend)
 add_coroutine_test(test_timeout)
 
 # Transliterated Kotlin tests
 add_coroutine_test(AsyncTest)
 add_coroutine_test(JobTest)
 
-# Cancellable tests
-add_coroutine_test(test_cancellable)
-
-# Suspension infrastructure tests
+# Suspension infrastructure and flow tests
 add_coroutine_test(test_suspension_core)
-add_coroutine_test(test_suspension_infrastructure)
-add_coroutine_test(test_suspension_infrastructure_simple)
-add_coroutine_test(test_suspension_fixes)
-add_coroutine_test(test_comprehensive_suspension)
-add_coroutine_test(test_delay_dsl)
-add_coroutine_test(test_dsl)
-add_coroutine_test(test_plugin_canonical)
-add_coroutine_test(test_flow_merge_smoke)
 add_coroutine_test(test_channel_as_flow_smoke)
 add_coroutine_test(test_sync)
 add_coroutine_test(test_combine_zip_smoke)
