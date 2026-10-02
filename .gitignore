@@ -156,7 +156,8 @@ tasks.json
 tasks.json.lock
 
 # Local tool binaries
-ast_distance
+/ast_distance
+tools/ast_distance/ast_distance
 
 # Backups and archives
 *.tar
