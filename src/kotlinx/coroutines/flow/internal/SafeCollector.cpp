@@ -13,3 +13,20 @@
 
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
+
+namespace kotlinx {
+namespace coroutines {
+namespace flow {
+namespace internal {
+
+SafeCollectorBase::SafeCollectorBase(std::shared_ptr<CoroutineContext> collectContext)
+    : collect_context_(std::move(collectContext)), collect_context_size_(0) {}
+
+void SafeCollectorBase::check_context(const CoroutineContext& currentContext) {
+    (void)currentContext;
+}
+
+} // namespace internal
+} // namespace flow
+} // namespace coroutines
+} // namespace kotlinx

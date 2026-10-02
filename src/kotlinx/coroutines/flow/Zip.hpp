@@ -69,7 +69,7 @@ inline std::shared_ptr<Flow<R>> combine(
                 R r = transform(std::any_cast<T1>(values[0]), std::any_cast<T2>(values[1]));
                 return sink->emit(std::move(r), cont);
             },
-            nullptr);
+            completion);
     });
 }
 
@@ -143,9 +143,37 @@ inline std::shared_ptr<Flow<R>> combine(
 }
 
 /**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:129-140
  * Upstream:
- *   public fun <T1, T2, T3, T4, R> combine(flow, flow2, flow3, flow4, transform): Flow<R> =
- *       combineUnsafe(flow, flow2, flow3, flow4) { args -> transform(args[0..3]) }
+ *   public fun <T1, T2, T3, R> combineTransform(flow, flow2, flow3, transform): Flow<R>
+ */
+template <typename T1, typename T2, typename T3, typename R>
+inline std::shared_ptr<Flow<R>> combine_transform(
+    std::shared_ptr<Flow<T1>> flow1,
+    std::shared_ptr<Flow<T2>> flow2,
+    std::shared_ptr<Flow<T3>> flow3,
+    std::function<void*(FlowCollector<R>*, T1, T2, T3, Continuation<void*>*)> transform) {
+    std::vector<std::shared_ptr<Flow<std::any>>> sources;
+    sources.push_back(internal::as_any_flow<T1>(flow1));
+    sources.push_back(internal::as_any_flow<T2>(flow2));
+    sources.push_back(internal::as_any_flow<T3>(flow3));
+    return internal::combine_transform_unsafe<R>(
+        std::move(sources),
+        [transform](FlowCollector<R>* sink,
+                    const std::vector<std::any>& values,
+                    Continuation<void*>* cont) {
+            return transform(sink,
+                             std::any_cast<T1>(values[0]),
+                             std::any_cast<T2>(values[1]),
+                             std::any_cast<T3>(values[2]),
+                             cont);
+        });
+}
+
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:146-159
+ * Upstream:
+ *   public fun <T1, T2, T3, T4, R> combine(flow, flow2, flow3, flow4, transform): Flow<R>
  */
 template <typename T1, typename T2, typename T3, typename T4, typename R>
 inline std::shared_ptr<Flow<R>> combine(
@@ -166,6 +194,101 @@ inline std::shared_ptr<Flow<R>> combine(
                              std::any_cast<T2>(values[1]),
                              std::any_cast<T3>(values[2]),
                              std::any_cast<T4>(values[3]));
+        });
+}
+
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:167-180
+ * Upstream:
+ *   public fun <T1, T2, T3, T4, R> combineTransform(flow, flow2, flow3, flow4, transform): Flow<R>
+ */
+template <typename T1, typename T2, typename T3, typename T4, typename R>
+inline std::shared_ptr<Flow<R>> combine_transform(
+    std::shared_ptr<Flow<T1>> flow1,
+    std::shared_ptr<Flow<T2>> flow2,
+    std::shared_ptr<Flow<T3>> flow3,
+    std::shared_ptr<Flow<T4>> flow4,
+    std::function<void*(FlowCollector<R>*, T1, T2, T3, T4, Continuation<void*>*)> transform) {
+    std::vector<std::shared_ptr<Flow<std::any>>> sources;
+    sources.push_back(internal::as_any_flow<T1>(flow1));
+    sources.push_back(internal::as_any_flow<T2>(flow2));
+    sources.push_back(internal::as_any_flow<T3>(flow3));
+    sources.push_back(internal::as_any_flow<T4>(flow4));
+    return internal::combine_transform_unsafe<R>(
+        std::move(sources),
+        [transform](FlowCollector<R>* sink,
+                    const std::vector<std::any>& values,
+                    Continuation<void*>* cont) {
+            return transform(sink,
+                             std::any_cast<T1>(values[0]),
+                             std::any_cast<T2>(values[1]),
+                             std::any_cast<T3>(values[2]),
+                             std::any_cast<T4>(values[3]),
+                             cont);
+        });
+}
+
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:186-201
+ * Upstream:
+ *   public fun <T1, T2, T3, T4, T5, R> combine(flow, flow2, flow3, flow4, flow5, transform): Flow<R>
+ */
+template <typename T1, typename T2, typename T3, typename T4, typename T5, typename R>
+inline std::shared_ptr<Flow<R>> combine(
+    std::shared_ptr<Flow<T1>> flow1,
+    std::shared_ptr<Flow<T2>> flow2,
+    std::shared_ptr<Flow<T3>> flow3,
+    std::shared_ptr<Flow<T4>> flow4,
+    std::shared_ptr<Flow<T5>> flow5,
+    std::function<R(T1, T2, T3, T4, T5)> transform) {
+    std::vector<std::shared_ptr<Flow<std::any>>> sources;
+    sources.push_back(internal::as_any_flow<T1>(flow1));
+    sources.push_back(internal::as_any_flow<T2>(flow2));
+    sources.push_back(internal::as_any_flow<T3>(flow3));
+    sources.push_back(internal::as_any_flow<T4>(flow4));
+    sources.push_back(internal::as_any_flow<T5>(flow5));
+    return internal::combine_unsafe<R>(
+        std::move(sources),
+        [transform](const std::vector<std::any>& values) {
+            return transform(std::any_cast<T1>(values[0]),
+                             std::any_cast<T2>(values[1]),
+                             std::any_cast<T3>(values[2]),
+                             std::any_cast<T4>(values[3]),
+                             std::any_cast<T5>(values[4]));
+        });
+}
+
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:209-224
+ * Upstream:
+ *   public fun <T1, T2, T3, T4, T5, R> combineTransform(flow, flow2, flow3, flow4, flow5, transform): Flow<R>
+ */
+template <typename T1, typename T2, typename T3, typename T4, typename T5, typename R>
+inline std::shared_ptr<Flow<R>> combine_transform(
+    std::shared_ptr<Flow<T1>> flow1,
+    std::shared_ptr<Flow<T2>> flow2,
+    std::shared_ptr<Flow<T3>> flow3,
+    std::shared_ptr<Flow<T4>> flow4,
+    std::shared_ptr<Flow<T5>> flow5,
+    std::function<void*(FlowCollector<R>*, T1, T2, T3, T4, T5, Continuation<void*>*)> transform) {
+    std::vector<std::shared_ptr<Flow<std::any>>> sources;
+    sources.push_back(internal::as_any_flow<T1>(flow1));
+    sources.push_back(internal::as_any_flow<T2>(flow2));
+    sources.push_back(internal::as_any_flow<T3>(flow3));
+    sources.push_back(internal::as_any_flow<T4>(flow4));
+    sources.push_back(internal::as_any_flow<T5>(flow5));
+    return internal::combine_transform_unsafe<R>(
+        std::move(sources),
+        [transform](FlowCollector<R>* sink,
+                    const std::vector<std::any>& values,
+                    Continuation<void*>* cont) {
+            return transform(sink,
+                             std::any_cast<T1>(values[0]),
+                             std::any_cast<T2>(values[1]),
+                             std::any_cast<T3>(values[2]),
+                             std::any_cast<T4>(values[3]),
+                             std::any_cast<T5>(values[4]),
+                             cont);
         });
 }
 
