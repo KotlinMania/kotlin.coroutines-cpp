@@ -96,8 +96,12 @@ public:
         // the calling continuation's own join semantics on the AbstractCoroutine.
         try {
             auto result = block(*this);
-            // Block completed synchronously - return heap-allocated result
-            return reinterpret_cast<void*>(new T(std::move(result)));
+            // Block completed synchronously - return result (unboxed if void*, heap-allocated otherwise)
+            if constexpr (std::is_same_v<T, void*>) {
+                return result;
+            } else {
+                return reinterpret_cast<void*>(new T(std::move(result)));
+            }
         } catch (...) {
             auto ex = std::current_exception();
             // Check if this is our own timeout exception (should return null, not rethrow)

@@ -57,6 +57,14 @@ namespace kotlinx {
                 continuation);
         }
 
+        void* Delay::delay(long long time_millis, std::shared_ptr<Continuation<void*>> continuation) {
+            if (time_millis <= 0) return nullptr;
+            auto block = [this, time_millis](CancellableContinuation<void>& cont) {
+                schedule_resume_after_delay(time_millis, cont);
+            };
+            return suspend_cancellable_coroutine_void(block, std::move(continuation));
+        }
+
         // Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:121-129
         void *delay(long long time_millis, Continuation<void *> *continuation) {
             if (time_millis <= 0) return nullptr; // Return immediately
@@ -96,19 +104,26 @@ namespace kotlinx {
     namespace coroutines {
 
         void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> continuation) {
-            return delay(time_millis, continuation.get());
+            if (time_millis <= 0) return nullptr;
+            auto block = [time_millis](CancellableContinuation<void>& cont) {
+                if (time_millis < std::numeric_limits<long long>::max()) {
+                    get_delay(cont.get_context()).schedule_resume_after_delay(time_millis, cont);
+                }
+            };
+            return suspend_cancellable_coroutine_void(block, std::move(continuation));
         }
 
         void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void*>> continuation) {
-            return delay(duration, continuation.get());
+            return delay(to_delay_millis(duration), std::move(continuation));
         }
 
         void* delay(std::chrono::milliseconds duration, std::shared_ptr<Continuation<void*>> continuation) {
-            return delay(duration, continuation.get());
+            return delay(duration.count(), std::move(continuation));
         }
 
         void* await_cancellation(std::shared_ptr<Continuation<void*>> continuation) {
-            return await_cancellation(continuation.get());
+            auto block = [](CancellableContinuation<void>&) {};
+            return suspend_cancellable_coroutine_void(block, std::move(continuation));
         }
 
     } // namespace coroutines

@@ -81,6 +81,7 @@ public:
      * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:25-28
      */
     virtual void* delay(long long time_millis, Continuation<void*>* continuation);
+    virtual void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> continuation);
 };
 
 /**
