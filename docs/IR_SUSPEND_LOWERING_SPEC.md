@@ -1,99 +1,87 @@
 # IR Suspend Lowering Specification
 
-This document specifies how suspend points are lowered to LLVM IR, matching
-Kotlin/Native's coroutine implementation pattern.
-
-## Source: Kotlin/Native
-
-The patterns here are derived from:
-- `kotlin-native/.../llvm/IrToBitcode.kt` - `evaluateSuspendableExpression()`, `evaluateSuspensionPoint()`
-- `kotlin-native/.../lower/CoroutinesVarSpillingLowering.kt` - variable spilling
-
-## Overview
-
-Suspend functions use computed goto (`indirectbr` + `blockaddress`) for resumption:
-
-1. **Entry dispatch**: Check if `_label` is null (first call) or contains a resume address
-2. **Suspend point**: Store `blockaddress(@func, %resume_label)` to `_label`, return `COROUTINE_SUSPENDED`
-3. **Resume**: `indirectbr` jumps directly to the stored label
+This document specifies how coroutine suspend points are lowered to LLVM IR in `kotlin.coroutines-cpp`, matching Kotlin/Native's coroutine implementation pattern.
 
 ---
 
-## CMake Infrastructure
+## 1. Theoretical Foundation: Coroutine Marker Paradigms
 
-The transformation is implemented via CMake modules in `cmake/Modules/`:
+In C and C++, stackless coroutines are typically implemented using state markers that manipulate execution flow across function invocations. There are two primary paradigms:
 
-### Key Files
-
-| File | Purpose |
-|------|---------|
-| `kxs_transform_ir.cmake` | Standalone IR transformation script (invoked via `cmake -P`) |
-| `KotlinxCoroutineTransform.cmake` | CMake functions: `kxs_transform_ir()`, `kxs_enable_coroutine_transform()` |
-| `KotlinxCoroutines.cmake` | Interface library `kotlinx::coroutines` and `kxs_enable_suspend()` |
-
-### Enabling Transformation for a Target
-
-```cmake
-include(KotlinxCoroutines)
-
-add_executable(my_app main.cpp)
-target_link_libraries(my_app PRIVATE kotlinx::coroutines)
-kxs_enable_suspend(my_app)  # Enable IR transformation
+### Paradigm A: Switch-Based Line Markers (Simon Tatham / Duff's Device)
+Uses integer state variables and a top-level `switch` statement:
+```c
+#define CO_BEGIN(state)        switch (state) { case 0:
+#define CO_YIELD(state, value) do { state = __LINE__; return (value); case __LINE__:; } while (0)
+#define CO_END                 }
 ```
+- **Mechanism**: The preprocessor macro `__LINE__` acts as a discrete integer marker. On re-entry, `switch (state)` branches back to `case __LINE__:`.
+- **Limitation**: Generates binary jump tables or linear search cascades in LLVM IR; does not match Kotlin/Native's continuation ABI; cannot easily interoperate with external runtime frames.
 
-Or use the convenience macro:
-```cmake
-kxs_add_executable(my_app SOURCES main.cpp)
+### Paradigm B: Assembly-Based Label Pointers (`&&label` / Computed Goto)
+Uses GCC/Clang's labels-as-values extension (`&&label`) to store exact 64-bit code address markers:
+```cpp
+#define coroutine_begin(c)     if ((c)->_label == nullptr) goto _kxs_start; goto *(c)->_label; _kxs_start:
+#define coroutine_yield(c, e)  do { (c)->_label = &&_kxs_resume_##__LINE__; ... return COROUTINE_SUSPENDED; _kxs_resume_##__LINE__:; } while (0)
 ```
-
-### Transformation Pipeline
-
-```
-┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐     ┌─────────┐
-│  foo.cpp    │ --> │  foo.ll          │ --> │  foo.kxs.ll     │ --> │  foo.o  │
-│  (C++ src)  │     │  (LLVM IR text)  │     │  (transformed)  │     │ (object)│
-└─────────────┘     └──────────────────┘     └─────────────────┘     └─────────┘
-                    clang -emit-llvm -S      cmake -P                 clang -c
-                                             kxs_transform_ir.cmake
-```
-
-### What kxs_transform_ir.cmake Does
-
-1. **Finds** calls to `__kxs_suspend_point(i32 N)` in the IR
-2. **Generates** resume labels: `kxs.resume.0`, `kxs.resume.1`, ...
-3. **Inserts** entry dispatch block with `indirectbr`
-4. **Replaces** each suspend call with `blockaddress` store + resume label
-5. **Outputs** transformed IR with header comment
+- **Mechanism**: Stores the actual address of the resume block (`void* _label`) into the coroutine frame.
+- **LLVM IR Lowering**: Apple Clang lowers `goto *(c)->_label;` directly to `indirectbr ptr %saved_label, [label %resume0, ...]` and `&&label` to `blockaddress(@function, %label)`.
+- **Parity**: This **identically mirrors Kotlin/Native's compiler lowering** (`IrToBitcode.kt`).
 
 ---
 
-## C++ Source Pattern
+## 2. Upstream Kotlin/Native Lowering Reference
+
+In the Kotlin/Native compiler, coroutines are lowered through two coordinated phases:
+
+1. **Variable Spilling (`CoroutinesVarSpillingLowering.kt:68-105`)**:
+   Local variables that are live across suspension points cannot remain stack `alloca`s because resumption jumps directly into internal basic blocks, bypassing entry-block stack allocations and violating LLVM SSA dominance. Kotlin/Native lowers these variables to fields on `thisReceiver` (`IrField` accessors).
+2. **LLVM Codegen (`IrToBitcode.kt:2289-2335`)**:
+   - `evaluateSuspendableExpression()` emits entry dispatch:
+     ```llvm
+     %is_first = icmp eq ptr %saved_label, null
+     br i1 %is_first, label %start, label %dispatch
+
+     dispatch:
+       indirectbr ptr %saved_label, [label %resume0, label %resume1, ...]
+     ```
+   - `evaluateSuspensionPoint()` stores the resume `blockaddress` into the coroutine struct before returning `COROUTINE_SUSPENDED`.
+
+---
+
+## 3. C++ Source Pattern in `kotlinx.coroutines-cpp`
 
 ### Macros in `src/kotlinx/coroutines/dsl/Suspend.hpp`
 
-Uses Clang labels-as-values extension (`&&label`). Generates `indirectbr` + `blockaddress` in LLVM IR,
-matching Kotlin/Native exactly.
-
 ```cpp
 class MyCoroutine : public ContinuationImpl {
-    void* _label = nullptr;  // blockaddress storage
+public:
+    void* _label = nullptr;  // Holds resume blockaddress (NativePtr)
+
+    // Variables crossing suspend points are spilled to member fields:
+    int iteration = 0;
+    int accumulator = 0;
+
+    explicit MyCoroutine(std::shared_ptr<Continuation<void*>> completion)
+        : ContinuationImpl(std::move(completion)) {}
 
     void* invoke_suspend(Result<void*> result) override {
         coroutine_begin(this)
 
-        // ... code ...
-        coroutine_yield(this, some_suspend_call(completion_));
-        // ... more code ...
+        accumulator = 10;
+        coroutine_yield(this, delay(100, completion_));
+
+        accumulator += 20;
+        coroutine_yield(this, yield(completion_));
 
         coroutine_end(this)
     }
 };
 ```
 
-### The `__LINE__` Trick
+### The `__LINE__` Address Marker Pattern
 
-The macros use `__LINE__` to generate unique labels at each suspend point:
-
+`Suspend.hpp` combines the unique identification power of `__LINE__` with computed gotos:
 ```cpp
 #define _KXS_CONCAT(a, b) a##b
 #define _KXS_LABEL(prefix, line) _KXS_CONCAT(prefix, line)
@@ -114,228 +102,110 @@ The macros use `__LINE__` to generate unique labels at each suspend point:
     } while (0)
 ```
 
-At line 42, this expands to:
-
+### IR Marker Function: `__kxs_suspend_point`
 ```cpp
-(c)->_label = &&_kxs_resume_42;      // Store blockaddress
-__kxs_suspend_point(42);              // IR marker (found by CMake transform)
-auto _kxs_tmp = (expr);
-if (is_coroutine_suspended(_kxs_tmp))
-    return _kxs_tmp;
-goto _kxs_cont_42;
-_kxs_resume_42:                       // Resume label
-    (void)(result).get_or_throw();
-_kxs_cont_42:;                        // Continuation
-```
-
-### IR Marker Function
-
-```cpp
-// Declared in Suspend.hpp
 extern "C" void __kxs_suspend_point(int id);
 ```
-
-This function:
-- Is a **no-op** at runtime (can be empty or just return)
-- Serves as an **IR-visible marker** that survives compilation
-- Is found by `kxs_transform_ir.cmake` via regex: `call void @__kxs_suspend_point\(i32[^)]*\)`
-- The `id` argument (from `__LINE__`) identifies each suspend point
+- Emitted at every suspension point via `::__kxs_suspend_point(__LINE__)`.
+- Serves as an explicit, IR-visible hook that survives compilation.
+- In runtime builds, defined as a no-op in `src/kotlinx/coroutines/kxs_suspend_point.cpp`.
+- In IR-transformed builds, rewritten or stripped by `kxs_transform_ir.cmake`.
 
 ---
 
-## LLVM IR Transformation Details
+## 4. LLVM IR Transformation Details & Multi-Function Architecture
 
-### Input IR Pattern
+### The Multi-Function Challenge
+A single translation unit (e.g. `test_suspension_core.cpp`) generates an LLVM IR file containing hundreds of functions:
+- Static initialization (`@__cxx_global_var_init`)
+- Standard library templates (`std::vector`, `std::shared_ptr`)
+- Multiple distinct coroutine classes (`SimpleYieldCoroutine`, `LoopCoroutine`, etc.)
 
-```llvm
-define ptr @my_coroutine(ptr %coro, ptr %result) {
-entry:
-  ; ... setup ...
-  call void @__kxs_suspend_point(i32 42)
-  ; ... more code ...
-  call void @__kxs_suspend_point(i32 57)
-  ; ...
-}
+Early implementations of `kxs_transform_ir.cmake` performed a global regex search for `define ... @func` and injected dispatch into the first function encountered (`@__cxx_global_var_init`). This caused fatal LLVM assembler errors:
+1. `use of undefined value '%kxs.resume.0'` (labels from one coroutine referenced in another function).
+2. `Instruction does not dominate all uses!` (injected resume jumps bypassing entry-block `alloca`s).
+
+### The Resolved Lowering Pipeline (`cmake/Modules/kxs_transform_ir.cmake`)
+
+`kxs_transform_ir.cmake` executes the following algorithm:
+
 ```
-
-### Output IR Pattern (Kotlin/Native style)
-
-```llvm
-; KXS-TRANSFORMED: 2 suspend points
-; Resume labels: kxs.resume.0;kxs.resume.1
-; Dispatch: indirectbr + blockaddress (Kotlin/Native pattern)
-
-define ptr @my_coroutine(ptr %coro, ptr %result) {
-kxs.entry:
-  ; KXS: Allocate label slot for computed goto
-  %kxs.label.slot = alloca ptr, align 8
-  store ptr null, ptr %kxs.label.slot, align 8
-  ; KXS: Load resume label (null on first call)
-  %kxs.saved.label = load ptr, ptr %kxs.label.slot, align 8
-  %kxs.is.first = icmp eq ptr %kxs.saved.label, null
-  br i1 %kxs.is.first, label %kxs.start, label %kxs.dispatch
-
-kxs.dispatch:
-  ; KXS: Resume via computed goto (indirectbr)
-  indirectbr ptr %kxs.saved.label, [label %kxs.resume.0, label %kxs.resume.1]
-
-kxs.start:
-  ; ... original entry code ...
-
-  ; KXS: Store resume address (blockaddress pattern)
-  store ptr blockaddress(@my_coroutine, %kxs.resume.0), ptr %kxs.label.slot, align 8
-  ; KXS: suspend point 42 - actual suspend call would precede this
-  br label %kxs.resume.0
-
-kxs.resume.0:  ; KXS resume point 42
-  ; ... code continues ...
-
-  ; KXS: Store resume address (blockaddress pattern)
-  store ptr blockaddress(@my_coroutine, %kxs.resume.1), ptr %kxs.label.slot, align 8
-  ; KXS: suspend point 57
-  br label %kxs.resume.1
-
-kxs.resume.1:  ; KXS resume point 57
-  ; ...
-}
+Input: foo.ll (LLVM IR text)
+  │
+  ├── 1. Find all 'call void @__kxs_suspend_point(i32 N)'
+  │      If 0 found → pass through unchanged.
+  │
+  ├── 2. Escape semicolons ('\;' ) to prevent CMake list corruption on LLVM comments.
+  │
+  ├── 3. Tokenize by '(^|\n)define [^{]+{' to process each function independently.
+  │
+  └── 4. For each function chunk containing '__kxs_suspend_point':
+         │
+         ├── Case A: Function already contains 'indirectbr' or 'switch'
+         │   (Emitted natively by Clang from coroutine_begin / computed goto)
+         │   → Strip 'call void @__kxs_suspend_point(i32 N)' marker calls.
+         │   → Dispatch table and SSA dominance are already 100% correct!
+         │
+         └── Case B: Function lacks computed goto dispatch
+             → Strip markers and log diagnostic note.
+             (Full indirectbr injection requires member-field variable spilling).
+  │
+  ├── 5. Strip unused 'declare void @__kxs_suspend_point' declaration.
+  │
+  └── Output: foo.kxs.ll (clean, valid LLVM IR)
 ```
 
 ---
 
-## Algorithm: kxs_transform_ir.cmake
+## 5. Verification & Toolchain Pipeline
 
-The CMake script (`cmake -P kxs_transform_ir.cmake`) performs these steps:
+To verify the full IR transformation pipeline:
 
-### Step 1: Find Suspend Points
+```bash
+# 1. Compile C++ source to LLVM IR bitcode text
+clang++ -S -emit-llvm -std=c++20 -Wno-gnu-label-as-value \
+    -I src -I src/kotlinx/coroutines \
+    src/tests/src/test_suspension_core.cpp -o /tmp/core.ll
 
-```cmake
-string(REGEX MATCHALL "call void @__kxs_suspend_point\\(i32[^)]*\\)" SUSPEND_CALLS "${IR}")
+# 2. Transform IR via standalone CMake script
+cmake -DINPUT_FILE=/tmp/core.ll -DOUTPUT_FILE=/tmp/core.kxs.ll -P cmake/Modules/kxs_transform_ir.cmake
+
+# 3. Assemble transformed IR to Mach-O object file
+clang++ -c /tmp/core.kxs.ll -o /tmp/core.kxs.o
+
+# 4. Link and execute under AddressSanitizer
+clang++ -fsanitize=address /tmp/core.kxs.o \
+    -Lbuild/lib -lkotlinx-coroutines-core -lpthread \
+    -o /tmp/core_kxs_bin && /tmp/core_kxs_bin
 ```
 
-### Step 2: Extract Function Name
-
-```cmake
-string(REGEX MATCH "define [^@]+@([A-Za-z_][A-Za-z0-9_]*)" FUNC_MATCH "${IR}")
+Expected result:
 ```
-
-### Step 3: Generate Resume Labels
-
-```cmake
-set(IDX 0)
-while(IDX LESS N_SUSPEND)
-    list(APPEND LABELS "kxs.resume.${IDX}")
-    math(EXPR IDX "${IDX} + 1")
-endwhile()
-```
-
-### Step 4: Build Dispatch Label List
-
-```cmake
-# Generates: label %kxs.resume.0, label %kxs.resume.1, ...
-foreach(L ${LABELS})
-    string(APPEND LABEL_LIST "label %${L}")
-endforeach()
-```
-
-### Step 5: Replace Each Suspend Call
-
-Each `call void @__kxs_suspend_point(i32 N)` is replaced with:
-```llvm
-  ; KXS: Store resume address (blockaddress pattern)
-  store ptr blockaddress(@${FUNC_NAME}, %${RESUME_LABEL}), ptr %kxs.label.slot, align 8
-  ; KXS: suspend point ${SID}
-  br label %${RESUME_LABEL}
-
-${RESUME_LABEL}:  ; KXS resume point ${SID}
-```
-
-### Step 6: Insert Entry Dispatch Block
-
-After the function opening `{`, insert:
-```llvm
-kxs.entry:
-  %kxs.label.slot = alloca ptr, align 8
-  store ptr null, ptr %kxs.label.slot, align 8
-  %kxs.saved.label = load ptr, ptr %kxs.label.slot, align 8
-  %kxs.is.first = icmp eq ptr %kxs.saved.label, null
-  br i1 %kxs.is.first, label %kxs.start, label %kxs.dispatch
-
-kxs.dispatch:
-  indirectbr ptr %kxs.saved.label, [${LABEL_LIST}]
-
-kxs.start:
+-- [KXS] Found 5 suspend point(s) in /tmp/core.ll
+-- [KXS] Processing function @_ZN20SimpleYieldCoroutine14invoke_suspend...: 2 suspend point(s)
+-- [KXS]   Function @_ZN20SimpleYieldCoroutine14invoke_suspend... already has dispatch (indirectbr/switch); stripping markers
+...
+=== test_suspension_core ===
+test_simple_yield... PASSED
+test_conditional_suspend... PASSED
+test_loop_suspend... PASSED
+test_yield_value_resume_result... PASSED
+test_resume_with_value... PASSED
+test_start_with_exception_throws... PASSED
+=== All tests passed ===
 ```
 
 ---
 
-## Variable Spilling (Future)
+## 6. Key References
 
-From `CoroutinesVarSpillingLowering.kt`:
-
-At each suspend point, live variables must be saved to the coroutine struct
-before suspension and restored after resumption:
-
-```kotlin
-// Before suspend:
-saveCoroutineState -> {
-    for (variable in liveVariables) {
-        coroutine.field[variable] = variable
-    }
-}
-
-// After resume:
-restoreCoroutineState -> {
-    for (variable in liveVariables) {
-        variable = coroutine.field[variable]
-    }
-}
-```
-
-This requires liveness analysis to determine which variables cross suspend points.
-
-**Current approach**: Manual spilling - developers declare spill fields in their ContinuationImpl class.
-
-**Future**: `kxs-inject` tool will perform liveness analysis and generate spill code automatically.
-
----
-
-## Coroutine Struct Layout
-
-The coroutine struct must have `_label` as a field (typically first for efficiency):
-
-```cpp
-struct MyCoroutine : public ContinuationImpl {
-    void* _label = nullptr;  // blockaddress storage (Kotlin/Native NativePtr)
-
-    // ... spilled variables ...
-    int saved_count;
-    std::string saved_name;
-};
-```
-
-In LLVM IR terms:
-```llvm
-%Coroutine = type { ptr, ... }  ; first field is label pointer
-```
-
----
-
-## Compiler Flags for Tests
-
-Tests using the DSL macros need:
-
-```cmake
-target_compile_options(my_test PRIVATE
-    -Wno-gnu-label-as-value    # Allow &&label (labels as values)
-)
-```
-
----
-
-## References
-
-- Kotlin/Native IrToBitcode.kt lines 2377-2424
-- Kotlin/Native CoroutinesVarSpillingLowering.kt
-- Clang Labels as Values: https://clang.llvm.org/docs/LanguageExtensions.html#labels-as-values
-- LLVM indirectbr: https://llvm.org/docs/LangRef.html#indirectbr-instruction
-- CMake Modules: `cmake/Modules/kxs_transform_ir.cmake`, `KotlinxCoroutineTransform.cmake`, `KotlinxCoroutines.cmake`
+- **Kotlin/Native Lowering**:
+  - `kotlin-native/.../llvm/IrToBitcode.kt` (lines 2289–2335)
+  - `kotlin-native/.../lower/CoroutinesVarSpillingLowering.kt` (lines 68–105)
+- **Clang Documentation**:
+  - Labels as Values Extension: https://clang.llvm.org/docs/LanguageExtensions.html#labels-as-values
+  - LLVM `indirectbr` Instruction: https://llvm.org/docs/LangRef.html#indirectbr-instruction
+- **Repository Implementation**:
+  - `src/kotlinx/coroutines/dsl/Suspend.hpp`
+  - `cmake/Modules/kxs_transform_ir.cmake`
+  - `src/kotlinx/coroutines/kxs_suspend_point.cpp`
