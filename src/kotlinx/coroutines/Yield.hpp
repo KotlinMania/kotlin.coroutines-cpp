@@ -6,8 +6,7 @@
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/Yield.kt
  *
- * Provides the yield_coroutine() function (named yield_coroutine to avoid conflict
- * with C++ keyword 'yield' in C++20).
+ * Provides the suspend yield() function and test helper.
  */
 #include <memory>
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -89,9 +88,7 @@ namespace coroutines {
  * For custom implementations of CoroutineDispatcher, this function checks CoroutineDispatcher::is_dispatch_needed and
  * then invokes CoroutineDispatcher::dispatch regardless of the result; no way is provided to change this behavior.
  *
- * @note Named yield_coroutine in C++ to avoid conflict with C++20's yield keyword.
- *
- * Transliterated from:
+ * Transliterated from: kotlinx-coroutines-core/common/src/Yield.kt:128
  * public suspend fun yield(): Unit
  */
 
