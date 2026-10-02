@@ -178,6 +178,7 @@ inline void* combine_internal(
                 void* r = transform(collector, latest_values, completion);
                 if (intrinsics::is_coroutine_suspended(r)) {
                     suspended_result = r;
+                    return r;
                 }
             }
         }
@@ -313,9 +314,11 @@ inline std::shared_ptr<Flow<R>> zip_impl(
                         if (other_val_res.is_success() || other_val_res.is_closed()) break;
                         std::this_thread::yield();
                     }
-                    if (other_val_res.is_closed()) {
-                        auto ex = other_val_res.exception_or_null();
-                        if (ex) std::rethrow_exception(ex);
+                    if (!other_val_res.is_success()) {
+                        if (other_val_res.is_closed()) {
+                            auto ex = other_val_res.exception_or_null();
+                            if (ex) std::rethrow_exception(ex);
+                        }
                         throw AbortFlowException(collect_job_.get());
                     }
                     T2 other_value = other_val_res.get_or_throw();
@@ -326,8 +329,9 @@ inline std::shared_ptr<Flow<R>> zip_impl(
 
             ZipFirstCollector first_collector(collector, second, transform_, collect_job, cont);
 
+            void* res = nullptr;
             try {
-                flow1_->collect(&first_collector, cont);
+                res = flow1_->collect(&first_collector, cont);
             } catch (const AbortFlowException& e) {
                 const_cast<AbortFlowException&>(e).check_ownership(collect_job.get());
             } catch (...) {
@@ -346,7 +350,7 @@ inline std::shared_ptr<Flow<R>> zip_impl(
                 }
             }
 
-            return nullptr;
+            return res;
         }
     };
 

@@ -60,10 +60,19 @@ namespace kotlinx {
                     }
 
                     auto shared_impl = impl_ptr->shared_from_this();
-                    std::thread([time_millis, shared_impl]() {
+                    auto cancelled = std::make_shared<std::atomic<bool>>(false);
+                    auto on_cancel = [cancelled](std::exception_ptr) {
+                        cancelled->store(true, std::memory_order_relaxed);
+                    };
+                    continuation.invoke_on_cancellation(on_cancel);
+
+                    auto runner = [time_millis, shared_impl, cancelled]() {
                         std::this_thread::sleep_for(std::chrono::milliseconds(time_millis));
-                        shared_impl->resume(nullptr);
-                    }).detach();
+                        if (!cancelled->load(std::memory_order_relaxed) && shared_impl->is_active()) {
+                            shared_impl->resume(nullptr);
+                        }
+                    };
+                    std::thread(std::move(runner)).detach();
                 }
 
                 std::shared_ptr<DisposableHandle> invoke_on_timeout(

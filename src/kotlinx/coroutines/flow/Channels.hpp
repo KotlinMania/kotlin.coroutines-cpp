@@ -63,6 +63,7 @@ template <typename T>
 class EmitAllContinuation : public ContinuationImpl {
 public:
     void* _label = nullptr;
+    std::shared_ptr<FlowCollector<T>> receiver_shared_;
     FlowCollector<T>* receiver_;
     channels::ReceiveChannel<T>* channel_;
     bool consume_;
@@ -80,7 +81,21 @@ public:
         bool consume,
         std::shared_ptr<Continuation<void*>> completion)
         : ContinuationImpl(std::move(completion)),
+          receiver_shared_(nullptr),
           receiver_(receiver),
+          channel_(channel),
+          consume_(consume) {
+        (void)consume;
+    }
+
+    EmitAllContinuation(
+        std::shared_ptr<FlowCollector<T>> receiver,
+        channels::ReceiveChannel<T>* channel,
+        bool consume,
+        std::shared_ptr<Continuation<void*>> completion)
+        : ContinuationImpl(std::move(completion)),
+          receiver_shared_(receiver),
+          receiver_(receiver ? receiver.get() : nullptr),
           channel_(channel),
           consume_(consume) {
         (void)consume;
@@ -91,7 +106,8 @@ public:
     }
 
     void release() {
-        keep_alive_ = nullptr;
+        auto self = std::move(keep_alive_);
+        receiver_shared_ = nullptr;
     }
 
     void release_intercepted() override {
@@ -167,9 +183,40 @@ inline void* emit_all_impl(
     auto coro = std::make_shared<EmitAllContinuation<T>>(
         receiver, channel, consume, std::move(completion_shared));
     coro->retain();
-    void* res = coro->invoke_suspend(Result<void*>::success(nullptr));
-    if (res != intrinsics::get_COROUTINE_SUSPENDED()) {
+    void* res = nullptr;
+    try {
+        res = coro->invoke_suspend(Result<void*>::success(nullptr));
+        if (res != intrinsics::get_COROUTINE_SUSPENDED()) {
+            coro->release();
+        }
+    } catch (...) {
         coro->release();
+        throw;
+    }
+    return res;
+}
+
+template <typename T>
+inline void* emit_all_impl(
+    std::shared_ptr<FlowCollector<T>> receiver,
+    channels::ReceiveChannel<T>* channel,
+    bool consume,
+    Continuation<void*>* completion) {
+    auto completion_shared = completion
+        ? std::shared_ptr<Continuation<void*>>(completion, [](Continuation<void*>*){})
+        : nullptr;
+    auto coro = std::make_shared<EmitAllContinuation<T>>(
+        std::move(receiver), channel, consume, std::move(completion_shared));
+    coro->retain();
+    void* res = nullptr;
+    try {
+        res = coro->invoke_suspend(Result<void*>::success(nullptr));
+        if (res != intrinsics::get_COROUTINE_SUSPENDED()) {
+            coro->release();
+        }
+    } catch (...) {
+        coro->release();
+        throw;
     }
     return res;
 }
@@ -237,8 +284,8 @@ public:
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:116-117
     void collect_to(channels::ProducerScope<T>* scope) override {
-        internal::SendingCollector<T> collector(scope);
-        (void)emit_all_impl(&collector, channel_.get(), consume_, nullptr);
+        std::shared_ptr<FlowCollector<T>> collector = std::make_shared<internal::SendingCollector<T>>(scope);
+        (void)emit_all_impl(std::move(collector), channel_.get(), consume_, nullptr);
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:119-125
