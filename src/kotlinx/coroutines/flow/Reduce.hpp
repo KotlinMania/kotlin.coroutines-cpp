@@ -139,17 +139,18 @@ struct ReduceFrame : public FlowCollector<T>, public Continuation<void*>, public
                 return nullptr;
             }
             S* acc = static_cast<S*>(accumulator);
+            auto self = this->shared_from_this();
             auto op_cont = std::make_shared<FunctionalContinuation<void*>>(
                 cont ? cont->get_context() : nullptr,
-                [this, cont](Result<void*> op_res) {
+                [self, cont](Result<void*> op_res) {
                     if (op_res.is_success()) {
                         void* raw = op_res.get_or_throw();
                         if (raw) {
                             auto* s_ptr = static_cast<S*>(raw);
                             {
-                                std::lock_guard<std::recursive_mutex> lock(this->mutex);
-                                if (this->has_value && this->accumulator != nullptr) {
-                                    *static_cast<S*>(this->accumulator) = std::move(*s_ptr);
+                                std::lock_guard<std::recursive_mutex> lock(self->mutex);
+                                if (self->has_value && self->accumulator != nullptr) {
+                                    *static_cast<S*>(self->accumulator) = std::move(*s_ptr);
                                 }
                             }
                             delete s_ptr;
@@ -157,8 +158,8 @@ struct ReduceFrame : public FlowCollector<T>, public Continuation<void*>, public
                         if (cont) cont->resume_with(Result<void*>::success(nullptr));
                     } else {
                         {
-                            std::lock_guard<std::recursive_mutex> lock(this->mutex);
-                            this->failure = op_res.exception_or_null();
+                            std::lock_guard<std::recursive_mutex> lock(self->mutex);
+                            self->failure = op_res.exception_or_null();
                         }
                         if (cont) cont->resume_with(op_res);
                     }
@@ -266,24 +267,25 @@ struct FoldFrame : public FlowCollector<T>, public Continuation<void*>, public s
             }
             return nullptr;
         } else {
+            auto self = this->shared_from_this();
             auto op_cont = std::make_shared<FunctionalContinuation<void*>>(
                 cont ? cont->get_context() : nullptr,
-                [this, cont](Result<void*> op_res) {
+                [self, cont](Result<void*> op_res) {
                     if (op_res.is_success()) {
                         void* raw = op_res.get_or_throw();
                         if (raw) {
                             auto* r_ptr = static_cast<R*>(raw);
                             {
-                                std::lock_guard<std::recursive_mutex> lock(this->mutex);
-                                this->accumulator = std::move(*r_ptr);
+                                std::lock_guard<std::recursive_mutex> lock(self->mutex);
+                                self->accumulator = std::move(*r_ptr);
                             }
                             delete r_ptr;
                         }
                         if (cont) cont->resume_with(Result<void*>::success(nullptr));
                     } else {
                         {
-                            std::lock_guard<std::recursive_mutex> lock(this->mutex);
-                            this->failure = op_res.exception_or_null();
+                            std::lock_guard<std::recursive_mutex> lock(self->mutex);
+                            self->failure = op_res.exception_or_null();
                         }
                         if (cont) cont->resume_with(op_res);
                     }
