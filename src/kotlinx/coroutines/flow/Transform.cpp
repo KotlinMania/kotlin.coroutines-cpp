@@ -1,9 +1,9 @@
+// port-lint: source kotlinx-coroutines-core/common/src/flow/operators/Transform.kt
 /**
  * @file Transform.cpp
  * @brief Implementation of Transform operators.
  *
- * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/operators/Transform.hpp`.
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt
  */
 
 #include "kotlinx/coroutines/flow/Transform.hpp"

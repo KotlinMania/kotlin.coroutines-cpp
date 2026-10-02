@@ -1,9 +1,9 @@
+// port-lint: source kotlinx-coroutines-core/common/src/flow/operators/Errors.kt
 /**
  * @file Errors.cpp
  * @brief Implementation of Error handling operators (catch, retry).
  *
- * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/operators/Errors.hpp`.
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Errors.kt
  */
 
 #include "kotlinx/coroutines/flow/Errors.hpp"
