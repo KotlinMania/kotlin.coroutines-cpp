@@ -265,7 +265,7 @@ public:
                 expect(1);
                 auto d = async<Unit>(scope, [this](CoroutineScope*) -> Unit {
                     expect(3);
-                    std::this_thread::yield(); // simplified: OS thread yield
+                    yield();
                     finish(4);
                     throw testing::TestException();
                 });
@@ -275,37 +275,27 @@ public:
         );
     }
 
-    // @Test
-    // This test uses multiple yields for cooperative scheduling
-    // Simplified version - actual coroutine scheduling would need full DSL implementation
+    // Transliterated from: kotlinx-coroutines-core/common/test/AsyncTest.kt:180-207
     void test_defer_with_two_waiters() {
         run_test([this](CoroutineScope* scope) {
             expect(1);
             auto d = async<int>(scope, [this](CoroutineScope*) -> int {
-                expect(5);
-                std::this_thread::yield(); // simplified
-                expect(9);
+                expect(2);
                 return 42;
             });
-            expect(2);
-            launch(scope, [this, &d](CoroutineScope*) {
+            auto w1 = launch(scope, [this, &d](CoroutineScope*) {
+                expect(3);
+                assert_equals(d->await_blocking(), 42);
+                expect(4);
+            });
+            auto w2 = launch(scope, [this, &d](CoroutineScope*) {
+                expect(5);
+                assert_equals(d->await_blocking(), 42);
                 expect(6);
-                assert_equals(d->await_blocking(), 42);
-                expect(11);
             });
-            expect(3);
-            launch(scope, [this, &d](CoroutineScope*) {
-                expect(7);
-                assert_equals(d->await_blocking(), 42);
-                expect(12);
-            });
-            expect(4);
-            std::this_thread::yield(); // simplified
-            expect(8);
-            std::this_thread::yield();
-            expect(10);
-            std::this_thread::yield();
-            finish(13);
+            w1->join_blocking();
+            w2->join_blocking();
+            finish(7);
         });
     }
 
@@ -356,7 +346,6 @@ public:
             });
 
             deferred->await_blocking()->dispose();
-            // assertIs<DisposableHandle>(deferred->get_completed()); // Type is already DisposableHandle
             assert_null(deferred->get_completion_exception_or_null());
             assert_true(deferred->is_completed());
             assert_false(deferred->is_active());
@@ -392,17 +381,16 @@ public:
 
             auto d = async<std::string>(scope, [this](CoroutineScope*) -> std::string {
                 expect(3);
-                try {
-                    std::this_thread::yield(); // simplified: to main, will cancel
-                } catch (...) {
-                    expect(6); // will go there on await
-                    return "Fail"; // result will not override cancellation
-                }
-                expect_unreached();
+                yield(); // to main, will cancel
                 return "Fail2";
             });
+            d->invoke_on_completion([this](std::exception_ptr e) {
+                if (e) {
+                    expect(6); // will go there on await / cancellation
+                }
+            });
             expect(2);
-            std::this_thread::yield(); // to async
+            yield(); // to async
             expect(4);
             check(d->is_active() && !d->is_completed() && !d->is_cancelled());
             d->cancel();

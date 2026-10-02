@@ -211,7 +211,7 @@ namespace kotlinx::coroutines {
             }
 
             if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
-                on_completed(std::move(completed->value));
+                on_completed(completed->value);
                 return;
             }
 
