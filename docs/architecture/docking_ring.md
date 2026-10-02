@@ -158,7 +158,7 @@ tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbr
 How we located it:
 
 - evaluateSuspendableExpression and evaluateSuspensionPoint were found by searching those function names (also referenced in your docs/
-  SUSPEND_IMPLEMENTATION.md).
+  suspension/SUSPEND_IMPLEMENTATION.md).
 - We opened the file around those line regions.
 
 The mirrored core:
@@ -270,7 +270,7 @@ Representation note:
 
 **Status:** Hand-written Clang macros produce Kotlin/Native's address-dispatch
 pattern. Live values require manual frame storage; full ABI/GC and automatic
-spilling parity are not established. See [the IR specification](../IR_SUSPEND_LOWERING_SPEC.md)
+spilling parity are not established. See [the IR specification](../suspension/IR_SUSPEND_LOWERING_SPEC.md)
 for the verified handoff contracts and cleanup boundary.
 
 ### 4.1 Architecture

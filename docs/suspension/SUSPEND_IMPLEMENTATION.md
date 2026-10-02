@@ -2,7 +2,7 @@
 
 The current implementation uses Clang computed-goto macros in
 `src/kotlinx/coroutines/dsl/Suspend.hpp`. The design target and compiler contracts
-are described in [the docking ring](cpp_port/docking_ring.md) and the
+are described in [the docking ring](../architecture/docking_ring.md) and the
 [IR specification](IR_SUSPEND_LOWERING_SPEC.md).
 
 ## Runtime handoffs

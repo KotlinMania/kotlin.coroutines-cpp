@@ -3,7 +3,7 @@
 This experimental Clang plugin generates coroutine sidecars. Its computed-goto
 and liveness-analysis code is separate from the marker cleanup tools. Binary ABI,
 Result handoffs, frame lifetimes and automatic spill parity are not established
-by the generated address-dispatch shape; see `docs/IR_SUSPEND_LOWERING_SPEC.md`.
+by the generated address-dispatch shape; see `docs/suspension/IR_SUSPEND_LOWERING_SPEC.md`.
 
 ## Features
 

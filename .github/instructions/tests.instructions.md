@@ -15,7 +15,7 @@ When working with test files:
    - Prefer exercising the Continuation ABI and helpers over the legacy macro DSL.
    - Use `suspend_cancellable_coroutine<T>(...)` and check `intrinsics::COROUTINE_SUSPENDED` with `is_coroutine_suspended(result)`.
    - Legacy `SUSPEND_*` macros remain in some tests for backward compatibility; avoid introducing new usages and add a deprecation note if you must.
-   - See `docs/cpp_port/docking_ring.md` for the Clang suspend plugin plan that will back tests going forward.
+   - See `docs/architecture/docking_ring.md` for the Clang suspend plugin plan that will back tests going forward.
 
    Example pattern (non-void suspend):
    ```cpp
@@ -36,7 +36,7 @@ When working with test files:
 
 4. **IDE false positives are expected**:
    - Suspend constructs (legacy macros or upcoming plugin annotations) can confuse IntelliJ's parser
-   - See `docs/cpp_port/docking_ring.md` notes on IDE support
+   - See `docs/architecture/docking_ring.md` notes on IDE support
    - Add `// NOLINT` comments to suppress spurious errors
    - Trust the compiler, not the IDE
 

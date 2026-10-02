@@ -49,7 +49,7 @@ When modifying or creating public API headers in `include/kotlinx/coroutines/**/
    - Must return `void*` (type-erased result pointer or `COROUTINE_SUSPENDED` sentinel)
    - Must accept `Continuation<void*>* cont` as the last parameter
    - Declare signatures in .hpp; implement details in .cpp using the Continuation ABI helpers
-   - Migration: track suspend-plugin takeover notes in audit docs / PR text (not in source comments); see `docs/cpp_port/docking_ring.md`
+   - Migration: track suspend-plugin takeover notes in audit docs / PR text (not in source comments); see `docs/architecture/docking_ring.md`
    - Example in .hpp: `virtual void* await(Continuation<void*>* cont) = 0;`
 
 4. **Keep headers slim**:

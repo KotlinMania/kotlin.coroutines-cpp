@@ -43,7 +43,7 @@
     - Suspend functions lower to C-style entry points: `void* fn(args..., Continuation<void*>* cont)`.
     - Return either `intrinsics::COROUTINE_SUSPENDED` or a type-erased `void*` pointing to the result box.
     - Helpers exist: `suspend_cancellable_coroutine<T>(block, cont)` and `is_coroutine_suspended(...)`.
-- New direction (documented in `docs/cpp_port/docking_ring.md`):
+- New direction (documented in `docs/architecture/docking_ring.md`):
     - We are introducing a small C++ DSL for suspend and a Clang plugin (`tools/clang_suspend_plugin/`) to rewrite it into a Kotlin/Native-like state machine (labels, spilled locals, resume dispatch) at build time.
     - Continue transliteration using the current Continuation ABI; annotate code paths that will migrate to the plugin with `TODO(suspend-plugin): migrate`.
 - GC/interoperability notes:
@@ -210,7 +210,7 @@
 ---
 
 ### References
-- IR/LLVM plan: `docs/cpp_port/docking_ring.md`.
+- IR/LLVM plan: `docs/architecture/docking_ring.md`.
 - Headers: `include/kotlinx/coroutines/*.hpp` (e.g., `CoroutineDispatcher.hpp`, `Delay.hpp`, `Deferred.hpp`, `Job.hpp`).
 - Implementations: `kotlinx-coroutines-core/**/src/**/*.cpp`.
 - Kotlin sources: `tmp/kotlinx.coroutines/**/src/**/*.kt`.

@@ -43,7 +43,7 @@ Generate a new GitHub token to use the GitHub API with [your account](https://gi
 
 1. Specify the name of your token, for example, `coroutines-tutorial`:
 
-   ![Generate a new GitHub token](generating-token.png){width=700}
+   ![Generate a new GitHub token](../images/coroutines-and-channels/generating-token.png){width=700}
 
 2. Do not select any scopes. Click **Generate token** at the bottom of the page.
 3. Copy the generated token.
@@ -55,7 +55,7 @@ Later you'll add logic to sort the users by the number of their contributions.
 
 1. Open the `src/contributors/main.kt` file and run the `main()` function. You'll see the following window:
 
-   ![First window](initial-window.png){width=500}
+   ![First window](../images/coroutines-and-channels/initial-window.png){width=500}
 
    If the font is too small, adjust it by changing the value of `setDefaultFontSize(18f)` in the `main()` function.
 
@@ -151,7 +151,7 @@ This API is used by the `loadContributorsBlocking()` function to fetch the list 
     the same thread as the one called `loadContributorsBlocking()` is from, which is the main UI thread (in Swing, it's an AWT
     event dispatching thread). This main thread becomes blocked, and that's why the UI is frozen:
 
-    ![The blocked main thread](blocking.png){width=700}
+    ![The blocked main thread](../images/coroutines-and-channels/blocking.png){width=700}
     
     After the list of contributors has loaded, the result is updated.
 
@@ -192,7 +192,7 @@ The corresponding test file `test/tasks/AggregationKtTest.kt` shows an example o
 
 After implementing this task, the resulting list for the "kotlin" organization should be similar to the following:
 
-![The list for the "kotlin" organization](aggregate.png){width=500}
+![The list for the "kotlin" organization](../images/coroutines-and-channels/aggregate.png){width=500}
 
 #### Solution for task 1 {initial-collapse-state="collapsed" collapsible="true"}
 
@@ -237,7 +237,7 @@ which uses callbacks instead of blocking calls.
     Now that all of the loading has been moved to a separate thread, the main thread is free and can be occupied by other
     tasks:
 
-    ![The freed main thread](background.png){width=700}
+    ![The freed main thread](../images/coroutines-and-channels/background.png){width=700}
 
 2. The signature of the `loadContributorsBackground()` function changes. It takes an `updateResults()`
    callback as the last argument to call it after all the loading completes:
@@ -297,7 +297,7 @@ resulting response. The second _processing_ part should be extracted into a call
 The loading for each repository can then be started before the result for the previous repository is received (and the
 corresponding callback is called):
 
-![Using callback API](callbacks.png){width=700}
+![Using callback API](../images/coroutines-and-channels/callbacks.png){width=700}
 
 The Retrofit callback API can help achieve this. The `Call.enqueue()` function starts an HTTP request and takes a
 callback as an argument. In this callback, you need to specify what needs to be done after each request.
@@ -555,7 +555,7 @@ Coroutines run on top of threads and can be suspended. When a coroutine is suspe
 corresponding computation is paused, removed from the thread, and stored in memory. Meanwhile, the thread is free to be
 occupied by other tasks:
 
-![Suspending coroutines](suspension-process.gif){width=700}
+![Suspending coroutines](../images/coroutines-and-channels/suspension-process.gif){width=700}
 
 When the computation is ready to be continued, it is returned to a thread (not necessarily the same one).
 
@@ -565,7 +565,7 @@ that was started by the `launch` function is suspended.
 
 The coroutine resumes only after the corresponding response is received:
 
-![Suspending request](suspend-requests.png){width=700}
+![Suspending request](../images/coroutines-and-channels/suspend-requests.png){width=700}
 
 While the response is waiting to be received, the thread is free to be occupied by other tasks. The UI stays responsive,
 despite all the requests taking place on the main UI thread:
@@ -583,7 +583,7 @@ despite all the requests taking place on the main UI thread:
 2. The log can show you which coroutine the corresponding code is running on. To enable it, open **Run | Edit configurations**
    and add the `-Dkotlinx.coroutines.debug` VM option:
 
-   ![Edit run configuration](run-configuration.png){width=500}
+   ![Edit run configuration](../images/coroutines-and-channels/run-configuration.png){width=500}
 
    The coroutine name will be attached to the thread name while `main()` is run with this option. You can also
    modify the template for running all of the Kotlin files and enable this option by default.
@@ -665,7 +665,7 @@ fun main() = runBlocking {
 When each "contributors" request is started in a new coroutine, all of the requests are started asynchronously. A new request
 can be sent before the result for the previous one is received:
 
-![Concurrent coroutines](concurrency.png){width=700}
+![Concurrent coroutines](../images/coroutines-and-channels/concurrency.png){width=700}
 
 The total loading time is approximately the same as in the _CALLBACKS_ version, but it doesn't need any callbacks.
 What's more, `async` explicitly emphasizes which parts run concurrently in the code.
@@ -1055,7 +1055,7 @@ state or what contributors are already loaded.
 You can show the intermediate results earlier and display all of the contributors after loading the data for each of the
 repositories:
 
-![Loading data](loading.gif){width=500}
+![Loading data](../images/coroutines-and-channels/loading.gif){width=500}
 
 To implement this functionality, in the `src/tasks/Request6Progress.kt`, you'll need to pass the logic updating the UI
 as a callback, so that it's called on each intermediate state:
@@ -1132,14 +1132,14 @@ suspend fun loadContributorsProgress(
 
 An `updateResults()` callback is called after each request is completed:
 
-![Progress on requests](progress.png){width=700}
+![Progress on requests](../images/coroutines-and-channels/progress.png){width=700}
 
 This code doesn't include concurrency. It's sequential, so you don't need synchronization.
 
 The best option would be to send requests concurrently and update the intermediate results after getting the response
 for each repository:
 
-![Concurrent requests](progress-and-concurrency.png){width=700}
+![Concurrent requests](../images/coroutines-and-channels/progress-and-concurrency.png){width=700}
 
 To add concurrency, use _channels_.
 
@@ -1152,13 +1152,13 @@ Coroutines can communicate with each other through _channels_.
 Channels are communication primitives that allow data to be passed between coroutines. One coroutine can _send_
 some information to a channel, while another can _receive_ that information from it:
 
-![Using channels](using-channel.png)
+![Using channels](../images/coroutines-and-channels/using-channel.png)
 
 A coroutine that sends (produces) information is often called a producer, and a coroutine that receives (consumes)
 information is called a consumer. One or multiple coroutines can send information to the same channel, and one or multiple
 coroutines can receive data from it:
 
-![Using channels with many coroutines](using-channel-many-coroutines.png)
+![Using channels with many coroutines](../images/coroutines-and-channels/using-channel-many-coroutines.png)
 
 When many coroutines receive information from the same channel, each element is handled only once by one of the
 consumers. Once an element is handled, it is immediately removed from the channel.
@@ -1201,13 +1201,13 @@ keep growing indefinitely. The <code>send()</code> call will never be suspended.
 If the program runs out of memory, you'll get an <code>OutOfMemoryException</code>.
 The difference between an unlimited channel and a queue is that when a consumer tries to receive from an empty channel,
 it becomes suspended until some new elements are sent.</p>
-       <img src="unlimited-channel.png" alt="Unlimited channel" width="500"/>
+       <img src="../images/coroutines-and-channels/unlimited-channel.png" alt="Unlimited channel" width="500"/>
    </def>
    <def title="Buffered channel">
        <p>The size of a buffered channel is constrained by the specified number.
 Producers can send elements to this channel until the size limit is reached. All of the elements are internally stored.
 When the channel is full, the next `send` call on it is suspended until more free space becomes available.</p>
-       <img src="buffered-channel.png" alt="Buffered channel" width="500"/>
+       <img src="../images/coroutines-and-channels/buffered-channel.png" alt="Buffered channel" width="500"/>
    </def>
    <def title="Rendezvous channel">
        <p>The "Rendezvous" channel is a channel without a buffer, the same as a buffered channel with zero size.
@@ -1217,12 +1217,12 @@ is suspended. Similarly, if the <code>receive()</code> function is called and th
 suspended <code>send()</code> call ready to send the element, the <code>receive()</code> call is suspended. </p>
        <p>The "rendezvous" name ("a meeting at an agreed time and place") refers to the fact that <code>send()</code> and <code>receive()</code>
 should "meet on time".</p>
-       <img src="rendezvous-channel.png" alt="Rendezvous channel" width="500"/>
+       <img src="../images/coroutines-and-channels/rendezvous-channel.png" alt="Rendezvous channel" width="500"/>
    </def>
    <def title="Conflated channel">
        <p>A new element sent to the conflated channel will overwrite the previously sent element, so the receiver will always
 get only the latest element. The <code>send()</code> call is never suspended.</p>
-       <img src="conflated-channel.gif" alt="Conflated channel" width="500"/>
+       <img src="../images/coroutines-and-channels/conflated-channel.gif" alt="Conflated channel" width="500"/>
    </def>
 </deflist>
 
@@ -1397,7 +1397,7 @@ the `delay` will return immediately and advance the virtual time.
 Tests that use this mechanism run fast, but you can still check what happens at different moments in virtual time. The
 total running time drastically decreases:
 
-![Comparison for total running time](time-comparison.png){width=700}
+![Comparison for total running time](../images/coroutines-and-channels/time-comparison.png){width=700}
 
 To use virtual time, replace the `runBlocking` invocation with a `runTest`. `runTest` takes an
 extension lambda to `TestScope` as an argument.

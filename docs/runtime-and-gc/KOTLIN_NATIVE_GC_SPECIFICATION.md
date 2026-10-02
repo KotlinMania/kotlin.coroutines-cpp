@@ -457,7 +457,7 @@ fun main() {
 
 - `src/kotlinx/coroutines/KotlinGCBridge.hpp` - API implementation
 - `tests/gc_bridge/` - Test suite
-- `docs/SUSPEND_IMPLEMENTATION.md` - Suspend implementation and compiler lowering notes
+- `docs/suspension/SUSPEND_IMPLEMENTATION.md` - Suspend implementation and compiler lowering notes
 
 ### 10.2 External References
 

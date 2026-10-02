@@ -3,7 +3,7 @@
 This document is the *authoritative technical playbook* for porting Kotlin `kotlinx.coroutines` and Kotlin/Native coroutine lowering to C++.  
 It is written to be precise enough for other AI agents and humans to follow without re‑discovering intent.
 
-If anything here conflicts with a newer repo‑local rule (e.g., `AGENTS.md`, `docs/cpp_port/docking_ring.md`), treat the newer rule as source‑of‑truth and update this file.
+If anything here conflicts with a newer repo‑local rule (e.g., `AGENTS.md`, `docs/architecture/docking_ring.md`), treat the newer rule as source‑of‑truth and update this file.
 
 ---
 
@@ -128,7 +128,7 @@ Implementation: `include/kotlinx/coroutines/CancellableContinuationImpl.hpp`.
 
 ## 5. Kotlin/Native lowering model (the target)
 
-This section is grounded in the Kotlin/Native compiler sources you vendored in `tmp/kotlin/`. See `docs/cpp_port/docking_ring.md` for the discovery trail.
+This section is grounded in the Kotlin/Native compiler sources you vendored in `tmp/kotlin/`. See `docs/architecture/docking_ring.md` for the discovery trail.
 
 ### 5.1 Pipeline stages in Kotlin/Native
 1. **Suspend function lowering**
@@ -222,7 +222,7 @@ The `kxs-inject` tool (`src/kotlinx/coroutines/tools/kxs_inject/`) processes LLV
 3. Preserve frame accesses, resume dispatch and result/failure branches
 4. Verify output; keep any still-referenced declaration
 
-It does not generate spills or dispatch. See `docs/IR_SUSPEND_LOWERING_SPEC.md`
+It does not generate spills or dispatch. See `docs/suspension/IR_SUSPEND_LOWERING_SPEC.md`
 for the compiler/runtime handoff contracts and validated CMake pipeline.
 
 ### 6.5 Portability

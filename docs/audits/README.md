@@ -150,6 +150,40 @@ Detailed implementation analysis organized by functional area:
 
 ---
 
+## 📈 AST Porting & Status Reports
+
+### [port_status_report.md](port_status_report.md)
+**Purpose:** AST-based code port progress report
+**Contents:**
+- Executive summary of function parity (633/900 matched, 70.3%)
+- Average inline-code cosine similarity and documentation similarity
+- Port quality distribution (excellent, good, critical files)
+- Type coverage analysis and missing types per file
+- Missing files and documentation gaps
+
+### [high_priority_ports.md](high_priority_ports.md)
+**Purpose:** Action plan ranking files by dependency fanout and porting impact
+**Contents:**
+- Top files ranked by impact formula (deps × 1,000,000 + SymDeficit × 10,000 + SrcSymbols × 100)
+- Function similarity, symbol deficit, and missing function/type details per file
+- Critical issues breakdown for files with similarity < 0.60 and high dependencies
+- High-priority missing files ordered by dependent count
+
+### [NEXT_ACTIONS.md](NEXT_ACTIONS.md)
+**Purpose:** Immediate, high-value porting actions derived from AST analysis
+**Contents:**
+- Priority 1: Incomplete high-dependency files (`flow.Channels`, etc.)
+- Priority 2: High-value missing files with fanout
+- Task manager commands and guardrail workflows (`ast_distance --init-tasks`, `tasks.json`)
+
+### [port_lint_proposed_changes.md](port_lint_proposed_changes.md)
+**Purpose:** Review proposals for fallback normalization matches
+**Contents:**
+- Proposals emitted when Rust -> Kotlin pairs match only after fallback normalization
+- Tracking of fallback provenance headers
+
+---
+
 ## 📐 Templates & Tools
 
 ### [audit_template.md](audit_template.md)
@@ -197,6 +231,12 @@ Detailed implementation analysis organized by functional area:
 1. Update [TRANSLITERATION_STATUS.md](TRANSLITERATION_STATUS.md) - Mark files complete
 2. Update [TODO_CHECKLIST.md](TODO_CHECKLIST.md) - Check off completed tasks
 3. Update relevant block audit (01-11) - Update completion percentages
+
+### For Porting & Parity
+1. Check [port_status_report.md](port_status_report.md) - Review global AST parity and similarity metrics
+2. Check [high_priority_ports.md](high_priority_ports.md) - Identify top blocker files by dependency fanout
+3. Check [NEXT_ACTIONS.md](NEXT_ACTIONS.md) - Execute immediate high-value porting tasks
+4. Review [port_lint_proposed_changes.md](port_lint_proposed_changes.md) - Check fallback provenance proposals
 
 ---
 

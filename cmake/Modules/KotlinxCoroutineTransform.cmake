@@ -1,6 +1,6 @@
 # Marker cleanup for state machines already lowered by Clang.
 # Runtime dispatch, frame fields and Result handling remain in the source.
-# See docs/IR_SUSPEND_LOWERING_SPEC.md for the Kotlin/Native contract.
+# See docs/suspension/IR_SUSPEND_LOWERING_SPEC.md for the Kotlin/Native contract.
 
 cmake_minimum_required(VERSION 3.18)
 

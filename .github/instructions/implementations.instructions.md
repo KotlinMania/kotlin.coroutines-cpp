@@ -15,7 +15,7 @@ When implementing state machines and logic in `.cpp` files:
    - Call `suspend_cancellable_coroutine<T>(...)` where applicable and check `is_coroutine_suspended(result)`.
    - Return `intrinsics::COROUTINE_SUSPENDED` to signal suspension from suspend entry points.
    - The legacy `SUSPEND_*` macro DSL is still present in some files for backward compatibility; avoid introducing new usages and add a deprecation note if you must touch them.
-   - We are migrating to a Clang plugin that rewrites a minimal suspend DSL into state machines; track migration notes in audit docs / PR text (not source comments). See `docs/cpp_port/docking_ring.md`.
+   - We are migrating to a Clang plugin that rewrites a minimal suspend DSL into state machines; track migration notes in audit docs / PR text (not source comments). See `docs/architecture/docking_ring.md`.
 
    Example pattern:
    ```cpp

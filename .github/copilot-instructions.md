@@ -35,9 +35,9 @@ tmp/kotlinx.coroutines/              # Kotlin source reference (DO NOT EDIT)
 
 docs/                                # Documentation
   ├── SUSPEND_COMPARISON.md          # Kotlin vs C++ comparison
-  ├── cpp_port/docking_ring.md       # Suspend/IR/LLVM plan and plugin design
-  ├── API_AUDIT.md                   # API completeness tracker
-  ├── API_TRANSLATION.md             # Translation patterns
+  ├── architecture/docking_ring.md   # Suspend/IR/LLVM plan and plugin design
+  ├── audits/API_AUDIT.md            # API completeness tracker
+  ├── audits/API_TRANSLATION.md      # Translation patterns
   └── audits/                        # Per-file audit status
 
 tools/clang_suspend_plugin/          # Clang plugin for suspend DSL
@@ -110,7 +110,7 @@ done
 
 | Issue | Symptom | Workaround |
 |-------|---------|-----------|
-| IntelliJ IDE false positives | Parser confusion around legacy `SUSPEND_*` macros and future suspend annotations | Trust compiler; see `docs/cpp_port/docking_ring.md` (IDE notes) and `docs/SUSPEND_COMPARISON.md` |
+| IntelliJ IDE false positives | Parser confusion around legacy `SUSPEND_*` macros and future suspend annotations | Trust compiler; see `docs/architecture/docking_ring.md` (IDE notes) and `docs/SUSPEND_COMPARISON.md` |
 | Incomplete transliterations | "never used" warnings in JobSupport.cpp, etc. | Intentional; marked with `TODO(port)` |
 | No GC integration | Memory leaks if continuations aren't released | Use `std::shared_ptr`/`std::unique_ptr` explicitly; see `ContinuationImpl.hpp` |
 | Delay fallback | Threaded fallback resume used when no dispatcher `Delay` is present | Marked `TODO(semantics)`/`TODO(perf)` in `Delay.cpp`; will integrate timer heap/wheel |
@@ -204,10 +204,10 @@ Use this mapping to locate the ground truth when implementing or fixing APIs.
 ## Documentation References
 
 - **Ground truth**: Kotlin sources in `tmp/kotlinx.coroutines/`
-- **API status**: `docs/API_AUDIT.md`
-- **Suspend plan (plugin)**: `docs/cpp_port/docking_ring.md`
+- **API status**: `docs/audits/API_AUDIT.md`
+- **Suspend plan (plugin)**: `docs/architecture/docking_ring.md`
 - **Suspend macros**: `docs/SUSPEND_COMPARISON.md` (legacy reference)
-- **Translation patterns**: `docs/API_TRANSLATION.md`
+- **Translation patterns**: `docs/audits/API_TRANSLATION.md`
 - **Agent playbook**: `.github/AGENTS.md` (comprehensive transliteration guide)
 
 ## Trust These Instructions

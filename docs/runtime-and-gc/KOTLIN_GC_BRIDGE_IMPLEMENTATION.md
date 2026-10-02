@@ -20,7 +20,7 @@ Complete implementation of zero-overhead Kotlin Native GC integration for C++ co
 
 ### 2. Engineering Specification
 
-**File**: `docs/KOTLIN_NATIVE_GC_SPECIFICATION.md`
+**File**: `docs/runtime-and-gc/KOTLIN_NATIVE_GC_SPECIFICATION.md`
 
 Professional engineering-grade specification covering:
 - Architecture and thread state model
@@ -166,7 +166,8 @@ kotlin.coroutines-cpp/
 ├── include/kotlinx/coroutines/
 │   └── KotlinGCBridge.hpp          # Core implementation
 ├── docs/
-│   └── KOTLIN_NATIVE_GC_SPECIFICATION.md  # Engineering spec
+│   └── runtime-and-gc/
+│       └── KOTLIN_NATIVE_GC_SPECIFICATION.md  # Engineering spec
 └── tests/gc_bridge/
     ├── README.md                    # Test documentation
     ├── test_kotlin_gc_bridge.cpp    # Standalone tests

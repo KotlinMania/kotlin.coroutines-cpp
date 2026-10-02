@@ -16,7 +16,7 @@ When these builders are used to create a _root_ coroutine, that is not a _child_
 the former builders treat exceptions as **uncaught** exceptions, similar to Java's `Thread.uncaughtExceptionHandler`,
 while the latter are relying on the user to consume the final
 exception, for example via [await][Deferred.await] or [receive][ReceiveChannel.receive] 
-([produce] and [receive][ReceiveChannel.receive] are covered in [Channels](https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/channels.md) section).
+([produce] and [receive][ReceiveChannel.receive] are covered in [Channels](channels.md) section).
 
 It can be demonstrated by a simple example that creates root coroutines using the [GlobalScope]:
 
@@ -57,7 +57,7 @@ fun main() = runBlocking {
 >
 {style="note"}
 
-The output of this code is (with [debug](https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/coroutine-context-and-dispatchers.md#debugging-coroutines-and-threads)):
+The output of this code is (with [debug](coroutine-context-and-dispatchers.md#debugging-coroutines-and-threads)):
 
 ```text
 Throwing exception from launch
@@ -174,7 +174,7 @@ Parent is not cancelled
 
 If a coroutine encounters an exception other than `CancellationException`, it cancels its parent with that exception. 
 This behaviour cannot be overridden and is used to provide stable coroutines hierarchies for
-[structured concurrency](https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/composing-suspending-functions.md#structured-concurrency-with-async).
+[structured concurrency](composing-suspending-functions.md#structured-concurrency-with-async).
 [CoroutineExceptionHandler] implementation is not used for child coroutines.
 
 > In these examples, [CoroutineExceptionHandler] is always installed to a coroutine

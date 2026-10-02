@@ -77,7 +77,7 @@ endif()
 
 # -----------------------------------------------------------------------------
 # kxs-inject: LLVM-aware marker cleanup for existing state machines
-# See: docs/IR_SUSPEND_LOWERING_SPEC.md
+# See: docs/suspension/IR_SUSPEND_LOWERING_SPEC.md
 # -----------------------------------------------------------------------------
 option(KOTLINX_BUILD_KXS_INJECT "Build kxs-inject IR transformation tool" ON)
 if(KOTLINX_BUILD_KXS_INJECT)

@@ -3,7 +3,7 @@
 **Date:** October 2026  
 **Auditor:** Sydney Renee  
 **Branch:** `session/2026-10-01-ir-handoffs`  
-**Related Documents:** [IR_HANDOFF_REVIEW.md](IR_HANDOFF_REVIEW.md), [IR_SUSPEND_LOWERING_SPEC.md](../IR_SUSPEND_LOWERING_SPEC.md), [SUSPEND_IMPLEMENTATION.md](../SUSPEND_IMPLEMENTATION.md), [docking_ring.md](../cpp_port/docking_ring.md), [API_AUDIT.md](API_AUDIT.md)
+**Related Documents:** [IR_HANDOFF_REVIEW.md](IR_HANDOFF_REVIEW.md), [IR_SUSPEND_LOWERING_SPEC.md](../suspension/IR_SUSPEND_LOWERING_SPEC.md), [SUSPEND_IMPLEMENTATION.md](../suspension/SUSPEND_IMPLEMENTATION.md), [docking_ring.md](../architecture/docking_ring.md), [API_AUDIT.md](API_AUDIT.md)
 
 ---
 

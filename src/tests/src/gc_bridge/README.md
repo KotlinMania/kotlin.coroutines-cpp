@@ -166,5 +166,5 @@ clang++ -fsanitize=address test_kotlin_gc_bridge.cpp
 
 ## See Also
 
-- `../../docs/KOTLIN_NATIVE_GC_SPECIFICATION.md` - Full specification
+- `../../docs/runtime-and-gc/KOTLIN_NATIVE_GC_SPECIFICATION.md` - Full specification
 - `../../include/kotlinx/coroutines/KotlinGCBridge.hpp` - API documentation

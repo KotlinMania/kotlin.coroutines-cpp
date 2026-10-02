@@ -64,17 +64,17 @@ The tutorial assumes you have prior knowledge of the [coroutines](coroutines-gui
 
 5. Build the code by clicking **Build Project**.
 
-    ![Build an application](flow-build-project.png)
+    ![Build an application](../images/flow-build-project.png)
 
 ## Debug coroutines
 
 1. Set breakpoints at the lines with the `println()` function call:
 
-    ![Build a console application](coroutine-breakpoint.png)
+    ![Build a console application](../images/coroutine-breakpoint.png)
 
 2. Run the code in debug mode by clicking **Debug** next to the run configuration at the top of the screen.
 
-    ![Build a console application](flow-debug-project.png)
+    ![Build a console application](../images/flow-debug-project.png)
 
     The **Debug** tool window appears: 
     * The **Frames** tab contains the call stack.
@@ -82,11 +82,11 @@ The tutorial assumes you have prior knowledge of the [coroutines](coroutines-gui
     * The **Coroutines** tab contains information on running or suspended coroutines. It shows that there are three coroutines.
     The first one has the **RUNNING** status, and the other two have the **CREATED** status.
 
-    ![Debug the coroutine](coroutine-debug-1.png)
+    ![Debug the coroutine](../images/coroutine-debug-1.png)
 
 3. Resume the debugger session by clicking **Resume Program** in the **Debug** tool window:
 
-    ![Debug the coroutine](coroutine-debug-2.png)
+    ![Debug the coroutine](../images/coroutine-debug-2.png)
     
     Now the **Coroutines** tab shows the following:
     * The first coroutine has the **SUSPENDED** status – it is waiting for the values so it can multiply them.
@@ -95,7 +95,7 @@ The tutorial assumes you have prior knowledge of the [coroutines](coroutines-gui
 
 4. Resume the debugger session by clicking **Resume Program** in the **Debug** tool window:
 
-    ![Build a console application](coroutine-debug-3.png)
+    ![Build a console application](../images/coroutine-debug-3.png)
 
     Now the **Coroutines** tab shows the following:
     * The first coroutine has the **SUSPENDED** status – it is waiting for the values so it can multiply them.
@@ -108,7 +108,7 @@ Using IntelliJ IDEA debugger, you can dig deeper into each coroutine to debug yo
 
 If you use `suspend` functions, in the debugger, you might see the "was optimized out" text next to a variable's name:
 
-![Variable "a" was optimized out](variable-optimised-out.png){width=480}
+![Variable "a" was optimized out](../images/variable-optimised-out.png){width=480}
 
 This text means that the variable's lifetime was decreased, and the variable doesn't exist anymore.
 It is difficult to debug code with optimized variables because you don't see their values.

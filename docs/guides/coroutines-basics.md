@@ -10,7 +10,7 @@ On the JVM and in Kotlin/Native, all concurrent code, such as coroutines, runs o
 Coroutines can suspend their execution instead of blocking a thread.
 This allows one coroutine to suspend while waiting for some data to arrive and another coroutine to run on the same thread, ensuring effective resource utilization.
 
-![Comparing parallel and concurrent threads](parallelism-and-concurrency.svg){width="700"}
+![Comparing parallel and concurrent threads](../images/parallelism-and-concurrency.svg){width="700"}
 
 For more information about the differences between coroutines and threads, see [Comparing coroutines and JVM threads](#comparing-coroutines-and-jvm-threads).
 
@@ -235,7 +235,7 @@ You may notice that the output order and thread names may change each time you r
 > You can display coroutine names next to thread names in the output of your code for additional information.
 > To do so, pass the `-Dkotlinx.coroutines.debug` VM option in your build tool or IDE run configuration.
 >
-> See [Debugging coroutines](https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/topics/debugging.md) for more information.
+> See [Debugging coroutines](debugging.md) for more information.
 >
 {style="tip"}
 
@@ -567,7 +567,7 @@ It can suspend on one thread and resume on another, so many coroutines can share
 When a coroutine suspends, the thread isn't blocked and remains free to run other tasks.
 This makes coroutines much lighter than threads and allows running millions of them in one process without exhausting system resources.
 
-![Comparing coroutines and threads](coroutines-and-threads.svg){width="700"}
+![Comparing coroutines and threads](../images/coroutines-and-threads.svg){width="700"}
 
 Let's look at an example where 50,000 coroutines each wait five seconds and then print a period (`.`):
 
