@@ -1,4 +1,5 @@
 #pragma once
+#include "kotlinx/coroutines/Exceptions.hpp"
 #include <stdexcept>
 #include <exception>
 #include <string>
@@ -8,13 +9,15 @@ namespace coroutines {
 namespace flow {
 namespace internal {
 
-class AbortFlowException : public std::runtime_error {
+class AbortFlowException : public CancellationException {
 public:
     void* owner;
     
     explicit AbortFlowException(void* owner_) 
-        : std::runtime_error("Flow was aborted, this exception should not be seen")
-        , owner(owner_) {}
+        : CancellationException("Flow was aborted, this exception should not be seen")
+        , owner(owner_) {
+        (void)owner_;
+    }
 
     void check_ownership(void* other) {
         if (owner != other) {
@@ -23,9 +26,9 @@ public:
     }
 };
 
-class ChildCancelledException : public std::runtime_error {
+class ChildCancelledException : public CancellationException {
 public:
-    ChildCancelledException() : std::runtime_error("Child flow cancelled") {}
+    ChildCancelledException();
 };
 
 inline int check_index_overflow(int index) {

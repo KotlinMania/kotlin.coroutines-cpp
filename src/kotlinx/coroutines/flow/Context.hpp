@@ -167,7 +167,11 @@ inline std::shared_ptr<Flow<T>> buffer(
     }
     // Dispatch on FusibleFlow vs default ChannelFlowOperatorImpl.
     if (auto fusible = std::dynamic_pointer_cast<internal::FusibleFlow<T>>(flow)) {
-        return fusible->fuse(EmptyCoroutineContext::instance(), capacity, on_buffer_overflow);
+        auto* fused = fusible->fuse(EmptyCoroutineContext::instance(), capacity, on_buffer_overflow);
+        if (fused == flow.get()) {
+            return flow;
+        }
+        return std::shared_ptr<Flow<T>>(fused);
     }
     return std::make_shared<internal::ChannelFlowOperatorImpl<T>>(
         flow, EmptyCoroutineContext::instance(), capacity, on_buffer_overflow);
@@ -299,7 +303,11 @@ inline std::shared_ptr<Flow<T>> flow_on(
         return flow;
     }
     if (auto fusible = std::dynamic_pointer_cast<internal::FusibleFlow<T>>(flow)) {
-        return fusible->fuse(context, channels::CHANNEL_OPTIONAL, BufferOverflow::SUSPEND);
+        auto* fused = fusible->fuse(context, channels::CHANNEL_OPTIONAL, BufferOverflow::SUSPEND);
+        if (fused == flow.get()) {
+            return flow;
+        }
+        return std::shared_ptr<Flow<T>>(fused);
     }
     return std::make_shared<internal::ChannelFlowOperatorImpl<T>>(
         flow, context, channels::CHANNEL_OPTIONAL, BufferOverflow::SUSPEND);

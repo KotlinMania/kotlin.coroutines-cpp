@@ -1,3 +1,4 @@
+// port-lint: source kotlinx-coroutines-core/common/src/flow/terminal/Reduce.kt
 /**
  * @file Reduce.cpp
  * @brief Terminal flow operators for reduction: reduce, fold, first, last, single

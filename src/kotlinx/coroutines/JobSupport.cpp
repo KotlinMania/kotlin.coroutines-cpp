@@ -1193,13 +1193,14 @@ namespace kotlinx {
         }
 
         bool JobSupport::Impl::cancel_parent(std::exception_ptr cause) {
+            bool is_cancellation = is_cancellation_exception(cause);
             auto *handle = parent_handle.load(std::memory_order_relaxed);
-            if (handle) {
+            if (handle && handle != &NonDisposableHandle::instance()) {
                 if (auto *child_handle = dynamic_cast<ChildHandle *>(handle)) {
-                    return child_handle->child_cancelled(cause);
+                    return child_handle->child_cancelled(cause) || is_cancellation;
                 }
             }
-            return false;
+            return is_cancellation;
         }
 
         bool JobSupport::Impl::try_put_node_into_list(JobSupport *job, JobNode *node,

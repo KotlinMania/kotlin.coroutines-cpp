@@ -16,6 +16,16 @@ namespace coroutines {
 // Note: We use 'struct Job' everywhere because there's a function named 'Job' that shadows the type
 
 /**
+ * Thrown when an element cannot be found or retrieved.
+ * Parity with Kotlin's kotlin.NoSuchElementException.
+ */
+class NoSuchElementException : public std::out_of_range {
+public:
+    explicit NoSuchElementException(const std::string& message = "No such element")
+        : std::out_of_range(message) {}
+};
+
+/**
  * This exception gets thrown if an exception is caught while processing CompletionHandler invocation for Job.
  */
 class CompletionHandlerException : public std::runtime_error {

@@ -1,3 +1,4 @@
+// port-lint: source kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt
  *

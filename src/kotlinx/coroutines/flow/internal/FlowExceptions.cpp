@@ -15,7 +15,8 @@ namespace kotlinx {
         namespace flow {
             namespace internal {
                 // Platform-specific implementation details can go here
-                // The exception classes are defined in FlowExceptions.hpp
+                ChildCancelledException::ChildCancelledException()
+                    : CancellationException("Child flow cancelled") {}
             } // namespace internal
         } // namespace flow
     } // namespace coroutines
