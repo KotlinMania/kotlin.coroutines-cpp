@@ -1,5 +1,5 @@
 #pragma once
-// port-lint: source Delay.kt
+// port-lint: source kotlinx-coroutines-core/common/src/Delay.kt
 /**
  * @file Delay.hpp
  * @brief Delay interface and functions for coroutine timing
@@ -33,6 +33,8 @@ namespace coroutines {
  * Implementation of this interface affects operation of delay() and withTimeout() functions.
  *
  * @internal This is an internal API and should not be used from general code.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:18-54
  */
 class Delay {
 public:
@@ -51,6 +53,8 @@ public:
      *
      * @param time_millis the delay time in milliseconds
      * @param continuation the continuation to resume after the delay
+     *
+     * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:45
      */
     virtual void schedule_resume_after_delay(long long time_millis, CancellableContinuation<void>& continuation) = 0;
 
@@ -63,6 +67,8 @@ public:
      * @param block the runnable to execute after the delay
      * @param context the coroutine context
      * @return a DisposableHandle to cancel the scheduled invocation
+     *
+     * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:52-54
      */
     virtual std::shared_ptr<DisposableHandle> invoke_on_timeout(
         long long time_millis,
@@ -71,7 +77,8 @@ public:
 
     /**
      * Suspension point: Delays coroutine for a given time without blocking a thread.
-     * Use suspend_cancellable_coroutine logic inside.
+     *
+     * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:25-28
      */
     virtual void* delay(long long time_millis, Continuation<void*>* continuation);
 };
@@ -84,9 +91,33 @@ public:
 Delay& get_default_delay();
 
 /**
+ * Returns Delay implementation of the given context.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:149
+ */
+Delay& get_delay(const CoroutineContext& context);
+Delay& get_delay(const std::shared_ptr<CoroutineContext>& context);
+
+/**
+ * Convert this duration to its millisecond value. Durations which have a nanosecond component less than
+ * a single millisecond will be rounded up to the next largest millisecond.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:155-158
+ */
+inline long long to_delay_millis(std::chrono::nanoseconds duration) {
+    if (duration.count() > 0) {
+        auto rounded = duration + std::chrono::nanoseconds(999999);
+        return std::chrono::duration_cast<std::chrono::milliseconds>(rounded).count();
+    }
+    return 0;
+}
+
+/**
  * Enhanced Delay interface that provides additional diagnostics for withTimeout.
  *
  * @internal This is an internal API and should not be used from general code.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:62-67
  */
 class DelayWithTimeoutDiagnostics : public Delay {
 public:
@@ -96,6 +127,8 @@ public:
      *
      * @param timeout the timeout duration in nanoseconds
      * @return diagnostic message
+     *
+     * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:66
      */
     virtual std::string timeout_message(std::chrono::nanoseconds timeout) = 0;
 };
@@ -104,16 +137,22 @@ public:
 
 /**
  * Delays coroutine for at least the given duration without blocking.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:121-129
  */
 void* delay(long long time_millis, Continuation<void*>* continuation);
 
 /**
  * Delays coroutine for at least the given duration.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:146
  */
 void* delay(std::chrono::nanoseconds duration, Continuation<void*>* continuation);
 
 /**
  * Delays coroutine for at least the given duration (milliseconds overload).
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:146
  */
 void* delay(std::chrono::milliseconds duration, Continuation<void*>* continuation);
 
@@ -121,6 +160,8 @@ void* delay(std::chrono::milliseconds duration, Continuation<void*>* continuatio
  * Suspends the coroutine until cancellation.
  * @param continuation the continuation to suspend
  * @return COROUTINE_SUSPENDED
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:103
  */
 void* await_cancellation(Continuation<void*>* continuation);
 
@@ -137,8 +178,10 @@ void* delay(std::chrono::milliseconds duration, std::shared_ptr<Continuation<voi
 void* await_cancellation(std::shared_ptr<Continuation<void*>> continuation);
 
 /**
- * Synchronous delay overload for test environments and non-suspending contexts.
+ * Synchronous delay overload for test environments and non-suspending callers.
  * Long.MAX_VALUE signals a suspension point without resuming.
+ *
+ * NOTE(port): Test / non-suspending helper for environments without an explicit continuation.
  */
 inline void delay(long long time_millis) {
     if (time_millis <= 0) return;
@@ -154,4 +197,3 @@ inline void delay(long long time_millis) {
 
 } // namespace coroutines
 } // namespace kotlinx
-

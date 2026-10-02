@@ -1,3 +1,4 @@
+// port-lint: source kotlinx-coroutines-core/common/src/Delay.kt
 /**
  * @file Delay.cpp
  * @brief Implementation of delay functions
@@ -5,9 +6,6 @@
  * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt
  *
  * Provides delay functionality for coroutines.
- *
- * NOTE: In a full C++20 coroutine implementation, delay would be a suspend function.
- * This implementation provides a simplified blocking version.
  */
 
 #include "kotlinx/coroutines/Delay.hpp"
@@ -23,6 +21,25 @@
 
 namespace kotlinx {
     namespace coroutines {
+        // Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:149
+        Delay& get_delay(const CoroutineContext& context) {
+            auto element = context.get(ContinuationInterceptor::type_key);
+            if (element) {
+                if (auto* delay_impl = dynamic_cast<Delay*>(element.get())) {
+                    return *delay_impl;
+                }
+            }
+            return get_default_delay();
+        }
+
+        Delay& get_delay(const std::shared_ptr<CoroutineContext>& context) {
+            if (context) {
+                return get_delay(*context);
+            }
+            return get_default_delay();
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:52-54
         std::shared_ptr<DisposableHandle> Delay::invoke_on_timeout(
             long long time_millis,
             std::shared_ptr<Runnable> block,
@@ -30,6 +47,7 @@ namespace kotlinx {
             return get_default_delay().invoke_on_timeout(time_millis, block, context);
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:25-28
         void* Delay::delay(long long time_millis, Continuation<void*>* continuation) {
             if (time_millis <= 0) return nullptr;
             return suspend_cancellable_coroutine<void>(
@@ -39,44 +57,28 @@ namespace kotlinx {
                 continuation);
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:121-129
         void *delay(long long time_millis, Continuation<void *> *continuation) {
             if (time_millis <= 0) return nullptr; // Return immediately
 
             return suspend_cancellable_coroutine<void>([time_millis](CancellableContinuation<void> &cont) {
-                // 1. Get context
-                auto context = cont.get_context();
-                // 2. Look for Delay interface in context (Dispatcher implements Delay?)
-                // In Kotlin: context[ContinuationInterceptor] as? Delay
-                // In C++: dynamic_cast
-                Delay *delay_impl = nullptr;
-                auto element = context->get(ContinuationInterceptor::type_key);
-                if (element) {
-                    delay_impl = dynamic_cast<Delay *>(element.get());
-                }
-
-                if (delay_impl) {
-                    if (time_millis < std::numeric_limits<long long>::max()) {
-                        delay_impl->schedule_resume_after_delay(time_millis, cont);
-                    }
-                } else {
-                    if (time_millis < std::numeric_limits<long long>::max()) {
-                        get_default_delay().schedule_resume_after_delay(time_millis, cont);
-                    }
+                if (time_millis < std::numeric_limits<long long>::max()) {
+                    get_delay(cont.get_context()).schedule_resume_after_delay(time_millis, cont);
                 }
             }, continuation);
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:146
         void *delay(std::chrono::nanoseconds duration, Continuation<void *> *continuation) {
-            long long millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-            // Round up if > 0 but < 1ms?
-            if (millis == 0 && duration.count() > 0) millis = 1;
-            return delay(millis, continuation);
+            return delay(to_delay_millis(duration), continuation);
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:146
         void *delay(std::chrono::milliseconds duration, Continuation<void *> *continuation) {
             return delay(duration.count(), continuation);
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:103
         void *await_cancellation(Continuation<void *> *continuation) {
             // Kotlin: suspendCancellableCoroutine {} - empty lambda, never resumes
             return suspend_cancellable_coroutine<void>([](CancellableContinuation<void>&) {
@@ -94,26 +96,7 @@ namespace kotlinx {
     namespace coroutines {
 
         void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> continuation) {
-            if (time_millis <= 0) return nullptr;
-
-            return suspend_cancellable_coroutine<void>([time_millis](CancellableContinuation<void>& cont) {
-                auto context = cont.get_context();
-                Delay* delay_impl = nullptr;
-                auto element = context->get(ContinuationInterceptor::type_key);
-                if (element) {
-                    delay_impl = dynamic_cast<Delay*>(element.get());
-                }
-
-                if (delay_impl) {
-                    if (time_millis < std::numeric_limits<long long>::max()) {
-                        delay_impl->schedule_resume_after_delay(time_millis, cont);
-                    }
-                } else {
-                    if (time_millis < std::numeric_limits<long long>::max()) {
-                        get_default_delay().schedule_resume_after_delay(time_millis, cont);
-                    }
-                }
-            }, continuation);
+            return delay(time_millis, continuation.get());
         }
 
         void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void*>> continuation) {
