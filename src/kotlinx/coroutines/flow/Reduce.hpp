@@ -65,6 +65,15 @@ struct ReduceFrame : public FlowCollector<T>, public Continuation<void*>, public
         }
     }
 
+    void release_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        self_ref = nullptr;
+    }
+
+    bool is_completed() const {
+        return completed.load();
+    }
+
     std::shared_ptr<CoroutineContext> get_context() const override {
         return completion ? completion->get_context() : nullptr;
     }
@@ -202,6 +211,15 @@ struct FoldFrame : public FlowCollector<T>, public Continuation<void*>, public s
         }
     }
 
+    void release_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        self_ref = nullptr;
+    }
+
+    bool is_completed() const {
+        return completed.load();
+    }
+
     std::shared_ptr<CoroutineContext> get_context() const override {
         return completion ? completion->get_context() : nullptr;
     }
@@ -314,6 +332,15 @@ struct SingleFrame : public FlowCollector<T>, public Continuation<void*>, public
         }
     }
 
+    void release_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        self_ref = nullptr;
+    }
+
+    bool is_completed() const {
+        return completed.load();
+    }
+
     std::shared_ptr<CoroutineContext> get_context() const override {
         return completion ? completion->get_context() : nullptr;
     }
@@ -395,6 +422,15 @@ struct SingleOrNullFrame : public FlowCollector<T>, public Continuation<void*>, 
         if (!completed.load()) {
             self_ref = this->shared_from_this();
         }
+    }
+
+    void release_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        self_ref = nullptr;
+    }
+
+    bool is_completed() const {
+        return completed.load();
     }
 
     std::shared_ptr<CoroutineContext> get_context() const override {
@@ -500,6 +536,15 @@ struct FirstFrame : public FlowCollector<T>, public Continuation<void*>, public 
         }
     }
 
+    void release_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        self_ref = nullptr;
+    }
+
+    bool is_completed() const {
+        return completed.load();
+    }
+
     std::shared_ptr<CoroutineContext> get_context() const override {
         return completion ? completion->get_context() : nullptr;
     }
@@ -601,6 +646,15 @@ struct LastFrame : public FlowCollector<T>, public Continuation<void*>, public s
         }
     }
 
+    void release_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        self_ref = nullptr;
+    }
+
+    bool is_completed() const {
+        return completed.load();
+    }
+
     std::shared_ptr<CoroutineContext> get_context() const override {
         return completion ? completion->get_context() : nullptr;
     }
@@ -674,18 +728,22 @@ inline void* reduce(
     std::function<S(S, T)> operation,
     Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::ReduceFrame<T, S>>(std::move(operation), continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (...) {
+        frame->release_self();
         throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (frame->failure) {
         std::rethrow_exception(frame->failure);
@@ -712,18 +770,22 @@ inline void* reduce(
     std::function<void*(S, T, Continuation<void*>*)> operation,
     Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::ReduceFrame<T, S>>(std::move(operation), continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (...) {
+        frame->release_self();
         throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (frame->failure) {
         std::rethrow_exception(frame->failure);
@@ -777,18 +839,22 @@ inline void* fold(
     std::function<R(R, T)> operation,
     Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::FoldFrame<T, R>>(std::move(initial), std::move(operation), continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (...) {
+        frame->release_self();
         throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (frame->failure) {
         std::rethrow_exception(frame->failure);
@@ -809,18 +875,22 @@ inline void* fold(
     std::function<void*(R, T, Continuation<void*>*)> operation,
     Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::FoldFrame<T, R>>(std::move(initial), std::move(operation), continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (...) {
+        frame->release_self();
         throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (frame->failure) {
         std::rethrow_exception(frame->failure);
@@ -839,18 +909,22 @@ inline void* fold(
 template<typename T>
 inline void* single(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::SingleFrame<T>>(continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (...) {
+        frame->release_self();
         throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (frame->failure) {
         std::rethrow_exception(frame->failure);
@@ -875,18 +949,24 @@ inline void* single(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continua
 template<typename T>
 inline void* single_or_null(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::SingleOrNullFrame<T>>(continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (internal::AbortFlowException& e) {
         e.check_ownership(frame.get());
+    } catch (...) {
+        frame->release_self();
+        throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (frame->has_multiple || !frame->has_value) {
         return nullptr;
@@ -907,18 +987,24 @@ inline void* single_or_null(std::shared_ptr<Flow<T>> flow, Continuation<void*>* 
 template<typename T>
 inline void* first(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::FirstFrame<T>>(false, continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (internal::AbortFlowException& e) {
         e.check_ownership(frame.get());
+    } catch (...) {
+        frame->release_self();
+        throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (!frame->has_value) {
         throw NoSuchElementException("Expected at least one element");
@@ -942,18 +1028,24 @@ inline void* first(
     std::function<bool(const T&)> predicate,
     Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::FirstFrame<T>>(std::move(predicate), false, continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (internal::AbortFlowException& e) {
         e.check_ownership(frame.get());
+    } catch (...) {
+        frame->release_self();
+        throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (!frame->has_value) {
         throw NoSuchElementException("Expected at least one element matching the predicate");
@@ -974,18 +1066,24 @@ inline void* first(
 template<typename T>
 inline void* first_or_null(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::FirstFrame<T>>(true, continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (internal::AbortFlowException& e) {
         e.check_ownership(frame.get());
+    } catch (...) {
+        frame->release_self();
+        throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (!frame->has_value) {
         return nullptr;
@@ -1009,18 +1107,24 @@ inline void* first_or_null(
     std::function<bool(const T&)> predicate,
     Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::FirstFrame<T>>(std::move(predicate), true, continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (internal::AbortFlowException& e) {
         e.check_ownership(frame.get());
+    } catch (...) {
+        frame->release_self();
+        throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (!frame->has_value) {
         return nullptr;
@@ -1041,18 +1145,22 @@ inline void* first_or_null(
 template<typename T>
 inline void* last(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::LastFrame<T>>(false, continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (...) {
+        frame->release_self();
         throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (frame->failure) {
         std::rethrow_exception(frame->failure);
@@ -1076,18 +1184,22 @@ inline void* last(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuati
 template<typename T>
 inline void* last_or_null(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
     auto frame = std::make_shared<internal::LastFrame<T>>(true, continuation);
+    frame->retain_self();
 
     void* r = nullptr;
     try {
         r = flow->collect(frame.get(), frame.get());
     } catch (...) {
+        frame->release_self();
         throw;
     }
 
-    if (intrinsics::is_coroutine_suspended(r)) {
-        frame->retain_self();
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
+
+    frame->completed.store(true);
+    frame->release_self();
 
     if (frame->failure) {
         std::rethrow_exception(frame->failure);
