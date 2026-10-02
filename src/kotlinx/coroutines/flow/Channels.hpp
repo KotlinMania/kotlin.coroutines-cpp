@@ -53,7 +53,7 @@ template <typename T>
 void* emit_all(
     FlowCollector<T>* receiver,
     channels::ReceiveChannel<T>* channel,
-    std::shared_ptr<Continuation<void*>> completion);
+    Continuation<void*>* completion);
 
 /**
  * Private helper. Iterates the channel and emits to the collector; cancels the channel
@@ -81,7 +81,7 @@ void* emit_all_impl(
     FlowCollector<T>* receiver,
     channels::ReceiveChannel<T>* channel,
     bool consume,
-    std::shared_ptr<Continuation<void*>> completion);
+    Continuation<void*>* completion = nullptr);
 
 /**
  * Represents the given receive channel as a hot flow and [receives][ReceiveChannel.receive] from the channel
@@ -196,12 +196,9 @@ public:
      *   override suspend fun collectTo(scope: ProducerScope<T>) =
      *       SendingCollector(scope).emitAllImpl(channel, consume)
      */
-    [[suspend]]
-    void* collect_to(
-        channels::ProducerScope<T>* scope,
-        std::shared_ptr<Continuation<void*>> completion) override {
+    void collect_to(channels::ProducerScope<T>* scope) override {
         internal::SendingCollector<T> collector(scope);
-        return emit_all_impl(&collector, channel_.get(), consume_, completion);
+        (void)emit_all_impl(&collector, channel_.get(), consume_, nullptr);
     }
 
     /**
@@ -213,7 +210,7 @@ public:
      */
     std::shared_ptr<channels::ReceiveChannel<T>> produce_impl(CoroutineScope* scope) override {
         mark_consumed();
-        if (this->capacity() == channels::CHANNEL_OPTIONAL) {
+        if (this->capacity() == channels::Channel<T>::OPTIONAL_CHANNEL) {
             return channel_;
         }
         return internal::ChannelFlow<T>::produce_impl(scope);
@@ -233,8 +230,8 @@ public:
     [[suspend]]
     void* collect(
         FlowCollector<T>* collector,
-        std::shared_ptr<Continuation<void*>> completion) override {
-        if (this->capacity() == channels::CHANNEL_OPTIONAL) {
+        Continuation<void*>* completion) override {
+        if (this->capacity() == channels::Channel<T>::OPTIONAL_CHANNEL) {
             mark_consumed();
             return emit_all_impl(collector, channel_.get(), consume_, completion);
         }
@@ -242,7 +239,7 @@ public:
     }
 
     /** Upstream: override fun additionalToStringProps(): String = "channel=$channel" */
-    std::string additional_to_string_props() const override {
+    std::string additional_to_string_props() override {
         return std::string("channel=") + std::to_string(
             reinterpret_cast<std::uintptr_t>(channel_.get()));
     }
@@ -286,8 +283,8 @@ template <typename T>
 inline void* emit_all(
     FlowCollector<T>* receiver,
     channels::ReceiveChannel<T>* channel,
-    std::shared_ptr<Continuation<void*>> completion) {
-    return emit_all_impl(receiver, channel, /*consume=*/true, std::move(completion));
+    Continuation<void*>* completion) {
+    return emit_all_impl(receiver, channel, /*consume=*/true, completion);
 }
 
 template <typename T>
@@ -296,7 +293,7 @@ inline void* emit_all_impl(
     FlowCollector<T>* receiver,
     channels::ReceiveChannel<T>* channel,
     bool consume,
-    std::shared_ptr<Continuation<void*>> completion) {
+    Continuation<void*>* completion) {
     // Upstream: ensureActive()
     if (completion) {
         auto ctx = completion->get_context();
@@ -309,7 +306,7 @@ inline void* emit_all_impl(
         auto iterator = channel->iterator();
         while (true) {
             void* has_next_result =
-                dsl::suspend(iterator->has_next(completion.get()));
+                dsl::suspend(iterator->has_next(completion));
             if (intrinsics::is_coroutine_suspended(has_next_result)) {
                 return intrinsics::get_COROUTINE_SUSPENDED();
             }
@@ -318,7 +315,7 @@ inline void* emit_all_impl(
             if (!has_next) break;
             T element = iterator->next();
             void* emit_result =
-                dsl::suspend(receiver->emit(std::move(element), completion.get()));
+                dsl::suspend(receiver->emit(std::move(element), completion));
             if (intrinsics::is_coroutine_suspended(emit_result)) {
                 return intrinsics::get_COROUTINE_SUSPENDED();
             }
