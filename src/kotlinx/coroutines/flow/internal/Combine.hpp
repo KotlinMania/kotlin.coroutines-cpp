@@ -31,12 +31,13 @@
 
 namespace kotlinx::coroutines::flow::internal {
 
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Combine.kt:273
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:273
 template <typename T>
 inline auto null_array_factory() {
     return []() -> std::vector<T>* { return nullptr; };
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Combine.kt:13 (type-erased flow adapter for Array<out Flow<T>>)
 template <typename T>
 inline std::shared_ptr<Flow<std::any>> as_any_flow(std::shared_ptr<Flow<T>> flow) {
     class AnyFlow : public Flow<std::any> {
@@ -79,11 +80,34 @@ inline void* combine_internal(
         std::shared_ptr<std::atomic<size_t>> non_closed;
         std::shared_ptr<std::atomic<bool>> cancelled;
         std::vector<std::thread> threads;
+        std::vector<std::shared_ptr<Flow<std::any>>> flows;
+        std::mutex exception_mutex;
+        std::exception_ptr failure = nullptr;
 
-        explicit CombineFrame(size_t sz)
+        std::vector<std::any> latest_values;
+        std::vector<bool> has_value;
+        size_t remaining_absent_values;
+        std::vector<uint8_t> last_received_epoch;
+        uint8_t current_epoch = 0;
+
+        explicit CombineFrame(size_t sz, std::vector<std::shared_ptr<Flow<std::any>>> fls)
             : result_channel(channels::create_channel<Update>(static_cast<int>(sz))),
               non_closed(std::make_shared<std::atomic<size_t>>(sz)),
-              cancelled(std::make_shared<std::atomic<bool>>(false)) {}
+              cancelled(std::make_shared<std::atomic<bool>>(false)),
+              flows(std::move(fls)),
+              latest_values(sz),
+              has_value(sz, false),
+              remaining_absent_values(sz),
+              last_received_epoch(sz, 0) {}
+
+        void record_exception(std::exception_ptr e) {
+            if (!e) return;
+            std::lock_guard<std::mutex> lock(exception_mutex);
+            if (!failure) {
+                failure = e;
+                cancelled->store(true, std::memory_order_relaxed);
+            }
+        }
 
         ~CombineFrame() {
             cancelled->store(true, std::memory_order_relaxed);
@@ -98,24 +122,11 @@ inline void* combine_internal(
         }
     };
 
-    auto frame = std::make_shared<CombineFrame>(size);
-
-    std::mutex exception_mutex;
-    std::exception_ptr failure = nullptr;
-
-    auto record_exception = [&](std::exception_ptr e) {
-        if (!e) return;
-        std::lock_guard<std::mutex> lock(exception_mutex);
-        if (!failure) {
-            failure = e;
-            frame->cancelled->store(true, std::memory_order_relaxed);
-        }
-    };
-
+    auto frame = std::make_shared<CombineFrame>(size, std::move(flows));
     frame->threads.reserve(size);
 
     for (size_t i = 0; i < size; ++i) {
-        frame->threads.emplace_back([i, &flows, frame, &record_exception]() {
+        frame->threads.emplace_back([i, frame]() {
             try {
                 class ThreadCollector : public FlowCollector<std::any> {
                     size_t idx_;
@@ -141,9 +152,9 @@ inline void* combine_internal(
                     }
                 };
                 ThreadCollector tc(i, frame->result_channel, frame->cancelled);
-                flows[i]->collect(&tc, nullptr);
+                frame->flows[i]->collect(&tc, nullptr);
             } catch (...) {
-                record_exception(std::current_exception());
+                frame->record_exception(std::current_exception());
                 frame->result_channel->cancel(std::current_exception());
             }
             if (frame->non_closed->fetch_sub(1) == 1) {
@@ -152,18 +163,11 @@ inline void* combine_internal(
         });
     }
 
-    std::vector<std::any> latest_values(size);
-    std::vector<bool> has_value(size, false);
-    size_t remaining_absent_values = size;
-
-    std::vector<uint8_t> last_received_epoch(size, 0);
-    uint8_t current_epoch = 0;
-
     void* suspended_result = nullptr;
 
     try {
         while (true) {
-            ++current_epoch;
+            ++frame->current_epoch;
             channels::ChannelResult<Update> res = channels::ChannelResult<Update>::failure();
             while (true) {
                 if (frame->cancelled->load(std::memory_order_relaxed)) break;
@@ -181,22 +185,22 @@ inline void* combine_internal(
             Update element = res.get_or_throw();
             while (true) {
                 size_t index = element.index;
-                if (!has_value[index]) {
-                    has_value[index] = true;
-                    --remaining_absent_values;
+                if (!frame->has_value[index]) {
+                    frame->has_value[index] = true;
+                    --frame->remaining_absent_values;
                 }
-                latest_values[index] = std::move(element.value);
+                frame->latest_values[index] = std::move(element.value);
 
-                if (last_received_epoch[index] == current_epoch) break;
-                last_received_epoch[index] = current_epoch;
+                if (frame->last_received_epoch[index] == frame->current_epoch) break;
+                frame->last_received_epoch[index] = frame->current_epoch;
 
                 auto try_res = frame->result_channel->try_receive();
                 if (!try_res.is_success()) break;
                 element = try_res.get_or_throw();
             }
 
-            if (remaining_absent_values == 0) {
-                void* r = transform(collector, latest_values, completion);
+            if (frame->remaining_absent_values == 0) {
+                void* r = transform(collector, frame->latest_values, completion);
                 if (intrinsics::is_coroutine_suspended(r)) {
                     suspended_result = r;
                     return r;
@@ -204,7 +208,7 @@ inline void* combine_internal(
             }
         }
     } catch (...) {
-        record_exception(std::current_exception());
+        frame->record_exception(std::current_exception());
         frame->result_channel->cancel(std::current_exception());
     }
 
@@ -213,9 +217,9 @@ inline void* combine_internal(
     }
 
     {
-        std::lock_guard<std::mutex> lock(exception_mutex);
-        if (failure) {
-            std::rethrow_exception(failure);
+        std::lock_guard<std::mutex> lock(frame->exception_mutex);
+        if (frame->failure) {
+            std::rethrow_exception(frame->failure);
         }
     }
 
@@ -265,14 +269,31 @@ inline std::shared_ptr<Flow<R>> zip_impl(
         ZipFlowImpl(std::shared_ptr<Flow<T1>> f1, std::shared_ptr<Flow<T2>> f2, std::function<R(T1, T2)> t)
             : flow1_(std::move(f1)), flow2_(std::move(f2)), transform_(std::move(t)) {}
 
-        void* collect(FlowCollector<R>* collector, Continuation<void*>* cont) override {
-            auto second = channels::create_channel<T2>(1);
-            auto collect_job = JobImpl::create(nullptr);
-
-            std::exception_ptr second_exception = nullptr;
+        struct ZipFrame {
+            std::shared_ptr<channels::Channel<T2>> second;
+            std::shared_ptr<JobImpl> collect_job;
             std::mutex exception_mutex;
+            std::exception_ptr second_exception = nullptr;
+            std::thread t2;
 
-            std::thread t2([this, second, &second_exception, &exception_mutex]() {
+            ZipFrame()
+                : second(channels::create_channel<T2>(1)),
+                  collect_job(JobImpl::create(nullptr)) {}
+
+            ~ZipFrame() {
+                if (second) {
+                    second->cancel(nullptr);
+                }
+                if (t2.joinable()) {
+                    t2.detach();
+                }
+            }
+        };
+
+        void* collect(FlowCollector<R>* collector, Continuation<void*>* cont) override {
+            auto frame = std::make_shared<ZipFrame>();
+
+            frame->t2 = std::thread([this, frame]() {
                 try {
                     class ZipSecondCollector : public FlowCollector<T2> {
                         std::shared_ptr<channels::Channel<T2>> ch_;
@@ -288,19 +309,19 @@ inline std::shared_ptr<Flow<R>> zip_impl(
                             return nullptr;
                         }
                     };
-                    ZipSecondCollector sc(second);
+                    ZipSecondCollector sc(frame->second);
                     flow2_->collect(&sc, nullptr);
-                    second->close();
+                    frame->second->close();
                 } catch (...) {
                     {
-                        std::lock_guard<std::mutex> lock(exception_mutex);
-                        second_exception = std::current_exception();
+                        std::lock_guard<std::mutex> lock(frame->exception_mutex);
+                        frame->second_exception = std::current_exception();
                     }
-                    second->close(std::current_exception());
+                    frame->second->close(std::current_exception());
                 }
             });
 
-            second->invoke_on_close([collect_job](std::exception_ptr) {
+            frame->second->invoke_on_close([collect_job = frame->collect_job](std::exception_ptr) {
                 if (collect_job->is_active()) {
                     collect_job->cancel(std::make_exception_ptr(AbortFlowException(collect_job.get())));
                 }
@@ -308,30 +329,27 @@ inline std::shared_ptr<Flow<R>> zip_impl(
 
             class ZipFirstCollector : public FlowCollector<T1> {
                 FlowCollector<R>* collector_;
-                std::shared_ptr<channels::Channel<T2>> second_;
+                std::shared_ptr<ZipFrame> frame_;
                 std::function<R(T1, T2)> transform_;
-                std::shared_ptr<JobImpl> collect_job_;
                 Continuation<void*>* cont_;
             public:
                 ZipFirstCollector(
                     FlowCollector<R>* collector,
-                    std::shared_ptr<channels::Channel<T2>> second,
+                    std::shared_ptr<ZipFrame> frame,
                     std::function<R(T1, T2)> transform,
-                    std::shared_ptr<JobImpl> collect_job,
                     Continuation<void*>* cont)
                     : collector_(collector),
-                      second_(std::move(second)),
+                      frame_(std::move(frame)),
                       transform_(std::move(transform)),
-                      collect_job_(std::move(collect_job)),
                       cont_(cont) {}
 
                 void* emit(T1 value, Continuation<void*>* c) override {
-                    if (!collect_job_->is_active()) {
-                        throw AbortFlowException(collect_job_.get());
+                    if (!frame_->collect_job->is_active()) {
+                        throw AbortFlowException(frame_->collect_job.get());
                     }
                     channels::ChannelResult<T2> other_val_res = channels::ChannelResult<T2>::failure();
-                    while (collect_job_->is_active()) {
-                        other_val_res = second_->try_receive();
+                    while (frame_->collect_job->is_active()) {
+                        other_val_res = frame_->second->try_receive();
                         if (other_val_res.is_success() || other_val_res.is_closed()) break;
                         std::this_thread::yield();
                     }
@@ -340,7 +358,7 @@ inline std::shared_ptr<Flow<R>> zip_impl(
                             auto ex = other_val_res.exception_or_null();
                             if (ex) std::rethrow_exception(ex);
                         }
-                        throw AbortFlowException(collect_job_.get());
+                        throw AbortFlowException(frame_->collect_job.get());
                     }
                     T2 other_value = other_val_res.get_or_throw();
                     R transformed = transform_(std::move(value), std::move(other_value));
@@ -348,32 +366,32 @@ inline std::shared_ptr<Flow<R>> zip_impl(
                 }
             };
 
-            auto first_collector = std::make_shared<ZipFirstCollector>(collector, second, transform_, collect_job, cont);
+            auto first_collector = std::make_shared<ZipFirstCollector>(collector, frame, transform_, cont);
 
             void* res = nullptr;
             try {
                 res = flow1_->collect(first_collector.get(), cont);
             } catch (const AbortFlowException& e) {
-                const_cast<AbortFlowException&>(e).check_ownership(collect_job.get());
+                const_cast<AbortFlowException&>(e).check_ownership(frame->collect_job.get());
             } catch (...) {
-                second->cancel(std::current_exception());
-                if (t2.joinable()) t2.join();
+                frame->second->cancel(std::current_exception());
+                if (frame->t2.joinable()) frame->t2.join();
                 throw;
             }
 
             if (!intrinsics::is_coroutine_suspended(res)) {
-                second->cancel(nullptr);
-                if (t2.joinable()) t2.join();
+                frame->second->cancel(nullptr);
+                if (frame->t2.joinable()) frame->t2.join();
 
                 {
-                    std::lock_guard<std::mutex> lock(exception_mutex);
-                    if (second_exception) {
-                        std::rethrow_exception(second_exception);
+                    std::lock_guard<std::mutex> lock(frame->exception_mutex);
+                    if (frame->second_exception) {
+                        std::rethrow_exception(frame->second_exception);
                     }
                 }
             } else {
-                if (t2.joinable()) {
-                    t2.detach();
+                if (frame->t2.joinable()) {
+                    frame->t2.detach();
                 }
             }
 
