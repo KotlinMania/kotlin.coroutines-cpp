@@ -116,7 +116,7 @@ namespace coroutines {
             auto cont = coroutine->u_cont;
             auto context = cont->get_context();
             
-            Delay* delay = get_delay(*context);
+            Delay* delay = detail::get_delay(*context);
             
             // coroutine.disposeOnCompletion(context.delay.invokeOnTimeout(coroutine.time, coroutine, coroutine.context))
             // Cast coroutine (shared_ptr<TimeoutCoroutine>) to shared_ptr<Runnable>

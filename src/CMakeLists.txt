@@ -51,6 +51,7 @@ target_compile_options(kotlinx-coroutines-core PRIVATE
     -Wno-unused-variable
     -Wno-unused-const-variable
     -Wno-unused-private-field
+    -Wno-gnu-label-as-value
 )
 
 if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN AND TARGET KotlinxSuspendPlugin)
