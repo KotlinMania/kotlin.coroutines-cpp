@@ -9,6 +9,7 @@
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 #include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
+#include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/intrinsics/Cancellable.hpp"
 #include "kotlinx/coroutines/internal/CurrentRunningCoroutine.hpp"
@@ -450,10 +451,29 @@ void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<C
         auto interceptor = completion->get_context()->get(ContinuationInterceptor::type_key);
         if (auto dispatcher = std::dynamic_pointer_cast<CoroutineDispatcher>(interceptor)) {
             if (dispatcher->is_dispatch_needed(*completion->get_context())) {
-                std::function<void()> runner = [b = std::forward<Block>(block), rec = std::forward<R>(receiver), completion, void_cont, execute_block]() mutable {
+                std::function<void()> runner = [start, b = std::forward<Block>(block), rec = std::forward<R>(receiver), completion, void_cont, execute_block]() mutable {
+                    if (start == CoroutineStart::DEFAULT && completion && completion->get_context()) {
+                        auto job_elem = completion->get_context()->get(Job::type_key);
+                        if (auto job = std::dynamic_pointer_cast<Job>(job_elem)) {
+                            if (!job->is_active()) {
+                                completion->resume_with(Result<T>::failure(job->get_cancellation_exception()));
+                                return;
+                            }
+                        }
+                    }
                     execute_block(b, rec, completion, void_cont);
                 };
                 dispatcher->dispatch(*completion->get_context(), std::make_shared<LambdaRunnable<std::function<void()>>>(std::move(runner)));
+                return;
+            }
+        }
+    }
+
+    if (start == CoroutineStart::DEFAULT && completion && completion->get_context()) {
+        auto job_elem = completion->get_context()->get(Job::type_key);
+        if (auto job = std::dynamic_pointer_cast<Job>(job_elem)) {
+            if (!job->is_active()) {
+                completion->resume_with(Result<T>::failure(job->get_cancellation_exception()));
                 return;
             }
         }
@@ -482,10 +502,10 @@ public:
                 intrinsics::start_coroutine_cancellable(block, completion);
                 break;
             case CoroutineStart::ATOMIC:
-                intrinsics::start_coroutine_cancellable(block, completion);
+                intrinsics::start_coroutine(block, completion);
                 break;
             case CoroutineStart::UNDISPATCHED:
-                intrinsics::start_coroutine_cancellable(block, completion);
+                intrinsics::start_coroutine_undispatched(block, completion);
                 break;
             case CoroutineStart::LAZY:
                 break;
@@ -499,10 +519,10 @@ public:
                 intrinsics::start_coroutine_cancellable(block, receiver, completion);
                 break;
             case CoroutineStart::ATOMIC:
-                intrinsics::start_coroutine_cancellable(block, receiver, completion);
+                intrinsics::start_coroutine(block, receiver, completion);
                 break;
             case CoroutineStart::UNDISPATCHED:
-                intrinsics::start_coroutine_cancellable(block, receiver, completion);
+                intrinsics::start_coroutine_undispatched(block, receiver, completion);
                 break;
             case CoroutineStart::LAZY:
                 break;

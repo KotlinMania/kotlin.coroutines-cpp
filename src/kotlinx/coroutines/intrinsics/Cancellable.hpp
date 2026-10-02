@@ -13,6 +13,7 @@
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <functional>
 #include <memory>
 #include <concepts>
@@ -191,6 +192,84 @@ inline void start_coroutine_cancellable(Continuation<void*>* continuation, Conti
             resume_cancellable_with(intercepted, Result<void*>::success(nullptr));
         }
     });
+}
+
+/**
+ * Starts a coroutine in non-cancellable (ATOMIC) mode.
+ * Transliterated from: kotlin.coroutines.intrinsics.startCoroutine
+ */
+template <typename T>
+void start_coroutine(std::function<void*(Continuation<T>*)> block, Continuation<T>* completion) {
+    auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
+    if (!shared_completion) return;
+
+    try {
+        auto coroutine = create_coroutine_unintercepted(block, shared_completion);
+        auto intercepted = std::dynamic_pointer_cast<ContinuationImpl>(coroutine)->intercepted();
+        intercepted->resume_with(Result<void*>::success(nullptr));
+    } catch (...) {
+        auto ex = std::current_exception();
+        shared_completion->resume_with(Result<T>::failure(ex));
+        throw;
+    }
+}
+
+template <typename R, typename T>
+void start_coroutine(std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
+    auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
+    if (!shared_completion) return;
+
+    try {
+        auto coroutine = create_coroutine_unintercepted(block, receiver, shared_completion);
+        auto intercepted = std::dynamic_pointer_cast<ContinuationImpl>(coroutine)->intercepted();
+        intercepted->resume_with(Result<void*>::success(nullptr));
+    } catch (...) {
+        auto ex = std::current_exception();
+        shared_completion->resume_with(Result<T>::failure(ex));
+        throw;
+    }
+}
+
+/**
+ * Starts a coroutine in UNDISPATCHED mode immediately in the current thread.
+ * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13
+ */
+template <typename T>
+void start_coroutine_undispatched(std::function<void*(Continuation<T>*)> block, Continuation<T>* completion) {
+    auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
+    if (!shared_completion) return;
+
+    try {
+        void* result = block(completion);
+        if (!is_coroutine_suspended(result)) {
+            if constexpr (std::is_same_v<T, void*> || std::is_same_v<T, void>) {
+                shared_completion->resume_with(Result<T>::success());
+            } else {
+                shared_completion->resume_with(Result<T>(result));
+            }
+        }
+    } catch (...) {
+        shared_completion->resume_with(Result<T>::failure(std::current_exception()));
+    }
+}
+
+template <typename R, typename T>
+void start_coroutine_undispatched(std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
+    auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
+    if (!shared_completion) return;
+
+    try {
+        void* result = block(receiver, completion);
+        if (!is_coroutine_suspended(result)) {
+            if constexpr (std::is_same_v<T, void*> || std::is_same_v<T, void>) {
+                shared_completion->resume_with(Result<T>::success());
+            } else {
+                shared_completion->resume_with(Result<T>(result));
+            }
+        }
+    } catch (...) {
+        shared_completion->resume_with(Result<T>::failure(std::current_exception()));
+    }
 }
 
 } // namespace kotlinx::coroutines::intrinsics

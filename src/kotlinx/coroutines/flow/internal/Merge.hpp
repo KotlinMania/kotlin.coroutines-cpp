@@ -112,7 +112,7 @@ protected:
                 *previous_flow_ = kotlinx::coroutines::launch(
                     scope_.get(),
                     nullptr,
-                    CoroutineStart::DEFAULT,
+                    CoroutineStart::UNDISPATCHED,
                     [collector = collector_, transform = transform_, value = std::move(value)](CoroutineScope* scope) mutable {
                         auto noop = std::make_shared<NoopContinuation>(scope->get_coroutine_context());
                         void* r = transform(collector, std::move(value), noop.get());
