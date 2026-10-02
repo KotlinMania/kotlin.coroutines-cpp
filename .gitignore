@@ -157,3 +157,12 @@ tasks.json.lock
 
 # Local tool binaries
 ast_distance
+
+# Backups and archives
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.bak
+/backups/
+
