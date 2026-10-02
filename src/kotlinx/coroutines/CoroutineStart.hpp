@@ -357,7 +357,7 @@ enum class CoroutineStart {
 
 /**
  * Invokes the coroutine block with the given start strategy.
- * This mimics the Kotlin `CoroutineStart.invoke` operator.
+ * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-363
  */
 template <typename Block, typename R, typename T>
 void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<Continuation<T>> completion) {
@@ -483,6 +483,7 @@ void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<C
 }
 
 // Extension methods for CoroutineStart
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:346-371
 class CoroutineStartExtensions {
 public:
     /**
@@ -493,6 +494,7 @@ public:
      * - [UNDISPATCHED] uses [startCoroutineUndispatched].
      * - [LAZY] does nothing.
      *
+     * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-363
      * @suppress **This an internal API and should not be used from general code.**
      */
     template <typename T>
@@ -512,6 +514,11 @@ public:
         }
     }
 
+    /**
+     * Starts the corresponding block with receiver as a coroutine with this coroutine start strategy.
+     *
+     * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-363
+     */
     template <typename R, typename T>
     static void invoke(CoroutineStart start, std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
         switch (start) {
@@ -532,6 +539,7 @@ public:
     /**
      * Returns `true` when [LAZY].
      *
+     * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:370
      * @suppress **This an internal API and should not be used from general code.**
      */
     static bool is_lazy(CoroutineStart start) {

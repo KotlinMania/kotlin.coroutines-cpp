@@ -196,7 +196,7 @@ inline void start_coroutine_cancellable(Continuation<void*>* continuation, Conti
 
 /**
  * Starts a coroutine in non-cancellable (ATOMIC) mode.
- * Transliterated from: kotlin.coroutines.intrinsics.startCoroutine
+ * Transliterated from: kotlin-stdlib/common/src/kotlin/coroutines/intrinsics/Intrinsics.kt:114-124
  */
 template <typename T>
 void start_coroutine(std::function<void*(Continuation<T>*)> block, Continuation<T>* completion) {
@@ -214,6 +214,10 @@ void start_coroutine(std::function<void*(Continuation<T>*)> block, Continuation<
     }
 }
 
+/**
+ * Starts a coroutine with receiver in non-cancellable (ATOMIC) mode.
+ * Transliterated from: kotlin-stdlib/common/src/kotlin/coroutines/intrinsics/Intrinsics.kt:126-137
+ */
 template <typename R, typename T>
 void start_coroutine(std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
     auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
@@ -232,7 +236,7 @@ void start_coroutine(std::function<void*(R, Continuation<T>*)> block, R receiver
 
 /**
  * Starts a coroutine in UNDISPATCHED mode immediately in the current thread.
- * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13
+ * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13-31
  */
 template <typename T>
 void start_coroutine_undispatched(std::function<void*(Continuation<T>*)> block, Continuation<T>* completion) {
@@ -253,6 +257,10 @@ void start_coroutine_undispatched(std::function<void*(Continuation<T>*)> block, 
     }
 }
 
+/**
+ * Starts a coroutine with receiver in UNDISPATCHED mode immediately in the current thread.
+ * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13-31
+ */
 template <typename R, typename T>
 void start_coroutine_undispatched(std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
     auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());

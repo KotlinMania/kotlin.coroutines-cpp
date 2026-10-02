@@ -56,6 +56,7 @@ std::string format_concurrency_props(int concurrency);
 void acquire_semaphore_permit(Job* job, kotlinx::coroutines::sync::Semaphore& semaphore);
 void release_semaphore_permit(kotlinx::coroutines::sync::Semaphore& semaphore);
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:9-35
 template <typename T, typename R>
 class ChannelFlowTransformLatest : public ChannelFlowOperator<T, R> {
 public:
@@ -75,6 +76,7 @@ public:
     }
 
 protected:
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:19-34
     void* flow_collect(FlowCollector<R>* collector, Continuation<void*>* continuation) override {
         // Kotlin:
         // coroutineScope {
