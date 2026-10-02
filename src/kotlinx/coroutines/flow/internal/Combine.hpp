@@ -74,9 +74,31 @@ inline void* combine_internal(
         std::any value;
     };
 
-    auto result_channel = channels::create_channel<Update>(static_cast<int>(size));
-    auto non_closed = std::make_shared<std::atomic<size_t>>(size);
-    auto cancelled = std::make_shared<std::atomic<bool>>(false);
+    struct CombineFrame {
+        std::shared_ptr<channels::Channel<Update>> result_channel;
+        std::shared_ptr<std::atomic<size_t>> non_closed;
+        std::shared_ptr<std::atomic<bool>> cancelled;
+        std::vector<std::thread> threads;
+
+        explicit CombineFrame(size_t sz)
+            : result_channel(channels::create_channel<Update>(static_cast<int>(sz))),
+              non_closed(std::make_shared<std::atomic<size_t>>(sz)),
+              cancelled(std::make_shared<std::atomic<bool>>(false)) {}
+
+        ~CombineFrame() {
+            cancelled->store(true, std::memory_order_relaxed);
+            if (result_channel) {
+                result_channel->cancel(nullptr);
+            }
+            for (auto& t : threads) {
+                if (t.joinable()) {
+                    t.detach();
+                }
+            }
+        }
+    };
+
+    auto frame = std::make_shared<CombineFrame>(size);
 
     std::mutex exception_mutex;
     std::exception_ptr failure = nullptr;
@@ -86,15 +108,14 @@ inline void* combine_internal(
         std::lock_guard<std::mutex> lock(exception_mutex);
         if (!failure) {
             failure = e;
-            cancelled->store(true, std::memory_order_relaxed);
+            frame->cancelled->store(true, std::memory_order_relaxed);
         }
     };
 
-    std::vector<std::thread> threads;
-    threads.reserve(size);
+    frame->threads.reserve(size);
 
     for (size_t i = 0; i < size; ++i) {
-        threads.emplace_back([i, &flows, result_channel, non_closed, cancelled, &record_exception]() {
+        frame->threads.emplace_back([i, &flows, frame, &record_exception]() {
             try {
                 class ThreadCollector : public FlowCollector<std::any> {
                     size_t idx_;
@@ -119,14 +140,14 @@ inline void* combine_internal(
                         return nullptr;
                     }
                 };
-                ThreadCollector tc(i, result_channel, cancelled);
+                ThreadCollector tc(i, frame->result_channel, frame->cancelled);
                 flows[i]->collect(&tc, nullptr);
             } catch (...) {
                 record_exception(std::current_exception());
-                result_channel->cancel(std::current_exception());
+                frame->result_channel->cancel(std::current_exception());
             }
-            if (non_closed->fetch_sub(1) == 1) {
-                result_channel->close();
+            if (frame->non_closed->fetch_sub(1) == 1) {
+                frame->result_channel->close();
             }
         });
     }
@@ -145,8 +166,8 @@ inline void* combine_internal(
             ++current_epoch;
             channels::ChannelResult<Update> res = channels::ChannelResult<Update>::failure();
             while (true) {
-                if (cancelled->load(std::memory_order_relaxed)) break;
-                res = result_channel->try_receive();
+                if (frame->cancelled->load(std::memory_order_relaxed)) break;
+                res = frame->result_channel->try_receive();
                 if (res.is_success() || res.is_closed()) break;
                 std::this_thread::yield();
             }
@@ -169,7 +190,7 @@ inline void* combine_internal(
                 if (last_received_epoch[index] == current_epoch) break;
                 last_received_epoch[index] = current_epoch;
 
-                auto try_res = result_channel->try_receive();
+                auto try_res = frame->result_channel->try_receive();
                 if (!try_res.is_success()) break;
                 element = try_res.get_or_throw();
             }
@@ -184,10 +205,10 @@ inline void* combine_internal(
         }
     } catch (...) {
         record_exception(std::current_exception());
-        result_channel->cancel(std::current_exception());
+        frame->result_channel->cancel(std::current_exception());
     }
 
-    for (auto& t : threads) {
+    for (auto& t : frame->threads) {
         if (t.joinable()) t.join();
     }
 
@@ -327,11 +348,11 @@ inline std::shared_ptr<Flow<R>> zip_impl(
                 }
             };
 
-            ZipFirstCollector first_collector(collector, second, transform_, collect_job, cont);
+            auto first_collector = std::make_shared<ZipFirstCollector>(collector, second, transform_, collect_job, cont);
 
             void* res = nullptr;
             try {
-                res = flow1_->collect(&first_collector, cont);
+                res = flow1_->collect(first_collector.get(), cont);
             } catch (const AbortFlowException& e) {
                 const_cast<AbortFlowException&>(e).check_ownership(collect_job.get());
             } catch (...) {
@@ -340,13 +361,19 @@ inline std::shared_ptr<Flow<R>> zip_impl(
                 throw;
             }
 
-            second->cancel(nullptr);
-            if (t2.joinable()) t2.join();
+            if (!intrinsics::is_coroutine_suspended(res)) {
+                second->cancel(nullptr);
+                if (t2.joinable()) t2.join();
 
-            {
-                std::lock_guard<std::mutex> lock(exception_mutex);
-                if (second_exception) {
-                    std::rethrow_exception(second_exception);
+                {
+                    std::lock_guard<std::mutex> lock(exception_mutex);
+                    if (second_exception) {
+                        std::rethrow_exception(second_exception);
+                    }
+                }
+            } else {
+                if (t2.joinable()) {
+                    t2.detach();
                 }
             }
 
