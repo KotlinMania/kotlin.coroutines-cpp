@@ -127,16 +127,20 @@ struct __kxs_coroutine_my_suspend_fn : public ContinuationImpl {
         goto *_label;  // computed goto (indirectbr in LLVM)
 
     __kxs_start:
+        (void)result.get_or_throw();
         std::cout << "Before suspend" << std::endl;
 
         // At suspension point:
         _label = &&__kxs_resume0;  // store block address
         {
-            void* _tmp = yield(this->completion);
+            // Suspended operation must receive this frame's continuation so resumption
+            // re-enters this frame rather than skipping directly to parent completion.
+            void* _tmp = yield(shared_from_this());
             if (is_coroutine_suspended(_tmp)) return COROUTINE_SUSPENDED;
         }
 
     __kxs_resume0:
+        (void)result.get_or_throw();
         std::cout << "After suspend" << std::endl;
         return nullptr;
     }

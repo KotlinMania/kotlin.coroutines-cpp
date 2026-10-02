@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Last Updated:** December 10, 2025  
 **Author:** Sydney Bach  
-**Related Documents:** [SUSPEND_IMPLEMENTATION.md](SUSPEND_IMPLEMENTATION.md), [COMPREHENSIVE_AUDIT_REPORT.md](../COMPREHENSIVE_AUDIT_REPORT.md), [TODO_CHECKLIST.md](TODO_CHECKLIST.md)
+**Related Documents:** [SUSPEND_IMPLEMENTATION.md](SUSPEND_IMPLEMENTATION.md), [IR_SUSPEND_LOWERING_SPEC.md](IR_SUSPEND_LOWERING_SPEC.md), [IR_HANDOFF_REVIEW.md](audits/IR_HANDOFF_REVIEW.md), [COMPREHENSIVE_AUDIT_REPORT.md](audits/COMPREHENSIVE_AUDIT_REPORT.md), [TODO_CHECKLIST.md](audits/TODO_CHECKLIST.md)
 
 ---
 
@@ -17,7 +17,7 @@ The kotlinx.coroutines-cpp implementation demonstrates **strong engineering fund
 - Excellent core suspend infrastructure (ContinuationImpl, state machines)
 - Strong Job system and cancellation propagation
 - Proper memory safety with shared_ptr usage
-- State machine compilation → LLVM `indirectbr` optimization
+- State machine compilation → Clang computed gotos (`Suspend.hpp`) and LLVM `indirectbr` + `blockaddress` lowering with compiler launcher marker cleanup (`kxs_compile.py` / `kxs_transform_ir.py` / `kxs_inject`)
 
 **⚠️ Critical Issues:**
 - Flow operations don't actually suspend (defeats purpose of reactive streams)
@@ -423,38 +423,38 @@ void* with_context(std::shared_ptr<CoroutineContext> context, F&& block, Continu
 
 ### LLVM Integration Approach
 
-#### State Machine Pattern
-The Clang plugin generates state machines following this pattern:
+#### State Machine Pattern (Computed Goto - Kotlin/Native Parity)
+State machines use Clang computed-goto macros in `src/kotlinx/coroutines/dsl/Suspend.hpp` following this pattern:
 ```cpp
-switch (this->_label) {
-case 0:
-    this->_label = 1;
-    {
-        void* _tmp = suspend_call(completion);
-        if (is_coroutine_suspended(_tmp)) return COROUTINE_SUSPENDED;
-    }
-    [[fallthrough]];
-case 1:
-    // Continue execution
-}
+coroutine_begin(this)
+// ...
+coroutine_yield(this, delay(100, this));
+// ...
+coroutine_end(this)
 ```
 
-This compiles to efficient LLVM `indirectbr` instructions with -O2, exactly matching Kotlin Native's approach.
+This compiles directly to LLVM `indirectbr` + `blockaddress`, matching Kotlin/Native's address-dispatch pattern.
 
-#### Phase 1: Plugin-Generated State Machines (Current)
-- Clang plugin generates state machine code
-- Plugin emits `.kx.cpp` sidecar files
-- Standard switch-based dispatch, optimized by LLVM
+#### Phase 1: Macros + Computed Goto with IR Cleanup [COMPLETE]
+- `coroutine_begin/yield/end` macros in `src/kotlinx/coroutines/dsl/Suspend.hpp`
+- Address dispatch using `void* _label` with computed gotos compiling directly to LLVM `indirectbr` + `blockaddress`
+- Reserved `__kxs_suspend_point(int id) noexcept` IR marker calls
+- Compiler launcher `cmake/Modules/kxs_compile.py` wrapping conservative IR cleanup (`kxs_transform_ir.py`) and optional native tool `kxs_inject`
+- Manual member field spilling in `ContinuationImpl` classes
+- Verified via `test_suspension_core`, `test_ir_pipeline`, and `test_kxs_inject`
 
-#### Phase 2: Kotlin/Native-shaped Lowering (Medium-term)
-- Prefer computed-goto style dispatch where available (labels-as-values) for closer Kotlin/Native shape
-- Implement liveness-based spilling + save/restore scheduling parity
-- Expand plugin lowering coverage (try/finally, eval order, nested suspendable expressions)
+#### Phase 2: Compiler-Driven Automatic Spilling [NEXT]
+- Liveness analysis to detect variables crossing suspend points
+- Automatic coroutine frame struct generation and spill code insertion
+- Eliminates manual field declarations in `ContinuationImpl`
 
-#### Phase 3: Full LLVM Integration (Long-term)
-- Custom LLVM optimization passes
-- Remove manual state machine complexity
-- Achieve maximum performance parity
+#### Phase 3: Tail-Suspend Optimization [FUTURE]
+- Detect tail suspend calls and bypass state machine generation
+- Direct delegation to downstream continuation
+
+#### Phase 4: Full AST / DSL Plugin Rewriting [EXPERIMENTAL / FUTURE]
+- Experimental Clang AST plugin (`src/kotlinx/coroutines/tools/clang_suspend_plugin/`)
+- Native `[[suspend]]` attribute rewriting and language keyword integration
 
 ### Memory Management Strategy
 
@@ -557,15 +557,12 @@ Use the comprehensive audit data:
 #### Build and Test Verification
 ```bash
 # Build the project
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -- -j4
 
-# Run existing tests
-./test_cancellation
-
-# Run comprehensive test suite
-ctest --output-on-failure
+# Run all tests, or targeted suspension core and IR pipeline suites
+ctest --test-dir build --output-on-failure
+ctest --test-dir build -R '^(test_suspension_core|test_ir_pipeline|test_kxs_inject)$' --output-on-failure
 ```
 
 #### Performance Benchmarks

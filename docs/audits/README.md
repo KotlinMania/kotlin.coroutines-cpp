@@ -6,6 +6,17 @@ This directory contains comprehensive audit documentation for the kotlinx.corout
 
 ## 📊 Overview Documents
 
+### [IR_HANDOFF_REVIEW.md](IR_HANDOFF_REVIEW.md)
+**Purpose:** IR lowering, compiler launcher, tooling boundaries, and coroutine handoffs audit
+**Updated:** October 2026
+**Contents:**
+- Repaired findings across native tool (kxs_inject), CMake compiler launcher (kxs_compile.py), text cleanup (kxs_transform_ir.py)
+- Ground truth from Kotlin/Native compiler (tmp/kotlin) and library snapshot (tmp/kotlinx.coroutines)
+- Validation across test_suspension_core, test_ir_pipeline, test_kxs_inject
+- Delineation of tested cleanup/macro contracts vs compiler-driven automatic spilling
+
+**Read this** for IR transformation, suspension lowering, and toolchain mechanics.
+
 ### [COMPREHENSIVE_AUDIT_REPORT.md](COMPREHENSIVE_AUDIT_REPORT.md)
 **Purpose:** Definitive reference for overall implementation status
 **Updated:** December 10, 2025
@@ -218,8 +229,9 @@ Run before updating audits:
 # Build all
 cmake --build build -- -j4
 
-# Run tests
+# Run all tests, or targeted IR and suspension suites
 ctest
+ctest --test-dir build -R '^(test_suspension_core|test_ir_pipeline|test_kxs_inject)$' --output-on-failure
 
 # Check namespace consistency
 python analyze_packages.py
