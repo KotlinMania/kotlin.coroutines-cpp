@@ -17,6 +17,18 @@ This directory contains comprehensive audit documentation for the kotlinx.corout
 
 **Read this** for IR transformation, suspension lowering, and toolchain mechanics.
 
+### [IR_PORTING_PARITY_AUDIT.md](IR_PORTING_PARITY_AUDIT.md)
+**Purpose:** Parity audit comparing Kotlin compiler lowering with C++ coroutine transliteration and future porting rules
+**Updated:** October 2026
+**Contents:**
+- Ground truth lowering phases (NativeSuspendFunctionLowering, CoroutinesVarSpillingLowering, IrToBitcode, ContinuationImpl)
+- The 5 Golden Rules of C++ coroutine transliteration
+- Critical defect analysis across Flow operators (Collect, Collection, Count, Logic, Transform) and Channels (BufferedChannel)
+- Canonical C++ implementation templates (TerminalFrame, ContinuationBridge, SuspendMacro)
+- Future porting checklist and verification rules
+
+**Read this** before porting any suspending functions, flow operators, or channel operations.
+
 ### [COMPREHENSIVE_AUDIT_REPORT.md](COMPREHENSIVE_AUDIT_REPORT.md)
 **Purpose:** Definitive reference for overall implementation status
 **Updated:** December 10, 2025
