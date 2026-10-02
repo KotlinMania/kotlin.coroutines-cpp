@@ -172,19 +172,21 @@ kxs_enable_coroutine_transform(transformed)
         self.assertNotIn(b'call void @__kxs_suspend_point', ir)
         self.assertNotIn(b'invoke void @__kxs_suspend_point', ir)
         object_file = main_ir.with_name(main_ir.name[:-len('.kxs.cleaned.ll')])
-        before = object_file.stat().st_mtime_ns
-        # macOS's bundled Make compares whole-second modification times.
-        time.sleep(max(0, before // 1_000_000_000 + 1.1 - time.time()))
+        all_objects = list(build.rglob('*.o'))
+        max_mtime = max((p.stat().st_mtime_ns for p in all_objects), default=object_file.stat().st_mtime_ns)
+        # macOS's bundled Make compares whole-second modification times; ensure sleep crosses into next whole second.
+        time.sleep(max(1.1, (max_mtime // 1_000_000_000) + 1.1 - time.time()))
         header.write_text('inline constexpr int pipeline_value = 8;\n')
         self.run_command([OPTIONS.cmake, '--build', str(build), '--config', config, '-j', '2'])
-        self.assertGreater(object_file.stat().st_mtime_ns, before, 'header dependency was lost')
+        self.assertGreater(object_file.stat().st_mtime_ns, max_mtime, 'header dependency was lost')
         self.assertEqual(self.run_command([str(binary_dir / 'transformed')]), baseline)
-        before = object_file.stat().st_mtime_ns
-        time.sleep(max(0, before // 1_000_000_000 + 1.1 - time.time()))
+        all_objects = list(build.rglob('*.o'))
+        max_mtime = max((p.stat().st_mtime_ns for p in all_objects), default=object_file.stat().st_mtime_ns)
+        time.sleep(max(1.1, (max_mtime // 1_000_000_000) + 1.1 - time.time()))
         with (modules / 'kxs_transform_ir.py').open('a') as helper:
             helper.write('\n# Exercise helper dependency tracking.\n')
         self.run_command([OPTIONS.cmake, '--build', str(build), '--config', config, '-j', '2'])
-        self.assertGreater(object_file.stat().st_mtime_ns, before, 'helper dependency was lost')
+        self.assertGreater(object_file.stat().st_mtime_ns, max_mtime, 'helper dependency was lost')
 
     def test_make_debug_pipeline(self):
         self.build_fixture('Unix Makefiles', 'Debug')
