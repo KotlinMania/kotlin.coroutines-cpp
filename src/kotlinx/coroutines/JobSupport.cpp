@@ -421,7 +421,7 @@ namespace kotlinx {
             bool cancel_parent(std::exception_ptr cause);
 
             bool try_put_node_into_list(JobSupport *job, JobNode *node,
-                                        std::function<bool(Incomplete *, NodeList *)> try_add);
+                                        std::function<int(Incomplete *, NodeList *)> try_add);
 
             void remove_node(JobNode *node);
 
@@ -465,7 +465,11 @@ namespace kotlinx {
         JobSupport::~JobSupport() = default;
 
         std::shared_ptr<Job> JobSupport::get_parent() const {
-            return impl_->parent;
+            auto *handle = impl_->parent_handle.load(std::memory_order_acquire);
+            if (auto *child_handle = dynamic_cast<ChildHandle *>(handle)) {
+                return child_handle->get_parent();
+            }
+            return nullptr;
         }
 
         bool JobSupport::is_active() const {
@@ -601,8 +605,8 @@ namespace kotlinx {
 
             // Add the node to the completion handler list
             bool added = impl_->try_put_node_into_list(this, node,
-                                                       [node](Incomplete *state, NodeList *list) -> bool {
-                                                           return list->add_last(node);
+                                                       [node](Incomplete *state, NodeList *list) -> int {
+                                                           return list->add_last(node) ? 1 : 0;
                                                        });
 
             if (!added) {
@@ -678,8 +682,8 @@ namespace kotlinx {
 
             // Add the node to the completion handler list
             bool added = impl_->try_put_node_into_list(this, node,
-                                                       [node](Incomplete *state, NodeList *list) -> bool {
-                                                           return list->add_last(node);
+                                                       [node](Incomplete *state, NodeList *list) -> int {
+                                                           return list->add_last(node) ? 1 : 0;
                                                        });
 
             if (!added) {
@@ -741,8 +745,8 @@ namespace kotlinx {
             node->job = this;
 
             bool added = impl_->try_put_node_into_list(this, node,
-                                                       [node](Incomplete *state, NodeList *list) -> bool {
-                                                           return list->add_last(node);
+                                                       [node](Incomplete *state, NodeList *list) -> int {
+                                                           return list->add_last(node) ? 1 : 0;
                                                        });
 
             if (added) {
@@ -782,24 +786,30 @@ namespace kotlinx {
             bool invoke_immediately,
             JobNode *node) {
             node->job = this;
+            bool already_handled = false;
             bool added = impl_->try_put_node_into_list(this, node,
-                                                       [invoke_immediately, node](
-                                                   Incomplete *state, NodeList *list) -> bool {
+                                                       [&already_handled, invoke_immediately, node](
+                                                   Incomplete *state, NodeList *list) -> int {
                                                            if (node->get_on_cancelling()) {
                                                                auto *finishing = dynamic_cast<Finishing *>(state);
                                                                auto root_cause = finishing
                                                                    ? finishing->get_root_cause()
                                                                    : nullptr;
                                                                if (root_cause == nullptr) {
-                                                                   return list->add_last(node);
+                                                                   return list->add_last(node) ? 1 : 0;
                                                                } else {
                                                                    if (invoke_immediately) node->invoke(root_cause);
-                                                                   return false;
+                                                                   already_handled = true;
+                                                                   return -1;
                                                                }
                                                            } else {
-                                                               return list->add_last(node);
+                                                               return list->add_last(node) ? 1 : 0;
                                                            }
                                                        });
+            if (already_handled) {
+                delete node;
+                return non_disposable_handle();
+            }
             if (added) {
                 return std::shared_ptr<DisposableHandle>(node, [](DisposableHandle *) {});
             }
@@ -1193,7 +1203,7 @@ namespace kotlinx {
         }
 
         bool JobSupport::Impl::try_put_node_into_list(JobSupport *job, JobNode *node,
-                                                      std::function<bool(Incomplete *, NodeList *)> try_add) {
+                                                      std::function<int(Incomplete *, NodeList *)> try_add) {
             while (true) {
                 auto *s = state.load(std::memory_order_acquire);
 
@@ -1214,7 +1224,10 @@ namespace kotlinx {
                             continue;
                         }
                     } else {
-                        if (try_add(incomplete, list)) return true;
+                        int res = try_add(incomplete, list);
+                        if (res > 0) return true;
+                        if (res < 0) return false;
+                        // res == 0: retry loop
                     }
                 } else {
                     return false; // Completed
@@ -1290,14 +1303,23 @@ namespace kotlinx {
                 }
             }
 
+            std::exception_ptr notify_root_cause = nullptr;
             {
                 std::lock_guard<std::recursive_mutex> lock(finishing->mutex);
                 if (finishing->is_completing.load()) return COMPLETING_ALREADY;
                 finishing->is_completing.store(true);
 
+                bool was_cancelling = finishing->is_cancelling();
                 if (auto *ex = dynamic_cast<CompletedExceptionally *>(proposed)) {
                     finishing->add_exception_locked(ex->cause);
                 }
+                if (!was_cancelling) {
+                    notify_root_cause = finishing->get_root_cause();
+                }
+            }
+
+            if (notify_root_cause) {
+                notify_cancelling(job, list, notify_root_cause);
             }
 
             // Check for children

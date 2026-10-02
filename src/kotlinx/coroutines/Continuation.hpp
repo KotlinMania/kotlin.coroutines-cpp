@@ -207,9 +207,58 @@ std::shared_ptr<Continuation<T>> make_continuation(
 }
 
 /**
+ * Adapter that type-erases any Continuation<T> into a Continuation<void*>.
+ */
+class ContinuationVoidAdapter : public Continuation<void*> {
+    std::function<std::shared_ptr<CoroutineContext>()> get_context_fn_;
+    std::function<void(Result<void*>)> resume_fn_;
+public:
+    template<typename T>
+    explicit ContinuationVoidAdapter(std::shared_ptr<Continuation<T>> cont) {
+        if (cont) {
+            get_context_fn_ = [cont]() { return cont->get_context(); };
+            resume_fn_ = [cont](Result<void*> res) {
+                if (res.is_failure()) {
+                    cont->resume_with(Result<T>::failure(res.exception_or_null()));
+                } else {
+                    if constexpr (std::is_same_v<T, void*>) {
+                        cont->resume_with(Result<void*>::success(res.get_or_throw()));
+                    } else if constexpr (std::is_void_v<T>) {
+                        cont->resume_with(Result<void>::success());
+                    } else {
+                        cont->resume_with(Result<T>::success(T{}));
+                    }
+                }
+            };
+        }
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return get_context_fn_ ? get_context_fn_() : nullptr;
+    }
+
+    void resume_with(Result<void*> result) override {
+        if (resume_fn_) {
+            resume_fn_(result);
+        }
+    }
+};
+
+template<typename T>
+inline std::shared_ptr<Continuation<void*>> to_void_continuation(std::shared_ptr<Continuation<T>> cont) {
+    if (!cont) return nullptr;
+    if constexpr (std::is_same_v<T, void*>) {
+        return cont;
+    } else {
+        return std::make_shared<ContinuationVoidAdapter>(cont);
+    }
+}
+
+/**
  * Empty coroutine context singleton.
  */
 // EmptyCoroutineContext moved to context_impl.hpp
 
 } // namespace coroutines
 } // namespace kotlinx
+

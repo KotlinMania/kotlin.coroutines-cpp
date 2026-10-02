@@ -128,6 +128,12 @@ namespace kotlinx {
             return 0;
         }
 
+        bool BlockingEventLoop::is_empty() const {
+            if (!EventLoop::is_empty()) return false;
+            std::lock_guard<std::mutex> lock(mtx);
+            return task_queue.empty();
+        }
+
         void BlockingEventLoop::run() {
             while (!quit) {
                 if (process_next_event() == LLONG_MAX) {

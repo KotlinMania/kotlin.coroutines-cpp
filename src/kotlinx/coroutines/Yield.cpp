@@ -16,6 +16,7 @@
 #include "kotlinx/coroutines/EventLoop.hpp"
 #include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/Job.hpp"
+#include "kotlinx/coroutines/internal/CurrentRunningCoroutine.hpp"
 #include <thread>
 
 namespace kotlinx {
@@ -23,11 +24,17 @@ namespace coroutines {
 
 // Legacy function - just does OS thread yield or event loop step
 void yield_coroutine() {
-    if (auto loop = ThreadLocalEventLoop::current_or_null()) {
+    auto loop = ThreadLocalEventLoop::current_or_null();
+    if (loop && !loop->is_empty()) {
         loop->process_next_event();
-    } else {
-        std::this_thread::yield();
+        return;
     }
+    if (auto cont = internal::CurrentRunningCoroutine::current) {
+        yield(cont);
+        internal::CurrentRunningCoroutine::suspended = true;
+        return;
+    }
+    std::this_thread::yield();
 }
 
 /**
@@ -44,8 +51,18 @@ public:
 
     void run() override {
         if (continuation_) {
-            // Resume with Unit result (nullptr = success with Unit)
-            continuation_->resume_with(Result<void*>::success(nullptr));
+            auto context = continuation_->get_context();
+            std::shared_ptr<Job> job = nullptr;
+            if (context) {
+                auto job_element = context->get(Job::type_key);
+                job = std::dynamic_pointer_cast<Job>(job_element);
+            }
+            if (job && !job->is_active()) {
+                continuation_->resume_with(Result<void*>::failure(job->get_cancellation_exception()));
+            } else {
+                // Resume with Unit result (nullptr = success with Unit)
+                continuation_->resume_with(Result<void*>::success(nullptr));
+            }
         }
     }
 };

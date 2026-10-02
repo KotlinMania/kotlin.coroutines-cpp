@@ -8,8 +8,10 @@
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 #include "kotlinx/coroutines/Runnable.hpp"
+#include "kotlinx/coroutines/Unit.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/intrinsics/Cancellable.hpp"
+#include "kotlinx/coroutines/internal/CurrentRunningCoroutine.hpp"
 
 namespace kotlinx::coroutines {
 
@@ -365,26 +367,91 @@ void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<C
         return;
     }
 
+    auto void_cont = to_void_continuation(completion);
+
+    auto execute_block = [](auto& b, auto& rec, std::shared_ptr<Continuation<T>> comp, std::shared_ptr<Continuation<void*>> vc) {
+        internal::CurrentRunningCoroutineGuard guard(vc);
+        try {
+            if constexpr (std::is_invocable_v<Block, R, std::shared_ptr<Continuation<void*>>>) {
+                using Ret = std::invoke_result_t<Block, R, std::shared_ptr<Continuation<void*>>>;
+                if constexpr (std::is_void_v<Ret>) {
+                    std::invoke(b, rec, vc);
+                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
+                        if constexpr (std::is_same_v<T, Unit>) {
+                            comp->resume_with(Result<T>(Unit{}));
+                        } else {
+                            comp->resume_with(Result<T>::success());
+                        }
+                    }
+                } else {
+                    auto result = std::invoke(b, rec, vc);
+                    if constexpr (std::is_pointer_v<Ret>) {
+                        if (intrinsics::is_coroutine_suspended(result)) {
+                            return;
+                        }
+                    }
+                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
+                        comp->resume_with(Result<T>(result));
+                    }
+                }
+            } else if constexpr (std::is_invocable_v<Block, R, Continuation<void*>*>) {
+                using Ret = std::invoke_result_t<Block, R, Continuation<void*>*>;
+                if constexpr (std::is_void_v<Ret>) {
+                    std::invoke(b, rec, vc ? vc.get() : nullptr);
+                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
+                        if constexpr (std::is_same_v<T, Unit>) {
+                            comp->resume_with(Result<T>(Unit{}));
+                        } else {
+                            comp->resume_with(Result<T>::success());
+                        }
+                    }
+                } else {
+                    auto result = std::invoke(b, rec, vc ? vc.get() : nullptr);
+                    if constexpr (std::is_pointer_v<Ret>) {
+                        if (intrinsics::is_coroutine_suspended(result)) {
+                            return;
+                        }
+                    }
+                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
+                        comp->resume_with(Result<T>(result));
+                    }
+                }
+            } else if constexpr (std::is_invocable_v<Block, R>) {
+                using Ret = std::invoke_result_t<Block, R>;
+                if constexpr (std::is_void_v<Ret>) {
+                    std::invoke(b, rec);
+                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
+                        if constexpr (std::is_same_v<T, Unit>) {
+                            comp->resume_with(Result<T>(Unit{}));
+                        } else {
+                            comp->resume_with(Result<T>::success());
+                        }
+                    }
+                } else {
+                    auto result = std::invoke(b, rec);
+                    if constexpr (std::is_pointer_v<Ret>) {
+                        if (intrinsics::is_coroutine_suspended(result)) {
+                            return;
+                        }
+                    }
+                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
+                        comp->resume_with(Result<T>(result));
+                    }
+                }
+            }
+        } catch (...) {
+            if (comp) {
+                comp->resume_with(Result<T>(std::current_exception()));
+            }
+        }
+    };
+
     if ((start == CoroutineStart::DEFAULT || start == CoroutineStart::ATOMIC) && completion && completion->get_context()) {
         auto interceptor = completion->get_context()->get(ContinuationInterceptor::type_key);
         if (auto dispatcher = std::dynamic_pointer_cast<CoroutineDispatcher>(interceptor)) {
             if (dispatcher->is_dispatch_needed(*completion->get_context())) {
-                std::function<void()> runner = [b = std::forward<Block>(block), rec = std::forward<R>(receiver), completion]() mutable {
-                    try {
-                        if constexpr (std::is_invocable_v<Block, R>) {
-                            auto result = std::invoke(b, rec);
-                            if (completion) {
-                                completion->resume_with(Result<T>(result));
-                            }
-                        }
-                    } catch (const intrinsics::SuspendSignal&) {
-                        // Coroutine suspended, do not resume completion
-                        return;
-                    } catch (...) {
-                        if (completion) {
-                            completion->resume_with(Result<T>(std::current_exception()));
-                        }
-                    }
+                std::function<void()> runner = [b = std::forward<Block>(block), rec = std::forward<R>(receiver), completion, void_cont, execute_block]() mutable {
+                    execute_block(b, rec, completion, void_cont);
                 };
                 dispatcher->dispatch(*completion->get_context(), std::make_shared<LambdaRunnable<std::function<void()>>>(std::move(runner)));
                 return;
@@ -392,22 +459,7 @@ void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<C
         }
     }
 
-    try {
-        // Execute the block immediately for UNDISPATCHED (or unconfined/no-dispatch)
-        if constexpr (std::is_invocable_v<Block, R>) {
-            auto result = std::invoke(std::forward<Block>(block), std::forward<R>(receiver));
-            if (completion) {
-                completion->resume_with(Result<T>(result));
-            }
-        }
-    } catch (const intrinsics::SuspendSignal&) {
-        // Coroutine suspended, do not resume completion
-        return;
-    } catch (...) {
-        if (completion) {
-            completion->resume_with(Result<T>(std::current_exception()));
-        }
-    }
+    execute_block(block, receiver, completion, void_cont);
 }
 
 // Extension methods for CoroutineStart

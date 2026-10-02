@@ -71,6 +71,7 @@ struct BlockingEventLoop : public EventLoop {
 
     void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override;
     long long process_next_event() override;
+    bool is_empty() const override;
     void run();
     void shutdown() override;
 };

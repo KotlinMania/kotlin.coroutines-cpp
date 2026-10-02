@@ -260,8 +260,7 @@ namespace kotlinx::coroutines {
                 // Actually parentContext.get(Job::Key) returns Element which IS a Job.
                 auto parent_job = std::dynamic_pointer_cast<Job>(parent_element);
                 if (parent_job) {
-                    parent_job->start();
-                    auto handle = parent_job->attach_child(std::dynamic_pointer_cast<ChildJob>(JobSupport::shared_from_this()));
+                    init_parent_job(parent_job);
                 }
             }
         }

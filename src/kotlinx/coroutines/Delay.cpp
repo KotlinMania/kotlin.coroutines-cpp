@@ -94,7 +94,26 @@ namespace kotlinx {
     namespace coroutines {
 
         void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> continuation) {
-            return delay(time_millis, continuation.get());
+            if (time_millis <= 0) return nullptr;
+
+            return suspend_cancellable_coroutine<void>([time_millis](CancellableContinuation<void>& cont) {
+                auto context = cont.get_context();
+                Delay* delay_impl = nullptr;
+                auto element = context->get(ContinuationInterceptor::type_key);
+                if (element) {
+                    delay_impl = dynamic_cast<Delay*>(element.get());
+                }
+
+                if (delay_impl) {
+                    if (time_millis < std::numeric_limits<long long>::max()) {
+                        delay_impl->schedule_resume_after_delay(time_millis, cont);
+                    }
+                } else {
+                    if (time_millis < std::numeric_limits<long long>::max()) {
+                        get_default_delay().schedule_resume_after_delay(time_millis, cont);
+                    }
+                }
+            }, continuation);
         }
 
         void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void*>> continuation) {

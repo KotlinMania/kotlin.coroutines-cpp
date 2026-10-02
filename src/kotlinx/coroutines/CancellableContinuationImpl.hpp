@@ -704,11 +704,11 @@ public:
         auto child_handler = std::make_shared<ChildContinuation<T>>(this);
         child_handler->job = dynamic_cast<JobSupport*>(parent.get());
 
-        // val handle = parent.invokeOnCompletion(handler = ChildContinuation(this))
+        auto self = this->shared_from_this();
         auto handle = parent->invoke_on_completion(
             true,  // onCancelling = true
-            false, // invokeImmediately = false
-            [child_handler](std::exception_ptr cause) {
+            true,  // invokeImmediately = true
+            [child_handler, self](std::exception_ptr cause) {
                 child_handler->invoke(cause);
             }
         );
@@ -1301,11 +1301,11 @@ public:
         auto child_handler = std::make_shared<ChildContinuation<void>>(this);
         child_handler->job = dynamic_cast<JobSupport*>(parent.get());
 
-        // val handle = parent.invokeOnCompletion(handler = ChildContinuation(this))
+        auto self = this->shared_from_this();
         auto handle = parent->invoke_on_completion(
             true,  // onCancelling = true
-            false, // invokeImmediately = false
-            [child_handler](std::exception_ptr cause) {
+            true,  // invokeImmediately = true
+            [child_handler, self](std::exception_ptr cause) {
                 child_handler->invoke(cause);
             }
         );
@@ -1721,21 +1721,28 @@ inline void* suspend_cancellable_coroutine(
 
     // Adapter that turns Continuation<T> into Continuation<void*>
     class ContinuationAdapter : public Continuation<T> {
-        Continuation<void*>* outer_;
+        std::shared_ptr<Continuation<void*>> outer_shared_;
+        Continuation<void*>* outer_raw_;
+        Continuation<void*>* get_outer() const {
+            return outer_shared_ ? outer_shared_.get() : outer_raw_;
+        }
     public:
-        explicit ContinuationAdapter(Continuation<void*>* outer) : outer_(outer) {}
+        explicit ContinuationAdapter(Continuation<void*>* outer) : outer_shared_(nullptr), outer_raw_(outer) {}
+        explicit ContinuationAdapter(std::shared_ptr<Continuation<void*>> outer) : outer_shared_(outer), outer_raw_(outer.get()) {}
 
         std::shared_ptr<CoroutineContext> get_context() const override {
-            return outer_->get_context();
+            return get_outer() ? get_outer()->get_context() : nullptr;
         }
 
         void resume_with(Result<T> result) override {
+            auto* outer = get_outer();
+            if (!outer) return;
             if (result.is_success()) {
                 // Allocate result on heap to comply with void* return convention
                 T* value_ptr = new T(result.get_or_throw());
-                outer_->resume_with(Result<void*>::success(static_cast<void*>(value_ptr)));
+                outer->resume_with(Result<void*>::success(static_cast<void*>(value_ptr)));
             } else {
-                outer_->resume_with(Result<void*>::failure(result.exception_or_null()));
+                outer->resume_with(Result<void*>::failure(result.exception_or_null()));
             }
         }
     };
@@ -1751,6 +1758,40 @@ inline void* suspend_cancellable_coroutine(
     return impl->get_result();
 }
 
+template <typename T>
+inline void* suspend_cancellable_coroutine(
+    std::function<void(CancellableContinuation<T>&)> block,
+    std::shared_ptr<Continuation<void*>> continuation
+) {
+    class ContinuationAdapter : public Continuation<T> {
+        std::shared_ptr<Continuation<void*>> outer_;
+    public:
+        explicit ContinuationAdapter(std::shared_ptr<Continuation<void*>> outer) : outer_(outer) {}
+
+        std::shared_ptr<CoroutineContext> get_context() const override {
+            return outer_ ? outer_->get_context() : nullptr;
+        }
+
+        void resume_with(Result<T> result) override {
+            if (!outer_) return;
+            if (result.is_success()) {
+                T* value_ptr = new T(result.get_or_throw());
+                outer_->resume_with(Result<void*>::success(static_cast<void*>(value_ptr)));
+            } else {
+                outer_->resume_with(Result<void*>::failure(result.exception_or_null()));
+            }
+        }
+    };
+
+    auto adapter = std::make_shared<ContinuationAdapter>(continuation);
+    auto impl = std::make_shared<CancellableContinuationImpl<T>>(adapter, 1);
+    impl->init_cancellability();
+
+    block(*impl);
+
+    return impl->get_result();
+}
+
 // Void Specialization for suspend_cancellable_coroutine
 template <>
 inline void* suspend_cancellable_coroutine<void>(
@@ -1759,16 +1800,23 @@ inline void* suspend_cancellable_coroutine<void>(
 ) {
     // Adapter wraps generic Continuation<void*> as Continuation<void>
     class ContinuationAdapter : public Continuation<void> {
-        Continuation<void*>* outer_;
+        std::shared_ptr<Continuation<void*>> outer_shared_;
+        Continuation<void*>* outer_raw_;
+        Continuation<void*>* get_outer() const {
+            return outer_shared_ ? outer_shared_.get() : outer_raw_;
+        }
     public:
-        explicit ContinuationAdapter(Continuation<void*>* outer) : outer_(outer) {}
-        std::shared_ptr<CoroutineContext> get_context() const override { return outer_->get_context(); }
+        explicit ContinuationAdapter(Continuation<void*>* outer) : outer_shared_(nullptr), outer_raw_(outer) {}
+        explicit ContinuationAdapter(std::shared_ptr<Continuation<void*>> outer) : outer_shared_(outer), outer_raw_(outer.get()) {}
+        std::shared_ptr<CoroutineContext> get_context() const override { return get_outer() ? get_outer()->get_context() : nullptr; }
         void resume_with(Result<void> result) override {
+            auto* outer = get_outer();
+            if (!outer) return;
             if (result.is_success()) {
                 // Return nullptr as void "value"
-                outer_->resume_with(Result<void*>::success(nullptr));
+                outer->resume_with(Result<void*>::success(nullptr));
             } else {
-                outer_->resume_with(Result<void*>::failure(result.exception_or_null()));
+                outer->resume_with(Result<void*>::failure(result.exception_or_null()));
             }
         }
     };
@@ -1786,6 +1834,47 @@ inline void* suspend_cancellable_coroutine<void>(
     // Void result
     impl->get_result();
     return nullptr;
+}
+
+inline void* suspend_cancellable_coroutine_void(
+    std::function<void(CancellableContinuation<void>&)> block,
+    std::shared_ptr<Continuation<void*>> continuation
+) {
+    class ContinuationAdapter : public Continuation<void> {
+        std::shared_ptr<Continuation<void*>> outer_shared_;
+    public:
+        explicit ContinuationAdapter(std::shared_ptr<Continuation<void*>> outer) : outer_shared_(outer) {}
+        std::shared_ptr<CoroutineContext> get_context() const override { return outer_shared_ ? outer_shared_->get_context() : nullptr; }
+        void resume_with(Result<void> result) override {
+            if (!outer_shared_) return;
+            if (result.is_success()) {
+                outer_shared_->resume_with(Result<void*>::success(nullptr));
+            } else {
+                outer_shared_->resume_with(Result<void*>::failure(result.exception_or_null()));
+            }
+        }
+    };
+
+    auto adapter = std::make_shared<ContinuationAdapter>(continuation);
+    auto impl = std::make_shared<CancellableContinuationImpl<void>>(adapter, 1);
+    impl->init_cancellability();
+
+    block(*impl);
+
+    if (impl->try_suspend()) {
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
+    
+    impl->get_result();
+    return nullptr;
+}
+
+template <>
+inline void* suspend_cancellable_coroutine<void>(
+    std::function<void(CancellableContinuation<void>&)> block,
+    std::shared_ptr<Continuation<void*>> continuation
+) {
+    return suspend_cancellable_coroutine_void(block, continuation);
 }
 
 } // namespace coroutines

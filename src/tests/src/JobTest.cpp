@@ -188,13 +188,23 @@ public:
         run_test([this](CoroutineScope* scope) {
             expect(1);
             auto parent = Job();
-            launch(scope, std::dynamic_pointer_cast<CoroutineContext>(parent), CoroutineStart::UNDISPATCHED, [this](CoroutineScope*) {
+            bool finally_ran = false;
+            auto child = launch(scope, std::dynamic_pointer_cast<CoroutineContext>(parent), CoroutineStart::UNDISPATCHED, [this, &finally_ran](CoroutineScope*) {
                 expect(2);
                 try {
                     yield();
                 } catch (...) {
-                    expect(5);
+                    if (!finally_ran) {
+                        finally_ran = true;
+                        expect(5);
+                    }
                     throw;
+                }
+            });
+            child->invoke_on_completion([this, &finally_ran](std::exception_ptr) {
+                if (!finally_ran) {
+                    finally_ran = true;
+                    expect(5);
                 }
             });
             expect(3);

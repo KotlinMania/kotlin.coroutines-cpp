@@ -17,6 +17,7 @@
 
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/internal/CurrentRunningCoroutine.hpp"
 #include <chrono>
 #include <string>
 #include <thread>
@@ -141,11 +142,16 @@ void* await_cancellation(std::shared_ptr<Continuation<void*>> continuation);
  */
 inline void delay(long long time_millis) {
     if (time_millis <= 0) return;
-    if (time_millis == std::numeric_limits<long long>::max() || time_millis >= 1000000000LL) {
-        throw intrinsics::SuspendSignal();
+    if (auto cont = internal::CurrentRunningCoroutine::current) {
+        delay(time_millis, cont);
+        internal::CurrentRunningCoroutine::suspended = true;
+        return;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(time_millis));
+    if (time_millis < std::numeric_limits<long long>::max()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(time_millis));
+    }
 }
 
 } // namespace coroutines
 } // namespace kotlinx
+
