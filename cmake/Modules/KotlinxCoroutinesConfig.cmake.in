@@ -13,7 +13,6 @@
 
 include("${CMAKE_CURRENT_LIST_DIR}/KotlinxCoroutinesTargets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/KotlinxCoroutineTransform.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/kxs_transform_ir.cmake")
 
 # Re-export the convenience functions
 include("${CMAKE_CURRENT_LIST_DIR}/KotlinxCoroutines.cmake")

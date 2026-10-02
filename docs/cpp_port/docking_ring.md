@@ -262,13 +262,16 @@ C++ port (canonical authoring surface):
 Representation note:
 
 - Kotlin/Native stores a **block address** label (`void*`) for `indirectbr`.
-- The current plugin emits an **int** `_label` with a `switch` dispatch (correct semantics, not identical IR shape).
+- The experimental plugin has computed-goto and switch generators. Their presence does not establish complete state/result/lifetime parity.
 
 ———
 
 ## 4. Current Implementation: Macros + Computed Goto + IR Markers
 
-**Status:** Production-ready. Generates identical LLVM IR to Kotlin/Native.
+**Status:** Hand-written Clang macros produce Kotlin/Native's address-dispatch
+pattern. Live values require manual frame storage; full ABI/GC and automatic
+spilling parity are not established. See [the IR specification](../IR_SUSPEND_LOWERING_SPEC.md)
+for the verified handoff contracts and cleanup boundary.
 
 ### 4.1 Architecture
 
@@ -290,7 +293,7 @@ Representation note:
 +-------------------------------------------------------------------+
 |  kxs-inject (LLVM IR Transform)                                    |
 |  - Finds __kxs_suspend_point() calls                               |
-|  - Computes liveness, generates spill/restore                      |
+|  - Verifies IR; preserves existing dispatch and spill accesses     |
 |  - Removes marker calls                                            |
 +-------------------------------------------------------------------+
 ```
@@ -322,7 +325,7 @@ In LLVM IR:
 call void @__kxs_suspend_point(i32 42)
 ```
 
-The kxs-inject tool finds these markers for liveness analysis and spill generation.
+The kxs-inject tool removes these no-op markers; it does not generate spill fields.
 
 ### 4.3 Macro Definitions
 
@@ -330,10 +333,10 @@ From `src/kotlinx/coroutines/dsl/Suspend.hpp`:
 
 ```cpp
 // IR-visible marker for kxs-inject tooling
-extern "C" void __kxs_suspend_point(int id);
+extern "C" void __kxs_suspend_point(int id) noexcept;
 
-// Computed goto mode (default on GCC/Clang)
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(KXS_NO_COMPUTED_GOTO)
+// Computed goto mode (Clang required)
+#if defined(__clang__)
 
 #define coroutine_begin(c) \
     if ((c)->_label == nullptr) goto _kxs_start; \
@@ -360,8 +363,7 @@ extern "C" void __kxs_suspend_point(int id);
     return nullptr;
 
 #else
-// MSVC fallback: Duff's device (switch/__LINE__)
-// ... similar but uses switch/case instead of computed goto
+#error "kotlinx.coroutines-cpp requires Clang for computed goto support"
 #endif
 ```
 
@@ -370,13 +372,13 @@ extern "C" void __kxs_suspend_point(int id);
 ```cpp
 class MyCoroutine : public ContinuationImpl {
     void* _label = nullptr;  // blockaddress storage
-    int spilled_var;         // manual spill (kxs-inject automates later)
+    int spilled_var;         // manual frame storage; cleanup does not infer spills
 
     void* invoke_suspend(Result<void*> result) override {
         coroutine_begin(this)
 
         spilled_var = 42;
-        coroutine_yield(this, delay(100, completion_));
+        coroutine_yield(this, delay(100, this));
 
         std::cout << spilled_var << std::endl;
 
@@ -400,7 +402,7 @@ call void @__kxs_suspend_point(i32 42)
 indirectbr ptr %saved_label, [label %resume42, label %resume57]
 ```
 
-This is **identical** to Kotlin/Native's IrToBitcode.kt output.
+This matches Kotlin/Native's block-address dispatch shape. Frame layout, ownership, GC and full semantics need separate verification.
 
 ---
 
@@ -412,10 +414,14 @@ This is **identical** to Kotlin/Native's IrToBitcode.kt output.
 
 The kxs-inject tool processes LLVM IR to:
 
-1. **Find suspension points** via `__kxs_suspend_point()` calls
-2. **Compute liveness** - which variables are live across each suspension
-3. **Generate spill/restore** - add field stores/loads around suspend points
-4. **Remove markers** - eliminate `__kxs_suspend_point()` calls from output
+1. **Parse and verify LLVM IR** before modifying it.
+2. **Remove direct no-op marker calls** without assuming a frame layout.
+3. **Preserve handoffs**: saved labels, field stores/loads, sentinel checks and resumed Results.
+4. **Verify the output** and retain marker declarations when other uses remain.
+
+A marker ID carries no frame-field, liveness or result metadata. Generating new
+resume edges from it would bypass values needed on the resume path. Automatic
+lowering remains a compiler/AST task with explicit frame and result contracts.
 
 ### 5.2 Pipeline
 
@@ -423,7 +429,7 @@ The kxs-inject tool processes LLVM IR to:
 # Without kxs-inject (works, but requires manual spilling)
 clang++ -c file.cpp -o file.o
 
-# With kxs-inject (automatic spilling)
+# With kxs-inject (cleanup of an already lowered state machine)
 clang++ -S -emit-llvm -o file.ll file.cpp
 kxs-inject file.ll -o file.transformed.ll
 clang++ -c file.transformed.ll -o file.o
@@ -432,8 +438,8 @@ clang++ -c file.transformed.ll -o file.o
 ### 5.3 CMake Integration
 
 ```cmake
-include(kxs_transform_ir)
-kxs_enable_suspend(my_target)  # Applies IR transform to target
+include(KotlinxCoroutines)
+kxs_enable_suspend(my_target)  # Preserves lowering; cleans no-op markers
 ```
 
 ---
@@ -450,7 +456,7 @@ kxs_enable_suspend(my_target)  # Applies IR transform to target
 
 **Exit Criterion:** IR comparison shows identical `indirectbr` + `blockaddress` pattern.
 
-### Phase 2: kxs-inject Liveness Analysis [IN PROGRESS]
+### Phase 2: Compiler-Driven Automatic Spilling [NOT COMPLETE]
 
 - Find `__kxs_suspend_point()` markers in IR
 - Build CFG, compute liveness at each point
@@ -477,7 +483,7 @@ kxs_enable_suspend(my_target)  # Applies IR transform to target
 ## 7. Risks and Mitigations
 
 1. **Manual spilling is error-prone**
-   - Mitigation: Phase 2 adds automatic spilling via kxs-inject
+   - Mitigation: verify manual frame storage now; Phase 2 requires compiler-driven spill lowering
 
 2. **MSVC lacks computed goto**
    - Mitigation: Duff's device fallback (semantically correct, different IR)
@@ -502,10 +508,26 @@ The macro + computed goto approach achieves Kotlin/Native parity because:
 
 3. **`__kxs_suspend_point()` → IR-visible marker**
    - Function calls survive to IR (unlike attributes)
-   - kxs-inject can find them for liveness analysis
+   - kxs-inject can remove them while preserving the already lowered state machine
 
 4. **Same state machine structure**
    - Entry dispatch checks null, else jumps to saved label
    - Each suspend point stores label, calls, checks COROUTINE_SUSPENDED, has resume label
 
 This is essentially "Kotlin/Native lowering implemented in C++ macros."
+
+## 9. State and result handoffs verified in October 2026
+
+The saved address, spilled state, runtime `COROUTINE_SUSPENDED`, resumed
+`Result`, and the Safe/CancellableContinuation atomic decision are distinct.
+The marker's `__LINE__` ID replaces none of them. The suspended operation must
+resume the current frame; only completed outcomes proceed to its parent.
+`coroutine_yield_value` also needs separate immediate-value and resumed-value
+paths, with failure checking before subsequent work.
+
+The CMake compiler launcher preserves the actual target/source/toolchain flags,
+unique object paths and dependency graph. `test_ir_pipeline` compares ordinary
+and cleaned builds, including optimized AddressSanitizer execution, and checks
+multiple frames, repeated suspension, resumed failures and header rebuilds.
+See [the handoff review](../audits/IR_HANDOFF_REVIEW.md) for source/version
+evidence, the defects repaired, and remaining validation limits.

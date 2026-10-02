@@ -124,15 +124,23 @@ class YieldValueCoroutine : public ContinuationImpl {
 public:
     void* _label = nullptr;  // blockaddress storage (NativePtr)
     void* value = nullptr;
+    bool suspend_call = true;
+    void* immediate_value = nullptr;
+    int before_count = 0;
+    int after_count = 0;
 
-    explicit YieldValueCoroutine(std::shared_ptr<Continuation<void*>> completion)
-        : ContinuationImpl(std::move(completion)) {}
+    explicit YieldValueCoroutine(std::shared_ptr<Continuation<void*>> completion,
+                                 bool suspend = true, void* immediate = nullptr)
+        : ContinuationImpl(std::move(completion)), suspend_call(suspend),
+          immediate_value(immediate) {}
 
     void* invoke_suspend(Result<void*> result) override {
         coroutine_begin(this)
 
-        coroutine_yield_value(this, result, COROUTINE_SUSPENDED, value);
-
+        ++before_count;
+        coroutine_yield_value(this, result,
+                              suspend_call ? COROUTINE_SUSPENDED : immediate_value, value);
+        ++after_count;
         return value;
     }
 };
@@ -141,6 +149,7 @@ public:
 class TestCompletion : public Continuation<void*> {
 public:
     bool completed = false;
+    int completion_count = 0;
     void* result_value = nullptr;
     std::exception_ptr exception;
 
@@ -150,6 +159,7 @@ public:
 
     void resume_with(Result<void*> result) override {
         completed = true;
+        ++completion_count;
         if (result.is_success()) {
             result_value = result.get_or_throw();
         } else {
@@ -306,6 +316,80 @@ void test_start_with_exception_throws() {
     std::cout << "PASSED" << std::endl;
 }
 
+
+// Regression contracts: NativeSuspendFunctionLowering.kt:253-335 and
+// Kotlin/Native runtime ContinuationImpl.kt:21-45. These exercise observable
+// handoffs rather than testing the textual form of the macro expansion.
+void test_yield_value_immediate_result() {
+    std::cout << "test_yield_value_immediate_result... ";
+    int marker = 71;
+    auto completion = std::make_shared<TestCompletion>();
+    auto coro = std::make_shared<YieldValueCoroutine>(completion, false, &marker);
+    coro->resume_with(Result<void*>::success(nullptr));
+    assert(completion->completion_count == 1);
+    assert(completion->result_value == &marker);
+    assert(coro->before_count == 1);
+    assert(coro->after_count == 1);
+    std::cout << "PASSED" << std::endl;
+}
+
+void test_resumed_exception_stops_continuation() {
+    std::cout << "test_resumed_exception_stops_continuation... ";
+    auto completion = std::make_shared<TestCompletion>();
+    auto coro = std::make_shared<YieldValueCoroutine>(completion);
+    coro->resume_with(Result<void*>::success(nullptr));
+    assert(completion->completion_count == 0);
+    auto failure = std::make_exception_ptr(std::runtime_error("resumed failure"));
+    coro->resume_with(Result<void*>::failure(failure));
+    assert(completion->completion_count == 1);
+    assert(completion->exception == failure);
+    assert(coro->before_count == 1);
+    assert(coro->after_count == 0);
+    std::cout << "PASSED" << std::endl;
+}
+
+void test_resume_with_all_steps() {
+    std::cout << "test_resume_with_all_steps... ";
+    execution_log.clear();
+    auto completion = std::make_shared<TestCompletion>();
+    auto coro = std::make_shared<SimpleYieldCoroutine>(completion);
+    coro->resume_with(Result<void*>::success(nullptr));
+    assert(completion->completion_count == 0);
+    assert(coro->counter == 10);
+    coro->resume_with(Result<void*>::success(nullptr));
+    assert(completion->completion_count == 0);
+    assert(coro->counter == 20);
+    coro->resume_with(Result<void*>::success(nullptr));
+    assert(completion->completion_count == 1);
+    assert(coro->counter == 30);
+    assert((execution_log == std::vector<int>{1, 2, 3}));
+    std::cout << "PASSED" << std::endl;
+}
+
+void test_independent_frames() {
+    std::cout << "test_independent_frames... ";
+    auto loop_completion = std::make_shared<TestCompletion>();
+    auto value_completion = std::make_shared<TestCompletion>();
+    auto loop = std::make_shared<LoopCoroutine>(loop_completion);
+    auto value = std::make_shared<YieldValueCoroutine>(value_completion);
+    loop->resume_with(Result<void*>::success(nullptr));
+    value->resume_with(Result<void*>::success(nullptr));
+    assert(loop_completion->completion_count == 0);
+    assert(value_completion->completion_count == 0);
+    loop->resume_with(Result<void*>::success(nullptr));
+    int payload = 93;
+    value->resume_with(Result<void*>::success(&payload));
+    assert(value_completion->completion_count == 1);
+    assert(value_completion->result_value == &payload);
+    assert(value->before_count == 1 && value->after_count == 1);
+    assert(loop->iteration == 2 && loop->sum == 1);
+    loop->resume_with(Result<void*>::success(nullptr));
+    loop->resume_with(Result<void*>::success(nullptr));
+    assert(loop_completion->completion_count == 1);
+    assert(loop->sum == 3);
+    std::cout << "PASSED" << std::endl;
+}
+
 int main() {
     std::cout << "=== test_suspension_core ===" << std::endl;
 
@@ -315,6 +399,10 @@ int main() {
     test_yield_value_resume_result();
     test_resume_with_value();
     test_start_with_exception_throws();
+    test_yield_value_immediate_result();
+    test_resumed_exception_stops_continuation();
+    test_resume_with_all_steps();
+    test_independent_frames();
 
     std::cout << "=== All tests passed ===" << std::endl;
     return 0;

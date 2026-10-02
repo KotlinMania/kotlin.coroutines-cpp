@@ -76,7 +76,7 @@ if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
 endif()
 
 # -----------------------------------------------------------------------------
-# kxs-inject: LLVM IR transformation tool (Kotlin/Native-style IR lowering)
+# kxs-inject: LLVM-aware marker cleanup for existing state machines
 # See: docs/IR_SUSPEND_LOWERING_SPEC.md
 # -----------------------------------------------------------------------------
 option(KOTLINX_BUILD_KXS_INJECT "Build kxs-inject IR transformation tool" ON)
@@ -105,8 +105,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 include(KotlinxCoroutines)
 
 # Install headers
-install(DIRECTORY include/
-    DESTINATION include
+install(DIRECTORY src/kotlinx/
+    DESTINATION include/kotlinx
     FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
 )
 
@@ -118,6 +118,8 @@ install(FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/KotlinxCoroutines.cmake"
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/KotlinxCoroutineTransform.cmake"
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/kxs_transform_ir.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/kxs_transform_ir.py"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/kxs_compile.py"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/KotlinxCoroutines"
 )
 

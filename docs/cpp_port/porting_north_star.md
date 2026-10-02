@@ -153,7 +153,7 @@ This section is grounded in the Kotlin/Native compiler sources you vendored in `
 - **Kotlin/Native:** `void*` label storing `blockaddress`, dispatched via `indirectbr`
 - **C++ (current):** `void* _label` storing `&&label`, dispatched via `goto *label`
 
-Both compile to identical LLVM IR:
+Both express the same block-address dispatch pattern:
 ```llvm
 store ptr blockaddress(@func, %resume), ptr %label
 indirectbr ptr %label, [label %resume0, label %resume1, ...]
@@ -166,7 +166,7 @@ The `__kxs_suspend_point(__LINE__)` marker provides IR visibility for tooling (k
 ## 6. Suspend Implementation: Macros + Computed Goto + IR Markers
 
 ### 6.1 Current Approach (Production)
-The suspend implementation uses **macros with computed goto** that generate LLVM IR identical to Kotlin/Native:
+The suspend implementation uses **Clang macros with computed goto** to express Kotlin/Native's address-dispatch pattern; this alone does not establish full ABI parity:
 
 ```cpp
 class MyCoroutine : public ContinuationImpl {
@@ -175,7 +175,7 @@ class MyCoroutine : public ContinuationImpl {
     void* invoke_suspend(Result<void*> result) override {
         coroutine_begin(this)
 
-        coroutine_yield(this, delay(100, completion_));
+        coroutine_yield(this, delay(100, this));
 
         coroutine_end(this)
     }
@@ -206,7 +206,7 @@ Compiles to:
 call void @__kxs_suspend_point(i32 42)
 ```
 
-The kxs-inject tool finds these for liveness analysis.
+The kxs-inject tool removes these no-op markers while preserving the generated frame and result paths.
 
 ### 6.3 Macro Definitions
 From `src/kotlinx/coroutines/dsl/Suspend.hpp`:
@@ -217,14 +217,16 @@ From `src/kotlinx/coroutines/dsl/Suspend.hpp`:
 
 ### 6.4 kxs-inject (IR Transform)
 The `kxs-inject` tool (`src/kotlinx/coroutines/tools/kxs_inject/`) processes LLVM IR to:
-1. Find `__kxs_suspend_point()` markers
-2. Compute liveness at each suspension point
-3. Generate spill/restore code automatically
-4. Remove marker calls from output
+1. Parse and verify already lowered LLVM IR
+2. Remove direct no-op `__kxs_suspend_point()` calls
+3. Preserve frame accesses, resume dispatch and result/failure branches
+4. Verify output; keep any still-referenced declaration
+
+It does not generate spills or dispatch. See `docs/IR_SUSPEND_LOWERING_SPEC.md`
+for the compiler/runtime handoff contracts and validated CMake pipeline.
 
 ### 6.5 Portability
-- **GCC/Clang**: Computed goto (void* _label) → identical IR to Kotlin/Native
-- **MSVC**: Duff's device fallback (int _label with switch/case) → semantically correct
+- **Clang**: Computed goto (`void* _label`); GCC/MSVC fallbacks are not provided by current `Suspend.hpp`.
 
 ---
 

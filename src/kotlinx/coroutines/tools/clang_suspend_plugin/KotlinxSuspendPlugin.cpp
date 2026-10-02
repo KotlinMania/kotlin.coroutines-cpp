@@ -197,7 +197,7 @@ private:
         os << "#include <cstdint>\n\n";
         os << "using namespace kotlinx::coroutines;\n";
         os << "using namespace kotlinx::coroutines::intrinsics;\n\n";
-        os << "extern \"C\" void __kxs_suspend_point(int id);\n\n";
+        os << "extern \"C\" void __kxs_suspend_point(int id) noexcept;\n\n";
 
         for (FunctionDecl* fd : fns) {
             if (!fd || !fd->hasBody()) continue;

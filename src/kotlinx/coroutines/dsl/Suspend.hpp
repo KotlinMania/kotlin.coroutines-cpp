@@ -9,7 +9,7 @@
  * Uses computed goto (Clang labels-as-values extension):
  *   - `void* _label` stores `&&label` blockaddresses
  *   - `goto *_label` for computed goto dispatch
- *   - Compiles to LLVM `indirectbr` + `blockaddress` (exact Kotlin/Native parity)
+ *   - Compiles to LLVM `indirectbr` + `blockaddress` (the Kotlin/Native address-dispatch pattern)
  *
  * Usage example:
  * ```cpp
@@ -21,10 +21,10 @@
  *         coroutine_begin(this)
  *
  *         my_state = 10;
- *         coroutine_yield(this, yield(completion));  // suspend point
+ *         coroutine_yield(this, yield(shared_from_this()));  // suspend point
  *
  *         my_state = 20;
- *         coroutine_yield(this, delay(100, completion));  // another suspend
+ *         coroutine_yield(this, delay(100, this));  // another suspend
  *
  *         coroutine_end(this)
  *     }
@@ -37,7 +37,7 @@
 
 // IR-visible marker used by kxs tooling (see cmake/Modules/kxs_transform_ir.cmake).
 // The transformer is expected to rewrite/remove these calls.
-extern "C" void __kxs_suspend_point(int id);
+extern "C" void __kxs_suspend_point(int id) noexcept;
 
 // Helper to create unique label names.
 // Note: __LINE__ must be unique per suspend point; do not put multiple
@@ -69,7 +69,7 @@ inline T suspend(T&& value) {
 /**
  * Macro-based state machine for hand-written suspend functions.
  *
- * Uses computed goto (labels-as-values) for Kotlin/Native binary parity.
+ * Uses computed goto (labels-as-values) for Kotlin/Native address-dispatch parity.
  * Compiles to LLVM `indirectbr` + `blockaddress`.
  *
  * Usage:
@@ -92,8 +92,8 @@ inline T suspend(T&& value) {
  *   - nullptr on first call → jump to start
  *   - &&resume_label on resume → indirectbr to that label
  *
- * This compiles to LLVM indirectbr + blockaddress, matching Kotlin/Native exactly.
- * Required for proper Kotlin/Native interop.
+ * This compiles to LLVM indirectbr + blockaddress. Full Kotlin/Native interop
+ * additionally requires compatible frame, result, ownership and GC contracts.
  *
  * Requirements:
  *   - Coroutine class must have: void* _label = nullptr;

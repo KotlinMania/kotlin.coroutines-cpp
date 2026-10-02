@@ -56,3 +56,22 @@ endif()
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/gc_bridge")
     add_subdirectory(gc_bridge)
 endif()
+
+# Exercise standalone cleanup and the actual CMake compile/link pipeline.
+if(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang)$")
+    find_package(Python3 3.8 QUIET COMPONENTS Interpreter)
+    if(Python3_FOUND)
+        get_filename_component(KXS_TEST_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+        add_test(NAME test_ir_pipeline
+            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/ir/test_ir_pipeline.py"
+                --root "${KXS_TEST_ROOT}"
+                --modules "${KXS_TEST_ROOT}/cmake/Modules"
+                --headers "${KXS_TEST_ROOT}/src"
+                --core-test "${CMAKE_CURRENT_SOURCE_DIR}/src/test_suspension_core.cpp"
+                --library "$<TARGET_FILE:kotlinx-coroutines-core>"
+                --work-dir "${CMAKE_CURRENT_BINARY_DIR}/ir-regression"
+                --compiler "${CMAKE_CXX_COMPILER}"
+                --cmake "${CMAKE_COMMAND}")
+        set_tests_properties(test_ir_pipeline PROPERTIES TIMEOUT 120)
+    endif()
+endif()

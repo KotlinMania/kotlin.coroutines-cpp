@@ -68,6 +68,7 @@ test_*
 !tests/**/*.cpp
 !src/tests/*.cpp
 !src/tests/**/*.cpp
+!src/tests/ir/test_*.py
 
 # =============================================================================
 # Gradle/Kotlin Build System (from upstream kotlinx.coroutines)

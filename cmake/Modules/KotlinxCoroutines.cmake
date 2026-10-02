@@ -2,7 +2,7 @@
 #
 # Creates the kotlinx::coroutines INTERFACE library that provides:
 #   - Header files for coroutine primitives
-#   - Automatic IR transformation for suspend functions
+#   - Optional marker cleanup for already lowered suspend functions
 #   - Runtime library linking
 #
 # Usage:
@@ -26,10 +26,10 @@ cmake_minimum_required(VERSION 3.19)
 get_filename_component(_KXS_MODULE_DIR "${CMAKE_CURRENT_LIST_FILE}" DIRECTORY)
 
 # Check if we're in source tree (cmake/Modules/) or installed (lib/cmake/KotlinxCoroutines/)
-if(EXISTS "${_KXS_MODULE_DIR}/../../include/kotlinx")
+if(EXISTS "${_KXS_MODULE_DIR}/../../src/kotlinx")
     # Source tree: cmake/Modules -> project root
     get_filename_component(_KXS_ROOT_DIR "${_KXS_MODULE_DIR}/../.." ABSOLUTE)
-    set(_KXS_INCLUDE_DIR "${_KXS_ROOT_DIR}/include")
+    set(_KXS_INCLUDE_DIR "${_KXS_ROOT_DIR}/src")
 elseif(EXISTS "${_KXS_MODULE_DIR}/../../../include/kotlinx")
     # Installed: lib/cmake/KotlinxCoroutines -> prefix
     get_filename_component(_KXS_ROOT_DIR "${_KXS_MODULE_DIR}/../../.." ABSOLUTE)
@@ -69,7 +69,7 @@ if(NOT TARGET kotlinx::coroutines)
     # Custom property to mark targets for transformation
     define_property(TARGET PROPERTY KXS_COROUTINE_TRANSFORM
         BRIEF_DOCS "Enable KXS coroutine IR transformation"
-        FULL_DOCS "When set to ON, the target's source files will be compiled to LLVM IR, transformed to add coroutine dispatch, and then compiled to object files."
+        FULL_DOCS "When set to ON, the target's source files will be compiled to LLVM IR, cleaned of no-op markers without changing coroutine dispatch, and then compiled to object files."
     )
 
     message(STATUS "[KXS] Created kotlinx::coroutines INTERFACE library")

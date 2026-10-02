@@ -1,7 +1,9 @@
 # Clang Suspend DSL Plugin (kotlinx.coroutines-cpp)
 
-This Clang plugin transforms C++ suspend functions into Kotlin/Native-style state machines
-with binary-compatible coroutine ABI.
+This experimental Clang plugin generates coroutine sidecars. Its computed-goto
+and liveness-analysis code is separate from the marker cleanup tools. Binary ABI,
+Result handoffs, frame lifetimes and automatic spill parity are not established
+by the generated address-dispatch shape; see `docs/IR_SUSPEND_LOWERING_SPEC.md`.
 
 ## Features
 
@@ -10,7 +12,7 @@ with binary-compatible coroutine ABI.
 - Generates sidecar `.kx.cpp` files with computed-goto state machines
 - Uses `void* _label` (Kotlin/Native NativePtr)
 - Generates `&&label` (labels-as-values) + `goto *_label` (computed goto)
-- Compiles to LLVM `indirectbr` + `blockaddress` - exact Kotlin/Native parity
+- Compiles to LLVM `indirectbr` + `blockaddress`, the same address-dispatch pattern
 - CFG-based liveness analysis for automatic variable spilling
 
 Target: Apple clang only.
@@ -134,7 +136,7 @@ resume0:
   ; ... resume execution ...
 ```
 
-This is exact parity with Kotlin/Native's coroutine implementation.
+This expresses the address-dispatch pattern. Full Kotlin/Native parity needs separate frame, result and lifetime validation.
 
 ## Architecture
 

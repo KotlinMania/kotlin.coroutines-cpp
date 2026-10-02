@@ -1,81 +1,51 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 project(kxs_inject LANGUAGES CXX C)
 
-# This tool transforms LLVM IR to inject coroutine state machine dispatch.
-# It builds against vendored LLVM - no external LLVM installation required.
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Default to Release build for faster compilation
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+# Prefer an installed LLVM development package (e.g. Homebrew). A vendored
+# source checkout remains an optional fallback, not an installation requirement.
+find_package(LLVM CONFIG QUIET)
+if(LLVM_FOUND)
+    message(STATUS "Building kxs-inject with LLVM ${LLVM_PACKAGE_VERSION}")
+else()
+    get_filename_component(KXS_PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.." ABSOLUTE)
+    set(LLVM_SRC_DIR "${KXS_PROJECT_ROOT}/vendor/llvm-project/llvm")
+    if(NOT EXISTS "${LLVM_SRC_DIR}/CMakeLists.txt")
+        message(WARNING "LLVM development package and vendored sources are unavailable; skipping kxs-inject. Set LLVM_DIR to an installed LLVM CMake package.")
+        return()
+    endif()
+    set(LLVM_TARGETS_TO_BUILD "AArch64" CACHE STRING "" FORCE)
+    set(LLVM_ENABLE_PROJECTS "" CACHE STRING "" FORCE)
+    foreach(KXS_COMPONENT TOOLS UTILS EXAMPLES TESTS BENCHMARKS DOCS)
+        set(LLVM_BUILD_${KXS_COMPONENT} OFF CACHE BOOL "" FORCE)
+        set(LLVM_INCLUDE_${KXS_COMPONENT} OFF CACHE BOOL "" FORCE)
+    endforeach()
+    add_subdirectory("${LLVM_SRC_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/llvm" EXCLUDE_FROM_ALL)
+    set(LLVM_INCLUDE_DIRS "${LLVM_SRC_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/llvm/include")
 endif()
 
-# Path to vendored LLVM - resolve to absolute path
-# kxs_inject is at: src/kotlinx/coroutines/tools/kxs_inject
-# Project root is 5 levels up
-get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.." ABSOLUTE)
-set(LLVM_SRC_DIR "${PROJECT_ROOT}/vendor/llvm-project/llvm")
-
-if(NOT EXISTS "${LLVM_SRC_DIR}/CMakeLists.txt")
-    message(WARNING "Vendored LLVM not found at ${LLVM_SRC_DIR}; skipping kxs-inject. "
-                    "To build kxs-inject, clone llvm-project into vendor/llvm-project.")
-    return()
+add_executable(kxs-inject kxs_inject.cpp)
+target_compile_features(kxs-inject PRIVATE cxx_std_20)
+target_include_directories(kxs-inject SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
+separate_arguments(KXS_LLVM_DEFINITIONS NATIVE_COMMAND "${LLVM_DEFINITIONS}")
+target_compile_options(kxs-inject PRIVATE ${KXS_LLVM_DEFINITIONS})
+if(TARGET LLVM)
+    target_link_libraries(kxs-inject PRIVATE LLVM)
+else()
+    llvm_map_components_to_libnames(KXS_LLVM_LIBRARIES IRReader BitWriter)
+    target_link_libraries(kxs-inject PRIVATE ${KXS_LLVM_LIBRARIES})
 endif()
-
-message(STATUS "Using vendored LLVM from: ${LLVM_SRC_DIR}")
-
-# Build LLVM as a subdirectory with minimal components
-# We only need: Core, IRReader, BitReader, BitWriter, Support
-set(LLVM_TARGETS_TO_BUILD "AArch64" CACHE STRING "" FORCE)
-set(LLVM_ENABLE_PROJECTS "" CACHE STRING "" FORCE)
-set(LLVM_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
-set(LLVM_BUILD_UTILS OFF CACHE BOOL "" FORCE)
-set(LLVM_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(LLVM_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(LLVM_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
-set(LLVM_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(LLVM_INCLUDE_TOOLS OFF CACHE BOOL "" FORCE)
-set(LLVM_INCLUDE_UTILS OFF CACHE BOOL "" FORCE)
-set(LLVM_INCLUDE_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(LLVM_INCLUDE_TESTS OFF CACHE BOOL "" FORCE)
-set(LLVM_INCLUDE_BENCHMARKS OFF CACHE BOOL "" FORCE)
-set(LLVM_INCLUDE_DOCS OFF CACHE BOOL "" FORCE)
-set(LLVM_ENABLE_ZLIB OFF CACHE BOOL "" FORCE)
-set(LLVM_ENABLE_ZSTD OFF CACHE BOOL "" FORCE)
-set(LLVM_ENABLE_LIBXML2 OFF CACHE BOOL "" FORCE)
-set(LLVM_ENABLE_TERMINFO OFF CACHE BOOL "" FORCE)
-set(LLVM_ENABLE_LIBEDIT OFF CACHE BOOL "" FORCE)
-
-# Add LLVM as subdirectory
-add_subdirectory(${LLVM_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/llvm EXCLUDE_FROM_ALL)
-
-# Now build our tool
-add_executable(kxs-inject
-    kxs_inject.cpp
-)
-
-target_include_directories(kxs-inject PRIVATE
-    ${LLVM_SRC_DIR}/include
-    ${CMAKE_CURRENT_BINARY_DIR}/llvm/include
-)
-
-target_compile_definitions(kxs-inject PRIVATE
-    __STDC_CONSTANT_MACROS
-    __STDC_FORMAT_MACROS
-    __STDC_LIMIT_MACROS
-)
-
-# Link only the LLVM components we need
-target_link_libraries(kxs-inject PRIVATE
-    LLVMCore
-    LLVMIRReader
-    LLVMBitReader
-    LLVMBitWriter
-    LLVMAsmParser
-    LLVMSupport
-)
-
-# Install
 install(TARGETS kxs-inject RUNTIME DESTINATION bin)
+
+get_filename_component(KXS_PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.." ABSOLUTE)
+find_package(Python3 3.8 QUIET COMPONENTS Interpreter)
+if(Python3_FOUND)
+    enable_testing()
+    add_test(NAME test_kxs_inject
+        COMMAND "${Python3_EXECUTABLE}" "${KXS_PROJECT_ROOT}/src/tests/ir/test_kxs_inject.py"
+            --tool "$<TARGET_FILE:kxs-inject>"
+            --root "${KXS_PROJECT_ROOT}"
+            --headers "${KXS_PROJECT_ROOT}/src"
+            --compiler "${CMAKE_CXX_COMPILER}"
+            --work-dir "${CMAKE_CURRENT_BINARY_DIR}/ir-regression")
+    set_tests_properties(test_kxs_inject PROPERTIES TIMEOUT 120)
+endif()
