@@ -370,6 +370,69 @@ void test_last_or_null() {
     std::cout << "test_last_or_null passed" << std::endl;
 }
 
+void test_suspended_fold_and_reduce() {
+    class DeferredFlow : public Flow<int> {
+    public:
+        FlowCollector<int>* retained = nullptr;
+        Continuation<void*>* completion = nullptr;
+        void* collect(FlowCollector<int>* c, Continuation<void*>* cont) override {
+            retained = c;
+            completion = cont;
+            return intrinsics::get_COROUTINE_SUSPENDED();
+        }
+    };
+
+    // 1. Fold suspension test (immediate suspension return + deferred emissions)
+    auto deferred = std::make_shared<DeferredFlow>();
+    int resumed_val = 0;
+    bool resumed = false;
+    auto cont = make_continuation<void*>(nullptr, [&resumed_val, &resumed](Result<void*> res) {
+        resumed = true;
+        if (res.is_success()) {
+            auto* p = static_cast<int*>(res.get_or_throw());
+            if (p) {
+                resumed_val = *p;
+                delete p;
+            }
+        }
+    });
+
+    void* r = fold<int, int>(deferred, 10, [](int acc, int val) { return acc + val; }, cont.get());
+    assert(intrinsics::is_coroutine_suspended(r));
+    assert(!resumed);
+
+    // Now emit values and complete via deferred continuation
+    deferred->retained->emit(5, nullptr);
+    deferred->retained->emit(15, nullptr);
+    deferred->completion->resume_with(Result<void*>::success(nullptr));
+
+    assert(resumed);
+    assert(resumed_val == 30); // 10 + 5 + 15 = 30
+
+    // 2. Reduce suspension test (empty flow fails only upon completion)
+    auto empty_deferred = std::make_shared<DeferredFlow>();
+    bool empty_failed = false;
+    auto empty_cont = make_continuation<void*>(nullptr, [&empty_failed](Result<void*> res) {
+        if (res.is_failure()) {
+            try {
+                std::rethrow_exception(res.exception_or_null());
+            } catch (const NoSuchElementException&) {
+                empty_failed = true;
+            }
+        }
+    });
+
+    void* r_red = reduce<int>(empty_deferred, [](int acc, int val) { return acc + val; }, empty_cont.get());
+    assert(intrinsics::is_coroutine_suspended(r_red));
+    assert(!empty_failed);
+
+    // Complete empty flow
+    empty_deferred->completion->resume_with(Result<void*>::success(nullptr));
+    assert(empty_failed);
+
+    std::cout << "test_suspended_fold_and_reduce passed" << std::endl;
+}
+
 int main() {
     test_collect_nop();
     test_collect_action();
@@ -388,6 +451,7 @@ int main() {
     test_first_or_null_predicate();
     test_last();
     test_last_or_null();
+    test_suspended_fold_and_reduce();
 
     std::cout << "All Collect and Reduce tests passed!" << std::endl;
     return 0;

@@ -15,17 +15,656 @@
 #include "kotlinx/coroutines/flow/internal/NullSurrogate.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
+#include <atomic>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <stdexcept>
 #include <utility>
 
 namespace kotlinx::coroutines::flow {
 
+namespace internal {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Reduce.kt:15-30
+template <typename T, typename S>
+struct ReduceFrame : public FlowCollector<T>, public Continuation<void*>, public std::enable_shared_from_this<ReduceFrame<T, S>> {
+    void* accumulator = nullptr;
+    bool has_value = false;
+    std::function<S(S, T)> sync_operation;
+    std::function<void*(S, T, Continuation<void*>*)> susp_operation;
+    bool is_suspending_op = false;
+    Continuation<void*>* completion = nullptr;
+    std::recursive_mutex mutex;
+    std::exception_ptr failure = nullptr;
+    std::atomic<bool> completed{false};
+    std::shared_ptr<ReduceFrame<T, S>> self_ref;
+
+    ReduceFrame(std::function<S(S, T)> op, Continuation<void*>* comp)
+        : sync_operation(std::move(op)),
+          is_suspending_op(false),
+          completion(comp) {}
+
+    ReduceFrame(std::function<void*(S, T, Continuation<void*>*)> op, Continuation<void*>* comp)
+        : susp_operation(std::move(op)),
+          is_suspending_op(true),
+          completion(comp) {}
+
+    ~ReduceFrame() override {
+        if (has_value && accumulator != nullptr) {
+            delete static_cast<S*>(accumulator);
+            accumulator = nullptr;
+        }
+    }
+
+    void retain_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (!completed.load()) {
+            self_ref = this->shared_from_this();
+        }
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return completion ? completion->get_context() : nullptr;
+    }
+
+    void resume_with(Result<void*> collect_res) override {
+        std::shared_ptr<ReduceFrame<T, S>> guard;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (completed.exchange(true)) return;
+            guard = std::move(self_ref);
+            self_ref = nullptr;
+        }
+
+        if (collect_res.is_success()) {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (failure) {
+                if (completion) {
+                    completion->resume_with(Result<void*>::failure(failure));
+                }
+            } else if (!has_value) {
+                if (completion) {
+                    completion->resume_with(Result<void*>::failure(
+                        std::make_exception_ptr(NoSuchElementException("Empty flow can't be reduced"))));
+                }
+            } else {
+                void* res = accumulator;
+                accumulator = nullptr;
+                has_value = false;
+                if (completion) {
+                    completion->resume_with(Result<void*>::success(res));
+                }
+            }
+        } else {
+            if (completion) {
+                completion->resume_with(Result<void*>::failure(collect_res.exception_or_null()));
+            }
+        }
+    }
+
+    void* emit(T value, Continuation<void*>* cont) override {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (failure) {
+            std::rethrow_exception(failure);
+        }
+        if (!is_suspending_op) {
+            try {
+                if (!has_value) {
+                    accumulator = new S(std::move(value));
+                    has_value = true;
+                } else {
+                    S* acc = static_cast<S*>(accumulator);
+                    *acc = sync_operation(std::move(*acc), std::move(value));
+                }
+            } catch (...) {
+                failure = std::current_exception();
+                throw;
+            }
+            return nullptr;
+        } else {
+            if (!has_value) {
+                accumulator = new S(std::move(value));
+                has_value = true;
+                return nullptr;
+            }
+            S* acc = static_cast<S*>(accumulator);
+            auto op_cont = std::make_shared<FunctionalContinuation<void*>>(
+                cont ? cont->get_context() : nullptr,
+                [this, cont](Result<void*> op_res) {
+                    if (op_res.is_success()) {
+                        void* raw = op_res.get_or_throw();
+                        if (raw) {
+                            auto* s_ptr = static_cast<S*>(raw);
+                            {
+                                std::lock_guard<std::recursive_mutex> lock(this->mutex);
+                                if (this->has_value && this->accumulator != nullptr) {
+                                    *static_cast<S*>(this->accumulator) = std::move(*s_ptr);
+                                }
+                            }
+                            delete s_ptr;
+                        }
+                        if (cont) cont->resume_with(Result<void*>::success(nullptr));
+                    } else {
+                        {
+                            std::lock_guard<std::recursive_mutex> lock(this->mutex);
+                            this->failure = op_res.exception_or_null();
+                        }
+                        if (cont) cont->resume_with(op_res);
+                    }
+                }
+            );
+
+            void* res = susp_operation(*acc, std::move(value), op_cont.get());
+            if (intrinsics::is_coroutine_suspended(res)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
+            if (res) {
+                auto* s_ptr = static_cast<S*>(res);
+                *acc = std::move(*s_ptr);
+                delete s_ptr;
+            }
+            return nullptr;
+        }
+    }
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Reduce.kt:35-44
+template <typename T, typename R>
+struct FoldFrame : public FlowCollector<T>, public Continuation<void*>, public std::enable_shared_from_this<FoldFrame<T, R>> {
+    R accumulator;
+    std::function<R(R, T)> sync_operation;
+    std::function<void*(R, T, Continuation<void*>*)> susp_operation;
+    bool is_suspending_op = false;
+    Continuation<void*>* completion = nullptr;
+    std::recursive_mutex mutex;
+    std::exception_ptr failure = nullptr;
+    std::atomic<bool> completed{false};
+    std::shared_ptr<FoldFrame<T, R>> self_ref;
+
+    FoldFrame(R init, std::function<R(R, T)> op, Continuation<void*>* comp)
+        : accumulator(std::move(init)),
+          sync_operation(std::move(op)),
+          is_suspending_op(false),
+          completion(comp) {}
+
+    FoldFrame(R init, std::function<void*(R, T, Continuation<void*>*)> op, Continuation<void*>* comp)
+        : accumulator(std::move(init)),
+          susp_operation(std::move(op)),
+          is_suspending_op(true),
+          completion(comp) {}
+
+    void retain_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (!completed.load()) {
+            self_ref = this->shared_from_this();
+        }
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return completion ? completion->get_context() : nullptr;
+    }
+
+    void resume_with(Result<void*> collect_res) override {
+        std::shared_ptr<FoldFrame<T, R>> guard;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (completed.exchange(true)) return;
+            guard = std::move(self_ref);
+            self_ref = nullptr;
+        }
+
+        if (collect_res.is_success()) {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (failure) {
+                if (completion) {
+                    completion->resume_with(Result<void*>::failure(failure));
+                }
+            } else {
+                auto* final_res = new R(std::move(accumulator));
+                if (completion) {
+                    completion->resume_with(Result<void*>::success(final_res));
+                }
+            }
+        } else {
+            if (completion) {
+                completion->resume_with(Result<void*>::failure(collect_res.exception_or_null()));
+            }
+        }
+    }
+
+    void* emit(T value, Continuation<void*>* cont) override {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (failure) {
+            std::rethrow_exception(failure);
+        }
+        if (!is_suspending_op) {
+            try {
+                accumulator = sync_operation(std::move(accumulator), std::move(value));
+            } catch (...) {
+                failure = std::current_exception();
+                throw;
+            }
+            return nullptr;
+        } else {
+            auto op_cont = std::make_shared<FunctionalContinuation<void*>>(
+                cont ? cont->get_context() : nullptr,
+                [this, cont](Result<void*> op_res) {
+                    if (op_res.is_success()) {
+                        void* raw = op_res.get_or_throw();
+                        if (raw) {
+                            auto* r_ptr = static_cast<R*>(raw);
+                            {
+                                std::lock_guard<std::recursive_mutex> lock(this->mutex);
+                                this->accumulator = std::move(*r_ptr);
+                            }
+                            delete r_ptr;
+                        }
+                        if (cont) cont->resume_with(Result<void*>::success(nullptr));
+                    } else {
+                        {
+                            std::lock_guard<std::recursive_mutex> lock(this->mutex);
+                            this->failure = op_res.exception_or_null();
+                        }
+                        if (cont) cont->resume_with(op_res);
+                    }
+                }
+            );
+
+            void* res = susp_operation(accumulator, std::move(value), op_cont.get());
+            if (intrinsics::is_coroutine_suspended(res)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
+            if (res) {
+                auto* r_ptr = static_cast<R*>(res);
+                accumulator = std::move(*r_ptr);
+                delete r_ptr;
+            }
+            return nullptr;
+        }
+    }
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Reduce.kt:51-60
+template <typename T>
+struct SingleFrame : public FlowCollector<T>, public Continuation<void*>, public std::enable_shared_from_this<SingleFrame<T>> {
+    void* result = nullptr;
+    bool has_value = false;
+    bool has_multiple = false;
+    Continuation<void*>* completion = nullptr;
+    std::recursive_mutex mutex;
+    std::exception_ptr failure = nullptr;
+    std::atomic<bool> completed{false};
+    std::shared_ptr<SingleFrame<T>> self_ref;
+
+    explicit SingleFrame(Continuation<void*>* comp) : completion(comp) {}
+
+    ~SingleFrame() override {
+        if (has_value && result != nullptr) {
+            delete static_cast<T*>(result);
+            result = nullptr;
+        }
+    }
+
+    void retain_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (!completed.load()) {
+            self_ref = this->shared_from_this();
+        }
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return completion ? completion->get_context() : nullptr;
+    }
+
+    void resume_with(Result<void*> collect_res) override {
+        std::shared_ptr<SingleFrame<T>> guard;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (completed.exchange(true)) return;
+            guard = std::move(self_ref);
+            self_ref = nullptr;
+        }
+
+        if (collect_res.is_success()) {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (failure) {
+                if (completion) {
+                    completion->resume_with(Result<void*>::failure(failure));
+                }
+            } else if (!has_value) {
+                if (completion) {
+                    completion->resume_with(Result<void*>::failure(
+                        std::make_exception_ptr(NoSuchElementException("Flow is empty"))));
+                }
+            } else {
+                void* res = result;
+                result = nullptr;
+                has_value = false;
+                if (completion) {
+                    completion->resume_with(Result<void*>::success(res));
+                }
+            }
+        } else {
+            if (completion) {
+                completion->resume_with(Result<void*>::failure(collect_res.exception_or_null()));
+            }
+        }
+    }
+
+    void* emit(T value, Continuation<void*>*) override {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (failure) {
+            std::rethrow_exception(failure);
+        }
+        if (has_value) {
+            has_multiple = true;
+            failure = std::make_exception_ptr(std::invalid_argument("Flow has more than one element"));
+            throw std::invalid_argument("Flow has more than one element");
+        }
+        result = new T(std::move(value));
+        has_value = true;
+        return nullptr;
+    }
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Reduce.kt:66-80
+template <typename T>
+struct SingleOrNullFrame : public FlowCollector<T>, public Continuation<void*>, public std::enable_shared_from_this<SingleOrNullFrame<T>> {
+    void* result = nullptr;
+    bool has_value = false;
+    bool has_multiple = false;
+    Continuation<void*>* completion = nullptr;
+    std::recursive_mutex mutex;
+    std::exception_ptr failure = nullptr;
+    std::atomic<bool> completed{false};
+    std::shared_ptr<SingleOrNullFrame<T>> self_ref;
+
+    explicit SingleOrNullFrame(Continuation<void*>* comp) : completion(comp) {}
+
+    ~SingleOrNullFrame() override {
+        if (has_value && result != nullptr) {
+            delete static_cast<T*>(result);
+            result = nullptr;
+        }
+    }
+
+    void retain_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (!completed.load()) {
+            self_ref = this->shared_from_this();
+        }
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return completion ? completion->get_context() : nullptr;
+    }
+
+    void resume_with(Result<void*> collect_res) override {
+        std::shared_ptr<SingleOrNullFrame<T>> guard;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (completed.exchange(true)) return;
+            guard = std::move(self_ref);
+            self_ref = nullptr;
+        }
+
+        std::exception_ptr ex = nullptr;
+        if (collect_res.is_failure()) {
+            try {
+                std::rethrow_exception(collect_res.exception_or_null());
+            } catch (internal::AbortFlowException& e) {
+                if (e.owner == this) {
+                    // Expected short circuit - returns null
+                } else {
+                    ex = std::current_exception();
+                }
+            } catch (...) {
+                ex = std::current_exception();
+            }
+        }
+        if (ex) {
+            if (completion) {
+                completion->resume_with(Result<void*>::failure(ex));
+            }
+        } else {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (has_multiple || !has_value) {
+                if (completion) {
+                    completion->resume_with(Result<void*>::success(nullptr));
+                }
+            } else {
+                void* res = result;
+                result = nullptr;
+                has_value = false;
+                if (completion) {
+                    completion->resume_with(Result<void*>::success(res));
+                }
+            }
+        }
+    }
+
+    void* emit(T value, Continuation<void*>*) override {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (failure) {
+            std::rethrow_exception(failure);
+        }
+        if (!has_value && !has_multiple) {
+            result = new T(std::move(value));
+            has_value = true;
+        } else {
+            has_multiple = true;
+            if (has_value && result != nullptr) {
+                delete static_cast<T*>(result);
+                result = nullptr;
+            }
+            has_value = false;
+            throw internal::AbortFlowException(this);
+        }
+        return nullptr;
+    }
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Reduce.kt:86-142
+template <typename T>
+struct FirstFrame : public FlowCollector<T>, public Continuation<void*>, public std::enable_shared_from_this<FirstFrame<T>> {
+    void* result = nullptr;
+    bool has_value = false;
+    std::function<bool(const T&)> predicate;
+    bool has_predicate = false;
+    bool is_or_null = false;
+    Continuation<void*>* completion = nullptr;
+    std::recursive_mutex mutex;
+    std::exception_ptr failure = nullptr;
+    std::atomic<bool> completed{false};
+    std::shared_ptr<FirstFrame<T>> self_ref;
+
+    FirstFrame(bool or_null, Continuation<void*>* comp)
+        : is_or_null(or_null), completion(comp) {}
+
+    FirstFrame(std::function<bool(const T&)> pred, bool or_null, Continuation<void*>* comp)
+        : predicate(std::move(pred)), has_predicate(true), is_or_null(or_null), completion(comp) {}
+
+    ~FirstFrame() override {
+        if (has_value && result != nullptr) {
+            delete static_cast<T*>(result);
+            result = nullptr;
+        }
+    }
+
+    void retain_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (!completed.load()) {
+            self_ref = this->shared_from_this();
+        }
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return completion ? completion->get_context() : nullptr;
+    }
+
+    void resume_with(Result<void*> collect_res) override {
+        std::shared_ptr<FirstFrame<T>> guard;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (completed.exchange(true)) return;
+            guard = std::move(self_ref);
+            self_ref = nullptr;
+        }
+
+        std::exception_ptr ex = nullptr;
+        if (collect_res.is_failure()) {
+            try {
+                std::rethrow_exception(collect_res.exception_or_null());
+            } catch (internal::AbortFlowException& e) {
+                if (e.owner == this) {
+                    // Expected short circuit
+                } else {
+                    ex = std::current_exception();
+                }
+            } catch (...) {
+                ex = std::current_exception();
+            }
+        }
+        if (ex) {
+            if (completion) {
+                completion->resume_with(Result<void*>::failure(ex));
+            }
+        } else {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (!has_value) {
+                if (is_or_null) {
+                    if (completion) {
+                        completion->resume_with(Result<void*>::success(nullptr));
+                    }
+                } else {
+                    if (completion) {
+                        const char* msg = has_predicate
+                            ? "Expected at least one element matching the predicate"
+                            : "Expected at least one element";
+                        completion->resume_with(Result<void*>::failure(
+                            std::make_exception_ptr(NoSuchElementException(msg))));
+                    }
+                }
+            } else {
+                void* res = result;
+                result = nullptr;
+                has_value = false;
+                if (completion) {
+                    completion->resume_with(Result<void*>::success(res));
+                }
+            }
+        }
+    }
+
+    void* emit(T value, Continuation<void*>*) override {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (failure) {
+            std::rethrow_exception(failure);
+        }
+        if (!has_predicate || predicate(value)) {
+            result = new T(std::move(value));
+            has_value = true;
+            throw internal::AbortFlowException(this);
+        }
+        return nullptr;
+    }
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Reduce.kt:149-167
+template <typename T>
+struct LastFrame : public FlowCollector<T>, public Continuation<void*>, public std::enable_shared_from_this<LastFrame<T>> {
+    void* result = nullptr;
+    bool has_value = false;
+    bool is_or_null = false;
+    Continuation<void*>* completion = nullptr;
+    std::recursive_mutex mutex;
+    std::exception_ptr failure = nullptr;
+    std::atomic<bool> completed{false};
+    std::shared_ptr<LastFrame<T>> self_ref;
+
+    LastFrame(bool or_null, Continuation<void*>* comp)
+        : is_or_null(or_null), completion(comp) {}
+
+    ~LastFrame() override {
+        if (has_value && result != nullptr) {
+            delete static_cast<T*>(result);
+            result = nullptr;
+        }
+    }
+
+    void retain_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (!completed.load()) {
+            self_ref = this->shared_from_this();
+        }
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return completion ? completion->get_context() : nullptr;
+    }
+
+    void resume_with(Result<void*> collect_res) override {
+        std::shared_ptr<LastFrame<T>> guard;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (completed.exchange(true)) return;
+            guard = std::move(self_ref);
+            self_ref = nullptr;
+        }
+
+        if (collect_res.is_success()) {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (failure) {
+                if (completion) {
+                    completion->resume_with(Result<void*>::failure(failure));
+                }
+            } else if (!has_value) {
+                if (is_or_null) {
+                    if (completion) {
+                        completion->resume_with(Result<void*>::success(nullptr));
+                    }
+                } else {
+                    if (completion) {
+                        completion->resume_with(Result<void*>::failure(
+                            std::make_exception_ptr(NoSuchElementException("Expected at least one element"))));
+                    }
+                }
+            } else {
+                void* res = result;
+                result = nullptr;
+                has_value = false;
+                if (completion) {
+                    completion->resume_with(Result<void*>::success(res));
+                }
+            }
+        } else {
+            if (completion) {
+                completion->resume_with(Result<void*>::failure(collect_res.exception_or_null()));
+            }
+        }
+    }
+
+    void* emit(T value, Continuation<void*>*) override {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (failure) {
+            std::rethrow_exception(failure);
+        }
+        if (has_value && result != nullptr) {
+            delete static_cast<T*>(result);
+        }
+        result = new T(std::move(value));
+        has_value = true;
+        return nullptr;
+    }
+};
+
+} // namespace internal
+
 /**
  * Accumulates value starting with the first element and applying [operation] to current accumulator value and each element.
- * Throws std::out_of_range if flow was empty.
+ * Throws NoSuchElementException if flow was empty.
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Reduce.kt:15-30
  */
@@ -34,35 +673,32 @@ inline void* reduce(
     std::shared_ptr<Flow<T>> flow,
     std::function<S(S, T)> operation,
     Continuation<void*>* continuation) {
-    void* accumulator = &internal::NULL_VALUE();
+    auto frame = std::make_shared<internal::ReduceFrame<T, S>>(std::move(operation), continuation);
 
-    class ReduceCollector : public FlowCollector<T> {
-        void** accumulator_;
-        std::function<S(S, T)> operation_;
-    public:
-        ReduceCollector(void** acc, std::function<S(S, T)> op)
-            : accumulator_(acc), operation_(std::move(op)) {
-            (void)acc;
-        }
+    void* r = nullptr;
+    try {
+        r = flow->collect(frame.get(), frame.get());
+    } catch (...) {
+        throw;
+    }
 
-        void* emit(T value, Continuation<void*>*) override {
-            if (*accumulator_ == &internal::NULL_VALUE()) {
-                *accumulator_ = new S(std::move(value));
-            } else {
-                S* acc = static_cast<S*>(*accumulator_);
-                *acc = operation_(*acc, std::move(value));
-            }
-            return nullptr;
-        }
-    };
+    if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
 
-    ReduceCollector collector(&accumulator, operation);
-    flow->collect(&collector, continuation);
+    if (frame->failure) {
+        std::rethrow_exception(frame->failure);
+    }
 
-    if (accumulator == &internal::NULL_VALUE()) {
+    if (!frame->has_value) {
         throw NoSuchElementException("Empty flow can't be reduced");
     }
-    return accumulator;
+
+    void* res = frame->accumulator;
+    frame->accumulator = nullptr;
+    frame->has_value = false;
+    return res;
 }
 
 /**
@@ -75,46 +711,32 @@ inline void* reduce(
     std::shared_ptr<Flow<T>> flow,
     std::function<void*(S, T, Continuation<void*>*)> operation,
     Continuation<void*>* continuation) {
-    void* accumulator = &internal::NULL_VALUE();
+    auto frame = std::make_shared<internal::ReduceFrame<T, S>>(std::move(operation), continuation);
 
-    class SuspendingReduceCollector : public FlowCollector<T> {
-        void** accumulator_;
-        std::function<void*(S, T, Continuation<void*>*)> operation_;
-    public:
-        SuspendingReduceCollector(void** acc, std::function<void*(S, T, Continuation<void*>*)> op)
-            : accumulator_(acc), operation_(std::move(op)) {
-            (void)acc;
-        }
+    void* r = nullptr;
+    try {
+        r = flow->collect(frame.get(), frame.get());
+    } catch (...) {
+        throw;
+    }
 
-        void* emit(T value, Continuation<void*>* cont) override {
-            if (*accumulator_ == &internal::NULL_VALUE()) {
-                *accumulator_ = new S(std::move(value));
-            } else {
-                S* acc = static_cast<S*>(*accumulator_);
-                void* res = operation_(*acc, std::move(value), cont);
-                if (intrinsics::is_coroutine_suspended(res)) {
-                    return intrinsics::get_COROUTINE_SUSPENDED();
-                }
-                if (res) {
-                    auto* s_ptr = static_cast<S*>(res);
-                    *acc = std::move(*s_ptr);
-                    delete s_ptr;
-                }
-            }
-            return nullptr;
-        }
-    };
-
-    SuspendingReduceCollector collector(&accumulator, operation);
-    void* r = flow->collect(&collector, continuation);
     if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
 
-    if (accumulator == &internal::NULL_VALUE()) {
+    if (frame->failure) {
+        std::rethrow_exception(frame->failure);
+    }
+
+    if (!frame->has_value) {
         throw NoSuchElementException("Empty flow can't be reduced");
     }
-    return accumulator;
+
+    void* res = frame->accumulator;
+    frame->accumulator = nullptr;
+    frame->has_value = false;
+    return res;
 }
 
 /**
@@ -154,26 +776,25 @@ inline void* fold(
     R initial,
     std::function<R(R, T)> operation,
     Continuation<void*>* continuation) {
-    R* accumulator = new R(std::move(initial));
+    auto frame = std::make_shared<internal::FoldFrame<T, R>>(std::move(initial), std::move(operation), continuation);
 
-    class FoldCollector : public FlowCollector<T> {
-        R* accumulator_;
-        std::function<R(R, T)> operation_;
-    public:
-        FoldCollector(R* acc, std::function<R(R, T)> op)
-            : accumulator_(acc), operation_(std::move(op)) {
-            (void)acc;
-        }
+    void* r = nullptr;
+    try {
+        r = flow->collect(frame.get(), frame.get());
+    } catch (...) {
+        throw;
+    }
 
-        void* emit(T value, Continuation<void*>*) override {
-            *accumulator_ = operation_(*accumulator_, std::move(value));
-            return nullptr;
-        }
-    };
+    if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
 
-    FoldCollector collector(accumulator, operation);
-    flow->collect(&collector, continuation);
-    return accumulator;
+    if (frame->failure) {
+        std::rethrow_exception(frame->failure);
+    }
+
+    return new R(std::move(frame->accumulator));
 }
 
 /**
@@ -187,73 +808,62 @@ inline void* fold(
     R initial,
     std::function<void*(R, T, Continuation<void*>*)> operation,
     Continuation<void*>* continuation) {
-    R* accumulator = new R(std::move(initial));
+    auto frame = std::make_shared<internal::FoldFrame<T, R>>(std::move(initial), std::move(operation), continuation);
 
-    class SuspendingFoldCollector : public FlowCollector<T> {
-        R* accumulator_;
-        std::function<void*(R, T, Continuation<void*>*)> operation_;
-    public:
-        SuspendingFoldCollector(R* acc, std::function<void*(R, T, Continuation<void*>*)> op)
-            : accumulator_(acc), operation_(std::move(op)) {
-            (void)acc;
-        }
+    void* r = nullptr;
+    try {
+        r = flow->collect(frame.get(), frame.get());
+    } catch (...) {
+        throw;
+    }
 
-        void* emit(T value, Continuation<void*>* cont) override {
-            void* res = operation_(*accumulator_, std::move(value), cont);
-            if (intrinsics::is_coroutine_suspended(res)) {
-                return intrinsics::get_COROUTINE_SUSPENDED();
-            }
-            if (res) {
-                auto* r_ptr = static_cast<R*>(res);
-                *accumulator_ = std::move(*r_ptr);
-                delete r_ptr;
-            }
-            return nullptr;
-        }
-    };
-
-    SuspendingFoldCollector collector(accumulator, operation);
-    void* r = flow->collect(&collector, continuation);
     if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
-    return accumulator;
+
+    if (frame->failure) {
+        std::rethrow_exception(frame->failure);
+    }
+
+    return new R(std::move(frame->accumulator));
 }
 
 /**
  * The terminal operator that awaits for one and only one value to be emitted.
- * Throws std::out_of_range for empty flow and std::invalid_argument for flow
+ * Throws NoSuchElementException for empty flow and std::invalid_argument for flow
  * that contains more than one element.
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Reduce.kt:51-60
  */
 template<typename T>
 inline void* single(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
-    void* result = &internal::NULL_VALUE();
+    auto frame = std::make_shared<internal::SingleFrame<T>>(continuation);
 
-    class SingleCollector : public FlowCollector<T> {
-        void** result_;
-    public:
-        explicit SingleCollector(void** res) : result_(res) {
-            (void)res;
-        }
+    void* r = nullptr;
+    try {
+        r = flow->collect(frame.get(), frame.get());
+    } catch (...) {
+        throw;
+    }
 
-        void* emit(T value, Continuation<void*>*) override {
-            if (*result_ != &internal::NULL_VALUE()) {
-                throw std::invalid_argument("Flow has more than one element");
-            }
-            *result_ = new T(std::move(value));
-            return nullptr;
-        }
-    };
+    if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
 
-    SingleCollector collector(&result);
-    flow->collect(&collector, continuation);
+    if (frame->failure) {
+        std::rethrow_exception(frame->failure);
+    }
 
-    if (result == &internal::NULL_VALUE()) {
+    if (!frame->has_value) {
         throw NoSuchElementException("Flow is empty");
     }
-    return result;
+
+    void* res = frame->result;
+    frame->result = nullptr;
+    frame->has_value = false;
+    return res;
 }
 
 /**
@@ -264,43 +874,28 @@ inline void* single(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continua
  */
 template<typename T>
 inline void* single_or_null(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
-    void* result = &internal::NULL_VALUE();
-    bool has_multiple = false;
+    auto frame = std::make_shared<internal::SingleOrNullFrame<T>>(continuation);
 
-    class SingleOrNullCollector : public FlowCollector<T> {
-        void** result_;
-        bool* has_multiple_;
-    public:
-        SingleOrNullCollector(void** res, bool* mult)
-            : result_(res), has_multiple_(mult) {
-            (void)res;
-            (void)mult;
-        }
-
-        void* emit(T value, Continuation<void*>*) override {
-            if (*result_ == &internal::NULL_VALUE()) {
-                *result_ = new T(std::move(value));
-            } else {
-                *has_multiple_ = true;
-                delete static_cast<T*>(*result_);
-                *result_ = &internal::NULL_VALUE();
-                throw internal::AbortFlowException(this);
-            }
-            return nullptr;
-        }
-    };
-
-    SingleOrNullCollector collector(&result, &has_multiple);
+    void* r = nullptr;
     try {
-        flow->collect(&collector, continuation);
+        r = flow->collect(frame.get(), frame.get());
     } catch (internal::AbortFlowException& e) {
-        e.check_ownership(&collector);
+        e.check_ownership(frame.get());
     }
 
-    if (has_multiple || result == &internal::NULL_VALUE()) {
+    if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
+
+    if (frame->has_multiple || !frame->has_value) {
         return nullptr;
     }
-    return result;
+
+    void* res = frame->result;
+    frame->result = nullptr;
+    frame->has_value = false;
+    return res;
 }
 
 /**
@@ -311,32 +906,28 @@ inline void* single_or_null(std::shared_ptr<Flow<T>> flow, Continuation<void*>* 
  */
 template<typename T>
 inline void* first(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
-    void* result = &internal::NULL_VALUE();
+    auto frame = std::make_shared<internal::FirstFrame<T>>(false, continuation);
 
-    class FirstCollector : public FlowCollector<T> {
-        void** result_;
-    public:
-        explicit FirstCollector(void** res) : result_(res) {
-            (void)res;
-        }
-
-        void* emit(T value, Continuation<void*>*) override {
-            *result_ = new T(std::move(value));
-            throw internal::AbortFlowException(this);
-        }
-    };
-
-    FirstCollector collector(&result);
+    void* r = nullptr;
     try {
-        flow->collect(&collector, continuation);
+        r = flow->collect(frame.get(), frame.get());
     } catch (internal::AbortFlowException& e) {
-        e.check_ownership(&collector);
+        e.check_ownership(frame.get());
     }
 
-    if (result == &internal::NULL_VALUE()) {
+    if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
+
+    if (!frame->has_value) {
         throw NoSuchElementException("Expected at least one element");
     }
-    return result;
+
+    void* res = frame->result;
+    frame->result = nullptr;
+    frame->has_value = false;
+    return res;
 }
 
 /**
@@ -350,38 +941,28 @@ inline void* first(
     std::shared_ptr<Flow<T>> flow,
     std::function<bool(const T&)> predicate,
     Continuation<void*>* continuation) {
-    void* result = &internal::NULL_VALUE();
+    auto frame = std::make_shared<internal::FirstFrame<T>>(std::move(predicate), false, continuation);
 
-    class FirstPredicateCollector : public FlowCollector<T> {
-        void** result_;
-        const std::function<bool(const T&)>& predicate_;
-    public:
-        FirstPredicateCollector(void** res, const std::function<bool(const T&)>& pred)
-            : result_(res), predicate_(pred) {
-            (void)res;
-            (void)pred;
-        }
-
-        void* emit(T value, Continuation<void*>*) override {
-            if (predicate_(value)) {
-                *result_ = new T(std::move(value));
-                throw internal::AbortFlowException(this);
-            }
-            return nullptr;
-        }
-    };
-
-    FirstPredicateCollector collector(&result, predicate);
+    void* r = nullptr;
     try {
-        flow->collect(&collector, continuation);
+        r = flow->collect(frame.get(), frame.get());
     } catch (internal::AbortFlowException& e) {
-        e.check_ownership(&collector);
+        e.check_ownership(frame.get());
     }
 
-    if (result == &internal::NULL_VALUE()) {
+    if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
+
+    if (!frame->has_value) {
         throw NoSuchElementException("Expected at least one element matching the predicate");
     }
-    return result;
+
+    void* res = frame->result;
+    frame->result = nullptr;
+    frame->has_value = false;
+    return res;
 }
 
 /**
@@ -392,29 +973,28 @@ inline void* first(
  */
 template<typename T>
 inline void* first_or_null(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
-    T* result = nullptr;
+    auto frame = std::make_shared<internal::FirstFrame<T>>(true, continuation);
 
-    class FirstOrNullCollector : public FlowCollector<T> {
-        T** result_;
-    public:
-        explicit FirstOrNullCollector(T** res) : result_(res) {
-            (void)res;
-        }
-
-        void* emit(T value, Continuation<void*>*) override {
-            *result_ = new T(std::move(value));
-            throw internal::AbortFlowException(this);
-        }
-    };
-
-    FirstOrNullCollector collector(&result);
+    void* r = nullptr;
     try {
-        flow->collect(&collector, continuation);
+        r = flow->collect(frame.get(), frame.get());
     } catch (internal::AbortFlowException& e) {
-        e.check_ownership(&collector);
+        e.check_ownership(frame.get());
     }
 
-    return result;
+    if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
+
+    if (!frame->has_value) {
+        return nullptr;
+    }
+
+    void* res = frame->result;
+    frame->result = nullptr;
+    frame->has_value = false;
+    return res;
 }
 
 /**
@@ -428,35 +1008,28 @@ inline void* first_or_null(
     std::shared_ptr<Flow<T>> flow,
     std::function<bool(const T&)> predicate,
     Continuation<void*>* continuation) {
-    T* result = nullptr;
+    auto frame = std::make_shared<internal::FirstFrame<T>>(std::move(predicate), true, continuation);
 
-    class FirstOrNullPredicateCollector : public FlowCollector<T> {
-        T** result_;
-        const std::function<bool(const T&)>& predicate_;
-    public:
-        FirstOrNullPredicateCollector(T** res, const std::function<bool(const T&)>& pred)
-            : result_(res), predicate_(pred) {
-            (void)res;
-            (void)pred;
-        }
-
-        void* emit(T value, Continuation<void*>*) override {
-            if (predicate_(value)) {
-                *result_ = new T(std::move(value));
-                throw internal::AbortFlowException(this);
-            }
-            return nullptr;
-        }
-    };
-
-    FirstOrNullPredicateCollector collector(&result, predicate);
+    void* r = nullptr;
     try {
-        flow->collect(&collector, continuation);
+        r = flow->collect(frame.get(), frame.get());
     } catch (internal::AbortFlowException& e) {
-        e.check_ownership(&collector);
+        e.check_ownership(frame.get());
     }
 
-    return result;
+    if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
+
+    if (!frame->has_value) {
+        return nullptr;
+    }
+
+    void* res = frame->result;
+    frame->result = nullptr;
+    frame->has_value = false;
+    return res;
 }
 
 /**
@@ -467,31 +1040,32 @@ inline void* first_or_null(
  */
 template<typename T>
 inline void* last(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
-    void* result = &internal::NULL_VALUE();
+    auto frame = std::make_shared<internal::LastFrame<T>>(false, continuation);
 
-    class LastCollector : public FlowCollector<T> {
-        void** result_;
-    public:
-        explicit LastCollector(void** res) : result_(res) {
-            (void)res;
-        }
+    void* r = nullptr;
+    try {
+        r = flow->collect(frame.get(), frame.get());
+    } catch (...) {
+        throw;
+    }
 
-        void* emit(T value, Continuation<void*>*) override {
-            if (*result_ != &internal::NULL_VALUE()) {
-                delete static_cast<T*>(*result_);
-            }
-            *result_ = new T(std::move(value));
-            return nullptr;
-        }
-    };
+    if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
 
-    LastCollector collector(&result);
-    flow->collect(&collector, continuation);
+    if (frame->failure) {
+        std::rethrow_exception(frame->failure);
+    }
 
-    if (result == &internal::NULL_VALUE()) {
+    if (!frame->has_value) {
         throw NoSuchElementException("Expected at least one element");
     }
-    return result;
+
+    void* res = frame->result;
+    frame->result = nullptr;
+    frame->has_value = false;
+    return res;
 }
 
 /**
@@ -501,25 +1075,32 @@ inline void* last(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuati
  */
 template<typename T>
 inline void* last_or_null(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
-    T* result = nullptr;
+    auto frame = std::make_shared<internal::LastFrame<T>>(true, continuation);
 
-    class LastOrNullCollector : public FlowCollector<T> {
-        T** result_;
-    public:
-        explicit LastOrNullCollector(T** res) : result_(res) {
-            (void)res;
-        }
+    void* r = nullptr;
+    try {
+        r = flow->collect(frame.get(), frame.get());
+    } catch (...) {
+        throw;
+    }
 
-        void* emit(T value, Continuation<void*>*) override {
-            delete *result_;
-            *result_ = new T(std::move(value));
-            return nullptr;
-        }
-    };
+    if (intrinsics::is_coroutine_suspended(r)) {
+        frame->retain_self();
+        return intrinsics::get_COROUTINE_SUSPENDED();
+    }
 
-    LastOrNullCollector collector(&result);
-    flow->collect(&collector, continuation);
-    return result;
+    if (frame->failure) {
+        std::rethrow_exception(frame->failure);
+    }
+
+    if (!frame->has_value) {
+        return nullptr;
+    }
+
+    void* res = frame->result;
+    frame->result = nullptr;
+    frame->has_value = false;
+    return res;
 }
 
 } // namespace kotlinx::coroutines::flow
