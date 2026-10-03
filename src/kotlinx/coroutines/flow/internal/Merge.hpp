@@ -24,6 +24,7 @@
 #include "kotlinx/coroutines/channels/Produce.hpp" // For produce
 #include "kotlinx/coroutines/Dispatchers.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/EventLoop.hpp"
 #include <memory>
 #include <functional>
 #include <mutex>
@@ -162,59 +163,100 @@ struct TransformLatestFrame : public FlowCollector<T>,
                 return;
             }
 
-            self->previous_flow_ = kotlinx::coroutines::launch(
-                self->scope_.get(),
-                nullptr,
-                CoroutineStart::UNDISPATCHED,
-                [self, val = std::move(value)](CoroutineScope* child_scope) mutable {
-                    class ChildContinuation : public Continuation<void*> {
-                        std::shared_ptr<TransformLatestFrame<T, R>> frame_;
-                        std::shared_ptr<CoroutineContext> ctx_;
-                    public:
-                        ChildContinuation(std::shared_ptr<TransformLatestFrame<T, R>> frame,
-                                          std::shared_ptr<CoroutineContext> ctx)
-                            : frame_(std::move(frame)), ctx_(std::move(ctx)) {}
+            auto child_ctx = self->scope_->get_coroutine_context();
+            auto child_coro = std::make_shared<AbstractCoroutine<void*>>(child_ctx, true, true);
+            child_coro->init_parent_job_if_needed();
+            self->previous_flow_ = child_coro;
 
-                        std::shared_ptr<CoroutineContext> get_context() const override {
-                            return ctx_;
-                        }
+            class ChildContinuation : public Continuation<void*> {
+                std::shared_ptr<TransformLatestFrame<T, R>> frame_;
+                std::shared_ptr<AbstractCoroutine<void*>> coro_;
+            public:
+                ChildContinuation(std::shared_ptr<TransformLatestFrame<T, R>> frame,
+                                  std::shared_ptr<AbstractCoroutine<void*>> coro)
+                    : frame_(std::move(frame)), coro_(std::move(coro)) {}
 
-                        void resume_with(Result<void*> result) override {
-                            if (!result.is_success()) {
-                                frame_->on_child_failed(result.exception_or_null());
-                            }
-                        }
-                    };
+                std::shared_ptr<CoroutineContext> get_context() const override {
+                    return coro_ ? coro_->get_coroutine_context() : EmptyCoroutineContext::instance();
+                }
 
-                    auto child_ctx = child_scope ? child_scope->get_coroutine_context() : nullptr;
-                    auto child_cont = std::make_shared<ChildContinuation>(self, child_ctx);
-
-                    try {
-                        void* r = self->transform_(self->collector_, std::move(val), child_cont.get());
-                        if (intrinsics::is_coroutine_suspended(r)) {
-                            return;
-                        }
-                    } catch (...) {
-                        self->on_child_failed(std::current_exception());
+                void resume_with(Result<void*> result) override {
+                    if (!result.is_success()) {
+                        frame_->on_child_failed(result.exception_or_null());
+                    }
+                    if (coro_) {
+                        coro_->resume_with(result);
                     }
                 }
-            );
+            };
+
+            auto child_cont = std::make_shared<ChildContinuation>(self, child_coro);
+            child_coro->invoke_on_completion(true, true, [child_cont](std::exception_ptr) {});
+
+            std::function<void*(CoroutineScope*)> child_block = [self, val = std::move(value), child_cont](CoroutineScope*) -> void* {
+                try {
+                    void* r = self->transform_(self->collector_, std::move(val), child_cont.get());
+                    return r;
+                } catch (...) {
+                    self->on_child_failed(std::current_exception());
+                    return nullptr;
+                }
+            };
+
+            child_coro->start(CoroutineStart::UNDISPATCHED, static_cast<CoroutineScope*>(child_coro.get()), child_block);
         };
 
         if (prev_to_cancel && prev_to_cancel->is_active()) {
             prev_to_cancel->cancel(std::make_exception_ptr(ChildCancelledException()));
             if (!cont) {
-                prev_to_cancel->join_blocking();
+                auto loop = ThreadLocalEventLoop::current_or_null();
+                while (prev_to_cancel->is_active()) {
+                    if (loop && !loop->is_empty()) {
+                        loop->process_next_event();
+                    } else {
+                        std::this_thread::yield();
+                    }
+                }
                 launch_next();
                 return nullptr;
             }
-            prev_to_cancel->invoke_on_completion(true, true, [self, launch_next = std::move(launch_next), cont](std::exception_ptr) mutable {
-                launch_next();
-                if (cont) {
-                    cont->resume_with(Result<void*>::success(nullptr));
+
+            class JoinAndLaunchContinuation : public Continuation<void*>,
+                                              public std::enable_shared_from_this<JoinAndLaunchContinuation> {
+                std::function<void()> launch_next_;
+                Continuation<void*>* cont_;
+                std::shared_ptr<std::atomic<bool>> executed_;
+            public:
+                JoinAndLaunchContinuation(std::function<void()> launch_next,
+                                          Continuation<void*>* cont,
+                                          std::shared_ptr<std::atomic<bool>> executed)
+                    : launch_next_(std::move(launch_next)), cont_(cont), executed_(std::move(executed)) {}
+
+                std::shared_ptr<CoroutineContext> get_context() const override {
+                    return cont_ ? cont_->get_context() : EmptyCoroutineContext::instance();
                 }
-            });
-            return intrinsics::get_COROUTINE_SUSPENDED();
+
+                void resume_with(Result<void*> result) override {
+                    if (!executed_->exchange(true)) {
+                        launch_next_();
+                    }
+                    if (cont_) {
+                        cont_->resume_with(result);
+                    }
+                }
+            };
+
+            auto executed = std::make_shared<std::atomic<bool>>(false);
+            auto join_cont = std::make_shared<JoinAndLaunchContinuation>(launch_next, cont, executed);
+            prev_to_cancel->invoke_on_completion(true, true, [join_cont](std::exception_ptr) {});
+            void* join_res = prev_to_cancel->join(join_cont.get());
+            if (intrinsics::is_coroutine_suspended(join_res)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
+            if (!executed->exchange(true)) {
+                launch_next();
+            }
+            return nullptr;
         } else {
             launch_next();
             return nullptr;
@@ -300,7 +342,7 @@ public:
         TransformType transform,
         std::shared_ptr<Flow<T>> flow,
         std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance(),
-        int capacity = Channel<R>::BUFFERED,
+        int capacity = Channel<R>::OPTIONAL_CHANNEL,
         BufferOverflow on_buffer_overflow = BufferOverflow::SUSPEND
     ) : ChannelFlowOperator<T, R>(std::move(flow), std::move(context), capacity, on_buffer_overflow),
         transform_(std::move(transform)) {}
@@ -312,12 +354,7 @@ public:
 protected:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:19-34
     void* flow_collect(FlowCollector<R>* collector, Continuation<void*>* continuation) override {
-        auto ctx = continuation ? continuation->get_context() : nullptr;
-        if (!ctx || !ctx->get(ContinuationInterceptor::type_key)) {
-            auto def_disp = std::shared_ptr<CoroutineContext>(&Dispatchers::get_default(), [](CoroutineContext*) {});
-            ctx = (ctx ? ctx : EmptyCoroutineContext::instance())->operator+(def_disp);
-        }
-
+        auto ctx = continuation ? continuation->get_context() : EmptyCoroutineContext::instance();
         auto flow_scope = std::make_shared<FlowCoroutine<void*>>(ctx, nullptr);
         flow_scope->init_parent_job_if_needed();
 

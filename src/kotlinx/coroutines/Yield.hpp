@@ -110,6 +110,7 @@ void yield_coroutine();
  */
 void* yield(std::shared_ptr<Continuation<void*>> completion);
 
+
 /**
  * No-arg yield for test compatibility.
  * In Kotlin, yield() is a suspend function called within coroutines.

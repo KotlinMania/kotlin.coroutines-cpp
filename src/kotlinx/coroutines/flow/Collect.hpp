@@ -165,15 +165,16 @@ template <typename T>
 inline void* collect_latest(
     std::shared_ptr<Flow<T>> flow,
     std::function<void*(T, Continuation<void*>*)> action,
-    Continuation<void*>* continuation) {
+    Continuation<void*>* continuation = nullptr) {
     auto mapped = transform_latest<T, Unit>(
         std::move(flow),
         [action = std::move(action)](FlowCollector<Unit>*, T val, Continuation<void*>* cont) -> void* {
             return action(std::move(val), cont);
         });
-    auto buffered = buffer<Unit>(std::move(mapped), 0);
+    // NOTE(port): buffer(0) channel slow-path omitted until BufferedChannel state machine is complete;
+    // collecting directly via ChannelFlowTransformLatest provides prompt non-blocking cancellation.
     internal::NopCollector<Unit> nop;
-    return buffered->collect(&nop, continuation);
+    return mapped->collect(&nop, continuation);
 }
 
 /**
@@ -185,7 +186,7 @@ template <typename T>
 inline void* collect_latest(
     std::shared_ptr<Flow<T>> flow,
     std::function<void(T)> action,
-    Continuation<void*>* continuation) {
+    Continuation<void*>* continuation = nullptr) {
     return collect_latest<T>(
         std::move(flow),
         [action = std::move(action)](T val, Continuation<void*>*) -> void* {

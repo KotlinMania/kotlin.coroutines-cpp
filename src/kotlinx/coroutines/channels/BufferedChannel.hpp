@@ -28,6 +28,7 @@
 #include "kotlinx/coroutines/internal/Symbol.hpp"
 #include "kotlinx/coroutines/internal/ConcurrentLinkedList.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
+#include "kotlinx/coroutines/EventLoop.hpp"
 #include <atomic>
 #include <memory>
 #include <string>
@@ -3300,6 +3301,7 @@ public:
             auto ctx = continuation ? continuation->get_context() : nullptr;
             auto job = ctx ? std::dynamic_pointer_cast<Job>(ctx->get(Job::type_key)) : nullptr;
 
+            auto loop = ThreadLocalEventLoop::current_or_null();
             while (true) {
                 if (job && !job->is_active()) {
                     return new bool(false);
@@ -3315,7 +3317,11 @@ public:
                     if (cause) std::rethrow_exception(cause);
                     return new bool(false);
                 }
-                std::this_thread::yield();
+                if (loop && !loop->is_empty()) {
+                    loop->process_next_event();
+                } else {
+                    std::this_thread::yield();
+                }
             }
         }
 

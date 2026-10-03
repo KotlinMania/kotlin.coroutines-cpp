@@ -131,20 +131,71 @@ std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
  * Transliterated from:
  * public fun <T> Iterable<T>.asFlow(): Flow<T>
  */
+namespace detail {
+
+template <typename T>
+class AsFlowContinuation : public Continuation<void*>,
+                           public std::enable_shared_from_this<AsFlowContinuation<T>> {
+private:
+    std::vector<T> iterable_;
+    FlowCollector<T>* collector_;
+    Continuation<void*>* completion_;
+    size_t index_{0};
+
+public:
+    AsFlowContinuation(std::vector<T> iterable, FlowCollector<T>* collector, Continuation<void*>* completion)
+        : iterable_(std::move(iterable)), collector_(collector), completion_(completion) {}
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return completion_ ? completion_->get_context() : EmptyCoroutineContext::instance();
+    }
+
+    void resume_with(Result<void*> result) override {
+        if (!result.is_success()) {
+            if (completion_) completion_->resume_with(result);
+            return;
+        }
+        try {
+            void* res = loop();
+            if (!intrinsics::is_coroutine_suspended(res)) {
+                if (completion_) {
+                    completion_->resume_with(Result<void*>::success(nullptr));
+                }
+            }
+        } catch (...) {
+            if (completion_) {
+                completion_->resume_with(Result<void*>::failure(std::current_exception()));
+            } else {
+                throw;
+            }
+        }
+    }
+
+    void* loop() {
+        auto self = this->shared_from_this();
+        while (index_ < iterable_.size()) {
+            size_t curr = index_++;
+            void* res = collector_->emit(iterable_[curr], self.get());
+            if (intrinsics::is_coroutine_suspended(res)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
+        }
+        return nullptr;
+    }
+};
+
+} // namespace detail
+
 template <typename T>
 std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
     // Upstream:
     //   public fun <T> Iterable<T>.asFlow(): Flow<T> = flow { forEach { value -> emit(value) } }
     return flow<T>([iterable](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
-        for (const auto& value : iterable) {
-            void* emit_result = collector->emit(value, cont);
-            if (intrinsics::is_coroutine_suspended(emit_result)) {
-                return intrinsics::get_COROUTINE_SUSPENDED();
-            }
-        }
-        return nullptr;
+        auto sm = std::make_shared<detail::AsFlowContinuation<T>>(iterable, collector, cont);
+        return sm->loop();
     });
 }
+
 
 /**
  * Creates a flow from elements.
