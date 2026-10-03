@@ -9,6 +9,7 @@
 
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <functional>
 #include <exception>
 #include <memory>
@@ -62,23 +63,68 @@ std::shared_ptr<Flow<T>> on_start(std::shared_ptr<Flow<T>> upstream, std::functi
  * passing the cancellation exception or null if it completed successfully.
  *
  * Conceptually, onCompletion is similar to wrapping the flow collection into a finally block.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:140-160
  */
 template <typename T>
-std::shared_ptr<Flow<T>> on_completion(std::shared_ptr<Flow<T>> upstream, std::function<void(FlowCollector<T>*, std::exception_ptr)> action) {
-    return make_flow<T>([upstream, action](FlowCollector<T>* collector) {
+inline std::shared_ptr<Flow<T>> on_completion(
+    std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(FlowCollector<T>*, std::exception_ptr, Continuation<void*>*)> action) {
+    return flow<T>([upstream = std::move(upstream), action = std::move(action)](
+        FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
         try {
-            upstream->collect(collector);
-            action(collector, nullptr);
+            void* res = upstream->collect(collector, cont);
+            if (intrinsics::is_coroutine_suspended(res)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
         } catch (...) {
             auto ex = std::current_exception();
-            try {
-                action(collector, ex);
-            } catch (...) {
-                // If action throws, suppress it and rethrow original
+            void* a_res = action(collector, ex, cont);
+            if (intrinsics::is_coroutine_suspended(a_res)) {
+                return intrinsics::get_COROUTINE_SUSPENDED();
             }
-            throw; // Rethrow original exception
+            throw;
         }
+        void* a_res = action(collector, nullptr, cont);
+        if (intrinsics::is_coroutine_suspended(a_res)) {
+            return intrinsics::get_COROUTINE_SUSPENDED();
+        }
+        return nullptr;
     });
+}
+
+/**
+ * Non-suspending collector overload of [on_completion].
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:140-160
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> on_completion(
+    std::shared_ptr<Flow<T>> upstream,
+    std::function<void(FlowCollector<T>*, std::exception_ptr)> action) {
+    return on_completion<T>(
+        std::move(upstream),
+        [action = std::move(action)](
+            FlowCollector<T>* collector, std::exception_ptr cause, Continuation<void*>*) -> void* {
+            action(collector, cause);
+            return nullptr;
+        });
+}
+
+/**
+ * Non-suspending simplified overload of [on_completion] omitting collector.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:140-160
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> on_completion(
+    std::shared_ptr<Flow<T>> upstream,
+    std::function<void(std::exception_ptr)> action) {
+    return on_completion<T>(
+        std::move(upstream),
+        [action = std::move(action)](FlowCollector<T>*, std::exception_ptr cause) {
+            action(cause);
+        });
 }
 
 /**

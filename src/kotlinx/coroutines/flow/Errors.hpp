@@ -190,6 +190,23 @@ inline std::shared_ptr<Flow<T>> catch_(
 }
 
 /**
+ * Non-suspending simplified overload of [catch_] omitting collector.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Errors.kt:53-57
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> catch_(
+    std::shared_ptr<Flow<T>> upstream,
+    std::function<void(std::exception_ptr)> action) {
+    return catch_<T>(
+        std::move(upstream),
+        [action = std::move(action)](
+            FlowCollector<T>*, std::exception_ptr cause) {
+            action(cause);
+        });
+}
+
+/**
  * Retries collection of the given flow when an exception occurs in the upstream flow and the
  * [predicate] returns true.
  *

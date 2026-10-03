@@ -87,6 +87,19 @@ std::shared_ptr<Flow<T>> flow(std::function<void*(FlowCollector<T>*, Continuatio
 }
 
 /**
+ * Non-suspending overload of [flow].
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:60-65
+ */
+template <typename T>
+inline std::shared_ptr<Flow<T>> flow(std::function<void(FlowCollector<T>*)> block) {
+    return flow<T>([block = std::move(block)](FlowCollector<T>* collector, Continuation<void*>*) -> void* {
+        block(collector);
+        return nullptr;
+    });
+}
+
+/**
  * Creates a _cold_ flow that produces a single value from the given functional type.
  *
  * The function is invoked each time the flow is collected, making this

@@ -91,6 +91,26 @@ inline std::shared_ptr<Job> launch_in(std::shared_ptr<Flow<T>> flow, CoroutineSc
 }
 
 /**
+ * Reference overload of [launch_in].
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:45-47
+ */
+template <typename T>
+inline std::shared_ptr<Job> launch_in(std::shared_ptr<Flow<T>> flow, CoroutineScope& scope) {
+    return launch_in(std::move(flow), &scope);
+}
+
+/**
+ * Shared pointer overload of [launch_in].
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:45-47
+ */
+template <typename T>
+inline std::shared_ptr<Job> launch_in(std::shared_ptr<Flow<T>> flow, const std::shared_ptr<CoroutineScope>& scope) {
+    return launch_in(std::move(flow), scope.get());
+}
+
+/**
  * Terminal flow operator that collects the given flow with a provided [action] that takes the index
  * of an element (zero-based) and the element.
  *

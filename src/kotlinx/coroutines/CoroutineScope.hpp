@@ -179,6 +179,9 @@ public:
     std::shared_ptr<CoroutineContext> get_coroutine_context() const override;
 };
 
+// Forward declaration of create_coroutine_scope
+std::shared_ptr<CoroutineScope> create_coroutine_scope(std::shared_ptr<CoroutineContext> context);
+
 // ============================================================================
 // Line 99-100: CoroutineScope plus operator
 // ============================================================================
@@ -188,11 +191,45 @@ public:
  * in the current scope's context with the corresponding keys.
  *
  * This is a shorthand for `create_coroutine_scope(this_scope.context + context)`.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineScope.kt:99-100
  */
-std::shared_ptr<CoroutineScope> operator+(
+inline std::shared_ptr<CoroutineScope> operator+(
+    const CoroutineScope& scope,
+    std::shared_ptr<CoroutineContext> context
+) {
+    auto base_ctx = scope.get_coroutine_context();
+    auto new_ctx = base_ctx ? base_ctx->operator+(std::move(context)) : std::move(context);
+    return create_coroutine_scope(std::move(new_ctx));
+}
+
+inline std::shared_ptr<CoroutineScope> operator+(
+    CoroutineScope* scope,
+    std::shared_ptr<CoroutineContext> context
+) {
+    if (!scope) return nullptr;
+    return *scope + std::move(context);
+}
+
+inline std::shared_ptr<CoroutineScope> operator+(
     const CoroutineScope& scope,
     const CoroutineContext& context
-);
+) {
+    try {
+        auto shared_ctx = std::const_pointer_cast<CoroutineContext>(context.shared_from_this());
+        return scope + std::move(shared_ctx);
+    } catch (...) {
+        return create_coroutine_scope(scope.get_coroutine_context());
+    }
+}
+
+inline std::shared_ptr<CoroutineScope> operator+(
+    CoroutineScope* scope,
+    const CoroutineContext& context
+) {
+    if (!scope) return nullptr;
+    return *scope + context;
+}
 
 // ============================================================================
 // Line 157-158: isActive property
