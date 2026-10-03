@@ -12,6 +12,7 @@
 #include "kotlinx/coroutines/Exceptions.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
+#include "kotlinx/coroutines/flow/LinkedHashSet.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
 #include <atomic>
@@ -308,6 +309,44 @@ inline void* to_list(
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collection.kt:16-17
  */
+// Explicit LinkedHashSet destination overloads
+template <typename T>
+[[suspend]]
+inline void* to_set(
+    Flow<T>* flow,
+    LinkedHashSet<T>* destination,
+    Continuation<void*>* completion = nullptr) {
+    return to_collection<T, LinkedHashSet<T>>(flow, destination, completion);
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_set(
+    Flow<T>* flow,
+    LinkedHashSet<T>* destination,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return to_collection<T, LinkedHashSet<T>>(flow, destination, completion.get());
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_set(
+    std::shared_ptr<Flow<T>> flow,
+    LinkedHashSet<T>* destination,
+    Continuation<void*>* completion = nullptr) {
+    return to_collection<T, LinkedHashSet<T>>(std::move(flow), destination, completion);
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_set(
+    std::shared_ptr<Flow<T>> flow,
+    LinkedHashSet<T>* destination,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return to_collection<T, LinkedHashSet<T>>(std::move(flow), destination, completion.get());
+}
+
+// Backward compatibility: explicit std::set destination overloads
 template <typename T>
 [[suspend]]
 inline void* to_set(
@@ -344,14 +383,15 @@ inline void* to_set(
     return to_collection<T, std::set<T>>(std::move(flow), destination, completion.get());
 }
 
+// Default destination overloads (creates and returns LinkedHashSet<T> matching Kotlin upstream)
 template <typename T>
 [[suspend]]
 inline void* to_set(
     Flow<T>* flow,
     Continuation<void*>* completion = nullptr) {
-    auto owned = std::make_unique<std::set<T>>();
+    auto owned = std::make_unique<LinkedHashSet<T>>();
     auto* dest = owned.get();
-    return to_collection<T, std::set<T>>(flow, dest, completion, std::move(owned));
+    return to_collection<T, LinkedHashSet<T>>(flow, dest, completion, std::move(owned));
 }
 
 template <typename T>
@@ -370,10 +410,10 @@ inline void* to_set(
     if (!flow) {
         throw std::invalid_argument("flow cannot be null");
     }
-    auto owned = std::make_unique<std::set<T>>();
+    auto owned = std::make_unique<LinkedHashSet<T>>();
     auto* dest = owned.get();
     auto* flow_ptr = flow.get();
-    return to_collection<T, std::set<T>>(flow_ptr, dest, completion, std::move(owned), std::move(flow));
+    return to_collection<T, LinkedHashSet<T>>(flow_ptr, dest, completion, std::move(owned), std::move(flow));
 }
 
 template <typename T>

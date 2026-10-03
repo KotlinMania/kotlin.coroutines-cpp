@@ -10,7 +10,32 @@
 #include <iostream>
 #include <vector>
 #include <set>
+#include <string>
 #include <stdexcept>
+
+namespace kotlinx {
+namespace coroutines {
+
+struct NoLessKey {
+    int id = 0;
+    std::string name;
+
+    bool operator==(const NoLessKey& other) const {
+        return id == other.id && name == other.name;
+    }
+};
+
+} // namespace coroutines
+} // namespace kotlinx
+
+namespace std {
+template <>
+struct hash<kotlinx::coroutines::NoLessKey> {
+    size_t operator()(const kotlinx::coroutines::NoLessKey& k) const noexcept {
+        return std::hash<int>()(k.id) ^ (std::hash<std::string>()(k.name) << 1);
+    }
+};
+} // namespace std
 
 namespace kotlinx {
 namespace coroutines {
@@ -70,15 +95,15 @@ public:
         run_test([this](CoroutineScope*) {
             void* res1 = to_set(make_test_flow(), nullptr);
             assert_not_null(res1);
-            auto* set1 = static_cast<std::set<int>*>(res1);
-            std::set<int> expected1 = {42};
+            auto* set1 = static_cast<LinkedHashSet<int>*>(res1);
+            LinkedHashSet<int> expected1 = {42};
             assert_equals(expected1, *set1);
             delete set1;
 
             void* res2 = to_set(make_empty_flow(), nullptr);
             assert_not_null(res2);
-            auto* set2 = static_cast<std::set<int>*>(res2);
-            std::set<int> expected2;
+            auto* set2 = static_cast<LinkedHashSet<int>*>(res2);
+            LinkedHashSet<int> expected2;
             assert_equals(expected2, *set2);
             delete set2;
         });
@@ -139,13 +164,13 @@ public:
         run_test([](CoroutineScope*) {
             auto deferred_impl = std::make_shared<DeferredTestFlow>();
             std::shared_ptr<Flow<int>> deferred = deferred_impl;
-            std::set<int>* resumed_set = nullptr;
+            LinkedHashSet<int>* resumed_set = nullptr;
             bool resumed = false;
 
             auto cont = make_continuation<void*>(nullptr, [&resumed_set, &resumed](Result<void*> res) {
                 resumed = true;
                 if (res.is_success()) {
-                    resumed_set = static_cast<std::set<int>*>(res.get_or_throw());
+                    resumed_set = static_cast<LinkedHashSet<int>*>(res.get_or_throw());
                 }
             });
 
@@ -164,9 +189,64 @@ public:
 
             assert_true(resumed);
             assert_not_null(resumed_set);
-            std::set<int> expected = {10, 20};
+            LinkedHashSet<int> expected = {10, 20};
             assert_equals(expected, *resumed_set);
             delete resumed_set;
+        });
+    }
+
+    // @Test
+    void test_to_set_insertion_order() {
+        run_test([](CoroutineScope*) {
+            auto flow = flow::flow<int>([](FlowCollector<int>* collector, Continuation<void*>* cont) -> void* {
+                collector->emit(30, cont);
+                collector->emit(10, cont);
+                collector->emit(20, cont);
+                collector->emit(10, cont);
+                collector->emit(40, cont);
+                return nullptr;
+            });
+            void* res = to_set(flow, nullptr);
+            assert_not_null(res);
+            auto* set = static_cast<LinkedHashSet<int>*>(res);
+            assert_equals(static_cast<size_t>(4), set->size());
+            std::vector<int> elements(set->begin(), set->end());
+            std::vector<int> expected = {30, 10, 20, 40};
+            assert_equals(expected, elements);
+            delete set;
+        });
+    }
+
+    // @Test
+    void test_to_set_no_operator_less() {
+        run_test([](CoroutineScope*) {
+            auto flow = flow::flow<NoLessKey>([](FlowCollector<NoLessKey>* collector, Continuation<void*>* cont) -> void* {
+                collector->emit(NoLessKey{1, "first"}, cont);
+                collector->emit(NoLessKey{2, "second"}, cont);
+                collector->emit(NoLessKey{1, "first"}, cont);
+                collector->emit(NoLessKey{3, "third"}, cont);
+                return nullptr;
+            });
+            void* res = to_set(flow, nullptr);
+            assert_not_null(res);
+            auto* set = static_cast<LinkedHashSet<NoLessKey>*>(res);
+            assert_equals(static_cast<size_t>(3), set->size());
+            assert_equals(NoLessKey{1, "first"}, (*set)[0]);
+            assert_equals(NoLessKey{2, "second"}, (*set)[1]);
+            assert_equals(NoLessKey{3, "third"}, (*set)[2]);
+            delete set;
+        });
+    }
+
+    // @Test
+    void test_to_set_custom_std_set() {
+        run_test([this](CoroutineScope*) {
+            std::set<int> custom_set = {99};
+            void* res = to_set(make_test_flow(), &custom_set, nullptr);
+            assert_equals(static_cast<void*>(&custom_set), res);
+            assert_equals(static_cast<size_t>(2), custom_set.size());
+            assert_true(custom_set.find(42) != custom_set.end());
+            assert_true(custom_set.find(99) != custom_set.end());
         });
     }
 
@@ -222,11 +302,14 @@ int main() {
     std::cout << "=== ToCollectionTest ===" << std::endl;
     run("test_to_list", &ToCollectionTest::test_to_list);
     run("test_to_set", &ToCollectionTest::test_to_set);
+    run("test_to_set_insertion_order", &ToCollectionTest::test_to_set_insertion_order);
+    run("test_to_set_no_operator_less", &ToCollectionTest::test_to_set_no_operator_less);
+    run("test_to_set_custom_std_set", &ToCollectionTest::test_to_set_custom_std_set);
     run("test_to_collection_custom_destination", &ToCollectionTest::test_to_collection_custom_destination);
     run("test_suspended_to_list", &ToCollectionTest::test_suspended_to_list);
     run("test_suspended_to_set", &ToCollectionTest::test_suspended_to_set);
     run("test_suspended_failure_cleanup", &ToCollectionTest::test_suspended_failure_cleanup);
 
-    std::cout << "=== Results: " << (6 - failed) << "/6 passed ===" << std::endl;
+    std::cout << "=== Results: " << (9 - failed) << "/9 passed ===" << std::endl;
     return failed > 0 ? 1 : 0;
 }
