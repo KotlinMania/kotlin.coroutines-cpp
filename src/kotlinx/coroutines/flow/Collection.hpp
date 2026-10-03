@@ -61,14 +61,41 @@ template <typename T, typename Container>
 inline void* to_collection(
     Flow<T>* flow,
     Container* destination,
-    std::shared_ptr<Continuation<void*>> completion) {
+    Continuation<void*>* completion = nullptr) {
     detail::CollectingFlowCollector<T, Container> collector(destination);
     void* collect_result =
-        dsl::suspend(flow->collect(&collector, completion.get()));
+        dsl::suspend(flow->collect(&collector, completion));
     if (intrinsics::is_coroutine_suspended(collect_result)) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
     return static_cast<void*>(destination);
+}
+
+template <typename T, typename Container>
+[[suspend]]
+inline void* to_collection(
+    Flow<T>* flow,
+    Container* destination,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return to_collection<T, Container>(flow, destination, completion.get());
+}
+
+template <typename T, typename Container>
+[[suspend]]
+inline void* to_collection(
+    std::shared_ptr<Flow<T>> flow,
+    Container* destination,
+    Continuation<void*>* completion = nullptr) {
+    return to_collection<T, Container>(flow.get(), destination, completion);
+}
+
+template <typename T, typename Container>
+[[suspend]]
+inline void* to_collection(
+    std::shared_ptr<Flow<T>> flow,
+    Container* destination,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return to_collection<T, Container>(flow.get(), destination, completion.get());
 }
 
 /**
@@ -81,25 +108,77 @@ template <typename T>
 inline void* to_list(
     Flow<T>* flow,
     std::vector<T>* destination,
-    std::shared_ptr<Continuation<void*>> completion) {
-    return to_collection<T, std::vector<T>>(flow, destination, std::move(completion));
+    Continuation<void*>* completion = nullptr) {
+    return to_collection<T, std::vector<T>>(flow, destination, completion);
 }
 
-/**
- * Default-destination overload, matching the Kotlin
- * `destination: MutableList<T> = ArrayList()` default parameter value.
- *
- * Allocates the default `ArrayList()` on entry, forwards to the destination-taking suspend
- * overload, and routes the eventual collection through the same `Continuation` so the boxed
- * destination is delivered exactly once.
- */
+template <typename T>
+[[suspend]]
+inline void* to_list(
+    Flow<T>* flow,
+    std::vector<T>* destination,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return to_collection<T, std::vector<T>>(flow, destination, completion.get());
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_list(
+    std::shared_ptr<Flow<T>> flow,
+    std::vector<T>* destination,
+    Continuation<void*>* completion = nullptr) {
+    return to_collection<T, std::vector<T>>(flow.get(), destination, completion);
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_list(
+    std::shared_ptr<Flow<T>> flow,
+    std::vector<T>* destination,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return to_collection<T, std::vector<T>>(flow.get(), destination, completion.get());
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_list(
+    Flow<T>* flow,
+    Continuation<void*>* completion = nullptr) {
+    auto* destination = new std::vector<T>();
+    try {
+        void* res = to_collection<T, std::vector<T>>(flow, destination, completion);
+        if (intrinsics::is_coroutine_suspended(res)) {
+            return intrinsics::get_COROUTINE_SUSPENDED();
+        }
+        return res;
+    } catch (...) {
+        delete destination;
+        throw;
+    }
+}
+
 template <typename T>
 [[suspend]]
 inline void* to_list(
     Flow<T>* flow,
     std::shared_ptr<Continuation<void*>> completion) {
-    auto destination = std::make_shared<std::vector<T>>();
-    return to_collection<T, std::vector<T>>(flow, destination.get(), std::move(completion));
+    return to_list<T>(flow, completion.get());
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_list(
+    std::shared_ptr<Flow<T>> flow,
+    Continuation<void*>* completion = nullptr) {
+    return to_list<T>(flow.get(), completion);
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_list(
+    std::shared_ptr<Flow<T>> flow,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return to_list<T>(flow.get(), completion.get());
 }
 
 /**
@@ -112,21 +191,77 @@ template <typename T>
 inline void* to_set(
     Flow<T>* flow,
     std::set<T>* destination,
-    std::shared_ptr<Continuation<void*>> completion) {
-    return to_collection<T, std::set<T>>(flow, destination, std::move(completion));
+    Continuation<void*>* completion = nullptr) {
+    return to_collection<T, std::set<T>>(flow, destination, completion);
 }
 
-/**
- * Default-destination overload, matching the Kotlin
- * `destination: MutableSet<T> = LinkedHashSet()` default parameter value.
- */
+template <typename T>
+[[suspend]]
+inline void* to_set(
+    Flow<T>* flow,
+    std::set<T>* destination,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return to_collection<T, std::set<T>>(flow, destination, completion.get());
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_set(
+    std::shared_ptr<Flow<T>> flow,
+    std::set<T>* destination,
+    Continuation<void*>* completion = nullptr) {
+    return to_collection<T, std::set<T>>(flow.get(), destination, completion);
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_set(
+    std::shared_ptr<Flow<T>> flow,
+    std::set<T>* destination,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return to_collection<T, std::set<T>>(flow.get(), destination, completion.get());
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_set(
+    Flow<T>* flow,
+    Continuation<void*>* completion = nullptr) {
+    auto* destination = new std::set<T>();
+    try {
+        void* res = to_collection<T, std::set<T>>(flow, destination, completion);
+        if (intrinsics::is_coroutine_suspended(res)) {
+            return intrinsics::get_COROUTINE_SUSPENDED();
+        }
+        return res;
+    } catch (...) {
+        delete destination;
+        throw;
+    }
+}
+
 template <typename T>
 [[suspend]]
 inline void* to_set(
     Flow<T>* flow,
     std::shared_ptr<Continuation<void*>> completion) {
-    auto destination = std::make_shared<std::set<T>>();
-    return to_collection<T, std::set<T>>(flow, destination.get(), std::move(completion));
+    return to_set<T>(flow, completion.get());
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_set(
+    std::shared_ptr<Flow<T>> flow,
+    Continuation<void*>* completion = nullptr) {
+    return to_set<T>(flow.get(), completion);
+}
+
+template <typename T>
+[[suspend]]
+inline void* to_set(
+    std::shared_ptr<Flow<T>> flow,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return to_set<T>(flow.get(), completion.get());
 }
 
 } // namespace kotlinx::coroutines::flow

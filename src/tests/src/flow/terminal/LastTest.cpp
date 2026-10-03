@@ -1,12 +1,14 @@
-// Transliterated from Kotlin to C++
-// Original: kotlinx-coroutines-core/common/test/flow/terminal/LastTest.kt
-// NOTE(port): runTest wrapper not yet wired for suspend semantics
-// NOTE(port): Nullable flow elements (flowOf(1, null)) require void* boxing
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/test/flow/terminal/LastTest.kt
+ */
 
 #include "kotlinx/coroutines/testing/TestBase.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
 #include "kotlinx/coroutines/flow/Reduce.hpp"
+
+#include <iostream>
+#include <optional>
 
 namespace kotlinx {
 namespace coroutines {
@@ -18,47 +20,107 @@ class LastTest : public TestBase {
 public:
     // @Test
     void test_last() {
-        // NOTE(port): runTest { ... }
-        auto f = flow_of({1, 2, 3});
-        void* result = last(f, nullptr);
-        assert(result != nullptr);
-        assert(*static_cast<int*>(result) == 3);
-        delete static_cast<int*>(result);
+        run_test([](CoroutineScope*) {
+            auto f = flow_of({1, 2, 3});
+            void* res1 = last(f, nullptr);
+            assert_not_null(res1);
+            assert_equals(3, *static_cast<int*>(res1));
+            delete static_cast<int*>(res1);
 
-        void* result2 = last_or_null(f, nullptr);
-        assert(result2 != nullptr);
-        assert(*static_cast<int*>(result2) == 3);
-        delete static_cast<int*>(result2);
+            void* res2 = last_or_null(f, nullptr);
+            assert_not_null(res2);
+            assert_equals(3, *static_cast<int*>(res2));
+            delete static_cast<int*>(res2);
+        });
     }
 
     // @Test
-    // NOTE(port): Nullable types — flowOf(1, null) requires void* boxing
-    // void test_nulls() { ... }
+    void test_nulls() {
+        run_test([](CoroutineScope*) {
+            auto f = flow_of<std::optional<int>>({1, std::nullopt});
+            void* res1 = last(f, nullptr);
+            assert_not_null(res1);
+            auto val1 = *static_cast<std::optional<int>*>(res1);
+            delete static_cast<std::optional<int>*>(res1);
+            assert_true(!val1.has_value());
+
+            void* res2 = last_or_null(f, nullptr);
+            assert_not_null(res2);
+            auto val2 = *static_cast<std::optional<int>*>(res2);
+            delete static_cast<std::optional<int>*>(res2);
+            assert_true(!val2.has_value());
+        });
+    }
 
     // @Test
-    // NOTE(port): Nullable types — flowOf(null, 1) requires void* boxing
-    // void test_nulls_last_or_null() { ... }
+    void test_nulls_last_or_null() {
+        run_test([](CoroutineScope*) {
+            auto f = flow_of<std::optional<int>>({std::nullopt, 1});
+            void* res = last_or_null(f, nullptr);
+            assert_not_null(res);
+            auto val = *static_cast<std::optional<int>*>(res);
+            delete static_cast<std::optional<int>*>(res);
+            assert_true(val.has_value());
+            assert_equals(1, val.value());
+        });
+    }
 
     // @Test
     void test_empty_flow() {
-        // NOTE(port): runTest { ... }
-        // assertFailsWith<NoSuchElementException>
-        bool caught = false;
-        try {
-            last(empty_flow<int>(), nullptr);
-        } catch (const std::out_of_range&) {
-            caught = true;
-        }
-        assert(caught);
+        run_test([](CoroutineScope*) {
+            assert_fails_with<NoSuchElementException>([]() {
+                last(empty_flow<int>(), nullptr);
+            });
 
-        void* result = last_or_null(empty_flow<int>(), nullptr);
-        assert(result == nullptr);
+            void* result = last_or_null(empty_flow<int>(), nullptr);
+            assert_null(result);
+        });
     }
 
     // @Test
-    // NOTE(port): BadClass test requires special equality semantics
-    // void test_bad_class() { ... }
+    void test_bad_class() {
+        run_test([](CoroutineScope*) {
+            BadClass instance;
+            auto f = flow_of<BadClass>({instance});
+            void* res1 = last(f, nullptr);
+            assert_not_null(res1);
+            delete static_cast<BadClass*>(res1);
+
+            void* res2 = last_or_null(f, nullptr);
+            assert_not_null(res2);
+            delete static_cast<BadClass*>(res2);
+        });
+    }
 };
 
 } // namespace coroutines
 } // namespace kotlinx
+
+int main() {
+    using namespace kotlinx::coroutines;
+    LastTest test;
+    int failed = 0;
+
+    auto run = [&](const char* name, void (LastTest::*method)()) {
+        std::cout << "Running " << name << "..." << std::endl;
+        try {
+            (test.*method)();
+            test.reset();
+            std::cout << "  PASSED" << std::endl;
+        } catch (const std::exception& e) {
+            std::cerr << "  FAILED: " << e.what() << std::endl;
+            failed++;
+            test.reset();
+        }
+    };
+
+    std::cout << "=== LastTest ===" << std::endl;
+    run("test_last", &LastTest::test_last);
+    run("test_nulls", &LastTest::test_nulls);
+    run("test_nulls_last_or_null", &LastTest::test_nulls_last_or_null);
+    run("test_empty_flow", &LastTest::test_empty_flow);
+    run("test_bad_class", &LastTest::test_bad_class);
+
+    std::cout << "=== Results: " << (5 - failed) << "/5 passed ===" << std::endl;
+    return failed > 0 ? 1 : 0;
+}

@@ -16,6 +16,7 @@
 
 #include <functional>
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 namespace kotlinx::coroutines::flow {
@@ -47,9 +48,6 @@ public:
         : counter_(counter), predicate_(std::move(predicate)) {}
 
     void* emit(T value, Continuation<void*>* continuation) override {
-        // Upstream predicate is `suspend (T) -> Boolean`. The C++ predicate signature mirrors
-        // the suspend ABI: a non-null result is a boxed boolean payload, and
-        // `is_coroutine_suspended` indicates suspension at the predicate site.
         void* predicate_result =
             dsl::suspend(predicate_(std::move(value), continuation));
         if (intrinsics::is_coroutine_suspended(predicate_result)) {
@@ -57,6 +55,9 @@ public:
         }
         bool matched =
             predicate_result && *static_cast<bool*>(predicate_result);
+        if (predicate_result) {
+            delete static_cast<bool*>(predicate_result);
+        }
         if (matched) ++(*counter_);
         return nullptr;
     }
@@ -86,15 +87,39 @@ template <typename T>
 [[suspend]]
 inline void* count(
     Flow<T>* flow,
-    std::shared_ptr<Continuation<void*>> completion) {
+    Continuation<void*>* completion = nullptr) {
     int i = 0;
     detail::CountCollector<T> collector(&i);
     void* collect_result =
-        dsl::suspend(flow->collect(&collector, completion.get()));
+        dsl::suspend(flow->collect(&collector, completion));
     if (intrinsics::is_coroutine_suspended(collect_result)) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
     return new int(i);
+}
+
+template <typename T>
+[[suspend]]
+inline void* count(
+    Flow<T>* flow,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return count<T>(flow, completion.get());
+}
+
+template <typename T>
+[[suspend]]
+inline void* count(
+    std::shared_ptr<Flow<T>> flow,
+    Continuation<void*>* completion = nullptr) {
+    return count<T>(flow.get(), completion);
+}
+
+template <typename T>
+[[suspend]]
+inline void* count(
+    std::shared_ptr<Flow<T>> flow,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return count<T>(flow.get(), completion.get());
 }
 
 /**
@@ -112,15 +137,43 @@ template <typename T>
 inline void* count(
     Flow<T>* flow,
     std::function<void*(T, Continuation<void*>*)> predicate,
-    std::shared_ptr<Continuation<void*>> completion) {
+    Continuation<void*>* completion = nullptr) {
     int i = 0;
     detail::CountPredicateCollector<T> collector(&i, std::move(predicate));
     void* collect_result =
-        dsl::suspend(flow->collect(&collector, completion.get()));
+        dsl::suspend(flow->collect(&collector, completion));
     if (intrinsics::is_coroutine_suspended(collect_result)) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
     return new int(i);
+}
+
+template <typename T, typename Predicate,
+          typename = std::enable_if_t<!std::is_same_v<std::decay_t<Predicate>, std::shared_ptr<Continuation<void*>>> &&
+                                      !std::is_same_v<std::decay_t<Predicate>, Continuation<void*>*>>>
+[[suspend]]
+inline void* count(
+    Flow<T>* flow,
+    Predicate predicate,
+    Continuation<void*>* completion = nullptr) {
+    return count<T>(
+        flow,
+        std::function<void*(T, Continuation<void*>*)>(
+            [pred = std::move(predicate)](T value, Continuation<void*>*) -> void* {
+                return new bool(pred(value));
+            }),
+        completion);
+}
+
+template <typename T, typename Predicate,
+          typename = std::enable_if_t<!std::is_same_v<std::decay_t<Predicate>, std::shared_ptr<Continuation<void*>>> &&
+                                      !std::is_same_v<std::decay_t<Predicate>, Continuation<void*>*>>>
+[[suspend]]
+inline void* count(
+    std::shared_ptr<Flow<T>> flow,
+    Predicate predicate,
+    Continuation<void*>* completion = nullptr) {
+    return count<T>(flow.get(), std::move(predicate), completion);
 }
 
 } // namespace kotlinx::coroutines::flow

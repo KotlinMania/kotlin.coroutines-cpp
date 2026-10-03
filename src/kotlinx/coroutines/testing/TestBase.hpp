@@ -420,6 +420,21 @@ void assert_is(std::exception_ptr ex) {
     }
 }
 
+template<typename ExceptionType, typename Func>
+void assert_fails_with(Func&& func) {
+    bool caught = false;
+    try {
+        func();
+    } catch (const ExceptionType&) {
+        caught = true;
+    } catch (...) {
+        throw std::logic_error("assert_fails_with caught wrong exception type");
+    }
+    if (!caught) {
+        throw std::logic_error("assert_fails_with: expected exception was not thrown");
+    }
+}
+
 // =============================================================================
 // BadClass for testing equality edge cases
 // =============================================================================

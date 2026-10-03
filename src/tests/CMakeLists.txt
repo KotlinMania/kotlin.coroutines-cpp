@@ -3,8 +3,11 @@
 
 # Helper function to add a test executable
 function(add_coroutine_test TEST_NAME)
-    # Tests can be in src/suspend/ or src/ directly
+    # Tests can be in src/suspend/, src/flow/terminal/, or src/ directly
     set(TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/suspend/${TEST_NAME}.cpp")
+    if(NOT EXISTS "${TEST_SOURCE}")
+        set(TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/flow/terminal/${TEST_NAME}.cpp")
+    endif()
     if(NOT EXISTS "${TEST_SOURCE}")
         set(TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/${TEST_NAME}.cpp")
     endif()
@@ -49,6 +52,12 @@ add_coroutine_test(test_combine_zip_smoke)
 add_coroutine_test(test_share_hot_flow_smoke)
 add_coroutine_test(test_transform_errors_smoke)
 add_coroutine_test(test_collect_reduce_smoke)
+add_coroutine_test(CountTest)
+add_coroutine_test(LastTest)
+add_coroutine_test(SingleTest)
+add_coroutine_test(ToCollectionTest)
+add_coroutine_test(ReduceTest)
+add_coroutine_test(FoldTest)
 if(TARGET test_plugin_canonical AND KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     target_compile_options(test_plugin_canonical PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
     add_dependencies(test_plugin_canonical KotlinxSuspendPlugin)
