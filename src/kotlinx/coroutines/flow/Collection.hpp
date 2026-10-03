@@ -91,16 +91,20 @@ struct ToCollectionFrame : public FlowCollector<T>,
             flow_holder = nullptr;
         }
 
+        std::exception_ptr fail = nullptr;
         if (collect_res.is_success()) {
-            std::lock_guard<std::recursive_mutex> lock(mutex);
-            if (failure) {
+            {
+                std::lock_guard<std::recursive_mutex> lock(mutex);
+                fail = failure;
+            }
+            if (fail) {
                 if (completion) {
-                    completion->resume_with(Result<void*>::failure(failure));
+                    completion->resume_with(Result<void*>::failure(fail));
                 }
             } else {
-                void* res = owned_container ? static_cast<void*>(owned_container.release())
-                                            : static_cast<void*>(destination);
                 if (completion) {
+                    void* res = owned_container ? static_cast<void*>(owned_container.release())
+                                                : static_cast<void*>(destination);
                     completion->resume_with(Result<void*>::success(res));
                 }
             }

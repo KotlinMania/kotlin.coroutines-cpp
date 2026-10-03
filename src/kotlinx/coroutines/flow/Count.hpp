@@ -9,13 +9,17 @@
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
-#include "kotlinx/coroutines/dsl/Suspend.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
+#include <atomic>
+#include <exception>
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -23,48 +27,266 @@ namespace kotlinx::coroutines::flow {
 
 namespace detail {
 
-/** Sink for the bare `count()` overload: increments a counter on every emit. */
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Count.kt:11-18
+ *
+ * Heap-allocated state machine frame for bare `count()`.
+ * Implements both FlowCollector<T> (sink collector) and Continuation<void*> (completion interception),
+ * anchoring the counter and flow instance across suspension points to eliminate stack-UAF.
+ */
 template <typename T>
-class CountCollector : public FlowCollector<T> {
-public:
-    explicit CountCollector(int* counter) : counter_(counter) {}
+struct CountFrame : public FlowCollector<T>,
+                    public Continuation<void*>,
+                    public std::enable_shared_from_this<CountFrame<T>> {
+    int count_ = 0;
+    Continuation<void*>* completion = nullptr;
+    std::shared_ptr<Flow<T>> flow_holder;
+
+    std::recursive_mutex mutex;
+    std::exception_ptr failure = nullptr;
+    std::atomic<bool> completed{false};
+    std::shared_ptr<CountFrame<T>> self_ref;
+
+    explicit CountFrame(
+        Continuation<void*>* comp,
+        std::shared_ptr<Flow<T>> flow = nullptr)
+        : completion(comp),
+          flow_holder(std::move(flow)) {}
+
+    ~CountFrame() override = default;
+
+    void retain_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (!completed.load()) {
+            self_ref = this->shared_from_this();
+        }
+    }
+
+    void release_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        self_ref = nullptr;
+        flow_holder = nullptr;
+    }
+
+    bool is_completed() const {
+        return completed.load();
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return completion ? completion->get_context() : nullptr;
+    }
+
+    void resume_with(Result<void*> collect_res) override {
+        std::shared_ptr<CountFrame<T>> guard;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (completed.exchange(true)) return;
+            guard = std::move(self_ref);
+            self_ref = nullptr;
+            flow_holder = nullptr;
+        }
+
+        std::exception_ptr fail = nullptr;
+        int final_count = 0;
+        if (collect_res.is_success()) {
+            {
+                std::lock_guard<std::recursive_mutex> lock(mutex);
+                fail = failure;
+                final_count = count_;
+            }
+            if (fail) {
+                if (completion) {
+                    completion->resume_with(Result<void*>::failure(fail));
+                }
+            } else {
+                if (completion) {
+                    void* res = static_cast<void*>(new int(final_count));
+                    completion->resume_with(Result<void*>::success(res));
+                }
+            }
+        } else {
+            if (completion) {
+                completion->resume_with(Result<void*>::failure(collect_res.exception_or_null()));
+            }
+        }
+    }
 
     void* emit(T /*value*/, Continuation<void*>* /*continuation*/) override {
-        ++(*counter_);
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (failure) {
+            std::rethrow_exception(failure);
+        }
+        ++count_;
         return nullptr;
     }
-
-private:
-    int* counter_;
 };
 
-/** Sink for the `count(predicate)` overload. */
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Count.kt:23-32
+ *
+ * Heap-allocated state machine frame for `count(predicate)`.
+ * Implements both FlowCollector<T> and Continuation<void*>, handling both synchronous
+ * and suspending predicates without skipping counter increments, deadlocks, or leaking heap memory.
+ */
 template <typename T>
-class CountPredicateCollector : public FlowCollector<T> {
-public:
-    CountPredicateCollector(
-        int* counter,
-        std::function<void*(T, Continuation<void*>*)> predicate)
-        : counter_(counter), predicate_(std::move(predicate)) {}
+struct CountPredicateFrame : public FlowCollector<T>,
+                             public Continuation<void*>,
+                             public std::enable_shared_from_this<CountPredicateFrame<T>> {
+    int count_ = 0;
+    std::function<void*(T, Continuation<void*>*)> predicate_;
+    Continuation<void*>* completion = nullptr;
+    std::shared_ptr<Flow<T>> flow_holder;
 
-    void* emit(T value, Continuation<void*>* continuation) override {
-        void* predicate_result =
-            dsl::suspend(predicate_(std::move(value), continuation));
-        if (intrinsics::is_coroutine_suspended(predicate_result)) {
-            return intrinsics::get_COROUTINE_SUSPENDED();
+    std::recursive_mutex mutex;
+    std::exception_ptr failure = nullptr;
+    std::atomic<bool> completed{false};
+    std::shared_ptr<CountPredicateFrame<T>> self_ref;
+    std::shared_ptr<Continuation<void*>> active_op_cont;
+
+    CountPredicateFrame(
+        std::function<void*(T, Continuation<void*>*)> predicate,
+        Continuation<void*>* comp,
+        std::shared_ptr<Flow<T>> flow = nullptr)
+        : predicate_(std::move(predicate)),
+          completion(comp),
+          flow_holder(std::move(flow)) {}
+
+    ~CountPredicateFrame() override = default;
+
+    void retain_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        if (!completed.load()) {
+            self_ref = this->shared_from_this();
         }
-        bool matched =
-            predicate_result && *static_cast<bool*>(predicate_result);
-        if (predicate_result) {
-            delete static_cast<bool*>(predicate_result);
-        }
-        if (matched) ++(*counter_);
-        return nullptr;
     }
 
-private:
-    int* counter_;
-    std::function<void*(T, Continuation<void*>*)> predicate_;
+    void release_self() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        self_ref = nullptr;
+        flow_holder = nullptr;
+        active_op_cont = nullptr;
+    }
+
+    bool is_completed() const {
+        return completed.load();
+    }
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return completion ? completion->get_context() : nullptr;
+    }
+
+    void resume_with(Result<void*> collect_res) override {
+        std::shared_ptr<CountPredicateFrame<T>> guard;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (completed.exchange(true)) return;
+            guard = std::move(self_ref);
+            self_ref = nullptr;
+            flow_holder = nullptr;
+            active_op_cont = nullptr;
+        }
+
+        std::exception_ptr fail = nullptr;
+        int final_count = 0;
+        if (collect_res.is_success()) {
+            {
+                std::lock_guard<std::recursive_mutex> lock(mutex);
+                fail = failure;
+                final_count = count_;
+            }
+            if (fail) {
+                if (completion) {
+                    completion->resume_with(Result<void*>::failure(fail));
+                }
+            } else {
+                if (completion) {
+                    void* res = static_cast<void*>(new int(final_count));
+                    completion->resume_with(Result<void*>::success(res));
+                }
+            }
+        } else {
+            if (completion) {
+                completion->resume_with(Result<void*>::failure(collect_res.exception_or_null()));
+            }
+        }
+    }
+
+    void* emit(T value, Continuation<void*>* cont) override {
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            if (failure) {
+                std::rethrow_exception(failure);
+            }
+        }
+
+        std::weak_ptr<CountPredicateFrame<T>> self_weak = this->shared_from_this();
+        auto op_cont = std::make_shared<FunctionalContinuation<void*>>(
+            cont ? cont->get_context() : nullptr,
+            [self_weak, cont](Result<void*> op_res) {
+                auto self = self_weak.lock();
+                if (!self) return;
+
+                std::shared_ptr<Continuation<void*>> op_guard;
+                {
+                    std::lock_guard<std::recursive_mutex> lock(self->mutex);
+                    op_guard = std::move(self->active_op_cont);
+                }
+
+                if (op_res.is_success()) {
+                    void* raw = op_res.get_or_throw();
+                    if (raw) {
+                        auto* b_ptr = static_cast<bool*>(raw);
+                        if (*b_ptr) {
+                            std::lock_guard<std::recursive_mutex> lock(self->mutex);
+                            ++self->count_;
+                        }
+                        delete b_ptr;
+                    }
+                    if (cont) cont->resume_with(Result<void*>::success(nullptr));
+                } else {
+                    {
+                        std::lock_guard<std::recursive_mutex> lock(self->mutex);
+                        self->failure = op_res.exception_or_null();
+                    }
+                    if (cont) cont->resume_with(op_res);
+                }
+            }
+        );
+
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            active_op_cont = op_cont;
+        }
+
+        void* res = nullptr;
+        try {
+            res = predicate_(std::move(value), op_cont.get());
+        } catch (...) {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            active_op_cont = nullptr;
+            failure = std::current_exception();
+            throw;
+        }
+
+        if (intrinsics::is_coroutine_suspended(res)) {
+            return intrinsics::get_COROUTINE_SUSPENDED();
+        }
+
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex);
+            active_op_cont = nullptr;
+        }
+
+        if (res) {
+            auto* b_ptr = static_cast<bool*>(res);
+            if (*b_ptr) {
+                std::lock_guard<std::recursive_mutex> lock(mutex);
+                ++count_;
+            }
+            delete b_ptr;
+        }
+        return nullptr;
+    }
 };
 
 } // namespace detail
@@ -79,23 +301,41 @@ private:
  *       return i
  *   }
  *
- * Suspend ABI: returns `void*` per the project convention — a heap-boxed `int` on completion,
- * or `COROUTINE_SUSPENDED` when the underlying `collect` suspends. Callers unbox the boxed
- * int and own the returned pointer.
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Count.kt:11-18
  */
 template <typename T>
 [[suspend]]
 inline void* count(
     Flow<T>* flow,
-    Continuation<void*>* completion = nullptr) {
-    int i = 0;
-    detail::CountCollector<T> collector(&i);
-    void* collect_result =
-        dsl::suspend(flow->collect(&collector, completion));
-    if (intrinsics::is_coroutine_suspended(collect_result)) {
+    Continuation<void*>* completion = nullptr,
+    std::shared_ptr<Flow<T>> flow_holder = nullptr) {
+    if (!flow) {
+        throw std::invalid_argument("flow cannot be null");
+    }
+
+    auto frame = std::make_shared<detail::CountFrame<T>>(completion, std::move(flow_holder));
+    frame->retain_self();
+
+    void* r = nullptr;
+    try {
+        r = flow->collect(frame.get(), frame.get());
+    } catch (...) {
+        frame->release_self();
+        throw;
+    }
+
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
-    return new int(i);
+
+    frame->completed.store(true);
+    frame->release_self();
+
+    if (frame->failure) {
+        std::rethrow_exception(frame->failure);
+    }
+
+    return static_cast<void*>(new int(frame->count_));
 }
 
 template <typename T>
@@ -111,7 +351,11 @@ template <typename T>
 inline void* count(
     std::shared_ptr<Flow<T>> flow,
     Continuation<void*>* completion = nullptr) {
-    return count<T>(flow.get(), completion);
+    if (!flow) {
+        throw std::invalid_argument("flow cannot be null");
+    }
+    auto* flow_ptr = flow.get();
+    return count<T>(flow_ptr, completion, std::move(flow));
 }
 
 template <typename T>
@@ -119,7 +363,7 @@ template <typename T>
 inline void* count(
     std::shared_ptr<Flow<T>> flow,
     std::shared_ptr<Continuation<void*>> completion) {
-    return count<T>(flow.get(), completion.get());
+    return count<T>(std::move(flow), completion.get());
 }
 
 /**
@@ -131,21 +375,78 @@ inline void* count(
  *       collect { value -> if (predicate(value)) ++i }
  *       return i
  *   }
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Count.kt:23-32
  */
 template <typename T>
 [[suspend]]
 inline void* count(
     Flow<T>* flow,
     std::function<void*(T, Continuation<void*>*)> predicate,
-    Continuation<void*>* completion = nullptr) {
-    int i = 0;
-    detail::CountPredicateCollector<T> collector(&i, std::move(predicate));
-    void* collect_result =
-        dsl::suspend(flow->collect(&collector, completion));
-    if (intrinsics::is_coroutine_suspended(collect_result)) {
+    Continuation<void*>* completion = nullptr,
+    std::shared_ptr<Flow<T>> flow_holder = nullptr) {
+    if (!flow) {
+        throw std::invalid_argument("flow cannot be null");
+    }
+    if (!predicate) {
+        throw std::invalid_argument("predicate cannot be null");
+    }
+
+    auto frame = std::make_shared<detail::CountPredicateFrame<T>>(
+        std::move(predicate), completion, std::move(flow_holder));
+    frame->retain_self();
+
+    void* r = nullptr;
+    try {
+        r = flow->collect(frame.get(), frame.get());
+    } catch (...) {
+        frame->release_self();
+        throw;
+    }
+
+    if (intrinsics::is_coroutine_suspended(r) || frame->is_completed()) {
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
-    return new int(i);
+
+    frame->completed.store(true);
+    frame->release_self();
+
+    if (frame->failure) {
+        std::rethrow_exception(frame->failure);
+    }
+
+    return static_cast<void*>(new int(frame->count_));
+}
+
+template <typename T>
+[[suspend]]
+inline void* count(
+    Flow<T>* flow,
+    std::function<void*(T, Continuation<void*>*)> predicate,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return count<T>(flow, std::move(predicate), completion.get());
+}
+
+template <typename T>
+[[suspend]]
+inline void* count(
+    std::shared_ptr<Flow<T>> flow,
+    std::function<void*(T, Continuation<void*>*)> predicate,
+    Continuation<void*>* completion = nullptr) {
+    if (!flow) {
+        throw std::invalid_argument("flow cannot be null");
+    }
+    auto* flow_ptr = flow.get();
+    return count<T>(flow_ptr, std::move(predicate), completion, std::move(flow));
+}
+
+template <typename T>
+[[suspend]]
+inline void* count(
+    std::shared_ptr<Flow<T>> flow,
+    std::function<void*(T, Continuation<void*>*)> predicate,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return count<T>(std::move(flow), std::move(predicate), completion.get());
 }
 
 template <typename T, typename Predicate,
@@ -156,13 +457,34 @@ inline void* count(
     Flow<T>* flow,
     Predicate predicate,
     Continuation<void*>* completion = nullptr) {
-    return count<T>(
-        flow,
-        std::function<void*(T, Continuation<void*>*)>(
-            [pred = std::move(predicate)](T value, Continuation<void*>*) -> void* {
-                return new bool(pred(value));
-            }),
-        completion);
+    if constexpr (std::is_invocable_r_v<void*, Predicate, T, Continuation<void*>*>) {
+        return count<T>(
+            flow,
+            std::function<void*(T, Continuation<void*>*)>(
+                [pred = std::move(predicate)](T value, Continuation<void*>* cont) -> void* {
+                    return pred(std::move(value), cont);
+                }),
+            completion);
+    } else {
+        return count<T>(
+            flow,
+            std::function<void*(T, Continuation<void*>*)>(
+                [pred = std::move(predicate)](T value, Continuation<void*>* cont) -> void* {
+                    return static_cast<void*>(new bool(pred(std::move(value))));
+                }),
+            completion);
+    }
+}
+
+template <typename T, typename Predicate,
+          typename = std::enable_if_t<!std::is_same_v<std::decay_t<Predicate>, std::shared_ptr<Continuation<void*>>> &&
+                                      !std::is_same_v<std::decay_t<Predicate>, Continuation<void*>*>>>
+[[suspend]]
+inline void* count(
+    Flow<T>* flow,
+    Predicate predicate,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return count<T, Predicate>(flow, std::move(predicate), completion.get());
 }
 
 template <typename T, typename Predicate,
@@ -173,7 +495,40 @@ inline void* count(
     std::shared_ptr<Flow<T>> flow,
     Predicate predicate,
     Continuation<void*>* completion = nullptr) {
-    return count<T>(flow.get(), std::move(predicate), completion);
+    if (!flow) {
+        throw std::invalid_argument("flow cannot be null");
+    }
+    auto* flow_ptr = flow.get();
+    if constexpr (std::is_invocable_r_v<void*, Predicate, T, Continuation<void*>*>) {
+        return count<T>(
+            flow_ptr,
+            std::function<void*(T, Continuation<void*>*)>(
+                [pred = std::move(predicate)](T value, Continuation<void*>* cont) -> void* {
+                    return pred(std::move(value), cont);
+                }),
+            completion,
+            std::move(flow));
+    } else {
+        return count<T>(
+            flow_ptr,
+            std::function<void*(T, Continuation<void*>*)>(
+                [pred = std::move(predicate)](T value, Continuation<void*>* cont) -> void* {
+                    return static_cast<void*>(new bool(pred(std::move(value))));
+                }),
+            completion,
+            std::move(flow));
+    }
+}
+
+template <typename T, typename Predicate,
+          typename = std::enable_if_t<!std::is_same_v<std::decay_t<Predicate>, std::shared_ptr<Continuation<void*>>> &&
+                                      !std::is_same_v<std::decay_t<Predicate>, Continuation<void*>*>>>
+[[suspend]]
+inline void* count(
+    std::shared_ptr<Flow<T>> flow,
+    Predicate predicate,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return count<T, Predicate>(std::move(flow), std::move(predicate), completion.get());
 }
 
 } // namespace kotlinx::coroutines::flow
