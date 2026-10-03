@@ -19,8 +19,13 @@
 #include "kotlinx/coroutines/Exceptions.hpp"
 #include "kotlinx/coroutines/Builders.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
+#include "kotlinx/coroutines/CancellableContinuation.hpp"
+#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/internal/CurrentRunningCoroutine.hpp"
 #include <atomic>
 #include <functional>
+#include <type_traits>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -224,6 +229,84 @@ public:
 };
 
 // =============================================================================
+// Suspending Test Helpers (hang)
+// =============================================================================
+
+namespace detail {
+
+template<typename OnCancellation>
+inline void invoke_cancellation_callback(OnCancellation& callback, std::exception_ptr cause) {
+    if constexpr (std::is_invocable_v<OnCancellation, std::exception_ptr>) {
+        callback(cause);
+    } else if constexpr (std::is_invocable_v<OnCancellation>) {
+        callback();
+    }
+}
+
+} // namespace detail
+
+/**
+ * Transliterated from: test-utils/common/src/TestBase.common.kt:241-247
+ *
+ * public suspend inline fun hang(onCancellation: () -> Unit) {
+ *     try {
+ *         suspendCancellableCoroutine<Unit> { }
+ *     } finally {
+ *         onCancellation()
+ *     }
+ * }
+ *
+ * Suspends indefinitely until cancelled. When cancelled, invokes the [on_cancellation] handler.
+ */
+template<typename OnCancellation>
+inline void* hang(OnCancellation&& on_cancellation, Continuation<void*>* continuation) {
+    auto callback = std::make_shared<std::decay_t<OnCancellation>>(std::forward<OnCancellation>(on_cancellation));
+    auto called = std::make_shared<std::atomic<bool>>(false);
+    return suspend_cancellable_coroutine<void>([callback, called](CancellableContinuation<void>& cont) {
+        cont.invoke_on_cancellation([callback, called](std::exception_ptr cause) {
+            if (!called->exchange(true)) {
+                detail::invoke_cancellation_callback(*callback, cause);
+            }
+        });
+    }, continuation);
+}
+
+template<typename OnCancellation>
+inline void* hang(OnCancellation&& on_cancellation, std::shared_ptr<Continuation<void*>> continuation) {
+    auto callback = std::make_shared<std::decay_t<OnCancellation>>(std::forward<OnCancellation>(on_cancellation));
+    auto called = std::make_shared<std::atomic<bool>>(false);
+    return suspend_cancellable_coroutine<void>([callback, called](CancellableContinuation<void>& cont) {
+        cont.invoke_on_cancellation([callback, called](std::exception_ptr cause) {
+            if (!called->exchange(true)) {
+                detail::invoke_cancellation_callback(*callback, cause);
+            }
+        });
+    }, std::move(continuation));
+}
+
+template<typename OnCancellation>
+inline void* hang(OnCancellation&& on_cancellation) {
+    auto cont = internal::CurrentRunningCoroutine::current;
+    if (!cont) {
+        throw std::logic_error("hang() called outside of a coroutine context with no continuation provided");
+    }
+    internal::CurrentRunningCoroutine::suspended = true;
+    return hang(std::forward<OnCancellation>(on_cancellation), cont);
+}
+
+inline void* hang(Continuation<void*>* continuation) {
+    return hang([]() {}, continuation);
+}
+
+inline void* hang(std::shared_ptr<Continuation<void*>> continuation) {
+    return hang([]() {}, std::move(continuation));
+}
+
+inline void* hang() {
+    return hang([]() {});
+}
+
+// =============================================================================
 // TestBase - Main test class
 // =============================================================================
 
@@ -331,6 +414,34 @@ public:
             throw std::logic_error("Too few unhandled exceptions " + std::to_string(ex_count) +
                                    ", expected " + std::to_string(unhandled.size()));
         }
+    }
+
+    // Suspending hang helpers delegating to kotlinx::coroutines::testing::hang
+    template<typename OnCancellation>
+    void* hang(OnCancellation&& on_cancellation, Continuation<void*>* continuation) {
+        return kotlinx::coroutines::testing::hang(std::forward<OnCancellation>(on_cancellation), continuation);
+    }
+
+    template<typename OnCancellation>
+    void* hang(OnCancellation&& on_cancellation, std::shared_ptr<Continuation<void*>> continuation) {
+        return kotlinx::coroutines::testing::hang(std::forward<OnCancellation>(on_cancellation), std::move(continuation));
+    }
+
+    template<typename OnCancellation>
+    void* hang(OnCancellation&& on_cancellation) {
+        return kotlinx::coroutines::testing::hang(std::forward<OnCancellation>(on_cancellation));
+    }
+
+    void* hang(Continuation<void*>* continuation) {
+        return kotlinx::coroutines::testing::hang(continuation);
+    }
+
+    void* hang(std::shared_ptr<Continuation<void*>> continuation) {
+        return kotlinx::coroutines::testing::hang(std::move(continuation));
+    }
+
+    void* hang() {
+        return kotlinx::coroutines::testing::hang();
     }
 };
 
