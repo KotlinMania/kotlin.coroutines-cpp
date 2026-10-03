@@ -8,12 +8,13 @@
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
+#include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <iostream>
-#include <cassert>
 #include <vector>
 
 using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::intrinsics;
+using namespace kotlinx::coroutines::testing;
 
 // Simple completion continuation
 class TestCompletion : public Continuation<void*> {
@@ -52,8 +53,8 @@ void test_timeout_no_suspend() {
     // We expect it to return the result immediately because block doesn't suspend
     void* result = with_timeout<void*>(1000, block, completion);
     
-    assert(!is_coroutine_suspended(result));
-    assert(*(int*)result == 42);
+    assert_false(is_coroutine_suspended(result));
+    assert_equals(42, *(int*)result);
     
     std::cout << "PASSED" << std::endl;
 }
@@ -74,12 +75,12 @@ void test_timeout_throws_exception() {
         caught = true;
     }
     
-    assert(caught);
+    assert_true(caught);
     
     std::cout << "PASSED" << std::endl;
 }
 
-// TODO: Test suspension inside with_timeout (requires async machine)
+// Suspension inside with_timeout requires async machine support
 
 int main() {
     std::cout << "=== test_timeout ===" << std::endl;

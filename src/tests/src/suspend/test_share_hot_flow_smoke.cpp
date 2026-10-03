@@ -9,7 +9,7 @@
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/CompletableJob.hpp"
 #include <atomic>
-#include <cassert>
+#include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -18,12 +18,13 @@
 
 using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::flow;
+using namespace kotlinx::coroutines::testing;
 using flow_abort = kotlinx::coroutines::flow::internal::AbortFlowException;
 
 void test_subscription_count_tracking() {
     auto shared = make_mutable_shared_flow<int>(/*replay=*/1, /*extra_buffer_capacity=*/0);
-    assert(shared->subscription_count()->value() == 0);
-    assert(shared->get_subscription_count()->value() == 0);
+    assert_equals(0, shared->subscription_count()->value());
+    assert_equals(0, shared->get_subscription_count()->value());
 
     std::atomic<bool> stop_sub1{false};
     std::thread t1([&]() {
@@ -45,7 +46,7 @@ void test_subscription_count_tracking() {
     for (int i = 0; i < 50 && shared->subscription_count()->value() == 0; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    assert(shared->subscription_count()->value() == 1);
+    assert_equals(1, shared->subscription_count()->value());
 
     std::atomic<bool> stop_sub2{false};
     std::thread t2([&]() {
@@ -67,7 +68,7 @@ void test_subscription_count_tracking() {
     for (int i = 0; i < 50 && shared->subscription_count()->value() < 2; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    assert(shared->subscription_count()->value() == 2);
+    assert_equals(2, shared->subscription_count()->value());
 
     stop_sub1 = true;
     shared->try_emit(999); // wake up collector 1
@@ -76,7 +77,7 @@ void test_subscription_count_tracking() {
     for (int i = 0; i < 50 && shared->subscription_count()->value() > 1; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    assert(shared->subscription_count()->value() == 1);
+    assert_equals(1, shared->subscription_count()->value());
 
     stop_sub2 = true;
     shared->try_emit(999); // wake up collector 2
@@ -85,12 +86,12 @@ void test_subscription_count_tracking() {
     for (int i = 0; i < 50 && shared->subscription_count()->value() > 0; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    assert(shared->subscription_count()->value() == 0);
+    assert_equals(0, shared->subscription_count()->value());
 
     // Also verify StateFlow tracking
     auto state = make_mutable_state_flow<int>(42);
-    assert(state->subscription_count()->value() == 0);
-    assert(state->value() == 42);
+    assert_equals(0, state->subscription_count()->value());
+    assert_equals(42, state->value());
 
     std::cout << "test_subscription_count_tracking passed" << std::endl;
 }
@@ -115,12 +116,12 @@ void test_share_in_eagerly() {
     for (int i = 0; i < 50 && emissions.load() < 2; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    assert(emissions.load() == 2);
+    assert_equals(2, emissions.load());
 
     const auto& cache = shared->replay_cache();
-    assert(cache.size() == 2);
-    assert(cache[0] == 10);
-    assert(cache[1] == 20);
+    assert_equals(static_cast<size_t>(2), cache.size());
+    assert_equals(10, cache[0]);
+    assert_equals(20, cache[1]);
 
     cancel(*scope);
     std::cout << "test_share_in_eagerly passed" << std::endl;
@@ -138,7 +139,7 @@ void test_share_in_lazily() {
 
     auto shared = share_in(cold, scope.get(), SharingStarted::lazily(), /*replay=*/1);
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    assert(!upstream_started.load());
+    assert_false(upstream_started.load());
 
     std::atomic<int> received{0};
     std::thread sub([&]() {
@@ -160,8 +161,8 @@ void test_share_in_lazily() {
     for (int i = 0; i < 50 && received.load() == 0; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    assert(upstream_started.load());
-    assert(received.load() == 100);
+    assert_true(upstream_started.load());
+    assert_equals(100, received.load());
 
     if (sub.joinable()) sub.join();
     cancel(*scope);
@@ -191,7 +192,7 @@ void test_share_in_while_subscribed_restart_and_cache_reset() {
         /*replay=*/1
     );
 
-    assert(upstream_runs.load() == 0);
+    assert_equals(0, upstream_runs.load());
 
     // Subscriber 1
     std::atomic<bool> sub1_stop{false};
@@ -219,9 +220,9 @@ void test_share_in_while_subscribed_restart_and_cache_reset() {
     for (int i = 0; i < 50 && sub1_val.load() == 0; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    assert(upstream_runs.load() == 1);
-    assert(sub1_val.load() == 10);
-    assert(!shared->replay_cache().empty());
+    assert_equals(1, upstream_runs.load());
+    assert_equals(10, sub1_val.load());
+    assert_false(shared->replay_cache().empty());
 
     // Unsubscribe
     sub1_stop = true;
@@ -231,7 +232,7 @@ void test_share_in_while_subscribed_restart_and_cache_reset() {
     for (int i = 0; i < 50 && !shared->replay_cache().empty(); ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
-    assert(shared->replay_cache().empty());
+    assert_true(shared->replay_cache().empty());
 
     cancel(*scope);
     std::cout << "test_share_in_while_subscribed_restart_and_cache_reset passed" << std::endl;
@@ -259,7 +260,7 @@ void test_state_in_while_subscribed_reset_to_initial() {
         /*initial_value=*/-1
     );
 
-    assert(state->value() == -1);
+    assert_equals(-1, state->value());
 
     // Subscriber 1
     std::atomic<bool> sub1_stop{false};
@@ -287,7 +288,7 @@ void test_state_in_while_subscribed_reset_to_initial() {
     for (int i = 0; i < 50 && sub1_val.load() != 77; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    assert(state->value() == 77);
+    assert_equals(77, state->value());
 
     // Unsubscribe
     sub1_stop = true;
@@ -297,7 +298,7 @@ void test_state_in_while_subscribed_reset_to_initial() {
     for (int i = 0; i < 50 && state->value() != -1; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
-    assert(state->value() == -1);
+    assert_equals(-1, state->value());
 
     cancel(*scope);
     std::cout << "test_state_in_while_subscribed_reset_to_initial passed" << std::endl;

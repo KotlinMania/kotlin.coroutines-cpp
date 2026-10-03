@@ -4,7 +4,7 @@
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
-#include <cassert>
+#include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -14,6 +14,7 @@
 
 using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::flow;
+using namespace kotlinx::coroutines::testing;
 
 template <typename T>
 class AccumulatorCollector : public FlowCollector<T> {
@@ -44,7 +45,7 @@ void test_filter() {
     auto filtered = filter<int>(f, [](const int& v) { return v % 2 != 0; });
     AccumulatorCollector<int> col;
     filtered->collect(&col, nullptr);
-    assert((col.items == std::vector<int>{1, 3, 5}));
+    assert_equals(std::vector<int>{1, 3, 5}, col.items);
 
     // Suspending filter
     auto f2 = make_test_flow<int>({10, 20, 30});
@@ -53,7 +54,7 @@ void test_filter() {
     });
     AccumulatorCollector<int> col2;
     filtered2->collect(&col2, nullptr);
-    assert((col2.items == std::vector<int>{20, 30}));
+    assert_equals(std::vector<int>{20, 30}, col2.items);
     std::cout << "test_filter passed" << std::endl;
 }
 
@@ -62,7 +63,7 @@ void test_filter_not() {
     auto filtered = filter_not<int>(f, [](const int& v) { return v % 2 != 0; });
     AccumulatorCollector<int> col;
     filtered->collect(&col, nullptr);
-    assert((col.items == std::vector<int>{2, 4}));
+    assert_equals(std::vector<int>{2, 4}, col.items);
     std::cout << "test_filter_not passed" << std::endl;
 }
 
@@ -86,9 +87,9 @@ void test_filter_is_instance() {
     auto filtered = filter_is_instance<DerivedA, Base>(f);
     AccumulatorCollector<std::shared_ptr<DerivedA>> col;
     filtered->collect(&col, nullptr);
-    assert(col.items.size() == 2);
-    assert(col.items[0]->a == 1);
-    assert(col.items[1]->a == 1);
+    assert_equals(static_cast<size_t>(2), col.items.size());
+    assert_equals(1, col.items[0]->a);
+    assert_equals(1, col.items[1]->a);
     std::cout << "test_filter_is_instance passed" << std::endl;
 }
 
@@ -99,9 +100,9 @@ void test_filter_not_null() {
     auto filtered = filter_not_null<int>(f);
     AccumulatorCollector<int*> col;
     filtered->collect(&col, nullptr);
-    assert(col.items.size() == 2);
-    assert(*col.items[0] == 10);
-    assert(*col.items[1] == 20);
+    assert_equals(static_cast<size_t>(2), col.items.size());
+    assert_equals(10, *col.items[0]);
+    assert_equals(20, *col.items[1]);
 
     // Optional overload
     std::vector<std::optional<std::string>> opts = {"hello", std::nullopt, "world"};
@@ -109,7 +110,7 @@ void test_filter_not_null() {
     auto filtered_opt = filter_not_null<std::string>(f_opt);
     AccumulatorCollector<std::string> col_opt;
     filtered_opt->collect(&col_opt, nullptr);
-    assert((col_opt.items == std::vector<std::string>{"hello", "world"}));
+    assert_equals(std::vector<std::string>{"hello", "world"}, col_opt.items);
     std::cout << "test_filter_not_null passed" << std::endl;
 }
 
@@ -118,7 +119,7 @@ void test_map() {
     auto mapped = map<int, std::string>(f, [](int v) { return std::to_string(v * 10); });
     AccumulatorCollector<std::string> col;
     mapped->collect(&col, nullptr);
-    assert((col.items == std::vector<std::string>{"10", "20", "30"}));
+    assert_equals(std::vector<std::string>{"10", "20", "30"}, col.items);
 
     // Suspending map
     auto mapped_suspend = map<int, int>(f, [](int v, Continuation<void*>*) -> void* {
@@ -126,7 +127,7 @@ void test_map() {
     });
     AccumulatorCollector<int> col_suspend;
     mapped_suspend->collect(&col_suspend, nullptr);
-    assert((col_suspend.items == std::vector<int>{101, 102, 103}));
+    assert_equals(std::vector<int>{101, 102, 103}, col_suspend.items);
     std::cout << "test_map passed" << std::endl;
 }
 
@@ -138,7 +139,7 @@ void test_map_not_null() {
     });
     AccumulatorCollector<std::string> col;
     mapped->collect(&col, nullptr);
-    assert((col.items == std::vector<std::string>{"2", "4"}));
+    assert_equals(std::vector<std::string>{"2", "4"}, col.items);
     std::cout << "test_map_not_null passed" << std::endl;
 }
 
@@ -147,10 +148,13 @@ void test_with_index() {
     auto indexed = with_index<std::string>(f);
     AccumulatorCollector<IndexedValue<std::string>> col;
     indexed->collect(&col, nullptr);
-    assert(col.items.size() == 3);
-    assert(col.items[0].index == 0 && col.items[0].value == "a");
-    assert(col.items[1].index == 1 && col.items[1].value == "b");
-    assert(col.items[2].index == 2 && col.items[2].value == "c");
+    assert_equals(static_cast<size_t>(3), col.items.size());
+    assert_equals(0, col.items[0].index);
+    assert_equals(std::string("a"), col.items[0].value);
+    assert_equals(1, col.items[1].index);
+    assert_equals(std::string("b"), col.items[1].value);
+    assert_equals(2, col.items[2].index);
+    assert_equals(std::string("c"), col.items[2].value);
     std::cout << "test_with_index passed" << std::endl;
 }
 
@@ -162,8 +166,8 @@ void test_on_each() {
     });
     AccumulatorCollector<int> col;
     tracked->collect(&col, nullptr);
-    assert((col.items == std::vector<int>{1, 2, 3}));
-    assert((side_effects == std::vector<int>{1, 2, 3}));
+    assert_equals(std::vector<int>{1, 2, 3}, col.items);
+    assert_equals(std::vector<int>{1, 2, 3}, side_effects);
     std::cout << "test_on_each passed" << std::endl;
 }
 
@@ -172,13 +176,13 @@ void test_running_fold_and_scan() {
     auto folded = running_fold<int, int>(f, 0, [](int acc, int val) { return acc + val; });
     AccumulatorCollector<int> col;
     folded->collect(&col, nullptr);
-    assert((col.items == std::vector<int>{0, 1, 3, 6}));
+    assert_equals(std::vector<int>{0, 1, 3, 6}, col.items);
 
     // scan alias
     auto scanned = scan<int, int>(f, 10, [](int acc, int val) { return acc + val; });
     AccumulatorCollector<int> col2;
     scanned->collect(&col2, nullptr);
-    assert((col2.items == std::vector<int>{10, 11, 13, 16}));
+    assert_equals(std::vector<int>{10, 11, 13, 16}, col2.items);
     std::cout << "test_running_fold_and_scan passed" << std::endl;
 }
 
@@ -187,7 +191,7 @@ void test_running_reduce() {
     auto reduced = running_reduce<int>(f, [](int acc, int val) { return acc * val; });
     AccumulatorCollector<int> col;
     reduced->collect(&col, nullptr);
-    assert((col.items == std::vector<int>{1, 2, 6, 24}));
+    assert_equals(std::vector<int>{1, 2, 6, 24}, col.items);
     std::cout << "test_running_reduce passed" << std::endl;
 }
 
@@ -196,10 +200,10 @@ void test_chunked() {
     auto chunked_flow = chunked<int>(f, 2);
     AccumulatorCollector<std::vector<int>> col;
     chunked_flow->collect(&col, nullptr);
-    assert(col.items.size() == 3);
-    assert((col.items[0] == std::vector<int>{1, 2}));
-    assert((col.items[1] == std::vector<int>{3, 4}));
-    assert((col.items[2] == std::vector<int>{5}));
+    assert_equals(static_cast<size_t>(3), col.items.size());
+    assert_equals(std::vector<int>{1, 2}, col.items[0]);
+    assert_equals(std::vector<int>{3, 4}, col.items[1]);
+    assert_equals(std::vector<int>{5}, col.items[2]);
 
     bool threw = false;
     try {
@@ -207,7 +211,7 @@ void test_chunked() {
     } catch (const std::invalid_argument&) {
         threw = true;
     }
-    assert(threw);
+    assert_true(threw);
     std::cout << "test_chunked passed" << std::endl;
 }
 
@@ -228,7 +232,7 @@ void test_catch() {
 
     AccumulatorCollector<int> col;
     caught->collect(&col, nullptr);
-    assert((col.items == std::vector<int>{1, 2, 999}));
+    assert_equals(std::vector<int>{1, 2, 999}, col.items);
 
     // Downstream exception is NOT caught
     class ThrowingCollector : public FlowCollector<int> {
@@ -244,7 +248,7 @@ void test_catch() {
     } catch (const std::logic_error& e) {
         downstream_threw = true;
     }
-    assert(downstream_threw);
+    assert_true(downstream_threw);
     std::cout << "test_catch passed" << std::endl;
 }
 
@@ -266,8 +270,8 @@ void test_retry() {
 
     AccumulatorCollector<int> col;
     retried->collect(&col, nullptr);
-    assert((col.items == std::vector<int>{1, 1, 1, 2}));
-    assert(attempts == 3);
+    assert_equals(std::vector<int>{1, 1, 1, 2}, col.items);
+    assert_equals(3, attempts);
     std::cout << "test_retry passed" << std::endl;
 }
 
@@ -292,8 +296,8 @@ void test_retry_when() {
     } catch (const std::runtime_error&) {
         failed = true;
     }
-    assert(failed);
-    assert((recorded_attempts == std::vector<std::int64_t>{0, 1, 2}));
+    assert_true(failed);
+    assert_equals(std::vector<std::int64_t>{0, 1, 2}, recorded_attempts);
     std::cout << "test_retry_when passed" << std::endl;
 }
 

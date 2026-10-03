@@ -21,10 +21,8 @@ function(add_coroutine_test TEST_NAME)
         # Tests include library headers, so they need the same suppressions as library code.
         # Test CODE should still be written to use parameters properly.
         target_compile_options(${TEST_NAME} PRIVATE
-            -UNDEBUG
             -Wno-unused-parameter
             -Wno-unused-variable
-            -Wno-unused-but-set-variable
             -Wno-unused-const-variable
             -Wno-unused-private-field
             -Wno-gnu-label-as-value  # Required for computed goto (K/N binary parity)

@@ -10,12 +10,13 @@
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
+#include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <iostream>
-#include <cassert>
 #include <vector>
 
 using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::intrinsics;
+using namespace kotlinx::coroutines::testing;
 
 // Track execution order
 static std::vector<int> execution_log;
@@ -177,24 +178,24 @@ void test_simple_yield() {
 
     // First call - runs until first yield
     void* r1 = coro->invoke_suspend(Result<void*>::success(nullptr));
-    assert(is_coroutine_suspended(r1));
-    assert(coro->counter == 10);
-    assert(execution_log.size() == 1);
-    assert(execution_log[0] == 1);
+    assert_true(is_coroutine_suspended(r1));
+    assert_equals(10, coro->counter);
+    assert_equals(static_cast<size_t>(1), execution_log.size());
+    assert_equals(1, execution_log[0]);
 
     // Resume - runs until second yield
     void* r2 = coro->invoke_suspend(Result<void*>::success(nullptr));
-    assert(is_coroutine_suspended(r2));
-    assert(coro->counter == 20);
-    assert(execution_log.size() == 2);
-    assert(execution_log[1] == 2);
+    assert_true(is_coroutine_suspended(r2));
+    assert_equals(20, coro->counter);
+    assert_equals(static_cast<size_t>(2), execution_log.size());
+    assert_equals(2, execution_log[1]);
 
     // Resume - runs to completion
     void* r3 = coro->invoke_suspend(Result<void*>::success(nullptr));
-    assert(!is_coroutine_suspended(r3));
-    assert(coro->counter == 30);
-    assert(execution_log.size() == 3);
-    assert(execution_log[2] == 3);
+    assert_false(is_coroutine_suspended(r3));
+    assert_equals(30, coro->counter);
+    assert_equals(static_cast<size_t>(3), execution_log.size());
+    assert_equals(3, execution_log[2]);
 
     std::cout << "PASSED" << std::endl;
 }
@@ -208,12 +209,12 @@ void test_conditional_suspend() {
         auto coro = std::make_shared<ConditionalSuspendCoroutine>(true, completion);
 
         void* r1 = coro->invoke_suspend(Result<void*>::success(nullptr));
-        assert(is_coroutine_suspended(r1));
-        assert(coro->value == 1);
+        assert_true(is_coroutine_suspended(r1));
+        assert_equals(1, coro->value);
 
         void* r2 = coro->invoke_suspend(Result<void*>::success(nullptr));
-        assert(!is_coroutine_suspended(r2));
-        assert(coro->value == 2);
+        assert_false(is_coroutine_suspended(r2));
+        assert_equals(2, coro->value);
     }
 
     // Test without suspension
@@ -222,8 +223,8 @@ void test_conditional_suspend() {
         auto coro = std::make_shared<ConditionalSuspendCoroutine>(false, completion);
 
         void* r1 = coro->invoke_suspend(Result<void*>::success(nullptr));
-        assert(!is_coroutine_suspended(r1));
-        assert(coro->value == 2);
+        assert_false(is_coroutine_suspended(r1));
+        assert_equals(2, coro->value);
     }
 
     std::cout << "PASSED" << std::endl;
@@ -237,25 +238,25 @@ void test_loop_suspend() {
 
     // iteration 0: sum = 0, iteration = 1
     void* r = coro->invoke_suspend(Result<void*>::success(nullptr));
-    assert(is_coroutine_suspended(r));
-    assert(coro->iteration == 1);
-    assert(coro->sum == 0);
+    assert_true(is_coroutine_suspended(r));
+    assert_equals(1, coro->iteration);
+    assert_equals(0, coro->sum);
 
     // iteration 1: sum = 1, iteration = 2
     r = coro->invoke_suspend(Result<void*>::success(nullptr));
-    assert(is_coroutine_suspended(r));
-    assert(coro->iteration == 2);
-    assert(coro->sum == 1);
+    assert_true(is_coroutine_suspended(r));
+    assert_equals(2, coro->iteration);
+    assert_equals(1, coro->sum);
 
     // iteration 2: sum = 3, iteration = 3
     r = coro->invoke_suspend(Result<void*>::success(nullptr));
-    assert(is_coroutine_suspended(r));
-    assert(coro->iteration == 3);
-    assert(coro->sum == 3);
+    assert_true(is_coroutine_suspended(r));
+    assert_equals(3, coro->iteration);
+    assert_equals(3, coro->sum);
 
     // Loop done, completion
     r = coro->invoke_suspend(Result<void*>::success(nullptr));
-    assert(!is_coroutine_suspended(r));
+    assert_false(is_coroutine_suspended(r));
 
     std::cout << "PASSED" << std::endl;
 }
@@ -270,12 +271,12 @@ void test_yield_value_resume_result() {
     auto coro = std::make_shared<YieldValueCoroutine>(completion);
 
     void* r1 = coro->invoke_suspend(Result<void*>::success(nullptr));
-    assert(is_coroutine_suspended(r1));
+    assert_true(is_coroutine_suspended(r1));
 
     void* r2 = coro->invoke_suspend(Result<void*>::success(expected));
-    assert(!is_coroutine_suspended(r2));
-    assert(r2 == expected);
-    assert(coro->value == expected);
+    assert_false(is_coroutine_suspended(r2));
+    assert_equals(expected, r2);
+    assert_equals(expected, coro->value);
 
     std::cout << "PASSED" << std::endl;
 }
@@ -292,7 +293,7 @@ void test_resume_with_value() {
 
     // After first invoke_suspend returns COROUTINE_SUSPENDED,
     // resume_with returns (doesn't keep looping)
-    assert(coro->counter == 10);
+    assert_equals(10, coro->counter);
 
     std::cout << "PASSED" << std::endl;
 }
@@ -311,8 +312,8 @@ void test_start_with_exception_throws() {
         threw = true;
     }
 
-    assert(threw);
-    assert(execution_log.empty());
+    assert_true(threw);
+    assert_true(execution_log.empty());
     std::cout << "PASSED" << std::endl;
 }
 
@@ -326,10 +327,10 @@ void test_yield_value_immediate_result() {
     auto completion = std::make_shared<TestCompletion>();
     auto coro = std::make_shared<YieldValueCoroutine>(completion, false, &marker);
     coro->resume_with(Result<void*>::success(nullptr));
-    assert(completion->completion_count == 1);
-    assert(completion->result_value == &marker);
-    assert(coro->before_count == 1);
-    assert(coro->after_count == 1);
+    assert_equals(1, completion->completion_count);
+    assert_equals(static_cast<void*>(&marker), completion->result_value);
+    assert_equals(1, coro->before_count);
+    assert_equals(1, coro->after_count);
     std::cout << "PASSED" << std::endl;
 }
 
@@ -338,13 +339,13 @@ void test_resumed_exception_stops_continuation() {
     auto completion = std::make_shared<TestCompletion>();
     auto coro = std::make_shared<YieldValueCoroutine>(completion);
     coro->resume_with(Result<void*>::success(nullptr));
-    assert(completion->completion_count == 0);
+    assert_equals(0, completion->completion_count);
     auto failure = std::make_exception_ptr(std::runtime_error("resumed failure"));
     coro->resume_with(Result<void*>::failure(failure));
-    assert(completion->completion_count == 1);
-    assert(completion->exception == failure);
-    assert(coro->before_count == 1);
-    assert(coro->after_count == 0);
+    assert_equals(1, completion->completion_count);
+    assert_true(completion->exception == failure);
+    assert_equals(1, coro->before_count);
+    assert_equals(0, coro->after_count);
     std::cout << "PASSED" << std::endl;
 }
 
@@ -354,15 +355,15 @@ void test_resume_with_all_steps() {
     auto completion = std::make_shared<TestCompletion>();
     auto coro = std::make_shared<SimpleYieldCoroutine>(completion);
     coro->resume_with(Result<void*>::success(nullptr));
-    assert(completion->completion_count == 0);
-    assert(coro->counter == 10);
+    assert_equals(0, completion->completion_count);
+    assert_equals(10, coro->counter);
     coro->resume_with(Result<void*>::success(nullptr));
-    assert(completion->completion_count == 0);
-    assert(coro->counter == 20);
+    assert_equals(0, completion->completion_count);
+    assert_equals(20, coro->counter);
     coro->resume_with(Result<void*>::success(nullptr));
-    assert(completion->completion_count == 1);
-    assert(coro->counter == 30);
-    assert((execution_log == std::vector<int>{1, 2, 3}));
+    assert_equals(1, completion->completion_count);
+    assert_equals(30, coro->counter);
+    assert_equals(std::vector<int>{1, 2, 3}, execution_log);
     std::cout << "PASSED" << std::endl;
 }
 
@@ -374,19 +375,21 @@ void test_independent_frames() {
     auto value = std::make_shared<YieldValueCoroutine>(value_completion);
     loop->resume_with(Result<void*>::success(nullptr));
     value->resume_with(Result<void*>::success(nullptr));
-    assert(loop_completion->completion_count == 0);
-    assert(value_completion->completion_count == 0);
+    assert_equals(0, loop_completion->completion_count);
+    assert_equals(0, value_completion->completion_count);
     loop->resume_with(Result<void*>::success(nullptr));
     int payload = 93;
     value->resume_with(Result<void*>::success(&payload));
-    assert(value_completion->completion_count == 1);
-    assert(value_completion->result_value == &payload);
-    assert(value->before_count == 1 && value->after_count == 1);
-    assert(loop->iteration == 2 && loop->sum == 1);
+    assert_equals(1, value_completion->completion_count);
+    assert_equals(static_cast<void*>(&payload), value_completion->result_value);
+    assert_equals(1, value->before_count);
+    assert_equals(1, value->after_count);
+    assert_equals(2, loop->iteration);
+    assert_equals(1, loop->sum);
     loop->resume_with(Result<void*>::success(nullptr));
     loop->resume_with(Result<void*>::success(nullptr));
-    assert(loop_completion->completion_count == 1);
-    assert(loop->sum == 3);
+    assert_equals(1, loop_completion->completion_count);
+    assert_equals(3, loop->sum);
     std::cout << "PASSED" << std::endl;
 }
 

@@ -363,7 +363,7 @@ void assert_same(const T& expected, const T& actual) {
     }
 }
 
-inline void assert_null(void* ptr) {
+inline void assert_null(const void* ptr) {
     if (ptr != nullptr) {
         throw std::logic_error("Expected null");
     }
@@ -382,7 +382,7 @@ inline void assert_null(std::exception_ptr ptr) {
     }
 }
 
-inline void assert_not_null(void* ptr) {
+inline void assert_not_null(const void* ptr) {
     if (ptr == nullptr) {
         throw std::logic_error("Expected non-null");
     }

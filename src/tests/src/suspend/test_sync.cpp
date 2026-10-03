@@ -7,7 +7,7 @@
  */
 
 #include <iostream>
-#include <cassert>
+#include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <thread>
 #include <vector>
 #include <atomic>
@@ -16,6 +16,7 @@
 #include "kotlinx/coroutines/sync/Semaphore.hpp"
 
 using namespace kotlinx::coroutines::sync;
+using namespace kotlinx::coroutines::testing;
 
 // Test basic mutex lock/unlock
 void test_mutex_basic() {
@@ -23,11 +24,11 @@ void test_mutex_basic() {
 
     auto mutex = make_mutex(false);
 
-    assert(!mutex->is_locked());
-    assert(mutex->try_lock());
-    assert(mutex->is_locked());
+    assert_false(mutex->is_locked());
+    assert_true(mutex->try_lock());
+    assert_true(mutex->is_locked());
     mutex->unlock();
-    assert(!mutex->is_locked());
+    assert_false(mutex->is_locked());
 
     std::cout << "PASSED\n";
 }
@@ -40,11 +41,11 @@ void test_mutex_owner() {
     void* owner1 = reinterpret_cast<void*>(1);
     void* owner2 = reinterpret_cast<void*>(2);
 
-    assert(mutex->try_lock(owner1));
-    assert(mutex->holds_lock(owner1));
-    assert(!mutex->holds_lock(owner2));
+    assert_true(mutex->try_lock(owner1));
+    assert_true(mutex->holds_lock(owner1));
+    assert_false(mutex->holds_lock(owner2));
     mutex->unlock(owner1);
-    assert(!mutex->holds_lock(owner1));
+    assert_false(mutex->holds_lock(owner1));
 
     std::cout << "PASSED\n";
 }
@@ -64,7 +65,7 @@ void test_mutex_reentrant() {
     } catch (const std::logic_error& e) {
         threw = true;
     }
-    assert(threw);
+    assert_true(threw);
 
     mutex->unlock(owner);
     std::cout << "PASSED\n";
@@ -75,11 +76,11 @@ void test_mutex_created_locked() {
     std::cout << "test_mutex_created_locked... ";
 
     auto mutex = make_mutex(true);
-    assert(mutex->is_locked());
-    assert(!mutex->try_lock());
+    assert_true(mutex->is_locked());
+    assert_false(mutex->try_lock());
 
     mutex->unlock();
-    assert(!mutex->is_locked());
+    assert_false(mutex->is_locked());
 
     std::cout << "PASSED\n";
 }
@@ -90,17 +91,17 @@ void test_semaphore_basic() {
 
     auto sem = create_semaphore(2);
 
-    assert(sem->available_permits() == 2);
-    assert(sem->try_acquire());
-    assert(sem->available_permits() == 1);
-    assert(sem->try_acquire());
-    assert(sem->available_permits() == 0);
-    assert(!sem->try_acquire());
+    assert_equals(2, sem->available_permits());
+    assert_true(sem->try_acquire());
+    assert_equals(1, sem->available_permits());
+    assert_true(sem->try_acquire());
+    assert_equals(0, sem->available_permits());
+    assert_false(sem->try_acquire());
 
     sem->release();
-    assert(sem->available_permits() == 1);
+    assert_equals(1, sem->available_permits());
     sem->release();
-    assert(sem->available_permits() == 2);
+    assert_equals(2, sem->available_permits());
 
     std::cout << "PASSED\n";
 }
@@ -111,10 +112,10 @@ void test_semaphore_acquired() {
 
     auto sem = create_semaphore(3, 2);
 
-    assert(sem->available_permits() == 1);
-    assert(sem->try_acquire());
-    assert(sem->available_permits() == 0);
-    assert(!sem->try_acquire());
+    assert_equals(1, sem->available_permits());
+    assert_true(sem->try_acquire());
+    assert_equals(0, sem->available_permits());
+    assert_false(sem->try_acquire());
 
     std::cout << "PASSED\n";
 }
@@ -131,7 +132,7 @@ void test_semaphore_overflow() {
     } catch (const std::logic_error& e) {
         threw = true;
     }
-    assert(threw);
+    assert_true(threw);
 
     std::cout << "PASSED\n";
 }
@@ -161,7 +162,7 @@ void test_mutex_concurrent() {
         t.join();
     }
 
-    assert(counter.load() == num_threads * iterations);
+    assert_equals(num_threads * iterations, counter.load());
     std::cout << "PASSED\n";
 }
 
@@ -199,7 +200,7 @@ void test_semaphore_concurrent() {
     }
 
     // Max active should never exceed semaphore permits
-    assert(max_active.load() <= 2);
+    assert_true(max_active.load() <= 2);
     std::cout << "PASSED (max_active=" << max_active.load() << ")\n";
 }
 

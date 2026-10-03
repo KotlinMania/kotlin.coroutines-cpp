@@ -111,6 +111,8 @@ cmake_install.cmake
 CTestTestfile.cmake
 Makefile
 compile_commands.json
+*Config.cmake
+*ConfigVersion.cmake
 
 # =============================================================================
 # OS Generated Files

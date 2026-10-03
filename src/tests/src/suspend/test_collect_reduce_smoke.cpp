@@ -8,7 +8,7 @@
 #include "kotlinx/coroutines/Exceptions.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
-#include <cassert>
+#include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -17,6 +17,7 @@
 
 using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::flow;
+using namespace kotlinx::coroutines::testing;
 
 template <typename T>
 class AccumulatorCollector : public FlowCollector<T> {
@@ -57,7 +58,7 @@ void test_collect_nop() {
     auto tracked = std::make_shared<std::vector<int>>();
     auto f = make_tracking_flow<int>({1, 2, 3}, tracked);
     collect<int>(f, nullptr);
-    assert(( *tracked == std::vector<int>{1, 2, 3} ));
+    assert_equals(std::vector<int>{1, 2, 3}, *tracked);
     std::cout << "test_collect_nop passed" << std::endl;
 }
 
@@ -67,7 +68,7 @@ void test_collect_action() {
     collect<int>(f, [&collected](int val) {
         collected.push_back(val);
     }, nullptr);
-    assert(( collected == std::vector<int>{10, 20, 30} ));
+    assert_equals(std::vector<int>{10, 20, 30}, collected);
 
     // Suspending action overload
     std::vector<int> collected_susp;
@@ -75,7 +76,7 @@ void test_collect_action() {
         collected_susp.push_back(val * 2);
         return nullptr;
     }, nullptr);
-    assert(( collected_susp == std::vector<int>{20, 40, 60} ));
+    assert_equals(std::vector<int>{20, 40, 60}, collected_susp);
     std::cout << "test_collect_action passed" << std::endl;
 }
 
@@ -84,8 +85,8 @@ void test_launch_in() {
     auto tracked = std::make_shared<std::vector<int>>();
     auto f = make_tracking_flow<int>({100, 200}, tracked);
     auto job = launch_in<int>(f, scope.get());
-    assert(job != nullptr);
-    assert(( *tracked == std::vector<int>{100, 200} ));
+    assert_not_null(job.get());
+    assert_equals(std::vector<int>{100, 200}, *tracked);
     std::cout << "test_launch_in passed" << std::endl;
 }
 
@@ -96,10 +97,13 @@ void test_collect_indexed() {
         collected.emplace_back(idx, std::move(val));
     }, nullptr);
 
-    assert(collected.size() == 3);
-    assert(collected[0].first == 0 && collected[0].second == "apple");
-    assert(collected[1].first == 1 && collected[1].second == "banana");
-    assert(collected[2].first == 2 && collected[2].second == "cherry");
+    assert_equals(static_cast<size_t>(3), collected.size());
+    assert_equals(0, collected[0].first);
+    assert_equals(std::string("apple"), collected[0].second);
+    assert_equals(1, collected[1].first);
+    assert_equals(std::string("banana"), collected[1].second);
+    assert_equals(2, collected[2].first);
+    assert_equals(std::string("cherry"), collected[2].second);
 
     // Suspending action overload
     std::vector<int> indices;
@@ -107,7 +111,7 @@ void test_collect_indexed() {
         indices.push_back(idx);
         return nullptr;
     }, nullptr);
-    assert(( indices == std::vector<int>{0, 1, 2} ));
+    assert_equals(std::vector<int>{0, 1, 2}, indices);
     std::cout << "test_collect_indexed passed" << std::endl;
 }
 
@@ -118,8 +122,10 @@ void test_collect_latest() {
         out.push_back(val);
     }, nullptr);
     // In sequential test, all items complete
-    assert(out.size() == 3);
-    assert(out[0] == 1 && out[1] == 2 && out[2] == 3);
+    assert_equals(static_cast<size_t>(3), out.size());
+    assert_equals(1, out[0]);
+    assert_equals(2, out[1]);
+    assert_equals(3, out[2]);
     std::cout << "test_collect_latest passed" << std::endl;
 }
 
@@ -127,7 +133,7 @@ void test_emit_all() {
     auto f = make_test_flow<int>({5, 10, 15});
     AccumulatorCollector<int> col;
     emit_all<int>(&col, f, nullptr);
-    assert(( col.items == std::vector<int>{5, 10, 15} ));
+    assert_equals(std::vector<int>{5, 10, 15}, col.items);
     std::cout << "test_emit_all passed" << std::endl;
 }
 
@@ -139,14 +145,14 @@ void test_reduce() {
     auto f = make_test_flow<int>({1, 2, 3, 4});
     void* res_ptr = reduce<int>(f, [](int acc, int val) { return acc + val; }, nullptr);
     auto* sum = static_cast<int*>(res_ptr);
-    assert(*sum == 10);
+    assert_equals(10, *sum);
     delete sum;
 
     // Multiplication
     auto f2 = make_test_flow<int>({2, 3, 4});
     void* mul_ptr = reduce<int>(f2, [](int acc, int val) { return acc * val; }, nullptr);
     auto* mul = static_cast<int*>(mul_ptr);
-    assert(*mul == 24);
+    assert_equals(24, *mul);
     delete mul;
 
     // Suspending overload
@@ -154,7 +160,7 @@ void test_reduce() {
         return new int(acc + val);
     }, nullptr);
     auto* susp_sum = static_cast<int*>(susp_ptr);
-    assert(*susp_sum == 10);
+    assert_equals(10, *susp_sum);
     delete susp_sum;
 
     // Empty flow throws NoSuchElementException
@@ -165,7 +171,7 @@ void test_reduce() {
     } catch (const NoSuchElementException&) {
         caught = true;
     }
-    assert(caught);
+    assert_true(caught);
 
     std::cout << "test_reduce passed" << std::endl;
 }
@@ -174,14 +180,14 @@ void test_fold() {
     auto f = make_test_flow<int>({1, 2, 3});
     void* res_ptr = fold<int, int>(f, 10, [](int acc, int val) { return acc + val; }, nullptr);
     auto* sum = static_cast<int*>(res_ptr);
-    assert(*sum == 16);
+    assert_equals(16, *sum);
     delete sum;
 
     // Empty flow returns initial value
     auto empty = make_test_flow<int>({});
     void* empty_ptr = fold<int, int>(empty, 42, [](int acc, int val) { return acc + val; }, nullptr);
     auto* empty_res = static_cast<int*>(empty_ptr);
-    assert(*empty_res == 42);
+    assert_equals(42, *empty_res);
     delete empty_res;
 
     // Suspending fold overload
@@ -189,7 +195,7 @@ void test_fold() {
         return new int(acc + val);
     }, nullptr);
     auto* susp_sum = static_cast<int*>(susp_ptr);
-    assert(*susp_sum == 106);
+    assert_equals(106, *susp_sum);
     delete susp_sum;
 
     std::cout << "test_fold passed" << std::endl;
@@ -199,7 +205,7 @@ void test_single() {
     auto f = make_test_flow<int>({42});
     void* res_ptr = single<int>(f, nullptr);
     auto* val = static_cast<int*>(res_ptr);
-    assert(*val == 42);
+    assert_equals(42, *val);
     delete val;
 
     // Empty flow throws NoSuchElementException
@@ -210,7 +216,7 @@ void test_single() {
     } catch (const NoSuchElementException&) {
         caught_empty = true;
     }
-    assert(caught_empty);
+    assert_true(caught_empty);
 
     // Flow with more than one element throws std::invalid_argument
     auto multi = make_test_flow<int>({1, 2});
@@ -220,7 +226,7 @@ void test_single() {
     } catch (const std::invalid_argument&) {
         caught_multi = true;
     }
-    assert(caught_multi);
+    assert_true(caught_multi);
 
     std::cout << "test_single passed" << std::endl;
 }
@@ -228,23 +234,23 @@ void test_single() {
 void test_single_or_null() {
     auto f = make_test_flow<int>({77});
     void* res_ptr = single_or_null<int>(f, nullptr);
-    assert(res_ptr != nullptr);
+    assert_not_null(res_ptr);
     auto* val = static_cast<int*>(res_ptr);
-    assert(*val == 77);
+    assert_equals(77, *val);
     delete val;
 
     // Empty flow returns nullptr
     auto empty = make_test_flow<int>({});
     void* empty_ptr = single_or_null<int>(empty, nullptr);
-    assert(empty_ptr == nullptr);
+    assert_null(empty_ptr);
 
     // Multi-element flow returns nullptr and aborts early
     auto tracked = std::make_shared<std::vector<int>>();
     auto multi = make_tracking_flow<int>({1, 2, 3, 4}, tracked);
     void* multi_ptr = single_or_null<int>(multi, nullptr);
-    assert(multi_ptr == nullptr);
+    assert_null(multi_ptr);
     // Aborted after second element!
-    assert(tracked->size() == 2);
+    assert_equals(static_cast<size_t>(2), tracked->size());
 
     std::cout << "test_single_or_null passed" << std::endl;
 }
@@ -253,12 +259,12 @@ void test_first() {
     auto tracked = std::make_shared<std::vector<int>>();
     auto f = make_tracking_flow<int>({10, 20, 30}, tracked);
     void* res_ptr = first<int>(f, nullptr);
-    assert(res_ptr != nullptr);
+    assert_not_null(res_ptr);
     auto* val = static_cast<int*>(res_ptr);
-    assert(*val == 10);
+    assert_equals(10, *val);
     delete val;
     // Short-circuited after first emission!
-    assert(tracked->size() == 1);
+    assert_equals(static_cast<size_t>(1), tracked->size());
 
     // Empty flow throws NoSuchElementException
     auto empty = make_test_flow<int>({});
@@ -268,7 +274,7 @@ void test_first() {
     } catch (const NoSuchElementException&) {
         caught = true;
     }
-    assert(caught);
+    assert_true(caught);
 
     std::cout << "test_first passed" << std::endl;
 }
@@ -277,12 +283,12 @@ void test_first_predicate() {
     auto tracked = std::make_shared<std::vector<int>>();
     auto f = make_tracking_flow<int>({1, 3, 4, 7, 8}, tracked);
     void* res_ptr = first<int>(f, [](const int& v) { return v % 2 == 0; }, nullptr);
-    assert(res_ptr != nullptr);
+    assert_not_null(res_ptr);
     auto* val = static_cast<int*>(res_ptr);
-    assert(*val == 4);
+    assert_equals(4, *val);
     delete val;
     // Short-circuited after 4 (emitted 1, 3, 4)
-    assert(tracked->size() == 3);
+    assert_equals(static_cast<size_t>(3), tracked->size());
 
     // No matching elements throws NoSuchElementException
     auto f2 = make_test_flow<int>({1, 3, 5});
@@ -292,7 +298,7 @@ void test_first_predicate() {
     } catch (const NoSuchElementException&) {
         caught = true;
     }
-    assert(caught);
+    assert_true(caught);
 
     std::cout << "test_first_predicate passed" << std::endl;
 }
@@ -301,16 +307,16 @@ void test_first_or_null() {
     auto tracked = std::make_shared<std::vector<int>>();
     auto f = make_tracking_flow<int>({99, 100}, tracked);
     void* res_ptr = first_or_null<int>(f, nullptr);
-    assert(res_ptr != nullptr);
+    assert_not_null(res_ptr);
     auto* val = static_cast<int*>(res_ptr);
-    assert(*val == 99);
+    assert_equals(99, *val);
     delete val;
-    assert(tracked->size() == 1);
+    assert_equals(static_cast<size_t>(1), tracked->size());
 
     // Empty flow returns nullptr
     auto empty = make_test_flow<int>({});
     void* empty_ptr = first_or_null<int>(empty, nullptr);
-    assert(empty_ptr == nullptr);
+    assert_null(empty_ptr);
 
     std::cout << "test_first_or_null passed" << std::endl;
 }
@@ -319,16 +325,16 @@ void test_first_or_null_predicate() {
     auto tracked = std::make_shared<std::vector<int>>();
     auto f = make_tracking_flow<int>({1, 3, 6, 7}, tracked);
     void* res_ptr = first_or_null<int>(f, [](const int& v) { return v % 2 == 0; }, nullptr);
-    assert(res_ptr != nullptr);
+    assert_not_null(res_ptr);
     auto* val = static_cast<int*>(res_ptr);
-    assert(*val == 6);
+    assert_equals(6, *val);
     delete val;
-    assert(tracked->size() == 3);
+    assert_equals(static_cast<size_t>(3), tracked->size());
 
     // No matching elements returns nullptr
     auto f2 = make_test_flow<int>({1, 3, 5});
     void* res_none = first_or_null<int>(f2, [](const int& v) { return v % 2 == 0; }, nullptr);
-    assert(res_none == nullptr);
+    assert_null(res_none);
 
     std::cout << "test_first_or_null_predicate passed" << std::endl;
 }
@@ -336,9 +342,9 @@ void test_first_or_null_predicate() {
 void test_last() {
     auto f = make_test_flow<int>({1, 2, 3});
     void* res_ptr = last<int>(f, nullptr);
-    assert(res_ptr != nullptr);
+    assert_not_null(res_ptr);
     auto* val = static_cast<int*>(res_ptr);
-    assert(*val == 3);
+    assert_equals(3, *val);
     delete val;
 
     // Empty flow throws NoSuchElementException
@@ -349,7 +355,7 @@ void test_last() {
     } catch (const NoSuchElementException&) {
         caught = true;
     }
-    assert(caught);
+    assert_true(caught);
 
     std::cout << "test_last passed" << std::endl;
 }
@@ -357,15 +363,15 @@ void test_last() {
 void test_last_or_null() {
     auto f = make_test_flow<int>({10, 20, 30});
     void* res_ptr = last_or_null<int>(f, nullptr);
-    assert(res_ptr != nullptr);
+    assert_not_null(res_ptr);
     auto* val = static_cast<int*>(res_ptr);
-    assert(*val == 30);
+    assert_equals(30, *val);
     delete val;
 
     // Empty flow returns nullptr
     auto empty = make_test_flow<int>({});
     void* empty_ptr = last_or_null<int>(empty, nullptr);
-    assert(empty_ptr == nullptr);
+    assert_null(empty_ptr);
 
     std::cout << "test_last_or_null passed" << std::endl;
 }
@@ -398,16 +404,16 @@ void test_suspended_fold_and_reduce() {
     });
 
     void* r = fold<int, int>(deferred, 10, [](int acc, int val) { return acc + val; }, cont.get());
-    assert(intrinsics::is_coroutine_suspended(r));
-    assert(!resumed);
+    assert_true(intrinsics::is_coroutine_suspended(r));
+    assert_false(resumed);
 
     // Now emit values and complete via deferred continuation
     deferred->retained->emit(5, nullptr);
     deferred->retained->emit(15, nullptr);
     deferred->completion->resume_with(Result<void*>::success(nullptr));
 
-    assert(resumed);
-    assert(resumed_val == 30); // 10 + 5 + 15 = 30
+    assert_true(resumed);
+    assert_equals(30, resumed_val); // 10 + 5 + 15 = 30
 
     // 2. Reduce suspension test (empty flow fails only upon completion)
     auto empty_deferred = std::make_shared<DeferredFlow>();
@@ -423,12 +429,12 @@ void test_suspended_fold_and_reduce() {
     });
 
     void* r_red = reduce<int>(empty_deferred, [](int acc, int val) { return acc + val; }, empty_cont.get());
-    assert(intrinsics::is_coroutine_suspended(r_red));
-    assert(!empty_failed);
+    assert_true(intrinsics::is_coroutine_suspended(r_red));
+    assert_false(empty_failed);
 
     // Complete empty flow
     empty_deferred->completion->resume_with(Result<void*>::success(nullptr));
-    assert(empty_failed);
+    assert_true(empty_failed);
 
     std::cout << "test_suspended_fold_and_reduce passed" << std::endl;
 }

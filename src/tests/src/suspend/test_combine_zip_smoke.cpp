@@ -1,7 +1,7 @@
 #include "kotlinx/coroutines/flow/Zip.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
-#include <cassert>
+#include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <iostream>
 #include <memory>
 #include <string>
@@ -9,6 +9,7 @@
 
 using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::flow;
+using namespace kotlinx::coroutines::testing;
 
 template <typename T>
 class AccumulatorCollector : public FlowCollector<T> {
@@ -42,9 +43,9 @@ void test_combine_success() {
 
     AccumulatorCollector<std::string> collector;
     combined->collect(&collector, nullptr);
-    assert(!collector.items.empty());
+    assert_false(collector.items.empty());
     // Latest values should produce combinations
-    assert(collector.items.back() == "2b");
+    assert_equals(std::string("2b"), collector.items.back());
     std::cout << "test_combine_success passed" << std::endl;
 }
 
@@ -75,7 +76,7 @@ void test_combine_error_propagation() {
             caught = true;
         }
     }
-    assert(caught);
+    assert_true(caught);
     std::cout << "test_combine_error_propagation passed" << std::endl;
 }
 
@@ -104,10 +105,10 @@ void test_zip_success() {
 
     AccumulatorCollector<std::string> collector;
     zipped->collect(&collector, nullptr);
-    assert(collector.items.size() == 3);
-    assert(collector.items[0] == "1a");
-    assert(collector.items[1] == "2b");
-    assert(collector.items[2] == "3c");
+    assert_equals(static_cast<size_t>(3), collector.items.size());
+    assert_equals(std::string("1a"), collector.items[0]);
+    assert_equals(std::string("2b"), collector.items[1]);
+    assert_equals(std::string("3c"), collector.items[2]);
     std::cout << "test_zip_success passed" << std::endl;
 }
 
@@ -132,9 +133,9 @@ void test_zip_early_termination() {
 
     AccumulatorCollector<int> collector;
     zipped->collect(&collector, nullptr);
-    assert(collector.items.size() == 2);
-    assert(collector.items[0] == 11);
-    assert(collector.items[1] == 22);
+    assert_equals(static_cast<size_t>(2), collector.items.size());
+    assert_equals(11, collector.items[0]);
+    assert_equals(22, collector.items[1]);
     std::cout << "test_zip_early_termination passed" << std::endl;
 }
 
@@ -163,7 +164,7 @@ void test_zip_flow2_error_propagation() {
             caught = true;
         }
     }
-    assert(caught);
+    assert_true(caught);
     std::cout << "test_zip_flow2_error_propagation passed" << std::endl;
 }
 
@@ -191,7 +192,7 @@ void test_zip_flow1_error_propagation() {
             caught = true;
         }
     }
-    assert(caught);
+    assert_true(caught);
     std::cout << "test_zip_flow1_error_propagation passed" << std::endl;
 }
 
