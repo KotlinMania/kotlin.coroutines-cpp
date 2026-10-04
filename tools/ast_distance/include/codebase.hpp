@@ -47,6 +47,7 @@ struct SourceFile {
     std::string matched_file;      // Matched file in other codebase
 
     // Porting analysis
+    std::vector<std::string> identity_conflicts;
     std::string transliterated_from;  // "Transliterated from:" header value
     int line_count = 0;
     int code_lines = 0;
@@ -54,6 +55,22 @@ struct SourceFile {
     bool needs_implementation_review = false;
     std::vector<TodoItem> todos;
     std::vector<LintError> lint_errors;
+
+    static std::string normalize_provenance_path(std::string path) {
+        std::replace(path.begin(), path.end(), '\\', '/');
+        while (path.rfind("./", 0) == 0) path.erase(0, 2);
+        auto trim_end = [&] {
+            auto end = path.find_last_not_of(" \t\r\n");
+            path.erase(end == std::string::npos ? 0 : end + 1);
+        };
+        trim_end();
+        if (path.ends_with("*/")) { path.resize(path.size() - 2); trim_end(); }
+        // Function markers retain line provenance in callable reports, but
+        // file identity compares the underlying path, including its namespace.
+        static const std::regex line_range(R"(:[0-9]+(?:-[0-9]+)?$)");
+        path = std::regex_replace(path, line_range, "");
+        return fs::path(path).lexically_normal().generic_string();
+    }
 
     // Get the "identity" for matching - last part of package + filename
     std::string identity() const {
@@ -403,6 +420,9 @@ public:
         ImportExtractor extractor;
 
         for (auto& [path, sf] : files) {
+            sf.imports.clear();
+            sf.package = PackageDecl{};
+            sf.identity_conflicts.clear();
             for (const auto& p : sf.paths) {
                 auto file_imports = extractor.extract_from_file(p);
                 sf.imports.insert(sf.imports.end(), file_imports.begin(), file_imports.end());
@@ -412,8 +432,14 @@ public:
                     if (sf.package.parts.empty()) {
                         sf.package = derive_python_module(sf.relative_path);
                     }
-                } else if (sf.package.parts.empty()) {
-                    sf.package = extractor.extract_package_from_file(p);
+                } else {
+                    auto package = extractor.extract_package_from_file(p);
+                    if (package.ambiguous)
+                        sf.identity_conflicts.push_back("Ambiguous namespace declarations: " + p + " [" + package.raw + "]");
+                    if (sf.package.declared && package.declared && sf.package.parts != package.parts)
+                        sf.identity_conflicts.push_back("Companion namespace conflict: " + p + " [" + package.path +
+                            "] vs [" + sf.package.path + "]");
+                    else if (sf.package.parts.empty() || package.declared) sf.package = std::move(package);
                 }
             }
             sf.dependency_count = sf.imports.size();
@@ -435,9 +461,12 @@ public:
 
             bool all_parts_stub = !sf.paths.empty();
             for (const auto& p : sf.paths) {
-                if (sf.transliterated_from.empty()) {
-                    sf.transliterated_from = PortingAnalyzer::extract_transliterated_from(p);
-                }
+                auto provenance = PortingAnalyzer::extract_transliterated_from(p);
+                if (!provenance.empty() && !sf.transliterated_from.empty() &&
+                    SourceFile::normalize_provenance_path(provenance) != SourceFile::normalize_provenance_path(sf.transliterated_from))
+                    sf.identity_conflicts.push_back("Companion provenance conflict: " + p + " [" + provenance +
+                        "] vs [" + sf.transliterated_from + "]");
+                else if (sf.transliterated_from.empty()) sf.transliterated_from = std::move(provenance);
 
                 FileStats stats = PortingAnalyzer::analyze_file(p);
                 sf.line_count += stats.line_count;
@@ -769,6 +798,7 @@ public:
     };
 
     std::vector<Match> matches;
+    std::vector<std::string> identity_warnings;
     std::vector<std::string> unmatched_source;
     std::vector<std::string> unmatched_target;
 
@@ -776,11 +806,7 @@ public:
         : source(src), target(tgt) {}
 
     static std::string normalize_source_annotation_path(std::string path) {
-        std::replace(path.begin(), path.end(), '\\', '/');
-        while (path.rfind("./", 0) == 0) {
-            path = path.substr(2);
-        }
-        return path;
+        return SourceFile::normalize_provenance_path(std::move(path));
     }
 
     static std::string normalized_source_annotation_component(const std::string& component,
@@ -1316,6 +1342,20 @@ public:
         return 0.0f;
     }
 
+    static bool namespace_identity_matches(const PackageDecl& left, const PackageDecl& right) {
+        if (left.ambiguous || right.ambiguous) return false;
+        if (!left.declared && !right.declared) return true;
+        return left.declared && right.declared && left.parts == right.parts;
+    }
+
+    bool namespace_context_matches(const SourceFile& left, const SourceFile& right) const {
+        if (!left.identity_conflicts.empty() || !right.identity_conflicts.empty()) return false;
+        bool kotlin_cpp = (source.language == "kotlin" && target.language == "cpp") ||
+            (source.language == "cpp" && target.language == "kotlin");
+        return (!kotlin_cpp && !(left.package.declared && right.package.declared)) ||
+            namespace_identity_matches(left.package, right.package);
+    }
+
     static bool is_test_transliteration(const std::string& header_path) {
         return header_path.rfind("tests:", 0) == 0;
     }
@@ -1414,6 +1454,28 @@ public:
         return result;
     }
 
+    HeaderMatchResult identity_header_match(const SourceFile& src_file, const SourceFile& tgt_file) {
+        HeaderMatchResult result;
+        auto header = normalize_source_annotation_path(source_path_from_transliteration(tgt_file.transliterated_from));
+        if (header.empty()) return result;
+        bool context = header == normalize_source_annotation_path(src_file.relative_path);
+        if (!context && fs::path(header).has_parent_path()) {
+            for (const auto& path : src_file.paths) {
+                auto full = fs::absolute(path).lexically_normal().generic_string();
+                context |= full == header || full.ends_with("/" + header);
+            }
+        }
+        if (!context) return result;
+        if (!namespace_context_matches(src_file, tgt_file)) {
+            identity_warnings.push_back("Rejected provenance pair with different namespace/package: " +
+                src_file.relative_path + " [" + src_file.package.path + "] vs " +
+                tgt_file.relative_path + " [" + tgt_file.package.path + "]");
+            return result;
+        }
+        result.score = 1.0f;
+        return result;
+    }
+
     static float exact_transliteration_header_match_score(
             const SourceFile& src_file,
             const SourceFile& tgt_file) {
@@ -1464,7 +1526,12 @@ public:
      * Priority: 1) "Transliterated from:" headers, 2) Name matching
      */
     void find_matches() {
+        source.extract_imports();
+        target.extract_imports();
         target.extract_porting_data();
+        identity_warnings.clear();
+        for (const auto& [path, file] : target.files)
+            identity_warnings.insert(identity_warnings.end(), file.identity_conflicts.begin(), file.identity_conflicts.end());
 
         std::set<std::string> matched_sources;
         std::set<std::string> matched_targets;
@@ -1491,11 +1558,7 @@ public:
             // Try to find the source file that matches the header
             for (const auto& [src_path, src_file] : source.files) {
                 HeaderMatchResult match;
-                if (strict_provenance_matching) {
-                    match = exact_transliteration_header_match_result(src_file, tgt_file);
-                } else {
-                    match.score = transliteration_header_match_score(src_file, tgt_file);
-                }
+                match = identity_header_match(src_file, tgt_file);
 
                 if (match.score > 0.0f) {
                     header_candidates.push_back({
@@ -1509,6 +1572,14 @@ public:
                 }
             }
         }
+
+        std::map<std::string, size_t> provenance_source_counts;
+        for (const auto& candidate : header_candidates) ++provenance_source_counts[candidate.tgt_path];
+        header_candidates.erase(std::remove_if(header_candidates.begin(), header_candidates.end(), [&](const auto& candidate) {
+            if (provenance_source_counts[candidate.tgt_path] <= 1) return false;
+            identity_warnings.push_back("Ambiguous provenance identifies multiple sources: " + candidate.tgt_path);
+            return true;
+        }), header_candidates.end());
 
         // Sort by score descending, with header preference for ties
         std::sort(header_candidates.begin(), header_candidates.end(),
@@ -1597,11 +1668,7 @@ public:
                     if (mit == match_by_src.end()) continue;
 
                     HeaderMatchResult match;
-                    if (strict_provenance_matching) {
-                        match = exact_transliteration_header_match_result(src_file, tgt_file);
-                    } else {
-                        match.score = transliteration_header_match_score(src_file, tgt_file);
-                    }
+                    match = identity_header_match(src_file, tgt_file);
                     if (match.score > best_score) {
                         best_score = match.score;
                         best_match = match;
@@ -1637,6 +1704,18 @@ public:
                 for (const auto& [tgt_path, tgt_file] : target.files) {
                     if (matched_targets.count(tgt_path)) continue;
                     if (is_test_transliteration(tgt_file.transliterated_from)) continue;
+                    // An explicit marker identifying another source cannot be
+                    // overridden by a plausible basename.
+                    if (!tgt_file.transliterated_from.empty()) continue;
+                    if (SourceFile::normalize_name(src_file.stem) != SourceFile::normalize_name(tgt_file.stem)) continue;
+                    if (!namespace_context_matches(src_file, tgt_file)) {
+                        identity_warnings.push_back("Rejected same filename in different namespace/package: " +
+                            src_file.relative_path + " [" + src_file.package.path + "] vs " +
+                            tgt_file.relative_path + " [" + tgt_file.package.path + "]");
+                        continue;
+                    }
+                    if (!src_file.package.declared && !tgt_file.package.declared &&
+                        fs::path(src_file.relative_path).parent_path() != fs::path(tgt_file.relative_path).parent_path()) continue;
 
                     float score = name_match_score(src_file, tgt_file);
                     if (score > 0.4f) {
@@ -1645,6 +1724,28 @@ public:
                 }
             }
         }
+
+        // A basename and namespace cannot disambiguate equal candidates in
+        // different source sets. Require provenance instead of an arbitrary tie.
+        std::map<std::string, std::pair<float, size_t>> source_best, target_best;
+        auto count_best = [](auto& entries, const std::string& path, float score) {
+            auto& best = entries[path];
+            if (score > best.first + 0.001f) best = {score, 1};
+            else if (std::abs(score - best.first) < 0.001f) ++best.second;
+        };
+        for (const auto& [score, src_path, tgt_path] : candidates) {
+            count_best(source_best, src_path, score);
+            count_best(target_best, tgt_path, score);
+        }
+        candidates.erase(std::remove_if(candidates.begin(), candidates.end(), [&](const auto& candidate) {
+            const auto& [score, src_path, tgt_path] = candidate;
+            const auto& source_entry = source_best.at(src_path);
+            const auto& target_entry = target_best.at(tgt_path);
+            bool ambiguous = (source_entry.second > 1 && std::abs(score - source_entry.first) < 0.001f) ||
+                (target_entry.second > 1 && std::abs(score - target_entry.first) < 0.001f);
+            if (ambiguous) identity_warnings.push_back("Ambiguous filename/namespace pairing requires provenance: " + src_path + " vs " + tgt_path);
+            return ambiguous;
+        }), candidates.end());
 
         // Sort by score descending
         std::sort(candidates.begin(), candidates.end(),
@@ -2201,6 +2302,10 @@ public:
 
     void print_report() {
         std::cout << "\n=== Codebase Comparison Report ===\n\n";
+        std::sort(identity_warnings.begin(), identity_warnings.end());
+        identity_warnings.erase(std::unique(identity_warnings.begin(), identity_warnings.end()), identity_warnings.end());
+        for (const auto& warning : identity_warnings) std::cout << "IDENTITY_MISMATCH " << warning << '\n';
+
 
         std::cout << "Source: " << source.root_path << " (" << source.files.size() << " files)\n";
         std::cout << "Target: " << target.root_path << " (" << target.files.size() << " files)\n";

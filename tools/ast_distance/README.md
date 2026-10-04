@@ -15,7 +15,7 @@ Inspired by the [ASTERIA paper](https://arxiv.org/abs/2108.06082) which uses Tre
   - Normalized tree edit distance
 - **Codebase-level analysis**:
   - Dependency graph building
-  - File matching by port-lint headers or name similarity
+  - File matching by provenance paths and namespace/package identity
   - Porting priority ranking
   - Detailed function/type symbol parity in default reports
   - Documentation gap detection
@@ -48,8 +48,8 @@ Default codebase reports are intentionally detailed: terminal output and generat
 markdown reports include per-file function parity, type parity, and the complete
 missing-symbol names needed for porting work.
 
-See [TRANSLITERATION_DISTANCE.md](TRANSLITERATION_DISTANCE.md) for the planned
-parser-guided translated-buffer distance model.
+See [TRANSLITERATION_DISTANCE.md](TRANSLITERATION_DISTANCE.md) for the implemented bounded Kotlin-to-C++
+parser-guided translated-buffer distance model and its explicit unsupported rules.
 
 Optional `.ast_distance_config.json` files define the local port roots and
 `reexport_modules` patterns for declarations-only wiring files that should be
@@ -182,3 +182,24 @@ See [QUALITY_OF_LIFE.md](QUALITY_OF_LIFE.md) for complete symbol reports,
 Symbol "stub" reports identify review candidates rather than asserting missing
 behavior from file/body length. Stdout/stderr redirection and automated capture
 are supported.
+
+## Inspecting a literal transliteration
+
+```sh
+./ast_distance --transliterate source.kt kotlin cpp > emitted.cpp 2> rules.txt
+./ast_distance --translit-distance source.kt kotlin target.cpp cpp > distance.txt
+./ast_distance --compare-functions source.kt kotlin target.cpp cpp > functions.txt
+```
+
+The emitted buffer comes from AST-scoped rules. Its report preserves source/emitted
+spans and explicit unsupported constructs. Ordered logic retains operations,
+constants, calls, branches and parameter evidence so invented or omitted logic
+lowers similarity. Documentation references lower separately to C++ names and
+markup; documentation never raises the implementation score. Numerical similarity
+is accompanied by full differing sequences and parser/rule limitations.
+
+For Kotlin/C++ comparisons, provenance must identify the source path and declared
+namespace/package components must agree exactly. Same basenames in another
+namespace, contradictory companion metadata and ambiguous source-set ties are
+reported instead of silently paired. See [DEEP_INVENTORY.md](DEEP_INVENTORY.md)
+for the complete inventory and deep emitted-evidence receipts.

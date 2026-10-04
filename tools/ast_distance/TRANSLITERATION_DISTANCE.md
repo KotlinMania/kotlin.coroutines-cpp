@@ -94,3 +94,99 @@ Once rule coverage is high enough, the emitted buffer stops being just a scoring
 artifact and becomes a draft port. Because rules are parser-driven and ordered,
 the output is reproducible. Because fallbacks are reported, the tool knows where
 it is not yet a translator.
+
+## Implemented Kotlin → C++ rule pack
+
+The native `transliteration_engine` now implements the source parse → emitted
+buffer → target parse pipeline for a bounded Kotlin → C++ subset. This is an
+additional metric, distinct from the existing in-memory common-node comparison.
+The other language-pair rule packs above remain design work; invoking them fails
+explicitly.
+
+Supported emission includes package-to-namespace declarations, typed ordinary
+functions, default parameters, explicit return types, expression-body returns,
+primitive types, type arguments, basic local bindings, statement `if`/`else`,
+`while`, ordinary calls/member access, return/throw/break/continue, basic literals
+and arithmetic/comparison/logical/assignment expressions. Name lowering changes
+camelCase identifiers to snake_case. `val` emits `const`; `var` remains mutable.
+KDoc and ordinary comments retain their narrative and C++ comment delimiters.
+AST comment-scoped rules lower `@param`/`@see` identifiers and KDoc symbol links
+(`\ref` with C++ qualified/name syntax), including labeled links and companion
+static references. Primitive type links share the emitter's Kotlin/C++ type map:
+`[Int]`/`[kotlin.Int]` become `\c int`, `[String]` becomes `\c std::string`, and
+multi-word C++ types use inline code markup. Labels and ordinary class names stay
+intact. Equivalent Doxygen/inline code delimiters do not change correspondence,
+but a changed referenced primitive type does. Narrative casing/spelling and
+Markdown URLs are preserved.
+Fenced and inline examples retain their original text; Kotlin-only example syntax
+produces explicit documentation diagnostics rather than invented example code.
+The pack does not claim to rewrite every KDoc tag or its embedded algorithms.
+Line comments inside bodies retain their newline so they cannot swallow code.
+
+Unmapped nodes emit `__ast_distance_unmapped__(node_type, original_source)` and
+record the original line and byte span. Suspend functions, generic function
+signatures, extension receivers, nullable/function types, non-public modifiers,
+named arguments, varargs, classes, ranges, lambdas, inference-dependent expression
+return types and additional Kotlin idioms currently require rules. They are
+visible fallbacks rather than invented algorithms. This engine does not generate
+C++ coroutines or claim to implement the coroutine DSL/IR lowering.
+
+Inspect and capture a complete generated buffer and rule receipt:
+
+```sh
+./ast_distance --transliterate source.kt kotlin cpp > emitted.cpp 2> emitted.rules.txt
+./ast_distance --translit-distance source.kt kotlin target.cpp cpp > distance.txt
+```
+
+The span map currently covers complete top-level parsed declarations/comments,
+including functions with their bodies, rather than claiming a separate map for
+all nested expressions. Offsets refer to original source bytes and assembled
+emitted bytes. Rule hit/miss counts count visited rewrite nodes. Coverage is the
+fraction of top-level executable/declaration source bytes fully handled without
+a fallback anywhere in that declaration. Comments, package/import metadata are
+excluded from the coverage denominator. Imports are metadata only in this pack;
+resolving external APIs/includes is outside this emitter.
+
+The report shows token cosine on target-grammar leaves, parsed target-shaped AST
+histogram cosine, function-name coverage, ordered normalized logic, coverage,
+fallback penalty, parser-error status, full maps/diagnostics, function locations,
+missing/extra callable names, differing ordered logic sequences and the emitted
+buffer. Overloads match one-to-one using emitted source spans and strongest
+compatible callable evidence. Known incompatible callable owners do not match.
+The standalone function-name subscore is not a type/test/API proof; `--deep`
+provides the complete extracted symbol inventory beside implementation metrics.
+
+The design's weighted score is additionally multiplied by ordered normalized
+logic to prevent copied vocabulary or matching node histograms from rescuing
+missing behavior:
+
+```text
+base = .35 * translated_text_cosine + .35 * translated_ast_cosine
+     + .20 * function_name_parity + .10 * span_rule_coverage
+score = max(0, base - fallback_penalty) * normalized_logic
+```
+
+Generated fallback argument strings are excluded from translated text vocabulary.
+Parsed comments never raise implementation metrics. Documentation correspondence
+is reported separately as ordered comment-word correspondence, lowering only
+identifier-bearing reference/tag syntax, with no contribution to `score`. Documentation terms are compared after the
+same bounded reference/tag lowering, preserving narrative spelling; comment delimiters
+and punctuation are excluded. Anchored `Transliterated from:` and `port-lint:`
+metadata lines are preserved but excluded from narrative correspondence. Separate `documentation_misses` record unsupported
+example syntax without reducing executable rule coverage. A preserved
+comment does not compensate for an omitted branch. A changed operator or literal
+appears in the full ordered sequences even when a long function retains a high
+numeric similarity. Parser errors make the result provisional. None of these
+metrics establish compiler equivalence or semantic correctness.
+
+Native and captured CLI regression tests exercise faithful emission, byte/line
+maps, expression returns, namespace identity, overloads/defaults, while loops,
+comment preservation, missing documentation, tiny operator/literal changes,
+vocabulary stuffing and unsupported signature/body fallbacks. The native emitter
+test compiles with `-Wall -Wextra -Wpedantic -Werror`.
+
+```sh
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --target ast_distance transliteration_engine_test -j4
+ctest --test-dir build -R transliteration_engine --output-on-failure
+```

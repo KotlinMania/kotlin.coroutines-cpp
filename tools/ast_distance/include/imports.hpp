@@ -9,6 +9,9 @@
 #include <regex>
 #include <filesystem>
 #include <cctype>
+#include <algorithm>
+#include <functional>
+#include "kotlin_grammar_compat.hpp"
 
 // External declarations for tree-sitter language functions
 extern "C" {
@@ -24,6 +27,8 @@ namespace ast_distance {
  * Represents a package/namespace declaration.
  */
 struct PackageDecl {
+    bool ambiguous = false;  // Declarations span unrelated namespaces.
+    bool declared = false;    // Found in source AST, rather than derived from a path.
     std::string raw;           // Original text
     std::string path;          // Normalized path (e.g., "ratatui.widgets.block")
     std::vector<std::string> parts;  // Split parts ["ratatui", "widgets", "block"]
@@ -241,7 +246,8 @@ public:
             return pkg;
         }
 
-        TSTree* tree = ts_parser_parse_string(parser_, nullptr, source.c_str(), source.length());
+        auto adapted = kotlin_grammar_input(source);
+        TSTree* tree = ts_parser_parse_string(parser_, nullptr, adapted.text.c_str(), adapted.text.length());
         if (!tree) return pkg;
 
         TSNode root = ts_tree_root_node(tree);
@@ -304,7 +310,7 @@ public:
         }
 
         // If no namespace found, derive from file path
-        if (pkg.parts.empty()) {
+        if (!pkg.declared) {
             std::filesystem::path p(file_path);
             std::vector<std::string> parts;
 
@@ -458,6 +464,7 @@ private:
 
         // Handle package_header (Kotlin)
         if (std::string(type) == "package_header") {
+            pkg.declared = true;
             pkg.raw = get_node_text(node, source);
 
             // Extract the identifier
@@ -635,45 +642,56 @@ private:
 
     void extract_cpp_namespace_recursive(TSNode node, const std::string& source,
                                           PackageDecl& pkg) {
-        const char* type = ts_node_type(node);
-        std::string type_s(type);
-
-        // Handle namespace_definition
-        if (type_s == "namespace_definition") {
-            // Get the namespace name
-            uint32_t child_count = ts_node_child_count(node);
-            for (uint32_t i = 0; i < child_count; ++i) {
-                TSNode child = ts_node_child(node, i);
-                const char* child_type = ts_node_type(child);
-                std::string ct(child_type);
-
-                if (ct == "namespace_identifier" || ct == "identifier") {
-                    std::string name = get_node_text(child, source);
-                    if (!name.empty()) {
-                        pkg.parts.push_back(name);
-                        if (!pkg.path.empty()) pkg.path += ".";
-                        pkg.path += name;
-                    }
-                    break;
+        // Determine the namespace of declarations, rather than letting an empty
+        // namespace placed first claim unrelated implementations later in a file.
+        std::vector<std::vector<std::string>> declaration_scopes, declared_scopes;
+        std::function<void(TSNode, std::vector<std::string>)> visit = [&](TSNode current, std::vector<std::string> scope) {
+            std::string kind = ts_node_type(current);
+            if (kind == "namespace_definition") {
+                TSNode name_node = ts_node_child_by_field_name(current, "name", 4);
+                if (!ts_node_is_null(name_node)) {
+                    std::string name = get_node_text(name_node, source);
+                    for (size_t i = 0; (i = name.find("::", i)) != std::string::npos; ++i) name.replace(i, 2, ".");
+                    std::istringstream components(name);
+                    for (std::string component; std::getline(components, component, '.');)
+                        if (!component.empty()) scope.push_back(component);
+                    declared_scopes.push_back(scope);
                 }
+                TSNode body = ts_node_child_by_field_name(current, "body", 4);
+                if (!ts_node_is_null(body)) visit(body, scope);
+            } else if (kind == "translation_unit" || kind == "declaration_list" ||
+                       kind == "preproc_if" || kind == "preproc_ifdef" || kind == "preproc_else" || kind == "preproc_elif") {
+                for (uint32_t i = 0; i < ts_node_named_child_count(current); ++i)
+                    visit(ts_node_named_child(current, i), scope);
+            } else if (kind == "function_definition" || kind == "declaration" || kind == "template_declaration" ||
+                       kind == "class_specifier" || kind == "struct_specifier" || kind == "enum_specifier" ||
+                       kind == "alias_declaration" || kind == "type_definition") {
+                declaration_scopes.push_back(std::move(scope));
             }
-
-            // Check for nested namespace in the body
-            for (uint32_t i = 0; i < child_count; ++i) {
-                TSNode child = ts_node_child(node, i);
-                const char* child_type = ts_node_type(child);
-                if (std::string(child_type) == "declaration_list") {
-                    extract_cpp_namespace_recursive(child, source, pkg);
-                    return;  // Found nested, stop
-                }
-            }
-            return;  // Found namespace, stop further searching
+        };
+        visit(node, {});
+        if (declared_scopes.empty()) return;
+        pkg.declared = true;
+        const auto& scopes = declaration_scopes.empty() ? declared_scopes : declaration_scopes;
+        auto common = scopes.front();
+        for (const auto& scope : scopes) {
+            size_t equal = 0;
+            while (equal < common.size() && equal < scope.size() && common[equal] == scope[equal]) ++equal;
+            common.resize(equal);
         }
-
-        // Recurse (only into top-level)
-        uint32_t child_count = ts_node_child_count(node);
-        for (uint32_t i = 0; i < child_count && pkg.path.empty(); ++i) {
-            extract_cpp_namespace_recursive(ts_node_child(node, i), source, pkg);
+        pkg.ambiguous = common.empty();
+        pkg.parts = common;
+        for (const auto& part : common) {
+            if (!pkg.path.empty()) { pkg.path += '.'; pkg.raw += "::"; }
+            pkg.path += part; pkg.raw += part;
+        }
+        if (pkg.ambiguous) {
+            pkg.path = "<mixed namespace declarations>";
+            for (const auto& scope : scopes) {
+                if (!pkg.raw.empty()) pkg.raw += " | ";
+                if (scope.empty()) pkg.raw += "<global>";
+                for (size_t i = 0; i < scope.size(); ++i) pkg.raw += (i ? "::" : "") + scope[i];
+            }
         }
     }
 

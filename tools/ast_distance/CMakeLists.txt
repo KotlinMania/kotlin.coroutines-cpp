@@ -111,6 +111,7 @@ add_executable(ast_distance
     src/symbol_analysis.cpp
     src/symbol_extraction.cpp
     src/deep_inventory.cpp
+    src/transliteration_engine.cpp
 )
 
 target_include_directories(ast_distance PRIVATE
@@ -183,4 +184,23 @@ endif()
 if(BUILD_TESTING)
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/test-tmp")
     set_tests_properties(extraction_review_native PROPERTIES ENVIRONMENT "TMPDIR=${CMAKE_CURRENT_BINARY_DIR}/test-tmp")
+endif()
+
+if(BUILD_TESTING)
+    add_executable(transliteration_engine_test tests/transliteration_engine_test.cc src/transliteration_engine.cpp)
+    target_include_directories(transliteration_engine_test PRIVATE include ${tree-sitter_SOURCE_DIR}/lib/include)
+    target_compile_options(transliteration_engine_test PRIVATE -UNDEBUG -Wall -Wextra -Wpedantic -Werror)
+    target_link_libraries(transliteration_engine_test PRIVATE tree-sitter-core tree-sitter-rust-parser tree-sitter-kotlin-parser tree-sitter-cpp-parser tree-sitter-python-parser tree-sitter-typescript-parser)
+    add_test(NAME transliteration_engine_native COMMAND transliteration_engine_test)
+    add_test(NAME transliteration_engine_cli
+        COMMAND ${CMAKE_COMMAND} -DAST_DISTANCE=$<TARGET_FILE:ast_distance>
+        -DTEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/transliteration-fixtures
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/transliteration_cli_test.cmake)
+endif()
+
+if(BUILD_TESTING)
+    add_test(NAME identity_pairing_cli
+        COMMAND ${CMAKE_COMMAND} -DAST_DISTANCE=$<TARGET_FILE:ast_distance>
+        -DTEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/identity-fixtures
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/identity_pairing_test.cmake)
 endif()

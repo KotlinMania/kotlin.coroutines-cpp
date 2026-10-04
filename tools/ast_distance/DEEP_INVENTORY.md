@@ -49,3 +49,33 @@ information; they are excluded from unresolved `findings`. This means finding a
 body or type definition in a header locates implementation evidence, not that the
 entire logical unit passes source parity. Parser errors remain unresolved review
 findings even when a companion contains definitions.
+
+## File identity and emitted algorithm evidence
+
+Kotlin/C++ pairing compares declared package/namespace components exactly,
+normalizing `.` versus `::` separators without erasing component boundaries,
+case or underscores. Provenance identifies the actual relative source path or
+an exact component-boundary suffix of its physical path. A conflicting marker
+cannot be rescued by a similar basename. Unmarked files require the same
+normalized basename and declared namespace; equal candidates in distinct source
+sets remain unmatched with an ambiguity diagnostic requiring provenance.
+
+C++ namespace identity follows declaration scopes rather than the first empty
+namespace in a file. Classic/C++17 nested namespace syntax is equivalent. Empty
+helper scopes cannot claim declarations elsewhere. Unrelated scopes and
+conflicting companion namespaces/provenance produce identity diagnostics and
+are excluded from pairing. Include-only translation units may inherit their
+companion header's identity. A common namespace enclosing helper subscopes is
+recorded; this is file identity evidence, not a compiler symbol-resolution proof.
+Direct file comparisons also reject conflicting identity before scoring.
+
+For Kotlin -> C++, `--deep` adds a separate emitted-transliteration metrics table
+and saves `deep_transliteration_evidence.txt`. That receipt contains all metrics,
+parser/fallback diagnostics, top-level source/emitted byte maps, callable
+locations, missing/extra functions, full differing ordered logic sequences and
+emitted C++ buffers. Physical files and concatenation order are listed because
+paired header/source locations in this receipt refer to the combined buffer.
+The existing function score and complete symbol inventory remain distinct from
+this bounded rule-pack score. Unsupported classes/suspend lowering and other
+constructs are visible fallbacks; a zero emitted score can indicate missing
+normalization rules and is not itself a proven port defect.

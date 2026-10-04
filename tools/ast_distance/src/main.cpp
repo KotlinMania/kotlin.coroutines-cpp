@@ -6,6 +6,7 @@
 #include "deep_inventory.hpp"
 #include "porting_utils.hpp"
 #include "transliteration_similarity.hpp"
+#include "transliteration_engine.hpp"
 #include "symbol_analysis.hpp"
 #include "symbol_extraction.hpp"
 #include "symbol_extractor.hpp"
@@ -39,6 +40,7 @@ using namespace ast_distance;
 
 static ReexportConfig g_reexport_config;
 static AstConfig g_ast_config;
+static void print_transliteration_distance(const TransliterationDistance& report, std::ostream& stream);
 
 [[maybe_unused]] static std::optional<std::chrono::seconds> file_age_seconds(const std::string& path) {
     try {
@@ -720,6 +722,10 @@ void print_usage(const char* program) {
     std::cerr << "      Compare AST similarity between two files\n\n";
     std::cerr << "  " << program << " --compare-functions <file1> <lang1> <file2> <lang2>\n";
     std::cerr << "      Compare strict function-name parity and per-function cosine/line similarity\n\n";
+    std::cerr << "  " << program << " --transliterate <source_file> kotlin cpp\n";
+    std::cerr << "      Emit AST-driven C++ buffer on stdout; complete span/rule evidence on stderr\n\n";
+    std::cerr << "  " << program << " --translit-distance <source_file> kotlin <target_file> cpp\n";
+    std::cerr << "      Score emitted C++ against target C++, with fallback and ordered logic evidence\n\n";
     std::cerr << "  " << program << " --scan <directory> <rust|kotlin|cpp|python|typescript>\n";
     std::cerr << "      Scan directory and show file list with import counts\n\n";
     std::cerr << "  " << program << " --deps <directory> <rust|kotlin|cpp|python|typescript>\n";
@@ -2201,9 +2207,9 @@ void generate_reports(const Codebase& source, const Codebase& target,
 	            docs_missing = doc_coverage_pct < 85.0f;
 	        }
 	        if (docs_missing) {
-	            report << "There is missing documentation that is hurting overall scoring.\n\n";
+	            report << "Documentation correspondence is incomplete; it is reported separately from implementation scoring.\n\n";
 	        }
-	        report << "**Documentation coverage:** " << total_tgt_doc_lines << " / " 
+	        report << "**Documentation line amount:** " << total_tgt_doc_lines << " / "
 	               << total_src_doc_lines << " lines (";
 	        if (total_src_doc_lines > 0) {
 	            report << std::fixed << std::setprecision(0)
@@ -2214,7 +2220,7 @@ void generate_reports(const Codebase& source, const Codebase& target,
 	        
 	        report << "Documentation gaps (>20%), complete list:\n\n";
 	        if (doc_gaps.empty()) {
-	            report << "No significant documentation gaps found.\n\n";
+	            report << "No significant documentation line-count gaps found; text/reference correspondence is separate.\n\n";
 	        } else {
 	            // Preserve the complete documentation-gap tally for report consumers.
 	            [[maybe_unused]] int shown_docs = 0;
@@ -2603,10 +2609,10 @@ void cmd_deep(const std::string& src_dir, const std::string& src_lang,
 	              << " unported `#[test]` functions)\n";
 	    if (total_src_doc_lines > 0) {
 	        int pct = static_cast<int>(doc_coverage_pct + 0.5f);
-	        std::cout << "- Documentation coverage: " << total_tgt_doc_lines << " / "
+	        std::cout << "- Documentation line amount: " << total_tgt_doc_lines << " / "
 	                  << total_src_doc_lines << " lines (" << pct << "%)\n";
 		    } else {
-		        std::cout << "- Documentation coverage: N/A (source has no docs)\n";
+		        std::cout << "- Documentation line amount: N/A (source has no docs)\n";
 		    }
 		    std::cout << "\nPrimary focus: ";
 		    if (!comp.unmatched_source.empty()) {
@@ -2793,19 +2799,19 @@ void cmd_deep(const std::string& src_dir, const std::string& src_lang,
 	        });
 
 	    if (docs_missing) {
-	        std::cout << "There is missing documentation that is hurting overall scoring.\n";
+	        std::cout << "Documentation correspondence is incomplete; it is reported separately from implementation scoring.\n";
 	    }
 	    if (total_src_doc_lines > 0) {
 	        int pct = static_cast<int>(doc_coverage_pct + 0.5f);
-	        std::cout << "Documentation coverage: " << total_tgt_doc_lines << " / "
+	        std::cout << "Documentation line amount: " << total_tgt_doc_lines << " / "
 	                  << total_src_doc_lines << " lines (" << pct << "%)\n";
 	    } else {
-	        std::cout << "Documentation coverage: N/A (source has no docs)\n";
+	        std::cout << "Documentation line amount: N/A (source has no docs)\n";
 	    }
 	    std::cout << "Files with >20% doc gap: " << doc_gaps.size() << "\n\n";
 
 	    if (doc_gaps.empty()) {
-	        std::cout << "No significant documentation gaps found.\n";
+	        std::cout << "No significant documentation line-count gaps found; text/reference correspondence is separate.\n";
 	    } else {
 	        std::cout << std::setw(30) << std::left << "File"
                   << std::setw(12) << "Src Docs"
@@ -2840,6 +2846,37 @@ void cmd_deep(const std::string& src_dir, const std::string& src_lang,
     std::ofstream symbol_report("deep_symbol_inventory.txt");
     symbol_report << inventory.str();
     if (!symbol_report) throw std::runtime_error("Cannot write deep_symbol_inventory.txt");
+
+    if (src_lang == "kotlin" && tgt_lang == "cpp") {
+        std::ofstream evidence("deep_transliteration_evidence.txt");
+        if (!evidence) throw std::runtime_error("Cannot write deep_transliteration_evidence.txt");
+        std::cout << "\n=== AST Emitted Transliteration Distance (bounded Kotlin -> C++ rules) ===\n";
+        std::cout << "Source\tTarget\tScore\tOrderedLogic\tRuleCoverage\tDocs\tFallbacks\tDocMisses\n";
+        for (const auto& match : comp.matches) {
+            const auto& source_file = source.files.at(match.source_path);
+            const auto& target_file = target.files.at(match.target_path);
+            auto target_paths = target_file.paths;
+            target_paths.insert(target_paths.end(), match.additional_target_paths.begin(), match.additional_target_paths.end());
+            auto distance = transliteration_distance(CodebaseComparator::read_files_to_string(source_file.paths), Language::KOTLIN,
+                CodebaseComparator::read_files_to_string(target_paths), Language::CPP);
+            std::cout << source_file.relative_path << '\t' << target_file.relative_path << '\t'
+                << std::fixed << std::setprecision(6) << distance.score << '\t' << distance.normalized_logic << '\t'
+                << distance.translation.rule_coverage << '\t' << distance.documentation_parity << '\t'
+                << distance.translation.rule_misses << '\t' << distance.translation.documentation_misses << '\n';
+            for (const auto& diagnostic : distance.translation.diagnostics)
+                std::cout << "  " << source_file.relative_path << ':' << diagnostic << '\n';
+            evidence << "=== " << source_file.relative_path << " -> " << target_file.relative_path << " ===\n";
+            evidence << "Locations below refer to these concatenated physical files, in order:\nSource:";
+            for (const auto& path : source_file.paths) evidence << ' ' << path;
+            evidence << "\nTarget:";
+            for (const auto& path : target_paths) evidence << ' ' << path;
+            evidence << '\n';
+            print_transliteration_distance(distance, evidence);
+        }
+        if (!evidence) throw std::runtime_error("Cannot write deep_transliteration_evidence.txt");
+        std::cout << "Full metrics, source/emitted byte maps, ordered logic differences, missing/extra callables,\n"
+                     "and emitted buffers saved to deep_transliteration_evidence.txt. Unsupported rules are visible fallbacks.\n";
+    }
 }
 
 void cmd_missing(const std::string& src_dir, const std::string& src_lang,
@@ -3029,6 +3066,77 @@ void cmd_stats(const std::string& directory) {
     std::cout << "  Lint errors: " << total_lint << "\n";
 }
 
+static void verify_comparison_identity(const std::string& source_path, Language source_language,
+                                       const std::string& target_path, Language target_language) {
+    const bool kotlin_cpp = (source_language == Language::KOTLIN && target_language == Language::CPP) ||
+        (source_language == Language::CPP && target_language == Language::KOTLIN);
+    if (!kotlin_cpp) return;
+    Codebase source(source_path, source_language == Language::KOTLIN ? "kotlin" : "cpp");
+    Codebase target(target_path, target_language == Language::KOTLIN ? "kotlin" : "cpp");
+    source.scan(); source.extract_imports();
+    target.scan(); target.extract_imports(); target.extract_porting_data();
+    if (source.files.size() != 1 || target.files.size() != 1)
+        throw std::runtime_error("Explicit file comparison requires one source/target compilation unit");
+    const auto& left = source.files.begin()->second;
+    const auto& right = target.files.begin()->second;
+    if (!right.identity_conflicts.empty())
+        throw std::runtime_error("Identity conflict: " + right.identity_conflicts.front());
+    if (!CodebaseComparator::namespace_identity_matches(left.package, right.package))
+        throw std::runtime_error("Namespace/package mismatch: " + source_path + " [" + left.package.path +
+            "] vs " + target_path + " [" + right.package.path + "]");
+    if (!right.transliterated_from.empty()) {
+        CodebaseComparator comparator(source, target);
+        if (comparator.identity_header_match(left, right).score == 0)
+            throw std::runtime_error("Provenance mismatch: target identifies " + right.transliterated_from +
+                ", not " + source_path);
+    }
+}
+
+static void print_emission_evidence(const TransliterationOutput& output, std::ostream& stream) {
+    stream << "Rule hits: " << output.rule_hits << " | misses: " << output.rule_misses
+           << " | documentation misses: " << output.documentation_misses
+           << " | supported code-byte coverage: " << output.rule_coverage << '\n';
+    stream << "Source line\tSource bytes\tEmitted bytes\tNode\tSupported\n";
+    for (const auto& span : output.spans)
+        stream << span.source_line << '\t' << span.source_start << ':' << span.source_end << '\t'
+               << span.target_start << ':' << span.target_end << '\t' << span.node_type << '\t'
+               << (span.supported ? "yes" : "fallback") << '\n';
+    for (const auto& diagnostic : output.diagnostics) stream << "Diagnostic: " << diagnostic << '\n';
+}
+static void print_transliteration_distance(const TransliterationDistance& report, std::ostream& stream) {
+stream << std::fixed << std::setprecision(6)
+    << "translated_text_cosine: " << report.translated_text_cosine << '\n'
+    << "translated_ast_cosine: " << report.translated_ast_cosine << '\n'
+    << "function_name_parity: " << report.symbol_parity << '\n'
+    << "normalized_logic: " << report.normalized_logic << '\n'
+    << "documentation_correspondence: " << report.documentation_parity << '\n'
+    << "span_rule_coverage: " << report.translation.rule_coverage << '\n'
+    << "fallback_penalty: " << report.fallback_penalty << '\n'
+    << "score: " << report.score << '\n'
+    << "Generated parse errors: " << (report.translated_parse_errors ? "yes (provisional)" : "no") << '\n'
+    << "Target parse errors: " << (report.target_parse_errors ? "yes (provisional)" : "no") << '\n';
+print_emission_evidence(report.translation, stream);
+for (const auto& function : report.functions) {
+    stream << "Function " << function.source_name << ':' << function.source_line << " -> "
+        << function.target_name << ':' << function.target_line << " | normalized logic: " << function.normalized_logic << '\n';
+    if (function.emitted_tokens == function.target_tokens) stream << "  Ordered logic sequences are equal\n";
+    else {
+        stream << "  Emitted logic:";
+        for (const auto& token : function.emitted_tokens) stream << ' ' << token;
+        stream << "\n  Target logic:";
+        for (const auto& token : function.target_tokens) stream << ' ' << token;
+        stream << '\n';
+    }
+}
+for (const auto& function : report.missing_functions) stream << "Missing source function: " << function << '\n';
+for (const auto& function : report.extra_functions) stream << "Extra target function: " << function << '\n';
+stream << "=== Emitted target buffer ===\n" << report.translation.buffer;
+}
+static std::string read_emission_input(const std::string& path) {
+    std::ifstream file(path);
+    if (!file) throw std::runtime_error("Cannot read transliteration input: " + path);
+    return std::string(std::istreambuf_iterator<char>(file), {});
+}
 int main(int argc, char* argv[]) {
     setvbuf(stdout, nullptr, _IOLBF, 0);
 
@@ -3218,6 +3326,18 @@ int main(int argc, char* argv[]) {
             std::cerr << "Error: --dump and --dump-node are disabled. Use markdown report generation only.\n";
             return 2;
 
+        } else if (mode == "--transliterate") {
+            if (argc != 5) throw std::runtime_error("Usage: --transliterate source_file source_lang target_lang");
+            auto output = transliterate(read_emission_input(argv[2]), parse_language(argv[3]), parse_language(argv[4]));
+            std::cout << output.buffer;
+            print_emission_evidence(output, std::cerr);
+        } else if (mode == "--translit-distance") {
+            if (argc != 6) throw std::runtime_error("Usage: --translit-distance source_file source_lang target_file target_lang");
+            auto source_text = read_emission_input(argv[2]);
+            auto target_text = read_emission_input(argv[4]);
+            verify_comparison_identity(argv[2], parse_language(argv[3]), argv[4], parse_language(argv[5]));
+            auto report = transliteration_distance(source_text, parse_language(argv[3]), target_text, parse_language(argv[5]));
+            print_transliteration_distance(report, std::cout);
         } else if (mode == "--compare-functions" && argc >= 6) {
             ASTParser parser;
             std::string file1 = argv[2];
@@ -3254,6 +3374,7 @@ int main(int argc, char* argv[]) {
             buffer2 << stream2.rdbuf();
             std::string file2_text = buffer2.str();
             if (!stream2.is_open()) throw std::runtime_error("Cannot open target: " + file2);
+            verify_comparison_identity(file1, lang1, file2, lang2);
             auto funcs2 = parser.extract_function_infos(file2_text, lang2);
             auto target_unmapped = parser.get_unmapped_node_types();
             print_extraction_diagnostics(file2);
@@ -3728,6 +3849,7 @@ int main(int argc, char* argv[]) {
             if (lang1 == Language::RUST) macro_friendly |= file_contains_macro_rules(file1);
             if (lang2 == Language::RUST) macro_friendly |= file_contains_macro_rules(file2);
 
+            verify_comparison_identity(file1, lang1, file2, lang2);
             std::cout << "Parsing " << language_name(lang1) << " file: " << file1 << "\n";
             std::optional<std::string> file1_source;
             if (lang1 == Language::RUST && lang2 == Language::KOTLIN) {
