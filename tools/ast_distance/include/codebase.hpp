@@ -49,6 +49,7 @@ struct SourceFile {
     // Porting analysis
     std::vector<std::string> identity_conflicts;
     std::string transliterated_from;  // "Transliterated from:" header value
+    std::vector<std::string> provenance_headers; // Every physical companion marker must resolve to the selected source.
     int line_count = 0;
     int code_lines = 0;
     bool is_stub = false;
@@ -452,6 +453,7 @@ public:
     void extract_porting_data() {
         for (auto& [path, sf] : files) {
             sf.transliterated_from.clear();
+            sf.provenance_headers.clear();
             sf.line_count = 0;
             sf.code_lines = 0;
             sf.is_stub = false;
@@ -462,11 +464,19 @@ public:
             bool all_parts_stub = !sf.paths.empty();
             for (const auto& p : sf.paths) {
                 auto provenance = PortingAnalyzer::extract_transliterated_from(p);
-                if (!provenance.empty() && !sf.transliterated_from.empty() &&
-                    SourceFile::normalize_provenance_path(provenance) != SourceFile::normalize_provenance_path(sf.transliterated_from))
-                    sf.identity_conflicts.push_back("Companion provenance conflict: " + p + " [" + provenance +
+                if (!provenance.empty()) {
+                    sf.provenance_headers.push_back(provenance);
+                    auto current = SourceFile::normalize_provenance_path(provenance);
+                    auto previous = SourceFile::normalize_provenance_path(sf.transliterated_from);
+                    // A root-relative path and a full upstream path may identify
+                    // the same file. Accept their syntax only provisionally: every
+                    // marker must resolve to the actual source in identity_header_match.
+                    bool compatible = previous.empty() || current == previous ||
+                        current.ends_with("/" + previous) || previous.ends_with("/" + current);
+                    if (!compatible) sf.identity_conflicts.push_back("Companion provenance conflict: " + p + " [" + provenance +
                         "] vs [" + sf.transliterated_from + "]");
-                else if (sf.transliterated_from.empty()) sf.transliterated_from = std::move(provenance);
+                    else if (sf.transliterated_from.empty() || current.size() > previous.size()) sf.transliterated_from = provenance;
+                }
 
                 FileStats stats = PortingAnalyzer::analyze_file(p);
                 sf.line_count += stats.line_count;
@@ -1456,16 +1466,27 @@ public:
 
     HeaderMatchResult identity_header_match(const SourceFile& src_file, const SourceFile& tgt_file) {
         HeaderMatchResult result;
-        auto header = normalize_source_annotation_path(source_path_from_transliteration(tgt_file.transliterated_from));
-        if (header.empty()) return result;
-        bool context = header == normalize_source_annotation_path(src_file.relative_path);
-        if (!context && fs::path(header).has_parent_path()) {
-            for (const auto& path : src_file.paths) {
-                auto full = fs::absolute(path).lexically_normal().generic_string();
-                context |= full == header || full.ends_with("/" + header);
+        auto headers = tgt_file.provenance_headers;
+        if (headers.empty() && !tgt_file.transliterated_from.empty()) headers.push_back(tgt_file.transliterated_from);
+        if (headers.empty()) return result;
+        for (const auto& marker : headers) {
+            auto header = normalize_source_annotation_path(source_path_from_transliteration(marker));
+            bool context = header == normalize_source_annotation_path(src_file.relative_path);
+            if (!context && fs::path(header).has_parent_path()) {
+                for (const auto& path : src_file.paths) {
+                    auto full = fs::absolute(path).lexically_normal().generic_string();
+                    context |= full == header || full.ends_with("/" + header);
+                }
+            }
+            if (!context) {
+                // Different source/target candidates normally have different markers.
+                // Only a plausible same-file candidate warrants a report diagnostic.
+                if (fs::path(header).filename() == fs::path(src_file.relative_path).filename() &&
+                    namespace_context_matches(src_file, tgt_file))
+                    identity_warnings.push_back("Rejected companion provenance marker against actual source: " + marker + " vs " + src_file.relative_path);
+                return result;
             }
         }
-        if (!context) return result;
         if (!namespace_context_matches(src_file, tgt_file)) {
             identity_warnings.push_back("Rejected provenance pair with different namespace/package: " +
                 src_file.relative_path + " [" + src_file.package.path + "] vs " +

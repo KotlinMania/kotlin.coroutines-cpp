@@ -672,7 +672,18 @@ private:
         visit(node, {});
         if (declared_scopes.empty()) return;
         pkg.declared = true;
-        const auto& scopes = declaration_scopes.empty() ? declared_scopes : declaration_scopes;
+        // Empty classic namespace chains contribute their terminal scope, not
+        // each intermediate opening. Populated declaration scopes still win.
+        std::vector<std::vector<std::string>> terminal_scopes;
+        if (declaration_scopes.empty()) {
+            for (const auto& scope : declared_scopes) {
+                bool parent_only = std::any_of(declared_scopes.begin(), declared_scopes.end(), [&](const auto& other) {
+                    return other.size() > scope.size() && std::equal(scope.begin(), scope.end(), other.begin());
+                });
+                if (!parent_only) terminal_scopes.push_back(scope);
+            }
+        }
+        const auto& scopes = declaration_scopes.empty() ? terminal_scopes : declaration_scopes;
         auto common = scopes.front();
         for (const auto& scope : scopes) {
             size_t equal = 0;

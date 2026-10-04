@@ -3071,8 +3071,12 @@ static void verify_comparison_identity(const std::string& source_path, Language 
     const bool kotlin_cpp = (source_language == Language::KOTLIN && target_language == Language::CPP) ||
         (source_language == Language::CPP && target_language == Language::KOTLIN);
     if (!kotlin_cpp) return;
-    Codebase source(source_path, source_language == Language::KOTLIN ? "kotlin" : "cpp");
-    Codebase target(target_path, target_language == Language::KOTLIN ? "kotlin" : "cpp");
+    // File identity follows upstream Kotlin -> C++ provenance even when the
+    // caller requests the body comparison in the reverse language direction.
+    const std::string& upstream_path = source_language == Language::KOTLIN ? source_path : target_path;
+    const std::string& port_path = target_language == Language::CPP ? target_path : source_path;
+    Codebase source(upstream_path, "kotlin");
+    Codebase target(port_path, "cpp");
     source.scan(); source.extract_imports();
     target.scan(); target.extract_imports(); target.extract_porting_data();
     if (source.files.size() != 1 || target.files.size() != 1)
@@ -3082,13 +3086,13 @@ static void verify_comparison_identity(const std::string& source_path, Language 
     if (!right.identity_conflicts.empty())
         throw std::runtime_error("Identity conflict: " + right.identity_conflicts.front());
     if (!CodebaseComparator::namespace_identity_matches(left.package, right.package))
-        throw std::runtime_error("Namespace/package mismatch: " + source_path + " [" + left.package.path +
-            "] vs " + target_path + " [" + right.package.path + "]");
+        throw std::runtime_error("Namespace/package mismatch: " + upstream_path + " [" + left.package.path +
+            "] vs " + port_path + " [" + right.package.path + "]");
     if (!right.transliterated_from.empty()) {
         CodebaseComparator comparator(source, target);
         if (comparator.identity_header_match(left, right).score == 0)
             throw std::runtime_error("Provenance mismatch: target identifies " + right.transliterated_from +
-                ", not " + source_path);
+                ", not " + upstream_path);
     }
 }
 

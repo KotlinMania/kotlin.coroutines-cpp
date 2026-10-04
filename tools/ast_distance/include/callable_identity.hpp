@@ -2,6 +2,23 @@
 #include "ast_parser.hpp"
 
 namespace ast_distance {
+inline std::string callable_type_key(std::string name) {
+    // Generic argument syntax qualifies instances, not the owning type symbol.
+    // This is matching only; generic arguments remain in the scored AST.
+    std::string plain;
+    int depth = 0;
+    for (unsigned char c : name) {
+        if (c == '<') { ++depth; continue; }
+        if (c == '>') { if (depth) --depth; continue; }
+        if (!depth && !std::isspace(c)) plain += static_cast<char>(c);
+    }
+    for (size_t position = 0; (position = plain.find('.', position)) != std::string::npos; position += 2) plain.replace(position, 1, "::");
+    return IdentifierStats::canonicalize(plain);
+}
+inline bool callable_type_names_compatible(const std::string& left, const std::string& right) {
+    auto a = callable_type_key(left), b = callable_type_key(right);
+    return !a.empty() && !b.empty() && (a == b || a.ends_with("::" + b) || b.ends_with("::" + a));
+}
 inline std::string callable_owner_key(const FunctionInfo& function) {
     auto separator = function.qualified_name.rfind("::");
     if (separator == std::string::npos) return {};
@@ -10,9 +27,17 @@ inline std::string callable_owner_key(const FunctionInfo& function) {
         owner.replace(position, 1, "::");
     // Kotlin companion members lower to static members of the containing class.
     if (owner.ends_with("::Companion")) owner.erase(owner.size() - 11);
-    return IdentifierStats::canonicalize(owner);
+    return callable_type_key(owner);
 }
 inline bool callable_owners_compatible(const FunctionInfo& source, const FunctionInfo& target) {
+    if (!source.extension_receiver.empty() && target.is_namespace_function)
+        return callable_type_names_compatible(source.extension_receiver, target.first_parameter_type);
+    if (!target.extension_receiver.empty() && source.is_namespace_function)
+        return callable_type_names_compatible(target.extension_receiver, source.first_parameter_type);
+    // A receiver extension cannot be hidden inside an unrelated class method.
+    // Companion extensions are the explicit static-member lowering exception.
+    if (!source.extension_receiver.empty() && target.has_class_owner && !source.extension_receiver.ends_with(".Companion")) return false;
+    if (!target.extension_receiver.empty() && source.has_class_owner && !target.extension_receiver.ends_with(".Companion")) return false;
     auto left = callable_owner_key(source), right = callable_owner_key(target);
     if (left.empty() || right.empty()) return true; // Report ownerless extension/free-function lowering separately.
     return left == right || left.ends_with("::" + right) || right.ends_with("::" + left);

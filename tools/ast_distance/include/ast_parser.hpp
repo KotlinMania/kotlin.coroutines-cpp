@@ -264,6 +264,11 @@ struct FunctionInfo {
     std::string name;
     std::string qualified_name;
     std::string signature;
+    // Matching evidence only: bodies keep every receiver/continuation/type token.
+    std::string extension_receiver;
+    std::string first_parameter_type;
+    bool is_namespace_function = false;
+    bool has_class_owner = false;
     TreePtr body_tree;
     IdentifierStats identifiers;
     bool has_stub_markers = false;
@@ -1482,7 +1487,7 @@ public:
                         return "operator " + source.substr(ts_node_start_byte(conversion_type),
                             ts_node_end_byte(conversion_type) - ts_node_start_byte(conversion_type));
                 }
-                if (type == "qualified_identifier") {
+                if (type == "qualified_identifier" || type == "template_function" || type == "template_type") {
                     declarator = ts_node_child_by_field_name(declarator, "name", 4);
                 } else {
                     TSNode next = ts_node_child_by_field_name(declarator, "declarator", 10);
@@ -1867,6 +1872,31 @@ public:
         return false;
     }
 
+    std::string receiver_type_from_cpp_node(TSNode type, const std::string& source) const {
+        if (ts_node_is_null(type)) return {};
+        auto text = source.substr(ts_node_start_byte(type), ts_node_end_byte(type) - ts_node_start_byte(type));
+        std::string base = text.substr(0, text.find('<'));
+        base.erase(std::remove_if(base.begin(), base.end(), [](unsigned char c) { return std::isspace(c); }), base.end());
+        // Ownership wrappers are syntactic receiver carriers. Their spelling and
+        // actual ownership behavior remain in implementation/signature scores.
+        if (base == "std::shared_ptr" || base == "std::unique_ptr" || base == "std::weak_ptr") {
+            TSNode arguments{};
+            std::function<void(TSNode)> find = [&](TSNode node) {
+                if (!ts_node_is_null(arguments)) return;
+                if (std::string(ts_node_type(node)) == "template_argument_list") { arguments = node; return; }
+                for (uint32_t i = 0; i < ts_node_named_child_count(node); ++i) find(ts_node_named_child(node, i));
+            };
+            find(type);
+            if (!ts_node_is_null(arguments) && ts_node_named_child_count(arguments)) {
+                TSNode first = ts_node_named_child(arguments, 0);
+                TSNode nested_type = ts_node_child_by_field_name(first, "type", 4);
+                return receiver_type_from_cpp_node(ts_node_is_null(nested_type) ? first : nested_type, source);
+            }
+            return {};
+        }
+        return base;
+    }
+
     void extract_function_infos_recursive(
             TSNode node,
             const std::string& source,
@@ -1895,8 +1925,21 @@ public:
                 if (!ts_node_is_null(name_node)) info.qualified_name = source.substr(
                     ts_node_start_byte(name_node), ts_node_end_byte(name_node) - ts_node_start_byte(name_node));
                 TSNode parameters = ts_node_is_null(d) ? TSNode{} : ts_node_child_by_field_name(d, "parameters", 10);
-                if (!ts_node_is_null(parameters)) info.signature = source.substr(
-                    ts_node_start_byte(parameters), ts_node_end_byte(parameters) - ts_node_start_byte(parameters));
+                if (!ts_node_is_null(parameters)) {
+                    info.signature = source.substr(ts_node_start_byte(parameters), ts_node_end_byte(parameters) - ts_node_start_byte(parameters));
+                    for (uint32_t i = 0; i < ts_node_named_child_count(parameters); ++i) {
+                        TSNode parameter = ts_node_named_child(parameters, i);
+                        std::string kind = ts_node_type(parameter);
+                        if (kind != "parameter_declaration" && kind != "optional_parameter_declaration") continue;
+                        info.first_parameter_type = receiver_type_from_cpp_node(ts_node_child_by_field_name(parameter, "type", 4), source);
+                        break;
+                    }
+                }
+                for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
+                    std::string kind = ts_node_type(parent);
+                    info.has_class_owner |= kind == "class_specifier" || kind == "struct_specifier";
+                }
+                info.is_namespace_function = !info.has_class_owner && info.qualified_name.find("::") == std::string::npos;
             } else if (lang == Language::KOTLIN) {
                 for (uint32_t i = 0; i < ts_node_named_child_count(node); ++i) {
                     TSNode child = ts_node_named_child(node, i);
@@ -1930,7 +1973,8 @@ public:
                         TSNode child = ts_node_named_child(node, i);
                         if (std::string(ts_node_type(child)) == "simple_identifier") break;
                         if (std::string(ts_node_type(child)) == "user_type") {
-                            prefix = source.substr(ts_node_start_byte(child), ts_node_end_byte(child) - ts_node_start_byte(child)) + "::";
+                            info.extension_receiver = source.substr(ts_node_start_byte(child), ts_node_end_byte(child) - ts_node_start_byte(child));
+                            prefix = info.extension_receiver + "::";
                             break;
                         }
                     }

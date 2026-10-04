@@ -116,3 +116,35 @@ a rule-pack limitation, not proof that all sharing algorithms are missing. The
 full emitted report makes those limitations explicit rather than certifying
 continuation/DSL/IR lowering from an aggregate histogram. Other language-pair
 emitter packs also remain unsupported; existing Rust/Kotlin analysis is retained.
+
+## Receiver and companion identity repair (2026-10-04)
+
+Canonical commits 24045c9 and 5bc592b were copied as an exact eight-file
+committed snapshot. Empty classic nested namespace companions now retain their
+terminal namespace rather than every intermediate scope. Populated wrong or
+mixed scopes remain rejected. Every short/full companion provenance marker must
+resolve to the actual selected upstream source, including reverse comparisons.
+
+Kotlin extension functions match C++ namespace functions only with the
+corresponding first-parameter receiver. Known smart-pointer carriers are
+unwrapped for identity; parameters, generics, continuations, operators and all
+body evidence remain in scoring. Template method owners and explicit
+specializations retain their callable names.
+
+Independent project reruns passed all eight strict Release tooling tests and
+verified all eight copied file hashes against the canonical commit manifest.
+The delegated ASan build also passed eight tests. Direct comparisons against
+the unchanged project headers now match Limit 7/8 (body 0.092), Logic 3/3
+(0.081), Combine 2/2 (0.048), and Transform 13/13 (0.086). Missing emitAbort in
+Limit remains explicit. These low scores are review evidence, not a semantic
+equivalence measurement or a claim that matching coverage repairs runtime code.
+
+The full deep rerun reduced unmatched source files from 53 to 16: 37 identity
+false alarms were removed. Remaining namespace/platform provenance and helper
+scope conflicts are retained for review; an unmatched file is not proof of a
+physically missing port. The project-built executable and installed tool hashes
+agree. Different compiler/sanitizer configurations produce different binary
+hashes; the source-copy manifest verifies the committed source snapshot.
+
+Tracked on Kanban t_e0acb2be. Full canonical receipts were copied to
+tmp/logic-parity-review/ast-distance-final-evidence for local inspection.

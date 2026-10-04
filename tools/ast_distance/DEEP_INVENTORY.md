@@ -79,3 +79,18 @@ The existing function score and complete symbol inventory remain distinct from
 this bounded rule-pack score. Unsupported classes/suspend lowering and other
 constructs are visible fallbacks; a zero emitted score can indicate missing
 normalization rules and is not itself a proven port defect.
+
+Empty companion namespace chains retain their deepest declared scope when they
+contain no declarations. That permits an implementation in a matching header to
+pair with its empty classic nested namespace companion, without letting an empty
+scope override declarations in an unrelated scope. Short and full companion
+provenance markers must each resolve to the actual selected upstream source,
+including when comparing C++ to Kotlin in the reverse direction.
+
+Generic method owners and explicit template specializations retain their names.
+Kotlin top-level extension functions can pair with C++ namespace functions only
+when the first C++ parameter provides the corresponding receiver type. Known
+smart-pointer receiver carriers are unwrapped for this identity check; unrelated
+wrappers and class-member namesakes do not satisfy it. Generic arguments, receiver
+parameters, continuation arguments and body logic remain in the scoring input.
+These matching rules do not establish equivalent coroutine suspension behavior.

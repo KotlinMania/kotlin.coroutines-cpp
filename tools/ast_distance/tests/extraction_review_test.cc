@@ -1,6 +1,8 @@
 #include "ast_parser.hpp"
 #include "cpp_review.hpp"
 #include "symbol_analysis.hpp"
+#include "imports.hpp"
+#include "callable_identity.hpp"
 #include <cassert>
 #include <filesystem>
 #include <iostream>
@@ -57,6 +59,36 @@ class Started {
     assert(adapted.text.substr(0, lexical.find("fun /* nested")) == lexical.substr(0, lexical.find("fun /* nested")));
     parser.extract_function_infos("fun broken( {", Language::KOTLIN);
     assert(parser.last_extraction_has_errors());
+
+    ImportExtractor imports;
+    auto empty = imports.extract_cpp_namespace("namespace kotlinx { namespace coroutines { namespace flow {} } }", "Empty.cpp");
+    assert(empty.declared && !empty.ambiguous && empty.path == "kotlinx.coroutines.flow");
+    auto helper_scope = imports.extract_cpp_namespace("namespace helper {} namespace intended { int work(){return 1;} }", "Mixed.cpp");
+    assert(helper_scope.path == "intended" && !helper_scope.ambiguous);
+    auto wrong_scope = imports.extract_cpp_namespace("namespace intended {} namespace wrong { int work(){return 1;} }", "Wrong.cpp");
+    assert(wrong_scope.path == "wrong");
+    auto mixed_scope = imports.extract_cpp_namespace("namespace intended { int work(){return 1;} } namespace wrong { int other(){return 2;} }", "Mixed.cpp");
+    assert(mixed_scope.ambiguous);
+    auto extension = parser.extract_function_infos("fun <T> Flow<T>.drop(count: Int): Flow<T> = this", Language::KOTLIN);
+    assert(extension.size() == 1 && extension[0].extension_receiver == "Flow<T>");
+    auto lowered = parser.extract_function_infos("namespace kotlinx::coroutines::flow { template<class T> std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) { return upstream; } }", Language::CPP);
+    assert(lowered.size() == 1 && lowered[0].is_namespace_function && lowered[0].first_parameter_type == "Flow");
+    assert(callable_owners_compatible(extension[0], lowered[0]));
+    auto wrong_receiver = parser.extract_function_infos("namespace kotlinx::coroutines::flow { int drop(int count) { return count; } }", Language::CPP);
+    assert(!callable_owners_compatible(extension[0], wrong_receiver[0]));
+    auto wrong_wrapper = parser.extract_function_infos("namespace kotlinx::coroutines::flow { template<class T> int drop(Wrapper<Flow<T>> value) { return 0; } }", Language::CPP);
+    assert(!callable_owners_compatible(extension[0], wrong_wrapper[0]));
+    auto class_moved = parser.extract_function_infos("class Flow { int drop(int count) { return count; } };", Language::CPP);
+    assert(!callable_owners_compatible(extension[0], class_moved[0]));
+    auto qualified_receiver = parser.extract_function_infos("fun foo.Flow.drop(count: Int): foo.Flow = this", Language::KOTLIN);
+    auto unrelated_receiver = parser.extract_function_infos("namespace intended { bar::Flow drop(bar::Flow value, int count) { return value; } }", Language::CPP);
+    assert(!callable_owners_compatible(qualified_receiver[0], unrelated_receiver[0]));
+    auto template_methods = parser.extract_function_infos("template<class T> struct Box { T map(T); }; template<class T> T Box<T>::map(T value) { return value; }", Language::CPP);
+    auto kotlin_method = parser.extract_function_infos("class Box<T> { fun map(value: T): T = value }", Language::KOTLIN);
+    assert(template_methods.size() == 1 && template_methods[0].name == "map");
+    assert(callable_owners_compatible(kotlin_method[0], template_methods[0]));
+    auto specialized = parser.extract_function_infos("template<class T> T identity(T input) { return input; } template<> int identity<int>(int input) { return input; }", Language::CPP);
+    assert(specialized.size() == 2 && specialized[0].name == "identity" && specialized[1].name == "identity");
 
     auto review = review_cpp(R"(
 enum class HolderType { VALUE, FAILED, CLOSED };
