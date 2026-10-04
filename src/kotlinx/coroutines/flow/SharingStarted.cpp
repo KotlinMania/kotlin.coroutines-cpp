@@ -13,6 +13,7 @@
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/flow/StateFlow.hpp"
 #include "kotlinx/coroutines/flow/Merge.hpp"
+#include "kotlinx/coroutines/flow/Context.hpp"
 #include "kotlinx/coroutines/flow/Limit.hpp"
 #include "kotlinx/coroutines/flow/Distinct.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -153,8 +154,9 @@ std::shared_ptr<Flow<SharingCommand>> StartedWhileSubscribed::command(
             }
             return sink->emit(SharingCommand::STOP_AND_RESET_REPLAY_CACHE, cont);
         });
+    auto buffered_staged = buffer<SharingCommand>(staged, channels::CHANNEL_BUFFERED);
     auto dropped = drop_while<SharingCommand>(
-        staged,
+        buffered_staged,
         [](SharingCommand value) { return value != SharingCommand::START; });
     return distinct_until_changed<SharingCommand>(dropped);
 }

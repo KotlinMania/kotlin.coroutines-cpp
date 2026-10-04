@@ -221,42 +221,24 @@ struct TransformLatestFrame : public FlowCollector<T>,
                 return nullptr;
             }
 
-            class JoinAndLaunchContinuation : public Continuation<void*>,
-                                              public std::enable_shared_from_this<JoinAndLaunchContinuation> {
-                std::function<void()> launch_next_;
-                Continuation<void*>* cont_;
-                std::shared_ptr<std::atomic<bool>> executed_;
-            public:
-                JoinAndLaunchContinuation(std::function<void()> launch_next,
-                                          Continuation<void*>* cont,
-                                          std::shared_ptr<std::atomic<bool>> executed)
-                    : launch_next_(std::move(launch_next)), cont_(cont), executed_(std::move(executed)) {}
-
-                std::shared_ptr<CoroutineContext> get_context() const override {
-                    return cont_ ? cont_->get_context() : EmptyCoroutineContext::instance();
-                }
-
-                void resume_with(Result<void*> result) override {
-                    if (!executed_->exchange(true)) {
-                        launch_next_();
-                    }
-                    if (cont_) {
-                        cont_->resume_with(result);
-                    }
-                }
-            };
-
             auto executed = std::make_shared<std::atomic<bool>>(false);
-            auto join_cont = std::make_shared<JoinAndLaunchContinuation>(launch_next, cont, executed);
-            prev_to_cancel->invoke_on_completion(true, true, [join_cont](std::exception_ptr) {});
-            void* join_res = prev_to_cancel->join(join_cont.get());
-            if (intrinsics::is_coroutine_suspended(join_res)) {
-                return intrinsics::get_COROUTINE_SUSPENDED();
+            auto is_async = std::make_shared<std::atomic<bool>>(false);
+            prev_to_cancel->invoke_on_completion(true, true, [launch_next, cont, executed, is_async](std::exception_ptr) mutable {
+                if (!executed->exchange(true)) {
+                    launch_next();
+                }
+                if (is_async->load() && cont) {
+                    cont->resume_with(Result<void*>::success(nullptr));
+                }
+            });
+            if (!prev_to_cancel->is_active()) {
+                if (!executed->exchange(true)) {
+                    launch_next();
+                }
+                return nullptr;
             }
-            if (!executed->exchange(true)) {
-                launch_next();
-            }
-            return nullptr;
+            is_async->store(true);
+            return intrinsics::get_COROUTINE_SUSPENDED();
         } else {
             launch_next();
             return nullptr;
@@ -320,6 +302,14 @@ struct TransformLatestFrame : public FlowCollector<T>,
             completion_ = nullptr;
             guard = std::move(self_ref_);
             self_ref_ = nullptr;
+        }
+
+        if (scope_) {
+            if (failure_) {
+                scope_->resume_with(Result<void*>::failure(failure_));
+            } else if (scope_->is_active()) {
+                scope_->resume_with(Result<void*>::success(nullptr));
+            }
         }
 
         if (comp) {
@@ -388,7 +378,16 @@ protected:
 
         // Asynchronous continuation mode
         frame->retain_self();
-        void* result = this->upstream()->collect(frame.get(), frame.get());
+        void* result = nullptr;
+        try {
+            result = this->upstream()->collect(frame.get(), frame.get());
+        } catch (...) {
+            frame->resume_with(Result<void*>::failure(std::current_exception()));
+            if (frame->is_completed() && frame->has_failure()) {
+                std::rethrow_exception(frame->get_failure());
+            }
+            return nullptr;
+        }
         if (intrinsics::is_coroutine_suspended(result)) {
             return intrinsics::get_COROUTINE_SUSPENDED();
         }
