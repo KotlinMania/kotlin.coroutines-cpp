@@ -169,3 +169,4 @@ tools/ast_distance/ast_distance
 *.bak
 /backups/
 
+*.log

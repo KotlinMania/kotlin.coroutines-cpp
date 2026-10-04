@@ -443,16 +443,25 @@ inline Waiter* get_waiter(void* state) {
  * the latter uses this wrapper for its continuation.
  */
 template <typename E>
-class ReceiveCatching : public Waiter {
+class ReceiveCatching : public Waiter, public std::enable_shared_from_this<ReceiveCatching<E>> {
 public:
-    // @JvmField val cont: CancellableContinuationImpl<ChannelResult<E>>
+    std::shared_ptr<CancellableContinuationImpl<ChannelResult<E>>> cont_sp;
     CancellableContinuationImpl<ChannelResult<E>>* cont;
 
-    explicit ReceiveCatching(CancellableContinuationImpl<ChannelResult<E>>* c) : cont(c) {}
+    explicit ReceiveCatching(std::shared_ptr<CancellableContinuationImpl<ChannelResult<E>>> c)
+        : cont_sp(c), cont(c.get()) {}
 
-    // Waiter interface delegation
+    explicit ReceiveCatching(CancellableContinuationImpl<ChannelResult<E>>* c)
+        : cont_sp(nullptr), cont(c) {}
+
     void invoke_on_cancellation(internal::SegmentBase* segment, int index) override {
-        cont->invoke_on_cancellation(segment, index);
+        if (cont) {
+            cont->invoke_on_cancellation(segment, index);
+        }
+    }
+
+    std::shared_ptr<Waiter> shared_from_this_waiter() override {
+        return this->shared_from_this();
     }
 };
 
@@ -1140,22 +1149,37 @@ public:
      * Transliterated from: override suspend fun receive(): E
      */
     void* receive(Continuation<void*>* continuation) override {
-        auto result = try_receive();
-        if (result.is_success()) {
-            // Return boxed element
-            return new E(result.get_or_throw());
-        }
-        if (result.is_closed()) {
-            if (result.exception_or_null()) {
-                std::rethrow_exception(result.exception_or_null());
+        ChannelSegment<E>* segment = receive_segment_.load(std::memory_order_acquire);
+        while (true) {
+            if (is_closed_for_receive()) {
+                auto cause = receive_exception();
+                if (cause) {
+                    std::rethrow_exception(cause);
+                }
+                throw ClosedReceiveChannelException("Channel was closed");
             }
-            throw ClosedReceiveChannelException("Channel was closed");
+            int64_t r = receivers_.fetch_add(1, std::memory_order_acq_rel);
+            int64_t id = r / SEGMENT_SIZE;
+            int i = static_cast<int>(r % SEGMENT_SIZE);
+            if (segment->id != id) {
+                segment = find_segment_receive(id, segment);
+                if (segment == nullptr) {
+                    continue;
+                }
+            }
+            void* upd_cell_result = update_cell_receive(segment, i, r, nullptr);
+            if (upd_cell_result == static_cast<void*>(&SUSPEND())) {
+                assert(false && "unexpected SUSPEND with null waiter");
+            } else if (upd_cell_result == static_cast<void*>(&FAILED())) {
+                if (r < senders_counter()) segment->clean_prev();
+                continue;
+            } else if (upd_cell_result == static_cast<void*>(&SUSPEND_NO_WAITER())) {
+                return receive_on_no_waiter_suspend(segment, i, r, continuation);
+            } else {
+                segment->clean_prev();
+                return upd_cell_result;
+            }
         }
-
-        // Need to suspend - full state machine implementation required
-        (void)continuation;
-        throw std::logic_error("BufferedChannel::receive suspend path requires full state machine implementation");
-        return nullptr;
     }
 
     /**
@@ -1167,16 +1191,36 @@ public:
      * Transliterated from: override suspend fun receiveCatching(): ChannelResult<E>
      */
     void* receive_catching(Continuation<void*>* continuation) override {
-        auto result = try_receive();
-        if (result.is_success() || result.is_closed()) {
-            // Return boxed ChannelResult
-            return new ChannelResult<E>(std::move(result));
+        ChannelSegment<E>* segment = receive_segment_.load(std::memory_order_acquire);
+        while (true) {
+            if (is_closed_for_receive()) {
+                return new ChannelResult<E>(ChannelResult<E>::closed(close_cause()));
+            }
+            int64_t r = receivers_.fetch_add(1, std::memory_order_acq_rel);
+            int64_t id = r / SEGMENT_SIZE;
+            int i = static_cast<int>(r % SEGMENT_SIZE);
+            if (segment->id != id) {
+                segment = find_segment_receive(id, segment);
+                if (segment == nullptr) {
+                    continue;
+                }
+            }
+            void* upd_cell_result = update_cell_receive(segment, i, r, nullptr);
+            if (upd_cell_result == static_cast<void*>(&SUSPEND())) {
+                assert(false && "unexpected SUSPEND with null waiter");
+            } else if (upd_cell_result == static_cast<void*>(&FAILED())) {
+                if (r < senders_counter()) segment->clean_prev();
+                continue;
+            } else if (upd_cell_result == static_cast<void*>(&SUSPEND_NO_WAITER())) {
+                return receive_catching_on_no_waiter_suspend(segment, i, r, continuation);
+            } else {
+                segment->clean_prev();
+                E* elem_ptr = static_cast<E*>(upd_cell_result);
+                E elem = std::move(*elem_ptr);
+                delete elem_ptr;
+                return new ChannelResult<E>(ChannelResult<E>::success(std::move(elem)));
+            }
         }
-
-        // Need to suspend - full state machine implementation required
-        (void)continuation;
-        throw std::logic_error("BufferedChannel::receive_catching suspend path requires full state machine implementation");
-        return nullptr;
     }
 
     /**
@@ -2034,6 +2078,106 @@ private:
     }
 
     // -------------------------------------------------------------------------
+    // Lines 708-733: private suspend fun receiveOnNoWaiterSuspend(...)
+    // -------------------------------------------------------------------------
+    void* receive_on_no_waiter_suspend(
+        ChannelSegment<E>* segment,
+        int index,
+        int64_t r,
+        Continuation<void*>* completion
+    ) {
+        class ReceiveContinuationAdapter : public Continuation<E> {
+            Continuation<void*>* completion_;
+        public:
+            explicit ReceiveContinuationAdapter(Continuation<void*>* completion)
+                : completion_(completion) {}
+
+            std::shared_ptr<CoroutineContext> get_context() const override {
+                return completion_ ? completion_->get_context() : nullptr;
+            }
+
+            void resume_with(Result<E> result) override {
+                if (!completion_) return;
+                if (result.is_success()) {
+                    completion_->resume_with(Result<void*>::success(new E(result.get_or_throw())));
+                } else {
+                    completion_->resume_with(Result<void*>::failure(result.exception_or_null()));
+                }
+            }
+        };
+
+        auto adapter = std::make_shared<ReceiveContinuationAdapter>(completion);
+        auto cont = std::make_shared<CancellableContinuationImpl<E>>(
+            adapter, MODE_CANCELLABLE_REUSABLE
+        );
+        cont->init_cancellability();
+
+        receive_impl_on_no_waiter(
+            segment, index, r,
+            cont.get(),
+            [cont](E element) {
+                cont->resume(std::move(element), nullptr);
+            },
+            [this, cont]() {
+                on_closed_receive_on_no_waiter_suspend(cont.get());
+            }
+        );
+
+        return cont->get_result();
+    }
+
+    // -------------------------------------------------------------------------
+    // Lines 762-776: private suspend fun receiveCatchingOnNoWaiterSuspend(...)
+    // -------------------------------------------------------------------------
+    void* receive_catching_on_no_waiter_suspend(
+        ChannelSegment<E>* segment,
+        int index,
+        int64_t r,
+        Continuation<void*>* completion
+    ) {
+        class ReceiveCatchingContinuationAdapter : public Continuation<ChannelResult<E>> {
+            Continuation<void*>* completion_;
+        public:
+            explicit ReceiveCatchingContinuationAdapter(Continuation<void*>* completion)
+                : completion_(completion) {}
+
+            std::shared_ptr<CoroutineContext> get_context() const override {
+                return completion_ ? completion_->get_context() : nullptr;
+            }
+
+            void resume_with(Result<ChannelResult<E>> result) override {
+                if (!completion_) return;
+                if (result.is_success()) {
+                    completion_->resume_with(Result<void*>::success(new ChannelResult<E>(result.get_or_throw())));
+                } else {
+                    completion_->resume_with(Result<void*>::failure(result.exception_or_null()));
+                }
+            }
+        };
+
+        auto adapter = std::make_shared<ReceiveCatchingContinuationAdapter>(completion);
+        auto cont = std::make_shared<CancellableContinuationImpl<ChannelResult<E>>>(
+            adapter, MODE_CANCELLABLE_REUSABLE
+        );
+        cont->init_cancellability();
+
+        auto waiter = std::make_shared<ReceiveCatching<E>>(cont);
+
+        receive_impl_on_no_waiter(
+            segment, index, r,
+            waiter.get(),
+            [cont](E element) {
+                cont->resume(ChannelResult<E>::success(std::move(element)), nullptr);
+            },
+            [this, cont]() {
+                on_closed_receive_catching_on_no_waiter_suspend(cont.get());
+            }
+        );
+
+        return cont->get_result();
+    }
+
+    // -------------------------------------------------------------------------
     // Lines 735-738: private fun Waiter.prepareReceiverForSuspension(...)
     // -------------------------------------------------------------------------
     void prepare_receiver_for_suspension(Waiter* waiter, ChannelSegment<E>* segment, int index) {
@@ -2080,7 +2224,10 @@ private:
             receive_impl_with_waiter(waiter, on_element_retrieved, on_closed);
         } else {
             segment->clean_prev();
-            on_element_retrieved(*static_cast<E*>(upd_cell_result));
+            auto* elem_ptr = static_cast<E*>(upd_cell_result);
+            E elem = std::move(*elem_ptr);
+            delete elem_ptr;
+            on_element_retrieved(std::move(elem));
         }
     }
 
@@ -3161,88 +3308,144 @@ public:
         }
     }
 
+    /**
+     * Updates the `senders` counter if its value is lower that the specified one.
+     * Senders use this function to efficiently skip a sequence of cancelled receivers.
+     *
+     * Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2570-2576
+     */
+    void update_senders_counter_if_lower(int64_t value) {
+        int64_t cur = senders_and_close_status_.load(std::memory_order_acquire);
+        while (true) {
+            int64_t cur_counter = channels::senders_counter(cur);
+            if (cur_counter >= value) return;
+            int64_t update = construct_senders_and_close_status(value, channels::senders_close_status(cur));
+            if (senders_and_close_status_.compare_exchange_weak(cur, update,
+                    std::memory_order_acq_rel, std::memory_order_acquire)) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * Updates the `receivers` counter if its value is lower that the specified one.
+     * Receivers use this function to efficiently skip a sequence of cancelled senders.
+     *
+     * Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2585-2589
+     */
+    void update_receivers_counter_if_lower(int64_t value) {
+        int64_t cur = receivers_.load(std::memory_order_acquire);
+        while (true) {
+            if (cur >= value) return;
+            if (receivers_.compare_exchange_weak(cur, value,
+                    std::memory_order_acq_rel, std::memory_order_acquire)) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2390-2432
+     */
     ChannelSegment<E>* find_segment_send(int64_t id, ChannelSegment<E>* start_from) {
-        // Simplified segment finding
-        ChannelSegment<E>* segment = start_from;
-        while (segment != nullptr && segment->id < id) {
-            ChannelSegment<E>* next = segment->next();
-            if (next == nullptr) {
-                next = create_segment<E>(segment->id + 1, segment);
-                if (!segment->try_set_next(next)) {
-                    delete next;
-                    next = segment->next();
-                }
+        auto res = internal::find_segment_and_move_forward(
+            send_segment_,
+            id,
+            start_from,
+            [](int64_t seg_id, ChannelSegment<E>* prev) {
+                return create_segment<E>(seg_id, prev);
             }
-            segment = next;
-        }
-
-        if (segment != nullptr) {
-            ChannelSegment<E>* expected = send_segment_.load(std::memory_order_acquire);
-            while (expected->id < segment->id) {
-                if (send_segment_.compare_exchange_weak(expected, segment,
-                        std::memory_order_acq_rel, std::memory_order_acquire)) {
-                    break;
+        );
+        if (res.is_closed()) {
+            complete_close_or_cancel();
+            if (start_from->id * SEGMENT_SIZE < receivers_counter()) {
+                start_from->clean_prev();
+            }
+            return nullptr;
+        } else {
+            auto* segment = res.segment();
+            if (segment->id > id) {
+                update_senders_counter_if_lower(segment->id * SEGMENT_SIZE);
+                if (segment->id * SEGMENT_SIZE < receivers_counter()) {
+                    segment->clean_prev();
                 }
+                return nullptr;
+            } else {
+                assert(segment->id == id);
+                return segment;
             }
         }
-
-        return segment;
     }
 
+    /**
+     * Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2448-2491
+     */
     ChannelSegment<E>* find_segment_receive(int64_t id, ChannelSegment<E>* start_from) {
-        ChannelSegment<E>* segment = start_from;
-        while (segment != nullptr && segment->id < id) {
-            ChannelSegment<E>* next = segment->next();
-            if (next == nullptr) {
-                next = create_segment<E>(segment->id + 1, segment);
-                if (!segment->try_set_next(next)) {
-                    delete next;
-                    next = segment->next();
-                }
+        auto res = internal::find_segment_and_move_forward(
+            receive_segment_,
+            id,
+            start_from,
+            [](int64_t seg_id, ChannelSegment<E>* prev) {
+                return create_segment<E>(seg_id, prev);
             }
-            segment = next;
-        }
-
-        if (segment != nullptr) {
-            ChannelSegment<E>* expected = receive_segment_.load(std::memory_order_acquire);
-            while (expected->id < segment->id) {
-                if (receive_segment_.compare_exchange_weak(expected, segment,
-                        std::memory_order_acq_rel, std::memory_order_acquire)) {
-                    break;
+        );
+        if (res.is_closed()) {
+            complete_close_or_cancel();
+            if (start_from->id * SEGMENT_SIZE < senders_counter()) {
+                start_from->clean_prev();
+            }
+            return nullptr;
+        } else {
+            auto* segment = res.segment();
+            if (!is_rendezvous_or_unlimited() && id <= buffer_end_counter() / SEGMENT_SIZE) {
+                internal::move_forward(buffer_end_segment_, segment);
+            }
+            if (segment->id > id) {
+                update_receivers_counter_if_lower(segment->id * SEGMENT_SIZE);
+                if (segment->id * SEGMENT_SIZE < senders_counter()) {
+                    segment->clean_prev();
                 }
+                return nullptr;
+            } else {
+                assert(segment->id == id);
+                return segment;
             }
         }
-
-        return segment;
     }
 
+    /**
+     * Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2497-2535
+     */
     ChannelSegment<E>* find_segment_buffer_end(int64_t id, ChannelSegment<E>* start_from, int64_t current_buffer_end_counter) {
-        (void)current_buffer_end_counter;
-
-        ChannelSegment<E>* segment = start_from;
-        while (segment != nullptr && segment->id < id) {
-            ChannelSegment<E>* next = segment->next();
-            if (next == nullptr) {
-                next = create_segment<E>(segment->id + 1, segment);
-                if (!segment->try_set_next(next)) {
-                    delete next;
-                    next = segment->next();
-                }
+        auto res = internal::find_segment_and_move_forward(
+            buffer_end_segment_,
+            id,
+            start_from,
+            [](int64_t seg_id, ChannelSegment<E>* prev) {
+                return create_segment<E>(seg_id, prev);
             }
-            segment = next;
-        }
-
-        if (segment != nullptr) {
-            ChannelSegment<E>* expected = buffer_end_segment_.load(std::memory_order_acquire);
-            while (expected->id < segment->id) {
-                if (buffer_end_segment_.compare_exchange_weak(expected, segment,
+        );
+        if (res.is_closed()) {
+            complete_close_or_cancel();
+            move_segment_buffer_end_to_specified_or_last(id, start_from);
+            inc_completed_expand_buffer_attempts();
+            return nullptr;
+        } else {
+            auto* segment = res.segment();
+            if (segment->id > id) {
+                int64_t expected = current_buffer_end_counter + 1;
+                if (buffer_end_.compare_exchange_weak(expected, segment->id * SEGMENT_SIZE,
                         std::memory_order_acq_rel, std::memory_order_acquire)) {
-                    break;
+                    inc_completed_expand_buffer_attempts(segment->id * SEGMENT_SIZE - current_buffer_end_counter);
+                } else {
+                    inc_completed_expand_buffer_attempts();
                 }
+                return nullptr;
+            } else {
+                assert(segment->id == id);
+                return segment;
             }
         }
-
-        return segment;
     }
 
     void move_segment_buffer_end_to_specified_or_last(int64_t id, ChannelSegment<E>* start_from) {
@@ -3270,57 +3473,51 @@ public:
     }
 
     // =========================================================================
+    // Lines 1612-1744: Iterator Support
     // =========================================================================
 
-    // Implements both ChannelIterator and Waiter interfaces
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1612-1744
     class BufferedChannelIterator : public ChannelIterator<E>, public Waiter {
     public:
         BufferedChannelIterator(BufferedChannel<E>* channel)
             : channel_(channel)
             , receive_result_(static_cast<void*>(&NO_RECEIVE_RESULT()))
-            , continuation_(nullptr) {}
+            , continuation_(nullptr)
+            , continuation_sp_(nullptr) {}
 
         void* has_next(Continuation<void*>* continuation) override {
             if (receive_result_ != static_cast<void*>(&NO_RECEIVE_RESULT()) &&
                 receive_result_ != static_cast<void*>(&CHANNEL_CLOSED())) {
-                return new bool(true);  // Boxing result
-            }
-
-            auto result = channel_->try_receive();
-            if (result.is_success()) {
-                receive_result_ = new E(result.get_or_throw());
                 return new bool(true);
             }
-            if (result.is_closed()) {
-                receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
-                auto cause = channel_->close_cause();
-                if (cause) std::rethrow_exception(cause);
-                return new bool(false);
-            }
 
-            auto ctx = continuation ? continuation->get_context() : nullptr;
-            auto job = ctx ? std::dynamic_pointer_cast<Job>(ctx->get(Job::type_key)) : nullptr;
-
-            auto loop = ThreadLocalEventLoop::current_or_null();
+            ChannelSegment<E>* segment = channel_->receive_segment_.load(std::memory_order_acquire);
             while (true) {
-                if (job && !job->is_active()) {
-                    return new bool(false);
+                if (channel_->is_closed_for_receive()) {
+                    bool has_more = on_closed_has_next();
+                    return new bool(has_more);
                 }
-                auto res = channel_->try_receive();
-                if (res.is_success()) {
-                    receive_result_ = new E(res.get_or_throw());
-                    return new bool(true);
+                int64_t r = channel_->receivers_.fetch_add(1, std::memory_order_acq_rel);
+                int64_t id = r / SEGMENT_SIZE;
+                int i = static_cast<int>(r % SEGMENT_SIZE);
+                if (segment->id != id) {
+                    segment = channel_->find_segment_receive(id, segment);
+                    if (segment == nullptr) {
+                        continue;
+                    }
                 }
-                if (res.is_closed()) {
-                    receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
-                    auto cause = channel_->close_cause();
-                    if (cause) std::rethrow_exception(cause);
-                    return new bool(false);
-                }
-                if (loop && !loop->is_empty()) {
-                    loop->process_next_event();
+                void* upd_cell_result = channel_->update_cell_receive(segment, i, r, nullptr);
+                if (upd_cell_result == static_cast<void*>(&SUSPEND())) {
+                    assert(false && "unexpected SUSPEND with null waiter");
+                } else if (upd_cell_result == static_cast<void*>(&FAILED())) {
+                    if (r < channel_->senders_counter()) segment->clean_prev();
+                    continue;
+                } else if (upd_cell_result == static_cast<void*>(&SUSPEND_NO_WAITER())) {
+                    return has_next_on_no_waiter_suspend(segment, i, r, continuation);
                 } else {
-                    std::this_thread::yield();
+                    segment->clean_prev();
+                    receive_result_ = upd_cell_result;
+                    return new bool(true);
                 }
             }
         }
@@ -3345,25 +3542,19 @@ public:
             return elem;
         }
 
-        // -------------------------------------------------------------------------
-        // Lines 1709-1720: fun tryResumeHasNext(element: E): Boolean
-        // -------------------------------------------------------------------------
         bool try_resume_has_next(E element) {
-            CancellableContinuationImpl<bool>* cont = continuation_;
-            assert(cont != nullptr);
+            auto cont = std::move(continuation_sp_);
             continuation_ = nullptr;
-            receive_result_ = new E(element);
-            // Note: Kotlin uses (Throwable, Any?, CoroutineContext) signature and ignores the value.
-            // In C++, we capture the element and ignore the bool value passed in.
+            if (!cont) return false;
+            receive_result_ = new E(std::move(element));
             std::function<void(std::exception_ptr, bool, std::shared_ptr<CoroutineContext>)> on_cancellation = nullptr;
             if (channel_->on_undelivered_element()) {
-                auto elem_copy = element;
+                auto elem_copy = *static_cast<E*>(receive_result_);
                 auto channel = channel_;
                 on_cancellation = [channel, elem_copy](std::exception_ptr, bool, std::shared_ptr<CoroutineContext>) {
                     channel->on_undelivered_element()(elem_copy);
                 };
             }
-            // Inline try_resume_0 logic since it's defined after the class
             void* token = cont->try_resume(true, nullptr, on_cancellation);
             if (token != nullptr) {
                 cont->complete_resume(token);
@@ -3372,14 +3563,11 @@ public:
             return false;
         }
 
-        // -------------------------------------------------------------------------
-        // Lines 1722-1742: fun tryResumeHasNextOnClosedChannel()
-        // -------------------------------------------------------------------------
         void try_resume_has_next_on_closed_channel() {
-            CancellableContinuationImpl<bool>* cont = continuation_;
-            assert(cont != nullptr);
+            auto cont = std::move(continuation_sp_);
             continuation_ = nullptr;
             receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
+            if (!cont) return;
             auto cause = channel_->close_cause();
             if (!cause) {
                 cont->resume_with(Result<bool>::success(false));
@@ -3388,7 +3576,6 @@ public:
             }
         }
 
-        // Waiter interface implementation
         void invoke_on_cancellation(internal::SegmentBase* segment, int index) override {
             if (continuation_) {
                 continuation_->invoke_on_cancellation(segment, index);
@@ -3396,9 +3583,84 @@ public:
         }
 
     private:
+        bool on_closed_has_next() {
+            receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
+            auto cause = channel_->close_cause();
+            if (cause) {
+                std::rethrow_exception(cause);
+            }
+            return false;
+        }
+
+        void* has_next_on_no_waiter_suspend(
+            ChannelSegment<E>* segment,
+            int index,
+            int64_t r,
+            Continuation<void*>* continuation
+        ) {
+            class HasNextContinuationAdapter : public Continuation<bool> {
+                Continuation<void*>* completion_;
+            public:
+                explicit HasNextContinuationAdapter(Continuation<void*>* completion)
+                    : completion_(completion) {}
+
+                std::shared_ptr<CoroutineContext> get_context() const override {
+                    return completion_ ? completion_->get_context() : nullptr;
+                }
+
+                void resume_with(Result<bool> result) override {
+                    if (!completion_) return;
+                    if (result.is_success()) {
+                        completion_->resume_with(Result<void*>::success(new bool(result.get_or_throw())));
+                    } else {
+                        completion_->resume_with(Result<void*>::failure(result.exception_or_null()));
+                    }
+                }
+            };
+
+            auto adapter = std::make_shared<HasNextContinuationAdapter>(continuation);
+            auto cont = std::make_shared<CancellableContinuationImpl<bool>>(
+                adapter, MODE_CANCELLABLE_REUSABLE
+            );
+            cont->init_cancellability();
+
+            continuation_sp_ = cont;
+            continuation_ = cont.get();
+
+            channel_->receive_impl_on_no_waiter(
+                segment, index, r,
+                this,
+                [this, cont](E element) {
+                    this->receive_result_ = new E(std::move(element));
+                    this->continuation_ = nullptr;
+                    this->continuation_sp_ = nullptr;
+                    cont->resume(true, nullptr);
+                },
+                [this]() {
+                    this->on_closed_has_next_no_waiter_suspend();
+                }
+            );
+
+            return cont->get_result();
+        }
+
+        void on_closed_has_next_no_waiter_suspend() {
+            auto cont = std::move(this->continuation_sp_);
+            this->continuation_ = nullptr;
+            this->receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
+            if (!cont) return;
+            auto cause = channel_->close_cause();
+            if (!cause) {
+                cont->resume(false, nullptr);
+            } else {
+                cont->resume_with_exception(cause);
+            }
+        }
+
         BufferedChannel<E>* channel_;
         void* receive_result_;
         CancellableContinuationImpl<bool>* continuation_;
+        std::shared_ptr<CancellableContinuationImpl<bool>> continuation_sp_;
     };
 };
 
