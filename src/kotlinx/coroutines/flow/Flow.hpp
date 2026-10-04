@@ -2,9 +2,9 @@
 // port-lint: source kotlinx-coroutines-core/common/src/flow/Flow.kt
 
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
-#include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
+#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -240,21 +240,8 @@ struct CancellableFlow : public virtual Flow<T> {
 template<typename T>
 class AbstractFlow : public CancellableFlow<T> {
 public:
-    void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
-        // Context preservation: use the collector's context or the continuation's context
-        auto collect_context = continuation ? continuation->get_context() : EmptyCoroutineContext::instance();
-        internal::SafeCollector<T> safe_collector(collector, collect_context);
-
-        void* result = nullptr;
-        try {
-            result = collect_safely(&safe_collector, continuation);
-        } catch (...) {
-            safe_collector.release_intercepted();
-            throw;
-        }
-        safe_collector.release_intercepted();
-        return result;
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
+    void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) final override;
 
     /**
      * Accepts the given [collector] and [emits][FlowCollector.emit] values into it.
@@ -275,3 +262,5 @@ public:
 } // namespace flow
 } // namespace coroutines
 } // namespace kotlinx
+
+#include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"

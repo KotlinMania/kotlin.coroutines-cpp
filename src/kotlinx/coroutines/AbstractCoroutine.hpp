@@ -112,7 +112,14 @@ namespace kotlinx::coroutines {
             // Cast self to Element
             auto self_element = std::static_pointer_cast<CoroutineContext::Element>(self_job);
 
-            return std::make_shared<CombinedContext>(parent_context, self_element);
+            if (!parent_context) {
+                return self_element;
+            }
+            auto removed = parent_context->minus_key(Job::type_key);
+            if (!removed) {
+                return self_element;
+            }
+            return std::make_shared<CombinedContext>(removed, self_element);
         }
 
         // Continuation impl

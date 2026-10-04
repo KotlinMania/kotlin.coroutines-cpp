@@ -26,6 +26,18 @@ public:
 };
 
 /**
+ * Signals that a method has been invoked at an illegal or inappropriate time.
+ * Parity with Kotlin's java.lang.IllegalStateException / kotlin.IllegalStateException.
+ */
+class IllegalStateException : public std::logic_error {
+public:
+    explicit IllegalStateException(const std::string& message = "Illegal state")
+        : std::logic_error(message) {}
+    explicit IllegalStateException(const char* message)
+        : std::logic_error(message) {}
+};
+
+/**
  * This exception gets thrown if an exception is caught while processing CompletionHandler invocation for Job.
  */
 class CompletionHandlerException : public std::runtime_error {

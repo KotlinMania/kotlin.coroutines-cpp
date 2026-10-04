@@ -308,6 +308,12 @@ public:
      */
     virtual std::exception_ptr get_completion_exception_or_null() const;
 
+    /**
+     * Returns true if this is a scoped coroutine (affects exception handling and context preservation).
+     * Transliterated from: internal open val isScopedCoroutine: Boolean get() = false
+     */
+    virtual bool get_is_scoped_coroutine() const { return false; }
+
 protected:
     /**
      * Called when the job is started (transitions from New to Active).
@@ -360,11 +366,6 @@ protected:
      * Used by CompletableJob implementations.
      */
     virtual bool get_on_cancel_complete() const { return false; }
-
-    /**
-     * Returns true if this is a scoped coroutine (affects exception handling).
-     */
-    virtual bool get_is_scoped_coroutine() const { return false; }
 
     /**
      * Called to handle a job exception (for CoroutineExceptionHandler).
