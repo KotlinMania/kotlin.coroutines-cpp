@@ -24,12 +24,8 @@ std::shared_ptr<Job> launch(
     CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
     CoroutineStart start,
     std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
-    auto new_context = scope->get_coroutine_context()->operator+(
-        context ? context : EmptyCoroutineContext::instance());
-    if (!new_context->get(ContinuationInterceptor::type_key)) {
-        new_context = new_context->operator+(std::shared_ptr<CoroutineContext>(
-            &Dispatchers::get_default(), [](CoroutineContext*) {}));
-    }
+    auto new_context = new_coroutine_context(
+        scope, context ? std::move(context) : EmptyCoroutineContext::instance());
     std::shared_ptr<StandaloneCoroutine> coroutine;
     if (start == CoroutineStart::LAZY) {
         coroutine = std::make_shared<LazyStandaloneCoroutine>(new_context, block);

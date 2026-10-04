@@ -261,7 +261,7 @@ inline void* ChannelFlow<T>::collect(FlowCollector<T>* collector, Continuation<v
         CoroutineScope* scope, std::shared_ptr<Continuation<void*>> completion) -> void* {
         auto frame = std::make_shared<CollectFrame>(this, collector, scope, std::move(completion));
         frame->retain();
-        return frame->invoke_suspend(Result<void*>::success(nullptr));
+        return frame->start(Result<void*>::success(nullptr));
     }, continuation);
 }
 
@@ -354,7 +354,7 @@ protected:
         };
         auto frame = std::make_shared<CollectToFrame>(this, scope, std::move(completion));
         frame->retain();
-        return frame->invoke_suspend(Result<void*>::success(nullptr));
+        return frame->start(Result<void*>::success(nullptr));
     }
 
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override;

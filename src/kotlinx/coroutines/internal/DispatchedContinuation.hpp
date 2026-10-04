@@ -87,6 +87,10 @@ public:
         return continuation->get_context();
     }
 
+    std::shared_ptr<SchedulerTask> shared_task() override {
+        return this->shared_from_this();
+    }
+
     // Kotlin: override val callerFrame: CoroutineStackFrame? get() = continuation as? CoroutineStackFrame
     CoroutineStackFrame* get_caller_frame() const override {
         return dynamic_cast<CoroutineStackFrame*>(continuation.get());
@@ -417,6 +421,14 @@ inline void resume_cancellable_with(const std::shared_ptr<Continuation<T>>& cont
  */
 inline bool yield_undispatched(internal::DispatchedContinuation<void>& continuation) {
     return continuation.execute_unconfined(Result<void>::success(), MODE_CANCELLABLE, true, [&continuation]() {
+        continuation.run();
+    });
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedContinuation.kt:282-285
+// NOTE(port): Unit is nullptr at the Continuation<void*> ABI boundary.
+inline bool yield_undispatched(internal::DispatchedContinuation<void*>& continuation) {
+    return continuation.execute_unconfined(Result<void*>::success(nullptr), MODE_CANCELLABLE, true, [&continuation]() {
         continuation.run();
     });
 }

@@ -124,7 +124,7 @@ public:
         auto owner = std::static_pointer_cast<TransformLatestFrame>(shared_from_this());
         auto frame = std::make_shared<EmitFrame>(std::move(owner), std::move(value), completion);
         frame->retain();
-        return frame->invoke_suspend(Result<void*>::success(nullptr));
+        return frame->start(Result<void*>::success(nullptr));
     }
 
 private:
@@ -167,7 +167,7 @@ private:
                     auto frame = std::make_shared<ChildFrame>(std::move(transform), collector,
                                                              std::move(value), std::move(completion));
                     frame->retain();
-                    return frame->invoke_suspend(Result<void*>::success(nullptr));
+                    return frame->start(Result<void*>::success(nullptr));
                 }));
     }
 
@@ -207,7 +207,7 @@ protected:
             auto frame = std::make_shared<TransformLatestFrame<T, R>>(
                 flow, transform, collector, scope, std::move(completion));
             frame->retain();
-            return frame->invoke_suspend(Result<void*>::success(nullptr));
+            return frame->start(Result<void*>::success(nullptr));
         }, continuation);
     }
 

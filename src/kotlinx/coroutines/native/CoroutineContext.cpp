@@ -13,6 +13,7 @@
  */
 
 #include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/Delay.hpp"
 #include "kotlinx/coroutines/Dispatchers.hpp"
@@ -24,6 +25,23 @@
 
 namespace kotlinx {
     namespace coroutines {
+        // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:32-36
+        std::shared_ptr<CoroutineContext> new_coroutine_context(
+            CoroutineScope* scope, std::shared_ptr<CoroutineContext> context) {
+            auto combined = scope->get_coroutine_context()->operator+(std::move(context));
+            auto default_dispatcher = std::shared_ptr<CoroutineContext>(
+                &Dispatchers::get_default(), [](CoroutineContext*) {});
+            return combined != default_dispatcher && !combined->get(ContinuationInterceptor::type_key)
+                ? combined->operator+(std::move(default_dispatcher)) : combined;
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:38-40
+        std::shared_ptr<CoroutineContext> new_coroutine_context(
+            std::shared_ptr<CoroutineContext> base_context,
+            std::shared_ptr<CoroutineContext> added_context) {
+            return base_context->operator+(std::move(added_context));
+        }
+
         namespace {
             /**
              * Internal DefaultExecutor singleton.

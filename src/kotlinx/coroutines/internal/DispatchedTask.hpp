@@ -74,6 +74,9 @@ public:
     explicit DispatchedTask(int resume_mode) : resume_mode(resume_mode) {}
     virtual ~DispatchedTask() = default;
 
+    // NOTE(port): Dispatcher queues must retain the task that Kotlin GC owns.
+    virtual std::shared_ptr<SchedulerTask> shared_task() = 0;
+
     // Kotlin: internal abstract val delegate: Continuation<T>
     virtual std::shared_ptr<Continuation<T>> get_delegate() = 0;
 

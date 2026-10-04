@@ -392,9 +392,10 @@ void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<C
                         }
                     }
                     if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        if constexpr (std::is_same_v<T, Unit> && std::is_pointer_v<Ret>) {
-                            // A completed suspend Unit call uses the erased nullptr result.
-                            comp->resume_with(Result<T>::success(Unit{}));
+                        if constexpr (std::is_same_v<Ret, void*>) {
+                            // NOTE(port): Immediate and resumed erased results use
+                            // the same receiving adapter and unbox/delete policy.
+                            vc->resume_with(Result<void*>::success(result));
                         } else {
                             comp->resume_with(Result<T>(result));
                         }
@@ -419,9 +420,10 @@ void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<C
                         }
                     }
                     if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        if constexpr (std::is_same_v<T, Unit> && std::is_pointer_v<Ret>) {
-                            // A completed suspend Unit call uses the erased nullptr result.
-                            comp->resume_with(Result<T>::success(Unit{}));
+                        if constexpr (std::is_same_v<Ret, void*>) {
+                            // NOTE(port): Immediate and resumed erased results use
+                            // the same receiving adapter and unbox/delete policy.
+                            vc->resume_with(Result<void*>::success(result));
                         } else {
                             comp->resume_with(Result<T>(result));
                         }

@@ -1,3 +1,6 @@
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt
+ */
 #pragma once
 // port-lint: source Builders.common.kt
 #include "kotlinx/coroutines/CoroutineScope.hpp"
@@ -252,6 +255,54 @@ namespace coroutines {
         std::function<T(CoroutineScope*)> block
     ) {
         return async<T>(scope, context, CoroutineStart::DEFAULT, block);
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:103-111
+    template<typename T>
+    class LazyDeferredCoroutine final : public DeferredCoroutine<T> {
+        std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block_;
+    public:
+        LazyDeferredCoroutine(std::shared_ptr<CoroutineContext> context,
+            std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block)
+            : DeferredCoroutine<T>(std::move(context), false), block_(std::move(block)) {}
+
+        void on_start() override {
+            this->start(CoroutineStart::DEFAULT, static_cast<CoroutineScope*>(this), std::move(block_));
+        }
+    };
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:78-89
+    template<typename T>
+    std::shared_ptr<Deferred<T>> async(
+        CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+        CoroutineStart start,
+        std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
+        if (!context) context = empty_context();
+        auto new_context = new_coroutine_context(scope, std::move(context));
+        std::shared_ptr<DeferredCoroutine<T>> coroutine;
+        if (start == CoroutineStart::LAZY) {
+            coroutine = std::make_shared<LazyDeferredCoroutine<T>>(new_context, block);
+        } else {
+            coroutine = std::make_shared<DeferredCoroutine<T>>(new_context, true);
+        }
+        coroutine->start(start, static_cast<CoroutineScope*>(coroutine.get()), std::move(block));
+        return coroutine;
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:78-89
+    template<typename T>
+    std::shared_ptr<Deferred<T>> async(
+        CoroutineScope* scope,
+        std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
+        return async<T>(scope, nullptr, CoroutineStart::DEFAULT, std::move(block));
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:78-89
+    template<typename T>
+    std::shared_ptr<Deferred<T>> async(
+        CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+        std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
+        return async<T>(scope, std::move(context), CoroutineStart::DEFAULT, std::move(block));
     }
 
     // Transliterated from Builders.common.kt: suspend fun <T> withContext(context: CoroutineContext, block: suspend CoroutineScope.() -> T): T

@@ -46,6 +46,8 @@ set_tests_properties(test_lock_free_list PROPERTIES TIMEOUT 30)
 
 # Suspension infrastructure and flow tests
 add_coroutine_test(test_suspension_core)
+add_coroutine_test(test_continuation_dispatch)
+set_tests_properties(test_continuation_dispatch PROPERTIES TIMEOUT 15)
 add_coroutine_test(test_channel_as_flow_smoke)
 add_coroutine_test(test_channel_rendezvous)
 set_tests_properties(test_channel_rendezvous PROPERTIES TIMEOUT 15)
@@ -65,6 +67,7 @@ add_coroutine_test(FoldTest)
 add_coroutine_test(LaunchInTest)
 add_coroutine_test(HangTest)
 add_coroutine_test(CollectLatestTest)
+set_tests_properties(AsyncTest JobTest CollectLatestTest PROPERTIES TIMEOUT 30)
 if(TARGET test_plugin_canonical AND KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     target_compile_options(test_plugin_canonical PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
     add_dependencies(test_plugin_canonical KotlinxSuspendPlugin)
@@ -87,6 +90,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang)$")
                 --headers "${KXS_TEST_ROOT}/src"
                 --core-test "${CMAKE_CURRENT_SOURCE_DIR}/src/test_suspension_core.cpp"
                 --library "$<TARGET_FILE:kotlinx-coroutines-core>"
+                "--library-link-options=${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}"
                 --work-dir "${CMAKE_CURRENT_BINARY_DIR}/ir-regression"
                 --compiler "${CMAKE_CXX_COMPILER}"
                 --cmake "${CMAKE_COMMAND}")

@@ -202,7 +202,7 @@ std::shared_ptr<BlockStateMachine<R, T>> create_coroutine(
 template<typename R, typename T>
 void* start_coroutine(std::shared_ptr<BlockStateMachine<R, T>> coroutine) {
     // Initial invocation with success(Unit) - matches Kotlin's invoke pattern
-    return coroutine->invoke_suspend(Result<void*>::success(nullptr));
+    return coroutine->start(Result<void*>::success(nullptr));
 }
 
 } // namespace coroutines

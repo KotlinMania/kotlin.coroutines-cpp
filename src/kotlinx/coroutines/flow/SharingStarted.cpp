@@ -150,7 +150,7 @@ std::shared_ptr<Flow<SharingCommand>> StartedLazily::command(
                              Continuation<void*>* cont) -> void* {
             auto frame = std::make_shared<LazyCommandFrame>(subscription_count, sink, cont);
             frame->retain();
-            return frame->invoke_suspend(Result<void*>::success(nullptr));
+            return frame->start(Result<void*>::success(nullptr));
         });
 }
 
@@ -207,7 +207,7 @@ std::shared_ptr<Flow<SharingCommand>> StartedWhileSubscribed::command(
             auto frame = std::make_shared<WhileSubscribedCommandFrame>(
                 sink, stop_timeout, replay_expiration, cont);
             frame->retain();
-            return frame->invoke_suspend(Result<void*>::success(nullptr));
+            return frame->start(Result<void*>::success(nullptr));
         });
     auto dropped = drop_while<SharingCommand>(
         staged,

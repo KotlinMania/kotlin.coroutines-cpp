@@ -274,7 +274,7 @@ inline std::shared_ptr<Job> launch_sharing(
             auto frame = std::make_shared<detail::SharingFrame<T>>(
                 upstream, shared, started, initial_value, std::move(completion));
             frame->retain();
-            return frame->invoke_suspend(Result<void*>::success(nullptr));
+            return frame->start(Result<void*>::success(nullptr));
         });
 }
 

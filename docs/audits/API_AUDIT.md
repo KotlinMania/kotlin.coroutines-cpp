@@ -7,7 +7,7 @@ This document tracks the API completeness of our C++ transliteration against the
 For each public Kotlin API file, we compare:
 1. **Properties** (val/var) → C++ virtual getters/setters
 2. **Functions** (fun) → C++ virtual methods
-3. **Suspend functions** (suspend fun) → C++ methods returning coroutine types
+3. **Suspend functions** (suspend fun) → Continuation ABI entries returning a result box or the suspension sentinel
 4. **Extension functions** → C++ free functions
 5. **Companion object members** → C++ static methods or free functions
 
@@ -108,6 +108,21 @@ Method names are converted from camelCase to snake_case per C++ conventions.
 
 ---
 
+## Continuation interception repair (2026-10-04)
+
+| Kotlin runtime/API | C++ reference | Status | Scope |
+|---|---|---|---|
+| ContinuationImpl.intercepted / releaseIntercepted | ContinuationImpl.cpp:12, :24 | Wired | Cached context interceptor, release hook and completed sentinel |
+| Continuation<T>.intercepted intrinsic | ContinuationImpl.cpp:53 | Wired for erased ABI | Only compiler-frame continuations are intercepted; ordinary continuations remain unchanged |
+| ContinuationInterceptor default release | ContinuationInterceptor.cpp:8 | Wired | Kotlin default is a no-op |
+| CoroutineDispatcher virtual erased interception | CoroutineDispatcher.hpp:137, :141; CoroutineDispatcher.cpp:41 | Wired | Exposes Continuation<void*> interception and release through the context interceptor, alongside the typed template |
+| yield | Yield.cpp:43 | Wired | Dispatcher and Unconfined branches retain Kotlin ordering; queued resumption checks cancellation |
+| Dispatchers.Unconfined (native) | native/Dispatchers.cpp:101 | Wired | Returns the existing canonical Unconfined object |
+
+Detailed confirmed gaps, Kanban cards and validation scope:
+[LOGIC_PARITY_REPAIR.md](LOGIC_PARITY_REPAIR.md). These entries do not certify
+automatic compiler lowering or the whole Kotlin/Native binary ABI.
+
 ## Builders
 
 ### launch, async, runBlocking
@@ -118,16 +133,20 @@ Method names are converted from camelCase to snake_case per C++ conventions.
 | Kotlin API | C++ API | Status | Notes |
 |------------|---------|--------|-------|
 | `fun CoroutineScope.launch(context, start, block): Job` | `launch(scope, context, start, suspend_block)` | Wired | Suspend block receives a shared erased continuation: `Builders.hpp:55`, implementation `Builders.common.cpp:23`; legacy synchronous overloads remain |
-| `fun CoroutineScope.async(context, start, block): Deferred<T>` | ✅ | ✅ | In Builders.hpp |
+| `fun CoroutineScope.async(context, start, block): Deferred<T>` | `async<T>(scope, context, start, suspend_block)` | Wired for erased suspend blocks | Builders.hpp:276; DEFAULT, LAZY and UNDISPATCHED; receiving adapter owns unboxing/deletion |
 | `fun <T> runBlocking(context, block): T` | ✅ | ✅ | In Builders.hpp |
 | `fun CoroutineScope.produce(context, capacity, start, onCompletion, block): ReceiveChannel<E>` | `produce(scope, context, capacity, overflow, start, suspend_block)` | Partial / Wired | `channels/Produce.hpp:187` propagates suspension; this overload does not expose `onCompletion` |
-| `fun <T> withContext(context, block): T` | ❌ | ❌ MISSING | Context switching |
+| `fun <T> withContext(context, block): T` | `with_context(...)` | Surface / divergent wiring | Builders.hpp:336; scope/dispatcher repair t_d1b9ce81 |
 | `fun <T> withTimeout(timeMillis, block): T` | ❌ | ❌ MISSING | Timeout wrapper |
 | `fun <T> withTimeoutOrNull(timeMillis, block): T?` | ❌ | ❌ MISSING | Nullable timeout |
-| `suspend fun <T> coroutineScope(block): T` | ❌ | ❌ MISSING | Structured concurrency scope |
-| `suspend fun <T> supervisorScope(block): T` | ❌ | ❌ MISSING | Supervisor scope |
+| `suspend fun <T> coroutineScope(block): T` | `coroutine_scope(...)` | Surface / divergent wiring | Builders.hpp:380; structured scope repair t_d1b9ce81 |
+| `suspend fun <T> supervisorScope(block): T` | `supervisor_scope(...)` | Surface / divergent wiring | Builders.hpp:410; supervisor repair t_d1b9ce81 |
 
-**Status**: ⚠️ **PARTIAL** - Core builders exist, scope wrappers/timeouts in progress
+Native context extensions: CoroutineScope.hpp:105 and :109 expose both
+new_coroutine_context overloads; native/CoroutineContext.cpp:29 and :39 implement
+Native CoroutineContext.kt:32-40. Suspend launch and async use those actuals.
+
+**Status**: ⚠️ **PARTIAL** - Core builders exist; scope algorithms and timeouts remain incomplete
 
 ---
 
@@ -162,8 +181,8 @@ a fresh AST-distance measurement or a guarantee of semantic parity.
 | Deferred | 4 | 0 | 0 | 4 |
 | Dispatchers | 4 | 0 | 0 | 4 |
 | Delay | 3 | 0 | 0 | 3 |
-| Builders | 3 | 1 | 5 | 9 |
-| **TOTAL** | **36** | **2** | **5** | **43** |
+| Builders | 3 | 4 | 2 | 9 |
+| **TOTAL** | **36** | **5** | **2** | **43** |
 
 **Listed-row coverage**: ~84% (36/43 marked implemented; not whole-library parity)
 

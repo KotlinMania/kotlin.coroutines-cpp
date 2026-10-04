@@ -2,7 +2,7 @@
  * Copyright 2010-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license
  * that can be found in the LICENSE file.
  *
- * C++ transliteration of kotlin/coroutines/native/internal/ContinuationImpl.kt
+ * Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt
  */
 
 #pragma once
@@ -25,6 +25,7 @@ namespace coroutines {
 class BaseContinuationImpl;
 class ContinuationImpl;
 class RestrictedContinuationImpl;
+class CoroutineDispatcher;
 
 // Type alias for Any? equivalent - we use void* for type-erased values
 using AnyResult = Result<void*>;
@@ -111,6 +112,11 @@ public:
 
     virtual void* invoke_suspend(Result<void*> result) = 0;
 
+    // NOTE(port): Direct ABI entry returns its result to the caller rather than
+    // resume_with. Release cached interception on both terminating entry paths,
+    // as resume_with does, to break the ownership cycle that Kotlin GC collects.
+    void* start(Result<void*> result);
+
     virtual void release_intercepted() {
         // does nothing here, overridden in ContinuationImpl
     }
@@ -129,7 +135,6 @@ public:
     }
 
     std::string to_string() const {
-        // todo: how continuation shall be rendered?
         return "Continuation @ BaseContinuationImpl";
     }
 };
@@ -160,23 +165,12 @@ public:
         return context_ ? context_ : EmptyCoroutineContext::instance();
     }
 
-    std::shared_ptr<Continuation<void*>> intercepted() {
-        if (!intercepted_) {
-            intercepted_ = std::dynamic_pointer_cast<Continuation<void*>>(shared_from_this());
-            if (!intercepted_) {
-                intercepted_ = std::shared_ptr<Continuation<void*>>(
-                    shared_from_this(),
-                    static_cast<Continuation<void*>*>(this)
-                );
-            }
-        }
-        return intercepted_;
-    }
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:104-107
+    std::shared_ptr<Continuation<void*>> intercepted();
 
 protected:
-    void release_intercepted() override {
-        intercepted_ = nullptr;
-    }
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:109-115
+    void release_intercepted() override;
 
 private:
     std::shared_ptr<CoroutineContext> context_;
@@ -198,6 +192,22 @@ public:
         throw std::runtime_error("This continuation is already complete");
     }
 };
+
+namespace internal {
+// NOTE(port): Keep typed cancellable results until dispatch cancellation checks
+// have run, then box them at the Continuation<void*> ABI boundary.
+struct InterceptedDelegate {
+    std::shared_ptr<Continuation<void*>> continuation;
+    std::shared_ptr<CoroutineDispatcher> dispatcher;
+};
+std::shared_ptr<Continuation<void*>> retain_continuation(Continuation<void*>* continuation);
+InterceptedDelegate intercepted_delegate(std::shared_ptr<Continuation<void*>> continuation);
+} // namespace internal
+
+namespace intrinsics {
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:201-202
+std::shared_ptr<Continuation<void*>> intercepted(std::shared_ptr<Continuation<void*>> continuation);
+} // namespace intrinsics
 
 } // namespace coroutines
 } // namespace kotlinx

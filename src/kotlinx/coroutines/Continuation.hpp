@@ -9,6 +9,7 @@
 
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Result.hpp"
+#include "kotlinx/coroutines/Unit.hpp"
 #include <memory>
 #include <functional>
 
@@ -225,8 +226,15 @@ public:
                         cont->resume_with(Result<void*>::success(res.get_or_throw()));
                     } else if constexpr (std::is_void_v<T>) {
                         cont->resume_with(Result<void>::success());
+                    } else if constexpr (std::is_same_v<T, Unit>) {
+                        // NOTE(port): Unit uses nullptr in the erased suspend ABI.
+                        std::unique_ptr<Unit> box(static_cast<Unit*>(res.get_or_throw()));
+                        cont->resume_with(Result<T>::success(Unit{}));
                     } else {
-                        cont->resume_with(Result<T>::success(T{}));
+                        // NOTE(port): The receiving adapter owns unbox and deletion.
+                        std::unique_ptr<T> box(static_cast<T*>(res.get_or_throw()));
+                        if (!box) throw std::logic_error("Missing suspended result box");
+                        cont->resume_with(Result<T>::success(std::move(*box)));
                     }
                 }
             };

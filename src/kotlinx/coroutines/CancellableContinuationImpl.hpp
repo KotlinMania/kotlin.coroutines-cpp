@@ -6,6 +6,7 @@
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/Waiter.hpp"
 #include "kotlinx/coroutines/DisposableHandle.hpp"
@@ -217,6 +218,7 @@ public:
        // Cleanup if needed
     }
 
+    std::shared_ptr<SchedulerTask> shared_task() override { return this->shared_from_this(); }
     std::shared_ptr<CoroutineContext> get_context() const override { return context_; }
     std::shared_ptr<Continuation<T>> get_delegate() override { return delegate; }
 
@@ -432,6 +434,8 @@ public:
     
     // cancel - Kotlin lines 201-217
     bool cancel(std::exception_ptr cause = nullptr) override {
+        // NOTE(port): Retain the GC-owned receiver while detaching parent handlers.
+        auto self_guard = this->weak_from_this().lock();
         while (true) {
             State* state = state_.load(std::memory_order_acquire);
             // line 203: if (state !is NotCompleted) return false
@@ -788,6 +792,7 @@ public:
 
     // completeResume - Kotlin lines 589-592
     void complete_resume(void* token) override {
+        auto self_guard = this->weak_from_this().lock();
         if (token != RESUME_TOKEN) return;
         // Note: detachChildIfNonReusable is called in tryResumeImpl, not here
         dispatch_resume(this->resume_mode);
@@ -830,6 +835,8 @@ public:
     // resumeImpl - Kotlin lines 493-523
     void resume_impl(T proposed_update, int resume_mode,
                      std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation = nullptr) {
+        // NOTE(port): A slot may resume through a raw pointer; detach can drop its last owner.
+        auto self_guard = this->weak_from_this().lock();
         while (true) {
             State* state = state_.load(std::memory_order_acquire);
 
@@ -1032,6 +1039,7 @@ public:
     }
     
     void resume_impl_exception(std::exception_ptr exception, int mode) {
+        auto self_guard = this->weak_from_this().lock();
         void* token = try_resume_with_exception(exception);
         if (!token) throw std::logic_error("Already resumed");
         complete_resume(token);
@@ -1101,6 +1109,7 @@ public:
         decision_and_index_.store(decision_and_index(UNDECIDED, NO_INDEX), std::memory_order_relaxed);
     }
 
+    std::shared_ptr<SchedulerTask> shared_task() override { return this->shared_from_this(); }
     std::shared_ptr<CoroutineContext> get_context() const override { return context_; }
     std::shared_ptr<Continuation<void>> get_delegate() override { return delegate; }
 
@@ -1210,6 +1219,8 @@ public:
 
     // Kotlin lines 201-217
     bool cancel(std::exception_ptr cause = nullptr) override {
+        // NOTE(port): Retain the GC-owned receiver while detaching parent handlers.
+        auto self_guard = this->weak_from_this().lock();
         while (true) {
             State* state = state_.load(std::memory_order_acquire);
             // if (state !is NotCompleted) return false
@@ -1452,6 +1463,7 @@ public:
     }
 
     void complete_resume(void* token) override {
+        auto self_guard = this->weak_from_this().lock();
         if (token != RESUME_TOKEN) return;
         detach_child_if_non_reusable();
         dispatch_resume(this->resume_mode);
@@ -1459,6 +1471,8 @@ public:
 
     // ---- resume / resume_with ----
     void resume(std::function<void(std::exception_ptr)> on_cancellation) override {
+        // NOTE(port): Keep the receiver alive across the try/complete-resume handshake.
+        auto self_guard = this->weak_from_this().lock();
         void* token = try_resume(nullptr);
         if (!token) throw std::logic_error("Already resumed");
         // The void specialization does not store on_cancellation because the typed
@@ -1706,6 +1720,7 @@ public:
 
 
 // suspend_cancellable_coroutine implementation
+// Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:423-436
 template <typename T>
 inline void* suspend_cancellable_coroutine(
     std::function<void(CancellableContinuation<T>&)> block,
@@ -1750,8 +1765,10 @@ inline void* suspend_cancellable_coroutine(
         }
     };
 
-    auto adapter = std::make_shared<ContinuationAdapter>(continuation);
-    auto impl = std::make_shared<CancellableContinuationImpl<T>>(adapter, 1);
+    auto intercepted = internal::intercepted_delegate(internal::retain_continuation(continuation));
+    std::shared_ptr<Continuation<T>> adapter = std::make_shared<ContinuationAdapter>(intercepted.continuation);
+    if (intercepted.dispatcher) adapter = intercepted.dispatcher->template intercept_continuation<T>(adapter);
+    auto impl = std::make_shared<CancellableContinuationImpl<T>>(adapter, MODE_CANCELLABLE);
     impl->init_cancellability();
 
     // Execute user block with the cancellable continuation
@@ -1761,6 +1778,7 @@ inline void* suspend_cancellable_coroutine(
     return impl->get_result();
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:423-436
 template <typename T>
 inline void* suspend_cancellable_coroutine(
     std::function<void(CancellableContinuation<T>&)> block,
@@ -1786,8 +1804,10 @@ inline void* suspend_cancellable_coroutine(
         }
     };
 
-    auto adapter = std::make_shared<ContinuationAdapter>(continuation);
-    auto impl = std::make_shared<CancellableContinuationImpl<T>>(adapter, 1);
+    auto intercepted = internal::intercepted_delegate(continuation);
+    std::shared_ptr<Continuation<T>> adapter = std::make_shared<ContinuationAdapter>(intercepted.continuation);
+    if (intercepted.dispatcher) adapter = intercepted.dispatcher->template intercept_continuation<T>(adapter);
+    auto impl = std::make_shared<CancellableContinuationImpl<T>>(adapter, MODE_CANCELLABLE);
     impl->init_cancellability();
 
     block(*impl);
@@ -1796,6 +1816,7 @@ inline void* suspend_cancellable_coroutine(
 }
 
 // Void Specialization for suspend_cancellable_coroutine
+// Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:423-436
 template <>
 inline void* suspend_cancellable_coroutine<void>(
     std::function<void(CancellableContinuation<void>&)> block,
@@ -1824,8 +1845,10 @@ inline void* suspend_cancellable_coroutine<void>(
         }
     };
 
-    auto adapter = std::make_shared<ContinuationAdapter>(continuation);
-    auto impl = std::make_shared<CancellableContinuationImpl<void>>(adapter, 1);
+    auto intercepted = internal::intercepted_delegate(internal::retain_continuation(continuation));
+    std::shared_ptr<Continuation<void>> adapter = std::make_shared<ContinuationAdapter>(intercepted.continuation);
+    if (intercepted.dispatcher) adapter = intercepted.dispatcher->template intercept_continuation<void>(adapter);
+    auto impl = std::make_shared<CancellableContinuationImpl<void>>(adapter, MODE_CANCELLABLE);
     impl->init_cancellability();
 
     block(*impl);
@@ -1839,6 +1862,7 @@ inline void* suspend_cancellable_coroutine<void>(
     return nullptr;
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:423-436
 inline void* suspend_cancellable_coroutine_void(
     std::function<void(CancellableContinuation<void>&)> block,
     std::shared_ptr<Continuation<void*>> continuation
@@ -1858,8 +1882,10 @@ inline void* suspend_cancellable_coroutine_void(
         }
     };
 
-    auto adapter = std::make_shared<ContinuationAdapter>(continuation);
-    auto impl = std::make_shared<CancellableContinuationImpl<void>>(adapter, 1);
+    auto intercepted = internal::intercepted_delegate(continuation);
+    std::shared_ptr<Continuation<void>> adapter = std::make_shared<ContinuationAdapter>(intercepted.continuation);
+    if (intercepted.dispatcher) adapter = intercepted.dispatcher->template intercept_continuation<void>(adapter);
+    auto impl = std::make_shared<CancellableContinuationImpl<void>>(adapter, MODE_CANCELLABLE);
     impl->init_cancellability();
 
     block(*impl);

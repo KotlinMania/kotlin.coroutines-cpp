@@ -1,9 +1,10 @@
 /**
+ * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt
  * @file CoroutineDispatcher.cpp
  * @brief Implementation of CoroutineDispatcher and its helpers.
  *
  * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/CoroutineDispatcher.hpp`.
+ * in the companion header file: `src/kotlinx/coroutines/CoroutineDispatcher.hpp`.
  *
  * This file contains the implementation of:
  * - `LimitedDispatcher` (internal helper for limited parallelism)
@@ -31,17 +32,20 @@ namespace kotlinx {
             return true;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt:231-232
         void CoroutineDispatcher::dispatch_yield(const CoroutineContext &context,
                                                  std::shared_ptr<Runnable> block) const {
-            dispatch(context, block);
+            internal::safe_dispatch(*this, context, std::move(block));
         }
 
-        // Template method intercept_continuation is in header
+        // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt:240-241
+        std::shared_ptr<Continuation<void*>> CoroutineDispatcher::intercept_continuation(
+            std::shared_ptr<Continuation<void*>> continuation) {
+            return intercept_continuation<void*>(std::move(continuation));
+        }
 
-        // Explicit instantiation for common types if needed, or keep in header if possible.
-        // But we defined it in header as template.
-
-        void CoroutineDispatcher::release_intercepted_continuation(std::shared_ptr<ContinuationBase> continuation) {
+        // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt:243-250
+        void CoroutineDispatcher::release_intercepted_continuation(std::shared_ptr<Continuation<void*>> continuation) {
             auto dispatched = std::dynamic_pointer_cast<DispatchedContinuationBase>(continuation);
             if (dispatched) {
                 dispatched->release();

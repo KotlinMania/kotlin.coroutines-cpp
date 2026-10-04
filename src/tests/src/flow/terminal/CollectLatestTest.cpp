@@ -7,6 +7,8 @@
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
 #include "kotlinx/coroutines/flow/Collect.hpp"
 #include "kotlinx/coroutines/Yield.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/EventLoop.hpp"
 #include <iostream>
 #include <memory>
@@ -36,57 +38,19 @@ public:
     // @Test
     void test_suspension() {
         run_test([this](CoroutineScope* scope) {
-            struct YieldExpectStateMachine : public Continuation<void*>,
-                                             public std::enable_shared_from_this<YieldExpectStateMachine> {
+            // Transliterated from: kotlinx-coroutines-core/common/test/flow/terminal/CollectLatestTest.kt:18-21
+            class YieldExpectStateMachine final : public ContinuationImpl {
                 TestBase* test_;
-                Continuation<void*>* cont_;
-                int state_ = 0;
+                void* _label = nullptr;
+            public:
+                YieldExpectStateMachine(TestBase* test, Continuation<void*>* completion)
+                    : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)), test_(test) {}
 
-                YieldExpectStateMachine(TestBase* test, Continuation<void*>* cont)
-                    : test_(test), cont_(cont) {}
-
-                std::shared_ptr<CoroutineContext> get_context() const override {
-                    return cont_ ? cont_->get_context() : nullptr;
-                }
-
-                void resume_with(Result<void*> result) override {
-                    if (!result.is_success()) {
-                        if (cont_) cont_->resume_with(result);
-                        return;
-                    }
-                    execute();
-                }
-
-                void* execute() {
-                    if (state_ == 0) {
-                        state_ = 1;
-                        if (cont_ && cont_->get_context()) {
-                            auto job = std::dynamic_pointer_cast<Job>(cont_->get_context()->get(Job::type_key));
-                            if (job && !job->is_active()) {
-                                if (cont_) cont_->resume_with(Result<void*>::failure(job->get_cancellation_exception()));
-                                return nullptr;
-                            }
-                        }
-                        auto self = shared_from_this();
-                        void* res = yield(self);
-                        if (intrinsics::is_coroutine_suspended(res)) {
-                            return intrinsics::get_COROUTINE_SUSPENDED();
-                        }
-                    }
-                    if (state_ == 1) {
-                        state_ = 2;
-                        if (cont_ && cont_->get_context()) {
-                            auto job = std::dynamic_pointer_cast<Job>(cont_->get_context()->get(Job::type_key));
-                            if (job && !job->is_active()) {
-                                if (cont_) cont_->resume_with(Result<void*>::failure(job->get_cancellation_exception()));
-                                return nullptr;
-                            }
-                        }
-                        test_->expect(1);
-                        if (cont_) cont_->resume_with(Result<void*>::success(nullptr));
-                        return nullptr;
-                    }
-                    return nullptr;
+                void* invoke_suspend(Result<void*> result) override {
+                    coroutine_begin(this)
+                    coroutine_yield(this, yield(shared_from_this()));
+                    test_->expect(1);
+                    coroutine_end(this)
                 }
             };
 
@@ -105,7 +69,7 @@ public:
 
             void* r = collect_latest<int>(f, [this](int, Continuation<void*>* c) -> void* {
                 auto sm = std::make_shared<YieldExpectStateMachine>(this, c);
-                return sm->execute();
+                return sm->start(Result<void*>::success(nullptr));
             }, cont.get());
 
             if (intrinsics::is_coroutine_suspended(r)) {

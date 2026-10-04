@@ -113,14 +113,14 @@ void* map_latest_action(FlowCollector<Unit>* collector,
                        Continuation<void*>* completion) {
     auto frame = std::make_shared<MapLatestActionFrame>(collector, std::move(action), completion);
     frame->retain();
-    return frame->invoke_suspend(Result<void*>::success(nullptr));
+    return frame->start(Result<void*>::success(nullptr));
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:82-97
 void* collect_latest_impl(std::shared_ptr<Flow<Unit>> mapped, Continuation<void*>* completion) {
     auto frame = std::make_shared<CollectLatestFrame>(std::move(mapped), completion);
     frame->retain();
-    return frame->invoke_suspend(Result<void*>::success(nullptr));
+    return frame->start(Result<void*>::success(nullptr));
 }
 
 } // namespace kotlinx::coroutines::flow::internal

@@ -4,6 +4,7 @@ import argparse
 import importlib.util
 from pathlib import Path
 import shutil
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -113,7 +114,7 @@ declare void @__kxs_suspend_point(i32)
             '#include "settings.hpp"\nint right_value() { return pipeline_value; }\n')
         main = Path(OPTIONS.core_test).read_text()
         main = '#include "settings.hpp"\n#include <span>\n' + main
-        # Keep the fixture independent of sanitizer flags on a prebuilt library.
+        # Define the marker locally; the prebuilt library supplies runtime helpers.
         main = main.replace('int main() {',
                             'extern "C" void __kxs_suspend_point(int) noexcept {}\nint main() {')
         main = main.replace('int main() {', '''
@@ -131,6 +132,9 @@ int main() {
 ''')
         (directory / 'main.cpp').write_text(main)
         sanitizer = 'target_compile_options(settings INTERFACE -fsanitize=address -fno-omit-frame-pointer)\ntarget_link_options(settings INTERFACE -fsanitize=address)\n' if sanitize else ''
+        library_link_options = ' '.join(
+            '"' + option.replace('\\', '\\\\').replace('"', '\\"') + '"'
+            for option in shlex.split(OPTIONS.library_link_options))
         (directory / 'CMakeLists.txt').write_text(f'''
 cmake_minimum_required(VERSION 3.18)
 project(ir_fixture LANGUAGES CXX)
@@ -142,6 +146,7 @@ target_compile_definitions(settings INTERFACE KXS_INHERITED=41)
 target_compile_features(settings INTERFACE cxx_std_20)
 target_compile_options(settings INTERFACE -Werror -Wno-gnu-label-as-value -UNDEBUG)
 {sanitizer}
+target_link_options(settings INTERFACE {library_link_options})
 set_source_files_properties(left/shared.cpp PROPERTIES COMPILE_DEFINITIONS KXS_SOURCE_OPTION=5)
 file(GENERATE OUTPUT "${{CMAKE_CURRENT_BINARY_DIR}}/generated.cpp" CONTENT "int generated_value() {{ return 9; }}")
 foreach(name baseline transformed)
@@ -207,6 +212,7 @@ def main():
     parser.add_argument('--headers', required=True)
     parser.add_argument('--core-test', required=True)
     parser.add_argument('--library', required=True)
+    parser.add_argument('--library-link-options', default='')
     parser.add_argument('--work-dir', required=True)
     parser.add_argument('--compiler', required=True)
     parser.add_argument('--cmake', required=True)

@@ -101,6 +101,15 @@ struct CoroutineScope {
     }
 };
 
+// Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:32-36
+std::shared_ptr<CoroutineContext> new_coroutine_context(
+    CoroutineScope* scope, std::shared_ptr<CoroutineContext> context);
+
+// Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:38-40
+std::shared_ptr<CoroutineContext> new_coroutine_context(
+    std::shared_ptr<CoroutineContext> base_context,
+    std::shared_ptr<CoroutineContext> added_context);
+
 /**
  * A global [CoroutineScope] not bound to any job.
  * Global scope is used to launch top-level coroutines that operate
@@ -349,5 +358,4 @@ std::shared_ptr<CoroutineScope> main_scope();
 
 } // namespace coroutines
 } // namespace kotlinx
-
 

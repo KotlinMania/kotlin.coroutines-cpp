@@ -162,32 +162,67 @@ namespace kotlinx {
         // Handler Node Types (private in Kotlin)
         // ============================================================================
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1530-1535
         class InvokeOnCompletion : public JobNode {
             std::function<void(std::exception_ptr)> handler_;
+            std::mutex handler_mutex_;
 
         public:
-            explicit InvokeOnCompletion(std::function<void(std::exception_ptr)> h) : handler_(std::move(h)) {
-            }
+            explicit InvokeOnCompletion(std::function<void(std::exception_ptr)> h) : handler_(std::move(h)) {}
 
             bool get_on_cancelling() const override { return false; }
-            void invoke(std::exception_ptr cause) override { handler_(cause); }
+
+            void invoke(std::exception_ptr cause) override {
+                std::function<void(std::exception_ptr)> handler;
+                {
+                    std::lock_guard<std::mutex> guard(handler_mutex_);
+                    // NOTE(port): Kotlin GC collects a terminated handler's captures.
+                    // Published intrusive nodes remain allocated in this port, so
+                    // relinquish captures after their single completion notification.
+                    handler = std::move(handler_);
+                    handler_ = nullptr;
+                }
+                if (handler) handler(cause);
+            }
+
+            void dispose() override {
+                JobNode::dispose();
+                std::lock_guard<std::mutex> guard(handler_mutex_);
+                // NOTE(port): A removed node must not retain a cancelled coroutine.
+                handler_ = nullptr;
+            }
         };
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1564-1573
         class InvokeOnCancelling : public JobNode {
             std::function<void(std::exception_ptr)> handler_;
+            std::mutex handler_mutex_;
             std::atomic<bool> invoked_{false};
 
         public:
-            explicit InvokeOnCancelling(std::function<void(std::exception_ptr)> h) : handler_(std::move(h)) {
-            }
+            explicit InvokeOnCancelling(std::function<void(std::exception_ptr)> h) : handler_(std::move(h)) {}
 
             bool get_on_cancelling() const override { return true; }
 
             void invoke(std::exception_ptr cause) override {
                 bool expected = false;
                 if (invoked_.compare_exchange_strong(expected, true)) {
-                    handler_(cause);
+                    std::function<void(std::exception_ptr)> handler;
+                    {
+                        std::lock_guard<std::mutex> guard(handler_mutex_);
+                        // NOTE(port): Release GC-owned captures after one-shot invocation.
+                        handler = std::move(handler_);
+                        handler_ = nullptr;
+                    }
+                    if (handler) handler(cause);
                 }
+            }
+
+            void dispose() override {
+                JobNode::dispose();
+                std::lock_guard<std::mutex> guard(handler_mutex_);
+                // NOTE(port): Retired intrusive nodes must not keep a coroutine alive.
+                handler_ = nullptr;
             }
         };
 

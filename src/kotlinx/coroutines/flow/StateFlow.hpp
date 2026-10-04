@@ -430,7 +430,7 @@ public:
         };
         auto frame = std::make_shared<CollectFrame>(this, collector, continuation);
         frame->retain();
-        return frame->invoke_suspend(Result<void*>::success(nullptr));
+        return frame->start(Result<void*>::success(nullptr));
     }
 
     // AbstractSharedFlow requirements

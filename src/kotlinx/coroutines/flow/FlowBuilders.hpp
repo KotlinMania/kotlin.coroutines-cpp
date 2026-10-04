@@ -176,7 +176,7 @@ std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
     return flow<T>([iterable](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
         auto sm = std::make_shared<detail::AsFlowContinuation<T>>(iterable, collector, cont);
         sm->retain();
-        return sm->invoke_suspend(Result<void*>::success(nullptr));
+        return sm->start(Result<void*>::success(nullptr));
     });
 }
 

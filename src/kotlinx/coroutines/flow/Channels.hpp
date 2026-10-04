@@ -185,7 +185,7 @@ inline void* emit_all_impl(
     coro->retain();
     void* res = nullptr;
     try {
-        res = coro->invoke_suspend(Result<void*>::success(nullptr));
+        res = coro->start(Result<void*>::success(nullptr));
         if (res != intrinsics::get_COROUTINE_SUSPENDED()) {
             coro->release();
         }
@@ -207,7 +207,7 @@ inline void* emit_all_impl(
     coro->retain();
     void* res = nullptr;
     try {
-        res = coro->invoke_suspend(Result<void*>::success(nullptr));
+        res = coro->start(Result<void*>::success(nullptr));
         if (res != intrinsics::get_COROUTINE_SUSPENDED()) {
             coro->release();
         }

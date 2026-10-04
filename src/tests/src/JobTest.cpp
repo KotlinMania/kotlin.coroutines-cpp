@@ -10,6 +10,8 @@
 #include "kotlinx/coroutines/CompletableJob.hpp"
 #include "kotlinx/coroutines/Deferred.hpp"
 #include "kotlinx/coroutines/Yield.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/Delay.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
@@ -184,34 +186,73 @@ public:
         assert_equals(0, fire_count);
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/test/JobTest.kt:141-157
     void test_cancel_and_join_parent_wait_children() {
         run_test([this](CoroutineScope* scope) {
-            expect(1);
-            auto parent = Job();
-            bool finally_ran = false;
-            auto child = launch(scope, std::dynamic_pointer_cast<CoroutineContext>(parent), CoroutineStart::UNDISPATCHED, [this, &finally_ran](CoroutineScope*) {
-                expect(2);
-                try {
-                    yield();
-                } catch (...) {
-                    if (!finally_ran) {
-                        finally_ran = true;
-                        expect(5);
+            // Transliterated from: kotlinx-coroutines-core/common/test/JobTest.kt:144-151
+            class ChildFrame final : public ContinuationImpl {
+                JobTest* test_;
+                void* _label = nullptr;
+            public:
+                ChildFrame(JobTest* test, std::shared_ptr<Continuation<void*>> completion)
+                    : ContinuationImpl(std::move(completion)), test_(test) {}
+                void* invoke_suspend(Result<void*> result) override {
+                    try {
+                        coroutine_begin(this)
+                        test_->expect(2);
+                        coroutine_yield(this, yield(shared_from_this()));
+                    } catch (...) {
+                        test_->expect(5);
+                        throw;
                     }
-                    throw;
+                    test_->expect(5);
+                    return nullptr;
                 }
-            });
-            child->invoke_on_completion([this, &finally_ran](std::exception_ptr) {
-                if (!finally_ran) {
-                    finally_ran = true;
-                    expect(5);
+            };
+
+            // Transliterated from: kotlinx-coroutines-core/common/test/JobTest.kt:141-157
+            class TestFrame final : public ContinuationImpl {
+                JobTest* test_;
+                CoroutineScope* scope_;
+                std::shared_ptr<CompletableJob> parent_;
+                void* _label = nullptr;
+            public:
+                TestFrame(JobTest* test, CoroutineScope* scope,
+                          std::shared_ptr<Continuation<void*>> completion)
+                    : ContinuationImpl(std::move(completion)), test_(test), scope_(scope) {}
+                void* invoke_suspend(Result<void*> result) override {
+                    coroutine_begin(this)
+                    test_->expect(1);
+                    parent_ = make_job();
+                    launch(scope_, std::dynamic_pointer_cast<CoroutineContext>(parent_),
+                        CoroutineStart::UNDISPATCHED,
+                        std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)>(
+                            [test = test_](CoroutineScope*, std::shared_ptr<Continuation<void*>> completion) {
+                                auto frame = std::make_shared<ChildFrame>(test, std::move(completion));
+                                return frame->start(Result<void*>::success(nullptr));
+                            }));
+                    test_->expect(3);
+                    parent_->cancel();
+                    test_->expect(4);
+                    coroutine_yield(this, parent_->join(this));
+                    test_->finish(6);
+                    coroutine_end(this)
                 }
-            });
-            expect(3);
-            parent->cancel();
-            expect(4);
-            parent->join_blocking();
-            finish(6);
+            };
+            bool done = false;
+            std::exception_ptr failure;
+            auto completion = std::make_shared<FunctionalContinuation<void*>>(
+                scope->get_coroutine_context(), [&](Result<void*> result) {
+                    done = true;
+                    failure = result.exception_or_null();
+                });
+            auto frame = std::make_shared<TestFrame>(this, scope, completion);
+            void* result = frame->start(Result<void*>::success(nullptr));
+            if (intrinsics::is_coroutine_suspended(result)) {
+                auto loop = ThreadLocalEventLoop::get_event_loop();
+                while (!done) loop->process_next_event();
+            }
+            if (failure) std::rethrow_exception(failure);
         });
     }
 

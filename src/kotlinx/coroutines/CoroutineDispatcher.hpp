@@ -133,7 +133,12 @@ public:
     template <typename T>
     std::shared_ptr<Continuation<T>> intercept_continuation(std::shared_ptr<Continuation<T>> continuation);
 
-    void release_intercepted_continuation(std::shared_ptr<ContinuationBase> continuation) override;
+    // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt:240-241
+    std::shared_ptr<Continuation<void*>> intercept_continuation(
+        std::shared_ptr<Continuation<void*>> continuation) override final;
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt:243-250
+    void release_intercepted_continuation(std::shared_ptr<Continuation<void*>> continuation) override final;
 
     virtual std::shared_ptr<CoroutineDispatcher> plus(std::shared_ptr<CoroutineDispatcher> other) {
         return other;

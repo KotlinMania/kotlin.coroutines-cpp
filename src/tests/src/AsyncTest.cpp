@@ -373,39 +373,90 @@ public:
         });
     }
 
-    // @Test
-    // This test uses yield() - simplified version
+    // Transliterated from: kotlinx-coroutines-core/common/test/AsyncTest.kt:266-298
     void test_async_with_finally() {
         run_test([this](CoroutineScope* scope) {
-            expect(1);
-
-            auto d = async<std::string>(scope, [this](CoroutineScope*) -> std::string {
-                expect(3);
-                yield(); // to main, will cancel
-                return "Fail2";
-            });
-            d->invoke_on_completion([this](std::exception_ptr e) {
-                if (e) {
-                    expect(6); // will go there on await / cancellation
+            // Transliterated from: kotlinx-coroutines-core/common/test/AsyncTest.kt:270-280
+            class AsyncFrame final : public ContinuationImpl {
+                AsyncTest* test_;
+                void* _label = nullptr;
+            public:
+                AsyncFrame(AsyncTest* test, std::shared_ptr<Continuation<void*>> completion)
+                    : ContinuationImpl(std::move(completion)), test_(test) {}
+                void* invoke_suspend(Result<void*> result) override {
+                    try {
+                        coroutine_begin(this)
+                        test_->expect(3);
+                        coroutine_yield(this, yield(shared_from_this()));
+                    } catch (...) {
+                        // Kotlin's return in finally overrides the local exception;
+                        // the cancelled Deferred still keeps its cancellation cause.
+                    }
+                    test_->expect(6);
+                    return new std::string("Fail");
                 }
-            });
-            expect(2);
-            yield(); // to async
-            expect(4);
-            check(d->is_active() && !d->is_completed() && !d->is_cancelled());
-            d->cancel();
-            check(!d->is_active() && !d->is_completed() && d->is_cancelled());
-            check(!d->is_active() && !d->is_completed() && d->is_cancelled());
-            expect(5);
-            try {
-                d->await_blocking(); // awaits
-                expect_unreached(); // does not complete normally
-            } catch (const std::exception& e) {
-                expect(7);
-                check(dynamic_cast<const CancellationException*>(&e) != nullptr);
+            };
+
+            // Transliterated from: kotlinx-coroutines-core/common/test/AsyncTest.kt:266-298
+            class TestFrame final : public ContinuationImpl {
+                AsyncTest* test_;
+                CoroutineScope* scope_;
+                std::shared_ptr<Deferred<std::string>> deferred_;
+                int phase_ = 0;
+                void* _label = nullptr;
+                void* value_ = nullptr;
+            public:
+                TestFrame(AsyncTest* test, CoroutineScope* scope,
+                          std::shared_ptr<Continuation<void*>> completion)
+                    : ContinuationImpl(std::move(completion)), test_(test), scope_(scope) {}
+                void* invoke_suspend(Result<void*> result) override {
+                    try {
+                        coroutine_begin(this)
+                        test_->expect(1);
+                        deferred_ = async<std::string>(scope_,
+                            std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)>(
+                                [test = test_](CoroutineScope*, std::shared_ptr<Continuation<void*>> completion) {
+                                    auto frame = std::make_shared<AsyncFrame>(test, std::move(completion));
+                                    return frame->start(Result<void*>::success(nullptr));
+                                }));
+                        test_->expect(2);
+                        coroutine_yield(this, yield(shared_from_this()));
+                        test_->expect(4);
+                        test_->check(deferred_->is_active() && !deferred_->is_completed() && !deferred_->is_cancelled());
+                        deferred_->cancel();
+                        test_->check(!deferred_->is_active() && !deferred_->is_completed() && deferred_->is_cancelled());
+                        test_->check(!deferred_->is_active() && !deferred_->is_completed() && deferred_->is_cancelled());
+                        test_->expect(5);
+                        phase_ = 1;
+                        coroutine_yield_value(this, result, deferred_->await(this), value_);
+                        delete static_cast<std::string*>(value_);
+                        test_->expect_unreached();
+                    } catch (...) {
+                        if (phase_ != 1) throw;
+                        test_->expect(7);
+                        try { throw; }
+                        catch (const CancellationException&) {}
+                    }
+                    test_->check(!deferred_->is_active() && deferred_->is_completed() && deferred_->is_cancelled());
+                    test_->finish(8);
+                    return nullptr;
+                }
+            };
+
+            bool done = false;
+            std::exception_ptr failure;
+            auto completion = std::make_shared<FunctionalContinuation<void*>>(
+                scope->get_coroutine_context(), [&](Result<void*> result) {
+                    done = true;
+                    failure = result.exception_or_null();
+                });
+            auto frame = std::make_shared<TestFrame>(this, scope, completion);
+            void* result = frame->start(Result<void*>::success(nullptr));
+            if (intrinsics::is_coroutine_suspended(result)) {
+                auto loop = ThreadLocalEventLoop::get_event_loop();
+                while (!done) loop->process_next_event();
             }
-            check(!d->is_active() && d->is_completed() && d->is_cancelled());
-            finish(8);
+            if (failure) std::rethrow_exception(failure);
         });
     }
 
