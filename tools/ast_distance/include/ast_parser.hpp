@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tree.hpp"
+#include "kotlin_grammar_compat.hpp"
 #include "node_types.hpp"
 #include <tree_sitter/api.h>
 #include <string>
@@ -10,8 +11,11 @@
 #include <map>
 #include <set>
 #include <cctype>
+#include <cstring>
 #include <algorithm>
 #include <cmath>
+#include <charconv>
+#include <limits>
 
 // External declarations for tree-sitter language functions
 extern "C" {
@@ -19,6 +23,7 @@ extern "C" {
     const TSLanguage* tree_sitter_kotlin();
     const TSLanguage* tree_sitter_cpp();
     const TSLanguage* tree_sitter_python();
+    const TSLanguage* tree_sitter_typescript();
 }
 
 namespace ast_distance {
@@ -27,7 +32,8 @@ enum class Language {
     RUST,
     KOTLIN,
     CPP,
-    PYTHON
+    PYTHON,
+    TYPESCRIPT
 };
 
 /**
@@ -44,12 +50,14 @@ struct IdentifierStats {
      * "foo_bar" and "fooBar" and "FooBar" all become "foobar".
      * This lets snake_case Rust match camelCase Kotlin.
      *
-     * Also normalizes cross-language equivalents:
-     *   self/this → "this", Option/nullable → "option",
-     *   Vec/List/MutableList → "list", etc.
+     * This is intentionally strict: it does not map `fmt` to `toString`,
+     * `cmp` to `compareTo`, or collection/type synonyms. Those translations
+     * are real naming choices and should stay visible in parity reports.
      */
     static std::string canonicalize(const std::string& name) {
-        // First: lowercase + strip underscores
+        // Strict snake_case <-> camelCase / PascalCase parity:
+        // collapse case and drop underscores. No type-name remapping,
+        // no ignore lists, no synonym tables.
         std::string result;
         result.reserve(name.size());
         for (char c : name) {
@@ -58,191 +66,6 @@ struct IdentifierStats {
                     std::tolower(static_cast<unsigned char>(c)));
             }
         }
-
-        // Ignore a small, explicit set of low-signal identifiers which commonly appear in
-        // faithful Rust→Kotlin transliterations but would otherwise dominate the identifier
-        // overlap metric (package/import path components, receiver tokens, and tiny temp vars).
-        static const std::set<std::string> ignore = {
-            // Receiver tokens
-            "self",
-            "this",
-            // Rust path components / Kotlin package/import noise
-            "crate",
-            "io",
-            "github",
-            "com",
-            "kotlin",
-            "kotlinmania",
-            "starlarkkotlin",
-            // Common tiny temp vars (tuple destructuring / iterator glue)
-            "xk",
-            "xv",
-            "xy",
-            "yk",
-            "yv",
-            // Iterator/local glue frequently introduced by Kotlin ports
-            "xsiter",
-            "xsbasics",
-            "rest",
-            "merged",
-            "minlen",
-            "ch",
-            "sb",
-            // Rust-only derive/plumbing identifiers which do not exist in Kotlin ports
-            // but otherwise dominate identifier overlap.
-            "allocative",
-            "dupe",
-            "clone",
-            "copy",
-            "formatter",
-            "hasher",
-
-            // Kotlin Result plumbing which has no direct Rust identifier analogue.
-            // (Rust uses `?` / `Ok` / `Err` patterns instead.)
-            "getorelse",
-
-            // Kotlin stdlib/value types used to represent Rust syntax-only constructs.
-            // Rust tuples and slices don't surface as identifiers in tree-sitter-rust, so
-            // counting Kotlin's `Pair`/`Triple`/`Array`/`TupleN` identifiers is low-signal
-            // noise for faithful transliterations.
-            "array",
-            "pair",
-            "triple",
-            "tuple",
-            "tuple1",
-            "tuple4",
-            "tuple5",
-
-        };
-        if (ignore.count(result)) {
-            return "";
-        }
-
-        // Normalize Kotlin generic type parameter conventions like `TFrozen`, `KFrozen`, `AFrozen`
-        // to Rust's associated type name `Frozen`.
-        //
-        // This is a common, faithful transliteration pattern for Rust `T::Frozen` and should not
-        // count as identifier drift.
-        if (result.size() > 6 && result != "frozen") {
-            const std::string suffix = "frozen";
-            if (result.size() >= suffix.size() &&
-                result.compare(result.size() - suffix.size(), suffix.size(), suffix) == 0) {
-                return "frozen";
-            }
-        }
-
-        // Cross-language equivalents (applied after lowering)
-        static const std::vector<std::pair<std::string, std::string>> equivalents = {
-            // Keywords
-            {"self", "this"},
-            {"crate", ""},          // Rust path component, no Kotlin equivalent
-            {"super", "super"},
-            // Visibility: Rust `pub(crate)` most closely matches Kotlin `internal`
-            {"internal", "public"},
-            // Collections
-            {"vec", "list"},
-            {"mutablelist", "list"},
-            {"arraylist", "list"},
-            {"mutablelistof", "list"},
-            {"listof", "list"},
-            {"tomutablelist", "list"},
-            {"tolist", "list"},
-            {"hashmap", "map"},
-            {"mutablemap", "map"},
-            {"mutablemapof", "map"},
-            {"mapof", "map"},
-            {"hashset", "set"},
-            {"mutableset", "set"},
-            {"mutablesetof", "set"},
-            {"setof", "set"},
-            {"btreemap", "map"},
-            {"btreeset", "set"},
-            // Types
-            {"option", "nullable"},
-            {"some", "notnull"},
-            {"none", "null"},
-            {"box", "boxed"},
-            {"arc", "arc"},
-            {"string", "string"},
-            {"str", "string"},
-            // Atomics: Rust frequently uses `AtomicPtr<T>`; Kotlin ports use `AtomicReference<T?>`.
-            {"atomicreference", "atomicptr"},
-            {"i32", "int"},
-            {"i64", "long"},
-            {"u32", "uint"},
-            {"u64", "ulong"},
-            {"usize", "uint"},
-            {"isize", "int"},
-            {"f32", "float"},
-            {"f64", "double"},
-            {"bool", "boolean"},
-            // Kotlin port helper type repr names → underlying Rust-ish scalar/type
-            {"i32typerepr", "int"},
-            {"i32starlarktyperepr", "int"},
-            {"stringtyperepr", "string"},
-            {"eithertyperepr", "either"},
-            {"kclass", "typeid"},
-            {"pair", "tuple"},
-            {"triple", "tuple"},
-            {"unit", "void"},
-            // Error handling
-            {"result", "result"},
-            {"freezeresult", "result"},
-            {"err", "error"},
-            {"ok", "success"},
-            {"failure", "error"},
-            // Test/assertion equivalents (Rust tests → kotlin.test)
-            {"assertequals", "asserteq"},
-            // Kotlin Result helper names often appear in faithful ports.
-            {"getorthrow", "unwrap"},
-            {"exceptionornull", "error"},
-            {"issuccess", "ok"},
-            {"isfailure", "err"},
-            // Rust trait methods -> Kotlin equivalents
-            {"fmt", "tostring"},          // Display::fmt -> toString
-            {"eq", "equals"},             // PartialEq::eq -> equals
-            {"partialeq", "equals"},
-            {"cmp", "compareto"},         // Ord::cmp -> compareTo
-            {"partialcmp", "compareto"},  // PartialOrd::partial_cmp -> compareTo
-            {"hash", "hashcode"},         // Hash::hash -> hashCode
-            {"clone", "copy"},            // Clone::clone -> copy (data class)
-            {"default", "invoke"},        // Default::default -> companion invoke
-            {"fromstr", "parse"},         // FromStr -> parse
-            {"intoiter", "iterator"},     // IntoIterator::into_iter -> iterator
-            {"intoiterator", "iterator"},
-            {"hasnext", "next"},
-            {"next", "next"},             // Iterator::next (same name)
-            {"serialize", "serialize"},   // serde (same name)
-            {"deserialize", "deserialize"},
-            // Project-wide convention: Rust Ordering is represented as Kotlin Int.
-            {"ordering", "int"},
-            // Kotlin string builders are commonly used where Rust uses `String`.
-            {"stringbuilder", "string"},
-            {"buildstring", "string"},
-            {"append", "push"},
-            {"substring", "split"},
-            {"deref", "get"},             // Deref::deref -> get/value
-            {"drop", "close"},            // Drop::drop -> close/Closeable
-            {"freeze", "freeze"},         // project-specific (same name)
-            {"trace", "trace"},           // project-specific (same name)
-            // Common prefixes
-            {"fn", "fun"},
-            {"impl", "class"},
-            {"pub", "public"},
-            {"mut", "var"},
-            {"let", "val"},
-            // Common operations in ports
-            {"len", "size"},
-            {"push", "add"},
-            {"add", "push"},
-        };
-
-        for (const auto& [from, to] : equivalents) {
-            if (result == from) {
-                return to;
-            }
-        }
-
         return result;
     }
 
@@ -434,15 +257,21 @@ struct CommentStats {
 
 /**
  * Function metadata extracted from source code.
- * The AST is kept as the function body (not the whole declaration)
- * so that stub checks and identifier matching are aligned with behavior.
+ * The AST and identifiers are kept as parameters + body so transliteration
+ * reports compare callable behavior, not loose whole-file shape.
  */
 struct FunctionInfo {
     std::string name;
+    std::string qualified_name;
+    std::string signature;
     TreePtr body_tree;
     IdentifierStats identifiers;
     bool has_stub_markers = false;
     bool is_test = false;  // true if #[test] or inside #[cfg(test)] mod
+    int start_line = 0;    // 1-based declaration start line
+    int end_line = 0;      // 1-based declaration end line
+    int line_count = 0;    // declaration line span, inclusive
+    int body_line_count = 0;
 };
 
 /**
@@ -503,6 +332,7 @@ public:
             case Language::KOTLIN: ts_lang = tree_sitter_kotlin(); break;
             case Language::CPP: ts_lang = tree_sitter_cpp(); break;
             case Language::PYTHON: ts_lang = tree_sitter_python(); break;
+            case Language::TYPESCRIPT: ts_lang = tree_sitter_typescript(); break;
         }
 
         if (!ts_parser_set_language(parser_, ts_lang)) {
@@ -538,6 +368,7 @@ public:
             case Language::KOTLIN: ts_lang = tree_sitter_kotlin(); break;
             case Language::CPP: ts_lang = tree_sitter_cpp(); break;
             case Language::PYTHON: ts_lang = tree_sitter_python(); break;
+            case Language::TYPESCRIPT: ts_lang = tree_sitter_typescript(); break;
         }
 
         if (!ts_parser_set_language(parser_, ts_lang)) {
@@ -593,6 +424,7 @@ public:
             case Language::KOTLIN: ts_lang = tree_sitter_kotlin(); break;
             case Language::CPP: ts_lang = tree_sitter_cpp(); break;
             case Language::PYTHON: ts_lang = tree_sitter_python(); break;
+            case Language::TYPESCRIPT: ts_lang = tree_sitter_typescript(); break;
         }
 
         if (!ts_parser_set_language(parser_, ts_lang)) {
@@ -654,6 +486,10 @@ public:
     /**
      * Extract function metadata and body ASTs from source.
      */
+    bool last_extraction_has_errors() const { return last_extraction_has_errors_; }
+    const std::vector<std::string>& last_extraction_diagnostics() const { return last_extraction_diagnostics_; }
+    const std::vector<int>& last_fun_interface_lines() const { return last_fun_interface_lines_; }
+
     std::vector<FunctionInfo> extract_function_infos(
             const std::string& source, Language lang) {
         std::vector<FunctionInfo> functions;
@@ -665,20 +501,34 @@ public:
             case Language::KOTLIN: ts_lang = tree_sitter_kotlin(); break;
             case Language::CPP: ts_lang = tree_sitter_cpp(); break;
             case Language::PYTHON: ts_lang = tree_sitter_python(); break;
+            case Language::TYPESCRIPT: ts_lang = tree_sitter_typescript(); break;
         }
 
         if (!ts_parser_set_language(parser_, ts_lang)) {
             throw std::runtime_error("Failed to set parser language");
         }
 
+        auto compatible = lang == Language::KOTLIN
+            ? kotlin_grammar_input(source) : KotlinGrammarInput{source, {}};
+        last_fun_interface_lines_ = compatible.fun_interface_lines;
         TSTree* ts_tree = ts_parser_parse_string(
-            parser_, nullptr, source.c_str(), source.length());
+            parser_, nullptr, compatible.text.c_str(), compatible.text.length());
 
         if (!ts_tree) {
             throw std::runtime_error("Failed to parse source");
         }
 
         TSNode root = ts_tree_root_node(ts_tree);
+        last_extraction_has_errors_ = ts_node_has_error(root);
+        last_extraction_diagnostics_.clear();
+        std::function<void(TSNode)> diagnose = [&](TSNode current) {
+            if (std::string(ts_node_type(current)) == "ERROR" || ts_node_is_missing(current))
+                last_extraction_diagnostics_.push_back(std::to_string(ts_node_start_point(current).row + 1) +
+                    "-" + std::to_string(ts_node_end_point(current).row + 1) + " " +
+                    (ts_node_is_missing(current) ? "missing " : "error ") + ts_node_type(current));
+            for (uint32_t i = 0; i < ts_node_named_child_count(current); ++i) diagnose(ts_node_named_child(current, i));
+        };
+        if (last_extraction_has_errors_) diagnose(root);
         extract_function_infos_recursive(root, source, lang, functions);
 
         ts_tree_delete(ts_tree);
@@ -753,7 +603,8 @@ public:
                lower.find("not implemented") != std::string::npos ||
                // Common stub constructs without spaces (Rust `unimplemented!`, Kotlin/Python `NotImplementedError`)
                has_word("unimplemented") ||
-               has_word("notimplemented");
+               has_word("notimplemented") ||
+               has_word("notimplementederror");
     }
 
     static bool comment_has_stub_markers(const std::string& text) {
@@ -852,6 +703,7 @@ public:
             case Language::KOTLIN: ts_lang = tree_sitter_kotlin(); break;
             case Language::CPP: ts_lang = tree_sitter_cpp(); break;
             case Language::PYTHON: ts_lang = tree_sitter_python(); break;
+            case Language::TYPESCRIPT: ts_lang = tree_sitter_typescript(); break;
         }
 
         if (!ts_parser_set_language(parser_, ts_lang)) return false;
@@ -916,6 +768,9 @@ public:
     void clear_unmapped() { unmapped_node_types_.clear(); }
 
     private:
+    bool last_extraction_has_errors_ = false;
+    std::vector<std::string> last_extraction_diagnostics_;
+    std::vector<int> last_fun_interface_lines_;
     TSParser* parser_;
     std::map<std::string, int> unmapped_node_types_;
 
@@ -985,6 +840,10 @@ public:
         } else if (lang == Language::PYTHON) {
             is_comment = (type_s == "comment");
             is_line_comment = is_comment;
+        } else if (lang == Language::TYPESCRIPT) {
+            is_line_comment = (type_s == "comment");
+            is_block_comment = (type_s == "comment");
+            is_comment = (type_s == "comment");
         }
 
         if (is_comment) {
@@ -1030,6 +889,8 @@ public:
                 // Python has no standardized doc-comment syntax.
                 // Docstrings are AST string nodes, not comment nodes.
                 is_doc_comment = false;
+            } else if (lang == Language::TYPESCRIPT) {
+                is_doc_comment = (text.find("/**") == 0);
             }
 
             if (is_doc_comment) {
@@ -1071,6 +932,7 @@ public:
                node_type == "import_statement" ||        // Python
                node_type == "preproc_include" ||         // C++
                node_type == "using_declaration" ||       // C++
+               node_type == "import_declaration" ||      // TypeScript
                node_type == "package_header";            // Kotlin package declaration
     }
 
@@ -1092,6 +954,9 @@ public:
         if (lang == Language::CPP) {
             return node_type == "template_parameter_list";
         }
+        if (lang == Language::TYPESCRIPT) {
+            return node_type == "type_parameters";
+        }
         return false;
     }
 
@@ -1102,71 +967,6 @@ public:
         IdentifierStats& stats,
         bool skip_identifiers = false
     ) {
-        auto is_kotlin_override_shim_name = [&](TSNode identifier_node, const std::string& identifier) -> bool {
-            if (lang != Language::KOTLIN) return false;
-            if (!(identifier == "toString" || identifier == "compareTo")) return false;
-
-            // Walk up to the nearest Kotlin function declaration.
-            TSNode cur = identifier_node;
-            for (int depth = 0; depth < 8; depth++) {
-                TSNode parent = ts_node_parent(cur);
-                if (ts_node_is_null(parent)) break;
-                std::string ptype(ts_node_type(parent));
-                if (ptype == "function_declaration") {
-                    TSNode func = parent;
-
-                    // Confirm this identifier is the function name via field access when available.
-                    TSNode name_node = ts_node_child_by_field_name(func, "name", 4);
-                    if (!ts_node_is_null(name_node)) {
-                        uint32_t ns = ts_node_start_byte(name_node);
-                        uint32_t ne = ts_node_end_byte(name_node);
-                        uint32_t is = ts_node_start_byte(identifier_node);
-                        uint32_t ie = ts_node_end_byte(identifier_node);
-                        if (!(is >= ns && ie <= ne)) {
-                            return false;
-                        }
-                        if (ne > ns && ne <= source.length()) {
-                            std::string name_text = source.substr(ns, ne - ns);
-                            if (name_text != identifier) return false;
-                        }
-                    } else {
-                        // Fallback: restrict to the function signature text region.
-                        uint32_t fs = ts_node_start_byte(func);
-                        uint32_t fe = ts_node_end_byte(func);
-                        if (fe <= fs || fe > source.length()) return false;
-                        std::string sig = source.substr(fs, fe - fs);
-                        if (sig.find("fun " + identifier) == std::string::npos) return false;
-                    }
-
-                    // Check for `override` modifier in the modifiers subtree.
-                    TSNode mods = ts_node_child_by_field_name(func, "modifiers", 9);
-                    if (ts_node_is_null(mods)) {
-                        uint32_t cc = ts_node_child_count(func);
-                        for (uint32_t i = 0; i < cc; ++i) {
-                            TSNode c = ts_node_child(func, i);
-                            if (std::string(ts_node_type(c)) == "modifiers") {
-                                mods = c;
-                                break;
-                            }
-                        }
-                    }
-                    if (ts_node_is_null(mods)) return false;
-
-                    uint32_t ms = ts_node_start_byte(mods);
-                    uint32_t me = ts_node_end_byte(mods);
-                    if (me > ms && me <= source.length()) {
-                        std::string mtext = source.substr(ms, me - ms);
-                        if (mtext.find("override") != std::string::npos) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-                cur = parent;
-            }
-            return false;
-        };
-
         const char* type_str = ts_node_type(node);
         std::string node_type(type_str);
 
@@ -1188,210 +988,17 @@ public:
                 uint32_t end = ts_node_end_byte(node);
                 if (end > start && end <= source.length()) {
                     std::string identifier = source.substr(start, end - start);
-                    // Filter out very common/boilerplate identifiers
-                    if (identifier.length() > 1 && identifier != "it" && identifier != "this") {
-                        // Rust trait-derived behavior is frequently expressed as explicit Kotlin
-                        // overrides (e.g. `toString`, `compareTo`). These identifiers do not exist
-                        // as surface tokens in the Rust AST (they come from derives/traits), so
-                        // treat them as low-signal only when they are *override method names*.
-                        //
-                        // Important: do NOT ignore normal uses/calls of these identifiers inside
-                        // real logic — only the declaration name in an override.
-                        if (is_kotlin_override_shim_name(node, identifier)) {
-                            goto skip_add;
-                        }
-                        // Kotlin-specific noise identifiers (language plumbing),
-                        // not strong signals of port faithfulness.
-                        if (lang == Language::KOTLIN) {
-                            static const std::set<std::string> kIgnore = {
-                                // Result/exception plumbing
-                                "Result",
-                                "success",
-                                "failure",
-                                "exceptionOrNull",
-                                "isSuccess",
-                                "isFailure",
-                                "runCatching",
-                                "getOrThrow",
-                                "getOrElse",
-                                "getOrDefault",
-                                "fold",
-                                "map",
-                                "flatMap",
-                                "recover",
-                                "recoverCatching",
-                                "onSuccess",
-                                "onFailure",
-                                // Common Kotlin scoping/builder helpers
-                                "let",
-                                "also",
-                                "apply",
-                                "with",
-                                "use",
-                                "buildString",
-                                "StringBuilder",
-                                "append",
-                                // Kotlin preconditions
-                                "check",
-                                "require",
-                                "error",
-                                // Interior mutability / boxing helpers
-                                "getMut",
-                                "asMut",
-                                // Common bounds helpers
-                                "coerceIn",
-                                "coerceAtLeast",
-                                "maxOf",
-                                "minOf",
-                                // Common exception types
-                                "Exception",
-                                "IllegalStateException",
-                                "IllegalArgumentException",
-                                "ArithmeticException",
-                                // Annotations / reflection (porting noise)
-                                "PublishedApi",
-                                "JvmInline",
-                                "OptIn",
-                                "ExperimentalStdlibApi",
-                                "ExperimentalContracts",
-                                "KClass",
-                                // Port-task plumbing identifiers (Kotlin-only)
-                                "DEFAULT_VTABLE",
-                                "vtablesByName",
-                                "mapOf",
-                                "SmallMap",
-                                "DUMMY_INT",
-                                "DUMMY_STR",
-                                "DUMMY_LIST",
-                                "DUMMY_DICT",
-                                "DUMMY_SET",
-                                "uncheckedNewTycheckDummy",
-                                "INT_TYPE",
-                                "BOOL_TYPE",
-
-                                // Kotlin primitive/value types are mostly language-noise in cross-language ports.
-                                "Int",
-                                "UInt",
-                                "Long",
-                                "ULong",
-                                "Short",
-                                "UShort",
-                                "Byte",
-                                "UByte",
-                                "Double",
-                                "Float",
-                                "Char",
-                                "Boolean",
-                                "String",
-                                "Any",
-                                "Unit",
-                                // Port-specific Rust scalar stand-ins (treat like primitive noise).
-                                "Usize",
-                                "Isize",
-
-                                // Common Kotlin collection interface/type noise.
-                                "List",
-                                "MutableList",
-                                "Set",
-                                "MutableSet",
-                                "Map",
-                                "MutableMap",
-                                "Array",
-                                // Tuple helpers are Kotlin-only surface forms for Rust tuples.
-                                "Pair",
-                                "Triple",
-                                "Tuple1",
-                                "Tuple4",
-                                "Tuple5",
-                                // Generic "Frozen" type parameters are Kotlin-only noise created by transliteration.
-                                "TFrozen",
-                                "KFrozen",
-                                "VFrozen",
-                                "AFrozen",
-                                "BFrozen",
-                                "CFrozen",
-                                "DFrozen",
-                                "EFrozen",
-                                // Kotlin-only helper parameter names used to emulate Rust trait bounds in generics.
-                                "freezeA",
-                                "freezeB",
-                                "freezeC",
-                                "freezeD",
-                                "freezeE",
-                                "freezeKey",
-                                "freezeValue",
-
-                                // Common Kotlin collection factories.
-                                "listOf",
-                                "mutableListOf",
-                                "setOf",
-                                "mapOf",
-                                "mutableMapOf",
-                                "emptyList",
-                                "emptySet",
-                                "emptyMap",
-
-                                // Common Kotlin iteration/collection plumbing (noisy in ports).
-                                "iterator",
-                                "hasNext",
-                                "next",
-                                "add",
-                                "addAll",
-                                "removeAt",
-                                "remove",
-                                "size",
-                                "isEmpty",
-                                "isNotEmpty",
-                                "withIndex",
-                                "indices",
-
-                                // Common Kotlin IO helpers (noisy in commonMain ports).
-                                "print",
-                                "println",
+                    // Only primitive type syntax is representational noise. Calls,
+                    // including collection operations and one-letter variables, are logic.
+                    if (!identifier.empty() && identifier != "this") {
+                        if (node_type == "type_identifier") {
+                            static const std::set<std::string> primitive_types = {
+                                "Int", "UInt", "Long", "ULong", "Short", "UShort", "Byte", "UByte",
+                                "Double", "Float", "Char", "Boolean", "Unit", "int", "long", "short",
+                                "float", "double", "char", "bool", "void", "i8", "i16", "i32", "i64",
+                                "u8", "u16", "u32", "u64", "usize", "isize"
                             };
-                            if (kIgnore.count(identifier)) {
-                                goto skip_add;
-                            }
-                        }
-                        // Rust std/primitive type identifiers are mostly language-noise in cross-language ports.
-                        // Kotlin ports frequently erase or rename these (e.g. `Vec<T>` → `MutableList<T>`),
-                        // so excluding them reduces false negatives without weakening logic-shape signals.
-                        if (lang == Language::RUST) {
-                            static const std::set<std::string> rIgnore = {
-                                "Vec",
-                                "Option",
-                                "String",
-                                // Rust std traits/types which frequently have no direct Kotlin surface.
-                                // Keep AST-shape signals, but avoid punishing faithful ports for not
-                                // spelling out Rust trait machinery.
-                                "Borrow",
-                                "Ordering",
-                                "Display",
-                                "Formatter",
-                                "Hash",
-                                "Hasher",
-                                "Deref",
-                                // Memory-ordering marker used with atomics.
-                                "Relaxed",
-                                // Pointer/atomic helper names: Kotlin ports model these differently.
-                                "ptr",
-                                "null_mut",
-                                "is_null",
-                                "usize",
-                                "isize",
-                                "i8",
-                                "i16",
-                                "i32",
-                                "i64",
-                                "u8",
-                                "u16",
-                                "u32",
-                                "u64",
-                                "bool",
-                            };
-                            if (rIgnore.count(identifier)) {
-                                goto skip_add;
-                            }
+                            if (primitive_types.count(identifier)) goto skip_add;
                         }
                         stats.add_identifier(identifier);
                         skip_add: ;
@@ -1490,6 +1097,27 @@ public:
             case Language::KOTLIN: normalized_type = kotlin_node_to_type(type_str); break;
             case Language::CPP: normalized_type = cpp_node_to_type(type_str); break;
             case Language::PYTHON: normalized_type = python_node_to_type(type_str); break;
+            case Language::TYPESCRIPT: normalized_type = typescript_node_to_type(type_str); break;
+        }
+
+        if (lang == Language::KOTLIN && std::string(type_str) == "jump_expression") {
+            for (uint32_t i = 0; i < ts_node_child_count(node); ++i) {
+                std::string token = ts_node_type(ts_node_child(node, i));
+                if (token == "throw") normalized_type = NodeType::THROW;
+                else if (token == "break") normalized_type = NodeType::BREAK;
+                else if (token == "continue") normalized_type = NodeType::CONTINUE;
+            }
+        }
+
+        bool implicit_return = false;
+        if (lang == Language::KOTLIN && std::string(type_str) == "function_body") {
+            for (uint32_t i = 0; i < ts_node_child_count(node); ++i) {
+                if (std::string(ts_node_type(ts_node_child(node, i))) == "=") {
+                    implicit_return = true;
+                    normalized_type = NodeType::RETURN;
+                    break;
+                }
+            }
         }
 
         // Special-case: Rust `impl Trait for Type { ... }` blocks.
@@ -1591,6 +1219,16 @@ public:
         auto tree_node = std::make_shared<Tree>(
             static_cast<int>(normalized_type), type_str);
 
+        if (normalized_type == NodeType::VARIABLE || normalized_type == NodeType::NUMBER || normalized_type == NodeType::STRING ||
+            normalized_type == NodeType::CHAR || normalized_type == NodeType::BOOLEAN ||
+            normalized_type == NodeType::NULL_LIT) {
+            tree_node->label = source.substr(ts_node_start_byte(node),
+                ts_node_end_byte(node) - ts_node_start_byte(node));
+        }
+
+        if (lang == Language::CPP && std::string(type_str) == "sized_type_specifier")
+            tree_node->label = "primitive:" + source.substr(ts_node_start_byte(node), ts_node_end_byte(node) - ts_node_start_byte(node));
+
         // For leaf nodes, store the index
         uint32_t child_count = ts_node_child_count(node);
         if (child_count == 0) {
@@ -1617,6 +1255,13 @@ public:
                 // Capture semantically significant unnamed nodes (operators)
                 const char* child_type = ts_node_type(child);
                 std::string op_str(child_type);
+                // Type arguments, pointers/references and Kotlin expression-body
+                // `=` are representation syntax, not comparisons/arithmetic/assignment.
+                bool type_syntax = normalized_type == NodeType::TYPE_REF ||
+                    normalized_type == NodeType::GENERIC_TYPE || normalized_type == NodeType::TYPE_PARAM ||
+                    normalized_type == NodeType::ARRAY_TYPE || normalized_type == NodeType::NULLABLE_TYPE ||
+                    normalized_type == NodeType::FUNC_TYPE;
+                if (type_syntax || (implicit_return && op_str == "=")) continue;
 
                 // Arithmetic operators
                 if (op_str == "+" || op_str == "-" || op_str == "*" ||
@@ -1658,6 +1303,47 @@ public:
             }
         }
 
+        if (lang == Language::KOTLIN && std::string(type_str) == "property_declaration") {
+            // Kotlin infers primitive local types from literal initializers. Add
+            // the same type term present in an explicit C++ declaration; do not
+            // infer calls, references, expressions or user-defined types.
+            bool declared_type = false;
+            std::string inferred;
+            for (uint32_t i = 0; i < ts_node_named_child_count(node); ++i) {
+                TSNode child = ts_node_named_child(node, i);
+                std::string type = ts_node_type(child);
+                if (type == "variable_declaration") {
+                    for (uint32_t j = 0; j < ts_node_named_child_count(child); ++j) {
+                        std::string member = ts_node_type(ts_node_named_child(child, j));
+                        declared_type |= member == "user_type" || member == "nullable_type";
+                    }
+                }
+                std::string literal = source.substr(ts_node_start_byte(child), ts_node_end_byte(child) - ts_node_start_byte(child));
+                if (type == "integer_literal" || type == "long_literal" || type == "hex_literal" || type == "bin_literal" || type == "unsigned_literal") {
+                    bool large = literal.ends_with("L") || literal.ends_with("l");
+                    bool unsigned_literal = literal.find('u') != std::string::npos || literal.find('U') != std::string::npos;
+                    std::string digits = literal;
+                    digits.erase(std::remove(digits.begin(), digits.end(), '_'), digits.end());
+                    while (!digits.empty() && (digits.back() == 'l' || digits.back() == 'L' || digits.back() == 'u' || digits.back() == 'U')) digits.pop_back();
+                    int base = 10; size_t offset = 0;
+                    if (digits.starts_with("0x") || digits.starts_with("0X")) { base = 16; offset = 2; }
+                    else if (digits.starts_with("0b") || digits.starts_with("0B")) { base = 2; offset = 2; }
+                    uint64_t value = 0;
+                    auto parsed = std::from_chars(digits.data() + offset, digits.data() + digits.size(), value, base);
+                    if (parsed.ec == std::errc{} && parsed.ptr == digits.data() + digits.size()) {
+                        large |= value > (unsigned_literal ? std::numeric_limits<uint32_t>::max() : static_cast<uint64_t>(std::numeric_limits<int32_t>::max()));
+                        inferred = unsigned_literal ? (large ? "ULong" : "UInt") : (large ? "Long" : "Int");
+                    }
+                } else if (type == "real_literal") inferred = literal.ends_with("f") || literal.ends_with("F") ? "Float" : "Double";
+                else if (type == "boolean_literal") inferred = "Boolean";
+            }
+            if (!declared_type && !inferred.empty()) {
+                auto inferred_type = std::make_shared<Tree>(static_cast<int>(NodeType::TYPE_REF), inferred);
+                inferred_type->parent = tree_node.get();
+                tree_node->children.insert(tree_node->children.begin(), inferred_type);
+                tree_node->cached_size = tree_node->cached_depth = -1;
+            }
+        }
         return tree_node;
     }
 
@@ -1665,8 +1351,11 @@ public:
         return (lang == Language::RUST && type_s == "function_item") ||
             (lang == Language::KOTLIN && type_s == "function_declaration") ||
             (lang == Language::CPP &&
-             (type_s == "function_definition" || type_s == "function_declarator")) ||
-            (lang == Language::PYTHON && type_s == "function_definition");
+             type_s == "function_definition") ||
+            (lang == Language::PYTHON && type_s == "function_definition") ||
+            (lang == Language::TYPESCRIPT &&
+             (type_s == "function_declaration" || type_s == "method_definition" ||
+              type_s == "function_expression" || type_s == "arrow_function"));
     }
 
     /**
@@ -1777,6 +1466,38 @@ public:
     }
 
     std::string extract_function_name(TSNode node, Language lang, const std::string& source) const {
+        if (lang == Language::CPP) {
+            TSNode declarator = ts_node_child_by_field_name(node, "declarator", 10);
+            while (!ts_node_is_null(declarator)) {
+                std::string type = ts_node_type(declarator);
+                if (type == "identifier" || type == "field_identifier" ||
+                    type == "type_identifier" || type == "operator_name" ||
+                    type == "destructor_name") {
+                    return source.substr(ts_node_start_byte(declarator),
+                                         ts_node_end_byte(declarator) - ts_node_start_byte(declarator));
+                }
+                if (type == "operator_cast") {
+                    TSNode conversion_type = ts_node_child_by_field_name(declarator, "type", 4);
+                    if (!ts_node_is_null(conversion_type))
+                        return "operator " + source.substr(ts_node_start_byte(conversion_type),
+                            ts_node_end_byte(conversion_type) - ts_node_start_byte(conversion_type));
+                }
+                if (type == "qualified_identifier") {
+                    declarator = ts_node_child_by_field_name(declarator, "name", 4);
+                } else {
+                    TSNode next = ts_node_child_by_field_name(declarator, "declarator", 10);
+                    if (ts_node_is_null(next) && type == "operator_cast") {
+                        // Conversion operators have a type instead of an ordinary name.
+                        TSNode conversion_type = ts_node_child_by_field_name(declarator, "type", 4);
+                        if (!ts_node_is_null(conversion_type))
+                            return "operator " + source.substr(ts_node_start_byte(conversion_type),
+                                ts_node_end_byte(conversion_type) - ts_node_start_byte(conversion_type));
+                    }
+                    declarator = next;
+                }
+            }
+            return "<anonymous>";
+        }
         uint32_t child_count = ts_node_child_count(node);
         for (uint32_t i = 0; i < child_count; ++i) {
             TSNode child = ts_node_child(node, i);
@@ -1787,11 +1508,37 @@ public:
                 (lang == Language::KOTLIN && ct == "simple_identifier") ||
                 (lang == Language::CPP &&
                     (ct == "identifier" || ct == "field_identifier")) ||
-                (lang == Language::PYTHON && ct == "identifier")) {
+                (lang == Language::PYTHON && ct == "identifier") ||
+                (lang == Language::TYPESCRIPT &&
+                    (ct == "identifier" || ct == "property_identifier"))) {
                 uint32_t start = ts_node_start_byte(child);
                 uint32_t end = ts_node_end_byte(child);
                 if (end > start && end <= source.length()) {
-                    return source.substr(start, end - start);
+                    std::string name = source.substr(start, end - start);
+                    // Canonicalize TypeScript constructor to Python __init__ for parity
+                    if (lang == Language::TYPESCRIPT && name == "constructor") {
+                        return "__init__";
+                    }
+                    return name;
+                }
+            }
+        }
+
+        // Special-case: TypeScript arrow functions and function expressions
+        // often get their names from the parent (e.g., const name = () => { ... })
+        if (lang == Language::TYPESCRIPT) {
+            TSNode parent = ts_node_parent(node);
+            if (!ts_node_is_null(parent)) {
+                std::string pt(ts_node_type(parent));
+                if (pt == "variable_declarator" || pt == "property_definition") {
+                    TSNode name_node = ts_node_child_by_field_name(parent, "name", 4);
+                    if (!ts_node_is_null(name_node)) {
+                        uint32_t start = ts_node_start_byte(name_node);
+                        uint32_t end = ts_node_end_byte(name_node);
+                        if (end > start && end <= source.length()) {
+                            return source.substr(start, end - start);
+                        }
+                    }
                 }
             }
         }
@@ -1824,6 +1571,7 @@ public:
             "expression_body",
             "body",
             "block",
+            "statement_block",
             "compound_statement"
         };
 
@@ -1853,11 +1601,117 @@ public:
         // Returning the declaration node here would incorrectly count the whole declaration as a "function body"
         // and would heavily penalize faithful Rust→Kotlin ports where Rust trait method signatures don't count as
         // function bodies.
-        if (lang == Language::KOTLIN) {
+        if (lang == Language::KOTLIN || lang == Language::CPP) {
             return TSNode{};
         }
 
         return function_node;
+    }
+
+    bool is_parameter_container_node(const std::string& type_s, Language lang) const {
+        if (lang == Language::RUST) {
+            return type_s == "parameters";
+        }
+        if (lang == Language::KOTLIN) {
+            return type_s == "function_value_parameters";
+        }
+        if (lang == Language::CPP) {
+            return type_s == "parameter_list";
+        }
+        if (lang == Language::PYTHON) {
+            return type_s == "parameters";
+        }
+        if (lang == Language::TYPESCRIPT) {
+            return type_s == "formal_parameters" || type_s == "parameters";
+        }
+        return false;
+    }
+
+    bool node_contains_byte_range(TSNode node, uint32_t start, uint32_t end) const {
+        if (ts_node_is_null(node)) return false;
+        return ts_node_start_byte(node) <= start && ts_node_end_byte(node) >= end;
+    }
+
+    void collect_function_parameter_nodes(
+            TSNode node,
+            TSNode body_node,
+            Language lang,
+            std::vector<TSNode>& out) const {
+        if (ts_node_is_null(node)) return;
+
+        if (!ts_node_is_null(body_node) &&
+            node_contains_byte_range(node, ts_node_start_byte(body_node), ts_node_end_byte(body_node)) &&
+            !ts_node_eq(node, body_node)) {
+            // Keep walking until we reach the body itself, then stop before
+            // collecting nested/local function parameters from the body region.
+        } else if (!ts_node_is_null(body_node) && ts_node_eq(node, body_node)) {
+            return;
+        }
+
+        std::string type_s(ts_node_type(node));
+        if (is_parameter_container_node(type_s, lang)) {
+            out.push_back(node);
+            return;
+        }
+
+        uint32_t child_count = ts_node_child_count(node);
+        for (uint32_t i = 0; i < child_count; ++i) {
+            TSNode child = ts_node_child(node, i);
+            collect_function_parameter_nodes(child, body_node, lang, out);
+        }
+    }
+
+    std::vector<TSNode> extract_function_parameter_nodes(
+            TSNode function_node,
+            TSNode body_node,
+            Language lang) const {
+        std::vector<TSNode> params;
+
+        TSNode by_field = ts_node_child_by_field_name(function_node, "parameters", 10);
+        if (!ts_node_is_null(by_field)) {
+            params.push_back(by_field);
+            return params;
+        }
+
+        collect_function_parameter_nodes(function_node, body_node, lang, params);
+        return params;
+    }
+
+    TreePtr make_function_comparison_tree(
+            TSNode function_node,
+            TSNode body_node,
+            const std::string& source,
+            Language lang) {
+        auto root = std::make_shared<Tree>(
+            static_cast<int>(NodeType::FUNCTION),
+            "function_parameters_and_body");
+
+        auto params = extract_function_parameter_nodes(function_node, body_node, lang);
+        for (const auto& param_node : params) {
+            root->add_child(convert_node(param_node, source, lang));
+        }
+
+        if (!ts_node_is_null(body_node)) {
+            root->add_child(convert_node(body_node, source, lang));
+        }
+
+        return root;
+    }
+
+    IdentifierStats extract_function_comparison_identifiers(
+            TSNode function_node,
+            TSNode body_node,
+            const std::string& source,
+            Language lang) {
+        IdentifierStats ids;
+        auto params = extract_function_parameter_nodes(function_node, body_node, lang);
+        for (const auto& param_node : params) {
+            extract_identifiers_recursive(param_node, source, lang, ids);
+        }
+        if (!ts_node_is_null(body_node)) {
+            extract_identifiers_recursive(body_node, source, lang, ids);
+        }
+        return ids;
     }
 
     bool has_stub_markers_in_node(TSNode node, const std::string& source, Language lang) const {
@@ -1912,16 +1766,73 @@ public:
                         }
                     }
                 }
-            } else if (lang == Language::KOTLIN) {
+            } else if (lang == Language::KOTLIN || lang == Language::TYPESCRIPT || lang == Language::PYTHON) {
                 if (current_type == "simple_identifier" ||
                     current_type == "type_identifier" ||
-                    current_type == "identifier") {
+                    current_type == "identifier" ||
+                    current_type == "field_identifier" ||
+                    current_type == "property_identifier") {
                     uint32_t start = ts_node_start_byte(current);
                     uint32_t end = ts_node_end_byte(current);
                     if (end > start && end <= source.length()) {
                         std::string text = source.substr(start, end - start);
-                        if (text == "TODO" || text == "NotImplementedError") {
+                        if (text_has_stub_markers(text) ||
+                            (lang == Language::TYPESCRIPT && text == "undefined")) {
                             return true;
+                        }
+                    }
+                }
+            }
+
+            // Check string literals for Kotlin, TS, Python, and Rust
+            if (lang == Language::KOTLIN || lang == Language::TYPESCRIPT ||
+                lang == Language::PYTHON || lang == Language::RUST) {
+                if (current_type == "string_literal" ||
+                    current_type == "line_string_literal" ||
+                    current_type == "multi_line_string_literal" ||
+                    current_type == "string_content" ||
+                    current_type == "string" ||
+                    current_type == "template_string" ||
+                    current_type == "raw_string_literal" ||
+                    current_type == "string_fragment") {
+                    uint32_t start = ts_node_start_byte(current);
+                    uint32_t end = ts_node_end_byte(current);
+                    if (end > start && end <= source.length()) {
+                        std::string text = source.substr(start, end - start);
+                        if (text_has_stub_markers(text)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            if (lang == Language::KOTLIN || lang == Language::TYPESCRIPT) {
+                // TypeScript: throw new Error("unimplemented")
+                if (lang == Language::TYPESCRIPT && current_type == "throw_statement") {
+                    uint32_t start = ts_node_start_byte(current);
+                    uint32_t end = ts_node_end_byte(current);
+                    if (end > start && end <= source.length()) {
+                        std::string text = source.substr(start, end - start);
+                        if (text.find("not implemented") != std::string::npos ||
+                            text.find("unimplemented") != std::string::npos ||
+                            text.find("TODO") != std::string::npos) {
+                            return true;
+                        }
+                    }
+                }
+
+                // TypeScript: console.warn("TODO"...)
+                if (lang == Language::TYPESCRIPT && current_type == "call_expression") {
+                    uint32_t start = ts_node_start_byte(current);
+                    uint32_t end = ts_node_end_byte(current);
+                    if (end > start && end <= source.length()) {
+                        std::string text = source.substr(start, end - start);
+                        if (text.find("console.warn") != std::string::npos ||
+                            text.find("console.error") != std::string::npos) {
+                            if (text.find("TODO") != std::string::npos ||
+                                text.find("unimplemented") != std::string::npos) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -1966,21 +1877,85 @@ public:
         std::string type_s(type_str);
         if (is_function_node(type_s, lang)) {
             TSNode body_node = extract_function_body_node(node, lang);
-            if (lang == Language::KOTLIN && ts_node_is_null(body_node)) {
+            if ((lang == Language::KOTLIN || lang == Language::CPP) && ts_node_is_null(body_node)) {
                 // Skip Kotlin declarations without bodies (interface/abstract methods).
                 // Rust trait method signatures similarly do not contribute function bodies for similarity scoring.
                 return;
             }
             std::string func_name = extract_function_name(node, lang, source);
 
-            IdentifierStats ids;
-            extract_identifiers_recursive(body_node, source, lang, ids);
-
             FunctionInfo info;
             info.name = func_name;
-            info.body_tree = convert_node(body_node, source, lang);
-            info.identifiers = ids;
+            info.qualified_name = func_name;
+            if (lang == Language::CPP) {
+                TSNode d = ts_node_child_by_field_name(node, "declarator", 10);
+                while (!ts_node_is_null(d) && std::string(ts_node_type(d)) != "function_declarator")
+                    d = ts_node_child_by_field_name(d, "declarator", 10);
+                TSNode name_node = ts_node_is_null(d) ? TSNode{} : ts_node_child_by_field_name(d, "declarator", 10);
+                if (!ts_node_is_null(name_node)) info.qualified_name = source.substr(
+                    ts_node_start_byte(name_node), ts_node_end_byte(name_node) - ts_node_start_byte(name_node));
+                TSNode parameters = ts_node_is_null(d) ? TSNode{} : ts_node_child_by_field_name(d, "parameters", 10);
+                if (!ts_node_is_null(parameters)) info.signature = source.substr(
+                    ts_node_start_byte(parameters), ts_node_end_byte(parameters) - ts_node_start_byte(parameters));
+            } else if (lang == Language::KOTLIN) {
+                for (uint32_t i = 0; i < ts_node_named_child_count(node); ++i) {
+                    TSNode child = ts_node_named_child(node, i);
+                    if (std::string(ts_node_type(child)) == "function_value_parameters")
+                        info.signature = source.substr(ts_node_start_byte(child), ts_node_end_byte(child) - ts_node_start_byte(child));
+                }
+            }
+            if (lang == Language::KOTLIN ||
+                (lang == Language::CPP && info.qualified_name.find("::") == std::string::npos)) {
+                std::vector<std::string> owners;
+                for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
+                    std::string type = ts_node_type(parent);
+                    TSNode name{};
+                    if (lang == Language::CPP && (type == "class_specifier" || type == "struct_specifier" || type == "namespace_definition"))
+                        name = ts_node_child_by_field_name(parent, "name", 4);
+                    if (lang == Language::KOTLIN && (type == "class_declaration" || type == "object_declaration")) {
+                        for (uint32_t i = 0; i < ts_node_named_child_count(parent); ++i) {
+                            TSNode child = ts_node_named_child(parent, i);
+                            if (std::string(ts_node_type(child)) == "type_identifier") { name = child; break; }
+                        }
+                    }
+                    if (!ts_node_is_null(name)) owners.push_back(source.substr(
+                        ts_node_start_byte(name), ts_node_end_byte(name) - ts_node_start_byte(name)));
+                }
+                std::reverse(owners.begin(), owners.end());
+                std::string prefix;
+                for (const auto& owner : owners) prefix += owner + "::";
+                if (lang == Language::KOTLIN && owners.empty()) {
+                    // Extension receiver is a user_type before the callable name.
+                    for (uint32_t i = 0; i < ts_node_named_child_count(node); ++i) {
+                        TSNode child = ts_node_named_child(node, i);
+                        if (std::string(ts_node_type(child)) == "simple_identifier") break;
+                        if (std::string(ts_node_type(child)) == "user_type") {
+                            prefix = source.substr(ts_node_start_byte(child), ts_node_end_byte(child) - ts_node_start_byte(child)) + "::";
+                            break;
+                        }
+                    }
+                }
+                info.qualified_name = prefix + func_name;
+            }
+            info.body_tree = make_function_comparison_tree(node, body_node, source, lang);
+            info.identifiers = extract_function_comparison_identifiers(node, body_node, source, lang);
             info.has_stub_markers = has_stub_markers_in_node(body_node, source, lang);
+            TSPoint start = ts_node_start_point(node);
+            TSPoint end = ts_node_end_point(node);
+            info.start_line = static_cast<int>(start.row) + 1;
+            info.end_line = static_cast<int>(end.row) + 1;
+            info.line_count = info.end_line >= info.start_line
+                ? (info.end_line - info.start_line + 1)
+                : 0;
+            if (!ts_node_is_null(body_node)) {
+                TSPoint body_start = ts_node_start_point(body_node);
+                TSPoint body_end = ts_node_end_point(body_node);
+                int body_start_line = static_cast<int>(body_start.row) + 1;
+                int body_end_line = static_cast<int>(body_end.row) + 1;
+                info.body_line_count = body_end_line >= body_start_line
+                    ? (body_end_line - body_start_line + 1)
+                    : 0;
+            }
 
             // Tag Rust test functions: #[test] attribute or inside #[cfg(test)] mod
             if (lang == Language::RUST) {
