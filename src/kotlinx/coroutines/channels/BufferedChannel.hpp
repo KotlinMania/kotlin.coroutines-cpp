@@ -2115,8 +2115,14 @@ private:
         receive_impl_on_no_waiter(
             segment, index, r,
             cont.get(),
-            [cont](E element) {
-                cont->resume(std::move(element), nullptr);
+            [this, cont](E element) {
+                std::function<void(std::exception_ptr)> on_cancellation = nullptr;
+                if (on_undelivered_element_) {
+                    on_cancellation = [this, element](std::exception_ptr) {
+                        on_undelivered_element_(element);
+                    };
+                }
+                cont->resume(std::move(element), on_cancellation);
             },
             [this, cont]() {
                 on_closed_receive_on_no_waiter_suspend(cont.get());
@@ -2166,8 +2172,14 @@ private:
         receive_impl_on_no_waiter(
             segment, index, r,
             waiter.get(),
-            [cont](E element) {
-                cont->resume(ChannelResult<E>::success(std::move(element)), nullptr);
+            [this, cont](E element) {
+                std::function<void(std::exception_ptr)> on_cancellation = nullptr;
+                if (on_undelivered_element_) {
+                    on_cancellation = [this, element](std::exception_ptr) {
+                        on_undelivered_element_(element);
+                    };
+                }
+                cont->resume(ChannelResult<E>::success(std::move(element)), on_cancellation);
             },
             [this, cont]() {
                 on_closed_receive_catching_on_no_waiter_suspend(cont.get());
@@ -3560,6 +3572,10 @@ public:
                 cont->complete_resume(token);
                 return true;
             }
+            if (receive_result_ != nullptr && receive_result_ != static_cast<void*>(&CHANNEL_CLOSED())) {
+                delete static_cast<E*>(receive_result_);
+                receive_result_ = nullptr;
+            }
             return false;
         }
 
@@ -3634,7 +3650,15 @@ public:
                     this->receive_result_ = new E(std::move(element));
                     this->continuation_ = nullptr;
                     this->continuation_sp_ = nullptr;
-                    cont->resume(true, nullptr);
+                    std::function<void(std::exception_ptr)> on_cancellation = nullptr;
+                    if (channel_->on_undelivered_element()) {
+                        auto elem_copy = *static_cast<E*>(this->receive_result_);
+                        auto channel = channel_;
+                        on_cancellation = [channel, elem_copy](std::exception_ptr) {
+                            channel->on_undelivered_element()(elem_copy);
+                        };
+                    }
+                    cont->resume(true, on_cancellation);
                 },
                 [this]() {
                     this->on_closed_has_next_no_waiter_suspend();

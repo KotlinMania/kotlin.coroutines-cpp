@@ -144,17 +144,26 @@ using internal::unsafe_flow;
 template<typename T>
 inline void* AbstractFlow<T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {
     auto collect_context = continuation ? continuation->get_context() : EmptyCoroutineContext::instance();
-    internal::SafeCollector<T> safe_collector(collector, collect_context);
+    auto safe_collector = std::make_shared<internal::SafeCollector<T>>(collector, collect_context);
+
+    if (continuation && continuation->get_context()) {
+        auto job = std::dynamic_pointer_cast<Job>(continuation->get_context()->get(Job::type_key));
+        if (job) {
+            job->invoke_on_completion([safe_collector](std::exception_ptr) {
+                safe_collector->release_intercepted();
+            });
+        }
+    }
 
     void* result = nullptr;
     try {
-        result = collect_safely(&safe_collector, continuation);
+        result = collect_safely(safe_collector.get(), continuation);
     } catch (...) {
-        safe_collector.release_intercepted();
+        safe_collector->release_intercepted();
         throw;
     }
     if (!intrinsics::is_coroutine_suspended(result)) {
-        safe_collector.release_intercepted();
+        safe_collector->release_intercepted();
     }
     return result;
 }

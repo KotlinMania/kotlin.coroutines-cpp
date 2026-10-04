@@ -154,9 +154,8 @@ std::shared_ptr<Flow<SharingCommand>> StartedWhileSubscribed::command(
             }
             return sink->emit(SharingCommand::STOP_AND_RESET_REPLAY_CACHE, cont);
         });
-    auto buffered_staged = buffer<SharingCommand>(staged, channels::CHANNEL_BUFFERED);
     auto dropped = drop_while<SharingCommand>(
-        buffered_staged,
+        staged,
         [](SharingCommand value) { return value != SharingCommand::START; });
     return distinct_until_changed<SharingCommand>(dropped);
 }

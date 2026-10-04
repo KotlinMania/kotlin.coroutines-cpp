@@ -47,7 +47,7 @@ SafeCollectorBase::SafeCollectorBase(std::shared_ptr<CoroutineContext> collectCo
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:22-90
 void SafeCollectorBase::check_context(const CoroutineContext& currentContext) {
-    const int kIntMinValue = std::numeric_limits<int>::min() / 2;
+    const int INT_MIN_VALUE = std::numeric_limits<int>::min() / 2;
 
     int result = currentContext.fold<int>(0, [&](int count, std::shared_ptr<CoroutineContext::Element> element) -> int {
         if (!element) return count;
@@ -56,7 +56,7 @@ void SafeCollectorBase::check_context(const CoroutineContext& currentContext) {
 
         if (key != Job::type_key) {
             if (element.get() != collect_element.get()) {
-                return kIntMinValue;
+                return INT_MIN_VALUE;
             }
             return count + 1;
         }

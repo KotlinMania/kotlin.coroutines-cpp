@@ -214,8 +214,14 @@ inline void* ChannelFlow<T>::collect(FlowCollector<T>* collector, Continuation<v
     // coroutineScope { collector.emitAll(produceImpl(this)) }
     //
     auto ctx = continuation ? continuation->get_context() : EmptyCoroutineContext::instance();
-    kotlinx::coroutines::internal::ContextScope scope(ctx);
-    auto channel = produce_impl(&scope);
+    auto scope = std::make_shared<kotlinx::coroutines::internal::ContextScope>(ctx);
+    auto channel = produce_impl(scope.get());
+    if (continuation && continuation->get_context()) {
+        auto job = std::dynamic_pointer_cast<Job>(continuation->get_context()->get(Job::type_key));
+        if (job) {
+            job->invoke_on_completion([scope, channel](std::exception_ptr) {});
+        }
+    }
     return kotlinx::coroutines::flow::emit_all(collector, channel.get(), continuation);
 }
 

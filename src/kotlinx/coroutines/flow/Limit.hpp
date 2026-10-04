@@ -10,6 +10,8 @@
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
 #include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
+#include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
+#include "kotlinx/coroutines/Job.hpp"
 #include <functional>
 #include <stdexcept>
 #include <memory>
@@ -35,7 +37,7 @@ template<typename T>
 std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
     if (count < 0) throw std::invalid_argument("Drop count should be non-negative");
 
-    return flow<T>([upstream, count](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+    return internal::unsafe_flow<T>([upstream, count](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
         class DropCollector : public FlowCollector<T> {
         public:
             FlowCollector<T>* collector_;
@@ -51,8 +53,14 @@ std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
                 }
             }
         };
-        DropCollector drop_collector(collector, count);
-        return upstream->collect(&drop_collector, cont);
+        auto drop_collector = std::make_shared<DropCollector>(collector, count);
+        if (cont && cont->get_context()) {
+            auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
+            if (job) {
+                job->invoke_on_completion([drop_collector](std::exception_ptr) {});
+            }
+        }
+        return upstream->collect(drop_collector.get(), cont);
     });
 }
 
@@ -69,7 +77,7 @@ std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
  */
 template<typename T, typename Predicate>
 std::shared_ptr<Flow<T>> drop_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
-    return flow<T>([upstream, predicate](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+    return internal::unsafe_flow<T>([upstream, predicate](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
         class DropWhileCollector : public FlowCollector<T> {
         public:
             FlowCollector<T>* collector_;
@@ -86,8 +94,14 @@ std::shared_ptr<Flow<T>> drop_while(std::shared_ptr<Flow<T>> upstream, Predicate
                 return nullptr;
             }
         };
-        DropWhileCollector dw_collector(collector, predicate);
-        return upstream->collect(&dw_collector, cont);
+        auto dw_collector = std::make_shared<DropWhileCollector>(collector, predicate);
+        if (cont && cont->get_context()) {
+            auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
+            if (job) {
+                job->invoke_on_completion([dw_collector](std::exception_ptr) {});
+            }
+        }
+        return upstream->collect(dw_collector.get(), cont);
     });
 }
 
@@ -107,7 +121,7 @@ template<typename T>
 std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
     if (count <= 0) throw std::invalid_argument("Requested element count should be positive");
 
-    return flow<T>([upstream, count](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+    return internal::unsafe_flow<T>([upstream, count](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
         class TakeCollector : public FlowCollector<T> {
             FlowCollector<T>* down_;
             int limit_;
@@ -125,11 +139,17 @@ std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
             }
         };
 
-        TakeCollector tc(collector, count);
+        auto tc = std::make_shared<TakeCollector>(collector, count);
+        if (cont && cont->get_context()) {
+            auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
+            if (job) {
+                job->invoke_on_completion([tc](std::exception_ptr) {});
+            }
+        }
         try {
-            return upstream->collect(&tc, cont);
+            return upstream->collect(tc.get(), cont);
         } catch (internal::AbortFlowException& e) {
-            e.check_ownership(&tc);
+            e.check_ownership(tc.get());
             return nullptr;
         }
     });
@@ -157,11 +177,17 @@ void* collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Cont
         }
     };
 
-    PredicateCollector collector(predicate);
+    auto collector = std::make_shared<PredicateCollector>(predicate);
+    if (cont && cont->get_context()) {
+        auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
+        if (job) {
+            job->invoke_on_completion([collector](std::exception_ptr) {});
+        }
+    }
     try {
-        return upstream->collect(&collector, cont);
+        return upstream->collect(collector.get(), cont);
     } catch (internal::AbortFlowException& e) {
-        e.check_ownership(&collector);
+        e.check_ownership(collector.get());
         return nullptr;
     }
 }
@@ -178,7 +204,7 @@ void* collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Cont
  */
 template<typename T, typename Predicate>
 std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
-    return flow<T>([upstream, predicate](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+    return internal::unsafe_flow<T>([upstream, predicate](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
         class TakeWhileCollector : public FlowCollector<T> {
             FlowCollector<T>* down_;
             Predicate pred_;
@@ -193,11 +219,17 @@ std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate
             }
         };
 
-        TakeWhileCollector twc(collector, predicate);
+        auto twc = std::make_shared<TakeWhileCollector>(collector, predicate);
+        if (cont && cont->get_context()) {
+            auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
+            if (job) {
+                job->invoke_on_completion([twc](std::exception_ptr) {});
+            }
+        }
         try {
-            return upstream->collect(&twc, cont);
+            return upstream->collect(twc.get(), cont);
         } catch (internal::AbortFlowException& e) {
-            e.check_ownership(&twc);
+            e.check_ownership(twc.get());
             return nullptr;
         }
     });
@@ -235,11 +267,17 @@ std::shared_ptr<Flow<R>> transform_while(std::shared_ptr<Flow<T>> upstream, Tran
             }
         };
 
-        TransformWhileCollector twc(collector, transform_fn);
+        auto twc = std::make_shared<TransformWhileCollector>(collector, transform_fn);
+        if (cont && cont->get_context()) {
+            auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
+            if (job) {
+                job->invoke_on_completion([twc](std::exception_ptr) {});
+            }
+        }
         try {
-            return upstream->collect(&twc, cont);
+            return upstream->collect(twc.get(), cont);
         } catch (internal::AbortFlowException& e) {
-            e.check_ownership(&twc);
+            e.check_ownership(twc.get());
             return nullptr;
         }
     });

@@ -312,7 +312,8 @@ public:
      * Returns true if this is a scoped coroutine (affects exception handling and context preservation).
      * Transliterated from: internal open val isScopedCoroutine: Boolean get() = false
      */
-    virtual bool get_is_scoped_coroutine() const { return false; }
+    virtual bool is_scoped_coroutine() const { return false; }
+    bool get_is_scoped_coroutine() const { return is_scoped_coroutine(); }
 
 protected:
     /**

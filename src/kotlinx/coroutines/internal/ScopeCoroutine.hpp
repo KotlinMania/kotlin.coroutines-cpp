@@ -53,7 +53,8 @@ public:
     ScopeCoroutine(std::shared_ptr<CoroutineContext> context, std::shared_ptr<Continuation<T>> uCont)
         : AbstractCoroutine<T>(context, true, true), u_cont(uCont) {}
 
-    bool get_is_scoped_coroutine() const override { return true; }
+    bool is_scoped_coroutine() const override { return true; }
+    bool get_is_scoped_coroutine() const { return true; }
 
     void after_completion(JobState* state) override {
         // Resume in a cancellable way by default when resuming from another context

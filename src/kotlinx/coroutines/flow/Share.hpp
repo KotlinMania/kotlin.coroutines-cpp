@@ -337,12 +337,14 @@ inline std::shared_ptr<Job> launch_sharing(
                 }
             }
             try {
-                command_flow->collect(collector.get(), sharing_cont.get());
+                void* res = command_flow->collect(collector.get(), sharing_cont.get());
+                if (!intrinsics::is_coroutine_suspended(res)) {
+                    collector->cancel_upstream();
+                }
             } catch (...) {
                 collector->cancel_upstream();
                 throw;
             }
-            collector->cancel_upstream();
         }
     });
 }
