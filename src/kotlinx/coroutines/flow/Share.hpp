@@ -22,6 +22,9 @@
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/flow/Distinct.hpp"
+#include "kotlinx/coroutines/flow/Collect.hpp"
+#include "kotlinx/coroutines/flow/Reduce.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
 #include "kotlinx/coroutines/flow/internal/SubscribedFlowCollector.hpp"
 
@@ -178,6 +181,82 @@ private:
     std::shared_ptr<Job> job_;
 };
 
+namespace detail {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Share.kt:189-237
+// NOTE(port): This generic frame holds the live values of Kotlin's launch lambda.
+template <typename T>
+class SharingFrame final : public ContinuationImpl {
+public:
+    SharingFrame(std::shared_ptr<Flow<T>> upstream,
+                 std::shared_ptr<MutableSharedFlow<T>> shared,
+                 SharingStarted* started, std::optional<T> initial_value,
+                 std::shared_ptr<Continuation<void*>> completion)
+        : ContinuationImpl(std::move(completion)), upstream_(std::move(upstream)),
+          shared_(std::move(shared)), started_(started), initial_value_(std::move(initial_value)) {}
+
+    ~SharingFrame() override { delete static_cast<int*>(first_subscriber_); }
+
+    void retain() { self_ref_ = shared_from_this(); }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Share.kt:189-237
+    void* invoke_suspend(Result<void*> result) override {
+        try {
+            coroutine_begin(this)
+            if (started_ == SharingStarted::eagerly()) {
+                coroutine_yield(this, upstream_->collect(shared_.get(), this));
+            } else if (started_ == SharingStarted::lazily()) {
+                coroutine_yield_value(this, result,
+                    first<int>(shared_->subscription_count(),
+                               [](const int& count) { return count > 0; }, this),
+                    first_subscriber_);
+                delete static_cast<int*>(first_subscriber_);
+                first_subscriber_ = nullptr;
+                coroutine_yield(this, upstream_->collect(shared_.get(), this));
+            } else {
+                commands_ = distinct_until_changed<SharingCommand>(
+                    started_->command(shared_->subscription_count()));
+                coroutine_yield(this, collect_latest<SharingCommand>(commands_,
+                    [upstream = upstream_, shared = shared_, initial_value = initial_value_](
+                        SharingCommand command, Continuation<void*>* cont) -> void* {
+                        switch (command) {
+                            case SharingCommand::START:
+                                return upstream->collect(shared.get(), cont);
+                            case SharingCommand::STOP:
+                                return nullptr;
+                            case SharingCommand::STOP_AND_RESET_REPLAY_CACHE:
+                                if (initial_value.has_value()) {
+                                    shared->try_emit(*initial_value);
+                                } else {
+                                    shared->reset_replay_cache();
+                                }
+                                return nullptr;
+                        }
+                        throw std::logic_error("Unknown sharing command");
+                    }, this));
+            }
+            self_ref_.reset();
+            coroutine_end(this)
+        } catch (...) {
+            self_ref_.reset();
+            throw;
+        }
+    }
+
+private:
+    void* _label = nullptr;
+    std::shared_ptr<Flow<T>> upstream_;
+    std::shared_ptr<MutableSharedFlow<T>> shared_;
+    SharingStarted* started_;
+    std::optional<T> initial_value_;
+    void* first_subscriber_ = nullptr;
+    std::shared_ptr<Flow<SharingCommand>> commands_;
+    std::shared_ptr<BaseContinuationImpl> self_ref_;
+};
+
+} // namespace detail
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Share.kt:189-237
 template <typename T>
 inline std::shared_ptr<Job> launch_sharing(
     CoroutineScope* scope,
@@ -186,167 +265,17 @@ inline std::shared_ptr<Job> launch_sharing(
     std::shared_ptr<MutableSharedFlow<T>> shared,
     SharingStarted* started,
     std::optional<T> initial_value) {
-    const bool is_eager = (started == SharingStarted::eagerly() ||
-                           dynamic_cast<StartedEagerly*>(started) != nullptr);
-
-    auto sharing_context = context ? context : EmptyCoroutineContext::instance();
-    auto combined = scope->get_coroutine_context()->operator+(sharing_context);
-    if (!combined->get(ContinuationInterceptor::type_key)) {
-        sharing_context = sharing_context->operator+(std::shared_ptr<CoroutineContext>(
-            &Dispatchers::get_default(), [](CoroutineContext*) {}));
-    }
-
-    return launch(scope, sharing_context, CoroutineStart::DEFAULT, [upstream, shared, started, initial_value, is_eager](CoroutineScope* sharing_scope) {
-        if (is_eager) {
-            auto cont = std::make_shared<FunctionalContinuation<void*>>(
-                sharing_scope ? sharing_scope->get_coroutine_context() : nullptr,
-                [](Result<void*>) {}
-            );
-            if (sharing_scope && sharing_scope->get_coroutine_context()) {
-                auto job = std::dynamic_pointer_cast<Job>(sharing_scope->get_coroutine_context()->get(Job::type_key));
-                if (job) {
-                    job->invoke_on_completion([cont](std::exception_ptr) {});
-                }
-            }
-            upstream->collect(shared.get(), cont.get());
-        } else if (started == SharingStarted::lazily() ||
-                   dynamic_cast<StartedLazily*>(started) != nullptr) {
-            if (shared->subscription_count()->value() <= 0) {
-                try {
-                    class FirstSubscriberCollector : public FlowCollector<int> {
-                    public:
-                        void* emit(int count, Continuation<void*>*) override {
-                            if (count > 0) {
-                                throw internal::AbortFlowException(this);
-                            }
-                            return nullptr;
-                        }
-                    };
-                    FirstSubscriberCollector sub_collector;
-                    shared->subscription_count()->collect(&sub_collector, nullptr);
-                } catch (const internal::AbortFlowException&) {
-                    // First subscriber arrived
-                }
-            }
-            auto cont = std::make_shared<FunctionalContinuation<void*>>(
-                sharing_scope ? sharing_scope->get_coroutine_context() : nullptr,
-                [](Result<void*>) {}
-            );
-            if (sharing_scope && sharing_scope->get_coroutine_context()) {
-                auto job = std::dynamic_pointer_cast<Job>(sharing_scope->get_coroutine_context()->get(Job::type_key));
-                if (job) {
-                    job->invoke_on_completion([cont](std::exception_ptr) {});
-                }
-            }
-            upstream->collect(shared.get(), cont.get());
-        } else {
-            auto command_flow = distinct_until_changed<SharingCommand>(
-                started->command(shared->subscription_count()));
-
-            class CommandCollector : public FlowCollector<SharingCommand> {
-            private:
-                CoroutineScope* scope_;
-                std::shared_ptr<Flow<T>> upstream_;
-                std::shared_ptr<MutableSharedFlow<T>> shared_;
-                std::optional<T> initial_value_;
-                std::shared_ptr<Job> upstream_job_;
-                std::mutex job_mutex_;
-
-            public:
-                CommandCollector(CoroutineScope* scope,
-                                 std::shared_ptr<Flow<T>> upstream,
-                                 std::shared_ptr<MutableSharedFlow<T>> shared,
-                                 std::optional<T> initial_value)
-                    : scope_(scope),
-                      upstream_(std::move(upstream)),
-                      shared_(std::move(shared)),
-                      initial_value_(std::move(initial_value)),
-                      upstream_job_(nullptr) {}
-
-                void cancel_upstream() {
-                    std::unique_lock<std::mutex> lock(job_mutex_);
-                    if (upstream_job_) {
-                        upstream_job_->cancel(std::make_exception_ptr(CancellationException("Sharing coroutine completed")));
-                        auto old_job = upstream_job_;
-                        upstream_job_ = nullptr;
-                        lock.unlock();
-                        old_job->join_blocking();
-                    }
-                }
-
-                void* emit(SharingCommand cmd, Continuation<void*>*) override {
-                    std::unique_lock<std::mutex> lock(job_mutex_);
-                    if (upstream_job_) {
-                        upstream_job_->cancel(std::make_exception_ptr(CancellationException("Sharing command changed")));
-                        auto old_job = upstream_job_;
-                        upstream_job_ = nullptr;
-                        lock.unlock();
-                        old_job->join_blocking();
-                        lock.lock();
-                    }
-
-                    switch (cmd) {
-                        case SharingCommand::START: {
-                            upstream_job_ = kotlinx::coroutines::launch(
-                                scope_,
-                                nullptr,
-                                CoroutineStart::DEFAULT,
-                                [upstream = upstream_, shared = shared_](CoroutineScope* s) {
-                                    auto cont = std::make_shared<FunctionalContinuation<void*>>(
-                                        s ? s->get_coroutine_context() : nullptr,
-                                        [](Result<void*>) {}
-                                    );
-                                    if (s && s->get_coroutine_context()) {
-                                        auto job = std::dynamic_pointer_cast<Job>(s->get_coroutine_context()->get(Job::type_key));
-                                        if (job) {
-                                            job->invoke_on_completion([cont](std::exception_ptr) {});
-                                        }
-                                    }
-                                    upstream->collect(shared.get(), cont.get());
-                                }
-                            );
-                            break;
-                        }
-                        case SharingCommand::STOP: {
-                            break;
-                        }
-                        case SharingCommand::STOP_AND_RESET_REPLAY_CACHE: {
-                            if (!initial_value_.has_value()) {
-                                shared_->reset_replay_cache();
-                            } else {
-                                shared_->try_emit(*initial_value_);
-                            }
-                            break;
-                        }
-                    }
-                    return nullptr;
-                }
-            };
-
-            auto collector = std::make_shared<CommandCollector>(sharing_scope, upstream, shared, initial_value);
-            auto sharing_cont = std::make_shared<FunctionalContinuation<void*>>(
-                sharing_scope ? sharing_scope->get_coroutine_context() : nullptr,
-                [collector](Result<void*>) {}
-            );
-            if (sharing_scope && sharing_scope->get_coroutine_context()) {
-                auto job = std::dynamic_pointer_cast<Job>(sharing_scope->get_coroutine_context()->get(Job::type_key));
-                if (job) {
-                    job->invoke_on_completion([collector, sharing_cont](std::exception_ptr) {
-                        collector->cancel_upstream();
-                    });
-                }
-            }
-            try {
-                void* res = command_flow->collect(collector.get(), sharing_cont.get());
-                if (!intrinsics::is_coroutine_suspended(res)) {
-                    collector->cancel_upstream();
-                }
-            } catch (...) {
-                collector->cancel_upstream();
-                throw;
-            }
-        }
-    });
+    const auto start = started == SharingStarted::eagerly()
+        ? CoroutineStart::DEFAULT : CoroutineStart::UNDISPATCHED;
+    return launch(scope, std::move(context), start,
+        [upstream = std::move(upstream), shared = std::move(shared), started,
+         initial_value = std::move(initial_value)](
+            CoroutineScope*, std::shared_ptr<Continuation<void*>> completion) -> void* {
+            auto frame = std::make_shared<detail::SharingFrame<T>>(
+                upstream, shared, started, initial_value, std::move(completion));
+            frame->retain();
+            return frame->invoke_suspend(Result<void*>::success(nullptr));
+        });
 }
 
 template <typename T>

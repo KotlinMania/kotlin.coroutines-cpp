@@ -204,8 +204,6 @@ private:
     // Context cache - Kotlin line 38: context = delegate.context
     std::shared_ptr<CoroutineContext> context_;
 
-    // For segment-based cancellation (channel operations)
-    void* segment_for_cancellation_ = nullptr;
 
 public:
     CancellableContinuationImpl(std::shared_ptr<Continuation<T>> delegate_, int resume_mode_)
@@ -882,16 +880,22 @@ public:
     }
 
     // Segment-based cancellation - Kotlin lines 400-427 (Segment branch)
+    // Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuationImpl.kt:399-458
     void invoke_on_cancellation_impl_segment(internal::SegmentBase* segment) {
         while (true) {
             State* state = state_.load(std::memory_order_acquire);
 
             // Active -> store segment marker (we use the segment pointer as state indicator)
             if (dynamic_cast<Active*>(state)) {
-                // For segments, we store a marker indicating segment-based cancellation is pending
-                // The actual segment callback is called when cancellation occurs
-                segment_for_cancellation_ = segment;
-                return;
+                // SegmentBase implements NotCompleted, matching Kotlin's state union.
+                if (state_.compare_exchange_strong(state, static_cast<State*>(segment), std::memory_order_acq_rel)) {
+                    return;
+                }
+                continue;
+            }
+
+            if (dynamic_cast<CancelHandler*>(state) || dynamic_cast<internal::SegmentBase*>(state)) {
+                throw std::runtime_error("Multiple handlers prohibited");
             }
 
             // CompletedExceptionally (includes CancelledContinuation)
@@ -960,7 +964,7 @@ public:
             }
 
             // Already has a handler -> error
-            if (dynamic_cast<CancelHandler*>(state)) {
+            if (dynamic_cast<CancelHandler*>(state) || dynamic_cast<internal::SegmentBase*>(state)) {
                 throw std::runtime_error("Multiple handlers prohibited");
             }
 
@@ -1088,10 +1092,6 @@ private:
     std::shared_ptr<State> owned_state_; // Prevents use-after-free of dynamically allocated states
     std::shared_ptr<DisposableHandle> parent_handle_;
     std::shared_ptr<CoroutineContext> context_;
-    // Side-channel for segment-based cancellation. Upstream stores the Segment directly
-    // as the continuation's State; the C++ port keeps it here so the State slot remains
-    // a CAS-friendly pointer to one of the well-known sentinel types.
-    internal::SegmentBase* segment_handle_ = nullptr;
 
 public:
     CancellableContinuationImpl(std::shared_ptr<Continuation<void>> delegate_, int resume_mode_)
@@ -1514,19 +1514,22 @@ public:
     }
 
     // Segment-based cancellation - Kotlin lines 400-427 (Segment branch)
+    // Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuationImpl.kt:399-458
     void invoke_on_cancellation_impl_segment(internal::SegmentBase* segment) {
         while (true) {
             State* state = state_.load(std::memory_order_acquire);
 
             // Active -> store segment marker
             if (dynamic_cast<Active*>(state)) {
-                // Upstream stores the Segment directly as the State to take advantage of
-                // Kotlin's `is`-checks on the union shape. The C++ port keeps the segment
-                // in a side channel (segment_handle_) because mixing two unrelated base
-                // classes into one std::atomic slot would require a tagged-union wrapper
-                // and break the CAS-friendly pointer width.
-                segment_handle_ = segment;
-                return;
+                // SegmentBase implements NotCompleted, matching Kotlin's state union.
+                if (state_.compare_exchange_strong(state, static_cast<State*>(segment), std::memory_order_acq_rel)) {
+                    return;
+                }
+                continue;
+            }
+
+            if (dynamic_cast<CancelHandler*>(state) || dynamic_cast<internal::SegmentBase*>(state)) {
+                throw std::runtime_error("Multiple handlers prohibited");
             }
 
             // CompletedExceptionally (includes CancelledContinuation) - Kotlin lines 408-429
@@ -1583,7 +1586,7 @@ public:
             }
 
             // Already has a handler -> error (Kotlin line 407)
-            if (dynamic_cast<CancelHandler*>(state)) {
+            if (dynamic_cast<CancelHandler*>(state) || dynamic_cast<internal::SegmentBase*>(state)) {
                 throw std::runtime_error("Multiple handlers prohibited");
             }
 

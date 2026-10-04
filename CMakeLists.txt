@@ -104,6 +104,17 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 # Include the package definition
 include(KotlinxCoroutines)
 
+# Suspend.hpp emits markers in production frames and in test template instantiations.
+# Keep the existing computed-goto state machines and remove their no-op IR markers.
+kxs_enable_suspend(kotlinx-coroutines-core)
+get_property(KXS_COROUTINE_TEST_TARGETS DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/tests" PROPERTY BUILDSYSTEM_TARGETS)
+foreach(KXS_COROUTINE_TEST_TARGET IN LISTS KXS_COROUTINE_TEST_TARGETS)
+    get_target_property(KXS_COROUTINE_TEST_TYPE "${KXS_COROUTINE_TEST_TARGET}" TYPE)
+    if(KXS_COROUTINE_TEST_TYPE STREQUAL "EXECUTABLE")
+        kxs_enable_suspend("${KXS_COROUTINE_TEST_TARGET}")
+    endif()
+endforeach()
+
 # Install headers
 install(DIRECTORY src/kotlinx/
     DESTINATION include/kotlinx

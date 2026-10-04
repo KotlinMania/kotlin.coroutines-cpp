@@ -201,12 +201,9 @@ inline void* emit_all_impl(
     std::shared_ptr<FlowCollector<T>> receiver,
     channels::ReceiveChannel<T>* channel,
     bool consume,
-    Continuation<void*>* completion) {
-    auto completion_shared = completion
-        ? std::shared_ptr<Continuation<void*>>(completion, [](Continuation<void*>*){})
-        : nullptr;
+    std::shared_ptr<Continuation<void*>> completion) {
     auto coro = std::make_shared<EmitAllContinuation<T>>(
-        std::move(receiver), channel, consume, std::move(completion_shared));
+        std::move(receiver), channel, consume, std::move(completion));
     coro->retain();
     void* res = nullptr;
     try {
@@ -219,6 +216,16 @@ inline void* emit_all_impl(
         throw;
     }
     return res;
+}
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
+template <typename T>
+inline void* emit_all_impl(
+    std::shared_ptr<FlowCollector<T>> receiver,
+    channels::ReceiveChannel<T>* channel,
+    bool consume,
+    Continuation<void*>* completion) {
+    return emit_all_impl(std::move(receiver), channel, consume,
+        completion ? std::shared_ptr<Continuation<void*>>(completion, [](Continuation<void*>*) {}) : nullptr);
 }
 
 /**
@@ -286,6 +293,13 @@ public:
     void collect_to(channels::ProducerScope<T>* scope) override {
         std::shared_ptr<FlowCollector<T>> collector = std::make_shared<internal::SendingCollector<T>>(scope);
         (void)emit_all_impl(std::move(collector), channel_.get(), consume_, nullptr);
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:116-117
+    void* collect_to(channels::ProducerScope<T>* scope,
+                     std::shared_ptr<Continuation<void*>> completion) override {
+        std::shared_ptr<FlowCollector<T>> collector = std::make_shared<internal::SendingCollector<T>>(scope);
+        return emit_all_impl(std::move(collector), channel_.get(), consume_, std::move(completion));
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:119-125

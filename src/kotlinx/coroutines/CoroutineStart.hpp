@@ -392,7 +392,12 @@ void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<C
                         }
                     }
                     if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        comp->resume_with(Result<T>(result));
+                        if constexpr (std::is_same_v<T, Unit> && std::is_pointer_v<Ret>) {
+                            // A completed suspend Unit call uses the erased nullptr result.
+                            comp->resume_with(Result<T>::success(Unit{}));
+                        } else {
+                            comp->resume_with(Result<T>(result));
+                        }
                     }
                 }
             } else if constexpr (std::is_invocable_v<Block, R, Continuation<void*>*>) {
@@ -414,7 +419,12 @@ void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<C
                         }
                     }
                     if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        comp->resume_with(Result<T>(result));
+                        if constexpr (std::is_same_v<T, Unit> && std::is_pointer_v<Ret>) {
+                            // A completed suspend Unit call uses the erased nullptr result.
+                            comp->resume_with(Result<T>::success(Unit{}));
+                        } else {
+                            comp->resume_with(Result<T>(result));
+                        }
                     }
                 }
             } else if constexpr (std::is_invocable_v<Block, R>) {
@@ -436,7 +446,12 @@ void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<C
                         }
                     }
                     if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        comp->resume_with(Result<T>(result));
+                        if constexpr (std::is_same_v<T, Unit> && std::is_pointer_v<Ret>) {
+                            // A completed suspend Unit call uses the erased nullptr result.
+                            comp->resume_with(Result<T>::success(Unit{}));
+                        } else {
+                            comp->resume_with(Result<T>(result));
+                        }
                     }
                 }
             }

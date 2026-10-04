@@ -117,10 +117,10 @@ Method names are converted from camelCase to snake_case per C++ conventions.
 
 | Kotlin API | C++ API | Status | Notes |
 |------------|---------|--------|-------|
-| `fun CoroutineScope.launch(context, start, block): Job` | ✅ | ✅ | In Builders.hpp |
+| `fun CoroutineScope.launch(context, start, block): Job` | `launch(scope, context, start, suspend_block)` | Wired | Suspend block receives a shared erased continuation: `Builders.hpp:55`, implementation `Builders.common.cpp:23`; legacy synchronous overloads remain |
 | `fun CoroutineScope.async(context, start, block): Deferred<T>` | ✅ | ✅ | In Builders.hpp |
 | `fun <T> runBlocking(context, block): T` | ✅ | ✅ | In Builders.hpp |
-| `fun CoroutineScope.produce(context, capacity, start, onCompletion, block): ReceiveChannel<E>` | ❌ | ❌ MISSING | Channel producer |
+| `fun CoroutineScope.produce(context, capacity, start, onCompletion, block): ReceiveChannel<E>` | `produce(scope, context, capacity, overflow, start, suspend_block)` | Partial / Wired | `channels/Produce.hpp:187` propagates suspension; this overload does not expose `onCompletion` |
 | `fun <T> withContext(context, block): T` | ❌ | ❌ MISSING | Context switching |
 | `fun <T> withTimeout(timeMillis, block): T` | ❌ | ❌ MISSING | Timeout wrapper |
 | `fun <T> withTimeoutOrNull(timeMillis, block): T?` | ❌ | ❌ MISSING | Nullable timeout |
@@ -131,7 +131,26 @@ Method names are converted from camelCase to snake_case per C++ conventions.
 
 ---
 
+## Sharing continuation audit (2026-10-04)
+
+These entries describe the repaired paths, not whole-library completion. They are
+additional to the core-interface counts below.
+
+| Kotlin API / implementation | C++ reference | Status | Verified behavior / limit |
+|---|---|---|---|
+| `shareIn(scope, started, replay)` and `stateIn(scope, started, initialValue)` sharing launch | `flow/Share.hpp:261` | Wired | Eager uses DEFAULT; other strategies use UNDISPATCHED; command collection uses collectLatest, including cancel/join/reset |
+| `StartedWhileSubscribed.command` | `flow/SharingStarted.cpp:195` | Wired | Cancellable dispatcher delay, STOP then expiration delay then RESET; zero expiration skips STOP |
+| `StartedLazily.command` | `flow/SharingStarted.cpp:146` | Wired | Collector and started flag survive suspension; emits START only once |
+| `collectLatest(action)` | `flow/Collect.hpp:175`, `flow/Collect.cpp:120` | Wired | mapLatest(action).buffer(0).collect; action resumes before its Unit emission |
+| `ChannelFlow.collectTo` suspend ABI | `flow/internal/ChannelFlow.hpp:327` | Wired for operator/builder/channel paths | Producer and SendingCollector remain alive through suspension; legacy concurrent-merge implementations still need translation |
+| `stateIn(scope)` deferred overload | `flow/Share.hpp:282` | Surface / existing wiring | Deferred sharing path is outside this repair; no new suspension-parity claim |
+
+---
+
 ## Summary Statistics
+
+These counts describe the listed surfaces and earlier assessments. They are not
+a fresh AST-distance measurement or a guarantee of semantic parity.
 
 | Category | Implemented | Partial | Missing | Total |
 |----------|-------------|---------|---------|-------|
@@ -140,10 +159,10 @@ Method names are converted from camelCase to snake_case per C++ conventions.
 | Deferred | 4 | 0 | 0 | 4 |
 | Dispatchers | 4 | 0 | 0 | 4 |
 | Delay | 3 | 0 | 0 | 3 |
-| Builders | 3 | 0 | 6 | 9 |
-| **TOTAL** | **36** | **1** | **6** | **43** |
+| Builders | 3 | 1 | 5 | 9 |
+| **TOTAL** | **36** | **2** | **5** | **43** |
 
-**Completion**: ~84% (36/43 fully implemented)
+**Listed-row coverage**: ~84% (36/43 marked implemented; not whole-library parity)
 
 ---
 
@@ -172,7 +191,7 @@ Method names are converted from camelCase to snake_case per C++ conventions.
 Suspend functions are lowered to Kotlin/Native Continuation ABI: `void* fn(args..., Continuation<void*>* cont)` returning either the result or `intrinsics::COROUTINE_SUSPENDED`. State machine lowering uses computed goto (`Suspend.hpp`) with IR cleanup via `kxs_compile.py` / `kxs_transform_ir.py` or `kxs-inject`.
 
 ### Thread Safety
-All APIs are thread-safe per Kotlin's guarantee, using atomic operations and mutex-protected structures where needed.
+Thread safety and dispatcher behavior require implementation-specific verification. API presence and mutex/atomic use alone do not establish Kotlin parity.
 
 ### Error Handling
 Uses `std::exception_ptr` and `kotlinx::coroutines::Result<T>` matching Kotlin Native's exception model.

@@ -178,6 +178,7 @@ namespace kotlinx::coroutines {
      * @note T should be Unit for coroutines that don't return a value, NOT void.
      *       Using void as T is not supported and will cause compilation errors.
      */
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:98-102
         void resume_with(Result<T> result) override {
             JobState* state;
             if (result.is_success()) {
@@ -191,13 +192,12 @@ namespace kotlinx::coroutines {
             auto completing_result = JobSupport::make_completing_once(state);
 
             if (completing_result == CompletingResult::COMPLETING) return;
+            after_resume(get_state_for_await());
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:113
         virtual void after_resume(JobState* state) {
-            // In Kotlin: protected open fun afterResume(state: Any?): Unit = afterCompletion(state)
-            // afterCompletion is from JobSupport and is a no-op by default
-            // We just call on_completion_internal directly
-            on_completion_internal(state);
+            this->after_completion(state);
         }
 
         // NOTE: T should be Unit for coroutines that don't return a value, NOT void.
@@ -255,6 +255,15 @@ namespace kotlinx::coroutines {
         void start(CoroutineStart start_strategy, R receiver, std::function<T(R)> block) {
             init_parent_job_if_needed();
             invoke(start_strategy, block, receiver, std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:136-138
+        template <typename R>
+        void start(CoroutineStart start_strategy, R receiver,
+                   std::function<void*(R, std::shared_ptr<Continuation<void*>>)> block) {
+            init_parent_job_if_needed();
+            invoke(start_strategy, std::move(block), receiver,
+                   std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
         }
 
         // Helper for parent init

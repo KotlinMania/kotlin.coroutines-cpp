@@ -133,55 +133,38 @@ std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
  */
 namespace detail {
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:85-90
 template <typename T>
-class AsFlowContinuation : public Continuation<void*>,
-                           public std::enable_shared_from_this<AsFlowContinuation<T>> {
-private:
-    std::vector<T> iterable_;
-    FlowCollector<T>* collector_;
-    Continuation<void*>* completion_;
-    size_t index_{0};
-
+class AsFlowContinuation final : public ContinuationImpl {
 public:
     AsFlowContinuation(std::vector<T> iterable, FlowCollector<T>* collector, Continuation<void*>* completion)
-        : iterable_(std::move(iterable)), collector_(collector), completion_(completion) {}
+        : ContinuationImpl(std::shared_ptr<Continuation<void*>>(completion, [](Continuation<void*>*) {})),
+          iterable_(std::move(iterable)), collector_(collector) {}
 
-    std::shared_ptr<CoroutineContext> get_context() const override {
-        return completion_ ? completion_->get_context() : EmptyCoroutineContext::instance();
-    }
+    void retain() { self_ref_ = shared_from_this(); }
 
-    void resume_with(Result<void*> result) override {
-        if (!result.is_success()) {
-            if (completion_) completion_->resume_with(result);
-            return;
-        }
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:85-90
+    void* invoke_suspend(Result<void*> result) override {
         try {
-            void* res = loop();
-            if (!intrinsics::is_coroutine_suspended(res)) {
-                if (completion_) {
-                    completion_->resume_with(Result<void*>::success(nullptr));
-                }
+            coroutine_begin(this)
+            while (index_ < iterable_.size()) {
+                coroutine_yield(this, collector_->emit(iterable_[index_], this));
+                ++index_;
             }
+            self_ref_.reset();
+            coroutine_end(this)
         } catch (...) {
-            if (completion_) {
-                completion_->resume_with(Result<void*>::failure(std::current_exception()));
-            } else {
-                throw;
-            }
+            self_ref_.reset();
+            throw;
         }
     }
 
-    void* loop() {
-        auto self = this->shared_from_this();
-        while (index_ < iterable_.size()) {
-            size_t curr = index_++;
-            void* res = collector_->emit(iterable_[curr], self.get());
-            if (intrinsics::is_coroutine_suspended(res)) {
-                return intrinsics::get_COROUTINE_SUSPENDED();
-            }
-        }
-        return nullptr;
-    }
+private:
+    void* _label = nullptr;
+    std::vector<T> iterable_;
+    FlowCollector<T>* collector_;
+    size_t index_ = 0;
+    std::shared_ptr<BaseContinuationImpl> self_ref_;
 };
 
 } // namespace detail
@@ -192,7 +175,8 @@ std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
     //   public fun <T> Iterable<T>.asFlow(): Flow<T> = flow { forEach { value -> emit(value) } }
     return flow<T>([iterable](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
         auto sm = std::make_shared<detail::AsFlowContinuation<T>>(iterable, collector, cont);
-        return sm->loop();
+        sm->retain();
+        return sm->invoke_suspend(Result<void*>::success(nullptr));
     });
 }
 

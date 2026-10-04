@@ -17,6 +17,8 @@
 #include "kotlinx/coroutines/flow/Limit.hpp"
 #include "kotlinx/coroutines/flow/Distinct.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/Delay.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
@@ -28,6 +30,87 @@
 #include <string>
 
 namespace kotlinx::coroutines::flow {
+
+namespace {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt:171-185
+class WhileSubscribedCommandFrame final : public ContinuationImpl {
+public:
+    WhileSubscribedCommandFrame(FlowCollector<SharingCommand>* sink,
+                                long long stop_timeout, long long replay_expiration,
+                                Continuation<void*>* completion)
+        : ContinuationImpl(std::shared_ptr<Continuation<void*>>(
+              completion, [](Continuation<void*>*) {})),
+          sink_(sink), stop_timeout_(stop_timeout), replay_expiration_(replay_expiration) {}
+
+    void retain() { self_ref_ = shared_from_this(); }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt:148-185
+    void* invoke_suspend(Result<void*> result) override {
+        try {
+            coroutine_begin(this)
+            coroutine_yield(this, delay(stop_timeout_, shared_from_this()));
+            if (replay_expiration_ > 0) {
+                coroutine_yield(this, sink_->emit(SharingCommand::STOP, this));
+                coroutine_yield(this, delay(replay_expiration_, shared_from_this()));
+            }
+            coroutine_yield(this, sink_->emit(SharingCommand::STOP_AND_RESET_REPLAY_CACHE, this));
+            self_ref_.reset();
+            coroutine_end(this)
+        } catch (...) {
+            self_ref_.reset();
+            throw;
+        }
+    }
+
+private:
+    void* _label = nullptr;
+    FlowCollector<SharingCommand>* sink_;
+    long long stop_timeout_;
+    long long replay_expiration_;
+    std::shared_ptr<BaseContinuationImpl> self_ref_;
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt:149-158
+class LazyCommandFrame final : public ContinuationImpl, public FlowCollector<int> {
+public:
+    LazyCommandFrame(std::shared_ptr<StateFlow<int>> counts, FlowCollector<SharingCommand>* sink,
+                     Continuation<void*>* completion)
+        : ContinuationImpl(std::shared_ptr<Continuation<void*>>(completion, [](Continuation<void*>*) {})),
+          counts_(std::move(counts)), sink_(sink) {}
+
+    void retain() { self_ref_ = shared_from_this(); }
+
+    void* emit(int count, Continuation<void*>* completion) override {
+        if (count > 0 && !started_) {
+            started_ = true;
+            return sink_->emit(SharingCommand::START, completion);
+        }
+        return nullptr;
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt:148-185
+    void* invoke_suspend(Result<void*> result) override {
+        try {
+            coroutine_begin(this)
+            coroutine_yield(this, counts_->collect(this, this));
+            self_ref_.reset();
+            coroutine_end(this)
+        } catch (...) {
+            self_ref_.reset();
+            throw;
+        }
+    }
+
+private:
+    void* _label = nullptr;
+    std::shared_ptr<StateFlow<int>> counts_;
+    FlowCollector<SharingCommand>* sink_;
+    bool started_ = false;
+    std::shared_ptr<BaseContinuationImpl> self_ref_;
+};
+
+} // namespace
 
 /**
  * Upstream:
@@ -59,28 +142,15 @@ std::string StartedEagerly::to_string() const {
  *       }
  *   }
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt:148-158
 std::shared_ptr<Flow<SharingCommand>> StartedLazily::command(
     std::shared_ptr<StateFlow<int>> subscription_count) {
     return flow<SharingCommand>(
         [subscription_count](FlowCollector<SharingCommand>* sink,
                              Continuation<void*>* cont) -> void* {
-            auto started = std::make_shared<bool>(false);
-            class SubscriptionCollector : public FlowCollector<int> {
-            public:
-                FlowCollector<SharingCommand>* sink_;
-                std::shared_ptr<bool> started_;
-                SubscriptionCollector(FlowCollector<SharingCommand>* sink, std::shared_ptr<bool> started)
-                    : sink_(sink), started_(started) {}
-                void* emit(int count, Continuation<void*>* c) override {
-                    if (count > 0 && !*started_) {
-                        *started_ = true;
-                        return sink_->emit(SharingCommand::START, c);
-                    }
-                    return nullptr;
-                }
-            };
-            auto collector = std::make_shared<SubscriptionCollector>(sink, started);
-            return subscription_count->collect(collector.get(), cont);
+            auto frame = std::make_shared<LazyCommandFrame>(subscription_count, sink, cont);
+            frame->retain();
+            return frame->invoke_suspend(Result<void*>::success(nullptr));
         });
 }
 
@@ -121,6 +191,7 @@ StartedWhileSubscribed::StartedWhileSubscribed(long long stop_timeout_millis,
  *           .dropWhile { it != SharingCommand.START }
  *           .distinctUntilChanged()
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt:171-185
 std::shared_ptr<Flow<SharingCommand>> StartedWhileSubscribed::command(
     std::shared_ptr<StateFlow<int>> subscription_count) {
     const long long stop_timeout = stop_timeout_;
@@ -133,26 +204,10 @@ std::shared_ptr<Flow<SharingCommand>> StartedWhileSubscribed::command(
             if (count > 0) {
                 return sink->emit(SharingCommand::START, cont);
             }
-            auto ctx = cont ? cont->get_context() : nullptr;
-            auto job = ctx ? std::dynamic_pointer_cast<Job>(ctx->get(Job::type_key)) : nullptr;
-
-            auto start_time = std::chrono::steady_clock::now();
-            while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count() < stop_timeout) {
-                if (job && !job->is_active()) return nullptr;
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
-            }
-            if (job && !job->is_active()) return nullptr;
-
-            if (replay_expiration > 0) {
-                sink->emit(SharingCommand::STOP, cont);
-                auto stop_time = std::chrono::steady_clock::now();
-                while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - stop_time).count() < replay_expiration) {
-                    if (job && !job->is_active()) return nullptr;
-                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                }
-                if (job && !job->is_active()) return nullptr;
-            }
-            return sink->emit(SharingCommand::STOP_AND_RESET_REPLAY_CACHE, cont);
+            auto frame = std::make_shared<WhileSubscribedCommandFrame>(
+                sink, stop_timeout, replay_expiration, cont);
+            frame->retain();
+            return frame->invoke_suspend(Result<void*>::success(nullptr));
         });
     auto dropped = drop_while<SharingCommand>(
         staged,

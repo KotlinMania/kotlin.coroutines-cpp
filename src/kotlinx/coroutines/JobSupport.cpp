@@ -562,13 +562,9 @@ namespace kotlinx {
             // Transliterated from: public final override suspend fun join()
             // Fast path: already complete
             if (!join_internal()) {
-                // Job is complete — return immediately without suspending.
-                //
-                // Upstream's `join()` calls `coroutineContext.ensureActive()` after the
-                // fast-path check so the caller sees the cancellation even on a
-                // completed-job join. In the C++ port the active-state check is owned by
-                // the calling continuation's resume path; the caller's ensureActive
-                // happens at the next suspension point.
+                if (continuation && continuation->get_context()) {
+                    context_ensure_active(*continuation->get_context());
+                }
                 return nullptr; // Unit
             }
 
@@ -597,32 +593,16 @@ namespace kotlinx {
             }
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:585-588
         void *JobSupport::join_suspend(Continuation<void *> *continuation) {
-            // Transliterated from: private suspend fun joinSuspend()
-            // Register a completion handler that resumes the continuation
-            auto *node = new ResumeOnCompletion(continuation);
-            node->job = this;
-
-            // Add the node to the completion handler list
-            bool added = impl_->try_put_node_into_list(this, node,
-                                                       [node](Incomplete *state, NodeList *list) -> int {
-                                                           return list->add_last(node) ? 1 : 0;
-                                                       });
-
-            if (!added) {
-                // Job completed while we were setting up - resume immediately
-                delete node;
-                return nullptr; // Unit - already complete
-            }
-
-            // Upstream: cont.disposeOnCancellation(handle)
-            // The DisposableHandle wired here is registered against the job's completion
-            // list and is released when the parent continuation completes. The Kotlin
-            // helper `disposeOnCancellation` is an extension on CancellableContinuation
-            // that calls `invokeOnCancellation { handle.dispose() }`; the C++ port wires
-            // the same handler through the continuation's invoke_on_cancellation hook
-            // when the ResumeOnCompletion node is destroyed.
-            return COROUTINE_SUSPENDED;
+            auto self = std::dynamic_pointer_cast<JobSupport>(shared_from_this());
+            return suspend_cancellable_coroutine<void>(
+                [self](CancellableContinuation<void>& cont) {
+                    auto retained = static_cast<CancellableContinuationImpl<void>&>(cont).shared_from_this();
+                    auto handle = self->invoke_on_completion(false, true,
+                        [retained](std::exception_ptr) { retained->resume(nullptr); });
+                    cont.invoke_on_cancellation([handle](std::exception_ptr) { handle->dispose(); });
+                }, continuation);
         }
 
         void JobSupport::join_blocking() {
@@ -949,12 +929,16 @@ namespace kotlinx {
             return impl_->make_completing(this, proposed_state);
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:848-870
         JobSupport::CompletingResult JobSupport::make_completing_once(JobState *proposed_state) {
             while (true) {
                 auto *s = impl_->state.load(std::memory_order_acquire);
                 auto *final_state = impl_->try_make_completing(this, s, proposed_state);
 
-                if (final_state == COMPLETING_ALREADY) return CompletingResult::ALREADY_COMPLETING;
+                if (final_state == COMPLETING_ALREADY) {
+                    delete proposed_state;
+                    throw IllegalStateException("Job " + to_string() + " is already complete or completing");
+                }
                 if (final_state == COMPLETING_WAITING_CHILDREN) return CompletingResult::COMPLETING;
                 if (final_state == COMPLETING_RETRY) continue;
                 return CompletingResult::COMPLETED;
@@ -1497,6 +1481,7 @@ namespace kotlinx {
             return true;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:293-318
         void JobSupport::Impl::complete_state_finalization(JobSupport *job, Incomplete *s, JobState *update) {
             auto *handle = parent_handle.load();
             if (handle) {
@@ -1518,7 +1503,6 @@ namespace kotlinx {
                 notify_handlers(job, list, cause, [](JobNode *) { return true; });
             }
 
-            job->after_completion(update);
         }
 
         ChildHandleNode *JobSupport::Impl::next_child(internal::LockFreeLinkedListNode *node) {

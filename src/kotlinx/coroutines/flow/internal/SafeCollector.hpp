@@ -10,6 +10,8 @@
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include <memory>
 #include <functional>
 #include <string>
@@ -143,29 +145,40 @@ using internal::unsafe_flow;
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
 template<typename T>
 inline void* AbstractFlow<T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {
-    auto collect_context = continuation ? continuation->get_context() : EmptyCoroutineContext::instance();
-    auto safe_collector = std::make_shared<internal::SafeCollector<T>>(collector, collect_context);
+    // NOTE(port): The frame owns SafeCollector through collectSafely and its finally block.
+    class CollectFrame final : public ContinuationImpl {
+    public:
+        CollectFrame(AbstractFlow<T>* flow, FlowCollector<T>* collector, Continuation<void*>* completion)
+            : ContinuationImpl(std::shared_ptr<Continuation<void*>>(completion, [](Continuation<void*>*) {})),
+              flow_(flow), safe_collector_(std::make_shared<internal::SafeCollector<T>>(
+                  collector, completion ? completion->get_context() : EmptyCoroutineContext::instance())) {}
 
-    if (continuation && continuation->get_context()) {
-        auto job = std::dynamic_pointer_cast<Job>(continuation->get_context()->get(Job::type_key));
-        if (job) {
-            job->invoke_on_completion([safe_collector](std::exception_ptr) {
-                safe_collector->release_intercepted();
-            });
+        void retain() { self_ref_ = shared_from_this(); }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                coroutine_begin(this)
+                coroutine_yield(this, flow_->collect_safely(safe_collector_.get(), this));
+                safe_collector_->release_intercepted();
+                self_ref_.reset();
+                coroutine_end(this)
+            } catch (...) {
+                safe_collector_->release_intercepted();
+                self_ref_.reset();
+                throw;
+            }
         }
-    }
 
-    void* result = nullptr;
-    try {
-        result = collect_safely(safe_collector.get(), continuation);
-    } catch (...) {
-        safe_collector->release_intercepted();
-        throw;
-    }
-    if (!intrinsics::is_coroutine_suspended(result)) {
-        safe_collector->release_intercepted();
-    }
-    return result;
+    private:
+        void* _label = nullptr;
+        AbstractFlow<T>* flow_;
+        std::shared_ptr<internal::SafeCollector<T>> safe_collector_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+    auto frame = std::make_shared<CollectFrame>(this, collector, continuation);
+    frame->retain();
+    return frame->invoke_suspend(Result<void*>::success(nullptr));
 }
 
 } // namespace flow

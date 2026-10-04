@@ -12,6 +12,7 @@
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/DisposableHandle.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
@@ -25,6 +26,7 @@
 #include <algorithm>
 #include <cassert>
 #include <limits>
+#include <optional>
 
 namespace kotlinx::coroutines::flow {
 
@@ -305,41 +307,68 @@ public:
      *
      * @note This is a suspend function - returns void* (COROUTINE_SUSPENDED or result)
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/SharedFlow.kt:383-402
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
-        using namespace ::kotlinx::coroutines::dsl;
+        class CollectFrame final : public ContinuationImpl {
+        public:
+            CollectFrame(SharedFlowImpl<T>* flow, FlowCollector<T>* collector,
+                         Continuation<void*>* completion)
+                : ContinuationImpl(std::shared_ptr<Continuation<void*>>(
+                      completion, [](Continuation<void*>*) {})),
+                  flow_(flow), collector_(collector), synchronous_(completion == nullptr) {}
 
-        SharedFlowSlot* slot = this->allocate_slot();
-        try {
-            if (auto subscribed = dynamic_cast<internal::SubscribedFlowCollector<T>*>(collector)) {
-                subscribed->on_subscription(continuation);
-            }
+            void retain() { self_ref_ = shared_from_this(); }
 
-            auto ctx = continuation ? continuation->get_context() : nullptr;
-            std::shared_ptr<Job> collector_job = nullptr;
-            if (ctx) {
-                auto job_element = ctx->get(Job::type_key);
-                collector_job = std::dynamic_pointer_cast<Job>(job_element);
-            }
-
-            while (true) {
-                void* new_value = nullptr;
-                while (true) {
-                    new_value = try_take_value(slot);
-                    if (new_value != get_no_value()) break;
-                    auto awaited = suspend(await_value(slot, continuation));
-                    if (awaited == COROUTINE_SUSPENDED) return COROUTINE_SUSPENDED;
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/SharedFlow.kt:383-402
+            void* invoke_suspend(Result<void*> result) override {
+                try {
+                    coroutine_begin(this)
+                    slot_ = flow_->allocate_slot();
+                    subscribed_ = dynamic_cast<internal::SubscribedFlowCollector<T>*>(collector_);
+                    if (subscribed_) {
+                        coroutine_yield(this, subscribed_->on_subscription(synchronous_ ? nullptr : this));
+                    }
+                    collector_job_ = std::dynamic_pointer_cast<Job>(get_context()->get(Job::type_key));
+                    while (true) {
+                        while (true) {
+                            new_value_ = flow_->try_take_value(slot_);
+                            if (new_value_ != flow_->get_no_value()) break;
+                            coroutine_yield_value(this, result,
+                                flow_->await_value(slot_, synchronous_ ? nullptr : this), wait_result_);
+                            delete static_cast<Unit*>(wait_result_);
+                            wait_result_ = nullptr;
+                        }
+                        if (collector_job_) ensure_active(*collector_job_);
+                        value_ = *static_cast<T*>(new_value_);
+                        coroutine_yield(this, collector_->emit(*value_, synchronous_ ? nullptr : this));
+                        value_.reset();
+                    }
+                } catch (...) {
+                    if (slot_) {
+                        flow_->free_slot(slot_);
+                        slot_ = nullptr;
+                    }
+                    self_ref_.reset();
+                    throw;
                 }
-
-                if (collector_job) ensure_active(*collector_job);
-                auto emitted = suspend(collector->emit(*static_cast<T*>(new_value), continuation));
-                if (emitted == COROUTINE_SUSPENDED) return COROUTINE_SUSPENDED;
             }
-        } catch (...) {
-            this->free_slot(slot);
-            throw;
-        }
-        this->free_slot(slot);
-        return nullptr;
+
+        private:
+            void* _label = nullptr;
+            SharedFlowImpl<T>* flow_;
+            FlowCollector<T>* collector_;
+            bool synchronous_;
+            SharedFlowSlot* slot_ = nullptr;
+            internal::SubscribedFlowCollector<T>* subscribed_ = nullptr;
+            std::shared_ptr<Job> collector_job_;
+            void* new_value_ = nullptr;
+            void* wait_result_ = nullptr;
+            std::optional<T> value_;
+            std::shared_ptr<BaseContinuationImpl> self_ref_;
+        };
+        auto frame = std::make_shared<CollectFrame>(this, collector, continuation);
+        frame->retain();
+        return frame->invoke_suspend(Result<void*>::success(nullptr));
     }
 
     /**

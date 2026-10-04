@@ -1,0 +1,349 @@
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/test/flow/sharing/SharingStartedTest.kt:39-100
+ * Additional continuation regressions exercise suspended command emission and failure.
+ */
+#include "kotlinx/coroutines/flow/Share.hpp"
+#include "kotlinx/coroutines/flow/SharingStarted.hpp"
+#include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
+#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/Delay.hpp"
+#include "kotlinx/coroutines/NonCancellable.hpp"
+#include "kotlinx/coroutines/flow/FlowBuilders.hpp"
+#include "kotlinx/coroutines/CompletableJob.hpp"
+#include "kotlinx/coroutines/testing/TestBase.hpp"
+#include <deque>
+#include <limits>
+#include <map>
+#include <utility>
+#include <vector>
+#include <iostream>
+
+using namespace kotlinx::coroutines;
+using namespace kotlinx::coroutines::flow;
+using namespace kotlinx::coroutines::testing;
+
+// Deterministic single-thread fixture implementing the actual Dispatcher/Delay interfaces.
+class VirtualDispatcher final : public CoroutineDispatcher, public Delay {
+public:
+    long long now = 0;
+
+    bool is_dispatch_needed(const CoroutineContext&) const override { return true; }
+    void dispatch(const CoroutineContext&, std::shared_ptr<Runnable> block) const override {
+        queue_.push_back(std::move(block));
+    }
+    void schedule_resume_after_delay(long long millis, CancellableContinuation<void>& continuation) override {
+        auto retained = dynamic_cast<CancellableContinuationImpl<void>&>(continuation).shared_from_this();
+        timers_.emplace(now + millis, [retained] {
+            if (retained->is_active()) retained->resume(nullptr);
+        });
+    }
+    std::shared_ptr<DisposableHandle> invoke_on_timeout(
+        long long millis, std::shared_ptr<Runnable> block, const CoroutineContext&) override {
+        struct Handle final : DisposableHandle {
+            bool cancelled = false;
+            void dispose() override { cancelled = true; }
+        };
+        auto handle = std::make_shared<Handle>();
+        timers_.emplace(now + millis, [handle, block] {
+            if (!handle->cancelled) block->run();
+        });
+        return handle;
+    }
+    void run_current() {
+        int steps = 0;
+        while (!queue_.empty()) {
+            assert_true(++steps < 10000);
+            auto task = std::move(queue_.front());
+            queue_.pop_front();
+            task->run();
+        }
+    }
+    void advance_by(long long millis) {
+        const auto target = now + millis;
+        run_current();
+        while (!timers_.empty() && timers_.begin()->first <= target) {
+            auto it = timers_.begin();
+            now = it->first;
+            auto action = std::move(it->second);
+            timers_.erase(it);
+            action();
+            run_current();
+        }
+        now = target;
+        run_current();
+    }
+
+private:
+    mutable std::deque<std::shared_ptr<Runnable>> queue_;
+    std::multimap<long long, std::function<void()>> timers_;
+};
+
+class Commands {
+public:
+    std::shared_ptr<VirtualDispatcher> clock = std::make_shared<VirtualDispatcher>();
+    std::shared_ptr<Job> job = make_job();
+    std::shared_ptr<MutableStateFlow<int>> count = make_mutable_state_flow(0);
+    std::vector<std::pair<long long, SharingCommand>> events;
+    int completions = 0;
+    std::exception_ptr failure;
+    bool pause_stop = false;
+    Continuation<void*>* stopped_emit = nullptr;
+
+    Commands(long long stop, long long expiration) : started_(stop, expiration), recorder_(*this) {
+        auto context = std::dynamic_pointer_cast<CoroutineContext>(job)->operator+(clock);
+        completion_ = std::make_shared<FunctionalContinuation<void*>>(context, [this](Result<void*> result) {
+            ++completions;
+            failure = result.exception_or_null();
+        });
+        flow_ = started_.command(count);
+        assert_true(intrinsics::is_coroutine_suspended(flow_->collect(&recorder_, completion_.get())));
+        clock->run_current();
+    }
+    ~Commands() { stop(); }
+    void subscriptions(int value) { count->set_value(value); clock->run_current(); }
+    void stop() { job->cancel(); clock->run_current(); }
+    void resume_stop(Result<void*> result = Result<void*>::success(nullptr)) {
+        auto* completion = stopped_emit;
+        assert_true(completion != nullptr);
+        stopped_emit = nullptr;
+        completion->resume_with(std::move(result));
+        clock->run_current();
+    }
+
+private:
+    class Recorder final : public FlowCollector<SharingCommand> {
+    public:
+        explicit Recorder(Commands& owner) : owner_(owner) {}
+        void* emit(SharingCommand command, Continuation<void*>* completion) override {
+            owner_.events.emplace_back(owner_.clock->now, command);
+            if (command == SharingCommand::STOP && owner_.pause_stop) {
+                owner_.stopped_emit = completion;
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
+            return nullptr;
+        }
+    private:
+        Commands& owner_;
+    };
+    StartedWhileSubscribed started_;
+    Recorder recorder_;
+    std::shared_ptr<Flow<SharingCommand>> flow_;
+    std::shared_ptr<Continuation<void*>> completion_;
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/sharing/SharingStartedTest.kt:75-100
+void test_stop_and_expiration_with_resubscription() {
+    Commands commands(50, 100);
+    commands.clock->advance_by(200);
+    assert_true(commands.events.empty()); // Suppress STOP/RESET before the first START.
+    commands.subscriptions(1);
+    commands.subscriptions(0);
+    commands.clock->advance_by(49);
+    assert_equals(size_t(1), commands.events.size());
+    commands.subscriptions(1); // Cancel the pending STOP.
+    commands.clock->advance_by(200);
+    assert_equals(size_t(1), commands.events.size()); // Duplicate START is suppressed.
+    commands.subscriptions(0);
+    commands.clock->advance_by(50);
+    assert_true(commands.events.back() == std::make_pair(499LL, SharingCommand::STOP));
+    commands.clock->advance_by(99);
+    assert_equals(size_t(2), commands.events.size());
+    commands.subscriptions(1); // Cancel pending cache expiration.
+    commands.subscriptions(0);
+    commands.clock->advance_by(50);
+    commands.clock->advance_by(100);
+    assert_true(commands.events.back() == std::make_pair(748LL, SharingCommand::STOP_AND_RESET_REPLAY_CACHE));
+    commands.stop();
+    assert_equals(1, commands.completions);
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/sharing/SharingStartedTest.kt:39-45
+void test_zero_expiration() {
+    Commands commands(50, 0);
+    commands.subscriptions(1);
+    commands.subscriptions(0);
+    commands.clock->advance_by(49);
+    assert_equals(size_t(1), commands.events.size());
+    commands.clock->advance_by(1);
+    assert_true(commands.events.back() == std::make_pair(50LL, SharingCommand::STOP_AND_RESET_REPLAY_CACHE));
+    assert_equals(size_t(2), commands.events.size());
+    commands.stop();
+    assert_equals(1, commands.completions);
+}
+
+void test_stop_emission_suspends_before_expiration_delay() {
+    Commands commands(50, 100);
+    commands.pause_stop = true;
+    commands.subscriptions(1);
+    commands.subscriptions(0);
+    commands.clock->advance_by(50);
+    assert_true(commands.stopped_emit != nullptr);
+    commands.clock->advance_by(500);
+    assert_equals(size_t(2), commands.events.size());
+    commands.resume_stop();
+    commands.clock->advance_by(99);
+    assert_equals(size_t(2), commands.events.size());
+    commands.clock->advance_by(1);
+    assert_true(commands.events.back() == std::make_pair(650LL, SharingCommand::STOP_AND_RESET_REPLAY_CACHE));
+    commands.stop();
+    assert_equals(1, commands.completions);
+}
+
+void test_resumed_failure_stops_the_sequence() {
+    Commands commands(50, 100);
+    commands.pause_stop = true;
+    commands.subscriptions(1);
+    commands.subscriptions(0);
+    commands.clock->advance_by(50);
+    commands.resume_stop(Result<void*>::failure(std::make_exception_ptr(std::runtime_error("STOP emission failed"))));
+    commands.clock->advance_by(1000);
+    assert_equals(size_t(2), commands.events.size());
+    assert_equals(1, commands.completions);
+    assert_true(commands.failure != nullptr);
+    try {
+        std::rethrow_exception(commands.failure);
+    } catch (const std::runtime_error& error) {
+        assert_true(std::string(error.what()) == "STOP emission failed");
+    }
+}
+
+void test_infinite_stop_timeout_is_cancellable() {
+    Commands commands(std::numeric_limits<long long>::max(), 0);
+    commands.subscriptions(1);
+    commands.subscriptions(0);
+    commands.clock->advance_by(1000);
+    assert_equals(size_t(1), commands.events.size());
+    commands.stop();
+    assert_equals(1, commands.completions);
+}
+
+// Continuation regression: cancel must join the child's suspending finally before launch.
+void test_latest_waits_for_suspended_cleanup() {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto job = make_job();
+    auto context = std::dynamic_pointer_cast<CoroutineContext>(job)->operator+(clock);
+    std::vector<int> events;
+    int completions = 0;
+    std::exception_ptr failure;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(context, [&](Result<void*> result) {
+        ++completions;
+        failure = result.exception_or_null();
+    });
+
+    class CleanupFrame final : public ContinuationImpl {
+    public:
+        CleanupFrame(std::vector<int>& events, Continuation<void*>* completion)
+            : ContinuationImpl(std::shared_ptr<Continuation<void*>>(completion, [](Continuation<void*>*) {})),
+              events_(events), cleanup_context_(get_context()->operator+(non_cancellable())) {}
+        void retain() { self_ref_ = shared_from_this(); }
+        std::shared_ptr<CoroutineContext> get_context() const override {
+            return cleaning_ ? cleanup_context_ : ContinuationImpl::get_context();
+        }
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                if (state_ == 0) {
+                    state_ = 1;
+                    try {
+                        return await_cancellation(shared_from_this());
+                    } catch (...) {
+                        result = Result<void*>::failure(std::current_exception());
+                    }
+                }
+                if (state_ == 1) {
+                    assert_false(result.is_success());
+                    cancellation_ = result.exception_or_null();
+                    cleaning_ = true;
+                    events_.push_back(2);
+                    state_ = 2;
+                    void* delayed = delay(50, shared_from_this());
+                    if (intrinsics::is_coroutine_suspended(delayed)) return delayed;
+                } else {
+                    (void)result.get_or_throw();
+                }
+                events_.push_back(3);
+                std::rethrow_exception(cancellation_);
+            } catch (...) {
+                self_ref_.reset();
+                throw;
+            }
+        }
+    private:
+        int state_ = 0;
+        std::vector<int>& events_;
+        bool cleaning_ = false;
+        std::exception_ptr cancellation_;
+        std::shared_ptr<CoroutineContext> cleanup_context_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+
+    auto values = flow_of<int>({1, 2});
+    auto result = collect_latest<int>(values, [&](int value, Continuation<void*>* completion) -> void* {
+        if (value == 2) {
+            events.push_back(4);
+            return nullptr;
+        }
+        events.push_back(1);
+        auto frame = std::make_shared<CleanupFrame>(events, completion);
+        frame->retain();
+        return frame->invoke_suspend(Result<void*>::success(nullptr));
+    }, completion.get());
+    assert_true(intrinsics::is_coroutine_suspended(result));
+    clock->run_current();
+    assert_true(events == std::vector<int>({1, 2}));
+    assert_equals(0, completions);
+    clock->advance_by(49);
+    assert_true(events == std::vector<int>({1, 2}));
+    clock->advance_by(1);
+    assert_true(events == std::vector<int>({1, 2, 3, 4}));
+    assert_equals(1, completions);
+    assert_true(failure == nullptr);
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt:148-158
+void test_lazy_command_starts_once_and_releases_on_cancellation() {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto job = make_job();
+    auto context = std::dynamic_pointer_cast<CoroutineContext>(job)->operator+(clock);
+    auto counts = make_mutable_state_flow(0);
+    int starts = 0;
+    int completions = 0;
+    class Recorder final : public FlowCollector<SharingCommand> {
+    public:
+        explicit Recorder(int& starts) : starts_(starts) {}
+        void* emit(SharingCommand command, Continuation<void*>*) override {
+            assert_true(command == SharingCommand::START);
+            ++starts_;
+            return nullptr;
+        }
+    private:
+        int& starts_;
+    } recorder(starts);
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(context, [&](Result<void*> result) {
+        assert_false(result.is_success());
+        ++completions;
+    });
+    auto commands = SharingStarted::lazily()->command(counts);
+    assert_true(intrinsics::is_coroutine_suspended(commands->collect(&recorder, completion.get())));
+    assert_equals(0, starts);
+    counts->set_value(1);
+    clock->run_current();
+    counts->set_value(0);
+    clock->run_current();
+    counts->set_value(1);
+    clock->run_current();
+    assert_equals(1, starts);
+    job->cancel();
+    clock->run_current();
+    assert_equals(1, completions);
+}
+
+int main() {
+    test_stop_and_expiration_with_resubscription();
+    test_zero_expiration();
+    test_stop_emission_suspends_before_expiration_delay();
+    test_resumed_failure_stops_the_sequence();
+    test_infinite_stop_timeout_is_cancellable();
+    test_latest_waits_for_suspended_cleanup();
+    test_lazy_command_starts_once_and_releases_on_cancellation();
+    std::cout << "Sharing suspension and virtual-time tests passed\n";
+}

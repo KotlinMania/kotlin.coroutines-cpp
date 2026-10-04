@@ -31,12 +31,9 @@ public:
 
 template <typename T>
 std::shared_ptr<Flow<T>> make_test_flow(std::vector<T> values) {
-    return flow::flow<T>([values = std::move(values)](FlowCollector<T>* col, Continuation<void*>* c) -> void* {
-        for (const auto& item : values) {
-            col->emit(item, c);
-        }
-        return nullptr;
-    });
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:85-90
+    // The iterable frame must resume its loop after a suspended emit.
+    return as_flow<T>(values);
 }
 
 template <typename T>

@@ -36,14 +36,36 @@ namespace coroutines {
     class LazyStandaloneCoroutine : public StandaloneCoroutine {
     private:
         std::function<void(CoroutineScope*)> block;
+        std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> suspend_block_;
 
     public:
         LazyStandaloneCoroutine(
             std::shared_ptr<CoroutineContext> parent_context,
             std::function<void(CoroutineScope*)> block_param
         );
+        // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:199-208
+        LazyStandaloneCoroutine(
+            std::shared_ptr<CoroutineContext> parent_context,
+            std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block_param
+        );
         void on_start() override;
     };
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:43-54
+    std::shared_ptr<Job> launch(
+        CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+        CoroutineStart start,
+        std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block);
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:43-54
+    std::shared_ptr<Job> launch(
+        CoroutineScope* scope,
+        std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block);
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:43-54
+    std::shared_ptr<Job> launch(
+        CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+        std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block);
 
     /**
      * DeferredCoroutine - internal implementation of Deferred

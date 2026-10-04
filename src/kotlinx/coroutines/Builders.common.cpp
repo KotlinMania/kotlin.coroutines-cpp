@@ -15,8 +15,44 @@
 #include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
+#include "kotlinx/coroutines/Dispatchers.hpp"
 
 namespace kotlinx::coroutines {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:43-54
+std::shared_ptr<Job> launch(
+    CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+    CoroutineStart start,
+    std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
+    auto new_context = scope->get_coroutine_context()->operator+(
+        context ? context : EmptyCoroutineContext::instance());
+    if (!new_context->get(ContinuationInterceptor::type_key)) {
+        new_context = new_context->operator+(std::shared_ptr<CoroutineContext>(
+            &Dispatchers::get_default(), [](CoroutineContext*) {}));
+    }
+    std::shared_ptr<StandaloneCoroutine> coroutine;
+    if (start == CoroutineStart::LAZY) {
+        coroutine = std::make_shared<LazyStandaloneCoroutine>(new_context, block);
+    } else {
+        coroutine = std::make_shared<StandaloneCoroutine>(new_context, true);
+    }
+    coroutine->start(start, static_cast<CoroutineScope*>(coroutine.get()), std::move(block));
+    return coroutine;
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:43-54
+std::shared_ptr<Job> launch(
+    CoroutineScope* scope,
+    std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
+    return launch(scope, nullptr, CoroutineStart::DEFAULT, std::move(block));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:43-54
+std::shared_ptr<Job> launch(
+    CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+    std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
+    return launch(scope, std::move(context), CoroutineStart::DEFAULT, std::move(block));
+}
 
 // ---------------------------------------------------------------------------
 // StandaloneCoroutine implementation
@@ -49,6 +85,13 @@ LazyStandaloneCoroutine::LazyStandaloneCoroutine(
 ) : StandaloneCoroutine(parentContext, false),
     block(block_param) {}
 
+// Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:199-208
+LazyStandaloneCoroutine::LazyStandaloneCoroutine(
+    std::shared_ptr<CoroutineContext> parent_context,
+    std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block_param
+) : StandaloneCoroutine(std::move(parent_context), false),
+    suspend_block_(std::move(block_param)) {}
+
 /**
  * Upstream:
  *   private val continuation = block.createCoroutineUnintercepted(this, this)
@@ -57,6 +100,11 @@ LazyStandaloneCoroutine::LazyStandaloneCoroutine(
  *   }
  */
 void LazyStandaloneCoroutine::on_start() {
+    if (suspend_block_) {
+        this->start(CoroutineStart::DEFAULT, static_cast<CoroutineScope*>(this),
+                    std::move(suspend_block_));
+        return;
+    }
     try {
         if (block) {
             block(this);

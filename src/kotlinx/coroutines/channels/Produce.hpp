@@ -15,6 +15,7 @@
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
+#include "kotlinx/coroutines/Dispatchers.hpp"
 #include <functional>
 #include <memory>
 
@@ -178,6 +179,24 @@ std::shared_ptr<ReceiveChannel<E>> produce(
         coroutine->start(start, coroutine, std::move(wrapped_block));
     }
 
+    return coroutine;
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:269-284
+template <typename E>
+std::shared_ptr<ReceiveChannel<E>> produce(
+    CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+    int capacity, BufferOverflow on_buffer_overflow, CoroutineStart start,
+    std::function<void*(ProducerScope<E>*, std::shared_ptr<Continuation<void*>>)> block) {
+    auto channel = create_channel<E>(capacity, on_buffer_overflow);
+    auto new_context = scope->get_coroutine_context()->operator+(
+        context ? context : EmptyCoroutineContext::instance());
+    if (!new_context->get(ContinuationInterceptor::type_key)) {
+        new_context = new_context->operator+(std::shared_ptr<CoroutineContext>(
+            &Dispatchers::get_default(), [](CoroutineContext*) {}));
+    }
+    auto coroutine = std::make_shared<ProducerCoroutine<E>>(new_context, channel);
+    coroutine->start(start, static_cast<ProducerScope<E>*>(coroutine.get()), std::move(block));
     return coroutine;
 }
 

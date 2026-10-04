@@ -155,6 +155,15 @@ inline void* collect_indexed(
         continuation);
 }
 
+namespace internal {
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:82-97
+void* collect_latest_impl(std::shared_ptr<Flow<Unit>> mapped, Continuation<void*>* completion);
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:211-213
+void* map_latest_action(FlowCollector<Unit>* collector,
+                       std::function<void*(Continuation<void*>*)> action,
+                       Continuation<void*>* completion);
+}
+
 /**
  * Terminal flow operator that collects the given flow with a provided [action].
  * When the original flow emits a new value, the action for the previous value is cancelled.
@@ -168,13 +177,13 @@ inline void* collect_latest(
     Continuation<void*>* continuation = nullptr) {
     auto mapped = transform_latest<T, Unit>(
         std::move(flow),
-        [action = std::move(action)](FlowCollector<Unit>*, T val, Continuation<void*>* cont) -> void* {
-            return action(std::move(val), cont);
+        [action = std::move(action)](FlowCollector<Unit>* collector, T val, Continuation<void*>* cont) -> void* {
+            return internal::map_latest_action(collector,
+                [action, value = std::move(val)](Continuation<void*>* current) mutable -> void* {
+                    return action(std::move(value), current);
+                }, cont);
         });
-    // NOTE(port): buffer(0) channel slow-path omitted until BufferedChannel state machine is complete;
-    // collecting directly via ChannelFlowTransformLatest provides prompt non-blocking cancellation.
-    internal::NopCollector<Unit> nop;
-    return mapped->collect(&nop, continuation);
+    return internal::collect_latest_impl(buffer<Unit>(std::move(mapped), 0), continuation);
 }
 
 /**

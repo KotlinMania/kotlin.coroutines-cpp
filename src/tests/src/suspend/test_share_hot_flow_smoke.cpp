@@ -8,6 +8,8 @@
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/CompletableJob.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/Delay.hpp"
 #include <atomic>
 #include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <chrono>
@@ -20,6 +22,36 @@ using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::flow;
 using namespace kotlinx::coroutines::testing;
 using flow_abort = kotlinx::coroutines::flow::internal::AbortFlowException;
+
+// Regression fixture: emit a value, then suspend until the sharing child is cancelled.
+class EmitAndAwaitCancellation final : public ContinuationImpl {
+public:
+    EmitAndAwaitCancellation(FlowCollector<int>* collector, int value,
+                            Continuation<void*>* completion)
+        : ContinuationImpl(std::shared_ptr<Continuation<void*>>(
+              completion, [](Continuation<void*>*) {})), collector_(collector), value_(value) {}
+
+    void retain() { self_ref_ = shared_from_this(); }
+
+    void* invoke_suspend(Result<void*> result) override {
+        try {
+            coroutine_begin(this)
+            coroutine_yield(this, collector_->emit(value_, this));
+            coroutine_yield(this, await_cancellation(shared_from_this()));
+            self_ref_.reset();
+            coroutine_end(this)
+        } catch (...) {
+            self_ref_.reset();
+            throw;
+        }
+    }
+
+private:
+    void* _label = nullptr;
+    FlowCollector<int>* collector_;
+    int value_;
+    std::shared_ptr<BaseContinuationImpl> self_ref_;
+};
 
 void test_subscription_count_tracking() {
     auto shared = make_mutable_shared_flow<int>(/*replay=*/1, /*extra_buffer_capacity=*/0);
@@ -175,14 +207,10 @@ void test_share_in_while_subscribed_restart_and_cache_reset() {
 
     auto cold = flow::flow<int>([&upstream_runs](FlowCollector<int>* col, Continuation<void*>* c) -> void* {
         upstream_runs++;
-        col->emit(upstream_runs.load() * 10, c);
-        // keep alive until cancelled
-        while (c && c->get_context()) {
-            auto job = std::dynamic_pointer_cast<Job>(c->get_context()->get(Job::type_key));
-            if (job && !job->is_active()) break;
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-        return nullptr;
+        auto frame = std::make_shared<EmitAndAwaitCancellation>(
+            col, upstream_runs.load() * 10, c);
+        frame->retain();
+        return frame->invoke_suspend(Result<void*>::success(nullptr));
     });
 
     auto shared = share_in(
@@ -234,6 +262,29 @@ void test_share_in_while_subscribed_restart_and_cache_reset() {
     }
     assert_true(shared->replay_cache().empty());
 
+    std::atomic<int> sub2_value{0};
+    std::thread t2([&]() {
+        class OnceCollector final : public FlowCollector<int> {
+        public:
+            explicit OnceCollector(std::atomic<int>& value) : value_(value) {}
+            void* emit(int value, Continuation<void*>*) override {
+                value_ = value;
+                throw flow_abort(this);
+            }
+        private:
+            std::atomic<int>& value_;
+        } collector(sub2_value);
+        try {
+            shared->collect(&collector, nullptr);
+        } catch (const flow_abort&) {}
+    });
+    for (int i = 0; i < 50 && sub2_value.load() == 0; ++i) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    if (t2.joinable()) t2.join();
+    assert_equals(2, upstream_runs.load());
+    assert_equals(20, sub2_value.load());
+
     cancel(*scope);
     std::cout << "test_share_in_while_subscribed_restart_and_cache_reset passed" << std::endl;
 }
@@ -244,13 +295,9 @@ void test_state_in_while_subscribed_reset_to_initial() {
 
     auto cold = flow::flow<int>([&upstream_runs](FlowCollector<int>* col, Continuation<void*>* c) -> void* {
         upstream_runs++;
-        col->emit(77, c);
-        while (c && c->get_context()) {
-            auto job = std::dynamic_pointer_cast<Job>(c->get_context()->get(Job::type_key));
-            if (job && !job->is_active()) break;
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-        return nullptr;
+        auto frame = std::make_shared<EmitAndAwaitCancellation>(col, 77, c);
+        frame->retain();
+        return frame->invoke_suspend(Result<void*>::success(nullptr));
     });
 
     auto state = state_in(

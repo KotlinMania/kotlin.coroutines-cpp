@@ -55,6 +55,7 @@ public:
     virtual ~BaseContinuationImpl() = default;
 
     // This implementation is final. This fact is used to unroll resumeWith recursion.
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:21-45
     void resume_with(Result<void*> result) override final {
         // Upstream: invoke `probeCoroutineResumed(this)` exactly once even though the
         // loop below resumes previous frames as well. The C++ port relies on
@@ -67,8 +68,12 @@ public:
         Result<void*> param = std::move(result);
 
         while (true) {
+            // NOTE(port): Kotlin's GC keeps both frames alive while the loop
+            // releases interception and transfers the completed Result.
+            auto current_guard = current->weak_from_this().lock();
+            auto completion_guard = current->completion;
             // with(current)
-            auto* completion_ptr = current->completion.get();
+            auto* completion_ptr = completion_guard.get();
             if (!completion_ptr) {
                 // fail fast when trying to resume continuation without completion
                 // throw std::runtime_error("Trying to resume continuation without completion");
