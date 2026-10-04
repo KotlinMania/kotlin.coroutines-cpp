@@ -62,13 +62,10 @@ namespace kotlinx {
             constexpr int FALSE = 0;
             constexpr int TRUE = 1;
 
-            // LIST_ON_COMPLETION_PERMISSION and LIST_CANCELLATION_PERMISSION mirror
-            // upstream's `private const val ...` permission bits used by the NodeList
-            // state machine — both are referenced by inlined helpers that have not yet
-            // been split out into separate symbols.
-            [[maybe_unused]] constexpr int LIST_ON_COMPLETION_PERMISSION = 1;
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1414-1416
+            constexpr int LIST_ON_COMPLETION_PERMISSION = 1;
             constexpr int LIST_CHILD_PERMISSION = 2;
-            [[maybe_unused]] constexpr int LIST_CANCELLATION_PERMISSION = 4;
+            constexpr int LIST_CANCELLATION_PERMISSION = 4;
         } // anonymous namespace
 
         // ============================================================================
@@ -663,7 +660,7 @@ namespace kotlinx {
             // Add the node to the completion handler list
             bool added = impl_->try_put_node_into_list(this, node,
                                                        [node](Incomplete *state, NodeList *list) -> int {
-                                                           return list->add_last(node) ? 1 : 0;
+                                                           return list->add_last(node, LIST_ON_COMPLETION_PERMISSION) ? 1 : 0;
                                                        });
 
             if (!added) {
@@ -720,28 +717,34 @@ namespace kotlinx {
             return result;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1011-1083
         std::shared_ptr<ChildHandle> JobSupport::attach_child(std::shared_ptr<ChildJob> child) {
             auto *node = new ChildHandleNode(std::move(child));
             node->job = this;
-
+            bool already_notified = false;
             bool added = impl_->try_put_node_into_list(this, node,
-                                                       [node](Incomplete *state, NodeList *list) -> int {
-                                                           return list->add_last(node) ? 1 : 0;
-                                                       });
-
-            if (added) {
-                return std::shared_ptr<ChildHandle>(node, [](ChildHandle *) {
-                    // Node lifetime managed by list
+                [this, node, &already_notified](Incomplete*, NodeList *list) -> int {
+                    if (list->add_last(node, LIST_ON_COMPLETION_PERMISSION |
+                                      LIST_CHILD_PERMISSION | LIST_CANCELLATION_PERMISSION)) {
+                        return 1;
+                    }
+                    bool added_before_completion = list->add_last(
+                        node, LIST_CHILD_PERMISSION | LIST_ON_COMPLETION_PERMISSION);
+                    auto *latest = impl_->state.load(std::memory_order_acquire);
+                    auto *finishing = dynamic_cast<Finishing*>(latest);
+                    auto *exceptional = dynamic_cast<CompletedExceptionally*>(latest);
+                    auto root_cause = finishing ? finishing->get_root_cause() :
+                        (exceptional ? exceptional->cause : nullptr);
+                    already_notified = true;
+                    node->invoke(root_cause);
+                    return added_before_completion ? 1 : -1;
                 });
-            }
-
-            // Already completed
-            auto *s = impl_->state.load();
-            auto *ex = dynamic_cast<CompletedExceptionally *>(s);
-            node->invoke(ex ? ex->cause : nullptr);
+            if (added) return std::shared_ptr<ChildHandle>(node, [](ChildHandle*) {});
+            auto *state = impl_->state.load(std::memory_order_acquire);
+            auto *exceptional = dynamic_cast<CompletedExceptionally*>(state);
+            if (!already_notified) node->invoke(exceptional ? exceptional->cause : nullptr);
             delete node;
-            // Return a non-disposable ChildHandle (cast the NonDisposableHandle)
-            return std::shared_ptr<ChildHandle>(&NonDisposableHandle::instance(), [](ChildHandle*){});
+            return std::shared_ptr<ChildHandle>(&NonDisposableHandle::instance(), [](ChildHandle*) {});
         }
 
         // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:451-459
@@ -776,14 +779,14 @@ namespace kotlinx {
                                                                    ? finishing->get_root_cause()
                                                                    : nullptr;
                                                                if (root_cause == nullptr) {
-                                                                   return list->add_last(node) ? 1 : 0;
+                                                                   return list->add_last(node, LIST_CANCELLATION_PERMISSION | LIST_ON_COMPLETION_PERMISSION) ? 1 : 0;
                                                                } else {
                                                                    if (invoke_immediately) node->invoke(root_cause);
                                                                    already_handled = true;
                                                                    return -1;
                                                                }
                                                            } else {
-                                                               return list->add_last(node) ? 1 : 0;
+                                                               return list->add_last(node, LIST_ON_COMPLETION_PERMISSION) ? 1 : 0;
                                                            }
                                                        });
             if (already_handled) {
@@ -1130,15 +1133,14 @@ namespace kotlinx {
             }
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:561-568
         void JobSupport::Impl::promote_single_to_node_list(JobNode *node) {
             auto *list = new NodeList();
-            if (node->add_one_if_empty(list)) {
-                auto *expected = static_cast<JobState *>(node);
-                if (state.compare_exchange_strong(expected, list)) {
-                    return;
-                }
-            }
-            delete list;
+            if (!node->add_one_if_empty(list)) delete list;
+            // The published list belongs to the intrusive graph even if this state CAS loses.
+            auto *published_list = dynamic_cast<NodeList*>(node->next_node());
+            auto *expected = static_cast<JobState *>(node);
+            state.compare_exchange_strong(expected, published_list);
         }
 
         // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:360-374
@@ -1172,6 +1174,7 @@ namespace kotlinx {
         // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:976-997
         void JobSupport::Impl::notify_cancelling(JobSupport *job, NodeList *list, std::exception_ptr cause) {
             job->on_cancelling(cause);
+            list->close(LIST_CANCELLATION_PERMISSION);
             notify_handlers(job, list, cause, [](JobNode *node) { return node->get_on_cancelling(); });
             cancel_parent(cause);
         }
@@ -1187,13 +1190,19 @@ namespace kotlinx {
             return is_cancellation;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:532-552
         bool JobSupport::Impl::try_put_node_into_list(JobSupport *job, JobNode *node,
                                                       std::function<int(Incomplete *, NodeList *)> try_add) {
             while (true) {
                 auto *s = state.load(std::memory_order_acquire);
 
                 if (s == &EMPTY_ACTIVE || s == &EMPTY_NEW) {
-                    promote_empty_to_node_list(static_cast<Empty *>(s));
+                    if (static_cast<Empty*>(s)->is_active()) {
+                        auto *expected = s;
+                        if (state.compare_exchange_strong(expected, static_cast<JobState*>(node))) return true;
+                    } else {
+                        promote_empty_to_node_list(static_cast<Empty *>(s));
+                    }
                     continue;
                 }
 
@@ -1244,6 +1253,7 @@ namespace kotlinx {
             }
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:835-846
         bool JobSupport::Impl::make_completing(JobSupport *job, JobState *proposed) {
             while (true) {
                 auto *s = state.load(std::memory_order_acquire);
@@ -1252,6 +1262,7 @@ namespace kotlinx {
                 if (final_state == COMPLETING_ALREADY) return false;
                 if (final_state == COMPLETING_WAITING_CHILDREN) return true;
                 if (final_state == COMPLETING_RETRY) continue;
+                job->after_completion(final_state);
                 return true;
             }
         }
@@ -1266,7 +1277,7 @@ namespace kotlinx {
             if ((dynamic_cast<Empty *>(s) || (dynamic_cast<JobNode *>(s) && !dynamic_cast<ChildHandleNode *>(s)))
                 && !is_proposed_exception) {
                 if (try_finalize_simple_state(job, incomplete, proposed)) {
-                    return s;
+                    return proposed;
                 }
                 return COMPLETING_RETRY;
             }
@@ -1274,18 +1285,16 @@ namespace kotlinx {
             return try_make_completing_slow_path(job, incomplete, proposed);
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:902-945
         JobState *JobSupport::Impl::try_make_completing_slow_path(JobSupport *job, Incomplete *s, JobState *proposed) {
             auto *list = get_or_promote_cancelling_list(s);
             if (!list) return COMPLETING_RETRY;
 
             auto *finishing = dynamic_cast<Finishing *>(s);
+            std::unique_ptr<Finishing> promoted;
             if (!finishing) {
-                finishing = new Finishing(list, false, nullptr);
-                auto *expected = static_cast<JobState *>(s);
-                if (!state.compare_exchange_strong(expected, finishing)) {
-                    delete finishing;
-                    return COMPLETING_RETRY;
-                }
+                promoted = std::make_unique<Finishing>(list, false, nullptr);
+                finishing = promoted.get();
             }
 
             std::exception_ptr notify_root_cause = nullptr;
@@ -1293,6 +1302,12 @@ namespace kotlinx {
                 std::lock_guard<std::recursive_mutex> lock(finishing->mutex);
                 if (finishing->is_completing.load()) return COMPLETING_ALREADY;
                 finishing->is_completing.store(true);
+                if (promoted) {
+                    auto *expected = static_cast<JobState*>(s);
+                    if (!state.compare_exchange_strong(expected, finishing)) return COMPLETING_RETRY;
+                    // NOTE(port): Transfer ownership only after publication; a failed CAS frees after unlocking.
+                    promoted.release();
+                }
 
                 bool was_cancelling = finishing->is_cancelling();
                 if (auto *ex = dynamic_cast<CompletedExceptionally *>(proposed)) {
@@ -1313,6 +1328,11 @@ namespace kotlinx {
                 return COMPLETING_WAITING_CHILDREN;
             }
 
+            list->close(LIST_CHILD_PERMISSION);
+            auto *another_child = next_child(list);
+            if (another_child && try_wait_for_child(job, finishing, another_child, proposed)) {
+                return COMPLETING_WAITING_CHILDREN;
+            }
             return finalize_finishing_state(job, finishing, proposed);
         }
 

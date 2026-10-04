@@ -144,6 +144,9 @@ additional to the core-interface counts below.
 | `collectLatest(action)` | `flow/Collect.hpp:175`, `flow/Collect.cpp:120` | Wired | mapLatest(action).buffer(0).collect; action resumes before its Unit emission |
 | `ChannelFlow.collectTo` suspend ABI | `flow/internal/ChannelFlow.hpp:327` | Wired for operator/builder/channel paths | Producer and SendingCollector remain alive through suspension; legacy concurrent-merge implementations still need translation |
 | `stateIn(scope)` deferred overload | `flow/Share.hpp:282` | Surface / existing wiring | Deferred sharing path is outside this repair; no new suspension-parity claim |
+| `LockFreeLinkedListNode.next`, `addLast(node, permissionsBitmask)`, `addNext`, `removeOrNext`, `close`, `toString` | `internal/LockFreeLinkedList.hpp:18`, `:22`, `:26`, `:28`, `:29`, `:31`; `internal/LockFreeLinkedList.common.cpp:63` | Wired | Atomic publication, Removed marker, predecessor repair and permission closure follow the concurrent Kotlin source; C++ marker storage owns markers, while intrusive node reclamation still requires external lifetime management |
+| `JobSupport.attachChild` and completion registration | `JobSupport.cpp:721`, `:1137`, `:1194`, `:1289` | Wired | Registration respects cancellation/child/completion closure; a published single-to-list promotion survives a losing state CAS; completing flag is set under the Finishing lock before publication |
+| BufferedChannel waiter unwrap and suspended send handshake | `channels/BufferedChannel.hpp:423`, `:2036`, `:2811`, `:2900`; `channels/BufferedChannel.cpp:22` | Wired for exercised paths | Plain Waiter is preserved; WaiterEB is unwrapped conditionally; a concrete Unit/erased adapter and get_result handshake preserve send resumption; sender-first and receiver-first regressions exercise suspension in both directions |
 
 ---
 

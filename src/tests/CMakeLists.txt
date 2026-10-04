@@ -41,10 +41,14 @@ add_coroutine_test(test_timeout)
 # Transliterated Kotlin tests
 add_coroutine_test(AsyncTest)
 add_coroutine_test(JobTest)
+add_coroutine_test(test_lock_free_list)
+set_tests_properties(test_lock_free_list PROPERTIES TIMEOUT 30)
 
 # Suspension infrastructure and flow tests
 add_coroutine_test(test_suspension_core)
 add_coroutine_test(test_channel_as_flow_smoke)
+add_coroutine_test(test_channel_rendezvous)
+set_tests_properties(test_channel_rendezvous PROPERTIES TIMEOUT 15)
 add_coroutine_test(test_sync)
 add_coroutine_test(test_combine_zip_smoke)
 add_coroutine_test(test_share_hot_flow_smoke)

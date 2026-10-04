@@ -70,7 +70,7 @@ is not a claim of binary compatibility or completed automatic variable spilling.
 | Producer/scope handoff | `channels/Produce.hpp:187`; `flow/internal/ChannelFlow.cpp:73`; `flow/internal/ChannelFlow.hpp:230`, `:327` | Suspension leaves producer active; owned SendingCollector/channel survive; scope waits for child completion |
 | Cold-flow lifetime | `flow/FlowBuilders.hpp:146`; `flow/internal/SafeCollector.hpp:147` | Iterable frame retains index across emit; SafeCollector is released in collection's finally path |
 | Cancellable join | `JobSupport.cpp:597` | Completion resumes a cancellable continuation; caller cancellation disposes completion registration; completed join checks caller activity |
-| Completion ordering | `JobSupport.cpp:1485`; `AbstractCoroutine.hpp:182` | Finalization invokes handlers; AbstractCoroutine afterResume or deferred child completion resumes scope once, rather than both |
+| Completion ordering | `JobSupport.cpp:1505`; `AbstractCoroutine.hpp:182` | Finalization invokes handlers; AbstractCoroutine afterResume or deferred child completion resumes scope once, rather than both |
 | Channel cancellation state | `CancellableContinuationImpl.hpp:884`, `:1518` | CAS the actual SegmentBase into the NotCompleted state union, so cancellation clears waiter cells before iterator destruction |
 
 `BaseContinuationImpl::resume_with` retains current and completion frames while
@@ -139,3 +139,67 @@ LockFreeLinkedList.common.cpp publishes a node before initializing its links,
 uses unconditional stores during removal, and leaves close/help methods empty.
 The actual concurrent Kotlin list algorithm is a required follow-up dependency
 for reliable completion registration. This checkpoint is not the final repair.
+
+### Completion-list and rendezvous dependency repair
+
+The follow-up ports the actual concurrent list in
+`kotlinx-coroutines-core/concurrent/src/internal/LockFreeLinkedList.kt:29-287`:
+links initialize before publication, removal marks the next link with Removed,
+finishAdd/correctPrev repair predecessor links, and ListClosed nodes enforce
+permission bits. Atomic fields and concrete marker helpers stay in the `.cpp`.
+The C++ representation retains ownership of Removed and ListClosed markers;
+regular intrusive nodes must remain alive during operations. Kotlin GC reclamation
+is not implemented. The old JobNode comment claiming destructor list draining
+was corrected because the destructor does not do that.
+
+JobSupport follows upstream completion registration and single-node promotion
+(`JobSupport.kt:532-568`), child attachment during cancellation (`:1011-1083`),
+and completing/child-list closure (`:902-945`). It retains a published list if the
+state CAS loses and marks a newly created Finishing state as completing under its
+lock before publication. makeCompleting now invokes afterCompletion with the
+actual completed value on the immediate path, matching `:835-846`.
+
+A Debug CollectLatestTest stall was captured after the list repair. The root
+exception was `Unexpected sender type in tryResumeSender`. Its channel slow
+path used `dynamic_cast<WaiterEB*>(reinterpret_cast<WaiterEB*>(state))`, which
+does not check the actual type: it treated a plain waiter as a wrapper. The
+send/receive slow paths now conditionally unwrap using the existing cell tag,
+as Kotlin specifies (`BufferedChannel.kt:501-605`, `:1054-1164`). Tag checking
+reads object bytes rather than accessing an unrelated WaiterEB object.
+
+After correcting the unwrap, this regression exposed a second send-path shortcut:
+sendOnNoWaiterSuspend returned COROUTINE_SUSPENDED unconditionally without
+getResult, leaving the continuation decision undecided and preventing resumed
+delivery. It also reinterpreted `Continuation<void*>` as `Continuation<void>`.
+The helper now calls get_result, matching suspendCancellableCoroutineReusable,
+and uses a concrete Unit/erased continuation adapter in BufferedChannel.cpp.
+
+The sender-first rendezvous regression deterministically aborts with that exact
+exception when compiled against the prior `3581f80f` channel header. The repaired
+test also checks receiver-first operation and crosses four channel segments in
+each direction. The completion-list regression races two producers and two
+removers over 80,000 nodes, checks independent closure permissions, and races two
+handler registration threads with completion over 1,000 jobs (16,000 handlers).
+These address the captured dependency failures; they do not certify all channel
+or completion races. Raw receipts, debugger state, and the prior-header failure
+are retained in ignored `tmp/sharing-handoff/`.
+
+### Final verification of the repaired tree (2026-10-04)
+
+Both configurations build the production core and tests with Apple Clang 21 and
+the CMake suspend IR cleanup launcher enabled. The optional Clang plugin, kxs
+injector, and AST-distance targets are disabled in these test configurations.
+
+| Check | Result | Receipt under `tmp/sharing-handoff/` |
+|---|---|---|
+| Full Debug CTest, `ctest --test-dir build-sharing-review --timeout 60 --output-on-failure` | 23/23 passed, including test_ir_pipeline; 31.36s | `final-build.log`, `final-ctest.log` |
+| Optimized ASan focused CTest: JobTest, list races, rendezvous, hot-flow sharing, virtual sharing suspension, Collect/Reduce, CollectLatest | 7/7 passed; 3.75s | `final-asan-build.log`, `final-asan-ctest.log` |
+| Optimized ASan repetition of the two previously stalled latest paths | CollectLatestTest 500/500 and test_collect_reduce_smoke 500/500 passed, with a 5s timeout per execution | `final-latest-stress.log` |
+| Rendezvous regression against prior channel header | Deterministic abort: Unexpected sender type in tryResumeSender | `rendezvous-before-result.log` |
+
+ASan uses `detect_leaks=0`; no leak-freedom or universal race-freedom claim is
+made. Earlier failed tests and captured debugger state remain available alongside
+the passing receipts. The list publication/closure and channel waiter/decision
+shortcuts found during this handoff have been repaired against upstream. Remaining
+adverse-review findings listed above and the blocked fresh AST-distance measurement
+remain explicit limitations.

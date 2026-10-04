@@ -37,6 +37,7 @@
 #include <functional>
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <array>
 
 namespace kotlinx {
@@ -46,6 +47,11 @@ namespace channels {
 // Forward declarations
 template <typename E> class BufferedChannel;
 template <typename E> class ChannelSegment;
+
+namespace detail {
+// NOTE(port): Concrete Unit-to-erased continuation adapter for the templated send path.
+std::shared_ptr<Continuation<void>> adapt_send_completion(Continuation<void*>* completion);
+}
 
 // ============================================================================
 // Lines 2962-2973: Buffer end constants
@@ -416,9 +422,10 @@ inline bool is_waiter_type(void* state) {
 // Check if a pointer (known to be a waiter type) is WaiterEB
 inline bool is_waiter_eb(void* state) {
     if (!is_waiter_type(state)) return false;
-    // Check magic marker at the start of the object
-    auto* candidate = static_cast<WaiterEB*>(state);
-    return candidate->magic == WAITER_EB_MAGIC;
+    // NOTE(port): Read the existing erased-storage tag through object bytes, not an unrelated type.
+    uintptr_t marker;
+    std::memcpy(&marker, state, sizeof(marker));
+    return marker == WAITER_EB_MAGIC;
 }
 
 // Check if a pointer is a plain Waiter (not WaiterEB)
@@ -2025,6 +2032,7 @@ private:
     // -------------------------------------------------------------------------
     // Lines 141-164: private suspend fun sendOnNoWaiterSuspend(...)
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:141-164
     void* send_on_no_waiter_suspend(
         ChannelSegment<E>* segment,
         int index,
@@ -2032,14 +2040,8 @@ private:
         int64_t s,
         Continuation<void*>* completion
     ) {
-        // Create a CancellableContinuationImpl like suspendCancellableCoroutineReusable does
-        // Note: completion is Continuation<void*>*, wrap in shared_ptr with no-op deleter
-        auto completion_wrapper = std::shared_ptr<Continuation<void>>(
-            reinterpret_cast<Continuation<void>*>(completion),
-            [](Continuation<void>*){} // no-op deleter, we don't own completion
-        );
         auto cont = std::make_shared<CancellableContinuationImpl<void>>(
-            completion_wrapper, MODE_CANCELLABLE_REUSABLE
+            detail::adapt_send_completion(completion), MODE_CANCELLABLE_REUSABLE
         );
 
         send_impl_on_no_waiter(
@@ -2048,7 +2050,7 @@ private:
             [cont]() { cont->resume({}); },
             [this, element, cont]() { on_closed_send_on_no_waiter_suspend(element, cont.get()); }
         );
-        return COROUTINE_SUSPENDED;
+        return cont->get_result();
     }
 
     // -------------------------------------------------------------------------
@@ -2805,6 +2807,7 @@ public:
         return update_cell_send_slow(segment, index, element, s, waiter, closed);
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:501-605
     int update_cell_send_slow(ChannelSegment<E>* segment, int index, E element,
                               int64_t s, void* waiter, bool closed) {
         while (true) {
@@ -2846,9 +2849,7 @@ public:
             } else {
                 // state is Waiter or WaiterEB
                 segment->clean_element(index);
-                void* receiver = state;
-                WaiterEB* waiter_eb = dynamic_cast<WaiterEB*>(reinterpret_cast<WaiterEB*>(state));
-                if (waiter_eb) receiver = waiter_eb->waiter;
+                void* receiver = get_waiter(state);
 
                 if (try_resume_receiver(receiver, element)) {
                     // C++ lifetime: release the waiter ref since we're done with it
@@ -2895,6 +2896,7 @@ public:
         return update_cell_receive_slow(segment, index, r, waiter);
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1054-1164
     void* update_cell_receive_slow(ChannelSegment<E>* segment, int index, int64_t r, void* waiter) {
         while (true) {
             void* state = segment->get_state(index);
@@ -2933,10 +2935,8 @@ public:
             } else {
                 // state is a sender
                 if (segment->cas_state(index, state, static_cast<void*>(&RESUMING_BY_RCV()))) {
-                    bool help_expand_buffer = (dynamic_cast<WaiterEB*>(reinterpret_cast<WaiterEB*>(state)) != nullptr);
-                    void* sender = state;
-                    WaiterEB* waiter_eb = dynamic_cast<WaiterEB*>(reinterpret_cast<WaiterEB*>(state));
-                    if (waiter_eb) sender = waiter_eb->waiter;
+                    bool help_expand_buffer = is_waiter_eb(state);
+                    void* sender = get_waiter(state);
 
                     if (try_resume_sender(sender, segment, index)) {
                         // C++ lifetime: release the waiter ref since we're done with it

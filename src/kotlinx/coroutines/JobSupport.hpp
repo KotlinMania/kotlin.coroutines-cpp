@@ -94,18 +94,16 @@ public:
 
     void notify_completion(std::exception_ptr cause);
     std::string get_string(const std::string& state) const;
-    std::string to_string() const;
+    std::string to_string() const override;
 };
 
 /**
  * Node in the linked list of completion handlers.
  * Transliterated from: internal abstract class JobNode (JobSupport.kt:1460)
  *
- * NOTE: The `job` pointer is a raw pointer to the parent JobSupport. This is safe
- * because nodes are stored in a linked list owned by the JobSupport, and are cleaned
- * up when the JobSupport is destroyed. The lifetime invariant is enforced by the
- * destruction order: a JobSupport's destructor drains its list before the JobSupport's
- * own memory is freed, so a JobNode never sees its parent dangling under normal usage.
+ * NOTE(port): The intrusive node stores a raw parent pointer, as in upstream.
+ * The C++ port retains published nodes; it does not implement Kotlin GC reclamation.
+ * Callers must keep the parent alive while handlers or traversal access this pointer.
  */
 class JobNode : public Incomplete,
                 public internal::LockFreeLinkedListNode,
@@ -130,7 +128,7 @@ public:
     NodeList* get_list() const override { return nullptr; }
 
     void dispose() override;
-    virtual std::string to_string() const;
+    std::string to_string() const override;
 };
 
 /**
