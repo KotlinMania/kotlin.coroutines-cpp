@@ -554,3 +554,35 @@ The only workflow, .github/workflows/codeql.yml, retains weekly schedule and man
 dispatch and is unchanged. No push, PR, release, deployment or remote workflow change
 was performed. Evidence is under
 /Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-transform-repair/.
+
+
+## Transform comment translation completion — 2026-10-04
+
+Sydney requested closing the comparison further, explicitly allowing faithful
+comment ports. Re-read the whole original Transform.kt and current Doxygen.
+Completed the original running_fold vector-accumulation example, the running_reduce
+reference to its initial-value sibling scan, and the full chunked map/printing
+example using actual C++ FlowCollector and synchronous collection. Translated all
+three buffer comments: no preallocation, allocation when needed, and cleanup
+without allocating because the last full chunk may finish the flow. C++ contracts
+and result-box ownership documentation remain intact. No Kotlin syntax or source
+references appear inside Doxygen.
+
+Four exact fenced examples compiled and ran against the optimized ASan core with
+exit zero and no diagnostics. Their output values match the original examples;
+the printing example produced exactly ab, cd and e on separate lines. Comparing
+the pre-change and post-change C++ headers gives 100/100 function matches, body
+score 1.000, AST similarity 1.000 and normalized logic 1.000; comment-stripped
+source is unchanged. This is a comments-only change, so the previous algorithmic
+acceptance is not presented as a fresh full-suite run.
+
+ASTDistance intentionally excludes comments from normalized body ASTs and measures
+documentation separately. Kotlin/C++ function coverage remains12/13 and body score
+0.072. Documentation weighted score changed79.79% to79.62%, text cosine59.58% to
+59.25%, and word-set overlap17.28% to17.86%. The extra C++ example vocabulary did
+not increase the weighted word-frequency score; the more complete source examples
+are retained instead of tuning prose or hiding ABI documentation. Scoring weights
+and executable binary remain unchanged. Raw before/after reports, exact examples,
+code-control comparison and receipts are under
+/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-transform-comments/.
+The existing runtime-class representation and original choreography gaps remain.

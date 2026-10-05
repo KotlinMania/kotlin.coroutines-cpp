@@ -916,9 +916,13 @@ inline std::shared_ptr<Flow<R>> scan(
  * @return A flow emitting the intermediate accumulated results.
  *
  * ```cpp
- * auto values = running_fold<int, int>(as_flow(std::vector<int>{1, 2, 3}), 0,
- *     [](int accumulator, int value) { return accumulator + value; });
- * // Collects 0, 1, 3, 6.
+ * auto append = [](std::vector<int> accumulator, int value) {
+ *     accumulator.push_back(value);
+ *     return accumulator;
+ * };
+ * auto values = running_fold<int, std::vector<int>>(
+ *     as_flow(std::vector<int>{1, 2, 3}), {}, append);
+ * // Collects {}, {1}, {1, 2}, {1, 2, 3}.
  * ```
  *
  * A suspending operation accepts an additional `Continuation<void*>*` and returns
@@ -1061,6 +1065,7 @@ inline std::shared_ptr<Flow<R>> running_fold(
  *
  * The first element of the upstream flow is emitted immediately without applying the operation. Every subsequent
  * element is combined with the accumulated value using the operation, and the new result is emitted.
+ * The sibling operator `scan` takes an explicit initial value.
  *
  * @tparam T The element type of the source flow.
  * @tparam Operation Binary callable `(const T&, T)` returning `T` synchronously or via Continuation ABI.
@@ -1216,9 +1221,24 @@ inline std::shared_ptr<Flow<T>> running_reduce(
  * The final chunk may have fewer elements than `size`.
  *
  * ```cpp
- * auto values = chunked(as_flow(std::vector<std::string>{"a", "b", "c", "d", "e"}), 2);
- * // Collects {"a", "b"}, {"c", "d"}, {"e"}.
+ * auto chunks = chunked(as_flow(std::vector<std::string>{"a", "b", "c", "d", "e"}), 2);
+ * auto values = map<std::vector<std::string>, std::string>(chunks,
+ *     [](std::vector<std::string> chunk) {
+ *         std::string joined;
+ *         for (const auto& value : chunk) joined += value;
+ *         return joined;
+ *     });
+ * struct Printer final : FlowCollector<std::string> {
+ *     void* emit(std::string value, Continuation<void*>*) override {
+ *         std::cout << value << '\n';
+ *         return nullptr;
+ *     }
+ * } printer;
+ * values->collect(&printer, nullptr); // Prints "ab", "cd", "e" on separate lines.
  * ```
+ *
+ * The printing example requires `<iostream>`. Collection completes synchronously;
+ * the local printer remains alive until it returns.
  *
  * Batching & Buffer Lifetime:
  * - Lazy allocation: The chunk buffer `std::optional<std::vector<T>> result_` is allocated on demand on the first element.
@@ -1252,6 +1272,7 @@ inline std::shared_ptr<Flow<std::vector<T>>> chunked(
 
                 void* invoke_suspend(Result<void*> result) override {
                     coroutine_begin(this)
+                    // Allocate if needed.
                     if (!owner_->result_.has_value()) {
                         owner_->result_.emplace();
                         owner_->result_->reserve(owner_->size_);
@@ -1259,6 +1280,7 @@ inline std::shared_ptr<Flow<std::vector<T>>> chunked(
                     owner_->result_->push_back(std::move(value_));
                     if (static_cast<int>(owner_->result_->size()) == owner_->size_) {
                         coroutine_yield(this, owner_->downstream_->emit(*owner_->result_, this));
+                        // Cleanup, but don't allocate: this may be the last element.
                         owner_->result_.reset();
                     }
                     coroutine_end(this)
@@ -1312,7 +1334,7 @@ inline std::shared_ptr<Flow<std::vector<T>>> chunked(
             std::shared_ptr<Flow<T>> upstream_;
             FlowCollector<std::vector<T>>* downstream_;
             int size_;
-            std::optional<std::vector<T>> result_ = std::nullopt;
+            std::optional<std::vector<T>> result_ = std::nullopt; // Do not preallocate anything.
             std::shared_ptr<BaseContinuationImpl> self_ref_;
         };
 
