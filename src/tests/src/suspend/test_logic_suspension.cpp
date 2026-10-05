@@ -444,9 +444,9 @@ void test_upstream_suspension_and_finally_ordering() {
             // op 0 (any): x == 2 (1 does not terminate)
             // op 1 (all): x > 0 (1 satisfies, continues)
             // op 2 (none): x == 2 (1 does not terminate)
-            void* r = op == 0 ? any<int>(f, [](int x) { return x == 2; }, &comp)
+            void* r = op == 0 ? any<int>(f, [](int x) { return x > 5; }, &comp)
                     : op == 1 ? all<int>(f, [](int x) { return x > 0; }, &comp)
-                              : none<int>(f, [](int x) { return x == 2; }, &comp);
+                              : none<int>(f, [](int x) { return x > 5; }, &comp);
             assert_true(intrinsics::is_coroutine_suspended(r));
             assert_equals(0, comp.resumes);
             assert_equals(1, trace.completed_emits);
@@ -509,9 +509,9 @@ void test_resumed_failures_propagation() {
             Completion comp;
             auto f = source(trace, 2);
             auto failure = std::make_exception_ptr(TestException("upstream error after"));
-            void* r = op == 0 ? any<int>(f, [](int x) { return x == 2; }, &comp)
+            void* r = op == 0 ? any<int>(f, [](int x) { return x > 5; }, &comp)
                     : op == 1 ? all<int>(f, [](int x) { return x > 0; }, &comp)
-                              : none<int>(f, [](int x) { return x == 2; }, &comp);
+                              : none<int>(f, [](int x) { return x > 5; }, &comp);
             assert_true(intrinsics::is_coroutine_suspended(r));
             assert_equals(1, trace.completed_emits);
             trace.upstream_after.resume(Result<void*>::failure(failure));
@@ -528,7 +528,7 @@ void test_resumed_failures_propagation() {
 void test_foreign_abort_propagation() {
     int foreign_owner = 42;
     for (int op = 0; op < 3; ++op) {
-        auto abort_ex = std::make_exception_ptr(internal::AbortFlowException(&foreign_owner));
+        auto abort_ex = std::make_exception_ptr(kotlinx::coroutines::flow::internal::AbortFlowException(&foreign_owner));
 
         // 1. Synchronous foreign abort (call inside try block)
         try {
@@ -547,7 +547,7 @@ void test_foreign_abort_propagation() {
                 comp.result.get_or_throw();
             }
             assert_true(false);
-        } catch (const internal::AbortFlowException& e) {
+        } catch (const kotlinx::coroutines::flow::internal::AbortFlowException& e) {
             assert_true(e.owner == &foreign_owner);
         }
 
@@ -566,7 +566,7 @@ void test_foreign_abort_propagation() {
             try {
                 comp.result.get_or_throw();
                 assert_true(false);
-            } catch (const internal::AbortFlowException& e) {
+            } catch (const kotlinx::coroutines::flow::internal::AbortFlowException& e) {
                 assert_true(e.owner == &foreign_owner);
             }
             assert_true(pending.frame.expired());
@@ -713,7 +713,7 @@ void test_capture_and_upstream_lifetime_release() {
 void test_interleaved_concurrent_collections() {
     for (int op1 = 0; op1 < 3; ++op1) {
         for (int op2 = 0; op2 < 3; ++op2) {
-            auto f = as_flow(std::vector<int>{1, 2, 3});
+            auto f = as_flow(std::vector<int>{1});
             Pending p1;
             Pending p2;
             Completion c1;
@@ -729,20 +729,31 @@ void test_interleaved_concurrent_collections() {
             assert_true(intrinsics::is_coroutine_suspended(r2));
             assert_equals(0, c1.resumes);
             assert_equals(0, c2.resumes);
+            assert_false(p1.frame.expired());
+            assert_false(p2.frame.expired());
 
-            // Resume first
+            // Resume first with true
             p1.resume(Result<void*>::success(new bool(true)));
             assert_equals(1, c1.resumes);
             assert_equals(0, c2.resumes);
             void* ptr1 = c1.result.get_or_throw();
+            assert_true(ptr1 != nullptr);
+            bool v1 = *static_cast<bool*>(ptr1);
             delete static_cast<bool*>(ptr1);
+            assert_equals(op1 != 2, v1);
+            assert_true(p1.frame.expired());
+            assert_false(p2.frame.expired());
 
-            // Resume second
+            // Resume second with false
             p2.resume(Result<void*>::success(new bool(false)));
             assert_equals(1, c1.resumes);
             assert_equals(1, c2.resumes);
             void* ptr2 = c2.result.get_or_throw();
+            assert_true(ptr2 != nullptr);
+            bool v2 = *static_cast<bool*>(ptr2);
             delete static_cast<bool*>(ptr2);
+            assert_equals(op2 == 2, v2);
+            assert_true(p2.frame.expired());
         }
     }
 }

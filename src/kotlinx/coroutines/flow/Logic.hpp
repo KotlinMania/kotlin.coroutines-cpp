@@ -26,6 +26,7 @@ namespace kotlinx::coroutines::flow {
  * Boolean result of none evaluated with the same predicate.
  *
  * In the Continuation ABI, returns a heap-allocated bool* or COROUTINE_SUSPENDED.
+ * Supply a live completion continuation whenever upstream or predicate can suspend.
  * The caller or resumed completion continuation owns and deletes the returned Boolean box.
  *
  * Example:
@@ -33,8 +34,9 @@ namespace kotlinx::coroutines::flow {
  * auto source = as_flow(std::vector<int>{1, 2, 3});
  * void* res = any(source, [](int x) { return x == 2; });
  * // Note: This example uses a non-suspending source and a synchronous predicate,
- * // returning an immediate heap-allocated bool* result. General calls with suspending
- * // sources or predicates return COROUTINE_SUSPENDED and deliver their result to the completion continuation.
+ * // returning an immediate heap-allocated bool* result. Calls with suspending sources
+ * // or predicates may suspend (returning COROUTINE_SUSPENDED) or complete immediately;
+ * // if suspension occurs, the result is delivered to the completion continuation.
  * std::unique_ptr<bool> box(static_cast<bool*>(res));
  * bool matches = *box;
  * ```
@@ -119,6 +121,7 @@ void* any(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<v
  * of none evaluated with the inverted predicate.
  *
  * In the Continuation ABI, returns a heap-allocated bool* or COROUTINE_SUSPENDED.
+ * Supply a live completion continuation whenever upstream or predicate can suspend.
  * The caller or resumed completion continuation owns and deletes the returned Boolean box.
  *
  * Example:
@@ -126,8 +129,9 @@ void* any(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<v
  * auto source = as_flow(std::vector<int>{1, 2, 3});
  * void* res = all(source, [](int x) { return x > 0; });
  * // Note: This example uses a non-suspending source and a synchronous predicate,
- * // returning an immediate heap-allocated bool* result. General calls with suspending
- * // sources or predicates return COROUTINE_SUSPENDED and deliver their result to the completion continuation.
+ * // returning an immediate heap-allocated bool* result. Calls with suspending sources
+ * // or predicates may suspend (returning COROUTINE_SUSPENDED) or complete immediately;
+ * // if suspension occurs, the result is delivered to the completion continuation.
  * std::unique_ptr<bool> box(static_cast<bool*>(res));
  * bool all_match = *box;
  * ```
@@ -212,6 +216,7 @@ void* all(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<v
  * of all evaluated with the inverted predicate.
  *
  * In the Continuation ABI, returns a heap-allocated bool* or COROUTINE_SUSPENDED.
+ * Supply a live completion continuation whenever upstream or predicate can suspend.
  * The caller or resumed completion continuation owns and deletes the returned Boolean box.
  *
  * Example:
@@ -219,8 +224,9 @@ void* all(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<v
  * auto source = as_flow(std::vector<int>{1, 2, 3});
  * void* res = none(source, [](int x) { return x > 5; });
  * // Note: This example uses a non-suspending source and a synchronous predicate,
- * // returning an immediate heap-allocated bool* result. General calls with suspending
- * // sources or predicates return COROUTINE_SUSPENDED and deliver their result to the completion continuation.
+ * // returning an immediate heap-allocated bool* result. Calls with suspending sources
+ * // or predicates may suspend (returning COROUTINE_SUSPENDED) or complete immediately;
+ * // if suspension occurs, the result is delivered to the completion continuation.
  * std::unique_ptr<bool> box(static_cast<bool*>(res));
  * bool none_match = *box;
  * ```
