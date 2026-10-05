@@ -337,32 +337,38 @@ private:
         return result;
     }
 };
+float positional_cosine(const std::vector<std::string>& a, const std::vector<std::string>& b) {
+    // One-hot coordinates are (token position, exact spelling). Each occupied
+    // coordinate is 1, so the norms are sqrt(sequence length), not word counts.
+    if (a.empty() || b.empty()) return a.empty() && b.empty() ? 1.0f : 0.0f;
+    size_t matches = 0;
+    for (size_t i = 0; i < std::min(a.size(), b.size()); ++i)
+        if (a[i] == b[i]) ++matches;
+    return static_cast<float>(matches / std::sqrt(static_cast<double>(a.size()) * b.size()));
+}
 float token_cosine(const std::string& a, const std::string& b) {
-    // Tokenize both buffers through the target grammar rather than a vocabulary
-    // synonym table. Operator and literal leaf spellings remain distinct.
-    auto counts = [](const std::string& source, bool generated) {
-        std::map<std::string, int> counts;
+    auto tokens = [](const std::string& source, bool generated) {
+        std::vector<std::string> result;
         auto parser = ts_parser_new(); ts_parser_set_language(parser, tree_sitter_cpp());
         auto tree = ts_parser_parse_string(parser, nullptr, source.data(), source.size());
         std::function<void(TSNode)> visit = [&](TSNode node) {
-            if (std::string(ts_node_type(node)) == "comment") return;
-            if (generated && std::string(ts_node_type(node)) == "call_expression") {
-                auto callee = ts_node_child_by_field_name(node, "function", 8);
-                if (!ts_node_is_null(callee) && source.substr(ts_node_start_byte(callee), ts_node_end_byte(callee) - ts_node_start_byte(callee)) == "__ast_distance_unmapped__") return;
-            }
-            if (!ts_node_child_count(node)) {
-                auto value = source.substr(ts_node_start_byte(node), ts_node_end_byte(node) - ts_node_start_byte(node));
-                if (std::string(ts_node_type(node)).find("identifier") != std::string::npos) value = IdentifierStats::canonicalize(value);
-                if (!value.empty()) ++counts[value];
+            const std::string kind = ts_node_type(node);
+            if (kind == "comment") return;
+            const auto text = source.substr(ts_node_start_byte(node), ts_node_end_byte(node) - ts_node_start_byte(node));
+            // Fallback statements are evidence of absent replacement rules,
+            // never a literal implementation to reward for matching itself.
+            if (generated && (kind == "expression_statement" || kind == "call_expression") &&
+                text.starts_with("__ast_distance_unmapped__(")) return;
+            if (!ts_node_child_count(node) || kind == "string_literal" ||
+                kind == "raw_string_literal" || kind == "char_literal") {
+                if (!text.empty()) result.push_back(text);
             } else for (uint32_t i = 0; i < ts_node_child_count(node); ++i) visit(ts_node_child(node, i));
         };
-        visit(ts_tree_root_node(tree)); ts_tree_delete(tree); ts_parser_delete(parser); return counts;
+        visit(ts_tree_root_node(tree)); ts_tree_delete(tree); ts_parser_delete(parser); return result;
     };
-    auto left = counts(a, true), right = counts(b, false);
-    double dot = 0, first = 0, second = 0;
-    for (const auto& [key, value] : left) { first += value * value; auto found = right.find(key); if (found != right.end()) dot += value * found->second; }
-    for (const auto& [key, value] : right) { (void)key; second += value * value; }
-    return first && second ? static_cast<float>(dot / std::sqrt(first * second)) : 0.0f;
+    auto left = tokens(a, true), right = tokens(b, false);
+    // No executable evidence is not a successful comparison.
+    return left.empty() || right.empty() ? 0.0f : positional_cosine(left, right);
 }
 float documentation_similarity(const std::string& source, Language source_language,
     const std::string& target, Language target_language) {
@@ -414,18 +420,7 @@ float documentation_similarity(const std::string& source, Language source_langua
         visit(ts_tree_root_node(tree)); ts_tree_delete(tree); ts_parser_delete(parser); return result;
     };
     auto a = words(source, source_language), b = words(target, target_language);
-    if (a.empty() && b.empty()) return 1;
-    if (a.empty() || b.empty()) return 0;
-    std::vector<size_t> row(b.size() + 1);
-    for (const auto& word : a) {
-        size_t previous = 0;
-        for (size_t j = 1; j <= b.size(); ++j) {
-            size_t before = row[j];
-            row[j] = word == b[j - 1] ? previous + 1 : std::max(row[j], row[j - 1]);
-            previous = before;
-        }
-    }
-    return static_cast<float>(2 * row.back()) / (a.size() + b.size());
+    return positional_cosine(a, b);
 }
 } // namespace
 TransliterationOutput transliterate(const std::string& source, Language source_language, Language target_language) {
@@ -512,8 +507,9 @@ TransliterationDistance transliteration_distance(const std::string& source, Lang
     result.translated_text_cosine = token_cosine(result.translation.buffer, target);
     result.documentation_parity = documentation_similarity(source, source_language, target, target_language);
     result.fallback_penalty = 1 - result.translation.rule_coverage;
-    float base = .35f * result.translated_text_cosine + .35f * result.translated_ast_cosine + .20f * result.symbol_parity + .10f * result.translation.rule_coverage;
-    result.score = std::max(0.0f, base - result.fallback_penalty) * result.normalized_logic;
+    // The literal text cosine is the score. AST, logic, symbol and coverage
+    // evidence are independent diagnostics, not weighted score substitutes.
+    result.score = result.translated_text_cosine;
     return result;
 }
 } // namespace ast_distance

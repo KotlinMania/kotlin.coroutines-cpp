@@ -191,6 +191,26 @@ are supported.
 ./ast_distance --compare-functions source.kt kotlin target.cpp cpp > functions.txt
 ```
 
+For Kotlin-to-C++ file comparisons, the primary score is literal cosine against
+an in-memory C++ buffer emitted from Kotlin AST-scoped replacement rules. Vector
+coordinates are `(token position, exact token spelling)`: the score is the number
+of exact tokens at the same position divided by `sqrt(emittedTokens * targetTokens)`.
+Whitespace and comments are excluded from implementation tokens; identifiers,
+operators and complete string/character literals retain exact target spelling.
+Reordering calls or declarations lowers this score even with identical word counts.
+There is no alignment, identifier folding, weighted AST blend or logic multiplier.
+An insertion can shift every subsequent coordinate; this is literal closeness,
+not a proof of semantic equivalence. Documentation uses the same ordered cosine
+separately after C++ reference/markup replacement and never raises code similarity.
+
+`--translit-distance` reports this score with the complete emitted buffer.
+The default Kotlin-to-C++ file comparison shows it as the primary literal report;
+other languages and `--compare-functions` retain their legacy structural metrics.
+Coverage, unsupported spans, parser errors, symbol matching, AST histograms and
+ordered logic remain independent diagnostics. A provisional score does not establish
+parity for unsupported generic, extension or suspend lowering rules. Fallback
+statements cannot earn credit by matching their own generated placeholder.
+
 The emitted buffer comes from AST-scoped rules. Its report preserves source/emitted
 spans and explicit unsupported constructs. Ordered logic retains operations,
 constants, calls, branches and parameter evidence so invented or omitted logic

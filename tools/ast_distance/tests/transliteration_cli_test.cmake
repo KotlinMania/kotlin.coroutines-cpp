@@ -15,6 +15,15 @@ file(WRITE "${TEST_DIR}/faithful.report.txt" "${output}\n${error}")
 if(NOT result EQUAL 0 OR NOT output MATCHES "score: 1.000000" OR NOT output MATCHES "normalized_logic: 1.000000" OR NOT output MATCHES "documentation_correspondence: 1.000000" OR NOT output MATCHES "Generated parse errors: no")
     message(FATAL_ERROR "Faithful pipeline failed: ${result}: ${output}: ${error}")
 endif()
+execute_process(COMMAND "${AST_DISTANCE}" "${TEST_DIR}/source.kt" kotlin "${TEST_DIR}/emitted.cpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_VARIABLE default_report ERROR_VARIABLE error RESULT_VARIABLE result)
+if(NOT result EQUAL 0 OR NOT default_report MATCHES "Primary Literal Transliteration Score" OR
+   NOT default_report MATCHES "score_method: positional exact-token cosine" OR
+   NOT default_report MATCHES "score: 1.000000" OR NOT default_report MATCHES "Score evidence: supported" OR
+   NOT default_report MATCHES "Legacy Structural/Vocabulary Diagnostics")
+    message(FATAL_ERROR "Default Kotlin/C++ primary metric missing: ${default_report}: ${error}")
+endif()
+file(WRITE "${TEST_DIR}/default.report.txt" "${default_report}\n${error}")
 file(READ "${TEST_DIR}/emitted.cpp" emitted)
 if(NOT emitted MATCHES "@param input_value" OR NOT emitted MATCHES "ref next_value")
     message(FATAL_ERROR "KDoc identifier/reference lowering missing: ${emitted}")

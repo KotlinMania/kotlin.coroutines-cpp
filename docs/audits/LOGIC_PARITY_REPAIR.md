@@ -586,3 +586,26 @@ and executable binary remain unchanged. Raw before/after reports, exact examples
 code-control comparison and receipts are under
 /Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-transform-comments/.
 The existing runtime-class representation and original choreography gaps remain.
+
+
+### Ordered literal comparison checkpoint (2026-10-04)
+
+ASTDistance now compares an AST-emitted in-memory C++ buffer with target C++
+using positional exact-token cosine: equal spellings at equal positions divided
+by the square root of the two token counts. Identifier/operator/literal spellings
+remain exact; external whitespace is ignored. Documentation has a separate
+ordered cosine after C++ reference replacement. Call order reversal with identical
+AST histograms scores 15/17 (0.882353), while whitespace-only edits score 1.
+The default Kotlin/C++ file report presents this literal score first;
+`--compare-functions` retains its separately documented legacy structural metric.
+No coroutine source, continuation ABI, runtime algorithm or existing body score
+changed in this checkpoint. Strict, ASan and integrated strict suites pass 8/8 each.
+The tested binary is copied into `tools/ast_distance/ast_distance` and canonical
+ASTDistance; the receipt records exact SHA-256 and the canonical commit.
+
+Transform literal emission currently reports coverage 0 and 17 unsupported spans:
+its generic/extension/suspend rules require implementation before literal results
+can guide its translation comparison. This is missing measurement support, not
+a finding that the accepted runtime translation has zero behavioral parity.
+Raw evidence and installation receipt are in
+`automation-artifacts/2026-10-04-ast-literal-score/` at the workspace root.

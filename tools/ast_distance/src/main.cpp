@@ -3109,14 +3109,16 @@ static void print_emission_evidence(const TransliterationOutput& output, std::os
 }
 static void print_transliteration_distance(const TransliterationDistance& report, std::ostream& stream) {
 stream << std::fixed << std::setprecision(6)
+    << "score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission\n"
     << "translated_text_cosine: " << report.translated_text_cosine << '\n'
     << "translated_ast_cosine: " << report.translated_ast_cosine << '\n'
     << "function_name_parity: " << report.symbol_parity << '\n'
     << "normalized_logic: " << report.normalized_logic << '\n'
     << "documentation_correspondence: " << report.documentation_parity << '\n'
     << "span_rule_coverage: " << report.translation.rule_coverage << '\n'
-    << "fallback_penalty: " << report.fallback_penalty << '\n'
+    << "unsupported_fraction (diagnostic only): " << report.fallback_penalty << '\n'
     << "score: " << report.score << '\n'
+    << "Score evidence: " << (report.translation.rule_misses || report.translated_parse_errors || report.target_parse_errors ? "provisional (unsupported rules or parse errors)" : "supported") << '\n'
     << "Generated parse errors: " << (report.translated_parse_errors ? "yes (provisional)" : "no") << '\n'
     << "Target parse errors: " << (report.target_parse_errors ? "yes (provisional)" : "no") << '\n';
 print_emission_evidence(report.translation, stream);
@@ -3872,11 +3874,16 @@ int main(int argc, char* argv[]) {
             TreePtr tree2 = file2_source ? parser.parse_string(*file2_source, lang2) : parser.parse_file(file2, lang2);
 
             std::cout << "\n";
+            std::string text1 = file1_source ? *file1_source : read_file_to_string(file1);
+            std::string text2 = file2_source ? *file2_source : read_file_to_string(file2);
+            if (lang1 == Language::KOTLIN && lang2 == Language::CPP) {
+                std::cout << "\n=== Primary Literal Transliteration Score ===\n";
+                print_transliteration_distance(transliteration_distance(text1, lang1, text2, lang2), std::cout);
+                std::cout << "\n=== Legacy Structural/Vocabulary Diagnostics (separate from literal score) ===\n";
+            }
             auto report = ASTSimilarity::compare(tree1.get(), tree2.get(), macro_friendly);
             report.print();
 
-            std::string text1 = file1_source ? *file1_source : read_file_to_string(file1);
-            std::string text2 = file2_source ? *file2_source : read_file_to_string(file2);
             auto translit_report = TransliterationSimilarity::compare(text1, lang1, text2, lang2);
 
             std::cout << "\n=== Transliteration-Normalized Text ===\n";

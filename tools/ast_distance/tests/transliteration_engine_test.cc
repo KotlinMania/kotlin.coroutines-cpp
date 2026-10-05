@@ -27,6 +27,30 @@ int main() {
         auto report = transliteration_distance(source, Language::KOTLIN, variant, Language::CPP);
         assert(report.score < baseline.score && report.normalized_logic < 1);
     }
+    // These bodies have identical token frequencies but different execution order.
+    const std::string ordered_source = "fun orderedValue(): Int { first(); second(); return 1 }";
+    auto ordered_output = transliterate(ordered_source, Language::KOTLIN, Language::CPP);
+    auto ordered = transliteration_distance(ordered_source, Language::KOTLIN, ordered_output.buffer, Language::CPP);
+    auto swapped = transliteration_distance(ordered_source, Language::KOTLIN,
+        changed(ordered_output.buffer, "first(); second();", "second(); first();"), Language::CPP);
+    assert(ordered.score == 1 && swapped.score < ordered.score);
+    assert(std::abs(swapped.score - 15.0f / 17.0f) < 0.000001f);
+    assert(swapped.translated_ast_cosine == ordered.translated_ast_cosine);
+    assert(swapped.score == swapped.translated_text_cosine);
+    auto whitespace = transliteration_distance(ordered_source, Language::KOTLIN,
+        changed(ordered_output.buffer, "first(); second();", "first ( ) ;\n second ( ) ;"), Language::CPP);
+    assert(whitespace.score == 1);
+    auto renamed = transliteration_distance(source, Language::KOTLIN,
+        changed(output.buffer, "input_value", "inputValue"), Language::CPP);
+    assert(renamed.score < baseline.score); // Exact target spelling, no identifier canonicalization.
+    const std::string string_source = "fun literalValue(): String = \"red blue\"";
+    auto string_output = transliterate(string_source, Language::KOTLIN, Language::CPP);
+    auto string_changed = transliteration_distance(string_source, Language::KOTLIN,
+        changed(string_output.buffer, "red blue", "blue red"), Language::CPP);
+    assert(string_changed.score < 1); // Literal contents stay intact as one token.
+    auto doc_order = transliteration_distance(source, Language::KOTLIN,
+        changed(output.buffer, "after the limit", "the after limit"), Language::CPP);
+    assert(doc_order.documentation_parity < 1 && doc_order.score == baseline.score);
     auto documentation_removed = output.buffer.substr(output.buffer.find("int compare_value"));
     auto missing_docs = transliteration_distance(source, Language::KOTLIN, documentation_removed, Language::CPP);
     assert(missing_docs.score == baseline.score && missing_docs.documentation_parity == 0);
@@ -80,6 +104,7 @@ int main() {
     auto reversed_over = over.buffer.substr(over.buffer.find('\n') + 1) + over.buffer.substr(0, over.buffer.find('\n') + 1);
     auto reordered = transliteration_distance(overloads, Language::KOTLIN, reversed_over, Language::CPP);
     assert(reordered.normalized_logic == 1 && reordered.functions.size() == 2);
+    assert(reordered.score < over_score.score);
     assert(reordered.functions[0].target_line != reordered.functions[1].target_line);
     auto lost = transliteration_distance(overloads, Language::KOTLIN, "int apply_value(int x) { return x + 1; }", Language::CPP);
     assert(lost.symbol_parity == .5f && lost.normalized_logic <= .5f);
@@ -111,7 +136,8 @@ int main() {
         assert(fallback.rule_misses > 0 && fallback.rule_coverage == 0 && !fallback.diagnostics.empty());
         assert(fallback.buffer.find("__ast_distance_unmapped__") != std::string::npos);
         auto report = transliteration_distance(unsupported, Language::KOTLIN, fallback.buffer, Language::CPP);
-        assert(report.score == 0 && report.fallback_penalty == 1);
+        assert(report.score < 1 && report.score == report.translated_text_cosine);
+        assert(report.fallback_penalty == 1 && report.translation.rule_misses > 0);
     }
     bool rejected = false;
     try { (void)transliterate("int foo(){return 1;}", Language::CPP, Language::KOTLIN); }
