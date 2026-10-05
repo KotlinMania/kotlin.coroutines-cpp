@@ -13,7 +13,8 @@ by the generated address-dispatch shape; see `docs/suspension/IR_SUSPEND_LOWERIN
 - Uses `void* _label` (Kotlin/Native NativePtr)
 - Generates `&&label` (labels-as-values) + `goto *_label` (computed goto)
 - Compiles to LLVM `indirectbr` + `blockaddress`, the same address-dispatch pattern
-- CFG-based liveness analysis for automatic variable spilling
+- CFG-based liveness analysis with complete fixed-point convergence and source-order site IDs
+- Direct/no-suspension and sole-tail entries compiled and executed by the handoff regression
 
 Target: Apple clang only.
 
@@ -83,37 +84,33 @@ void* my_suspend_fn(int x, std::shared_ptr<Continuation<void*>> completion) {
 }
 ```
 
-Generated output (dispatch=goto, spill=liveness):
-```cpp
-struct __kxs_coroutine_my_suspend_fn_1 : public ContinuationImpl {
-    void* _label = nullptr;  // Block address for computed goto
-    int y_spill;  // Only 'y' is live across suspend
+Direct and sole-tail functions retain their original continuation entry. This
+matches the native lowering decision to allocate a state machine only for non-tail
+suspensions. Parameter declarations preserve array/reference declarators and
+`noexcept`; the incoming continuation is forwarded to the tail callee unchanged.
+The generated-code regression executes immediate/delayed success and failure,
+checks continuation release, and checks a borrowed array reference.
 
-    explicit __kxs_coroutine_my_suspend_fn_1(
-        std::shared_ptr<Continuation<void*>> completion, int x)
-        : ContinuationImpl(completion) {}
+Non-tail generation still needs value-result consumption, callee continuation
+rebinding, spill declaration/reference rewriting and frame lifetime handling.
+Generated sidecars are not yet consumed automatically by production CMake. The
+working marker cleanup preserves manually lowered frames; it does not implement
+these missing extraction steps.
 
-    void* invoke_suspend(Result<void*> result) override {
-        (void)result;
+## Verified plugin and handoff tests
 
-        // Entry dispatch (Kotlin/Native indirectbr pattern)
-        if (_label == nullptr) goto __kxs_start;
-        goto *_label;  // Computed goto -> LLVM indirectbr
+Load the plugin with the Clang version matching its LLVM development packages.
+The macOS test build uses Homebrew LLVM/Clang 23 and shared `clang-cpp`/`LLVM` so
+plugin loading shares the compiler runtime registries. The analyzer is compiled
+and linked into the plugin. CTest checks source-order suspension IDs and a
+300-block fixed-point liveness regression; a reconstructed 100-iteration cap
+fails that regression.
 
-    __kxs_start:
-        int y = x + 1;
-        y_spill = y;  // Save live variable
-        _label = &&__kxs_resume0;  // Store block address
-        {
-            void* _tmp = delay(100, completion);
-            if (is_coroutine_suspended(_tmp)) return COROUTINE_SUSPENDED;
-        }
-    __kxs_resume0:
-        y = y_spill;  // Restore live variable
-        return reinterpret_cast<void*>(y);
-    }
-};
-```
+With the optional plugin enabled in the main build, `kxs_plugin_handoff` extracts
+real annotated source, compiles its generated C++ against the runtime, and runs
+those continuation handoff cases. Sanitizer link options follow the configured
+runtime library. This establishes the tested direct/tail entry behavior, not
+GPU execution or Kotlin/Native binary ABI compatibility.
 
 ## LLVM IR Output
 

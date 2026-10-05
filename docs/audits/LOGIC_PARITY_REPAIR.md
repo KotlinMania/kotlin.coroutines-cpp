@@ -609,3 +609,34 @@ can guide its translation comparison. This is missing measurement support, not
 a finding that the accepted runtime translation has zero behavioral parity.
 Raw evidence and installation receipt are in
 `automation-artifacts/2026-10-04-ast-literal-score/` at the workspace root.
+
+
+### Production plugin direct/tail entry checkpoint (2026-10-04)
+
+Read NativeSuspendFunctionLowering.kt, CoroutinesVarSpillingLowering.kt and
+CoroutinesLivenessAnalysis.kt before changing the actual Clang plugin. The plugin
+now links its analyzer and uses shared Clang/LLVM runtime registries when available.
+Free direct/no-suspension entries and sole-tail entries preserve the original
+continuation ABI and avoid an unnecessary frame, following native lowering's
+non-tail decision. Parameter printing preserves array/reference declarators and
+`noexcept`. Annotated callees are recognized; an identity wrapper around a marked
+callee represents one suspension point. Site IDs follow source order instead of
+CFG storage order. Liveness converges to the fixed point without an arbitrary
+100-iteration cutoff. Restoring that cutoff fails the new actual 300-block CFG
+regression. These are compiler-source changes, separate from ASTDistance scoring.
+
+The real linked plugin extracts annotated input; generated C++ compiles and runs
+against the actual runtime. Five direct/tail success/failure traces match a cached
+Kotlin compiler oracle exactly. Tests check immediate/delayed completion, exactly
+once invocation, caller-continuation forwarding/release, boxed payload cleanup,
+and a borrowed array reference. Final integrated Debug CTest: 29/29 in 28.28s;
+optimized ASan analyzer: 1/1 in 0.95s; optimized ASan generated handoff: exit 0.
+Compiler and raw build/extraction/trace receipts are at workspace
+`automation-artifacts/2026-10-04-production-lowering/`. Runtime source and the
+manual computed-goto frame ABI are unchanged in this checkpoint.
+
+Non-tail sidecars still require callee-continuation rebinding, constructor argument
+storage, resumed value consumption, complete spill declaration/reference rewriting
+and entry/resume lifetime cleanup. Automatic production sidecar consumption,
+Kotlin/Native binary interoperability and GPU/hardware execution are not established
+by these direct/tail tests. Compiler card t_16bf1579 retains these open findings.

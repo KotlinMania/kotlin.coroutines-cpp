@@ -1,8 +1,10 @@
 #include "SuspendFunctionAnalyzer.hpp"
+#include <algorithm>
 
 #include "clang/AST/Attr.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Stmt.h"
+#include "clang/Basic/SourceManager.h"
 
 using namespace clang;
 
@@ -118,6 +120,9 @@ bool SuspendFunctionAnalyzer::is_suspend_call(const Stmt* stmt) {
             if (callee->getName() == "suspend") {
                 return true;
             }
+            for (const auto* attribute : callee->attrs())
+                if (const auto* annotation = dyn_cast<AnnotateAttr>(attribute))
+                    if (annotation->getAnnotation() == kSuspendAnnot) return true;
         }
     }
 
@@ -126,9 +131,8 @@ bool SuspendFunctionAnalyzer::is_suspend_call(const Stmt* stmt) {
 
 void SuspendFunctionAnalyzer::find_suspend_points() {
     suspend_points_.clear();
-    unsigned state_id = 1;
 
-    // Walk CFG in forward order to assign state IDs.
+    // Collect CFG suspension sites, then assign IDs in source traversal order.
     for (const CFGBlock* block : *cfg_) {
         if (!block) continue;
 
@@ -136,15 +140,30 @@ void SuspendFunctionAnalyzer::find_suspend_points() {
             if (auto stmt_elem = elem.getAs<CFGStmt>()) {
                 const Stmt* stmt = stmt_elem->getStmt();
                 if (is_suspend_call(stmt)) {
+                    // A wrapper around an already marked callee represents one
+                    // suspension site, rather than a second nested suspension.
+                    if (const auto* expression = dyn_cast<Expr>(stmt)) {
+                        const auto* call = dyn_cast<CallExpr>(expression->IgnoreParenImpCasts());
+                        if (call && call->getDirectCallee() && call->getDirectCallee()->getQualifiedNameAsString() == "kotlinx::coroutines::dsl::suspend" &&
+                            call->getNumArgs() == 1 && is_suspend_call(call->getArg(0)->IgnoreUnlessSpelledInSource()))
+                            continue;
+                    }
                     SuspendPointInfo info;
                     info.suspend_stmt = stmt;
-                    info.state_id = state_id++;
+                    info.state_id = 0;
                     // live_variables will be populated by compute_liveness()
                     suspend_points_.push_back(info);
                 }
             }
         }
     }
+    const auto& manager = ctx_.getSourceManager();
+    std::stable_sort(suspend_points_.begin(), suspend_points_.end(), [&](const auto& left, const auto& right) {
+        return manager.isBeforeInTranslationUnit(left.suspend_stmt->getBeginLoc(), right.suspend_stmt->getBeginLoc());
+    });
+    for (size_t i = 0; i < suspend_points_.size(); ++i)
+        suspend_points_[i].state_id = static_cast<unsigned>(i + 1);
+
 }
 
 /// AST visitor to collect variable uses (reads).
@@ -274,9 +293,8 @@ void SuspendFunctionAnalyzer::compute_liveness() {
 
     // Iterate until fixed point.
     bool changed = true;
-    int max_iterations = 100;  // Safety limit.
 
-    while (changed && max_iterations-- > 0) {
+    while (changed) {
         changed = false;
 
         // Process blocks in reverse post-order for faster convergence.
@@ -334,7 +352,6 @@ void SuspendFunctionAnalyzer::compute_liveness() {
         std::set<const VarDecl*> live = live_out_[block->getBlockID()];
 
         // Walk statements in reverse order.
-        bool found_stmt = false;
         for (auto it = block->rbegin(); it != block->rend(); ++it) {
             if (auto stmt_elem = it->getAs<CFGStmt>()) {
                 const Stmt* stmt = stmt_elem->getStmt();
@@ -343,7 +360,6 @@ void SuspendFunctionAnalyzer::compute_liveness() {
                     // Record liveness AFTER this statement (for spilling).
                     // Variables live after the suspend call need to be preserved.
                     sp.live_variables = live;
-                    found_stmt = true;
                     break;
                 }
 

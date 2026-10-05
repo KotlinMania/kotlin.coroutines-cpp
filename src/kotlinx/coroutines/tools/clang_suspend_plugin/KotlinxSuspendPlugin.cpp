@@ -63,8 +63,8 @@ static ParsedAttrInfoRegistry::Add<KotlinxSuspendAttrInfo>
 // -----------------------------------------------------------------------------
 class KotlinxSuspendVisitor : public RecursiveASTVisitor<KotlinxSuspendVisitor> {
 public:
-    explicit KotlinxSuspendVisitor(ASTContext& ctx, DiagnosticsEngine& diags)
-        : ctx_(ctx), diags_(diags) {}
+    explicit KotlinxSuspendVisitor(DiagnosticsEngine& diags)
+        : diags_(diags) {}
 
     bool VisitFunctionDecl(FunctionDecl* fd) {
         if (!fd || !fd->hasBody())
@@ -120,7 +120,6 @@ private:
         return false;
     }
 
-    ASTContext& ctx_;
     DiagnosticsEngine& diags_;
     FunctionDecl* currentSuspend_ = nullptr;
     std::vector<FunctionDecl*> suspendFns_;
@@ -131,9 +130,9 @@ private:
 // -----------------------------------------------------------------------------
 class KotlinxSuspendConsumer : public ASTConsumer {
 public:
-    KotlinxSuspendConsumer(ASTContext& ctx, DiagnosticsEngine& diags,
+    KotlinxSuspendConsumer(DiagnosticsEngine& diags,
                            std::string outDir, DispatchMode dispatchMode, SpillMode spillMode)
-        : ctx_(ctx), visitor_(ctx, diags), outDir_(std::move(outDir)),
+        : visitor_(diags), outDir_(std::move(outDir)),
           dispatchMode_(dispatchMode), spillMode_(spillMode) {}
 
     void HandleTranslationUnit(ASTContext& ctx) override {
@@ -192,15 +191,21 @@ private:
         os << "// Source: " << tuName << "\n\n";
         os << "#include <kotlinx/coroutines/ContinuationImpl.hpp>\n";
         os << "#include <kotlinx/coroutines/Result.hpp>\n";
+        os << "#include <kotlinx/coroutines/dsl/Suspend.hpp>\n";
         os << "#include <kotlinx/coroutines/intrinsics/Intrinsics.hpp>\n";
         os << "#include <memory>\n";
         os << "#include <cstdint>\n\n";
         os << "using namespace kotlinx::coroutines;\n";
-        os << "using namespace kotlinx::coroutines::intrinsics;\n\n";
+        os << "using namespace kotlinx::coroutines::intrinsics;\n";
+        os << "using namespace kotlinx::coroutines::dsl;\n\n";
         os << "extern \"C\" void __kxs_suspend_point(int id) noexcept;\n\n";
 
         for (FunctionDecl* fd : fns) {
             if (!fd || !fd->hasBody()) continue;
+
+            // Functions without suspension, and a sole tail suspension, keep
+            // their direct ABI entry. No frame or resume dispatch is needed.
+            if (emitDirectEntry(os, ctx, fd, pp, sm, lo)) continue;
 
             if (dispatchMode_ == DispatchMode::ComputedGoto) {
                 emitComputedGotoCoroutine(os, ctx, fd, pp, sm, lo);
@@ -212,6 +217,55 @@ private:
         auto id = ctx.getDiagnostics().getCustomDiagID(DiagnosticsEngine::Remark,
                                                      "kotlinx-suspend: wrote %0");
         ctx.getDiagnostics().Report(fns.front()->getLocation(), id) << outPath.str();
+    }
+
+    bool emitDirectEntry(llvm::raw_ostream& os, ASTContext& ctx, FunctionDecl* fd,
+                         const PrintingPolicy& pp, const SourceManager& sm,
+                         const LangOptions& lo) {
+        // Keep this path to free functions whose names can be emitted without
+        // synthesizing an enclosing class or namespace declaration.
+        if (!fd->getDeclContext()->isTranslationUnit()) return false;
+        SuspendFunctionAnalyzer analyzer(ctx, fd);
+        if (!analyzer.analyze()) return false;
+        const auto& points = analyzer.get_suspend_points();
+        bool direct = points.empty();
+        if (points.size() == 1) {
+            const auto* body = dyn_cast<CompoundStmt>(fd->getBody());
+            if (body && body->size() == 1) {
+                const auto* returned = dyn_cast<ReturnStmt>(*body->body_begin());
+                const Expr* value = returned ? returned->getRetValue() : nullptr;
+                if (value) value = value->IgnoreParenImpCasts();
+                const Expr* site = value;
+                while (const auto* call = dyn_cast_or_null<CallExpr>(site)) {
+                    if (!call->getDirectCallee() || call->getDirectCallee()->getQualifiedNameAsString() != "kotlinx::coroutines::dsl::suspend" || call->getNumArgs() != 1) break;
+                    const auto* argument = call->getArg(0)->IgnoreUnlessSpelledInSource();
+                    if (!isSuspendCallStmt(argument)) break;
+                    site = argument;
+                }
+                direct = value && points.front().suspend_stmt == site && isSuspendCallStmt(value);
+            }
+        }
+        if (!direct) return false;
+
+        os << "// Direct continuation ABI entry; no non-tail suspension.\n";
+        if (fd->getStorageClass() == SC_Static) os << "static ";
+        if (fd->isInlineSpecified()) os << "inline ";
+        if (fd->isConstexpr()) os << "constexpr ";
+        os << fd->getReturnType().getAsString(pp) << " " << fd->getNameAsString() << "(";
+        bool first = true;
+        for (const auto* parameter : fd->parameters()) {
+            if (!first) os << ", ";
+            first = false;
+            parameter->getType().print(os, pp, parameter->getNameAsString());
+        }
+        const auto* prototype = fd->getType()->getAs<FunctionProtoType>();
+        if (prototype && prototype->isVariadic()) os << (first ? "..." : ", ...");
+        os << ")";
+        if (prototype && prototype->getNoexceptExpr())
+            os << " noexcept(" << getStmtText(prototype->getNoexceptExpr(), sm, lo) << ")";
+        else if (prototype && prototype->isNothrow()) os << " noexcept";
+        os << " " << getStmtText(fd->getBody(), sm, lo) << "\n\n";
+        return true;
     }
 
     // -------------------------------------------------------------------------
@@ -516,7 +570,6 @@ private:
         os << "}\n\n";
     }
 
-    ASTContext& ctx_;
     KotlinxSuspendVisitor visitor_;
     std::string outDir_;
     DispatchMode dispatchMode_;
@@ -530,7 +583,7 @@ class KotlinxSuspendAction : public PluginASTAction {
 protected:
     std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance& ci, llvm::StringRef) override {
         return std::make_unique<KotlinxSuspendConsumer>(
-            ci.getASTContext(), ci.getDiagnostics(),
+            ci.getDiagnostics(),
             outDir_, dispatchMode_, spillMode_);
     }
 
