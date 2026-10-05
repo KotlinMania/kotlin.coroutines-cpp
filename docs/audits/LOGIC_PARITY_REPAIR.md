@@ -466,3 +466,91 @@ This is static staleness verification; no runtime tests, compiler builds, source
 implementation edits, scorer repairs, namespace overrides, worker dispatches or
 pushes were performed. Earlier runtime receipts remain valid only for their
 recorded bounded scenarios and revisions.
+
+
+## Transform source-order repair and scorer correction — 2026-10-04
+
+Sydney requested direct transliteration of the whole original Transform algorithm,
+including suspension and state flow. Read Transform.kt and unsafeTransform in
+Emitters.kt in full. The old delayed-filter probe emitted no value after a true
+predicate resumed; the corrected probe emits one value and completes once with
+Unit. Both executable receipts are retained. Iris's partial rewrite was saved in
+3b693eef and 2d823163; Sydney then requested direct Codex takeover because of drift.
+The desktop turn was stopped and the user archived its sessions. No fresh Iris
+conversation, worker or model API dispatch was started. Codex reviewed and corrected
+the preserved work directly.
+
+| Original Transform operation | Reviewed C++ execution order |
+|---|---|
+| filter / filterNot | Await Boolean predicate; test true / false; await downstream emission; return Unit. |
+| filterIsInstance | Pointer type test and successful emission preserve the represented branch; runtime-class and primitive/nullable reification remain unrepresented. |
+| filterNotNull | Test pointer/optional presence; emit the non-null value; otherwise Unit. |
+| map | Await transform; consume its owned result box; emit the result. |
+| mapNotNull | Await nullable transform; test presence; emit only a present result. Optional, raw and shared-pointer overloads keep their distinct ownership contracts. |
+| withIndex | Per collection zero index; copy old value, increment/wrap, check old value, emit indexed element. |
+| onEach | Await action; emit the original value. |
+| scan | Alias running_fold, before its definition. |
+| runningFold | Per collection initial accumulator; await initial emission before collecting; await operation with previous state intact, assign successful result, emit. |
+| runningReduce | Distinct disengaged optional sentinel, including nullable elements; first value assigns without operation; subsequent operation precedes assignment and emission. No default element construction. |
+| chunked | Validate size before flow construction; initially absent buffer; allocate, append, await full emission, then clear; after successful collection emit the partial buffer. Failure never flushes. |
+
+All original flow aliases use the existing unsafe_flow builder. Collection and
+non-tail lambda/emission frames retain their continuations and release retention
+on completion or failure; no new algorithm, thread, scheduler or continuation ABI
+was introduced. C++ value/list copies remain an explicit representation adaptation.
+The source-order ledger and original-test coverage ledger are in the artifacts.
+
+Codex rejected a copied near-overflow indexing implementation that never called
+production with_index. It was removed in favor of production guard checks and real
+indexing paths; the full 2^31-emission boundary was not executed. Incorrect assertions
+that upstream emission completed while downstream was suspended were corrected.
+Delayed interleaving uses the retained source fixture, with separate stateful index
+and fold checks. The new optional map_not_null implementation was constrained so raw
+and shared-pointer callbacks cannot enter the wrong result-box path. Borrowed raw
+results are copied without moving from caller-owned objects. Tests exercise those
+lambda and std::function overloads. Docstrings describe the actual C++ index order,
+shared initial-value contract, value emission, cancellation propagation and owned
+result boxes, with no Kotlin references inside Doxygen.
+
+Acceptance: 25 registered Transform test groups; full Debug 27/27 in 33.99s;
+optimized ASan 27/27 in 35.46s. After correcting the Unit cancellation fixture to use
+the real void specialization, the affected Transform target was rebuilt and rerun
+in both configurations. The independent offline oracle compiled the exact original
+Transform.kt bodies (only JVM facade metadata renamed). All 143 state snapshots
+across 48 scenarios and ten operators match the final C++ linked to the instrumented
+ASan core. Scenarios cover callback and downstream suspension, successful/empty
+collection, callback failure, downstream failure and upstream failure. Actual Job
+cancellation tests cover predicate, Unit action and reduce operation, including
+finally-once and explicit frame/capture/upstream weak expiry. Four exact C++ Doxygen
+examples compiled and ran under ASan. No ASan diagnostics were observed; no claim
+of exhaustive leak detection is made.
+
+Final Debug IR has 106 actual Transform frame invoke_suspend instantiations. All
+180 marker calls were removed; the complete IR preserves 124 indirectbr instructions,
+180 blockaddresses and every other byte. This verifies cleanup of the retained macro
+state machines, not automatic lowering of arbitrary C++ bodies.
+
+ASTDistance's extension-overload pairing incorrectly matched the original runtime
+KClass argument to a receiver-only C++ overload. Canonical fix 9973f127 records CST
+argument counts and actual suspend modifiers; it excludes omitted user arguments
+while recognizing a real suspension ABI continuation. Native and CLI regressions
+passed strict 8/8, optimized ASan 8/8, and integrated project strict 8/8. Exact four
+source/test files were integrated in 00dc3d88; unrelated canonical dirty files were
+preserved. Scored body tokens and weights were not changed. The unchanged baseline
+now reports 12/13, aggregate body 0.084, matched average 0.091. Final Transform reports
+12/13, aggregate body 0.072, matched average 0.078, and 88 unmatched helper/frame
+methods. Forwarding overload selection and unnormalized continuation lowering remain
+visible in the raw report. These low scores are not converted into semantic proof
+or concealed with fillers.
+
+The runtime-class overload and heterogeneous primitive/nullable reified APIs remain
+absent. Original structured-child/channel and buffered-cancellation choreography
+requires acceptance of the corresponding builder/adapter/merge repairs; this bounded
+run does not claim those original tests passed. The original-test ledger distinguishes
+23 nominal cases, nine such choreography cases, seven class-representation cases and
+two IndexedTest cases belonging to Collect rather than Transform. The unfinished
+parent audit t_0dd3c2ad also guards card closure. The seven-area epic is not complete.
+The only workflow, .github/workflows/codeql.yml, retains weekly schedule and manual
+dispatch and is unchanged. No push, PR, release, deployment or remote workflow change
+was performed. Evidence is under
+/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-transform-repair/.

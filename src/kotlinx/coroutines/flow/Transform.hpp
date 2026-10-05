@@ -16,6 +16,7 @@
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
+#include <concepts>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -579,6 +580,11 @@ inline std::shared_ptr<Flow<R>> map(
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:56-59
 template <typename T, typename R, typename Transform>
+    requires (requires(Transform& fn, T value) {
+        { fn(std::move(value)) } -> std::same_as<std::optional<R>>;
+    } || requires(Transform& fn, T value, Continuation<void*>* continuation) {
+        { fn(std::move(value), continuation) } -> std::same_as<void*>;
+    })
 inline std::shared_ptr<Flow<R>> map_not_null(
     std::shared_ptr<Flow<T>> upstream,
     Transform transform_fn) {
@@ -656,6 +662,8 @@ inline std::shared_ptr<Flow<R>> map_not_null(
 
 /**
  * Synchronous raw pointer overload of map_not_null.
+ * Non-null results are borrowed pointers: emits a copy of the pointed-to value
+ * without deleting or moving from the caller-owned object.
  */
 template <typename T, typename R>
 inline std::shared_ptr<Flow<R>> map_not_null(
@@ -667,7 +675,7 @@ inline std::shared_ptr<Flow<R>> map_not_null(
             FlowCollector<R>* collector, T value, Continuation<void*>* cont) -> void* {
             auto* transformed = transform_fn(std::move(value));
             if (transformed != nullptr) {
-                return collector->emit(std::move(*transformed), cont);
+                return collector->emit(*transformed, cont);
             }
             return nullptr;
         });
@@ -838,13 +846,24 @@ inline std::shared_ptr<Flow<T>> on_each(
     return on_each<T, std::function<void*(const T&, Continuation<void*>*)>>(std::move(upstream), std::move(action));
 }
 
-// Forward declaration of running_fold so scan can precede it in exact Kotlin declaration order.
+// Declare the folding implementation used by scan.
 template <typename T, typename R, typename Operation>
 std::shared_ptr<Flow<R>> running_fold(std::shared_ptr<Flow<T>> upstream, R initial, Operation operation);
 
 /**
  * Folds the given flow with operation, emitting every intermediate result, including initial value.
- * This function is an alias to running_fold.
+ * This function is an alias to running_fold. The initial value must remain immutable if
+ * it shares mutable storage between collectors.
+ *
+ * ```cpp
+ * auto append = [](std::vector<int> acc, int value) {
+ *     acc.push_back(value);
+ *     return acc;
+ * };
+ * auto values = scan<int, std::vector<int>>(
+ *     as_flow(std::vector<int>{1, 2, 3}), {}, append);
+ * // Collects {}, {1}, {1, 2}, {1, 2, 3}.
+ * ```
  *
  * @tparam T The element type of the source flow.
  * @tparam R The accumulator and result element type.
@@ -896,6 +915,17 @@ inline std::shared_ptr<Flow<R>> scan(
  * @param operation The folding function applied sequentially to each element.
  * @return A flow emitting the intermediate accumulated results.
  *
+ * ```cpp
+ * auto values = running_fold<int, int>(as_flow(std::vector<int>{1, 2, 3}), 0,
+ *     [](int accumulator, int value) { return accumulator + value; });
+ * // Collects 0, 1, 3, 6.
+ * ```
+ *
+ * A suspending operation accepts an additional `Continuation<void*>*` and returns
+ * the suspension sentinel or an owned heap-allocated `R*`. On successful return
+ * or resume, the frame consumes and deletes that result box before emitting.
+ * A failed resume propagates without assigning a new accumulator.
+ *
  * Initial Emission & Accumulator Lifecycle:
  * - Immediate initial emission: The initial accumulator value is emitted immediately upon collection start
  *   before any upstream elements are collected. If downstream emission of the initial value suspends, upstream
@@ -908,7 +938,7 @@ inline std::shared_ptr<Flow<R>> scan(
  * Sequential Updates & Fault Tolerance:
  * - Sequential accumulation: For each upstream element, `operation(accumulator, value)` is evaluated while the
  *   existing accumulator remains unmodified in place.
- * - Atomic state advancement: The accumulator is updated ONLY after the operation successfully produces a result.
+ * - Successful state advancement: The accumulator is updated ONLY after the operation successfully produces a result.
  *   If the operation fails or is cancelled, the accumulator is never updated and no stale or partial emission occurs.
  * - Tail emission: Downstream emission of the updated accumulator is awaited via `coroutine_yield` before completing
  *   the emit frame with Unit (`nullptr`).
@@ -1038,6 +1068,16 @@ inline std::shared_ptr<Flow<R>> running_fold(
  * @param operation The reducing function applied to elements.
  * @return A flow emitting intermediate reduced results.
  *
+ * ```cpp
+ * auto values = running_reduce<int>(as_flow(std::vector<int>{1, 2, 3, 4}),
+ *     [](int accumulator, int value) { return accumulator + value; });
+ * // Collects 1, 3, 6, 10.
+ * ```
+ *
+ * A suspending operation accepts an additional `Continuation<void*>*` and returns
+ * the suspension sentinel or an owned heap-allocated `T*`. On successful return
+ * or resume, the frame consumes and deletes the result box before emitting.
+ *
  * Initial State & Uninitialized Sentinel:
  * - Disengaged sentinel: Accumulator state is managed via `std::optional<T> accumulator_` (initially `std::nullopt`).
  *   No default constructor of `T` is ever called, safely supporting non-default-constructible types.
@@ -1049,7 +1089,7 @@ inline std::shared_ptr<Flow<R>> running_fold(
  *
  * Sequential Updates & Fault Tolerance:
  * - State protection: During operation execution, `*accumulator_` is passed by const reference and remains intact.
- * - Atomic assignment: Only upon successful operation return is `accumulator_` updated with the new result.
+ * - Successful assignment: Only upon successful operation return is `accumulator_` updated with the new result.
  *   Failure or cancellation during operation preserves state and aborts without emitting.
  * - Tail emission: Emission is awaited via `coroutine_yield` before completing with Unit (`nullptr`).
  */
@@ -1172,6 +1212,13 @@ inline std::shared_ptr<Flow<T>> running_reduce(
  * @param size The maximum number of elements per chunk. Must be strictly positive (size >= 1).
  * @return A flow emitting `std::vector<T>` chunks.
  * @throws std::invalid_argument Immediately upon invocation if `size < 1`.
+ *
+ * The final chunk may have fewer elements than `size`.
+ *
+ * ```cpp
+ * auto values = chunked(as_flow(std::vector<std::string>{"a", "b", "c", "d", "e"}), 2);
+ * // Collects {"a", "b"}, {"c", "d"}, {"e"}.
+ * ```
  *
  * Batching & Buffer Lifetime:
  * - Lazy allocation: The chunk buffer `std::optional<std::vector<T>> result_` is allocated on demand on the first element.

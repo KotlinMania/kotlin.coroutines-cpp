@@ -1,10 +1,11 @@
-// port-lint: source kotlinx-coroutines-core/common/test/flow/operators/FilterTest.kt
-// port-lint: source kotlinx-coroutines-core/common/test/flow/operators/MapTest.kt
-// port-lint: source kotlinx-coroutines-core/common/test/flow/operators/MapNotNullTest.kt
-// port-lint: source kotlinx-coroutines-core/common/test/flow/operators/OnEachTest.kt
-// port-lint: source kotlinx-coroutines-core/common/test/flow/operators/IndexedTest.kt
-// port-lint: source kotlinx-coroutines-core/common/test/flow/operators/ScanTest.kt
-// port-lint: source kotlinx-coroutines-core/common/test/flow/operators/ChunkedTest.kt
+// port-lint: tests kotlinx-coroutines-core/common/test/flow/operators/FilterTest.kt
+// port-lint: tests kotlinx-coroutines-core/common/test/flow/operators/MapTest.kt
+// port-lint: tests kotlinx-coroutines-core/common/test/flow/operators/MapNotNullTest.kt
+// port-lint: tests kotlinx-coroutines-core/common/test/flow/operators/OnEachTest.kt
+// port-lint: tests kotlinx-coroutines-core/common/test/flow/operators/IndexedTest.kt
+// port-lint: tests kotlinx-coroutines-core/common/test/flow/operators/ScanTest.kt
+// port-lint: tests kotlinx-coroutines-core/common/test/flow/operators/ChunkedTest.kt
+// port-lint: tests kotlinx-coroutines-core/common/test/flow/operators/FilterTrivialTest.kt
 // Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/FilterTest.kt
 // Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/MapTest.kt
 // Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/MapNotNullTest.kt
@@ -82,6 +83,7 @@ struct Collector final : FlowCollector<T> {
 };
 
 struct Trace {
+    int collection_starts = 0;
     int completed_emits = 0;
     int finally_calls = 0;
     std::exception_ptr failure;
@@ -101,6 +103,7 @@ std::shared_ptr<Flow<int>> source(Trace& trace, int count = 3) {
             void* invoke_suspend(Result<void*> result) override {
                 try {
                     coroutine_begin(this)
+                    ++trace_.collection_starts;
                     if (trace_.pause_upstream) coroutine_yield(this, trace_.upstream.suspend(this));
                     for (value_ = 1; value_ <= count_; ++value_) {
                         coroutine_yield(this, collector_->emit(value_, this));
@@ -147,21 +150,15 @@ std::vector<T> collect_now(const std::shared_ptr<Flow<T>>& f) {
 
 // Struct without default constructor to verify RunningReduceFrame does not require default construction.
 struct NoDefault {
-    static inline int default_constructor_count = 0;
-    static inline int value_constructor_count = 0;
-    static inline int copy_constructor_count = 0;
-    static inline int move_constructor_count = 0;
-    static inline int destructor_count = 0;
 
     int value;
 
-    explicit NoDefault(int v) : value(v) { ++value_constructor_count; }
+    explicit NoDefault(int v) : value(v) {}
     NoDefault() = delete;
-    NoDefault(const NoDefault& o) : value(o.value) { ++copy_constructor_count; }
-    NoDefault(NoDefault&& o) noexcept : value(o.value) { ++move_constructor_count; }
+    NoDefault(const NoDefault& o) = default;
+    NoDefault(NoDefault&& o) noexcept = default;
     NoDefault& operator=(const NoDefault& o) { value = o.value; return *this; }
     NoDefault& operator=(NoDefault&& o) noexcept { value = o.value; return *this; }
-    ~NoDefault() { ++destructor_count; }
 
     bool operator==(const NoDefault& o) const { return value == o.value; }
 };
@@ -181,7 +178,7 @@ struct DerivedType : BaseType {
 // Upstream Behavioral Tests
 // ============================================================================
 
-// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/FilterTest.kt:14-45
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/FilterTest.kt
 void test_filter_and_filter_not_nominal() {
     auto f = as_flow(std::vector<int>{1, 2, 3, 4, 5});
     auto evens = filter(f, [](int x) { return x % 2 == 0; });
@@ -198,7 +195,7 @@ void test_filter_and_filter_not_nominal() {
     assert_true(collect_now(filter(f, [](int) { return false; })).empty());
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/FilterTest.kt:50-80
+// C++ pointer representation coverage.
 void test_filter_is_instance_and_not_null() {
     // 1. Shared pointer downcasting
     std::vector<std::shared_ptr<BaseType>> mixed{
@@ -239,8 +236,8 @@ void test_filter_is_instance_and_not_null() {
     assert_true(collect_now(nn_opts) == std::vector<int>({1, 3}));
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/MapTest.kt:14-38
-// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/MapNotNullTest.kt:14-40
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/MapTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/MapNotNullTest.kt
 void test_map_and_map_not_null_nominal() {
     auto f = as_flow(std::vector<int>{1, 2, 3});
     auto mapped = map<int, int>(f, [](int x) { return x * 10; });
@@ -259,7 +256,7 @@ void test_map_and_map_not_null_nominal() {
     assert_true(collect_now(map<int, int>(empty_flow<int>(), [](int x) { return x; })).empty());
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/IndexedTest.kt:14-50
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/IndexedTest.kt
 void test_with_index_nominal_and_isolation() {
     auto f = as_flow(std::vector<std::string>{"alpha", "beta", "gamma"});
     auto indexed = with_index(f);
@@ -283,101 +280,20 @@ void test_with_index_nominal_and_isolation() {
     assert_true(collect_now(with_index(empty_flow<int>())).empty());
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/IndexedTest.kt:55-80
-void test_with_index_overflow() {
-    // Custom flow that emits near INT_MAX to verify check_index_overflow without UB
-    auto near_max_flow = internal::unsafe_flow<int>([](FlowCollector<int>* collector, Continuation<void*>* completion) -> void* {
-        class OverflowFrame final : public ContinuationImpl {
-        public:
-            OverflowFrame(FlowCollector<int>* collector, Continuation<void*>* completion)
-                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                  collector_(collector) {}
-            void retain() { self_ref_ = shared_from_this(); }
-            void* invoke_suspend(Result<void*> result) override {
-                coroutine_begin(this)
-                coroutine_yield(this, collector_->emit(100, this));
-                coroutine_yield(this, collector_->emit(200, this));
-                coroutine_end(this)
-            }
-        protected:
-            void release_intercepted() override {
-                ContinuationImpl::release_intercepted();
-                self_ref_.reset();
-            }
-        private:
-            void* _label = nullptr;
-            FlowCollector<int>* collector_;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
-        };
-        auto frame = std::make_shared<OverflowFrame>(collector, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
-    });
-
-    // Custom indexed collector that starts index at INT_MAX
-    class PreIndexedFlow final : public Flow<IndexedValue<int>> {
-        std::shared_ptr<Flow<int>> upstream_;
-    public:
-        explicit PreIndexedFlow(std::shared_ptr<Flow<int>> up) : upstream_(std::move(up)) {}
-        void* collect(FlowCollector<IndexedValue<int>>* collector, Continuation<void*>* completion) override {
-            class CustomIndexFrame final : public ContinuationImpl, public FlowCollector<int> {
-            public:
-                CustomIndexFrame(std::shared_ptr<Flow<int>> up, FlowCollector<IndexedValue<int>>* down, Continuation<void*>* comp)
-                    : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(comp)),
-                      upstream_(std::move(up)), downstream_(down), index_(std::numeric_limits<int>::max()) {}
-                void retain() { self_ref_ = shared_from_this(); }
-                void* invoke_suspend(Result<void*> result) override {
-                    coroutine_begin(this)
-                    coroutine_yield(this, upstream_->collect(this, this));
-                    coroutine_end(this)
-                }
-                void* emit(int value, Continuation<void*>* cont) override {
-                    int curr = index_;
-                    index_ = (index_ == std::numeric_limits<int>::max())
-                           ? std::numeric_limits<int>::min()
-                           : index_ + 1;
-                    int checked_idx = internal::check_index_overflow(curr);
-                    return downstream_->emit(IndexedValue<int>(checked_idx, std::move(value)), cont);
-                }
-            protected:
-                void release_intercepted() override {
-                    ContinuationImpl::release_intercepted();
-                    self_ref_.reset();
-                }
-            private:
-                void* _label = nullptr;
-                std::shared_ptr<Flow<int>> upstream_;
-                FlowCollector<IndexedValue<int>>* downstream_;
-                int index_;
-                std::shared_ptr<BaseContinuationImpl> self_ref_;
-            };
-            auto frame = std::make_shared<CustomIndexFrame>(upstream_, collector, completion);
-            frame->retain();
-            return frame->start(Result<void*>::success(nullptr));
-        }
-    };
-
-    auto test_flow = std::make_shared<PreIndexedFlow>(near_max_flow);
-    Collector<IndexedValue<int>> collector;
-    Completion completion;
-    bool caught_overflow = false;
+// Boundary checks for the production guard; collection still starts at index zero.
+void test_index_overflow_guard() {
+    assert_equals(INT_MAX, kotlinx::coroutines::flow::internal::check_index_overflow(INT_MAX));
+    bool failed = false;
     try {
-        void* r = test_flow->collect(&collector, &completion);
-        if (intrinsics::is_coroutine_suspended(r)) {
-            completion.result.get_or_throw();
-        }
+        kotlinx::coroutines::flow::internal::check_index_overflow(INT_MIN);
     } catch (const std::overflow_error& e) {
-        caught_overflow = true;
+        failed = true;
         assert_true(std::string(e.what()) == "Index overflow has happened");
     }
-    assert_true(caught_overflow);
-    // The first emission succeeded with INT_MAX
-    assert_equals(size_t(1), collector.values.size());
-    assert_equals(std::numeric_limits<int>::max(), collector.values[0].index);
-    assert_equals(100, collector.values[0].value);
+    assert_true(failed);
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/OnEachTest.kt:14-40
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/OnEachTest.kt
 void test_on_each_nominal() {
     std::vector<int> side_effects;
     auto f = as_flow(std::vector<int>{1, 2, 3});
@@ -391,7 +307,7 @@ void test_on_each_nominal() {
     assert_true(collect_now(on_each(empty_flow<int>(), [](int) {})).empty());
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/ScanTest.kt:14-55
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/ScanTest.kt
 void test_scan_and_running_fold_nominal() {
     auto f = as_flow(std::vector<int>{1, 2, 3});
     auto folded = running_fold<int, int>(f, 0, [](int acc, int x) { return acc + x; });
@@ -406,7 +322,7 @@ void test_scan_and_running_fold_nominal() {
     assert_true(collect_now(running_fold<int, int>(empty, 42, [](int acc, int x) { return acc + x; })) == std::vector<int>{42});
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/ScanTest.kt:60-90
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/ScanTest.kt
 void test_running_reduce_nominal() {
     auto f = as_flow(std::vector<int>{1, 2, 3, 4});
     auto reduced = running_reduce<int>(f, [](int acc, int x) { return acc + x; });
@@ -427,7 +343,7 @@ void test_running_reduce_nominal() {
     assert_true(collect_now(running_reduce<int>(empty, [](int a, int b) { return a + b; })).empty());
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/ChunkedTest.kt:14-60
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/ChunkedTest.kt
 void test_chunked_nominal() {
     // Negative or zero size throws std::invalid_argument immediately
     for (int invalid_size : {0, -1, -10}) {
@@ -475,7 +391,7 @@ void test_filter_suspension_followed_by_downstream_suspension() {
     assert_true(intrinsics::is_coroutine_suspended(r));
     assert_equals(0, completion.resumes);
     assert_false(pred_frame.expired());
-    assert_equals(0, collector.values.size());
+    assert_equals(size_t(0), collector.values.size());
 
     // Step 1: Resume predicate with true
     pred_pending.resume(Result<void*>::success(new bool(true)));
@@ -604,7 +520,7 @@ void test_map_not_null_suspension() {
 
     // First item returns std::nullopt (disengaged) -> should NOT emit downstream
     transform_pending.resume(Result<void*>::success(new std::optional<int>(std::nullopt)));
-    assert_equals(0, collector.values.size());
+    assert_equals(size_t(0), collector.values.size());
     assert_equals(0, completion.resumes);
 
     // Second item returns engaged value 999 -> emits downstream and suspends collector
@@ -635,7 +551,7 @@ void test_on_each_suspension_followed_by_downstream_suspension() {
     });
 
     assert_true(intrinsics::is_coroutine_suspended(f->collect(&collector, &completion)));
-    assert_equals(0, collector.values.size());
+    assert_equals(size_t(0), collector.values.size());
 
     // Step 1: Resume action (Unit = nullptr)
     action_pending.resume(Result<void*>::success(nullptr));
@@ -664,19 +580,21 @@ void test_running_fold_delayed_initial_emit() {
     // Initial emission has occurred (100), but upstream has NOT started yet!
     assert_equals(size_t(1), collector.values.size());
     assert_equals(100, collector.values[0]);
+    assert_equals(0, trace.collection_starts);
     assert_equals(0, trace.completed_emits);
 
     // Resume initial emission -> upstream begins and emits 1
     collector.pending.resume();
     assert_equals(size_t(2), collector.values.size());
     assert_equals(101, collector.values[1]);
-    assert_equals(1, trace.completed_emits);
+    assert_equals(1, trace.collection_starts);
+    assert_equals(0, trace.completed_emits);
 
     // Resume next emission -> upstream emits 2
     collector.pending.resume();
     assert_equals(size_t(3), collector.values.size());
     assert_equals(103, collector.values[2]);
-    assert_equals(2, trace.completed_emits);
+    assert_equals(1, trace.completed_emits);
 
     // Final resume settles collection
     collector.pending.resume();
@@ -717,10 +635,8 @@ void test_running_fold_operation_failure() {
     assert_equals(1, trace.finally_calls);
 }
 
-// 8. RunningReduce with non-default-constructible type and constructor count proof
+// RunningReduce accepts elements without a default constructor.
 void test_running_reduce_non_default_constructible() {
-    NoDefault::default_constructor_count = 0;
-    NoDefault::value_constructor_count = 0;
 
     std::vector<NoDefault> items;
     items.emplace_back(10);
@@ -738,8 +654,7 @@ void test_running_reduce_non_default_constructible() {
     assert_equals(30, res[1].value);
     assert_equals(60, res[2].value);
 
-    // CRITICAL ACCEPTANCE: 0 default constructor calls proved!
-    assert_equals(0, NoDefault::default_constructor_count);
+    // The deleted default constructor is checked by instantiating the real operator.
 }
 
 // 9. RunningReduce with nullable-first element (std::optional<int>)
@@ -806,7 +721,7 @@ void test_chunked_failure_does_not_flush_partial_chunk() {
     collector.pause = false;
 
     // Upstream emits 1 element, then fails (chunk size 2 means 1 element is partial)
-    auto err_flow = internal::unsafe_flow<int>([](FlowCollector<int>* collector, Continuation<void*>* completion) -> void* {
+    auto err_flow = kotlinx::coroutines::flow::internal::unsafe_flow<int>([](FlowCollector<int>* collector, Continuation<void*>* completion) -> void* {
         class FailFrame final : public ContinuationImpl {
         public:
             FailFrame(FlowCollector<int>* collector, Continuation<void*>* completion)
@@ -851,7 +766,8 @@ void test_chunked_failure_does_not_flush_partial_chunk() {
 
 // 12. Interleaved concurrent collections isolation
 void test_interleaved_concurrent_collections() {
-    auto base_flow = as_flow(std::vector<int>{1, 2});
+    Trace trace;
+    auto base_flow = source(trace, 2);
     auto map_flow = map<int, int>(base_flow, [](int x) { return x * 10; });
 
     Collector<int> col1;
@@ -888,6 +804,168 @@ void test_interleaved_concurrent_collections() {
     assert_true(comp2.result.is_success());
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/FilterTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/MapTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/MapNotNullTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/OnEachTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/IndexedTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/ScanTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/ChunkedTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/FilterTrivialTest.kt
+void test_original_nominal_cases() {
+    auto two = as_flow(std::vector<int>{1, 2});
+    assert_true(collect_now(filter(two, [](int v) { return v % 2 == 0; })) == std::vector<int>{2});
+    assert_true(collect_now(filter(two, [](int) { return true; })) == std::vector<int>({1, 2}));
+    assert_true(collect_now(filter(two, [](int) { return false; })).empty());
+    assert_true(collect_now(filter_not(two, [](int) { return true; })).empty());
+    assert_true(collect_now(filter_not(two, [](int) { return false; })) == std::vector<int>({1, 2}));
+    assert_true(collect_now(map<int, int>(two, [](int v) { return v + 1; })) == std::vector<int>({2, 3}));
+    std::vector<int> actions;
+    assert_true(collect_now(on_each(two, [&](int v) { actions.push_back(v); })) == std::vector<int>({1, 2}));
+    assert_true(actions == std::vector<int>({1, 2}));
+    auto nullable = as_flow(std::vector<std::optional<int>>{1, std::nullopt, 2});
+    assert_true(collect_now(map_not_null<std::optional<int>, int>(nullable,
+        [](std::optional<int> v) { return v; })) == std::vector<int>({1, 2}));
+    assert_true(collect_now(filter_not_null(as_flow(std::vector<std::optional<int>>{1, 2, std::nullopt}))) == std::vector<int>({1, 2}));
+    assert_true(collect_now(filter_not_null(empty_flow<std::optional<int>>())).empty());
+    assert_true(collect_now(with_index(as_flow(std::vector<int>{3, 2, 1}))) ==
+        std::vector<IndexedValue<int>>({{0, 3}, {1, 2}, {2, 1}}));
+    auto append = [](const std::vector<int>& acc, int v) { auto result = acc; result.push_back(v); return result; };
+    auto three = as_flow(std::vector<int>{1, 2, 3});
+    const std::vector<std::vector<int>> expected{{}, {1}, {1, 2}, {1, 2, 3}};
+    assert_true(collect_now(scan<int, std::vector<int>>(three, {}, append)) == expected);
+    assert_true(collect_now(running_fold<int, std::vector<int>>(three, {}, append)) == expected);
+    assert_true(collect_now(running_reduce(as_flow(std::vector<int>{1, 2, 3, 4, 5}),
+        [](int a, int v) { return a + v; })) == std::vector<int>({1, 3, 6, 10, 15}));
+    auto nulls = as_flow(std::vector<std::optional<int>>{std::nullopt, 2, std::nullopt, std::nullopt, std::nullopt, 5});
+    assert_true(collect_now(running_reduce(nulls, [](std::optional<int> a, std::optional<int> v) {
+        return v ? (a ? std::optional<int>(*a + *v) : v) : a;
+    })) == std::vector<std::optional<int>>({std::nullopt, 2, 2, 2, 2, 7}));
+    auto five = as_flow(std::vector<int>{1, 2, 3, 4, 5});
+    assert_true(collect_now(chunked(five, 2)) == std::vector<std::vector<int>>({{1, 2}, {3, 4}, {5}}));
+    assert_true(collect_now(chunked(five, 3)) == std::vector<std::vector<int>>({{1, 2, 3}, {4, 5}}));
+    assert_true(collect_now(chunked(as_flow(std::vector<int>{1, 2, 3, 4}), 2)) == std::vector<std::vector<int>>({{1, 2}, {3, 4}}));
+    assert_true(collect_now(chunked(as_flow(std::vector<int>{1}), 3)) == std::vector<std::vector<int>>({{1}}));
+    assert_true(collect_now(chunked(empty_flow<int>(), 1)).empty());
+    assert_true(collect_now(chunked(empty_flow<int>(), 2)).empty());
+    for (int invalid : {-1, 0, INT_MIN, INT_MIN + 1}) {
+        bool failed = false;
+        try { chunked(empty_flow<int>(), invalid); }
+        catch (const std::invalid_argument&) { failed = true; }
+        assert_true(failed);
+    }
+    auto strings = chunked(as_flow(std::vector<std::string>{"a", "b", "c", "d", "e"}), 2);
+    assert_true(collect_now(map<std::vector<std::string>, std::string>(strings,
+        [](std::vector<std::string> chunk) { std::string result; for (const auto& v : chunk) result += v; return result; })) ==
+        std::vector<std::string>({"ab", "cd", "e"}));
+    int empty_calls = 0;
+    assert_true(collect_now(map<int, int>(empty_flow<int>(), [&](int v) { ++empty_calls; return v; })).empty());
+    assert_true(collect_now(map_not_null<int, int>(empty_flow<int>(), [&](int v) -> std::optional<int> { ++empty_calls; return v; })).empty());
+    assert_true(collect_now(on_each(empty_flow<int>(), [&](int) { ++empty_calls; })).empty());
+    assert_equals(0, empty_calls);
+}
+
+void test_pointer_overload_compatibility() {
+    int a = 1, b = 2;
+    auto src = as_flow(std::vector<int>{1, 2, 3});
+    std::function<int*(int)> raw = [&](int v) { return v == 1 ? &a : (v == 3 ? &b : nullptr); };
+    assert_true(collect_now(map_not_null<int, int>(src, raw)) == std::vector<int>({1, 2}));
+    std::string borrowed = "owned by caller";
+    assert_true(collect_now(map_not_null<int, std::string>(src, [&](int v) -> std::string* {
+        return v == 2 ? nullptr : &borrowed;
+    })) == std::vector<std::string>({"owned by caller", "owned by caller"}));
+    assert_true(borrowed == "owned by caller");
+    auto shared = std::make_shared<int>(3);
+    std::function<std::shared_ptr<int>(int)> ptr = [shared](int v) { return v == 2 ? nullptr : shared; };
+    assert_true(collect_now(map_not_null<int, int>(src, ptr)) == std::vector<std::shared_ptr<int>>({shared, shared}));
+    assert_true(collect_now(map_not_null<int, int>(src, [shared](int v) -> std::shared_ptr<int> {
+        return v == 2 ? nullptr : shared;
+    })) == std::vector<std::shared_ptr<int>>({shared, shared}));
+    assert_true(collect_now(filter_not_null(as_flow(std::vector<std::shared_ptr<int>>{shared, nullptr, shared}))) ==
+        std::vector<std::shared_ptr<int>>({shared, shared}));
+}
+
+void test_stateful_interleaved_collections() {
+    Trace trace;
+    auto src = source(trace, 2);
+    auto indexed = with_index(src);
+    Collector<IndexedValue<int>> a, b;
+    a.pause = b.pause = true;
+    Completion ca, cb;
+    assert_true(intrinsics::is_coroutine_suspended(indexed->collect(&a, &ca)));
+    assert_true(intrinsics::is_coroutine_suspended(indexed->collect(&b, &cb)));
+    a.pending.resume(); b.pending.resume();
+    assert_true(a.values == std::vector<IndexedValue<int>>({{0, 1}, {1, 2}}));
+    assert_true(a.values == b.values);
+    b.pending.resume(); a.pending.resume();
+    assert_equals(1, ca.resumes); assert_equals(1, cb.resumes);
+    assert_true(ca.result.is_success() && cb.result.is_success());
+
+    auto folded = running_fold<int, int>(src, 10, [](int acc, int v) { return acc + v; });
+    Collector<int> x, y;
+    x.pause = y.pause = true;
+    Completion cx, cy;
+    assert_true(intrinsics::is_coroutine_suspended(folded->collect(&x, &cx)));
+    assert_true(intrinsics::is_coroutine_suspended(folded->collect(&y, &cy)));
+    for (int i = 0; i < 3; ++i) { y.pending.resume(); x.pending.resume(); }
+    assert_true(x.values == std::vector<int>({10, 11, 13}));
+    assert_true(x.values == y.values);
+    assert_equals(1, cx.resumes); assert_equals(1, cy.resumes);
+    assert_true(cx.result.is_success() && cy.result.is_success());
+}
+
+void test_real_action_and_operation_cancellation() {
+    for (bool reduction : {false, true}) {
+        auto job = JobImpl::create(nullptr);
+        Completion completion;
+        completion.context = job;
+        Trace trace;
+        Collector<int> sink;
+        auto capture = std::make_shared<int>(42);
+        std::weak_ptr<int> weak_capture = capture;
+        auto upstream = source(trace, 3);
+        std::weak_ptr<Flow<int>> weak_upstream = upstream;
+        std::weak_ptr<BaseContinuationImpl> weak_frame;
+        std::shared_ptr<CancellableContinuationImpl<void>> action_pending;
+        std::shared_ptr<CancellableContinuationImpl<int>> operation_pending;
+        {
+            std::shared_ptr<Flow<int>> transformed;
+            if (reduction) {
+                transformed = running_reduce<int>(upstream, [&, capture](int acc, int value, Continuation<void*>* c) -> void* {
+                    assert_equals(42, *capture); assert_equals(1, acc); assert_equals(2, value);
+                    weak_frame = dynamic_cast<BaseContinuationImpl*>(c)->weak_from_this();
+                    return suspend_cancellable_coroutine<int>([&](CancellableContinuation<int>& p) {
+                        operation_pending = dynamic_cast<CancellableContinuationImpl<int>&>(p).shared_from_this();
+                    }, c);
+                });
+            } else {
+                transformed = on_each<int>(upstream, [&, capture](int value, Continuation<void*>* c) -> void* {
+                    assert_equals(42, *capture); assert_equals(1, value);
+                    weak_frame = dynamic_cast<BaseContinuationImpl*>(c)->weak_from_this();
+                    return suspend_cancellable_coroutine<void>([&](CancellableContinuation<void>& p) {
+                        action_pending = dynamic_cast<CancellableContinuationImpl<void>&>(p).shared_from_this();
+                    }, c);
+                });
+            }
+            assert_true(intrinsics::is_coroutine_suspended(transformed->collect(&sink, &completion)));
+        }
+        capture.reset(); upstream.reset();
+        assert_false(weak_frame.expired()); assert_false(weak_capture.expired()); assert_false(weak_upstream.expired());
+        assert_equals(0, completion.resumes);
+        job->cancel();
+        assert_equals(1, completion.resumes);
+        assert_true(completion.result.is_failure());
+        bool cancelled = false;
+        try { completion.result.get_or_throw(); } catch (const CancellationException&) { cancelled = true; }
+        assert_true(cancelled);
+        assert_equals(1, trace.finally_calls);
+        assert_true(sink.values == (reduction ? std::vector<int>{1} : std::vector<int>{}));
+        action_pending.reset(); operation_pending.reset();
+        assert_true(weak_frame.expired()); assert_true(trace.frame.expired());
+        assert_true(weak_capture.expired()); assert_true(weak_upstream.expired());
+    }
+}
+
 } // namespace
 
 int main() {
@@ -905,8 +983,8 @@ int main() {
     test_with_index_nominal_and_isolation();
     std::cout << "  test_with_index_nominal_and_isolation passed" << std::endl;
 
-    test_with_index_overflow();
-    std::cout << "  test_with_index_overflow passed" << std::endl;
+    test_index_overflow_guard();
+    std::cout << "  test_index_overflow_guard passed" << std::endl;
 
     test_on_each_nominal();
     std::cout << "  test_on_each_nominal passed" << std::endl;
@@ -956,6 +1034,14 @@ int main() {
     test_interleaved_concurrent_collections();
     std::cout << "  test_interleaved_concurrent_collections passed" << std::endl;
 
+    test_original_nominal_cases();
+    std::cout << "  test_original_nominal_cases passed" << std::endl;
+    test_pointer_overload_compatibility();
+    std::cout << "  test_pointer_overload_compatibility passed" << std::endl;
+    test_stateful_interleaved_collections();
+    std::cout << "  test_stateful_interleaved_collections passed" << std::endl;
+    test_real_action_and_operation_cancellation();
+    std::cout << "  test_real_action_and_operation_cancellation passed" << std::endl;
     std::cout << "All test_transform_suspension tests passed successfully!" << std::endl;
     return 0;
 }
