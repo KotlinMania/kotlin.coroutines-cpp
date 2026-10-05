@@ -441,9 +441,9 @@ void test_upstream_suspension_and_finally_ordering() {
             Completion comp;
             auto f = source(trace, 2);
             // Non-terminating on value 1:
-            // op 0 (any): x == 2 (1 does not terminate)
+            // op 0 (any): x > 5 (neither value terminates)
             // op 1 (all): x > 0 (1 satisfies, continues)
-            // op 2 (none): x == 2 (1 does not terminate)
+            // op 2 (none): x > 5 (neither value terminates)
             void* r = op == 0 ? any<int>(f, [](int x) { return x > 5; }, &comp)
                     : op == 1 ? all<int>(f, [](int x) { return x > 0; }, &comp)
                               : none<int>(f, [](int x) { return x > 5; }, &comp);
@@ -613,24 +613,34 @@ void test_real_cancellation_during_suspended_predicate() {
         Trace trace;
         std::shared_ptr<CancellableContinuationImpl<bool>> pending;
         std::weak_ptr<BaseContinuationImpl> frame;
-        auto predicate = [&](int, Continuation<void*>* continuation) -> void* {
-            if (auto* base = dynamic_cast<BaseContinuationImpl*>(continuation)) {
-                frame = base->weak_from_this();
-            }
-            return suspend_cancellable_coroutine<bool>([&](CancellableContinuation<bool>& value) {
-                pending = dynamic_cast<CancellableContinuationImpl<bool>&>(value).shared_from_this();
-            }, continuation);
-        };
+        auto capture = std::make_shared<int>(42);
+        std::weak_ptr<int> capture_lifetime = capture;
         auto upstream = source(trace, 3);
-        void* r = op == 0 ? any<int>(upstream, predicate, &comp)
-                : op == 1 ? all<int>(upstream, predicate, &comp)
-                          : none<int>(upstream, predicate, &comp);
+        std::weak_ptr<Flow<int>> upstream_lifetime = upstream;
+        void* r;
+        {
+            auto predicate = [&, capture](int, Continuation<void*>* continuation) -> void* {
+                assert_equals(42, *capture);
+                if (auto* base = dynamic_cast<BaseContinuationImpl*>(continuation)) {
+                    frame = base->weak_from_this();
+                }
+                return suspend_cancellable_coroutine<bool>([&](CancellableContinuation<bool>& value) {
+                    pending = dynamic_cast<CancellableContinuationImpl<bool>&>(value).shared_from_this();
+                }, continuation);
+            };
+            r = op == 0 ? any<int>(upstream, predicate, &comp)
+              : op == 1 ? all<int>(upstream, predicate, &comp)
+                        : none<int>(upstream, predicate, &comp);
+        }
+        capture.reset();
+        upstream.reset(); // retain upstream only through suspended frames
         assert_true(intrinsics::is_coroutine_suspended(r));
         assert_equals(0, comp.resumes);
         assert_false(frame.expired());
+        assert_false(capture_lifetime.expired());
+        assert_false(upstream_lifetime.expired());
         assert_true(pending != nullptr);
 
-        upstream.reset(); // reset external upstream reference
         job->cancel();
 
         // Require completion failure WITHOUT manually resuming predicate
@@ -650,6 +660,8 @@ void test_real_cancellation_during_suspended_predicate() {
         // Assert frames/captures/upstream released
         assert_true(frame.expired());
         assert_true(trace.frame.expired());
+        assert_true(capture_lifetime.expired());
+        assert_true(upstream_lifetime.expired());
     }
 }
 

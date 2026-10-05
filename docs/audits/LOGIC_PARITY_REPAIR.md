@@ -11,7 +11,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 |---|---|---|---|
 | t_59e8d50a | Native ContinuationImpl.kt:104-115; CancellableContinuation.kt:423-435; Yield.kt:145-166 | Context interception bypassed; queued tasks had non-owning handles; yield skipped YieldContext; synthetic native Unconfined dispatcher resumed inline; terminated handler captures retained frames | Verified in this checkpoint |
 | t_79ca4abe | flow/operators/Limit.kt:17-140 | Source-ordered Limit algorithms with retained macro frames, suspended predicates, emitAbort, owned abort and cancellation paths | Implemented; local acceptance recorded below |
-| t_51240f83 | flow/terminal/Logic.kt | any/all/none return a synchronous bool, discard suspended predicates/collection, and swallow unrelated aborts | Queued |
+| t_51240f83 | flow/terminal/Logic.kt:34-42,71-79,107 | Source-ordered any/all retained frames over collect_while; none awaits any; erased Boolean results, suspension and owned-abort cancellation preserved | Implemented; bounded local acceptance below |
 | t_f2155697 | flow/operators/Transform.kt | Suspended filter/map/onEach/fold/reduce results bypass remaining algorithm; runningFold skips collection after suspended initial emission; stack collectors and chunk finalization do not survive suspension | Queued |
 | t_356e6dfc | flow/internal/Merge.kt:47-94 | Concurrent and limited merge use OS threads, synchronous semaphore acquisition and joins, and discard collection suspension | Queued |
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
@@ -313,3 +313,86 @@ No other production files, continuation ABI or algorithms changed. The parent
 repair and other operator/compiler cards remain open. Workflow shape remains
 unchanged: only codeql.yml, with weekly schedule and manual dispatch. No push,
 PR, deployment, live model call or remote workflow change was made.
+
+
+## Logic transliteration and independent corrections — 2026-10-04
+
+Sydney explicitly delegated this bounded implementation to Iris's existing
+Antigravity conversation under Codex review. The original complete Logic.kt,
+Limit.kt and BooleanTerminationTest.kt were authoritative. Iris held the
+implementation lease for Logic.hpp, the new suspension regression and its CMake
+registration; ownership returned to Codex after her completion report. Local
+safety checkpoint 3efab2f4 preserved the implementation before final acceptance.
+Iris subsequently committed the documentation/assertion corrections at 6f84fdd4,
+including the Logic.cpp provenance relocation. Both commits are preserved.
+
+The C++ algorithms follow original source order. any initializes found to false,
+awaits each predicate inside existing collect_while, records a true match and
+returns the inverted predicate to collection. all records a false counterexample
+and returns the predicate to collection. none awaits any and negates its result;
+it does not implement a separate loop. Retained ContinuationImpl macro frames
+preserve suspended local state and the existing computed-goto/erased ABI.
+Predicate and delegated Boolean boxes are consumed by their callers. Existing
+collect_while supplies owned-abort checking and the post-abort ensureActive check;
+foreign aborts and resumed failures propagate. No replacement algorithm, synchronous
+shortcut or compiler-lowering claim is introduced.
+
+Codex reviewed those branches and strengthened the real cancellable-predicate
+regression for each operator: independently observable weak handles now prove
+that captured state and the upstream flow survive suspension and expire after
+Job cancellation and terminal completion, without manually resuming the
+predicate. Stale source-pause comments were corrected. The API documentation
+uses C++ contracts, callable signatures, live completion requirements and actual
+result ownership; provenance is plain metadata outside Doxygen. Three exact
+Doxygen examples compiled and ran under optimized AddressSanitizer. Production
+non-comment tokens remain identical to the safety checkpoint.
+
+The new regression has 23 named checks: all 12 original BooleanTerminationTest
+cases, plus 11 groups for immediate/delayed results, short circuit, upstream
+suspension/finally, resumed errors, foreign abort, owned-abort cancellation,
+automatic cancellable-predicate failure, captured/upstream lifetimes, all nine
+interleaved operator pairs, and none's delegated Boolean consumption.
+
+An independent offline comparison compiled the exact original Logic.kt and
+Limit.kt bodies with cached Kotlin JVM compiler 2.4.0 and coroutines 1.11.0.
+Only JVM facade annotations were renamed to avoid dependency shadowing;
+bytecode confirms calls to these original compiled operators. Production C++
+matched all 30 state snapshots across 12 scenarios: each operator with a match
+at value two, exhaustion, empty source, and suspended predicate failure. Snapshots
+include predicate calls, completed source emissions, finally count, completion,
+failure, Boolean outcome and pending suspension kind. This is bounded observed
+control-flow agreement, not universal coroutine/backend parity.
+
+Final Debug (3/3, 26.10s) and optimized ASan (3/3, 26.36s) focused gates cover test_logic_suspension,
+test_limit_suspension and test_ir_pipeline. Exact final results and timings are
+retained in codex-final-debug-ctest.log and codex-final-asan-ctest.log. The earlier
+full Debug 25/25 and ASan 33/33 results belong to previous repairs; this isolated
+Logic change reruns affected gates. No ASan diagnostics were observed; macOS ASan
+output is not a LeakSanitizer certificate. Explicit weak-handle tests provide
+bounded lifetime evidence.
+
+Generated Debug IR contains 148 actual Logic frame invoke_suspend instantiations,
+279 indirectbr instructions and 282 blockaddresses. All 282 marker calls are
+removed; every other byte of the IR is preserved. Function matching uses the
+actual demangled method identity, excluding allocator/helper names containing an
+enclosing invoke_suspend name. Macro cleanup remains cleanup of existing state
+machines, not automatic extraction of arbitrary suspending C++.
+
+ASTDistance extracts 3 Kotlin and 23 C++ functions: 3/3 original operator matches,
+zero unmatched source and 20 unmatched target helper/frame methods. Its body
+score is 0.018 versus 0.081 for the previous incorrect synchronous implementation.
+Unsupported suspension/frame normalization remains visible; no weights or
+helper evidence were suppressed. This score is not semantic acceptance proof.
+The handoff baseline probe demonstrates a compile-time API mismatch, not an
+executed baseline runtime regression.
+
+Evidence, source/binary hashes, full raw/cleaned IR, exact offline harnesses,
+traces, documentation examples, scorer output and build/test logs are retained at
+/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-iris-logic-handoff/.
+The original Iris receipt's claims of zero leaks, zero unmatched target functions
+and a clean uncommitted tree were corrected explicitly. The umbrella and seven
+other originally linked production repairs remain open. The only workflow is
+.github/workflows/codeql.yml, with weekly schedule and manual dispatch; it is
+unchanged. No push, PR, deployment, release, new Hermes worker or model API
+dispatch was performed. Iris collaboration used the expressly authorized
+existing desktop conversation.
