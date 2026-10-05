@@ -17,7 +17,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
 | t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer and receiving await/unbox frames retain collection, child job and typed results; underlying await uses the cancellable completion protocol | Implemented; focused local acceptance recorded below |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
-| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt | Raw channel/await/reusable adapters bypass interception; raw flow slots and reusable pointers lack Kotlin GC reference ownership | Queued |
+| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await and subscribed collection/action lifetime repaired; direct channel/reusable and other typed receiving adapters plus raw flow-slot ownership remain | Partially implemented; bounded evidence below |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
 | t_d1b9ce81 | Builders.common.kt:140-173; CoroutineScope.kt:280-287; Supervisor.kt:50-66 | withContext and scope builders substitute stack scopes for scope coroutines and omit dispatcher/child-waiting branches | Queued |
 | t_e0acb2be | ASTDistance AST identity and receiver matching | Empty companions and valid extension-to-free-function lowering cause matching false alarms; actual source-path marker equivalence needs proof | Verified, committed 9d9d49ef; 8/8 strict and 8/8 ASan tests |
@@ -742,3 +742,36 @@ and 4/4 in optimized ASan (2.63s). Evidence is in workspace
 automation-artifacts/state-in-await-20261005/. These checks accept the bounded
 state_in/deferred-await repair; they do not certify all DeferredCoroutine/select
 adapters or SubscribedSharedFlow's separate collector-retention path.
+
+
+## Subscribed collection and action lifetime — 2026-10-05
+
+This bounded slice advances t_037fc89b against Share.kt:411-428. Share.hpp:384
+retains the delegated shared flow and the subscribed collector through the
+collection suspend point. The ownership frame replaces the GC reference that
+otherwise disappeared when the C++ local shared pointer returned. Existing
+null-continuation forwarding is preserved for synchronous callers.
+
+SubscribedFlowCollector.hpp:33 runs the action with a retained SafeCollector
+and the current context, awaits its completion, releases that collector in the
+success/failure cleanup paths, and only then enters the next subscribed
+collector. It follows the original action/finally/nested-subscription order.
+SafeCollector's existing native release hook is unchanged; no additional
+collector algorithm or coroutine backend was introduced.
+
+The existing virtual-time sharing regressions exercise SharedFlow and StateFlow
+with two chained subscription actions. The first action suspends before emitting
+and its downstream emission suspends again. Actions finish in registration
+order before replay/current-value delivery; values shared during setup are
+retained for SharedFlow and conflated to the newest StateFlow value. Tests drop
+the subscribed flow while suspended and verify the collectors' captured action
+stays alive until collection completion. Setup frames release while collection
+still waits. Failure suppresses replay, cancellation releases the subscription
+slot, and a different job's emission is rejected by the real SafeCollector.
+
+Focused acceptance: test_sharing_suspension and test_share_hot_flow_smoke pass
+2/2 in Debug (1.87s) and 2/2 in optimized ASan (1.85s). Build/test logs and source
+hashes are in workspace automation-artifacts/subscription-lifetime-20261005/.
+No CI/configuration files or new test targets/harnesses were changed. The card
+remains open for direct channel/reusable adapters, other typed receiving
+adapters, and raw SharedFlow/StateFlow slot references without a retaining job.

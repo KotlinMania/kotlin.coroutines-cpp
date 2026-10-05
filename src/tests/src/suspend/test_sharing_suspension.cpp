@@ -672,6 +672,173 @@ void test_exception_resume_after_waiter_cancellation() {
     catch (const CancellationException&) {}
 }
 
+class SubscriptionActionFrame final : public ContinuationImpl {
+public:
+    SubscriptionActionFrame(FlowCollector<int>* collector, int value, bool wait, bool fail,
+                            std::function<void(int)> after_emit,
+                            std::shared_ptr<Continuation<void*>> completion)
+        : ContinuationImpl(std::move(completion)), collector_(collector), value_(value),
+          wait_(wait), fail_(fail), after_emit_(std::move(after_emit)) {}
+    void retain() { self_ref_ = shared_from_this(); }
+    void* invoke_suspend(Result<void*> result) override {
+        try {
+            coroutine_begin(this)
+            if (wait_) coroutine_yield(this, delay(10, shared_from_this()));
+            coroutine_yield(this, collector_->emit(value_, this));
+            if (fail_) throw std::runtime_error("subscription failed");
+            after_emit_(value_);
+            self_ref_.reset();
+            coroutine_end(this)
+        } catch (...) {
+            self_ref_.reset();
+            throw;
+        }
+    }
+private:
+    void* _label = nullptr;
+    FlowCollector<int>* collector_;
+    int value_;
+    bool wait_;
+    bool fail_;
+    std::function<void(int)> after_emit_;
+    std::shared_ptr<BaseContinuationImpl> self_ref_;
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/sharing/SharedFlowTest.kt:562-621
+// Suspension regressions also cover StateFlow's subscription-before-current-value order.
+void test_subscription_actions_and_collector_lifetime(bool state_flow, bool fail, bool cancel_action = false) {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto job = make_job();
+    auto context = std::dynamic_pointer_cast<CoroutineContext>(job)->operator+(clock);
+    std::shared_ptr<MutableSharedFlow<int>> shared;
+    if (state_flow) shared = make_mutable_state_flow<int>(42);
+    else {
+        shared = make_mutable_shared_flow<int>(1, 4);
+        shared->try_emit(42);
+    }
+    std::vector<int> received;
+    std::vector<int> started;
+    std::vector<std::weak_ptr<BaseContinuationImpl>> action_frames;
+    std::vector<std::weak_ptr<BaseContinuationImpl>> subscription_frames;
+    auto token = std::make_shared<int>(1);
+    std::weak_ptr<int> weak_token = token;
+    auto action = [&](int value, FlowCollector<int>* collector, std::shared_ptr<Continuation<void*>> cont) {
+        assert_true(dynamic_cast<kotlinx::coroutines::flow::internal::SafeCollector<int>*>(collector) != nullptr);
+        assert_true(cont != nullptr);
+        started.push_back(value);
+        subscription_frames.push_back(std::dynamic_pointer_cast<BaseContinuationImpl>(cont));
+        auto frame = std::make_shared<SubscriptionActionFrame>(collector, value, value == 1,
+            fail && value == 2, [&](int v) { shared->try_emit(v * 100); }, std::move(cont));
+        action_frames.push_back(frame);
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
+    };
+    auto subscribed = on_subscription<int>(on_subscription<int>(shared,
+        [&, token](FlowCollector<int>* collector, std::shared_ptr<Continuation<void*>> cont) {
+            assert_equals(1, *token);
+            return action(1, collector, std::move(cont));
+        }), [&, token](FlowCollector<int>* collector, std::shared_ptr<Continuation<void*>> cont) {
+            assert_equals(1, *token);
+            return action(2, collector, std::move(cont));
+        });
+    class Recorder final : public FlowCollector<int> {
+    public:
+        Recorder(std::vector<int>& received) : received_(received) {}
+        void* emit(int value, Continuation<void*>* cont) override {
+            received_.push_back(value);
+            if (value == 1) return delay(5, kotlinx::coroutines::internal::retain_continuation(cont));
+            return nullptr;
+        }
+    private:
+        std::vector<int>& received_;
+    } recorder(received);
+    int completions = 0;
+    std::exception_ptr failure;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(context, [&](Result<void*> result) {
+        ++completions;
+        failure = result.exception_or_null();
+    });
+    assert_true(intrinsics::is_coroutine_suspended(subscribed->collect(&recorder, completion.get())));
+    subscribed.reset();
+    token.reset();
+    assert_false(weak_token.expired());
+    assert_equals(1, shared->subscription_count()->value());
+    assert_true(started == std::vector<int>({1}));
+    assert_true(received.empty());
+    if (cancel_action) {
+        job->cancel();
+        clock->run_current();
+        assert_true(received.empty());
+        assert_true(started == std::vector<int>({1}));
+        assert_equals(1, completions);
+        assert_equals(0, shared->subscription_count()->value());
+        clock->advance_by(10);
+    } else {
+        clock->advance_by(10);
+        assert_true(received == std::vector<int>({1}));
+        assert_true(started == std::vector<int>({1}));
+        clock->advance_by(4);
+        assert_true(started == std::vector<int>({1}));
+        clock->advance_by(1);
+        assert_true(started == std::vector<int>({1, 2}));
+        if (fail) {
+            assert_true(received == std::vector<int>({1, 2})); // Action failure suppresses replay/current value.
+            assert_equals(1, completions);
+            assert_equals(0, shared->subscription_count()->value());
+            assert_true(failure != nullptr);
+            try { std::rethrow_exception(failure); }
+            catch (const std::runtime_error& error) {
+                assert_true(std::string(error.what()) == "subscription failed");
+            }
+        } else {
+            assert_equals(0, completions);
+            assert_true(received == (state_flow ? std::vector<int>({1, 2, 200})
+                                               : std::vector<int>({1, 2, 42, 100, 200})));
+            for (auto& frame : action_frames) assert_true(frame.expired());
+            for (auto& frame : subscription_frames) assert_true(frame.expired());
+            assert_false(weak_token.expired()); // Collectors retain their captured action while waiting.
+            job->cancel();
+            clock->run_current();
+            assert_equals(1, completions);
+            assert_equals(0, shared->subscription_count()->value());
+        }
+    }
+    for (auto& frame : action_frames) assert_true(frame.expired());
+    for (auto& frame : subscription_frames) assert_true(frame.expired());
+    assert_true(weak_token.expired(), "collection completion must release the subscribed collectors");
+    assert_true(failure != nullptr);
+    job->cancel();
+    clock->run_current();
+}
+
+void test_subscription_safe_collector_rejects_other_job() {
+    auto shared = make_mutable_shared_flow<int>(1, 1);
+    shared->try_emit(42);
+    auto job = make_job();
+    auto alien = make_job();
+    auto wrong_context = std::make_shared<FunctionalContinuation<void*>>(
+        std::dynamic_pointer_cast<CoroutineContext>(alien), [](Result<void*>) {});
+    auto subscribed = on_subscription<int>(shared,
+        [&](FlowCollector<int>* collector, std::shared_ptr<Continuation<void*>>) {
+            return collector->emit(1, wrong_context.get());
+        });
+    class Recorder final : public FlowCollector<int> {
+    public:
+        int emissions = 0;
+        void* emit(int, Continuation<void*>*) override { ++emissions; return nullptr; }
+    } recorder;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(
+        std::dynamic_pointer_cast<CoroutineContext>(job), [](Result<void*>) {});
+    bool caught = false;
+    try { (void)subscribed->collect(&recorder, completion.get()); }
+    catch (const IllegalStateException&) { caught = true; }
+    assert_true(caught);
+    assert_equals(0, recorder.emissions);
+    assert_equals(0, shared->subscription_count()->value());
+    job->cancel();
+    alien->cancel();
+}
+
 int main() {
     test_stop_and_expiration_with_resubscription();
     test_zero_expiration();
@@ -698,5 +865,12 @@ int main() {
     test_state_in_await_unwraps(false, false, true);
     test_state_in_immediate_result();
     test_exception_resume_after_waiter_cancellation();
+    test_subscription_actions_and_collector_lifetime(false, false);
+    test_subscription_actions_and_collector_lifetime(true, false);
+    test_subscription_actions_and_collector_lifetime(false, true);
+    test_subscription_actions_and_collector_lifetime(true, true);
+    test_subscription_actions_and_collector_lifetime(false, false, true);
+    test_subscription_actions_and_collector_lifetime(true, false, true);
+    test_subscription_safe_collector_rejects_other_job();
     std::cout << "Sharing suspension and virtual-time tests passed\n";
 }

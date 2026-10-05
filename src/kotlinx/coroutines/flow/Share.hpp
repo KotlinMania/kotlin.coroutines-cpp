@@ -381,9 +381,37 @@ public:
     }
 
     void* collect(FlowCollector<T>* collector, Continuation<void*>* cont) override {
-        auto subscribed = std::make_shared<internal::SubscribedFlowCollector<T>>(
-            collector, action_);
-        return shared_flow_->collect(subscribed.get(), cont);
+        class CollectFrame final : public ContinuationImpl {
+        public:
+            CollectFrame(std::shared_ptr<SharedFlow<T>> shared,
+                         std::shared_ptr<internal::SubscribedFlowCollector<T>> collector,
+                         Continuation<void*>* completion)
+                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+                  shared_(std::move(shared)), collector_(std::move(collector)),
+                  synchronous_(completion == nullptr) {}
+            void retain() { self_ref_ = shared_from_this(); }
+            void* invoke_suspend(Result<void*> result) override {
+                try {
+                    coroutine_begin(this)
+                    coroutine_yield(this, shared_->collect(collector_.get(), synchronous_ ? nullptr : this));
+                    self_ref_.reset();
+                    coroutine_end(this)
+                } catch (...) {
+                    self_ref_.reset();
+                    throw;
+                }
+            }
+        private:
+            void* _label = nullptr;
+            std::shared_ptr<SharedFlow<T>> shared_;
+            std::shared_ptr<internal::SubscribedFlowCollector<T>> collector_;
+            bool synchronous_;
+            std::shared_ptr<BaseContinuationImpl> self_ref_;
+        };
+        auto frame = std::make_shared<CollectFrame>(shared_flow_,
+            std::make_shared<internal::SubscribedFlowCollector<T>>(collector, action_), cont);
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
     }
 
 private:
