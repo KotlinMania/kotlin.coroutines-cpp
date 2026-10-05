@@ -21,8 +21,10 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
+#include <typeindex>
 #include <utility>
 
 namespace kotlinx {
@@ -128,6 +130,9 @@ private:
             : kind(Kind::CANCELLATION), cause(std::move(cause)) {}
     };
     std::shared_ptr<ReusableState> reusable_cancellable_continuation_;
+    std::mutex typed_delegate_mutex_;
+    std::type_index typed_reusable_type_{typeid(void)};
+    std::shared_ptr<DispatchedContinuationBase> typed_reusable_delegate_;
 
     static const std::shared_ptr<ReusableState>& reusable_claimed() {
         static const auto claimed = std::make_shared<ReusableState>(ReusableState::Kind::CLAIMED);
@@ -135,6 +140,27 @@ private:
     }
 
 public:
+    /** Reuses a matching typed ABI delegate and releases the previous type when it changes. */
+    template<typename U, typename Factory>
+    std::shared_ptr<Continuation<U>> typed_reusable_delegate(Factory&& create) {
+        std::shared_ptr<DispatchedContinuationBase> previous;
+        std::shared_ptr<Continuation<U>> typed;
+        {
+            std::lock_guard<std::mutex> lock(typed_delegate_mutex_);
+            const std::type_index type(typeid(U));
+            if (typed_reusable_delegate_ && type == typed_reusable_type_) {
+                return std::dynamic_pointer_cast<Continuation<U>>(typed_reusable_delegate_);
+            }
+            auto next = std::make_shared<DispatchedContinuation<U>>(dispatcher, create());
+            previous = std::move(typed_reusable_delegate_);
+            typed_reusable_delegate_ = next;
+            typed_reusable_type_ = type;
+            typed = std::move(next);
+        }
+        if (previous) previous->release();
+        return typed;
+    }
+
     /** Whether reuse has been claimed, published or cancelled while claimed. */
     bool is_reusable() const {
         return std::atomic_load(&reusable_cancellable_continuation_) != nullptr;
@@ -157,6 +183,12 @@ public:
             std::atomic_compare_exchange_strong(
                 &reusable_cancellable_continuation_, &expected, std::shared_ptr<ReusableState>{});
         }
+        std::shared_ptr<DispatchedContinuationBase> typed;
+        {
+            std::lock_guard<std::mutex> lock(typed_delegate_mutex_);
+            typed = std::move(typed_reusable_delegate_);
+        }
+        if (typed) typed->release();
     }
 
     /** Claims null or a published continuation; cancellation remains postponed while claimed. */

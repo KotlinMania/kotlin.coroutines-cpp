@@ -568,7 +568,159 @@ void test_reusable_completion_releases_frame_cycle(bool cancel_before_dispatch) 
     assert_true(retained_frame.expired());
 }
 
+void test_reusable_raw_wrapper_reuses_typed_delegate() {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto parent = std::make_shared<RecordingContinuation>(dispatcher);
+    std::weak_ptr<CancellableContinuationImpl<void>> unit;
+    std::weak_ptr<CancellableContinuationImpl<int>> first;
+    std::shared_ptr<CancellableContinuationImpl<int>> suspended;
+    auto frame = std::make_shared<CallFrame>(parent, [&](auto* continuation) {
+        auto unit_result = dsl::suspend_cancellable_coroutine_reusable<void>(continuation, [&](auto* cont) {
+            unit = cont->shared_from_this();
+            cont->resume(nullptr);
+        });
+        assert_true(unit_result == nullptr);
+        assert_false(unit.expired());
+        std::unique_ptr<int> initial(static_cast<int*>(
+            dsl::suspend_cancellable_coroutine_reusable<int>(continuation, [&](auto* cont) {
+                first = cont->shared_from_this();
+                cont->resume(41, nullptr);
+            })));
+        assert_equals(41, *initial);
+        assert_true(unit.expired()); // Changing the result type releases the prior cache.
+        assert_false(first.expired());
+        return dsl::suspend_cancellable_coroutine_reusable<int>(continuation, [&](auto* cont) {
+            assert_true(cont == first.lock().get());
+            suspended = cont->shared_from_this();
+        });
+    });
+    std::weak_ptr<CallFrame> retained_frame = frame;
+    assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    frame.reset();
+    suspended->resume(42, nullptr);
+    suspended.reset();
+    assert_equals(0, parent->resumes);
+    assert_equals(size_t(1), dispatcher->queue.size());
+    dispatcher->drain();
+    assert_equals(1, parent->resumes);
+    std::unique_ptr<int> result(static_cast<int*>(parent->result.get_or_throw()));
+    assert_equals(42, *result);
+    assert_true(first.expired());
+    assert_true(unit.expired());
+    assert_true(retained_frame.expired());
+}
+
+void test_reusable_raw_wrapper_void_dispatch_and_failure(bool fail) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto parent = std::make_shared<RecordingContinuation>(dispatcher);
+    std::shared_ptr<CancellableContinuationImpl<void>> suspended;
+    auto frame = std::make_shared<CallFrame>(parent, [&](auto* continuation) {
+        return dsl::suspend_cancellable_coroutine_reusable_void(continuation, [&](auto* cont) {
+            suspended = cont->shared_from_this();
+        });
+    });
+    std::weak_ptr<CallFrame> retained_frame = frame;
+    assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    std::weak_ptr<CancellableContinuationImpl<void>> retained_cont = suspended;
+    frame.reset();
+    auto failure = std::make_exception_ptr(std::runtime_error("reusable failure"));
+    if (fail) suspended->resume_with(Result<void>::failure(failure));
+    else suspended->resume(nullptr);
+    suspended.reset();
+    assert_equals(0, parent->resumes);
+    assert_equals(size_t(1), dispatcher->queue.size());
+    dispatcher->drain();
+    assert_equals(1, parent->resumes);
+    if (fail) assert_true(parent->result.exception_or_null() == failure);
+    else assert_true(parent->result.get_or_throw() == nullptr);
+    assert_true(retained_cont.expired());
+    assert_true(retained_frame.expired());
+}
+
+void test_reusable_raw_wrapper_prompt_cancellation(bool cancel_in_block) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto job = JobImpl::create(nullptr);
+    auto parent = std::make_shared<RecordingContinuation>(job->operator+(dispatcher));
+    std::shared_ptr<CancellableContinuationImpl<std::shared_ptr<int>>> suspended;
+    int cancelled_values = 0;
+    auto payload = std::make_shared<int>(42);
+    std::weak_ptr<int> retained_value = payload;
+    auto frame = std::make_shared<CallFrame>(parent, [&](auto* continuation) {
+        return dsl::suspend_cancellable_coroutine_reusable<std::shared_ptr<int>>(continuation, [&](auto* cont) {
+            suspended = cont->shared_from_this();
+            if (cancel_in_block) {
+                job->cancel();
+                cont->resume(payload, [&](std::exception_ptr) { ++cancelled_values; });
+            }
+        });
+    });
+    std::weak_ptr<CallFrame> retained_frame = frame;
+    if (cancel_in_block) {
+        bool caught = false;
+        try { (void)frame->start(Result<void*>::success(nullptr)); }
+        catch (const CancellationException&) { caught = true; }
+        assert_true(caught);
+        assert_equals(0, parent->resumes);
+    } else {
+        assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+        suspended->resume(payload, [&](std::exception_ptr) { ++cancelled_values; });
+        job->cancel();
+        assert_equals(0, parent->resumes);
+        dispatcher->drain();
+        assert_equals(1, parent->resumes);
+        assert_false(parent->result.is_success());
+    }
+    std::weak_ptr<CancellableContinuationImpl<std::shared_ptr<int>>> retained_cont = suspended;
+    suspended.reset();
+    payload.reset();
+    frame.reset();
+    assert_equals(1, cancelled_values);
+    assert_true(retained_value.expired());
+    assert_true(retained_cont.expired());
+    assert_true(retained_frame.expired());
+}
+
+void test_reusable_raw_wrapper_block_failure_and_plain_completion() {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto parent = std::make_shared<RecordingContinuation>(dispatcher);
+    std::weak_ptr<CancellableContinuationImpl<int>> retained;
+    auto frame = std::make_shared<CallFrame>(parent, [&](auto* continuation) -> void* {
+        return dsl::suspend_cancellable_coroutine_reusable<int>(continuation, [&](auto* cont) {
+            retained = cont->shared_from_this();
+            throw std::runtime_error("block failure");
+        });
+    });
+    std::weak_ptr<CallFrame> retained_frame = frame;
+    bool caught = false;
+    try { (void)frame->start(Result<void*>::success(nullptr)); }
+    catch (const std::runtime_error& error) { caught = std::string(error.what()) == "block failure"; }
+    assert_true(caught);
+    assert_equals(0, parent->resumes);
+    assert_true(retained.expired());
+    frame.reset();
+    assert_true(retained_frame.expired());
+    std::unique_ptr<int> result(static_cast<int*>(dsl::suspend_cancellable_coroutine_reusable<int>(
+        parent.get(), [&](auto* cont) {
+            retained = cont->shared_from_this();
+            assert_equals(MODE_CANCELLABLE, cont->resume_mode);
+            cont->resume(42, nullptr);
+        })));
+    assert_equals(42, *result);
+    assert_true(retained.expired());
+    assert_equals(0, parent->resumes);
+}
+
 int main() {
+    std::cerr << "test_reusable_raw_wrapper_reuses_typed_delegate\n";
+    test_reusable_raw_wrapper_reuses_typed_delegate();
+    std::cerr << "test_reusable_raw_wrapper_void_dispatch_and_failure\n";
+    test_reusable_raw_wrapper_void_dispatch_and_failure(false);
+    test_reusable_raw_wrapper_void_dispatch_and_failure(true);
+    std::cerr << "test_reusable_raw_wrapper_prompt_cancellation\n";
+    test_reusable_raw_wrapper_prompt_cancellation(false);
+    test_reusable_raw_wrapper_prompt_cancellation(true);
+    std::cerr << "test_reusable_raw_wrapper_block_failure_and_plain_completion\n";
+    test_reusable_raw_wrapper_block_failure_and_plain_completion();
     std::cerr << "test_reusable_cache_owns_claimed_continuation\n";
     test_reusable_cache_owns_claimed_continuation();
     std::cerr << "test_reusable_postponed_cancellation_preserves_first_cause\n";

@@ -17,7 +17,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
 | t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer and receiving await/unbox frames retain collection, child job and typed results; underlying await uses the cancellable completion protocol | Implemented; focused local acceptance recorded below |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
-| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references and reusable cache ownership repaired; raw reusable ABI wrapper, direct channel interception and other typed receiving adapters remain | Partially implemented; bounded evidence below |
+| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references, reusable cache ownership and raw reusable ABI wrapper repaired; direct channel interception and other typed receiving adapters remain | Partially implemented; bounded evidence below |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
 | t_d1b9ce81 | Builders.common.kt:140-173; CoroutineScope.kt:280-287; Supervisor.kt:50-66 | withContext and scope builders substitute stack scopes for scope coroutines and omit dispatcher/child-waiting branches | Queued |
 | t_e0acb2be | ASTDistance AST identity and receiver matching | Empty companions and valid extension-to-free-function lowering cause matching false alarms; actual source-path marker equivalence needs proof | Verified, committed 9d9d49ef; 8/8 strict and 8/8 ASan tests |
@@ -895,3 +895,43 @@ suspend_cancellable_coroutine_reusable wrapper still needs proper retention,
 interception and typed result adaptation; direct BufferedChannel and other
 DeferredCoroutine/select adapters remain separate repairs. No full channel,
 all-race or interop acceptance is claimed.
+
+
+## Raw reusable ABI wrapper interception — 2026-10-05
+
+This slice advances t_037fc89b against CancellableContinuation.kt:442-479,
+using the owning cache prerequisite from 15dfd9dd. The raw wrapper now retains
+its lowered frame, obtains the native intercepted continuation and selects a
+correctly typed delegate before get_or_create. It follows the original block,
+exceptional release-claim and get_result order. It does not introduce the normal
+factory's eager init_cancellability step into the reusable algorithm.
+
+The typed result adapter owns the underlying frame. A typed dispatched delegate
+uses that frame directly, so cancellation is checked before allocating the result
+box and delivery does not dispatch twice through the native interceptor. Direct
+and resumed typed results are owned T boxes; void completion returns nullptr.
+A plain, non-intercepted continuation uses the original non-reusable mode.
+The helper's documentation now describes these C++ ABI operations.
+
+The native intercepted continuation owns one active typed reusable delegate.
+Repeated calls with the same C++ result type claim the same CCI instance. A
+result-type change releases the previous typed cache instead of retaining all
+previous types and their completed values. C++ continuation template instances
+cannot change specialization as the original erased generic instance can, so
+cross-type instance reuse is not claimed. The original reusable atomic protocol
+is unchanged; a mutex guards only the C++ typed bridge pointer bookkeeping.
+The existing terminating interceptor release boundary releases that typed cache,
+breaking its frame/delegate/CCI ownership cycle.
+
+Existing CallFrame and QueueDispatcher regressions exercise void and typed
+immediate returns, suspended delivery, same-type reuse, type-change cache release,
+one queued dispatch, void failure, cancellation during the block and after value
+resumption before dispatch, unexpected block failure, plain-continuation fallback,
+and value/CCI/frame release. No harness or test target was added.
+
+AsyncTest, test_continuation_dispatch and test_sharing_suspension pass 3/3 in
+Debug (1.00s) and 3/3 in optimized ASan (1.03s). Logs and source hashes are in
+workspace automation-artifacts/reusable-wrapper-20261005/. Direct BufferedChannel
+send/receive/receive-catching, iterator/broadcast paths and other typed receiving
+adapters remain on the card. This accepts the reusable wrapper, not those direct
+call sites or every race. No CI/configuration change or push was made.
