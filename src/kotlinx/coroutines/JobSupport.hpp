@@ -470,7 +470,6 @@ private:
     friend class JobNode;
     friend class ChildCompletion;
     friend class ResumeOnCompletion;
-    friend class ResumeAwaitOnCompletion;
     friend class SelectOnJoinCompletionHandler;
     friend class SelectOnAwaitCompletionHandler;
     template <typename T> friend class AwaitContinuation;

@@ -290,30 +290,6 @@ namespace kotlinx {
         };
 
         /**
- * ResumeAwaitOnCompletion - resumes a continuation with the deferred result
- * Transliterated from: private class ResumeAwaitOnCompletion<T> in JobSupport.kt
- * Used by await() - resumes with result value or exception
- */
-        class ResumeAwaitOnCompletion : public JobNode {
-            Continuation<void *> *continuation_;
-
-        public:
-            explicit ResumeAwaitOnCompletion(Continuation<void *> *cont) : continuation_(cont) {
-            }
-
-            bool get_on_cancelling() const override { return false; }
-
-            void invoke(std::exception_ptr cause) override {
-                auto *state = job->get_state_for_await();
-                if (auto *ex = dynamic_cast<CompletedExceptionally *>(state)) {
-                    continuation_->resume_with(Result<void *>::failure(ex->cause));
-                } else {
-                    continuation_->resume_with(Result<void *>::success(state));
-                }
-            }
-        };
-
-        /**
          * SelectOnJoinCompletionHandler - completion handler for onJoin select clause
          * Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:607-614
          */
@@ -360,10 +336,11 @@ namespace kotlinx {
          */
         template <typename T>
         class AwaitContinuation : public CancellableContinuationImpl<T> {
-            JobSupport *job_;
+            std::shared_ptr<JobSupport> job_;
         public:
-            AwaitContinuation(std::shared_ptr<Continuation<T>> delegate, JobSupport *job)
-                : CancellableContinuationImpl<T>(delegate, MODE_CANCELLABLE), job_(job) {}
+            AwaitContinuation(std::shared_ptr<Continuation<T>> delegate, std::shared_ptr<JobSupport> job)
+                : CancellableContinuationImpl<T>(std::move(delegate), MODE_CANCELLABLE),
+                  job_(std::move(job)) {}
 
             std::exception_ptr get_continuation_cancellation_cause(Job &parent) override {
                 auto *state = job_->get_state_for_await();
@@ -377,7 +354,7 @@ namespace kotlinx {
                 return parent.get_cancellation_exception();
             }
 
-            std::string name_string() const override {
+            std::string name_string() const {
                 return "AwaitContinuation";
             }
         };
@@ -671,7 +648,7 @@ namespace kotlinx {
                         std::rethrow_exception(ex->cause);
                     }
                     // Return the result (type-erased as void*)
-                    return s;
+                    return unbox_state(s);
                 }
 
                 // Try to start if in New state
@@ -687,35 +664,49 @@ namespace kotlinx {
         }
 
         void *JobSupport::await_suspend(Continuation<void *> *continuation) {
-            // Transliterated from: private suspend fun awaitSuspend(): Any?
-            // Register a completion handler that resumes with the result
-            auto *node = new ResumeAwaitOnCompletion(continuation);
-            node->job = this;
-
-            // Add the node to the completion handler list
-            bool added = impl_->try_put_node_into_list(this, node,
-                                                       [node](Incomplete *state, NodeList *list) -> int {
-                                                           return list->add_last(node, LIST_ON_COMPLETION_PERMISSION) ? 1 : 0;
-                                                       });
-
-            if (!added) {
-                // Job completed while we were setting up - return result immediately
-                delete node;
-                auto *s = impl_->state.load(std::memory_order_acquire);
-                if (auto *ex = dynamic_cast<CompletedExceptionally *>(s)) {
-                    std::rethrow_exception(ex->cause);
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1337-1350
+            class StateDelegate final : public Continuation<JobState*> {
+                std::shared_ptr<Continuation<void*>> completion_;
+            public:
+                explicit StateDelegate(std::shared_ptr<Continuation<void*>> completion)
+                    : completion_(std::move(completion)) {}
+                std::shared_ptr<CoroutineContext> get_context() const override {
+                    return completion_->get_context();
                 }
-                return s; // Return the result
-            }
+                void resume_with(Result<JobState*> result) override {
+                    if (result.is_success()) {
+                        completion_->resume_with(Result<void*>::success(result.get_or_throw()));
+                    } else {
+                        completion_->resume_with(Result<void*>::failure(result.exception_or_null()));
+                    }
+                }
+            };
 
-            // Upstream: cont.disposeOnCancellation(handle)
-            // The DisposableHandle wired here is registered against the job's completion
-            // list and is released when the parent continuation completes. The Kotlin
-            // helper `disposeOnCancellation` is an extension on CancellableContinuation
-            // that calls `invokeOnCancellation { handle.dispose() }`; the C++ port wires
-            // the same handler through the continuation's invoke_on_cancellation hook
-            // when the ResumeOnCompletion node is destroyed.
-            return COROUTINE_SUSPENDED;
+            auto self = std::dynamic_pointer_cast<JobSupport>(shared_from_this());
+            auto intercepted = internal::intercepted_delegate(
+                internal::retain_continuation(continuation));
+            std::shared_ptr<Continuation<JobState*>> delegate =
+                std::make_shared<StateDelegate>(intercepted.continuation);
+            if (intercepted.dispatcher) {
+                delegate = intercepted.dispatcher->intercept_continuation<JobState*>(delegate);
+            }
+            auto cont = std::make_shared<AwaitContinuation<JobState*>>(delegate, self);
+            cont->init_cancellability();
+            auto handle = invoke_on_completion(false, true,
+                [cont, self](std::exception_ptr) {
+                    auto* state = self->get_state_for_await();
+                    if (auto* failed = dynamic_cast<CompletedExceptionally*>(state)) {
+                        cont->resume_with(Result<JobState*>::failure(failed->cause));
+                    } else {
+                        cont->resume_with(Result<JobState*>::success(unbox_state(state)));
+                    }
+                });
+            cont->invoke_on_cancellation([handle](std::exception_ptr) { handle->dispose(); });
+            auto result = cont->get_result();
+            if (intrinsics::is_coroutine_suspended(result)) return result;
+            // The cancellable ABI boxes the borrowed state pointer on direct return.
+            std::unique_ptr<JobState*> state(static_cast<JobState**>(result));
+            return *state;
         }
 
         JobState *JobSupport::await_internal_blocking() {

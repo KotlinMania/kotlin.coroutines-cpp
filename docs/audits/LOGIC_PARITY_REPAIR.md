@@ -15,7 +15,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_f2155697 | flow/operators/Transform.kt | Suspended filter/map/onEach/fold/reduce results bypass remaining algorithm; runningFold skips collection after suspended initial emission; stack collectors and chunk finalization do not survive suspension | Queued |
 | t_356e6dfc | flow/internal/Merge.kt:47-94 | Concurrent and limited merge use OS threads, synchronous semaphore acquisition and joins, and discard collection suspension | Queued |
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
-| t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer retains collection and child job; stateIn resumed await still bypasses unwrapping and its generic await adapter needs cancellation/boxing repair | Producer implemented; await acceptance remains open |
+| t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer and receiving await/unbox frames retain collection, child job and typed results; underlying await uses the cancellable completion protocol | Implemented; focused local acceptance recorded below |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
 | t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt | Raw channel/await/reusable adapters bypass interception; raw flow slots and reusable pointers lack Kotlin GC reference ownership | Queued |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
@@ -700,3 +700,45 @@ forwards await to the parent and unwraps only on immediate return; the generic
 CompletableDeferred await exposes JobState rather than a typed ABI box, and
 JobSupport await's raw continuation path lacks the Kotlin cancellable await
 protocol. Those receiving-path repairs remain on the card.
+
+
+## Deferred state_in receiving path — 2026-10-05
+
+The receiving-path repair completes card t_eedecb8e after producer commit
+5b1932e8. Share.hpp:429 retains the result deferred in StateInAwaitFrame, awaits
+with its own continuation, and unwraps the Result on both direct and resumed
+paths. The intermediate Result box is owned and freed; the returned StateFlow
+shared-pointer box is owned by the receiving caller. The entry function retains
+Kotlin Share.kt:322-328 configuration, deferred creation and sharing-launch order.
+
+JobSupport.cpp:666 now uses the existing AwaitContinuation cancellation-cause
+algorithm against JobSupport.kt:1272-1289 and :1337-1350. It intercepts the
+delegate, initializes cancellability, registers the completion handler, disposes
+that handler on waiter cancellation and calls get_result. The awaited job remains
+owned through completion. The internal JobState pointer stays borrowed; a direct
+cancellable return frees only its temporary pointer box. CompletableDeferred's
+receiving frame converts that state into an owned typed ABI box before forwarding
+completion. The already-completed fast path preserves Kotlin's behavior of not
+checking the caller's job.
+
+The lifetime regression found that typed exceptional resumption omitted
+detach_child_if_non_reusable and retained completed frames in the waiter job.
+CancellableContinuationImpl now detaches on successful exceptional transitions,
+uses the supplied dispatch mode, and ignores the first late exceptional resume
+after cancellation as in Kotlin resumeImpl/tryResumeImpl (:493-553). The exception
+state is owned; cancellation/failure paths release the new await frames.
+
+Existing sharing tests now cover immediate/resumed typed values and failures,
+queued prompt cancellation, waiter cancellation followed by late completion,
+child failure cause preservation, immediate/resumed state_in empty results,
+continued updates, failure after the first value, and completion/frame release.
+A cancelled state_in waiter leaves the independent sharing scope running. Both
+returned boxes are consumed by their actual typed receiving paths. No new test
+harness or target was added.
+
+Focused verification: AsyncTest, test_continuation_dispatch,
+test_share_hot_flow_smoke and test_sharing_suspension pass 4/4 in Debug (2.68s)
+and 4/4 in optimized ASan (2.63s). Evidence is in workspace
+automation-artifacts/state-in-await-20261005/. These checks accept the bounded
+state_in/deferred-await repair; they do not certify all DeferredCoroutine/select
+adapters or SubscribedSharedFlow's separate collector-retention path.

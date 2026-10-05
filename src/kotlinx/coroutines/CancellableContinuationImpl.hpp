@@ -775,11 +775,14 @@ public:
     }
 
     void* try_resume_with_exception(std::exception_ptr exception) override {
+        auto self_guard = this->weak_from_this().lock();
         while (true) {
             State* state = state_.load(std::memory_order_acquire);
             if (dynamic_cast<NotCompleted*>(state)) {
                 auto* update = new CompletedExceptionState(exception, false);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    owned_state_.reset(update);
+                    detach_child_if_non_reusable();
                     return const_cast<void*>(RESUME_TOKEN);
                 }
                 delete update;
@@ -1040,9 +1043,24 @@ public:
     
     void resume_impl_exception(std::exception_ptr exception, int mode) {
         auto self_guard = this->weak_from_this().lock();
-        void* token = try_resume_with_exception(exception);
-        if (!token) throw std::logic_error("Already resumed");
-        complete_resume(token);
+        while (true) {
+            State* state = state_.load(std::memory_order_acquire);
+            if (dynamic_cast<NotCompleted*>(state)) {
+                auto* update = new CompletedExceptionState(exception, false);
+                if (!state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    delete update;
+                    continue;
+                }
+                owned_state_.reset(update);
+                detach_child_if_non_reusable();
+                dispatch_resume(mode);
+                return;
+            }
+            if (auto* cancelled = dynamic_cast<CancelledContinuation*>(state)) {
+                if (cancelled->make_resumed()) return;
+            }
+            throw std::logic_error("Already resumed");
+        }
     }
 
     void resume_undispatched(CoroutineDispatcher* dispatcher, T value) override {

@@ -422,6 +422,50 @@ inline std::shared_ptr<StateFlow<T>> state_in(
     return std::shared_ptr<ReadonlyStateFlow<T>>(new ReadonlyStateFlow<T>(state, std::move(job)));
 }
 
+namespace detail {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Share.kt:322-328
+template <typename T>
+class StateInAwaitFrame final : public ContinuationImpl {
+public:
+    StateInAwaitFrame(
+        std::shared_ptr<CompletableDeferred<Result<std::shared_ptr<StateFlow<T>>>>> result,
+        std::shared_ptr<Continuation<void*>> completion)
+        : ContinuationImpl(std::move(completion)), result_(std::move(result)) {}
+
+    ~StateInAwaitFrame() override {
+        delete static_cast<Result<std::shared_ptr<StateFlow<T>>>*>(awaited_);
+    }
+    void retain() { self_ref_ = shared_from_this(); }
+
+    void* invoke_suspend(Result<void*> result) override {
+        try {
+            coroutine_begin(this)
+            coroutine_yield_value(this, result, result_->await(this), awaited_);
+            self_ref_.reset();
+            return unbox_result();
+        } catch (...) {
+            self_ref_.reset();
+            throw;
+        }
+    }
+
+private:
+    void* unbox_result() {
+        std::unique_ptr<Result<std::shared_ptr<StateFlow<T>>>> outcome(
+            static_cast<Result<std::shared_ptr<StateFlow<T>>>*>(awaited_));
+        awaited_ = nullptr;
+        return new std::shared_ptr<StateFlow<T>>(outcome->get_or_throw());
+    }
+    void* _label = nullptr;
+    void* awaited_ = nullptr;
+    std::shared_ptr<CompletableDeferred<Result<std::shared_ptr<StateFlow<T>>>>> result_;
+    std::shared_ptr<BaseContinuationImpl> self_ref_;
+};
+
+} // namespace detail
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Share.kt:322-328
 template <typename T>
 [[suspend]]
 inline void* state_in(
@@ -434,12 +478,9 @@ inline void* state_in(
     auto result =
         make_completable_deferred<Result<std::shared_ptr<StateFlow<T>>>>(parent_job);
     launch_sharing_deferred<T>(scope, config.context, config.upstream, result);
-    void* awaited = dsl::suspend(result->await(completion.get()));
-    if (intrinsics::is_coroutine_suspended(awaited)) {
-        return intrinsics::get_COROUTINE_SUSPENDED();
-    }
-    auto* outcome = static_cast<Result<std::shared_ptr<StateFlow<T>>>*>(awaited);
-    return new std::shared_ptr<StateFlow<T>>(outcome->get_or_throw());
+    auto frame = std::make_shared<detail::StateInAwaitFrame<T>>(result, std::move(completion));
+    frame->retain();
+    return frame->start(Result<void*>::success(nullptr));
 }
 
 // -------------------------------- asSharedFlow / asStateFlow --------------------------------

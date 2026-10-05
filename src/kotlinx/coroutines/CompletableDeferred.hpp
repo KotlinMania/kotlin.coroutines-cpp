@@ -12,7 +12,9 @@
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Deferred.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/Result.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
 
 #include <exception>
@@ -109,9 +111,13 @@ public:
         throw std::logic_error("Unexpected completion state");
     }
 
-    /** Upstream: override suspend fun await(): T = awaitInternal() as T */
+    /** Returns an owned value box, or suspends until the value or failure is available. */
     void* await(Continuation<void*>* continuation) override {
-        return this->await_internal(continuation);
+        auto frame = std::make_shared<AwaitValueFrame>(
+            std::dynamic_pointer_cast<CompletableDeferredImpl<T>>(this->shared_from_this()),
+            internal::retain_continuation(continuation));
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
     }
 
     T await_blocking() override {
@@ -153,6 +159,35 @@ public:
     }
 
 private:
+    class AwaitValueFrame final : public ContinuationImpl {
+    public:
+        AwaitValueFrame(std::shared_ptr<CompletableDeferredImpl<T>> deferred,
+                        std::shared_ptr<Continuation<void*>> completion)
+            : ContinuationImpl(std::move(completion)), deferred_(std::move(deferred)) {}
+        void retain() { self_ref_ = shared_from_this(); }
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                coroutine_begin(this)
+                coroutine_yield_value(this, result, deferred_->await_internal(this), state_);
+                self_ref_.reset();
+                return box_value();
+            } catch (...) {
+                self_ref_.reset();
+                throw;
+            }
+        }
+    private:
+        void* box_value() {
+            auto* value = dynamic_cast<CompletedValue<T>*>(static_cast<JobState*>(state_));
+            if (!value) throw std::logic_error("Unexpected await state");
+            return new T(value->value);
+        }
+        void* _label = nullptr;
+        void* state_ = nullptr; // Borrowed from the retained deferred's completion state.
+        std::shared_ptr<CompletableDeferredImpl<T>> deferred_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+
     std::unique_ptr<selects::SelectClause1Impl<T>> on_await_clause_;
 };
 

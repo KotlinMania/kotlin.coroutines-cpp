@@ -465,6 +465,213 @@ void test_completable_deferred_typed_completion() {
     assert_true(pending->get_completion_exception_or_null() != nullptr);
 }
 
+// Await completion is dispatched, and cancellation wins over a queued value.
+void test_deferred_await_dispatch_and_cancellation(int cancellation) {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto waiter = make_job();
+    auto context = std::dynamic_pointer_cast<CoroutineContext>(waiter)->operator+(clock);
+    auto deferred = make_completable_deferred<int>();
+    std::weak_ptr<CompletableDeferred<int>> weak_deferred = deferred;
+    int completions = 0;
+    int value = 0;
+    std::exception_ptr failure;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(context, [&](Result<void*> result) {
+        ++completions;
+        failure = result.exception_or_null();
+        if (result.is_success()) {
+            std::unique_ptr<int> box(static_cast<int*>(result.get_or_throw()));
+            value = *box;
+        }
+    });
+    assert_true(intrinsics::is_coroutine_suspended(deferred->await(completion.get())));
+    if (cancellation == 1) {
+        waiter->cancel();
+        clock->run_current();
+        assert_equals(1, completions);
+        assert_true(failure != nullptr);
+        assert_true(deferred->is_active());
+        completion.reset(); // A disposed await handler must never call it again.
+    }
+    deferred->complete(42);
+    if (cancellation == 2) waiter->cancel();
+    if (cancellation != 1) assert_equals(0, completions);
+    clock->run_current();
+    assert_equals(1, completions);
+    assert_true((failure != nullptr) == (cancellation != 0));
+    if (cancellation == 0) assert_equals(42, value);
+    deferred.reset();
+    assert_true(weak_deferred.expired(), "await must release the deferred after resume/cancellation");
+    waiter->cancel();
+    clock->run_current();
+}
+
+void test_deferred_await_preserves_child_failure() {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto parent = make_job();
+    auto context = std::dynamic_pointer_cast<CoroutineContext>(parent)->operator+(clock);
+    auto deferred = make_completable_deferred<int>(parent);
+    int completions = 0;
+    std::exception_ptr failure;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(context, [&](Result<void*> result) {
+        ++completions;
+        failure = result.exception_or_null();
+    });
+    assert_true(intrinsics::is_coroutine_suspended(deferred->await(completion.get())));
+    deferred->complete_exceptionally(std::make_exception_ptr(std::runtime_error("child failure")));
+    assert_equals(0, completions);
+    clock->run_current();
+    assert_equals(1, completions);
+    assert_true(parent->is_cancelled());
+    assert_true(failure != nullptr);
+    try {
+        std::rethrow_exception(failure);
+    } catch (const std::runtime_error& error) {
+        assert_true(std::string(error.what()) == "child failure");
+    }
+}
+
+void test_deferred_await_immediate_value_and_failure() {
+    auto completed = make_completable_deferred<int>(42);
+    auto cancelled = make_job();
+    cancelled->cancel();
+    int completions = 0;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(
+        std::dynamic_pointer_cast<CoroutineContext>(cancelled), [&](Result<void*>) { ++completions; });
+    std::unique_ptr<int> value(static_cast<int*>(completed->await(completion.get())));
+    assert_equals(42, *value); // Kotlin's completed fast path does not check the caller's job.
+    auto failed = make_completable_deferred<int>();
+    failed->complete_exceptionally(std::make_exception_ptr(std::runtime_error("already failed")));
+    bool caught = false;
+    try {
+        (void)failed->await(completion.get());
+    } catch (const std::runtime_error& error) {
+        assert_true(std::string(error.what()) == "already failed");
+        caught = true;
+    }
+    assert_true(caught);
+    assert_equals(0, completions);
+}
+
+// Exercise state_in through its public erased result ABI, including resumed failure.
+void test_state_in_await_unwraps(bool empty, bool fail, bool cancel_waiter = false) {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto sharing_parent = make_job();
+    auto waiter = make_job();
+    auto scope = create_coroutine_scope(
+        std::dynamic_pointer_cast<CoroutineContext>(sharing_parent)->operator+(clock));
+    auto context = std::dynamic_pointer_cast<CoroutineContext>(waiter)->operator+(clock);
+    std::shared_ptr<StateFlow<int>> state;
+    int completions = 0;
+    std::exception_ptr failure;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(context, [&](Result<void*> result) {
+        ++completions;
+        failure = result.exception_or_null();
+        if (result.is_success()) {
+            std::unique_ptr<std::shared_ptr<StateFlow<int>>> box(
+                static_cast<std::shared_ptr<StateFlow<int>>*>(result.get_or_throw()));
+            state = *box;
+        }
+    });
+    std::weak_ptr<Continuation<void*>> weak_completion = completion;
+    std::weak_ptr<BaseContinuationImpl> upstream_frame;
+    auto upstream = flow::flow<int>([&](FlowCollector<int>* collector, Continuation<void*>* cont) {
+        auto frame = std::make_shared<DeferredUpstreamFrame>(collector, empty, fail, cont);
+        upstream_frame = frame;
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
+    });
+    assert_true(intrinsics::is_coroutine_suspended(state_in<int>(upstream, scope.get(), completion)));
+    completion.reset(); // The public shared completion must survive until its single resume.
+    upstream.reset();
+    clock->run_current();
+    assert_equals(0, completions);
+    if (cancel_waiter) {
+        waiter->cancel();
+        clock->run_current();
+        assert_equals(1, completions);
+        assert_true(failure != nullptr);
+        assert_true(weak_completion.expired(), "cancelled state_in must release its completion");
+        assert_true(sharing_parent->is_active()); // Await cancellation does not cancel the sharing scope.
+    }
+    clock->advance_by(10);
+    assert_equals(1, completions);
+    assert_true(weak_completion.expired(), "completed state_in must release its completion");
+    if (!cancel_waiter) {
+        assert_true((failure != nullptr) == empty);
+        if (empty) {
+            try { std::rethrow_exception(failure); }
+            catch (const std::out_of_range& error) {
+                assert_false(fail);
+                assert_true(std::string(error.what()) == "Flow is empty");
+            } catch (const std::runtime_error& error) {
+                assert_true(fail);
+                assert_true(std::string(error.what()) == "upstream failed");
+            }
+        } else {
+            assert_equals(10, state->value());
+            clock->advance_by(10);
+            assert_equals(20, state->value());
+        }
+    }
+    sharing_parent->cancel();
+    clock->advance_by(10);
+    assert_true(upstream_frame.expired(), "state_in cancellation must release upstream collection");
+    assert_equals(1, completions);
+    waiter->cancel();
+    clock->run_current();
+}
+
+void test_state_in_immediate_result() {
+    auto parent = make_job();
+    auto unconfined = std::shared_ptr<CoroutineContext>(
+        &Dispatchers::get_unconfined(), [](CoroutineContext*) {});
+    auto scope = create_coroutine_scope(
+        std::dynamic_pointer_cast<CoroutineContext>(parent)->operator+(unconfined));
+    int completions = 0;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(
+        scope->get_coroutine_context(), [&](Result<void*>) { ++completions; });
+    auto result = state_in<int>(flow_of<int>({42}), scope.get(), completion);
+    assert_false(intrinsics::is_coroutine_suspended(result));
+    std::unique_ptr<std::shared_ptr<StateFlow<int>>> state(
+        static_cast<std::shared_ptr<StateFlow<int>>*>(result));
+    assert_equals(42, (*state)->value());
+    bool caught = false;
+    try {
+        (void)state_in<int>(flow_of<int>({}), scope.get(), completion);
+    } catch (const std::out_of_range& error) {
+        assert_true(std::string(error.what()) == "Flow is empty");
+        caught = true;
+    }
+    assert_true(caught);
+    assert_equals(0, completions);
+    assert_true(parent->is_active());
+    parent->cancel();
+}
+
+void test_exception_resume_after_waiter_cancellation() {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto waiter = make_job();
+    auto context = std::dynamic_pointer_cast<CoroutineContext>(waiter)->operator+(clock);
+    std::shared_ptr<CancellableContinuationImpl<int>> suspended;
+    int completions = 0;
+    std::exception_ptr failure;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(context, [&](Result<void*> result) {
+        ++completions;
+        failure = result.exception_or_null();
+    });
+    assert_true(intrinsics::is_coroutine_suspended(suspend_cancellable_coroutine<int>(
+        [&](CancellableContinuation<int>& cont) {
+            suspended = dynamic_cast<CancellableContinuationImpl<int>&>(cont).shared_from_this();
+        }, completion)));
+    waiter->cancel();
+    suspended->resume_with(Result<int>::failure(std::make_exception_ptr(std::runtime_error("late failure"))));
+    clock->run_current();
+    assert_equals(1, completions);
+    assert_true(failure != nullptr);
+    try { std::rethrow_exception(failure); }
+    catch (const CancellationException&) {}
+}
+
 int main() {
     test_stop_and_expiration_with_resubscription();
     test_zero_expiration();
@@ -479,5 +686,17 @@ int main() {
     test_deferred_sharing_retains_collection(true, true);
     test_deferred_sharing_retains_collection(false, false, true);
     test_completable_deferred_typed_completion();
+    test_deferred_await_dispatch_and_cancellation(0);
+    test_deferred_await_dispatch_and_cancellation(1);
+    test_deferred_await_dispatch_and_cancellation(2);
+    test_deferred_await_preserves_child_failure();
+    test_deferred_await_immediate_value_and_failure();
+    test_state_in_await_unwraps(false, false);
+    test_state_in_await_unwraps(false, true);
+    test_state_in_await_unwraps(true, false);
+    test_state_in_await_unwraps(true, true);
+    test_state_in_await_unwraps(false, false, true);
+    test_state_in_immediate_result();
+    test_exception_resume_after_waiter_cancellation();
     std::cout << "Sharing suspension and virtual-time tests passed\n";
 }
