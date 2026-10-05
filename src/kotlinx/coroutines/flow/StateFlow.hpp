@@ -17,6 +17,7 @@
 #include <memory>
 #include <algorithm>
 #include <optional>
+#include <cassert>
 
 namespace kotlinx {
 namespace coroutines {
@@ -174,19 +175,29 @@ inline ::kotlinx::coroutines::internal::Symbol* get_null_symbol() {
 }
 
 class StateFlowSlot : public AbstractSharedFlowSlot<StateFlowImplBase> {
-public:
-    // Kotlin: private val _state = atomic<Any?>(null)
-    std::atomic<void*> state_{nullptr};
+private:
+    // Free, NONE, PENDING, or an owning reference to the suspended continuation.
+    std::shared_ptr<void> state_;
 
+    static const std::shared_ptr<void>& none_state() {
+        static const std::shared_ptr<void> state(get_none_symbol(), [](void*) {});
+        return state;
+    }
+    static const std::shared_ptr<void>& pending_state() {
+        static const std::shared_ptr<void> state(get_pending_symbol(), [](void*) {});
+        return state;
+    }
+
+public:
     bool allocate_locked(StateFlowImplBase* flow) override {
         // No need for atomic check & update here, since allocated happens under StateFlow lock
-        if (state_.load(std::memory_order_relaxed) != nullptr) return false;
-        state_.store(get_none_symbol(), std::memory_order_relaxed); // NONE symbol
+        if (std::atomic_load(&state_) != nullptr) return false;
+        std::atomic_store(&state_, none_state());
         return true;
     }
 
     std::vector<Continuation<Unit>*> free_locked(StateFlowImplBase* flow) override {
-        state_.store(nullptr, std::memory_order_relaxed); // free now
+        std::atomic_store(&state_, std::shared_ptr<void>{});
         return internal::EMPTY_RESUMES;
     }
 
@@ -460,19 +471,19 @@ public:
 
 // StateFlowSlot methods implementation
 inline void StateFlowSlot::make_pending() {
-    auto* pending = get_pending_symbol();
-    auto* none = get_none_symbol();
+    const auto& pending = pending_state();
+    const auto& none = none_state();
     
     while (true) {
-        void* s = state_.load();
+        auto s = std::atomic_load(&state_);
         if (s == nullptr) return;
         if (s == pending) return;
         if (s == none) {
-             if (state_.compare_exchange_weak(s, pending)) return;
+             if (std::atomic_compare_exchange_strong(&state_, &s, pending)) return;
         } else {
              // Suspend state
-             if (state_.compare_exchange_weak(s, none)) {
-                 auto* cont = static_cast<CancellableContinuation<Unit>*>(s);
+             if (std::atomic_compare_exchange_strong(&state_, &s, none)) {
+                 auto* cont = static_cast<CancellableContinuation<Unit>*>(s.get());
                  cont->resume(Unit{});
                  return;
              }
@@ -481,10 +492,9 @@ inline void StateFlowSlot::make_pending() {
 }
 
 inline bool StateFlowSlot::take_pending() {
-    auto* pending = get_pending_symbol();
-    auto* none = get_none_symbol();
-    void* expected = pending;
-    return state_.compare_exchange_strong(expected, none);
+    auto state = std::atomic_exchange(&state_, none_state());
+    assert(state && (state == none_state() || state == pending_state()));
+    return state == pending_state();
 }
 
 inline void* StateFlowSlot::await_pending(Continuation<void*>* cont) {
@@ -496,9 +506,11 @@ inline void* StateFlowSlot::await_pending(Continuation<void*>* cont) {
     }
     return suspend_cancellable_coroutine<Unit>(
         [this](CancellableContinuation<Unit>& c) {
-            auto* none = get_none_symbol();
-            void* expected = none;
-            if (state_.compare_exchange_strong(expected, &c)) return; 
+            auto expected = none_state();
+            std::shared_ptr<void> suspended = std::static_pointer_cast<CancellableContinuation<Unit>>(
+                dynamic_cast<CancellableContinuationImpl<Unit>&>(c).shared_from_this());
+            if (std::atomic_compare_exchange_strong(&state_, &expected, suspended)) return;
+            assert(expected == pending_state());
             c.resume(Unit{});
         }, cont);
 }

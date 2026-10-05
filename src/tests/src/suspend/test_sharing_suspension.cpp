@@ -839,6 +839,85 @@ void test_subscription_safe_collector_rejects_other_job() {
     alien->cancel();
 }
 
+// A hot StateFlow must own its suspended continuation even without a parent Job.
+void test_state_flow_without_job_retains_waiter_and_reuses_slot() {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto state = make_mutable_state_flow<int>(1);
+    assert_true(clock->get(Job::type_key) == nullptr);
+    for (int iteration = 0; iteration < 2; ++iteration) {
+        state->set_value(iteration * 10 + 1);
+        std::vector<int> values;
+        std::weak_ptr<BaseContinuationImpl> frame;
+        class Recorder final : public FlowCollector<int> {
+        public:
+            Recorder(std::vector<int>& values, std::weak_ptr<BaseContinuationImpl>& frame)
+                : values_(values), frame_(frame) {}
+            void* emit(int value, Continuation<void*>* cont) override {
+                frame_ = dynamic_cast<BaseContinuationImpl*>(cont)->shared_from_this();
+                values_.push_back(value);
+                if (values_.size() == 2) throw kotlinx::coroutines::flow::internal::AbortFlowException(this);
+                return nullptr;
+            }
+        private:
+            std::vector<int>& values_;
+            std::weak_ptr<BaseContinuationImpl>& frame_;
+        } recorder(values, frame);
+        int completions = 0;
+        std::exception_ptr failure;
+        auto completion = std::make_shared<FunctionalContinuation<void*>>(clock, [&](Result<void*> result) {
+            ++completions;
+            failure = result.exception_or_null();
+        });
+        assert_true(intrinsics::is_coroutine_suspended(state->collect(&recorder, completion.get())));
+        assert_equals(1, state->subscription_count()->value());
+        assert_false(frame.expired());
+        state->set_value(iteration * 10 + 2);
+        state->set_value(iteration * 10 + 3);
+        assert_true(values == std::vector<int>({iteration * 10 + 1}));
+        assert_equals(0, completions);
+        clock->run_current();
+        assert_true(values == std::vector<int>({iteration * 10 + 1, iteration * 10 + 3}));
+        assert_equals(1, completions);
+        assert_equals(0, state->subscription_count()->value());
+        assert_true(frame.expired());
+        assert_true(failure != nullptr);
+        try { std::rethrow_exception(failure); }
+        catch (const kotlinx::coroutines::flow::internal::AbortFlowException& error) {
+            assert_true(error.owner == &recorder);
+        }
+    }
+}
+
+// Controlled pending-before-install and install-before-wake paths use the real slot.
+void test_state_flow_slot_pending_order() {
+    kotlinx::coroutines::flow::internal::StateFlowSlot slot;
+    assert_true(slot.allocate_locked(nullptr));
+    assert_false(slot.allocate_locked(nullptr));
+    auto clock = std::make_shared<VirtualDispatcher>();
+    int completions = 0;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(clock, [&](Result<void*> result) {
+        std::unique_ptr<Unit> value(static_cast<Unit*>(result.get_or_throw()));
+        ++completions;
+    });
+    slot.make_pending();
+    auto immediate = slot.await_pending(completion.get());
+    assert_false(intrinsics::is_coroutine_suspended(immediate));
+    delete static_cast<Unit*>(immediate);
+    assert_equals(0, completions);
+    assert_true(slot.take_pending());
+    assert_false(slot.take_pending());
+    assert_true(intrinsics::is_coroutine_suspended(slot.await_pending(completion.get())));
+    slot.make_pending();
+    clock->run_current();
+    assert_equals(1, completions);
+    assert_false(slot.take_pending());
+    assert_true(slot.free_locked(nullptr).empty());
+    slot.make_pending(); // A freed slot ignores pending notifications.
+    assert_true(slot.allocate_locked(nullptr));
+    assert_false(slot.take_pending());
+    slot.free_locked(nullptr);
+}
+
 int main() {
     test_stop_and_expiration_with_resubscription();
     test_zero_expiration();
@@ -872,5 +951,7 @@ int main() {
     test_subscription_actions_and_collector_lifetime(false, false, true);
     test_subscription_actions_and_collector_lifetime(true, false, true);
     test_subscription_safe_collector_rejects_other_job();
+    test_state_flow_without_job_retains_waiter_and_reuses_slot();
+    test_state_flow_slot_pending_order();
     std::cout << "Sharing suspension and virtual-time tests passed\n";
 }

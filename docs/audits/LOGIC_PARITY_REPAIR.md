@@ -17,7 +17,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
 | t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer and receiving await/unbox frames retain collection, child job and typed results; underlying await uses the cancellable completion protocol | Implemented; focused local acceptance recorded below |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
-| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await and subscribed collection/action lifetime repaired; direct channel/reusable and other typed receiving adapters plus raw flow-slot ownership remain | Partially implemented; bounded evidence below |
+| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime and StateFlowSlot ownership repaired; direct channel/reusable, other typed receiving adapters and SharedFlow raw slots remain | Partially implemented; bounded evidence below |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
 | t_d1b9ce81 | Builders.common.kt:140-173; CoroutineScope.kt:280-287; Supervisor.kt:50-66 | withContext and scope builders substitute stack scopes for scope coroutines and omit dispatcher/child-waiting branches | Queued |
 | t_e0acb2be | ASTDistance AST identity and receiver matching | Empty companions and valid extension-to-free-function lowering cause matching false alarms; actual source-path marker equivalence needs proof | Verified, committed 9d9d49ef; 8/8 strict and 8/8 ASan tests |
@@ -775,3 +775,33 @@ hashes are in workspace automation-artifacts/subscription-lifetime-20261005/.
 No CI/configuration files or new test targets/harnesses were changed. The card
 remains open for direct channel/reusable adapters, other typed receiving
 adapters, and raw SharedFlow/StateFlow slot references without a retaining job.
+
+## StateFlowSlot owning atomic reference — 2026-10-05
+
+This slice advances t_037fc89b against StateFlow.kt:245-309 and the native
+WorkaroundAtomicReference operations in internal/Concurrent.kt:15-30.
+StateFlowSlot now uses C++17 atomic shared-pointer operations for the original
+null/NONE/PENDING/continuation states. A suspended continuation is owned by the
+slot independently of a parent Job. A loaded owning reference survives the
+successful make_pending CAS while resume runs. The static symbol identities
+remain distinct from the owning continuation reference.
+
+allocate_locked, free_locked, make_pending and await_pending preserve the
+original state transitions and CAS branches. take_pending now performs the
+original atomic exchange to NONE, with the allocated-state assertion, rather
+than only changing PENDING through CAS. No StateFlow value, sequence or slot-array
+algorithm, coroutine backend or continuation ABI was changed.
+
+The existing sharing tests now collect without a Job, queue two updates before
+dispatch, verify conflation, terminate through the real abort path, release the
+collection frame and reuse the freed slot. A direct real-slot regression covers
+PENDING before continuation installation and installation before wake, exactly
+one completion, free-slot wake and subsequent allocation. Existing sharing
+cancellation coverage remains in the same test target; no harness was added.
+
+test_sharing_suspension and test_share_hot_flow_smoke pass 2/2 in Debug (1.92s)
+and 2/2 in optimized ASan (1.93s). Evidence is in workspace
+automation-artifacts/stateflow-slot-ownership-20261005/. SharedFlow raw slot,
+resume and emitter references, channel/reusable adapters and other typed
+receiving adapters remain on the card. These tests do not establish all-race
+or interop acceptance.
