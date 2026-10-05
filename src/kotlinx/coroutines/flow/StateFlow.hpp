@@ -196,7 +196,7 @@ public:
         return true;
     }
 
-    std::vector<Continuation<Unit>*> free_locked(StateFlowImplBase* flow) override {
+    std::vector<std::shared_ptr<Continuation<Unit>>> free_locked(StateFlowImplBase* flow) override {
         std::atomic_store(&state_, std::shared_ptr<void>{});
         return internal::EMPTY_RESUMES;
     }
@@ -567,7 +567,7 @@ S* AbstractSharedFlow<S, F>::allocate_slot() {
 template<typename S, typename F>
 void AbstractSharedFlow<S, F>::free_slot(S* slot) {
     std::shared_ptr<SubscriptionCountStateFlow> sub_count;
-    std::vector<Continuation<Unit>*> resumes;
+    std::vector<std::shared_ptr<Continuation<Unit>>> resumes;
     {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         n_collectors_--;
@@ -575,7 +575,7 @@ void AbstractSharedFlow<S, F>::free_slot(S* slot) {
         if (n_collectors_ == 0) next_index_ = 0;
         resumes = slot->free_locked(as_flow());
     }
-    for (auto* cont : resumes) {
+    for (const auto& cont : resumes) {
         if (cont) cont->resume_with(Result<Unit>::success(Unit{}));
     }
     if (sub_count) {

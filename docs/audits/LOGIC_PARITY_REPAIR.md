@@ -17,7 +17,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
 | t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer and receiving await/unbox frames retain collection, child job and typed results; underlying await uses the cancellable completion protocol | Implemented; focused local acceptance recorded below |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
-| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime and StateFlowSlot ownership repaired; direct channel/reusable, other typed receiving adapters and SharedFlow raw slots remain | Partially implemented; bounded evidence below |
+| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, StateFlowSlot and SharedFlow stored-reference ownership repaired; direct channel/reusable and other typed receiving adapters remain | Partially implemented; bounded evidence below |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
 | t_d1b9ce81 | Builders.common.kt:140-173; CoroutineScope.kt:280-287; Supervisor.kt:50-66 | withContext and scope builders substitute stack scopes for scope coroutines and omit dispatcher/child-waiting branches | Queued |
 | t_e0acb2be | ASTDistance AST identity and receiver matching | Empty companions and valid extension-to-free-function lowering cause matching false alarms; actual source-path marker equivalence needs proof | Verified, committed 9d9d49ef; 8/8 strict and 8/8 ASan tests |
@@ -805,3 +805,44 @@ automation-artifacts/stateflow-slot-ownership-20261005/. SharedFlow raw slot,
 resume and emitter references, channel/reusable adapters and other typed
 receiving adapters remain on the card. These tests do not establish all-race
 or interop acceptance.
+
+## SharedFlow stored-reference ownership — 2026-10-05
+
+This slice advances t_037fc89b against SharedFlow.kt:294-314 and :385-725,
+plus AbstractSharedFlow.kt:69-90. Waiting slots now retain their continuations.
+Resume arrays retain collectors and emitters while slot/buffer references are
+cleared under lock and resumption runs outside it. The shared slot interface and
+StateFlow's empty resume-array return use the same owning element type.
+
+The circular buffer now stores owning value, emitter or NO_VALUE references.
+Queued emitters own their value and continuation. try_take_value keeps its local
+value reference alive after update_collector_index_locked removes the buffer
+entry, and collection retains the value across downstream suspension. Buffer
+growth, drop, replay reset, cancellation, promotion and cleanup retain their
+original index and size transitions; reference removal releases C++ objects.
+
+Emitter cancellation registration remains outside the lock. Its callback holds
+a weak emitter reference to avoid an emitter/continuation/callback ownership
+cycle. A queued emitter is retained by the buffer, and the registration local
+retains it during registration. After promotion or removal the original disposal
+identity check would be a no-op; an expired weak reference has that same effect.
+The original cancellation buffer-identity check and cleanup_tail_locked remain.
+The touched API documentation describes the C++ operations, with upstream
+algorithm references recorded here rather than embedded Kotlin signatures.
+
+Existing sharing regressions cover no-Job waiting subscribers with two buffered
+values and slot reuse, rendezvous and buffered emitters behind a suspended
+collector, cancellation of a queued emitter, delivery order and exactly-once
+completion. Both capacities are checked with normal collection and with the
+last collector terminating early, which resumes all queued emitters. Weak value
+and frame checks verify release; replay snapshot ownership, drop, reset and
+flow destruction are also checked. No harness, target or CI/configuration file
+was added or changed.
+
+test_sharing_suspension and test_share_hot_flow_smoke pass 2/2 in Debug (1.84s)
+and 2/2 in optimized ASan (1.92s). Evidence is in workspace
+automation-artifacts/sharedflow-ownership-20261005/. This accepts the bounded
+stored-reference repair while the flow and collector remain valid through their
+calls. It does not certify every race, arbitrary external receiver destruction,
+or interop. Direct channel/reusable and other typed receiving adapters remain
+on the card.

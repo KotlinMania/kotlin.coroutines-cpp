@@ -918,6 +918,162 @@ void test_state_flow_slot_pending_order() {
     slot.free_locked(nullptr);
 }
 
+// Suspended subscribers and queued emitters retain real continuations without a Job.
+void test_shared_flow_without_job_reuses_waiting_slot() {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto shared = make_mutable_shared_flow<int>(0, 2);
+    for (int iteration = 0; iteration < 2; ++iteration) {
+        class Recorder final : public FlowCollector<int> {
+        public:
+            std::vector<int> values;
+            std::weak_ptr<BaseContinuationImpl> frame;
+            void* emit(int value, Continuation<void*>* cont) override {
+                frame = dynamic_cast<BaseContinuationImpl*>(cont)->shared_from_this();
+                values.push_back(value);
+                if (values.size() == 2) throw kotlinx::coroutines::flow::internal::AbortFlowException(this);
+                return nullptr;
+            }
+        } recorder;
+        int completions = 0;
+        auto completion = std::make_shared<FunctionalContinuation<void*>>(clock, [&](Result<void*> result) {
+            assert_true(result.is_failure());
+            ++completions;
+        });
+        assert_true(intrinsics::is_coroutine_suspended(shared->collect(&recorder, completion.get())));
+        assert_equals(1, shared->subscription_count()->value());
+        assert_true(shared->try_emit(iteration * 10 + 1));
+        assert_true(shared->try_emit(iteration * 10 + 2));
+        assert_true(recorder.values.empty());
+        assert_equals(0, completions);
+        clock->run_current();
+        assert_true(recorder.values == std::vector<int>({iteration * 10 + 1, iteration * 10 + 2}));
+        assert_equals(1, completions);
+        assert_equals(0, shared->subscription_count()->value());
+        assert_true(recorder.frame.expired());
+    }
+}
+
+void test_shared_flow_queued_emitter_ownership(int capacity, bool terminate_early) {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto shared = make_mutable_shared_flow<std::shared_ptr<int>>(0, capacity);
+    class Recorder final : public FlowCollector<std::shared_ptr<int>> {
+    public:
+        std::vector<int> values;
+        Continuation<void*>* paused = nullptr;
+        std::weak_ptr<BaseContinuationImpl> frame;
+        bool terminate_early;
+        explicit Recorder(bool early) : terminate_early(early) {}
+        void* emit(std::shared_ptr<int> value, Continuation<void*>* cont) override {
+            frame = dynamic_cast<BaseContinuationImpl*>(cont)->shared_from_this();
+            values.push_back(*value);
+            if (values.size() == 1) {
+                paused = cont;
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            }
+            if (values.size() == 3) throw kotlinx::coroutines::flow::internal::AbortFlowException(this);
+            return nullptr;
+        }
+        void finish_pause() {
+            auto* cont = paused;
+            paused = nullptr;
+            if (terminate_early) cont->resume_with(Result<void*>::failure(std::make_exception_ptr(
+                kotlinx::coroutines::flow::internal::AbortFlowException(this))));
+            else cont->resume_with(Result<void*>::success(nullptr));
+        }
+    } recorder(terminate_early);
+    int collection_completions = 0;
+    auto completion = std::make_shared<FunctionalContinuation<void*>>(clock, [&](Result<void*> result) {
+        assert_true(result.is_failure());
+        ++collection_completions;
+    });
+    assert_true(intrinsics::is_coroutine_suspended(shared->collect(&recorder, completion.get())));
+    int emissions = 0;
+    auto emit_completion = std::make_shared<FunctionalContinuation<void*>>(clock, [&](Result<void*> result) {
+        std::unique_ptr<Unit> value(static_cast<Unit*>(result.get_or_throw()));
+        ++emissions;
+    });
+    std::vector<std::weak_ptr<int>> tokens;
+    auto emit = [&](int value) {
+        auto token = std::make_shared<int>(value);
+        tokens.push_back(token);
+        auto result = shared->emit(token, emit_completion.get());
+        if (!intrinsics::is_coroutine_suspended(result)) {
+            delete static_cast<Unit*>(result);
+            ++emissions;
+        }
+    };
+    emit(1);
+    clock->run_current();
+    assert_true(recorder.values == std::vector<int>({1}));
+    assert_equals(1, emissions);
+    emit(2);
+    emit(3);
+    assert_equals(capacity == 0 ? 1 : 2, emissions);
+    assert_false(tokens[0].expired()); // The collector is still using the first value.
+    assert_false(tokens[1].expired());
+    assert_false(tokens[2].expired());
+
+    // Cancellation disposes a queued emitter before any collector takes its value.
+    auto job = make_job();
+    int cancelled_emissions = 0;
+    std::exception_ptr cancelled_failure;
+    auto cancel_completion = std::make_shared<FunctionalContinuation<void*>>(
+        std::dynamic_pointer_cast<CoroutineContext>(job)->operator+(clock), [&](Result<void*> result) {
+            ++cancelled_emissions;
+            cancelled_failure = result.exception_or_null();
+        });
+    auto cancelled_value = std::make_shared<int>(4);
+    std::weak_ptr<int> cancelled_token = cancelled_value;
+    assert_true(intrinsics::is_coroutine_suspended(shared->emit(cancelled_value, cancel_completion.get())));
+    cancelled_value.reset();
+    assert_false(cancelled_token.expired());
+    job->cancel();
+    clock->run_current();
+    assert_equals(1, cancelled_emissions);
+    assert_true(cancelled_failure != nullptr);
+    assert_true(cancelled_token.expired());
+    assert_equals(capacity == 0 ? 1 : 2, emissions);
+
+    recorder.finish_pause();
+    clock->run_current();
+    assert_equals(3, emissions); // Also resumes all queued emitters when the last collector leaves.
+    assert_equals(1, cancelled_emissions);
+    assert_equals(1, collection_completions);
+    assert_equals(0, shared->subscription_count()->value());
+    assert_true(recorder.frame.expired());
+    assert_true(recorder.values == (terminate_early ? std::vector<int>({1}) : std::vector<int>({1, 2, 3})));
+    for (const auto& token : tokens) assert_true(token.expired());
+}
+
+void test_shared_flow_replay_reference_release() {
+    auto shared = make_mutable_shared_flow<std::shared_ptr<int>>(1);
+    auto first = std::make_shared<int>(1);
+    std::weak_ptr<int> old = first;
+    assert_true(shared->try_emit(first));
+    first.reset();
+    assert_false(old.expired());
+    auto second = std::make_shared<int>(2);
+    std::weak_ptr<int> current = second;
+    assert_true(shared->try_emit(second));
+    second.reset();
+    assert_true(old.expired());
+    assert_false(current.expired());
+    {
+        auto replay = shared->get_replay_cache();
+        assert_equals(1, static_cast<int>(replay.size()));
+        assert_equals(2, *replay[0]);
+        shared->reset_replay_cache();
+        assert_false(current.expired()); // The replay snapshot owns its element.
+    }
+    assert_true(current.expired());
+    auto last = std::make_shared<int>(3);
+    std::weak_ptr<int> destroyed = last;
+    assert_true(shared->try_emit(last));
+    last.reset();
+    shared.reset();
+    assert_true(destroyed.expired());
+}
+
 int main() {
     test_stop_and_expiration_with_resubscription();
     test_zero_expiration();
@@ -953,5 +1109,11 @@ int main() {
     test_subscription_safe_collector_rejects_other_job();
     test_state_flow_without_job_retains_waiter_and_reuses_slot();
     test_state_flow_slot_pending_order();
+    test_shared_flow_without_job_reuses_waiting_slot();
+    test_shared_flow_queued_emitter_ownership(0, false);
+    test_shared_flow_queued_emitter_ownership(1, false);
+    test_shared_flow_queued_emitter_ownership(0, true);
+    test_shared_flow_queued_emitter_ownership(1, true);
+    test_shared_flow_replay_reference_release();
     std::cout << "Sharing suspension and virtual-time tests passed\n";
 }

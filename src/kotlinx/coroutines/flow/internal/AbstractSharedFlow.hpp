@@ -24,8 +24,8 @@ namespace kotlinx::coroutines::flow {
 
 namespace kotlinx::coroutines::flow::internal {
 
-// Kotlin: @JvmField internal val EMPTY_RESUMES = arrayOfNulls<Continuation<Unit>?>(0)
-inline const std::vector<Continuation<Unit>*> EMPTY_RESUMES = {};
+// Empty owning continuation array returned when no suspended caller needs resumption.
+inline const std::vector<std::shared_ptr<Continuation<Unit>>> EMPTY_RESUMES = {};
 
 // Forward declaration for SubscriptionCountStateFlow (defined at end of file after SharedFlow.hpp include)
 class SubscriptionCountStateFlow;
@@ -54,7 +54,7 @@ public:
      * Frees this slot and returns continuations to resume.
      * @return Array of continuations that were waiting and should be resumed
      */
-    virtual std::vector<Continuation<Unit>*> free_locked(F* flow) = 0;
+    virtual std::vector<std::shared_ptr<Continuation<Unit>>> free_locked(F* flow) = 0;
 };
 
 /**
