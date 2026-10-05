@@ -128,7 +128,7 @@ public:
         return this->get_completed();
     }
 
-    /** Upstream: override val onAwait: SelectClause1<T> get() = onAwaitInternal as SelectClause1<T> */
+    /** Selects the completed value, transferring an owning T box to the typed block adapter. */
     selects::SelectClause1<T>& on_await() override {
         if (!on_await_clause_) {
             on_await_clause_ = std::make_unique<selects::SelectClause1Impl<T>>(
@@ -137,7 +137,10 @@ public:
                     static_cast<JobSupport*>(static_cast<CompletableDeferredImpl<T>*>(clause_object))->on_await_internal_reg_func(select, param);
                 },
                 [](void* clause_object, void* param, void* result) -> void* {
-                    return JobSupport::on_await_internal_process_res_func(clause_object, param, result);
+                    auto* state = static_cast<JobState*>(JobSupport::on_await_internal_process_res_func(clause_object, param, result));
+                    auto* completed = dynamic_cast<CompletedValue<T>*>(state);
+                    if (!completed) throw std::logic_error("Unexpected selected await state");
+                    return new T(completed->value);
                 }
             );
         }

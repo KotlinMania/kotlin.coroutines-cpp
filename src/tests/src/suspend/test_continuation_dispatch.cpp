@@ -1306,14 +1306,16 @@ void test_deferred_select_completion_processing() {
     assert_true(value->complete(value_exception));
     auto* state = value->get_state_for_await();
     auto process = value->on_await().get_process_res_func();
-    assert_true(process(value.get(), nullptr, state) == state);
+    std::unique_ptr<std::exception_ptr> exception_box(static_cast<std::exception_ptr*>(process(value.get(), nullptr, state)));
+    assert_true(*exception_box == value_exception);
     assert_true(value->get_completed() == value_exception);
 
     auto integer = std::make_shared<CompletionInspectingDeferred<DeferredCoroutine<int>>>(EmptyCoroutineContext::instance(), true);
     integer->resume_with(Result<int>::success(42));
     state = integer->get_state_for_await();
     process = integer->on_await().get_process_res_func();
-    assert_true(process(integer.get(), nullptr, state) == state);
+    std::unique_ptr<int> integer_box(static_cast<int*>(process(integer.get(), nullptr, state)));
+    assert_equals(42, *integer_box);
     assert_equals(42, integer->get_completed());
 
     auto reference = std::make_shared<CompletionInspectingDeferred<CompletableDeferredImpl<std::shared_ptr<int>>>>();
@@ -1321,7 +1323,8 @@ void test_deferred_select_completion_processing() {
     assert_true(reference->complete(payload));
     state = reference->get_state_for_await();
     process = reference->on_await().get_process_res_func();
-    assert_true(process(reference.get(), nullptr, state) == state);
+    std::unique_ptr<std::shared_ptr<int>> reference_box(static_cast<std::shared_ptr<int>*>(process(reference.get(), nullptr, state)));
+    assert_true(*reference_box == payload);
     assert_true(reference->get_completed() == payload);
 
     for (bool cancelled : {false, true}) {
@@ -1346,7 +1349,137 @@ void test_deferred_select_completion_processing() {
     assert_true(JobSupport::on_await_internal_process_res_func(nullptr, nullptr, nullptr) == nullptr);
 }
 
+void test_selected_deferred_invokes_typed_block() {
+    auto parent = std::make_shared<RecordingContinuation>(EmptyCoroutineContext::instance());
+    auto deferred = std::make_shared<CompletableDeferredImpl<int>>();
+    assert_true(deferred->complete(42));
+    auto second = std::make_shared<DeferredCoroutine<int>>(EmptyCoroutineContext::instance(), true);
+    second->resume_with(Result<int>::success(99));
+    int calls = 0;
+    auto* result = selects::select<void*>([&](auto& builder) {
+        builder.template invoke<int>(deferred->on_await(),
+            std::function<void*(int, Continuation<void*>*)>([&](int value, auto*) {
+                ++calls;
+                assert_equals(42, value);
+                return new int(value + 1);
+            }));
+        builder.template invoke<int>(second->on_await(),
+            std::function<void*(int, Continuation<void*>*)>([](int, auto*) -> void* {
+                throw std::logic_error("A later clause must not replace an already selected clause");
+            }));
+    }, parent.get());
+    std::unique_ptr<int> value(static_cast<int*>(result));
+    assert_equals(43, *value);
+    assert_equals(1, calls);
+    assert_equals(0, parent->resumes);
+}
+
+template<typename T>
+void check_selected_deferred_value(T expected) {
+    auto parent = std::make_shared<RecordingContinuation>(EmptyCoroutineContext::instance());
+    auto deferred = std::make_shared<CompletableDeferredImpl<T>>();
+    assert_true(deferred->complete(expected));
+    int calls = 0;
+    std::unique_ptr<T> result(static_cast<T*>(selects::select<void*>([&](auto& builder) {
+        builder.template invoke<T>(deferred->on_await(),
+            std::function<void*(T, Continuation<void*>*)>([&](T value, auto*) {
+                ++calls;
+                assert_true(value == expected);
+                return new T(value);
+            }));
+    }, parent.get())));
+    assert_true(*result == expected);
+    assert_equals(1, calls);
+    assert_equals(0, parent->resumes);
+}
+
+class SelectedValueFrame final : public ContinuationImpl {
+public:
+    std::shared_ptr<int> value;
+    void* _label = nullptr;
+    SelectedValueFrame(std::shared_ptr<Continuation<void*>> completion, std::shared_ptr<int> value)
+        : ContinuationImpl(std::move(completion)), value(std::move(value)) {}
+    void* invoke_suspend(Result<void*> result) override {
+        coroutine_begin(this)
+        coroutine_yield(this, delay(1, this));
+        return new std::shared_ptr<int>(value);
+    }
+};
+
+void test_selected_deferred_block_suspends(bool cancel) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto job = JobImpl::create(nullptr);
+    auto parent = std::make_shared<RecordingContinuation>(job->operator+(dispatcher));
+    auto deferred = std::make_shared<CompletableDeferredImpl<std::shared_ptr<int>>>();
+    auto payload = std::make_shared<int>(84);
+    assert_true(deferred->complete(payload));
+    std::weak_ptr<SelectedValueFrame> block_lifetime;
+    int calls = 0;
+    auto frame = std::make_shared<CallFrame>(parent, [&, deferred](auto* continuation) {
+        return selects::select<void*>([&](auto& builder) {
+            builder.template invoke<std::shared_ptr<int>>(deferred->on_await(),
+                std::function<void*(std::shared_ptr<int>, Continuation<void*>*)>([&](auto value, auto* completion) {
+                    ++calls;
+                    auto owner = dynamic_cast<BaseContinuationImpl*>(completion)->shared_from_this();
+                    auto block = std::make_shared<SelectedValueFrame>(std::move(owner), std::move(value));
+                    block_lifetime = block;
+                    return block->start(Result<void*>::success(nullptr));
+                }));
+        }, continuation);
+    });
+    std::weak_ptr<CallFrame> caller_lifetime = frame;
+    assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    assert_equals(1, calls);
+    assert_equals(0, parent->resumes);
+    assert_false(block_lifetime.expired());
+    frame.reset();
+    if (cancel) job->cancel();
+    else dispatcher->fire_timer();
+    assert_equals(0, parent->resumes);
+    dispatcher->drain();
+    assert_equals(1, parent->resumes);
+    assert_equals(1, calls);
+    if (cancel) {
+        assert_true(parent->result.exception_or_null() == job->get_cancellation_exception());
+        dispatcher->timer.reset();
+    } else {
+        std::unique_ptr<std::shared_ptr<int>> result(static_cast<std::shared_ptr<int>*>(parent->result.get_or_throw()));
+        assert_true(*result == payload);
+    }
+    assert_true(block_lifetime.expired());
+    assert_true(caller_lifetime.expired());
+}
+
+void test_selected_deferred_failure_skips_block() {
+    for (bool cancelled : {false, true}) {
+        auto cause = cancelled ? std::make_exception_ptr(CancellationException("selected failure"))
+                               : std::make_exception_ptr(std::runtime_error("selected failure"));
+        auto deferred = std::make_shared<CompletableDeferredImpl<int>>();
+        assert_true(deferred->complete_exceptionally(cause));
+        auto parent = std::make_shared<RecordingContinuation>(EmptyCoroutineContext::instance());
+        int calls = 0;
+        bool caught = false;
+        try {
+            selects::select<void*>([&](auto& builder) {
+                builder.template invoke<int>(deferred->on_await(),
+                    std::function<void*(int, Continuation<void*>*)>([&](auto, auto*) { ++calls; return nullptr; }));
+            }, parent.get());
+        } catch (...) { caught = std::current_exception() == cause; }
+        assert_true(caught);
+        assert_equals(0, calls);
+        assert_equals(0, parent->resumes);
+    }
+}
+
 int main() {
+    std::cerr << "test_selected_deferred_invokes_typed_block\n";
+    test_selected_deferred_invokes_typed_block();
+    check_selected_deferred_value(std::make_shared<int>(84));
+    check_selected_deferred_value(std::string("selected value"));
+    check_selected_deferred_value(std::make_exception_ptr(std::runtime_error("successful exception payload")));
+    test_selected_deferred_block_suspends(false);
+    test_selected_deferred_block_suspends(true);
+    test_selected_deferred_failure_skips_block();
     std::cerr << "test_deferred_select_completion_processing\n";
     test_deferred_select_completion_processing();
     std::cerr << "test_completed_typed_continuation_ignores_segment_registration\n";

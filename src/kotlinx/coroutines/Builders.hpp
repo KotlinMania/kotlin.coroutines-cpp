@@ -144,7 +144,10 @@ namespace coroutines {
                         static_cast<JobSupport*>(static_cast<DeferredCoroutine<T>*>(clause_object))->on_await_internal_reg_func(select, param);
                     },
                     [](void* clause_object, void* param, void* result) -> void* {
-                        return JobSupport::on_await_internal_process_res_func(clause_object, param, result);
+                        auto* state = static_cast<JobState*>(JobSupport::on_await_internal_process_res_func(clause_object, param, result));
+                        auto* completed = dynamic_cast<CompletedValue<T>*>(state);
+                        if (!completed) throw std::logic_error("Unexpected selected await state");
+                        return new T(completed->value);
                     }
                 );
             }

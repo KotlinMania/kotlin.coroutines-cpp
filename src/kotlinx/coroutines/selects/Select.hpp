@@ -232,6 +232,7 @@ class SelectClause1 : public SelectClause {};
 
 // =============================================================================
 // =============================================================================
+/** Its result processor transfers an owning Q box to the typed block adapter. */
 template<typename Q>
 class SelectClause1Impl : public SelectClause1<Q> {
     void* clause_object_;
@@ -553,7 +554,7 @@ public:
         bool try_register_as_waiter(SelectImplementation<R>* select) {
             assert(select->in_registration_phase() || select->is_cancelled());
             assert(select->internal_result_ == NO_RESULT());
-            reg_func_(clause_object, static_cast<void*>(select), param_);
+            reg_func_(clause_object, static_cast<void*>(static_cast<SelectInstance<R>*>(select)), param_);
             return select->internal_result_ == NO_RESULT();
         }
 
@@ -592,7 +593,7 @@ private:
     // State can be: STATE_REG, reregister_list_ set, continuation stored, ClauseData*, STATE_COMPLETED, STATE_CANCELLED
     std::atomic<void*> state_{STATE_REG()};
 
-    std::vector<std::unique_ptr<ClauseData>>* clauses_;
+    std::vector<std::shared_ptr<ClauseData>>* clauses_;
 
     void* disposable_handle_or_segment_ = nullptr;
 
@@ -612,7 +613,7 @@ private:
 public:
     explicit SelectImplementation(std::shared_ptr<CoroutineContext> context)
         : context_(std::move(context)),
-          clauses_(new std::vector<std::unique_ptr<ClauseData>>()) {
+          clauses_(new std::vector<std::shared_ptr<ClauseData>>()) {
         clauses_->reserve(2);
     }
 
@@ -818,11 +819,18 @@ private:
     void* complete(Continuation<void*>* completion) {
         assert(is_selected());
 
-        ClauseData* selected = selected_clause_;
+        std::shared_ptr<ClauseData> selected;
+        for (auto& clause : *clauses_) {
+            if (clause.get() == selected_clause_) {
+                selected = clause;
+                break;
+            }
+        }
+        assert(selected);
 
         void* result = internal_result_;
 
-        cleanup(selected);
+        cleanup(selected.get());
 
         void* block_argument = selected->process_result(result);
         return selected->invoke_block(block_argument, completion);
@@ -906,7 +914,8 @@ public:
     template<typename Q>
     void invoke(SelectClause1<Q>& clause, std::function<void*(Q, Continuation<void*>*)> block) {
         auto wrapped = [block](void* arg, Continuation<void*>* c) {
-            return block(static_cast<Q>(reinterpret_cast<std::uintptr_t>(arg)), c);
+            std::unique_ptr<Q> argument(static_cast<Q*>(arg));
+            return block(*argument, c);
         };
         register_clause(
             clause.get_clause_object(),
@@ -947,7 +956,8 @@ private:
         std::function<void*(void*, Continuation<void*>*)> block,
         OnCancellationConstructor on_cancellation_constructor
     ) {
-        auto clause = std::make_unique<ClauseData>(
+        if (is_selected()) return;
+        auto clause = std::make_shared<ClauseData>(
             clause_object,
             std::move(reg_func),
             std::move(process_res_func),

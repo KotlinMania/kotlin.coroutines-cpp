@@ -1266,3 +1266,49 @@ in Debug (0.94s) and 3/3 in optimized ASan (1.02s). Baseline failure, final
 source hashes and focused build/test logs are in workspace
 automation-artifacts/select-await-result-typecheck-20261005/receipt.json. No
 CI/configuration change or push was made.
+
+
+## Selected Deferred typed block and clause lifetime — 2026-10-05
+
+Card t_037fc89b has a bounded immediate-selection repair against Select.kt:469-471,
+484-527,700-729,805-852 and JobSupport.kt:1358-1376. Clause registration passes
+the adjusted SelectInstance base pointer through the erased registration ABI.
+The previous complete-object pointer caused the actual Deferred callback to call
+an unrelated virtual method; the unchanged-production regression failed0/1 in
+0.39s with `Clause with object is not found` before the block ran.
+
+SelectClause1 passes the value in an owning typed result box to the user's block,
+then releases that box on return or exception. Both Deferred implementations
+check exceptional completion through the accepted JobSupport processor before
+boxing CompletedValue<T>. Integer, string, shared reference and successful
+exception-pointer values are represented as values rather than pointer-sized
+integers. Result<exception_ptr> representation is unchanged: the successful
+exception-pointer case uses CompletableDeferred.complete rather than the
+known colliding Result specialization.
+
+A local shared ClauseData reference survives cleanup of the registered clause
+list, preserving cleanup-before-process-before-tail-block order. A later clause
+cannot replace an already selected clause. The selected block remains a tail
+handoff; its own computed-goto continuation retains values needed after its
+suspension. Existing-target tests cover first-clause bias, typed result identity,
+exact exceptional/cancellation cause propagation suppressing the block, queued
+selected-block suspension, prompt cancellation and caller/block-frame release.
+Callback processor tests additionally cover DeferredCoroutine<int> and both
+Deferred owners' exceptional states.
+
+Focused AsyncTest, test_continuation_dispatch and test_channel_as_flow_smoke:
+Debug3/3 in0.90s; optimized ASan3/3 in0.53s. No new target or separate harness,
+CI/config edits, push or owning-channel-cell changes.
+
+Fresh scoped selects --deep exit0 reports19 NO_LOCAL_LOWERING_REVIEW,
+2 TAIL_OR_HELPER_REVIEW and6 MISSING_TARGET_REVIEW rows. Source tracing confirms
+that do_select_suspend currently forwards the caller to wait_until_selected and
+skips complete after resumed waiting, unlike Select.kt:450-456. This needs a
+retained lowering frame and actual waiting-continuation/select/handler owners;
+macro syntax alone is insufficient. The fast complete path's absence of local
+macros is a legitimate final tail call, so that review row alone is not a defect.
+Raw waiting CCI, disposable handler and clause-object receiver ownership, generic
+Clause2/legacy nullable channel argument representations and unbiased selection
+are not accepted by this slice. Owning channel-cell publication remains reserved
+pending scope decision. Evidence and revision-pinned review are under workspace
+automation-artifacts/select-typed-completion-20261005/.
