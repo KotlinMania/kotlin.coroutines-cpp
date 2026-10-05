@@ -17,6 +17,7 @@
 #include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <deque>
 #include <iostream>
+#include <thread>
 
 using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::testing;
@@ -1130,7 +1131,66 @@ void test_channel_iterator_immediate_result_ownership() {
     assert_true(dispatcher->queue.empty());
 }
 
+class RegistrationRacingChannel final : public channels::BufferedChannel<int> {
+public:
+    std::atomic<bool> published{false};
+    std::atomic<bool> proceed{false};
+    RegistrationRacingChannel() : BufferedChannel(0) {}
+    void on_receive_enqueued() override {
+        published.store(true, std::memory_order_release);
+        while (!proceed.load(std::memory_order_acquire)) std::this_thread::yield();
+    }
+};
+
+void test_iterator_registration_races_completion(bool close) {
+    for (int iteration = 0; iteration < 100; ++iteration) {
+        auto dispatcher = std::make_shared<QueueDispatcher>();
+        auto parent = std::make_shared<RecordingContinuation>(dispatcher);
+        auto channel = std::make_shared<RegistrationRacingChannel>();
+        auto holder = std::make_shared<std::unique_ptr<channels::ChannelIterator<int>>>(channel->iterator());
+        auto frame = std::make_shared<CallFrame>(parent, [holder, channel](auto* continuation) {
+            return (*holder)->has_next(continuation);
+        });
+        std::weak_ptr<CallFrame> retained = frame;
+        void* start_result = nullptr;
+        std::exception_ptr failure;
+        std::atomic<bool> registration_done{false};
+        std::thread registration([&] {
+            try { start_result = frame->start(Result<void*>::success(nullptr)); }
+            catch (...) { failure = std::current_exception(); }
+            registration_done.store(true, std::memory_order_release);
+        });
+        while (!channel->published.load(std::memory_order_acquire) &&
+               !registration_done.load(std::memory_order_acquire)) std::this_thread::yield();
+        channel->proceed.store(true, std::memory_order_release);
+        bool completed = close ? channel->close() : channel->try_send(42).is_success();
+        registration.join();
+        if (failure) std::rethrow_exception(failure);
+        assert_true(channel->published.load(std::memory_order_acquire));
+        assert_true(completed);
+        frame.reset();
+        if (intrinsics::is_coroutine_suspended(start_result)) {
+            assert_equals(0, parent->resumes);
+            assert_equals(size_t(1), dispatcher->queue.size());
+            dispatcher->drain();
+            assert_equals(1, parent->resumes);
+            start_result = parent->result.get_or_throw();
+        } else {
+            assert_equals(0, parent->resumes);
+            assert_true(dispatcher->queue.empty());
+        }
+        std::unique_ptr<bool> result(static_cast<bool*>(start_result));
+        assert_equals(!close, *result);
+        if (!close) assert_equals(42, (*holder)->next());
+        assert_true(retained.expired(), "registration race retained completed frame");
+        holder->reset();
+    }
+}
+
 int main() {
+    std::cerr << "test_iterator_registration_races_completion\n";
+    test_iterator_registration_races_completion(false);
+    test_iterator_registration_races_completion(true);
     std::cerr << "test_channel_iterator_dispatch_and_lifetime\n";
     for (int mode : {0, 1, 2, 3, 4}) for (bool drop : {false, true}) {
         std::cerr << "  iterator mode=" << mode << " drop=" << drop << '\n';

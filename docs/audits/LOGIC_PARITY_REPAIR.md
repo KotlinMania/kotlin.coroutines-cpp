@@ -1083,3 +1083,49 @@ in Debug (1.53s) and 3/3 in optimized ASan (1.22s). Final source hashes and
 focused build/test logs are recorded in workspace
 automation-artifacts/channel-iterator-adapter-20261005/receipt.json. No
 CI/configuration change or push was made.
+
+
+## Iterator continuation reference race — 2026-10-05
+
+This bounded t_037fc89b slice follows the original nullable iterator continuation
+field at BufferedChannel.kt:1605-1613 and its accesses at 1658-1731. The original
+marks the field BenignDataRace: a loaded reference stays valid under GC while
+another path clears the field. C++ used concurrent ordinary shared_ptr reads,
+moves and assignments in invoke_on_cancellation versus send/close completion.
+Concurrent access to that same shared_ptr object is a C++ data race.
+
+All post-construction accesses now use C++17 atomic shared-pointer operations.
+Completion loads an owning local reference, then separately stores null before
+updating receiveResult and resuming. Registration loads an owning local and
+invokes only when non-null. Initial and immediate-retrieval field stores are
+atomic as well. The original read-then-clear order is retained; no exchange,
+new locking protocol, cell algorithm, cancellation callback or memory-management
+architecture is introduced. A registration that observes null still does
+nothing; a registration that observes the continuation keeps it alive through
+its call while completion clears the stored reference.
+
+The existing test_continuation_dispatch target coordinates 200 registration
+versus send/normal-close iterations using the existing on_receive_enqueued
+override point, after cell and waiter-owner publication. Registration and
+completion run concurrently. Either the original immediate-result decision or
+one queued dispatcher task is accepted, with exactly one result, correct bool,
+next value and completed-frame release. Tests also retain all earlier prompt
+cancellation, close, public-handle release and value ownership checks. No target
+or separate test harness was added. Debug/ASan concurrency checks do not replace
+ThreadSanitizer or establish race freedom for the rest of the channel.
+
+The borrowed outer-channel lifetime is independent of this field fix: the
+receiver is kept valid, and independent receiver destruction is not accepted.
+A distinct publication gap remains: original cell CAS publishes an owning
+reference to its Waiter, while C++ publishes a raw state pointer and installs
+the separate waiter_ref afterwards. A concurrent terminal operation can clear
+that owner before late registration installs it. The present tests intentionally
+start completion after existing owner publication to isolate the continuation
+field race; they do not accept or repair that gap. Raw segment reclamation and
+other DeferredCoroutine/select typed adapters also remain.
+
+AsyncTest, test_continuation_dispatch and test_channel_as_flow_smoke pass 3/3
+in Debug (0.65s) and 3/3 in optimized ASan (0.93s). Final source hashes and
+focused build/test logs are in workspace
+automation-artifacts/iterator-continuation-race-20261005/receipt.json. No
+CI/configuration change or push was made.

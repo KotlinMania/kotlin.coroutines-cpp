@@ -3482,7 +3482,9 @@ public:
         }
 
         bool try_resume_has_next(E element) {
-            auto cont = std::move(continuation_sp_);
+            auto cont = std::atomic_load_explicit(&continuation_sp_, std::memory_order_acquire);
+            std::atomic_store_explicit(&continuation_sp_, std::shared_ptr<CancellableContinuationImpl<bool>>{},
+                                       std::memory_order_release);
             if (!cont) return false;
             receive_result_ = new E(std::move(element));
             std::function<void(std::exception_ptr, bool, std::shared_ptr<CoroutineContext>)> on_cancellation = nullptr;
@@ -3502,7 +3504,9 @@ public:
         }
 
         void try_resume_has_next_on_closed_channel() {
-            auto cont = std::move(continuation_sp_);
+            auto cont = std::atomic_load_explicit(&continuation_sp_, std::memory_order_acquire);
+            std::atomic_store_explicit(&continuation_sp_, std::shared_ptr<CancellableContinuationImpl<bool>>{},
+                                       std::memory_order_release);
             receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
             if (!cont) return;
             auto cause = channel_->close_cause();
@@ -3514,8 +3518,9 @@ public:
         }
 
         void invoke_on_cancellation(internal::SegmentBase* segment, int index) override {
-            if (continuation_sp_) {
-                continuation_sp_->invoke_on_cancellation(segment, index);
+            auto cont = std::atomic_load_explicit(&continuation_sp_, std::memory_order_acquire);
+            if (cont) {
+                cont->invoke_on_cancellation(segment, index);
             }
         }
 
@@ -3536,13 +3541,14 @@ public:
             Continuation<void*>* continuation
         ) {
             return dsl::suspend_cancellable_coroutine_reusable<bool>(continuation, [&](auto* cont) {
-                continuation_sp_ = cont->shared_from_this();
+                std::atomic_store_explicit(&continuation_sp_, cont->shared_from_this(), std::memory_order_release);
                 channel_->receive_impl_on_no_waiter(
                     segment, index, r,
                     this,
                     [this, cont](E element) {
                         receive_result_ = new E(std::move(element));
-                        continuation_sp_ = nullptr;
+                        std::atomic_store_explicit(&continuation_sp_, std::shared_ptr<CancellableContinuationImpl<bool>>{},
+                                                   std::memory_order_release);
                         std::function<void(std::exception_ptr)> on_cancellation = nullptr;
                         if (channel_->on_undelivered_element()) {
                             auto elem_copy = *static_cast<E*>(receive_result_);
@@ -3559,7 +3565,9 @@ public:
         }
 
         void on_closed_has_next_no_waiter_suspend() {
-            auto cont = std::move(this->continuation_sp_);
+            auto cont = std::atomic_load_explicit(&continuation_sp_, std::memory_order_acquire);
+            std::atomic_store_explicit(&continuation_sp_, std::shared_ptr<CancellableContinuationImpl<bool>>{},
+                                       std::memory_order_release);
             this->receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
             if (!cont) return;
             auto cause = channel_->close_cause();
@@ -3572,6 +3580,7 @@ public:
 
         BufferedChannel<E>* channel_;
         void* receive_result_;
+        // Atomic reference accesses retain a loaded continuation across concurrent field clearing.
         std::shared_ptr<CancellableContinuationImpl<bool>> continuation_sp_;
     };
 
