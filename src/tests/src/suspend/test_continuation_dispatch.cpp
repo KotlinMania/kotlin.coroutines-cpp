@@ -12,6 +12,7 @@
 #include "kotlinx/coroutines/Dispatchers.hpp"
 #include "kotlinx/coroutines/Delay.hpp"
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
+#include "kotlinx/coroutines/dsl/CancellableReusable.hpp"
 #include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <deque>
 #include <iostream>
@@ -169,13 +170,17 @@ void test_typed_result_prompt_cancellation() {
         }, continuation);
     });
     assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
-    suspended->resume(42, [&](std::exception_ptr) { ++cancelled_values; });
+    auto capture = std::make_shared<int>(42);
+    std::weak_ptr<int> handler_capture = capture;
+    suspended->resume(42, [&, capture](std::exception_ptr) { ++cancelled_values; });
+    capture.reset();
     suspended.reset();
     job->cancel();
     dispatcher->drain();
     assert_equals(1, cancelled_values);
     assert_equals(1, parent->resumes);
     assert_false(parent->result.is_success());
+    assert_true(handler_capture.expired());
 }
 
 void test_typed_result_is_boxed_once_after_dispatch() {
@@ -382,7 +387,201 @@ void test_async_suspend_value_and_start_modes() {
     scope_without_dispatcher->get_job()->cancel();
 }
 
+void test_reusable_cache_owns_claimed_continuation() {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto completion = std::make_shared<FunctionalContinuation<int>>(dispatcher, [](Result<int>) {});
+    auto delegate = dispatcher->intercept_continuation<int>(completion);
+    auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<int>>(delegate);
+    auto first = dsl::get_or_create_cancellable_continuation<int>(delegate);
+    auto* identity = first.get();
+    std::weak_ptr<CancellableContinuationImpl<int>> retained = first;
+    first->resume(41, nullptr);
+    std::unique_ptr<int> initial(static_cast<int*>(first->get_result()));
+    assert_equals(41, *initial);
+    first.reset();
+    assert_false(retained.expired());
+    auto second = dsl::get_or_create_cancellable_continuation<int>(delegate);
+    assert_true(second.get() == identity);
+    assert_true(second->is_active());
+    second->resume(42, nullptr);
+    std::unique_ptr<int> repeated(static_cast<int*>(second->get_result()));
+    assert_equals(42, *repeated);
+    second.reset();
+    assert_false(retained.expired());
+    dispatched->release();
+    assert_true(retained.expired());
+    assert_false(dispatched->is_reusable());
+}
+
+void test_reusable_postponed_cancellation_preserves_first_cause() {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    int completions = 0;
+    std::exception_ptr failure;
+    auto completion = std::make_shared<FunctionalContinuation<int>>(dispatcher, [&](Result<int> result) {
+        ++completions;
+        failure = result.exception_or_null();
+    });
+    auto delegate = dispatcher->intercept_continuation<int>(completion);
+    auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<int>>(delegate);
+    auto cont = dsl::get_or_create_cancellable_continuation<int>(delegate);
+    std::weak_ptr<CancellableContinuationImpl<int>> retained = cont;
+    auto first = std::make_exception_ptr(std::runtime_error("first postponed cancellation"));
+    auto later = std::make_exception_ptr(std::runtime_error("later cancellation"));
+    assert_true(dispatched->postpone_cancellation(first));
+    assert_true(dispatched->postpone_cancellation(later));
+    dispatched->release(); // Release must leave the postponed cause for get_result to consume.
+    assert_true(dispatched->is_reusable());
+    assert_true(intrinsics::is_coroutine_suspended(cont->get_result()));
+    assert_false(dispatched->is_reusable());
+    cont.reset();
+    assert_equals(0, completions);
+    dispatcher->drain();
+    assert_equals(1, completions);
+    assert_true(failure == first);
+    assert_true(retained.expired());
+    dispatched->release();
+}
+
+void test_reusable_published_cancellation_releases_cache() {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto completion = std::make_shared<FunctionalContinuation<int>>(dispatcher, [](Result<int>) {});
+    auto delegate = dispatcher->intercept_continuation<int>(completion);
+    auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<int>>(delegate);
+    auto cont = dsl::get_or_create_cancellable_continuation<int>(delegate);
+    std::weak_ptr<CancellableContinuationImpl<int>> retained = cont;
+    cont->resume(42, nullptr);
+    std::unique_ptr<int> value(static_cast<int*>(cont->get_result()));
+    cont.reset();
+    assert_false(retained.expired());
+    assert_false(dispatched->postpone_cancellation(std::make_exception_ptr(std::runtime_error("cancel"))));
+    assert_true(retained.expired());
+    assert_false(dispatched->is_reusable());
+    dispatched->release();
+}
+
+void test_reusable_idempotent_resume_rejects_reset() {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto completion = std::make_shared<FunctionalContinuation<int>>(dispatcher, [](Result<int>) {});
+    auto delegate = dispatcher->intercept_continuation<int>(completion);
+    auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<int>>(delegate);
+    auto first = dsl::get_or_create_cancellable_continuation<int>(delegate);
+    std::weak_ptr<CancellableContinuationImpl<int>> rejected = first;
+    int idempotent = 0;
+    auto token = first->try_resume(42, &idempotent, nullptr);
+    assert_true(token != nullptr);
+    first->complete_resume(token);
+    std::unique_ptr<int> initial(static_cast<int*>(first->get_result()));
+    first.reset();
+    auto next = dsl::get_or_create_cancellable_continuation<int>(delegate);
+    assert_true(rejected.expired());
+    next->resume(43, nullptr);
+    std::unique_ptr<int> value(static_cast<int*>(next->get_result()));
+    assert_equals(43, *value);
+    std::weak_ptr<CancellableContinuationImpl<int>> retained = next;
+    next.reset();
+    dispatched->release();
+    assert_true(retained.expired());
+}
+
+void test_reusable_reset_releases_completed_references() {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto completion = std::make_shared<FunctionalContinuation<std::shared_ptr<int>>>(
+        dispatcher, [](Result<std::shared_ptr<int>>) {});
+    auto delegate = dispatcher->intercept_continuation<std::shared_ptr<int>>(completion);
+    auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<std::shared_ptr<int>>>(delegate);
+    auto first = dsl::get_or_create_cancellable_continuation<std::shared_ptr<int>>(delegate);
+    auto payload = std::make_shared<int>(42);
+    std::weak_ptr<int> value_retained = payload;
+    first->resume(payload, nullptr);
+    {
+        std::unique_ptr<std::shared_ptr<int>> result(
+            static_cast<std::shared_ptr<int>*>(first->get_result()));
+        assert_equals(42, **result);
+    }
+    payload.reset();
+    first.reset();
+    assert_false(value_retained.expired());
+    auto next = dsl::get_or_create_cancellable_continuation<std::shared_ptr<int>>(delegate);
+    assert_true(value_retained.expired());
+    next->resume(std::make_shared<int>(43), nullptr);
+    std::unique_ptr<std::shared_ptr<int>> result(static_cast<std::shared_ptr<int>*>(next->get_result()));
+    assert_equals(43, **result);
+    next.reset();
+    dispatched->release();
+
+    auto unit_completion = std::make_shared<FunctionalContinuation<void>>(dispatcher, [](Result<void>) {});
+    auto unit_delegate = dispatcher->intercept_continuation<void>(unit_completion);
+    auto unit_dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<void>>(unit_delegate);
+    auto unit_first = dsl::get_or_create_cancellable_continuation<void>(unit_delegate);
+    auto capture = std::make_shared<int>(1);
+    std::weak_ptr<int> handler_retained = capture;
+    unit_first->invoke_on_cancellation([capture](std::exception_ptr) {});
+    unit_first->resume(nullptr);
+    assert_true(unit_first->get_result() == nullptr);
+    capture.reset();
+    unit_first.reset();
+    assert_false(handler_retained.expired());
+    auto unit_next = dsl::get_or_create_cancellable_continuation<void>(unit_delegate);
+    assert_true(handler_retained.expired());
+    unit_next->resume(nullptr);
+    assert_true(unit_next->get_result() == nullptr);
+    unit_next.reset();
+    unit_dispatched->release();
+}
+
+void test_reusable_completion_releases_frame_cycle(bool cancel_before_dispatch) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto job = JobImpl::create(nullptr);
+    std::shared_ptr<CoroutineContext> context = cancel_before_dispatch ? job->operator+(dispatcher) : dispatcher;
+    auto parent = std::make_shared<RecordingContinuation>(context);
+    std::shared_ptr<CancellableContinuationImpl<void*>> suspended;
+    auto frame = std::make_shared<CallFrame>(parent, [&](auto* continuation) {
+        auto delegate = intrinsics::intercepted(internal::retain_continuation(continuation));
+        suspended = dsl::get_or_create_cancellable_continuation<void*>(delegate);
+        return suspended->get_result();
+    });
+    std::weak_ptr<CallFrame> retained_frame = frame;
+    assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    std::weak_ptr<CancellableContinuationImpl<void*>> retained_cont = suspended;
+    frame.reset();
+    auto* payload = new int(42);
+    int cancelled_values = 0;
+    suspended->resume(payload, [payload, &cancelled_values](std::exception_ptr) {
+        delete payload;
+        ++cancelled_values;
+    });
+    suspended.reset();
+    assert_equals(0, parent->resumes);
+    assert_false(retained_frame.expired());
+    if (cancel_before_dispatch) job->cancel();
+    dispatcher->drain();
+    assert_equals(1, parent->resumes);
+    if (cancel_before_dispatch) {
+        assert_false(parent->result.is_success());
+        assert_equals(1, cancelled_values);
+    } else {
+        std::unique_ptr<int> value(static_cast<int*>(parent->result.get_or_throw()));
+        assert_equals(42, *value);
+        assert_equals(0, cancelled_values);
+    }
+    assert_true(retained_cont.expired());
+    assert_true(retained_frame.expired());
+}
+
 int main() {
+    std::cerr << "test_reusable_cache_owns_claimed_continuation\n";
+    test_reusable_cache_owns_claimed_continuation();
+    std::cerr << "test_reusable_postponed_cancellation_preserves_first_cause\n";
+    test_reusable_postponed_cancellation_preserves_first_cause();
+    std::cerr << "test_reusable_published_cancellation_releases_cache\n";
+    test_reusable_published_cancellation_releases_cache();
+    std::cerr << "test_reusable_idempotent_resume_rejects_reset\n";
+    test_reusable_idempotent_resume_rejects_reset();
+    std::cerr << "test_reusable_reset_releases_completed_references\n";
+    test_reusable_reset_releases_completed_references();
+    std::cerr << "test_reusable_completion_releases_frame_cycle\n";
+    test_reusable_completion_releases_frame_cycle(false);
+    test_reusable_completion_releases_frame_cycle(true);
     std::cerr << "test_join_dispatch_retains_frame\n";
     test_join_dispatch_retains_frame();
     std::cerr << "test_join_prompt_cancellation_after_completion\n";

@@ -17,7 +17,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
 | t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer and receiving await/unbox frames retain collection, child job and typed results; underlying await uses the cancellable completion protocol | Implemented; focused local acceptance recorded below |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
-| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, StateFlowSlot and SharedFlow stored-reference ownership repaired; direct channel/reusable and other typed receiving adapters remain | Partially implemented; bounded evidence below |
+| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references and reusable cache ownership repaired; raw reusable ABI wrapper, direct channel interception and other typed receiving adapters remain | Partially implemented; bounded evidence below |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
 | t_d1b9ce81 | Builders.common.kt:140-173; CoroutineScope.kt:280-287; Supervisor.kt:50-66 | withContext and scope builders substitute stack scopes for scope coroutines and omit dispatcher/child-waiting branches | Queued |
 | t_e0acb2be | ASTDistance AST identity and receiver matching | Empty companions and valid extension-to-free-function lowering cause matching false alarms; actual source-path marker equivalence needs proof | Verified, committed 9d9d49ef; 8/8 strict and 8/8 ASan tests |
@@ -846,3 +846,52 @@ stored-reference repair while the flow and collector remain valid through their
 calls. It does not certify every race, arbitrary external receiver destruction,
 or interop. Direct channel/reusable and other typed receiving adapters remain
 on the card.
+
+
+## Reusable continuation ownership prerequisite — 2026-10-05
+
+This slice advances t_037fc89b against CancellableContinuation.kt:442-479,
+DispatchedContinuation.kt:70-172 and CancellableContinuationImpl.kt:140-158,
+:169-189 and :473-553. The actual helper file is
+src/kotlinx/coroutines/dsl/CancellableReusable.hpp. Its get_or_create helper now
+returns real shared ownership instead of a no-op-deleter pointer.
+
+DispatchedContinuation's reusable atomic state now owns its continuation and
+postponed cancellation cause. C++17 atomic shared-reference operations preserve
+null-to-claimed publication, continuation-to-claimed CAS, claimed-to-continuation
+publication, claimed-to-cause CAS, first-cause retention and invalidation to null.
+A claimed continuation stays owned after its cached state is replaced, including
+while reset rejects an idempotent result and the helper creates a replacement.
+
+The existing interceptor release boundary still waits for an active claim and
+detaches its published continuation. A CAS then clears that same published owner
+to break the C++ delegate/cache cycle after completion. It does not clear a
+postponed cause, which must remain available to get_result. This is C++ lifetime
+cleanup at the terminating interceptor boundary, not a new reuse algorithm.
+
+The completed-reference regression exposed missing ownership of allocated CCI
+success states in resume/tryResume and completed-result cancellation transitions.
+Those successful CAS paths now assign owned_state_. Cancellation keeps the old
+state alive through its handler calls. The void exceptional tryResume state is
+also owned. Reset installs Active and releases the preceding completed state in
+both specializations, matching removal of the original atomic state reference.
+The original resume, decision, CAS, cancellation and dispatch branches remain.
+
+The existing test_continuation_dispatch target checks actual cached ownership,
+same-instance reuse, idempotent rejection, first postponed cause, interceptor
+release before postponed cause consumption, published-state invalidation,
+release of previous values and handler captures, and real lowered-frame cleanup
+on success and prompt cancellation. Its existing typed cancellation check now
+also verifies handler capture release. The resumed native void-pointer test
+consumes its actual native result; it does not add an extra typed adapter box.
+
+AsyncTest, test_continuation_dispatch and test_sharing_suspension pass 3/3 in
+Debug (0.99s) and 3/3 in optimized ASan (1.10s). Logs and source hashes are in
+workspace automation-artifacts/reusable-ownership-20261005/. No new harness,
+target, CI/configuration change or push was made.
+
+This accepts the owning reusable cache/get-or-create prerequisite. The raw ABI
+suspend_cancellable_coroutine_reusable wrapper still needs proper retention,
+interception and typed result adaptation; direct BufferedChannel and other
+DeferredCoroutine/select adapters remain separate repairs. No full channel,
+all-race or interop acceptance is claimed.

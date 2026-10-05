@@ -262,6 +262,7 @@ public:
         decision_and_index_.store(decision_and_index(UNDECIDED, NO_INDEX), std::memory_order_release);
         // _state.value = Active
         state_.store(&Active::instance, std::memory_order_release);
+        owned_state_.reset();
         return true;
     }
 
@@ -416,6 +417,8 @@ public:
                 auto* update = new CompletedCancellableContinuationState<T>(
                     cc->result, cc->cancel_handler, cc->on_cancellation, cc->idempotent_resume, cause);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    auto previous_state = owned_state_;
+                    owned_state_.reset(update);
                     // Kotlin line 177: state.invokeHandlers(this, cause)
                     if (cc->cancel_handler) call_cancel_handler(cc->cancel_handler, cause);
                     if constexpr (std::is_void_v<T>) {
@@ -753,6 +756,7 @@ public:
             if (auto* nc = dynamic_cast<NotCompleted*>(state)) {
                 State* update = resumed_state(nc, owned_state_, value, this->resume_mode, on_cancellation, idempotent);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    owned_state_.reset(update);
                     detach_child_if_non_reusable();
                     return const_cast<void*>(RESUME_TOKEN);
                 }
@@ -849,6 +853,7 @@ public:
                     delete update;
                     continue; // retry on CAS failure
                 }
+                owned_state_.reset(update);
                 detach_child_if_non_reusable();
                 dispatch_resume(resume_mode);
                 return;
@@ -1162,6 +1167,7 @@ public:
 
         decision_and_index_.store(decision_and_index(UNDECIDED, NO_INDEX), std::memory_order_release);
         state_.store(&Active::instance, std::memory_order_release);
+        owned_state_.reset();
         return true;
     }
 
@@ -1224,6 +1230,8 @@ public:
                 if (cc->is_cancelled()) throw std::runtime_error("Must be called at most once");
                 auto* update = new CompletedCancellableContinuationState<void>(cc->cancel_handler, cc->on_cancellation, cc->idempotent_resume, cause);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    auto previous_state = owned_state_;
+                    owned_state_.reset(update);
                     if (cc->cancel_handler) call_cancel_handler(cc->cancel_handler, cause);
                     if (cc->on_cancellation) cc->on_cancellation(cause, context_);
                     return;
@@ -1382,6 +1390,7 @@ public:
                 if (!is_cancellable_mode(this->resume_mode) && idempotent == nullptr) {
                     auto* update = new CompletedWithValue<void>();
                     if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                        owned_state_.reset(update);
                         detach_child_if_non_reusable();
                         return const_cast<void*>(RESUME_TOKEN);
                     }
@@ -1398,6 +1407,7 @@ public:
                         nullptr,
                         idempotent);
                     if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                        owned_state_.reset(update);
                         detach_child_if_non_reusable();
                         return const_cast<void*>(RESUME_TOKEN);
                     }
@@ -1408,6 +1418,7 @@ public:
                 // Simple case - no handlers, no idempotent
                 auto* update = new CompletedWithValue<void>();
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    owned_state_.reset(update);
                     detach_child_if_non_reusable();
                     return const_cast<void*>(RESUME_TOKEN);
                 }
@@ -1444,6 +1455,7 @@ public:
                     adapted_on_cancellation,
                     idempotent);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    owned_state_.reset(update);
                     detach_child_if_non_reusable();
                     return const_cast<void*>(RESUME_TOKEN);
                 }
@@ -1470,6 +1482,7 @@ public:
             if (dynamic_cast<NotCompleted*>(state)) {
                 auto* update = new CompletedExceptionState(exception, false);
                 if (state_.compare_exchange_strong(state, update, std::memory_order_acq_rel)) {
+                    owned_state_.reset(update);
                     return const_cast<void*>(RESUME_TOKEN);
                 }
                 delete update;

@@ -114,97 +114,86 @@ public:
         return taken;
     }
 
-    /**
-     * Possible states of reusability:
-     *
-     * 1) `null`. Cancellable continuation wasn't yet attempted to be reused or
-     *    was used and then invalidated (e.g. because of the cancellation).
-     * 2) `CancellableContinuation`. Continuation to be/that is being reused.
-     * 3) `REUSABLE_CLAIMED`. CC is currently being reused and its owner executes `suspend` block:
-     *    ```
-     *    // state == null | CC
-     *    suspend_cancellable_coroutine_reusable { cont ->
-     *        // state == REUSABLE_CLAIMED
-     *        block(cont)
-     *    }
-     *    // state == CC
-     *    ```
-     * 4) `Throwable`. Continuation was cancelled with this cause while being in
-     *    `suspend_cancellable_coroutine_reusable`, `CancellableContinuationImpl::get_result`
-     *    will check for cancellation later.
-     *
-     * `REUSABLE_CLAIMED` state is required to prevent double-use of the reused continuation.
-     * In `get_result`, we have the following code:
-     * ```
-     * if (try_suspend()) {
-     *     // <- at this moment current continuation can be redispatched and claimed again.
-     *     attach_child_to_parent();
-     *     release_claimed_continuation();
-     * }
-     * ```
-     *
-     * C++ encoding:
-     * - 0: null
-     * - k_reusable_claimed: REUSABLE_CLAIMED
-     * - even pointer: CancellableContinuationImpl<T>*
-     * - odd pointer (except k_reusable_claimed): postponed cancellation cause (boxed std::exception_ptr)
-     */
-    std::atomic<std::uintptr_t> reusable_cancellable_continuation_{0};
+private:
+    struct ReusableState {
+        enum class Kind { CLAIMED, CONTINUATION, CANCELLATION };
+        Kind kind;
+        std::shared_ptr<CancellableContinuationImpl<T>> continuation;
+        std::exception_ptr cause;
 
+        explicit ReusableState(Kind kind) : kind(kind) {}
+        explicit ReusableState(std::shared_ptr<CancellableContinuationImpl<T>> continuation)
+            : kind(Kind::CONTINUATION), continuation(std::move(continuation)) {}
+        explicit ReusableState(std::exception_ptr cause)
+            : kind(Kind::CANCELLATION), cause(std::move(cause)) {}
+    };
+    std::shared_ptr<ReusableState> reusable_cancellable_continuation_;
+
+    static const std::shared_ptr<ReusableState>& reusable_claimed() {
+        static const auto claimed = std::make_shared<ReusableState>(ReusableState::Kind::CLAIMED);
+        return claimed;
+    }
+
+public:
+    /** Whether reuse has been claimed, published or cancelled while claimed. */
     bool is_reusable() const {
-        return reusable_cancellable_continuation_.load() != 0;
+        return std::atomic_load(&reusable_cancellable_continuation_) != nullptr;
     }
 
     void await_reusability() {
         while (true) {
-            auto state = reusable_cancellable_continuation_.load();
-            if (state != k_reusable_claimed) return;
+            auto state = std::atomic_load(&reusable_cancellable_continuation_);
+            if (state != reusable_claimed()) return;
         }
     }
 
+    /** Waits for the active claim, then detaches and releases the cached continuation. */
     void release() override {
         await_reusability();
-        auto cc = reusable_cancellable_continuation();
-        if (cc) cc->detach_child();
+        auto state = std::atomic_load(&reusable_cancellable_continuation_);
+        if (state && state->kind == ReusableState::Kind::CONTINUATION) {
+            state->continuation->detach_child();
+            auto expected = state;
+            std::atomic_compare_exchange_strong(
+                &reusable_cancellable_continuation_, &expected, std::shared_ptr<ReusableState>{});
+        }
     }
 
-    CancellableContinuationImpl<T>* claim_reusable_cancellable_continuation() {
+    /** Claims null or a published continuation; cancellation remains postponed while claimed. */
+    std::shared_ptr<CancellableContinuationImpl<T>> claim_reusable_cancellable_continuation() {
         while (true) {
-            auto state = reusable_cancellable_continuation_.load();
-            if (state == 0) {
-                reusable_cancellable_continuation_.store(k_reusable_claimed);
+            auto state = std::atomic_load(&reusable_cancellable_continuation_);
+            if (!state) {
+                std::atomic_store(&reusable_cancellable_continuation_, reusable_claimed());
                 return nullptr;
             }
-            if (state == k_reusable_claimed) {
-                continue;
-            }
-            if (is_postponed_cancellation(state)) {
-                continue;
-            }
+            if (state == reusable_claimed()) continue;
+            if (state->kind == ReusableState::Kind::CANCELLATION) continue;
             auto expected = state;
-            if (reusable_cancellable_continuation_.compare_exchange_strong(expected, k_reusable_claimed)) {
-                return reinterpret_cast<CancellableContinuationImpl<T>*>(state);
+            if (std::atomic_compare_exchange_strong(
+                    &reusable_cancellable_continuation_, &expected, reusable_claimed())) {
+                return state->continuation;
             }
         }
     }
 
+    /** Publishes the owned continuation or consumes cancellation postponed during its claim. */
     std::exception_ptr try_release_claimed_continuation(CancellableContinuation<T>* continuation_) {
         while (true) {
-            auto state = reusable_cancellable_continuation_.load();
-            if (state == k_reusable_claimed) {
+            auto state = std::atomic_load(&reusable_cancellable_continuation_);
+            if (state == reusable_claimed()) {
                 auto* impl = dynamic_cast<CancellableContinuationImpl<T>*>(continuation_);
-                auto new_state = reinterpret_cast<std::uintptr_t>(impl);
+                auto published = std::make_shared<ReusableState>(impl->shared_from_this());
                 auto expected = state;
-                if (reusable_cancellable_continuation_.compare_exchange_strong(expected, new_state)) {
+                if (std::atomic_compare_exchange_strong(
+                        &reusable_cancellable_continuation_, &expected, published)) {
                     return nullptr;
                 }
-            } else if (is_postponed_cancellation(state)) {
-                auto* box = postponed_cancellation_box(state);
+            } else if (state && state->kind == ReusableState::Kind::CANCELLATION) {
                 auto expected = state;
-                if (reusable_cancellable_continuation_.compare_exchange_strong(expected, 0)) {
-                    auto cause = *box;
-                    delete box;
-                    return cause;
+                if (std::atomic_compare_exchange_strong(
+                        &reusable_cancellable_continuation_, &expected, std::shared_ptr<ReusableState>{})) {
+                    return state->cause;
                 }
             } else {
                 assert(false);
@@ -212,23 +201,23 @@ public:
         }
     }
 
+    /** Records the first cancellation while claimed, otherwise invalidates reusable state. */
     bool postpone_cancellation(std::exception_ptr cause) {
-        auto* box = new std::exception_ptr(cause);
-        auto boxed = reinterpret_cast<std::uintptr_t>(box) | k_postponed_tag;
+        auto cancelled = std::make_shared<ReusableState>(std::move(cause));
         while (true) {
-            auto state = reusable_cancellable_continuation_.load();
-            if (state == k_reusable_claimed) {
+            auto state = std::atomic_load(&reusable_cancellable_continuation_);
+            if (state == reusable_claimed()) {
                 auto expected = state;
-                if (reusable_cancellable_continuation_.compare_exchange_strong(expected, boxed)) {
+                if (std::atomic_compare_exchange_strong(
+                        &reusable_cancellable_continuation_, &expected, cancelled)) {
                     return true;
                 }
-            } else if (is_postponed_cancellation(state)) {
-                delete box;
+            } else if (state && state->kind == ReusableState::Kind::CANCELLATION) {
                 return true;
             } else {
                 auto expected = state;
-                if (reusable_cancellable_continuation_.compare_exchange_strong(expected, 0)) {
-                    delete box;
+                if (std::atomic_compare_exchange_strong(
+                        &reusable_cancellable_continuation_, &expected, std::shared_ptr<ReusableState>{})) {
                     return false;
                 }
             }
@@ -322,24 +311,6 @@ public:
 
     void run() override {
         DispatchedTask<T>::run();
-    }
-
-private:
-    static constexpr std::uintptr_t k_reusable_claimed = 1;
-    static constexpr std::uintptr_t k_postponed_tag = 1;
-
-    bool is_postponed_cancellation(std::uintptr_t state) const {
-        return (state & k_postponed_tag) != 0 && state != k_reusable_claimed;
-    }
-
-    std::exception_ptr* postponed_cancellation_box(std::uintptr_t state) const {
-        return reinterpret_cast<std::exception_ptr*>(state & ~k_postponed_tag);
-    }
-
-    CancellableContinuationImpl<T>* reusable_cancellable_continuation() {
-        auto state = reusable_cancellable_continuation_.load();
-        if (state == 0 || state == k_reusable_claimed || is_postponed_cancellation(state)) return nullptr;
-        return reinterpret_cast<CancellableContinuationImpl<T>*>(state);
     }
 
 public:

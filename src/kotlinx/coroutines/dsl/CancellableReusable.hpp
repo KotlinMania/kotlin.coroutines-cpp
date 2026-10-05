@@ -22,43 +22,18 @@ namespace coroutines {
 namespace dsl {
 
 /**
- * Get or create a CancellableContinuationImpl, reusing if possible.
- *
- * Kotlin: getOrCreateCancellableContinuation(delegate)
- * From CancellableContinuation.kt lines 442-455
- *
- * If the delegate is a DispatchedContinuation, attempts to claim a reusable
- * continuation. Otherwise creates a new one.
- *
- * @param delegate The intercepted continuation
- * @return A shared_ptr to CancellableContinuationImpl (possibly reused)
+ * Claims and resets a reusable continuation when the intercepted delegate supports it.
+ * Returns actual shared ownership; otherwise creates a continuation in the appropriate mode.
  */
 template<typename T>
 std::shared_ptr<CancellableContinuationImpl<T>> get_or_create_cancellable_continuation(
     std::shared_ptr<Continuation<T>> delegate
 ) {
-    // If delegate is a DispatchedContinuation, try to reuse
-    // Kotlin: (uCont.intercepted() as? DispatchedContinuation<T>)
     if (auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<T>>(delegate)) {
-        // Kotlin: ?.claimReusableCancellableContinuation()
-        CancellableContinuationImpl<T>* reusable = dispatched->claim_reusable_cancellable_continuation();
-        if (reusable) {
-            // Kotlin: ?.takeIf { it.resetStateReusable() }
-            if (reusable->reset_state_reusable()) {
-                // Return the reused continuation wrapped in shared_ptr
-                // Note: The continuation is already alive via dispatched's state - we just wrap it
-                // This is a simplification; in Kotlin the CC lifetime is tied to dispatched
-                return std::shared_ptr<CancellableContinuationImpl<T>>(
-                    reusable, [](CancellableContinuationImpl<T>*) {} // No-op deleter since dispatched owns it
-                );
-            }
-        }
-        // Fall through to create new with reusable mode
-        // Kotlin: ?: CancellableContinuationImpl(uCont.intercepted(), MODE_CANCELLABLE_REUSABLE)
+        auto reusable = dispatched->claim_reusable_cancellable_continuation();
+        if (reusable && reusable->reset_state_reusable()) return reusable;
         return std::make_shared<CancellableContinuationImpl<T>>(delegate, MODE_CANCELLABLE_REUSABLE);
     }
-    // Not a dispatched continuation - create new with regular cancellable mode
-    // Kotlin: CancellableContinuationImpl(uCont.intercepted(), MODE_CANCELLABLE)
     return std::make_shared<CancellableContinuationImpl<T>>(delegate, MODE_CANCELLABLE);
 }
 
