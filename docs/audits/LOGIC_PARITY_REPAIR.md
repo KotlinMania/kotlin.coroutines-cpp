@@ -17,7 +17,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
 | t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer and receiving await/unbox frames retain collection, child job and typed results; underlying await uses the cancellable completion protocol | Implemented; focused local acceptance recorded below |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
-| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references, reusable cache ownership and raw reusable ABI wrapper and three direct channel adapters and broadcast send repaired; iterator, other typed receiving adapters, segment reclamation and publication races remain | Partially implemented; bounded evidence below |
+| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references, reusable cache ownership and raw reusable ABI wrapper and three direct channel adapters and broadcast send and iterator prerequisites repaired; other typed receiving adapters, channel receiver lifetime, segment reclamation and publication races remain | Partially implemented; bounded evidence below |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
 | t_d1b9ce81 | Builders.common.kt:140-173; CoroutineScope.kt:280-287; Supervisor.kt:50-66 | withContext and scope builders substitute stack scopes for scope coroutines and omit dispatcher/child-waiting branches | Queued |
 | t_e0acb2be | ASTDistance AST identity and receiver matching | Empty companions and valid extension-to-free-function lowering cause matching false alarms; actual source-path marker equivalence needs proof | Verified, committed 9d9d49ef; 8/8 strict and 8/8 ASan tests |
@@ -1032,4 +1032,54 @@ AsyncTest, test_continuation_dispatch and test_channel_as_flow_smoke pass 3/3
 in Debug (0.95s) and 3/3 in optimized ASan (1.12s). Final source hashes and
 focused build/test logs are in workspace
 automation-artifacts/channel-broadcast-adapter-20261005/receipt.json. No
+CI/configuration change or push was made.
+
+
+## Iterator reusable adapter and stored waiter — 2026-10-05
+
+This bounded t_037fc89b slice follows BufferedChannel.kt:1573-1744. The public
+iterator() signature remains unique_ptr<ChannelIterator<E>>. Its unique handle
+owns an internal shared BufferedChannelIterator, which supplies actual shared
+waiter ownership to channel-cell registration. Dropping the public handle while
+has_next is suspended therefore does not destroy the raw cell waiter. The
+facade only forwards has_next/next; it adds no iterator algorithm.
+
+has_next_on_no_waiter_suspend now calls the repaired reusable factory instead
+of constructing a raw HasNextContinuationAdapter and eagerly initializing a
+normal CCI. It retains/intercepts the compiler frame, uses a typed reusable
+Boolean continuation and returns its owned Boolean box or suspension marker.
+The original receiveResult/continuation store, clear, receive-cell callbacks,
+undelivered handler and getResult order remain. The iterator owns the actual CCI
+while pending, with no duplicate raw continuation alias. The non-original
+try_resume_has_next failure cleanup is removed: Kotlin retains the retrieved
+element even when tryResume fails. The iterator destructor releases an
+unconsumed E box; next still clears receiveResult before returning the element.
+Immediate has_next retains its original no-cancellation-check behavior.
+
+Existing CallFrame/QueueDispatcher regressions cover ten suspended iterator
+cases: normal delivery, cancellation before matching, cancellation after
+matching before dispatch, normal close and exceptional close, each with the
+public handle retained or dropped during suspension. They verify one queued
+dispatch/completion, undelivered counts, exception identity, idempotent has_next,
+next and closed-next behavior, and frame/value release after handle release.
+Non-cancelled-before-match terminal paths also release the frame while the
+public handle remains alive. Immediate tests verify missing-next rejection,
+repeated has_next, next release and destructor release of an unconsumed buffered
+reference while the channel stays alive, with an already cancelled job.
+No harness or target was added.
+
+Before-match cancellation leaves the original iterator continuation field
+intact; this slice does not invent a cancellation callback that clears it.
+Frame release is checked after that iterator handle is dropped. The channel
+receiver remains borrowed and must stay valid through iterator operations and
+callbacks; retaining the inner iterator's outer channel across independent
+channel destruction requires separate ownership work. Raw segment reclamation,
+raw waiter publication/late owner installation, iterator continuation-field
+races and other DeferredCoroutine/select typed adapters remain. No full channel,
+arbitrary channel destruction, all-race or interop acceptance is claimed.
+
+AsyncTest, test_continuation_dispatch and test_channel_as_flow_smoke pass 3/3
+in Debug (1.53s) and 3/3 in optimized ASan (1.22s). Final source hashes and
+focused build/test logs are recorded in workspace
+automation-artifacts/channel-iterator-adapter-20261005/receipt.json. No
 CI/configuration change or push was made.

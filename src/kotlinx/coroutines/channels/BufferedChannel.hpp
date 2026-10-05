@@ -1484,7 +1484,7 @@ public:
     // =========================================================================
 
     std::unique_ptr<ChannelIterator<E>> iterator() override {
-        return std::make_unique<BufferedChannelIterator>(this);
+        return std::make_unique<IteratorHandle>(std::make_shared<BufferedChannelIterator>(this));
     }
 
     // =========================================================================
@@ -3405,13 +3405,24 @@ public:
     // =========================================================================
 
     // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1612-1744
-    class BufferedChannelIterator : public ChannelIterator<E>, public Waiter {
+    class BufferedChannelIterator : public ChannelIterator<E>, public Waiter,
+                                    public std::enable_shared_from_this<BufferedChannelIterator> {
     public:
         BufferedChannelIterator(BufferedChannel<E>* channel)
             : channel_(channel)
             , receive_result_(static_cast<void*>(&NO_RECEIVE_RESULT()))
-            , continuation_(nullptr)
             , continuation_sp_(nullptr) {}
+
+        ~BufferedChannelIterator() override {
+            if (receive_result_ != static_cast<void*>(&NO_RECEIVE_RESULT()) &&
+                receive_result_ != static_cast<void*>(&CHANNEL_CLOSED())) {
+                delete static_cast<E*>(receive_result_);
+            }
+        }
+
+        std::shared_ptr<Waiter> shared_from_this_waiter() override {
+            return this->shared_from_this();
+        }
 
         void* has_next(Continuation<void*>* continuation) override {
             if (receive_result_ != static_cast<void*>(&NO_RECEIVE_RESULT()) &&
@@ -3472,7 +3483,6 @@ public:
 
         bool try_resume_has_next(E element) {
             auto cont = std::move(continuation_sp_);
-            continuation_ = nullptr;
             if (!cont) return false;
             receive_result_ = new E(std::move(element));
             std::function<void(std::exception_ptr, bool, std::shared_ptr<CoroutineContext>)> on_cancellation = nullptr;
@@ -3488,16 +3498,11 @@ public:
                 cont->complete_resume(token);
                 return true;
             }
-            if (receive_result_ != nullptr && receive_result_ != static_cast<void*>(&CHANNEL_CLOSED())) {
-                delete static_cast<E*>(receive_result_);
-                receive_result_ = nullptr;
-            }
             return false;
         }
 
         void try_resume_has_next_on_closed_channel() {
             auto cont = std::move(continuation_sp_);
-            continuation_ = nullptr;
             receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
             if (!cont) return;
             auto cause = channel_->close_cause();
@@ -3509,8 +3514,8 @@ public:
         }
 
         void invoke_on_cancellation(internal::SegmentBase* segment, int index) override {
-            if (continuation_) {
-                continuation_->invoke_on_cancellation(segment, index);
+            if (continuation_sp_) {
+                continuation_sp_->invoke_on_cancellation(segment, index);
             }
         }
 
@@ -3530,63 +3535,31 @@ public:
             int64_t r,
             Continuation<void*>* continuation
         ) {
-            class HasNextContinuationAdapter : public Continuation<bool> {
-                Continuation<void*>* completion_;
-            public:
-                explicit HasNextContinuationAdapter(Continuation<void*>* completion)
-                    : completion_(completion) {}
-
-                std::shared_ptr<CoroutineContext> get_context() const override {
-                    return completion_ ? completion_->get_context() : nullptr;
-                }
-
-                void resume_with(Result<bool> result) override {
-                    if (!completion_) return;
-                    if (result.is_success()) {
-                        completion_->resume_with(Result<void*>::success(new bool(result.get_or_throw())));
-                    } else {
-                        completion_->resume_with(Result<void*>::failure(result.exception_or_null()));
-                    }
-                }
-            };
-
-            auto adapter = std::make_shared<HasNextContinuationAdapter>(continuation);
-            auto cont = std::make_shared<CancellableContinuationImpl<bool>>(
-                adapter, MODE_CANCELLABLE_REUSABLE
-            );
-            cont->init_cancellability();
-
-            continuation_sp_ = cont;
-            continuation_ = cont.get();
-
-            channel_->receive_impl_on_no_waiter(
-                segment, index, r,
-                this,
-                [this, cont](E element) {
-                    this->receive_result_ = new E(std::move(element));
-                    this->continuation_ = nullptr;
-                    this->continuation_sp_ = nullptr;
-                    std::function<void(std::exception_ptr)> on_cancellation = nullptr;
-                    if (channel_->on_undelivered_element()) {
-                        auto elem_copy = *static_cast<E*>(this->receive_result_);
-                        auto channel = channel_;
-                        on_cancellation = [channel, elem_copy](std::exception_ptr) {
-                            channel->on_undelivered_element()(elem_copy);
-                        };
-                    }
-                    cont->resume(true, on_cancellation);
-                },
-                [this]() {
-                    this->on_closed_has_next_no_waiter_suspend();
-                }
-            );
-
-            return cont->get_result();
+            return dsl::suspend_cancellable_coroutine_reusable<bool>(continuation, [&](auto* cont) {
+                continuation_sp_ = cont->shared_from_this();
+                channel_->receive_impl_on_no_waiter(
+                    segment, index, r,
+                    this,
+                    [this, cont](E element) {
+                        receive_result_ = new E(std::move(element));
+                        continuation_sp_ = nullptr;
+                        std::function<void(std::exception_ptr)> on_cancellation = nullptr;
+                        if (channel_->on_undelivered_element()) {
+                            auto elem_copy = *static_cast<E*>(receive_result_);
+                            auto channel = channel_;
+                            on_cancellation = [channel, elem_copy](std::exception_ptr) {
+                                channel->on_undelivered_element()(elem_copy);
+                            };
+                        }
+                        cont->resume(true, on_cancellation);
+                    },
+                    [this]() { on_closed_has_next_no_waiter_suspend(); }
+                );
+            });
         }
 
         void on_closed_has_next_no_waiter_suspend() {
             auto cont = std::move(this->continuation_sp_);
-            this->continuation_ = nullptr;
             this->receive_result_ = static_cast<void*>(&CHANNEL_CLOSED());
             if (!cont) return;
             auto cause = channel_->close_cause();
@@ -3599,9 +3572,24 @@ public:
 
         BufferedChannel<E>* channel_;
         void* receive_result_;
-        CancellableContinuationImpl<bool>* continuation_;
         std::shared_ptr<CancellableContinuationImpl<bool>> continuation_sp_;
     };
+
+private:
+    /** Unique public handle owning the shared iterator used as a channel-cell waiter. */
+    class IteratorHandle final : public ChannelIterator<E> {
+        std::shared_ptr<BufferedChannelIterator> iterator_;
+    public:
+        explicit IteratorHandle(std::shared_ptr<BufferedChannelIterator> iterator)
+            : iterator_(std::move(iterator)) {}
+
+        void* has_next(Continuation<void*>* continuation) override {
+            return iterator_->has_next(continuation);
+        }
+
+        E next() override { return iterator_->next(); }
+    };
+
 };
 
 } // namespace channels

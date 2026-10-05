@@ -1026,7 +1026,117 @@ void test_channel_broadcast_immediate_and_closed() {
     assert_true(dispatcher->queue.empty());
 }
 
+void test_channel_iterator_dispatch_and_lifetime(int mode, bool drop_handle) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto job = JobImpl::create(nullptr);
+    std::shared_ptr<CoroutineContext> context = (mode == 1 || mode == 2)
+        ? job->operator+(dispatcher) : dispatcher;
+    auto parent = std::make_shared<RecordingContinuation>(context);
+    std::vector<int> undelivered;
+    auto channel = std::make_shared<channels::BufferedChannel<std::shared_ptr<int>>>(
+        0, [&](auto value) { undelivered.push_back(*value); });
+    auto holder = std::make_shared<std::unique_ptr<channels::ChannelIterator<std::shared_ptr<int>>>>(
+        channel->iterator());
+    auto frame = std::make_shared<CallFrame>(parent, [holder, channel](auto* continuation) {
+        return (*holder)->has_next(continuation);
+    });
+    std::weak_ptr<CallFrame> retained_frame = frame;
+    assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    frame.reset();
+    if (drop_handle) holder->reset();
+    std::weak_ptr<int> retained_value;
+    std::exception_ptr cause;
+    if (mode == 1) job->cancel();
+    else if (mode == 3 || mode == 4) {
+        if (mode == 4) cause = std::make_exception_ptr(std::runtime_error("iterator close"));
+        channel->close(cause);
+    } else {
+        auto value = std::make_shared<int>(42);
+        retained_value = value;
+        assert_true(channel->try_send(value).is_success());
+        value.reset();
+        if (mode == 2) job->cancel();
+    }
+    assert_equals(0, parent->resumes);
+    assert_equals(size_t(1), dispatcher->queue.size());
+    dispatcher->drain();
+    assert_equals(1, parent->resumes);
+    if (mode == 1 || mode == 2 || mode == 4) {
+        assert_false(parent->result.is_success());
+        if (mode == 4) assert_true(parent->result.exception_or_null() == cause);
+    } else {
+        std::unique_ptr<bool> result(static_cast<bool*>(parent->result.get_or_throw()));
+        assert_equals(mode == 0, *result);
+        if (!drop_handle && mode == 0) {
+            std::unique_ptr<bool> repeated(static_cast<bool*>((*holder)->has_next(parent.get())));
+            assert_true(*repeated);
+            {
+                auto value = (*holder)->next();
+                assert_equals(42, *value);
+            }
+            assert_equals(1, parent->resumes);
+            assert_true(dispatcher->queue.empty());
+        }
+        if (!drop_handle && mode == 3) {
+            bool closed = false;
+            try { (*holder)->next(); }
+            catch (const channels::ClosedReceiveChannelException&) { closed = true; }
+            assert_true(closed);
+        }
+    }
+    assert_true(undelivered == (mode == 2 ? std::vector<int>({42}) : std::vector<int>{}));
+    if (mode != 1) assert_true(retained_frame.expired(), "resumed iterator retained completed frame");
+    holder->reset();
+    assert_true(retained_frame.expired(), "iterator retained completed frame after handle release");
+    assert_true(retained_value.expired(), "iterator retained element after handle release");
+}
+
+void test_channel_iterator_immediate_result_ownership() {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto job = JobImpl::create(nullptr);
+    job->cancel();
+    auto parent = std::make_shared<RecordingContinuation>(job->operator+(dispatcher));
+    auto channel = std::make_shared<channels::BufferedChannel<std::shared_ptr<int>>>(1);
+    auto iterator = channel->iterator();
+    bool missing = false;
+    try { iterator->next(); }
+    catch (const std::logic_error&) { missing = true; }
+    assert_true(missing);
+    auto value = std::make_shared<int>(42);
+    std::weak_ptr<int> retained = value;
+    assert_true(channel->try_send(value).is_success());
+    value.reset();
+    {
+        std::unique_ptr<bool> result(static_cast<bool*>(iterator->has_next(parent.get())));
+        assert_true(*result);
+        std::unique_ptr<bool> repeated(static_cast<bool*>(iterator->has_next(parent.get())));
+        assert_true(*repeated);
+        auto element = iterator->next();
+        assert_equals(42, *element);
+    }
+    assert_true(retained.expired());
+    value = std::make_shared<int>(84);
+    retained = value;
+    assert_true(channel->try_send(value).is_success());
+    value.reset();
+    {
+        std::unique_ptr<bool> result(static_cast<bool*>(iterator->has_next(parent.get())));
+        assert_true(*result);
+    }
+    assert_false(retained.expired());
+    iterator.reset();
+    assert_true(retained.expired(), "unconsumed iterator result retained");
+    assert_equals(0, parent->resumes);
+    assert_true(dispatcher->queue.empty());
+}
+
 int main() {
+    std::cerr << "test_channel_iterator_dispatch_and_lifetime\n";
+    for (int mode : {0, 1, 2, 3, 4}) for (bool drop : {false, true}) {
+        std::cerr << "  iterator mode=" << mode << " drop=" << drop << '\n';
+        test_channel_iterator_dispatch_and_lifetime(mode, drop);
+    }
+    test_channel_iterator_immediate_result_ownership();
     std::cerr << "test_channel_broadcast_dispatch_and_cancellation\n";
     for (int capacity : {0, 1}) for (int mode : {0, 1, 2, 3}) {
         std::cerr << "  broadcast capacity=" << capacity << " cancel=" << mode << '\n';
