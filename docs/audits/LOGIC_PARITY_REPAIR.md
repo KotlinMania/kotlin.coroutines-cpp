@@ -17,7 +17,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
 | t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer and receiving await/unbox frames retain collection, child job and typed results; underlying await uses the cancellable completion protocol | Implemented; focused local acceptance recorded below |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
-| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references, reusable cache ownership and raw reusable ABI wrapper and three direct channel adapters repaired; iterator/broadcast, other typed receiving adapters, segment reclamation and publication races remain | Partially implemented; bounded evidence below |
+| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references, reusable cache ownership and raw reusable ABI wrapper and three direct channel adapters and broadcast send repaired; iterator, other typed receiving adapters, segment reclamation and publication races remain | Partially implemented; bounded evidence below |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
 | t_d1b9ce81 | Builders.common.kt:140-173; CoroutineScope.kt:280-287; Supervisor.kt:50-66 | withContext and scope builders substitute stack scopes for scope coroutines and omit dispatcher/child-waiting branches | Queued |
 | t_e0acb2be | ASTDistance AST identity and receiver matching | Empty companions and valid extension-to-free-function lowering cause matching false alarms; actual source-path marker equivalence needs proof | Verified, committed 9d9d49ef; 8/8 strict and 8/8 ASan tests |
@@ -985,4 +985,51 @@ AsyncTest, test_continuation_dispatch and test_channel_as_flow_smoke pass 3/3
 in Debug (1.15s) and 3/3 in optimized ASan (1.41s). Final focused build/test
 logs and source hashes are recorded in workspace
 automation-artifacts/channel-direct-adapters-20261005/receipt.json. No
+CI/configuration change or push was made.
+
+
+## Broadcast channel send adapter — 2026-10-05
+
+This bounded t_037fc89b slice follows BufferedChannel.kt:218-236 and the inline
+sendImpl loop at 244-349. send_broadcast now uses the existing normal cancellable
+factory, which retains the compiler frame, intercepts the typed continuation,
+initializes cancellability before the block and obtains get_result afterwards.
+The unsupported undelivered-handler check is inside that block as in the
+original. The invalid cross-template continuation cast and unconditional
+COROUTINE_SUSPENDED returns are removed.
+
+SendBroadcast owns its bool CCI and provides actual shared waiter ownership to
+the existing segment registration. The send path follows the original segment
+load, counter acquisition, lookup, closed-status and cell-result branches.
+RESULT_FAILED retries the loop with the same waiter and factory instance; it
+does not recurse into a new suspension factory. Rendezvous cleans the previous
+segment before success; the closed suspension and RESULT_CLOSED branches keep
+their original cleanup. Channel cancellation resumes false through the existing
+SendBroadcast closed-waiter case; job cancellation remains exceptional. The
+Boolean ABI result is an owned box on immediate and resumed paths. No channel
+CAS/publication or segment-reclamation algorithm was added.
+
+The existing test_continuation_dispatch target covers eight suspended broadcast
+cases at capacities zero and one: normal delivery, job cancellation before
+matching, job cancellation after matching before dispatch, and channel
+cancellation. Checks cover one queued dispatch, exact completion count, Boolean
+versus exceptional results and frame/value release while the channel stays
+alive. Immediate buffered send, normal/exceptional closed-channel false results,
+unsupported-handler rejection, immediate rendezvous and retry past an
+interrupted receiver are also exercised. No harness or target was added.
+
+The iterator remains a separate repair: has_next_on_no_waiter_suspend constructs
+a raw HasNextContinuationAdapter and directly initializes a reusable CCI,
+bypassing interception and the reusable factory. The public iterator API returns
+a unique_ptr, while its cell waiter is the raw iterator itself and cannot supply
+shared waiter ownership. Its result is also an owning raw E box without a
+destructor release path. These differ from the original inner iterator's
+retained object and value references. No iterator lifetime/publication acceptance
+is claimed. Raw segment reclamation, late waiter-owner installation and other
+DeferredCoroutine/select typed adapters remain recorded on the card.
+
+AsyncTest, test_continuation_dispatch and test_channel_as_flow_smoke pass 3/3
+in Debug (0.95s) and 3/3 in optimized ASan (1.12s). Final source hashes and
+focused build/test logs are in workspace
+automation-artifacts/channel-broadcast-adapter-20261005/receipt.json. No
 CI/configuration change or push was made.

@@ -476,16 +476,19 @@ public:
  * Used by BroadcastChannel to wrap send continuations.
  * Implements Waiter by delegating to the underlying CancellableContinuationImpl.
  */
-class SendBroadcast : public Waiter {
+class SendBroadcast : public Waiter, public std::enable_shared_from_this<SendBroadcast> {
 public:
-    // @JvmField val cont: CancellableContinuation<Boolean>
-    CancellableContinuationImpl<bool>* cont;
+    std::shared_ptr<CancellableContinuationImpl<bool>> cont;
 
-    explicit SendBroadcast(CancellableContinuationImpl<bool>* c) : cont(c) {}
+    explicit SendBroadcast(std::shared_ptr<CancellableContinuationImpl<bool>> continuation)
+        : cont(std::move(continuation)) {}
 
-    // Waiter interface delegation
     void invoke_on_cancellation(internal::SegmentBase* segment, int index) override {
         cont->invoke_on_cancellation(segment, index);
+    }
+
+    std::shared_ptr<Waiter> shared_from_this_waiter() override {
+        return shared_from_this();
     }
 };
 
@@ -1029,68 +1032,63 @@ public:
     }
 
     /**
-     * Special send implementation for BroadcastChannel.
-     * Returns true if the element was sent, false if the channel is closed.
-     * The onUndeliveredElement feature is not supported.
-     *
-     * Transliterated from: internal open suspend fun sendBroadcast(element: E): Boolean
+     * Sends an element for a broadcast subscription, returning an owned bool result.
+     * Returns true when sent and false when the channel is closed.
+     * An undelivered-element handler is unsupported.
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:218-236,244-349
     virtual void* send_broadcast(E element, Continuation<void*>* continuation) {
-        if (on_undelivered_element_) {
-            throw std::logic_error("the `onUndeliveredElement` feature is unsupported for `sendBroadcast(e)`");
-        }
-
-        // Create a CancellableContinuationImpl for the result
-        auto cont = std::make_shared<CancellableContinuationImpl<bool>>(
-            std::dynamic_pointer_cast<Continuation<bool>>(
-                std::shared_ptr<Continuation<void*>>(continuation, [](Continuation<void*>*){})
-            ),
-            MODE_CANCELLABLE
-        );
-
-        auto* waiter = new SendBroadcast(cont.get());
-
-        // Get segment and counter
-        int64_t senders_and_close_status_cur = senders_and_close_status_.fetch_add(1, std::memory_order_acq_rel);
-        int64_t s = channels::senders_counter(senders_and_close_status_cur);
-        bool closed = is_closed_for_send_internal(senders_and_close_status_cur);
-
-        int64_t id = s / SEGMENT_SIZE;
-        int i = static_cast<int>(s % SEGMENT_SIZE);
-
-        ChannelSegment<E>* segment = send_segment_.load(std::memory_order_acquire);
-        if (segment->id != id) {
-            segment = find_segment_send(id, segment);
-            if (segment == nullptr) {
-                if (closed) {
-                    delete waiter;
-                    cont->resume_with(Result<bool>::success(false));
-                    return COROUTINE_SUSPENDED;
+        return suspend_cancellable_coroutine<bool>([&](CancellableContinuation<bool>& continuation) {
+            if (on_undelivered_element_) {
+                throw std::logic_error("the `onUndeliveredElement` feature is unsupported for `sendBroadcast(e)`");
+            }
+            auto cont = dynamic_cast<CancellableContinuationImpl<bool>&>(continuation).shared_from_this();
+            auto waiter = std::make_shared<SendBroadcast>(cont);
+            ChannelSegment<E>* segment = send_segment_.load(std::memory_order_acquire);
+            while (true) {
+                int64_t current = senders_and_close_status_.fetch_add(1, std::memory_order_acq_rel);
+                int64_t s = channels::senders_counter(current);
+                bool closed = is_closed_for_send_internal(current);
+                int64_t id = s / SEGMENT_SIZE;
+                int i = static_cast<int>(s % SEGMENT_SIZE);
+                if (segment->id != id) {
+                    segment = find_segment_send(id, segment);
+                    if (segment == nullptr) {
+                        if (closed) {
+                            cont->resume(false, nullptr);
+                            return;
+                        }
+                        continue;
+                    }
+                }
+                switch (update_cell_send(segment, i, element, s, waiter.get(), closed)) {
+                    case RESULT_RENDEZVOUS:
+                        segment->clean_prev();
+                        cont->resume(true, nullptr);
+                        return;
+                    case RESULT_BUFFERED:
+                        cont->resume(true, nullptr);
+                        return;
+                    case RESULT_SUSPEND:
+                        if (closed) {
+                            segment->on_slot_cleaned();
+                            cont->resume(false, nullptr);
+                        } else {
+                            prepare_sender_for_suspension(waiter.get(), segment, i);
+                        }
+                        return;
+                    case RESULT_CLOSED:
+                        if (s < receivers_counter()) segment->clean_prev();
+                        cont->resume(false, nullptr);
+                        return;
+                    case RESULT_FAILED:
+                        segment->clean_prev();
+                        continue;
+                    default:
+                        throw std::logic_error("unexpected broadcast send cell result");
                 }
             }
-        }
-
-        int result = update_cell_send(segment, i, element, s, waiter, closed);
-        switch (result) {
-            case RESULT_RENDEZVOUS:
-            case RESULT_BUFFERED:
-                delete waiter;
-                cont->resume_with(Result<bool>::success(true));
-                return COROUTINE_SUSPENDED;
-            case RESULT_SUSPEND:
-                if (!closed) {
-                    prepare_sender_for_suspension(waiter, segment, i);
-                }
-                return COROUTINE_SUSPENDED;
-            case RESULT_CLOSED:
-                delete waiter;
-                cont->resume_with(Result<bool>::success(false));
-                return COROUTINE_SUSPENDED;
-            default:
-                // RESULT_FAILED - retry
-                delete waiter;
-                return send_broadcast(element, continuation);
-        }
+        }, continuation);
     }
 
     // =========================================================================
