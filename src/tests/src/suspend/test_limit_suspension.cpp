@@ -1,11 +1,9 @@
-/**
- * Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/TakeTest.kt
- * Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/DropTest.kt
- * Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/DropWhileTest.kt
- * Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/TakeWhileTest.kt
- * Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/TransformWhileTest.kt
- * Continuation ABI regressions for Limit.kt emission, predicates and ownership.
- */
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/TakeTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/DropTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/DropWhileTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/TakeWhileTest.kt
+// Transliterated from: kotlinx-coroutines-core/common/test/flow/operators/TransformWhileTest.kt
+/** Continuation ABI regressions for limiting-flow emission, predicates and ownership. */
 #include "kotlinx/coroutines/flow/Limit.hpp"
 #include "kotlinx/coroutines/testing/TestBase.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"

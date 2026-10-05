@@ -1,8 +1,7 @@
 #pragma once
 // port-lint: source flow/operators/Limit.kt
-/**
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt
- */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt
+/** @file Limit.hpp Flow operators that discard initial elements or retain a prefix. */
 
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
@@ -21,7 +20,7 @@ namespace kotlinx::coroutines::flow {
 
 namespace detail {
 
-// NOTE(port): Adapt non-suspending C++ callables to the suspend Boolean ABI.
+// Adapt non-suspending callables to the suspend Boolean ABI.
 // The receiving frame owns and deletes the Boolean box on either result path.
 template<typename Predicate, typename... Args>
 void* invoke_limit_predicate(Predicate& predicate, Continuation<void*>* continuation, Args&&... args) {
@@ -35,7 +34,10 @@ void* invoke_limit_predicate(Predicate& predicate, Continuation<void*>* continua
 
 } // namespace detail
 
-/** Returns a flow that ignores the first count elements. */
+/**
+ * Returns a flow that ignores the first @p count elements of @p upstream.
+ * @throws std::invalid_argument if @p count is negative.
+ */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:17-26
 template<typename T>
 std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
@@ -70,7 +72,7 @@ std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
             FlowCollector<T>* collector_;
             int count_;
             int skipped_ = 0;
-            // NOTE(port): Retain the captured collector until collection terminates, not until its Job ends.
+            // Retain the captured collector until collection terminates.
             std::shared_ptr<BaseContinuationImpl> self_ref_;
         };
         auto frame = std::make_shared<CollectFrame>(upstream, collector, count, cont);
@@ -79,7 +81,16 @@ std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
     });
 }
 
-/** Returns a flow containing all elements except the first elements satisfying predicate. */
+/**
+ * Returns a flow containing all elements except the initial elements satisfying
+ * @p predicate. Once the predicate returns false, that element and all remaining
+ * elements are emitted without evaluating the predicate again.
+ *
+ * A suspending callable accepts (value, Continuation<void*>*) and returns either
+ * intrinsics::get_COROUTINE_SUSPENDED() or a heap-allocated bool. The receiving
+ * frame deletes the bool after reading it. A synchronous bool(value) callable is
+ * also accepted.
+ */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:30-40
 template<typename T, typename Predicate>
 std::shared_ptr<Flow<T>> drop_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
@@ -156,7 +167,11 @@ template<typename T>
 void* emit_abort(FlowCollector<T>* collector, T value, void* ownership_marker, Continuation<void*>* completion);
 } // namespace detail
 
-/** Returns a flow containing the first count elements, then cancels the upstream flow. */
+/**
+ * Returns a flow containing the first @p count elements of @p upstream.
+ * Upstream collection is cancelled after the final downstream emission completes.
+ * @throws std::invalid_argument if @p count is not positive.
+ */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:47-68
 template<typename T>
 std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
@@ -181,7 +196,7 @@ std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
                 }
             }
             void* emit(T value, Continuation<void*>* completion) override {
-                // Check the condition first, then tail-call emit or emitAbort.
+                // Check the condition first, then tail-call emit or emit_abort.
                 // Only the terminating emission needs its own state machine.
                 if (++consumed_ < count_) return collector_->emit(std::move(value), completion);
                 return detail::emit_abort(collector_, std::move(value), &ownership_marker_, completion);
@@ -245,7 +260,16 @@ void* emit_abort(FlowCollector<T>* collector, T value, void* ownership_marker, C
 template<typename T, typename Predicate>
 void* collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<void*>* cont = nullptr);
 
-/** Returns the first elements satisfying predicate, excluding the first false element. */
+/**
+ * Returns a flow containing the initial elements satisfying @p predicate.
+ * The element for which the predicate returns false is excluded.
+ *
+ * A suspending callable accepts (value, Continuation<void*>*) and returns either
+ * intrinsics::get_COROUTINE_SUSPENDED() or a heap-allocated bool, consumed and
+ * deleted by the receiving frame. A synchronous bool(value) callable is also
+ * accepted.
+ * @see transform_while for a more flexible operator.
+ */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:81-90
 template<typename T, typename Predicate>
 std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
@@ -289,7 +313,33 @@ std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate
     });
 }
 
-/** Applies transform to each element while it returns true, including the last transformed element. */
+/**
+ * Applies @p transform_fn to each value of @p upstream while it returns true.
+ * The callable receives a FlowCollector<R>* and may transform the value, skip it,
+ * or emit it multiple times. Emissions made by the call returning false are kept.
+ *
+ * A suspending transform accepts (collector, value, Continuation<void*>*) and
+ * returns intrinsics::get_COROUTINE_SUSPENDED() or a heap-allocated bool. The
+ * receiving frame consumes and deletes that result. A synchronous
+ * bool(collector, value) transform is also accepted; any emission that can suspend
+ * requires the continuation-based form. The exposed collector enforces the flow
+ * context and exception-transparency rules.
+ *
+ * This operator generalizes take_while and can build other limiting operators.
+ * A download-progress transform can emit the final update before stopping. For
+ * example, a retained ContinuationImpl frame with collector_ and progress_ fields
+ * uses this body; its factory supplies the completion and retains the frame:
+ * @code{.cpp}
+ * void* invoke_suspend(Result<void*> result) override {
+ *     coroutine_begin(this)
+ *     coroutine_yield(this, collector_->emit(progress_, this));
+ *     return new bool(!progress_.is_done());
+ * }
+ * @endcode
+ * The frame also owns its resume label and releases its retained lifetime when
+ * invocation terminates. The final progress value is emitted even when is_done()
+ * is true, whereas take_while excludes the first value failing its predicate.
+ */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:112-120
 template<typename T, typename R, typename Transform>
 std::shared_ptr<Flow<R>> transform_while(std::shared_ptr<Flow<T>> upstream, Transform transform_fn) {
@@ -301,7 +351,13 @@ std::shared_ptr<Flow<R>> transform_while(std::shared_ptr<Flow<T>> upstream, Tran
     });
 }
 
-// Internal building block for non-tail-calling flow-truncating operators.
+/**
+ * Internal building block for flow-truncating operators with non-tail suspension.
+ * Evaluates @p predicate before deciding whether to abort upstream collection.
+ * A suspended predicate resumes that decision after producing its bool result.
+ * Only this collector's abort is handled; its catch then checks cancellation of
+ * the current context. Unrelated aborts and other failures propagate.
+ */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:123-140
 template<typename T, typename Predicate>
 void* collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<void*>* cont) {
@@ -316,6 +372,8 @@ void* collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Cont
             void retain() { self_ref_ = shared_from_this(); }
             void* invoke_suspend(Result<void*> result) override {
                 coroutine_begin(this)
+                // Evaluate the predicate first, then abort. A suspended predicate
+                // must resume the remaining branch, including when it emits values.
                 coroutine_yield_value(this, result,
                     detail::invoke_limit_predicate(owner_->predicate_, this, value_), predicate_result_);
                 if (!*std::unique_ptr<bool>(static_cast<bool*>(predicate_result_))) {

@@ -248,3 +248,68 @@ copy manifests and source/binary hashes are retained under
 `/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-ast-limit-score/`.
 Only local commits and developer executables were produced; no push, release,
 deployment or workflow changes were performed.
+
+## Limit control-flow and documentation verification — 2026-10-04
+
+Sydney requested algorithmic control-flow verification independently of the
+similarity score, and API documentation describing C++ rather than retaining
+Kotlin references. Follow-up card t_fb2e14d7 covers this bounded work. The
+original complete Limit.kt and current Limit.hpp were reviewed again. No new
+algorithm divergence was confirmed: branch order, tail emissions, non-tail
+predicate/emission suspension, owned abort handling, and the distinct take versus
+collectWhile cancellation contracts remain as described above.
+
+Current C++ entry lines after documentation restoration are drop:43,
+drop_while:96, take:177, detail::emit_abort:228, take_while:275,
+transform_while:345 and collect_while:363. Earlier line references in the
+implementation and scorer sections are historical receipts from their commits.
+
+The API docstrings now retain the original operator contracts, including count
+validation, exclusion of the first false predicate value, multiple/skipped
+transform emissions, and retention of emissions from the terminating transform.
+They describe actual C++ callable signatures, Boolean-result ownership,
+std::invalid_argument, continuation lifetime and collector restrictions. The
+download-progress example uses the existing continuation macros and emits its
+final progress before returning false. Source provenance remains separate plain
+metadata comments, outside Doxygen blocks. A string/raw-string-aware lexical
+comparison confirms all non-comment tokens in both edited source files are
+unchanged. Documentation line shifts can change macro label names, so the
+affected target and IR tests were rebuilt and run.
+
+Independent executable comparison used the repository's original Limit.kt
+function bodies with cached Kotlin JVM compiler 2.4.0 and coroutines 1.11.0.
+Only the JVM facade annotation was renamed from FlowKt to ParityLimit to avoid
+shadowing dependency builders; no algorithm bodies changed. Bytecode inspection
+confirms calls to the compiled original operators rather than dependency copies.
+The C++ harness uses production Limit.hpp and the existing retained source-flow
+test fixture. Kotlin and C++ produced exactly **26 matching state snapshots**
+across eight scenarios: drop, take, dropWhile, takeWhile, transformWhile with two
+suspended emissions per input, failure during take's final downstream emission,
+suspended predicate failure, and nested take ownership. Each snapshot records
+emitted values, completed upstream emits, upstream finally calls, predicate
+calls, completion calls, failure state and the pending suspension kind. This
+demonstrates matching observed control flow for these scenarios; it is not a
+proof for every input, scheduler, Kotlin backend or coroutine primitive.
+
+Validation for this documentation follow-up:
+
+- Rebuilt Debug Limit executable: all 18 suspension/ownership/lifetime/
+  cancellation checks pass; focused Limit and IR CTests 2/2, 27.05s.
+- Rebuilt optimized AddressSanitizer Limit executable: all 18 checks pass;
+  focused Limit and IR CTests 2/2, 26.86s.
+- The exact Doxygen method excerpt compiles in a retained frame under optimized
+  AddressSanitizer and passes two suspended progress emissions, retaining the
+  final progress and excluding the subsequent input.
+- ASTDistance still pairs 8/8 with body score 0.045. The unsupported suspension
+  normalization boundary remains; the score is not semantic acceptance evidence.
+
+Reproducible Kotlin/C++ harnesses, original-source hash/adaptation receipt,
+bytecode verification, full state traces, lexical/documentation checks, build and
+test logs are under
+`/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-limit-doc-parity/`.
+The prior full Debug 25/25 and optimized ASan 33/33 gates are historical results
+above; this follow-up reran the affected Limit/IR gates, not the whole suite.
+No other production files, continuation ABI or algorithms changed. The parent
+repair and other operator/compiler cards remain open. Workflow shape remains
+unchanged: only codeql.yml, with weekly schedule and manual dispatch. No push,
+PR, deployment, live model call or remote workflow change was made.
