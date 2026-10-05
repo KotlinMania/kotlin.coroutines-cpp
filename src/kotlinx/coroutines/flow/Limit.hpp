@@ -1,9 +1,6 @@
 #pragma once
 // port-lint: source flow/operators/Limit.kt
 /**
- * @file Limit.hpp
- * @brief Flow operators that limit emissions: drop, dropWhile, take, takeWhile, transformWhile
- *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt
  */
 
@@ -11,278 +8,368 @@
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
 #include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/Job.hpp"
-#include <functional>
-#include <stdexcept>
 #include <memory>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 #include <utility>
 
-namespace kotlinx {
-namespace coroutines {
-namespace flow {
+namespace kotlinx::coroutines::flow {
 
-/**
- * Returns a flow that ignores first count elements.
- *
- * This operator transforms the upstream flow by skipping the specified number
- * of elements from the beginning, then passing through all remaining elements.
- *
- * @param upstream The flow to transform
- * @param count The number of elements to skip (must be non-negative)
- * @return A new flow that skips the first count elements
- *
- * @throws std::invalid_argument if count is negative
- */
+namespace detail {
+
+// NOTE(port): Adapt non-suspending C++ callables to the suspend Boolean ABI.
+// The receiving frame owns and deletes the Boolean box on either result path.
+template<typename Predicate, typename... Args>
+void* invoke_limit_predicate(Predicate& predicate, Continuation<void*>* continuation, Args&&... args) {
+    if constexpr (std::is_invocable_v<Predicate&, Args..., Continuation<void*>*>) {
+        static_assert(std::is_same_v<std::invoke_result_t<Predicate&, Args..., Continuation<void*>*>, void*>);
+        return predicate(std::forward<Args>(args)..., continuation);
+    } else {
+        return new bool(predicate(std::forward<Args>(args)...));
+    }
+}
+
+} // namespace detail
+
+/** Returns a flow that ignores the first count elements. */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:17-26
 template<typename T>
 std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) {
-    if (count < 0) throw std::invalid_argument("Drop count should be non-negative");
-
+    if (count < 0) throw std::invalid_argument("Drop count should be non-negative, but had " + std::to_string(count));
     return internal::unsafe_flow<T>([upstream, count](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
-        class DropCollector : public FlowCollector<T> {
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:19-25
+        class CollectFrame final : public ContinuationImpl, public FlowCollector<T> {
         public:
+            CollectFrame(std::shared_ptr<Flow<T>> upstream, FlowCollector<T>* collector, int count,
+                         Continuation<void*>* completion)
+                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+                  upstream_(std::move(upstream)), collector_(collector), count_(count) {}
+            void retain() { self_ref_ = shared_from_this(); }
+            void* invoke_suspend(Result<void*> result) override {
+                coroutine_begin(this)
+                coroutine_yield(this, upstream_->collect(this, this));
+                coroutine_end(this)
+            }
+            void* emit(T value, Continuation<void*>* completion) override {
+                if (skipped_ >= count_) return collector_->emit(std::move(value), completion);
+                ++skipped_;
+                return nullptr;
+            }
+        protected:
+            void release_intercepted() override {
+                ContinuationImpl::release_intercepted();
+                self_ref_.reset();
+            }
+        private:
+            void* _label = nullptr;
+            std::shared_ptr<Flow<T>> upstream_;
             FlowCollector<T>* collector_;
             int count_;
-            int skipped_{0};
-            DropCollector(FlowCollector<T>* c, int cnt) : collector_(c), count_(cnt) {}
-            void* emit(T value, Continuation<void*>* c) override {
-                if (skipped_ >= count_) {
-                    return collector_->emit(std::move(value), c);
-                } else {
-                    ++skipped_;
-                    return nullptr;
-                }
-            }
+            int skipped_ = 0;
+            // NOTE(port): Retain the captured collector until collection terminates, not until its Job ends.
+            std::shared_ptr<BaseContinuationImpl> self_ref_;
         };
-        auto drop_collector = std::make_shared<DropCollector>(collector, count);
-        if (cont && cont->get_context()) {
-            auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
-            if (job) {
-                job->invoke_on_completion([drop_collector](std::exception_ptr) {});
-            }
-        }
-        return upstream->collect(drop_collector.get(), cont);
+        auto frame = std::make_shared<CollectFrame>(upstream, collector, count, cont);
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
     });
 }
 
-/**
- * Returns a flow containing all elements except first elements that satisfy the given predicate.
- *
- * This operator skips elements from the beginning of the flow while the predicate
- * returns true, then emits all remaining elements (including the first one that
- * doesn't satisfy the predicate).
- *
- * @param upstream The flow to transform
- * @param predicate The predicate function to test elements
- * @return A new flow that skips elements while predicate is true
- */
+/** Returns a flow containing all elements except the first elements satisfying predicate. */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:30-40
 template<typename T, typename Predicate>
 std::shared_ptr<Flow<T>> drop_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
     return internal::unsafe_flow<T>([upstream, predicate](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
-        class DropWhileCollector : public FlowCollector<T> {
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:30-40
+        class CollectFrame final : public ContinuationImpl, public FlowCollector<T> {
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:35-38
+            class EmitFrame final : public ContinuationImpl {
+            public:
+                EmitFrame(CollectFrame* owner, T value, Continuation<void*>* completion)
+                    : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+                      owner_(owner), value_(std::move(value)) {}
+                void retain() { self_ref_ = shared_from_this(); }
+                void* invoke_suspend(Result<void*> result) override {
+                    coroutine_begin(this)
+                    coroutine_yield_value(this, result,
+                        detail::invoke_limit_predicate(owner_->predicate_, this, value_), predicate_result_);
+                    if (!*std::unique_ptr<bool>(static_cast<bool*>(predicate_result_))) {
+                        owner_->matched_ = true;
+                        coroutine_yield(this, owner_->collector_->emit(std::move(value_), this));
+                    }
+                    coroutine_end(this)
+                }
+            protected:
+                void release_intercepted() override {
+                    ContinuationImpl::release_intercepted();
+                    self_ref_.reset();
+                }
+            private:
+                void* _label = nullptr;
+                CollectFrame* owner_;
+                T value_;
+                void* predicate_result_ = nullptr;
+                std::shared_ptr<BaseContinuationImpl> self_ref_;
+            };
         public:
+            CollectFrame(std::shared_ptr<Flow<T>> upstream, FlowCollector<T>* collector, Predicate predicate,
+                         Continuation<void*>* completion)
+                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+                  upstream_(std::move(upstream)), collector_(collector), predicate_(std::move(predicate)) {}
+            void retain() { self_ref_ = shared_from_this(); }
+            void* invoke_suspend(Result<void*> result) override {
+                coroutine_begin(this)
+                coroutine_yield(this, upstream_->collect(this, this));
+                coroutine_end(this)
+            }
+            void* emit(T value, Continuation<void*>* completion) override {
+                if (matched_) return collector_->emit(std::move(value), completion);
+                auto frame = std::make_shared<EmitFrame>(this, std::move(value), completion);
+                frame->retain();
+                return frame->start(Result<void*>::success(nullptr));
+            }
+        protected:
+            void release_intercepted() override {
+                ContinuationImpl::release_intercepted();
+                self_ref_.reset();
+            }
+        private:
+            void* _label = nullptr;
+            std::shared_ptr<Flow<T>> upstream_;
             FlowCollector<T>* collector_;
             Predicate predicate_;
-            bool matched_{false};
-            DropWhileCollector(FlowCollector<T>* c, Predicate p) : collector_(c), predicate_(p) {}
-            void* emit(T value, Continuation<void*>* c) override {
-                if (matched_) {
-                    return collector_->emit(std::move(value), c);
-                } else if (!predicate_(value)) {
-                    matched_ = true;
-                    return collector_->emit(std::move(value), c);
-                }
-                return nullptr;
-            }
+            bool matched_ = false;
+            std::shared_ptr<BaseContinuationImpl> self_ref_;
         };
-        auto dw_collector = std::make_shared<DropWhileCollector>(collector, predicate);
-        if (cont && cont->get_context()) {
-            auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
-            if (job) {
-                job->invoke_on_completion([dw_collector](std::exception_ptr) {});
-            }
-        }
-        return upstream->collect(dw_collector.get(), cont);
+        auto frame = std::make_shared<CollectFrame>(upstream, collector, predicate, cont);
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
     });
 }
 
-/**
- * Returns a flow that contains first count elements.
- *
- * This operator transforms the upstream flow by emitting only the specified
- * number of elements from the beginning, then cancelling the upstream flow.
- *
- * @param upstream The flow to transform
- * @param count The number of elements to take (must be positive)
- * @return A new flow that emits only the first count elements
- *
- * @throws std::invalid_argument if count is not positive
- */
+namespace detail {
+template<typename T>
+void* emit_abort(FlowCollector<T>* collector, T value, void* ownership_marker, Continuation<void*>* completion);
+} // namespace detail
+
+/** Returns a flow containing the first count elements, then cancels the upstream flow. */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:47-68
 template<typename T>
 std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
-    if (count <= 0) throw std::invalid_argument("Requested element count should be positive");
-
+    if (count <= 0) throw std::invalid_argument("Requested element count " + std::to_string(count) + " should be positive");
     return internal::unsafe_flow<T>([upstream, count](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
-        class TakeCollector : public FlowCollector<T> {
-            FlowCollector<T>* down_;
-            int limit_;
-            int consumed_{0};
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:49-67
+        class CollectFrame final : public ContinuationImpl, public FlowCollector<T> {
         public:
-            TakeCollector(FlowCollector<T>* d, int l) : down_(d), limit_(l) {}
-            void* emit(T value, Continuation<void*>* c) override {
-                consumed_++;
-                if (consumed_ < limit_) {
-                    return down_->emit(std::move(value), c);
-                } else {
-                    down_->emit(std::move(value), c);
-                    throw internal::AbortFlowException(this);
+            CollectFrame(std::shared_ptr<Flow<T>> upstream, FlowCollector<T>* collector, int count,
+                         Continuation<void*>* completion)
+                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+                  upstream_(std::move(upstream)), collector_(collector), count_(count) {}
+            void retain() { self_ref_ = shared_from_this(); }
+            void* invoke_suspend(Result<void*> result) override {
+                try {
+                    coroutine_begin(this)
+                    coroutine_yield(this, upstream_->collect(this, this));
+                    coroutine_end(this)
+                } catch (internal::AbortFlowException& error) {
+                    error.check_ownership(&ownership_marker_);
+                    return nullptr;
                 }
             }
-        };
-
-        auto tc = std::make_shared<TakeCollector>(collector, count);
-        if (cont && cont->get_context()) {
-            auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
-            if (job) {
-                job->invoke_on_completion([tc](std::exception_ptr) {});
+            void* emit(T value, Continuation<void*>* completion) override {
+                // Check the condition first, then tail-call emit or emitAbort.
+                // Only the terminating emission needs its own state machine.
+                if (++consumed_ < count_) return collector_->emit(std::move(value), completion);
+                return detail::emit_abort(collector_, std::move(value), &ownership_marker_, completion);
             }
-        }
-        try {
-            return upstream->collect(tc.get(), cont);
-        } catch (internal::AbortFlowException& e) {
-            e.check_ownership(tc.get());
-            return nullptr;
-        }
+        protected:
+            void release_intercepted() override {
+                ContinuationImpl::release_intercepted();
+                self_ref_.reset();
+            }
+        private:
+            void* _label = nullptr;
+            std::shared_ptr<Flow<T>> upstream_;
+            FlowCollector<T>* collector_;
+            int count_;
+            int consumed_ = 0;
+            char ownership_marker_ = 0;
+            std::shared_ptr<BaseContinuationImpl> self_ref_;
+        };
+        auto frame = std::make_shared<CollectFrame>(upstream, collector, count, cont);
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
     });
 }
 
-/**
- * Helper for collectWhile logic.
- *
- * This internal function collects elements from the upstream flow while the
- * predicate returns true, throwing AbortFlowException when the predicate fails.
- *
- * @param upstream The flow to collect from
- * @param predicate The predicate function to test elements
- */
-template<typename T, typename Predicate>
-void* collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<void*>* cont = nullptr) {
-    struct PredicateCollector : public FlowCollector<T> {
-        Predicate pred;
-        PredicateCollector(Predicate p) : pred(p) {}
-        void* emit(T value, Continuation<void*>*) override {
-            if (!pred(value)) {
-                throw internal::AbortFlowException(this);
-            }
-            return nullptr;
-        }
-    };
+namespace detail {
 
-    auto collector = std::make_shared<PredicateCollector>(predicate);
-    if (cont && cont->get_context()) {
-        auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
-        if (job) {
-            job->invoke_on_completion([collector](std::exception_ptr) {});
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:70-73
+template<typename T>
+void* emit_abort(FlowCollector<T>* collector, T value, void* ownership_marker, Continuation<void*>* completion) {
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:70-73
+    class EmitAbortFrame final : public ContinuationImpl {
+    public:
+        EmitAbortFrame(FlowCollector<T>* collector, T value, void* marker, Continuation<void*>* completion)
+            : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+              collector_(collector), value_(std::move(value)), ownership_marker_(marker) {}
+        void retain() { self_ref_ = shared_from_this(); }
+        void* invoke_suspend(Result<void*> result) override {
+            coroutine_begin(this)
+            coroutine_yield(this, collector_->emit(std::move(value_), this));
+            throw internal::AbortFlowException(ownership_marker_);
         }
-    }
-    try {
-        return upstream->collect(collector.get(), cont);
-    } catch (internal::AbortFlowException& e) {
-        e.check_ownership(collector.get());
-        return nullptr;
-    }
+    protected:
+        void release_intercepted() override {
+            ContinuationImpl::release_intercepted();
+            self_ref_.reset();
+        }
+    private:
+        void* _label = nullptr;
+        FlowCollector<T>* collector_;
+        T value_;
+        void* ownership_marker_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+    auto frame = std::make_shared<EmitAbortFrame>(collector, std::move(value), ownership_marker, completion);
+    frame->retain();
+    return frame->start(Result<void*>::success(nullptr));
 }
 
-/**
- * Returns a flow that contains first elements satisfying the given predicate.
- *
- * This operator emits elements from the upstream flow while the predicate
- * returns true, then cancels the upstream flow when the predicate fails.
- *
- * @param upstream The flow to transform
- * @param predicate The predicate function to test elements
- * @return A new flow that emits elements while predicate is true
- */
+} // namespace detail
+
+template<typename T, typename Predicate>
+void* collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<void*>* cont = nullptr);
+
+/** Returns the first elements satisfying predicate, excluding the first false element. */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:81-90
 template<typename T, typename Predicate>
 std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate) {
     return internal::unsafe_flow<T>([upstream, predicate](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
-        class TakeWhileCollector : public FlowCollector<T> {
-            FlowCollector<T>* down_;
-            Predicate pred_;
-        public:
-            TakeWhileCollector(FlowCollector<T>* d, Predicate p) : down_(d), pred_(p) {}
-            void* emit(T value, Continuation<void*>* c) override {
-                if (pred_(value)) {
-                    return down_->emit(std::move(value), c);
-                } else {
-                    throw internal::AbortFlowException(this);
+        return collect_while<T>(upstream, [collector, predicate](T value, Continuation<void*>* completion) mutable -> void* {
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:83-89
+            class PredicateFrame final : public ContinuationImpl {
+            public:
+                PredicateFrame(FlowCollector<T>* collector, Predicate* predicate, T value,
+                               Continuation<void*>* completion)
+                    : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+                      collector_(collector), predicate_(predicate), value_(std::move(value)) {}
+                void retain() { self_ref_ = shared_from_this(); }
+                void* invoke_suspend(Result<void*> result) override {
+                    coroutine_begin(this)
+                    coroutine_yield_value(this, result,
+                        detail::invoke_limit_predicate(*predicate_, this, value_), predicate_result_);
+                    if (*std::unique_ptr<bool>(static_cast<bool*>(predicate_result_))) {
+                        coroutine_yield(this, collector_->emit(std::move(value_), this));
+                        return new bool(true);
+                    }
+                    return new bool(false);
                 }
-            }
-        };
-
-        auto twc = std::make_shared<TakeWhileCollector>(collector, predicate);
-        if (cont && cont->get_context()) {
-            auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
-            if (job) {
-                job->invoke_on_completion([twc](std::exception_ptr) {});
-            }
-        }
-        try {
-            return upstream->collect(twc.get(), cont);
-        } catch (internal::AbortFlowException& e) {
-            e.check_ownership(twc.get());
-            return nullptr;
-        }
+            protected:
+                void release_intercepted() override {
+                    ContinuationImpl::release_intercepted();
+                    self_ref_.reset();
+                }
+            private:
+                void* _label = nullptr;
+                FlowCollector<T>* collector_;
+                Predicate* predicate_;
+                T value_;
+                void* predicate_result_ = nullptr;
+                std::shared_ptr<BaseContinuationImpl> self_ref_;
+            };
+            auto frame = std::make_shared<PredicateFrame>(collector, &predicate, std::move(value), completion);
+            frame->retain();
+            return frame->start(Result<void*>::success(nullptr));
+        }, cont);
     });
 }
 
-/**
- * Applies transform function to each value of the given flow while this function returns true.
- *
- * This operator transforms each element using the provided function and continues
- * processing as long as the transform function returns true. It allows for
- * complex transformations with early termination.
- *
- * @param upstream The flow to transform
- * @param transform_fn The transformation function that returns true to continue
- * @return A new flow with transformed elements
- *
- * @tparam T The input element type
- * @tparam R The output element type
- * @tparam Transform The transform function type
- */
+/** Applies transform to each element while it returns true, including the last transformed element. */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:112-120
 template<typename T, typename R, typename Transform>
 std::shared_ptr<Flow<R>> transform_while(std::shared_ptr<Flow<T>> upstream, Transform transform_fn) {
     return flow<R>([upstream, transform_fn](FlowCollector<R>* collector, Continuation<void*>* cont) -> void* {
-        class TransformWhileCollector : public FlowCollector<T> {
-            FlowCollector<R>* down_;
-            Transform fn_;
-        public:
-            TransformWhileCollector(FlowCollector<R>* d, Transform fn) : down_(d), fn_(fn) {}
-            void* emit(T value, Continuation<void*>*) override {
-                if (fn_(down_, std::move(value))) {
-                    return nullptr;
-                } else {
-                    throw internal::AbortFlowException(this);
-                }
-            }
-        };
-
-        auto twc = std::make_shared<TransformWhileCollector>(collector, transform_fn);
-        if (cont && cont->get_context()) {
-            auto job = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
-            if (job) {
-                job->invoke_on_completion([twc](std::exception_ptr) {});
-            }
-        }
-        try {
-            return upstream->collect(twc.get(), cont);
-        } catch (internal::AbortFlowException& e) {
-            e.check_ownership(twc.get());
-            return nullptr;
-        }
+        return collect_while<T>(upstream,
+            [collector, transform_fn](T value, Continuation<void*>* completion) mutable -> void* {
+                return detail::invoke_limit_predicate(transform_fn, completion, collector, std::move(value));
+            }, cont);
     });
 }
 
-} // namespace flow
-} // namespace coroutines
-} // namespace kotlinx
+// Internal building block for non-tail-calling flow-truncating operators.
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:123-140
+template<typename T, typename Predicate>
+void* collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<void*>* cont) {
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:124-139
+    class CollectFrame final : public ContinuationImpl, public FlowCollector<T> {
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:125-132
+        class EmitFrame final : public ContinuationImpl {
+        public:
+            EmitFrame(CollectFrame* owner, T value, Continuation<void*>* completion)
+                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+                  owner_(owner), value_(std::move(value)) {}
+            void retain() { self_ref_ = shared_from_this(); }
+            void* invoke_suspend(Result<void*> result) override {
+                coroutine_begin(this)
+                coroutine_yield_value(this, result,
+                    detail::invoke_limit_predicate(owner_->predicate_, this, value_), predicate_result_);
+                if (!*std::unique_ptr<bool>(static_cast<bool*>(predicate_result_))) {
+                    throw internal::AbortFlowException(static_cast<FlowCollector<T>*>(owner_));
+                }
+                coroutine_end(this)
+            }
+        protected:
+            void release_intercepted() override {
+                ContinuationImpl::release_intercepted();
+                self_ref_.reset();
+            }
+        private:
+            void* _label = nullptr;
+            CollectFrame* owner_;
+            T value_;
+            void* predicate_result_ = nullptr;
+            std::shared_ptr<BaseContinuationImpl> self_ref_;
+        };
+    public:
+        CollectFrame(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Continuation<void*>* completion)
+            : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+              upstream_(std::move(upstream)), predicate_(std::move(predicate)) {}
+        void retain() { self_ref_ = shared_from_this(); }
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                coroutine_begin(this)
+                coroutine_yield(this, upstream_->collect(this, this));
+                coroutine_end(this)
+            } catch (internal::AbortFlowException& error) {
+                error.check_ownership(static_cast<FlowCollector<T>*>(this));
+                context_ensure_active(*get_context());
+                return nullptr;
+            }
+        }
+        void* emit(T value, Continuation<void*>* completion) override {
+            auto frame = std::make_shared<EmitFrame>(this, std::move(value), completion);
+            frame->retain();
+            return frame->start(Result<void*>::success(nullptr));
+        }
+    protected:
+        void release_intercepted() override {
+            ContinuationImpl::release_intercepted();
+            self_ref_.reset();
+        }
+    private:
+        void* _label = nullptr;
+        std::shared_ptr<Flow<T>> upstream_;
+        Predicate predicate_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+    auto frame = std::make_shared<CollectFrame>(std::move(upstream), std::move(predicate), cont);
+    frame->retain();
+    return frame->start(Result<void*>::success(nullptr));
+}
+
+} // namespace kotlinx::coroutines::flow
