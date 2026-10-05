@@ -289,20 +289,35 @@ namespace kotlinx {
             }
         };
 
-        /**
-         * SelectOnJoinCompletionHandler - completion handler for onJoin select clause
-         * Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:607-614
-         */
+        /** Retains a registered job receiver and forwards its disposal handle. */
+        class SelectCompletionHandle final : public DisposableHandle {
+            std::shared_ptr<JobSupport> job_;
+            std::shared_ptr<DisposableHandle> handle_;
+        public:
+            SelectCompletionHandle(std::shared_ptr<JobSupport> job, std::shared_ptr<DisposableHandle> handle)
+                : job_(std::move(job)), handle_(std::move(handle)) {}
+            void dispose() override { handle_->dispose(); }
+        };
+
+        static std::weak_ptr<selects::SelectInstance<void*>> select_owner(selects::SelectInstance<void*>* select) {
+            auto* waiter = dynamic_cast<Waiter*>(select);
+            if (!waiter) throw std::logic_error("Select waiter requires shared ownership");
+            auto owner = std::dynamic_pointer_cast<selects::SelectInstance<void*>>(waiter->shared_from_this_waiter());
+            if (!owner) throw std::logic_error("Select waiter requires shared ownership");
+            return owner;
+        }
+
+        /** Completes a pending join clause while retaining the selected operation for this callback. */
         class SelectOnJoinCompletionHandler : public JobNode {
-            selects::SelectInstance<void *> *select_;
+            std::weak_ptr<selects::SelectInstance<void*>> select_;
         public:
             explicit SelectOnJoinCompletionHandler(selects::SelectInstance<void *> *select)
-                : select_(select) {}
+                : select_(select_owner(select)) {}
 
             bool get_on_cancelling() const override { return false; }
 
             void invoke(std::exception_ptr /*cause*/) override {
-                select_->try_select(job, nullptr);
+                if (auto select = select_.lock()) select->try_select(job, nullptr);
             }
         };
 
@@ -311,14 +326,16 @@ namespace kotlinx {
          * Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1378-1387
          */
         class SelectOnAwaitCompletionHandler : public JobNode {
-            selects::SelectInstance<void *> *select_;
+            std::weak_ptr<selects::SelectInstance<void*>> select_;
         public:
             explicit SelectOnAwaitCompletionHandler(selects::SelectInstance<void *> *select)
-                : select_(select) {}
+                : select_(select_owner(select)) {}
 
             bool get_on_cancelling() const override { return false; }
 
             void invoke(std::exception_ptr /*cause*/) override {
+                auto select = select_.lock();
+                if (!select) return;
                 auto *state = job->get_state_for_await();
                 void *result = nullptr;
                 if (auto *ex = dynamic_cast<CompletedExceptionally *>(state)) {
@@ -326,7 +343,7 @@ namespace kotlinx {
                 } else {
                     result = static_cast<void *>(unbox_state(state));
                 }
-                select_->try_select(job, result);
+                select->try_select(job, result);
             }
         };
 
@@ -1739,7 +1756,8 @@ namespace kotlinx {
             }
             auto* node = new SelectOnJoinCompletionHandler(select);
             auto handle = invoke_on_completion_internal(true, node);
-            select->dispose_on_completion(handle);
+            select->dispose_on_completion(std::make_shared<SelectCompletionHandle>(
+                std::dynamic_pointer_cast<JobSupport>(shared_from_this()), std::move(handle)));
         }
 
         // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1358-1370
@@ -1761,7 +1779,8 @@ namespace kotlinx {
             }
             auto* node = new SelectOnAwaitCompletionHandler(select);
             auto handle = invoke_on_completion_internal(true, node);
-            select->dispose_on_completion(handle);
+            select->dispose_on_completion(std::make_shared<SelectCompletionHandle>(
+                std::dynamic_pointer_cast<JobSupport>(shared_from_this()), std::move(handle)));
         }
 
         // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1373-1376

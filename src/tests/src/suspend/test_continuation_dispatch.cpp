@@ -1471,7 +1471,142 @@ void test_selected_deferred_failure_skips_block() {
     }
 }
 
+void test_deferred_select_wait_resumes_block(int mode) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto job = mode == 0 ? nullptr : JobImpl::create(nullptr);
+    auto context = job ? job->operator+(dispatcher) : std::static_pointer_cast<CoroutineContext>(dispatcher);
+    auto parent = std::make_shared<RecordingContinuation>(context);
+    auto deferred = std::make_shared<CompletableDeferredImpl<int>>();
+    std::weak_ptr<CompletableDeferredImpl<int>> target_lifetime = deferred;
+    std::weak_ptr<selects::SelectImplementation<void*>> select_lifetime;
+    int calls = 0;
+    auto frame = std::make_shared<CallFrame>(parent, [&, target = deferred.get()](auto* continuation) {
+        return selects::select<void*>([&](auto& builder) {
+            select_lifetime = builder.shared_from_this();
+            builder.template invoke<int>(target->on_await(),
+                std::function<void*(int, Continuation<void*>*)>([&](int value, auto* completion) -> void* {
+                    ++calls;
+                    assert_equals(42, value);
+                    if (mode == 4 || mode == 5) {
+                        auto block = std::make_shared<SelectedValueFrame>(internal::retain_continuation(completion), std::make_shared<int>(43));
+                        return block->start(Result<void*>::success(nullptr));
+                    }
+                    return new int(value + 1);
+                }));
+        }, continuation);
+    });
+    std::weak_ptr<CallFrame> caller_lifetime = frame;
+    assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    frame.reset();
+    deferred.reset();
+    assert_false(caller_lifetime.expired());
+    assert_false(target_lifetime.expired());
+    assert_false(select_lifetime.expired());
+    auto target = target_lifetime.lock();
+    auto failure = std::make_exception_ptr(std::runtime_error("selected asynchronous failure"));
+    if (mode == 1) job->cancel();
+    else if (mode == 3) assert_true(target->complete_exceptionally(failure));
+    else assert_true(target->complete(42));
+    if (mode == 2) job->cancel();
+    target.reset();
+    assert_equals(0, parent->resumes);
+    dispatcher->drain();
+    if (mode == 4 || mode == 5) {
+        assert_equals(1, calls);
+        assert_equals(0, parent->resumes);
+        if (mode == 5) job->cancel();
+        else dispatcher->fire_timer();
+        dispatcher->drain();
+    }
+    assert_equals(1, parent->resumes);
+    assert_equals((mode == 1 || mode == 2 || mode == 3) ? 0 : 1, calls);
+    if (mode == 1 || mode == 2 || mode == 5) {
+        assert_true(parent->result.exception_or_null() == job->get_cancellation_exception());
+        dispatcher->timer.reset();
+    } else if (mode == 3) {
+        assert_true(parent->result.exception_or_null() == failure);
+    } else if (mode == 4) {
+        std::unique_ptr<std::shared_ptr<int>> result(static_cast<std::shared_ptr<int>*>(parent->result.get_or_throw()));
+        assert_equals(43, **result);
+    } else {
+        std::unique_ptr<int> result(static_cast<int*>(parent->result.get_or_throw()));
+        assert_equals(43, *result);
+    }
+    assert_true(caller_lifetime.expired());
+    assert_true(select_lifetime.expired());
+    assert_true(target_lifetime.expired());
+}
+
+void test_deferred_select_reregisters_completed_clause() {
+    auto parent = std::make_shared<RecordingContinuation>(EmptyCoroutineContext::instance());
+    auto deferred = std::make_shared<CompletableDeferredImpl<int>>();
+    std::weak_ptr<CompletableDeferredImpl<int>> target_lifetime = deferred;
+    int calls = 0;
+    auto* raw = selects::select<void*>([&](auto& builder) {
+        builder.template invoke<int>(deferred->on_await(),
+            std::function<void*(int, Continuation<void*>*)>([&](int value, auto*) {
+                ++calls;
+                assert_equals(42, value);
+                return new int(value);
+            }));
+        assert_true(deferred->complete(42));
+        deferred.reset();
+        assert_false(target_lifetime.expired());
+    }, parent.get());
+    assert_false(intrinsics::is_coroutine_suspended(raw));
+    std::unique_ptr<int> result(static_cast<int*>(raw));
+    assert_equals(42, *result);
+    assert_equals(1, calls);
+    assert_equals(0, parent->resumes);
+    assert_true(target_lifetime.expired());
+}
+
+void test_select_disposes_unselected_and_cancelled_job_handlers() {
+    for (bool cancel : {false, true}) {
+        auto dispatcher = std::make_shared<QueueDispatcher>();
+        auto job = JobImpl::create(nullptr);
+        auto parent = std::make_shared<RecordingContinuation>(job->operator+(dispatcher));
+        auto deferred = std::make_shared<CompletableDeferredImpl<int>>();
+        auto other = JobImpl::create(nullptr);
+        selects::SelectClause0Impl join_clause(other.get(), [](void* object, void* select, void* param) {
+            static_cast<JobImpl*>(object)->register_select_for_on_join(select, param);
+        });
+        int calls = 0;
+        auto frame = std::make_shared<CallFrame>(parent, [&](auto* completion) {
+            return selects::select<void*>([&](auto& builder) {
+                builder.template invoke<int>(deferred->on_await(),
+                    std::function<void*(int, Continuation<void*>*)>([&](int value, auto*) { ++calls; return new int(value); }));
+                builder.invoke(join_clause, std::function<void*(Continuation<void*>*)>([](auto*) -> void* {
+                    throw std::logic_error("Disposed losing join handler selected");
+                }));
+            }, completion);
+        });
+        std::weak_ptr<CallFrame> lifetime = frame;
+        assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+        frame.reset();
+        if (cancel) job->cancel();
+        else assert_true(deferred->complete(42));
+        dispatcher->drain();
+        assert_equals(1, parent->resumes);
+        assert_equals(cancel ? 0 : 1, calls);
+        if (!cancel) {
+            std::unique_ptr<int> result(static_cast<int*>(parent->result.get_or_throw()));
+            assert_equals(42, *result);
+        }
+        assert_true(lifetime.expired());
+        other->complete();
+        if (cancel) assert_true(deferred->complete(42));
+        dispatcher->drain();
+        assert_equals(1, parent->resumes);
+        assert_equals(cancel ? 0 : 1, calls);
+    }
+}
+
 int main() {
+    std::cerr << "test_deferred_select_wait_resumes_block\n";
+    for (int mode : {0, 1, 2, 3, 4, 5}) test_deferred_select_wait_resumes_block(mode);
+    test_deferred_select_reregisters_completed_clause();
+    test_select_disposes_unselected_and_cancelled_job_handlers();
     std::cerr << "test_selected_deferred_invokes_typed_block\n";
     test_selected_deferred_invokes_typed_block();
     check_selected_deferred_value(std::make_shared<int>(84));

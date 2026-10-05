@@ -58,6 +58,8 @@
 #include "kotlinx/coroutines/DisposableHandle.hpp"
 #include "kotlinx/coroutines/Waiter.hpp"
 #include "kotlinx/coroutines/Delay.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
 namespace kotlinx {
@@ -443,11 +445,11 @@ public:
  * == Phase 3: COMPLETION ==
  * Once a rendezvous happens either in REGISTRATION phase (via SelectInstance::select_in_registration_phase) or
  * in WAITING phase (via SelectInstance::try_select), this select moves to the final COMPLETION phase.
- * First, the provided internal result is processed via the ProcessResultFunction of the selected clause;
- * it returns the argument for the user-specified block or throws an exception (see SendChannel::on_send as
- * an example). After that, this select should be removed from all other clause objects by calling the
- * corresponding DisposableHandles, provided via SelectInstance::dispose_on_completion during registration.
- * At the end, the user-specified block is called and this select finishes.
+ * First, the internal result and an owning reference to the selected clause are collected. Then this select
+ * is removed from the other clause objects by disposing their registered handles. The selected clause's
+ * ProcessResultFunction returns the argument for the user-specified block or throws an exception.
+ * At the end, the user-specified block is called with the completion continuation; it can return a value
+ * or suspend and later resume that continuation. Cleanup precedes result processing and block invocation.
  *
  * In this phase, once a rendezvous has happened, the state field stores the corresponding clause.
  * After that, it moves to STATE_COMPLETED to avoid memory leaks.
@@ -534,6 +536,8 @@ public:
 
     public:
         void* disposable_handle_or_segment = nullptr;
+        std::shared_ptr<DisposableHandle> disposable_handle;
+        std::shared_ptr<DisposableHandle> receiver_owner;
         int index_in_segment = -1;
 
         ClauseData(
@@ -567,13 +571,11 @@ public:
         }
 
         void dispose(std::shared_ptr<CoroutineContext> context) {
-            // Upstream branches on `disposableHandleOrSegment` being either a
-            // DisposableHandle or a Segment; the segment branch calls
-            // `segment.onCancellation(index, cause, context)`. The C++ port currently
-            // routes through the DisposableHandle path only — segment-based clauses
-            // wrap themselves in a DisposableHandle adapter at registration time.
-            if (auto* handle = static_cast<DisposableHandle*>(disposable_handle_or_segment)) {
-                if (handle) handle->dispose();
+            if (index_in_segment >= 0) {
+                static_cast<internal::SegmentBase*>(disposable_handle_or_segment)->on_cancellation(
+                    index_in_segment, nullptr, std::move(context));
+            } else if (disposable_handle) {
+                disposable_handle->dispose();
             }
         }
 
@@ -590,35 +592,48 @@ public:
 private:
     std::shared_ptr<CoroutineContext> context_;
 
-    // State can be: STATE_REG, reregister_list_ set, continuation stored, ClauseData*, STATE_COMPLETED, STATE_CANCELLED
-    std::atomic<void*> state_{STATE_REG()};
-
-    std::vector<std::shared_ptr<ClauseData>>* clauses_;
-
+    struct State {
+        void* marker = nullptr;
+        std::shared_ptr<CancellableContinuation<void>> continuation;
+        std::shared_ptr<ClauseData> clause;
+        std::vector<void*> reregister;
+        explicit State(void* marker) : marker(marker) {}
+        explicit State(std::shared_ptr<CancellableContinuation<void>> continuation)
+            : continuation(std::move(continuation)) {}
+        explicit State(std::shared_ptr<ClauseData> clause) : clause(std::move(clause)) {}
+        explicit State(std::vector<void*> reregister) : reregister(std::move(reregister)) {}
+    };
+    using Clauses = std::vector<std::shared_ptr<ClauseData>>;
+    std::shared_ptr<State> state_ = std::make_shared<State>(STATE_REG());
+    std::shared_ptr<Clauses> clauses_ = std::make_shared<Clauses>();
     void* disposable_handle_or_segment_ = nullptr;
-
+    std::shared_ptr<DisposableHandle> disposable_handle_;
     int index_in_segment_ = -1;
+    std::atomic<void*> internal_result_{NO_RESULT()};
 
-    void* internal_result_ = NO_RESULT();
-
-    // Continuation stored during WAITING phase
-    CancellableContinuation<void>* waiting_continuation_ = nullptr;
-
-    // Reregister list when in registration phase with pending reregistrations
-    std::unique_ptr<std::vector<void*>> reregister_list_;
-
-    // Selected clause (when state transitions to selected)
-    ClauseData* selected_clause_ = nullptr;
+    std::shared_ptr<State> load_state() const {
+        return std::atomic_load_explicit(&state_, std::memory_order_acquire);
+    }
+    void store_state(std::shared_ptr<State> state) {
+        std::atomic_store_explicit(&state_, std::move(state), std::memory_order_release);
+    }
+    bool cas_state(std::shared_ptr<State>& expected, std::shared_ptr<State> update) {
+        return std::atomic_compare_exchange_strong_explicit(&state_, &expected, std::move(update),
+            std::memory_order_acq_rel, std::memory_order_acquire);
+    }
+    std::shared_ptr<Clauses> load_clauses() const {
+        return std::atomic_load_explicit(&clauses_, std::memory_order_acquire);
+    }
+    void clear_clauses() {
+        std::atomic_store_explicit(&clauses_, std::shared_ptr<Clauses>{}, std::memory_order_release);
+    }
 
 public:
     explicit SelectImplementation(std::shared_ptr<CoroutineContext> context)
-        : context_(std::move(context)),
-          clauses_(new std::vector<std::shared_ptr<ClauseData>>()) {
-        clauses_->reserve(2);
-    }
+        : context_(std::move(context)) { clauses_->reserve(2); }
 
-    ~SelectImplementation() {
-        delete clauses_;
+    std::shared_ptr<Waiter> shared_from_this_waiter() override {
+        return this->shared_from_this();
     }
 
     std::shared_ptr<CoroutineContext> get_context() const override {
@@ -632,20 +647,20 @@ public:
     // ==========================================================================
     // ==========================================================================
     bool in_registration_phase() const {
-        void* s = state_.load(std::memory_order_acquire);
-        return s == STATE_REG() || reregister_list_ != nullptr;
+        auto state = load_state();
+        return state->marker == STATE_REG() || !state->reregister.empty();
     }
 
     // ==========================================================================
     // ==========================================================================
     bool is_selected() const {
-        return selected_clause_ != nullptr;
+        return load_state()->clause != nullptr;
     }
 
     // ==========================================================================
     // ==========================================================================
     bool is_cancelled() const {
-        return state_.load(std::memory_order_acquire) == STATE_CANCELLED();
+        return load_state()->marker == STATE_CANCELLED();
     }
 
     // ==========================================================================
@@ -660,78 +675,75 @@ public:
 private:
     // ==========================================================================
     // ==========================================================================
-    void* do_select_suspend(Continuation<void*>* completion) {
-        void* wait_result = wait_until_selected(completion);
-        if (intrinsics::is_coroutine_suspended(wait_result)) {
-            return wait_result;
+    class DoSelectFrame final : public ContinuationImpl {
+        std::shared_ptr<SelectImplementation<R>> select_;
+        void* _label = nullptr;
+        void* value_ = nullptr;
+    public:
+        DoSelectFrame(std::shared_ptr<SelectImplementation<R>> select, Continuation<void*>* completion)
+            : ContinuationImpl(internal::retain_continuation(completion)), select_(std::move(select)) {}
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                coroutine_begin(this)
+                coroutine_yield(this, select_->wait_until_selected(this));
+                coroutine_yield_value(this, result, select_->complete(this), value_);
+                select_.reset();
+                return value_;
+            } catch (...) {
+                select_.reset();
+                throw;
+            }
         }
-        return complete(completion);
+    };
+
+    void* do_select_suspend(Continuation<void*>* completion) {
+        auto frame = std::make_shared<DoSelectFrame>(this->shared_from_this(), completion);
+        return frame->start(Result<void*>::success(nullptr));
     }
 
     // ==========================================================================
     // ==========================================================================
     void* wait_until_selected(Continuation<void*>* completion) {
-        // Use suspend_cancellable_coroutine pattern
         return suspend_cancellable_coroutine<void>(
             [this](CancellableContinuation<void>& cont) {
                 while (true) {
-                    void* cur_state = state_.load(std::memory_order_acquire);
-
-                    if (cur_state == STATE_REG() && reregister_list_ == nullptr) {
-                        // Transition to WAITING phase by storing continuation
-                        waiting_continuation_ = &cont;
-                        void* expected = STATE_REG();
-                        if (state_.compare_exchange_strong(expected, &cont)) {
-                            // The continuation's own invoke_on_cancellation hook owns
-                            // the dispose path — when the suspended caller is cancelled,
-                            // the continuation walks the registered clauses and disposes
-                            // each via its DisposableHandle wrapper.
-                            return;  // Suspend
-                        }
-                        waiting_continuation_ = nullptr;
-                        continue;
-                    }
-
-                    if (reregister_list_ != nullptr) {
-                        // Re-register clauses
-                        auto list = std::move(reregister_list_);
-                        void* expected = cur_state;
-                        if (state_.compare_exchange_strong(expected, STATE_REG())) {
-                            for (void* clause_object : *list) {
-                                reregister_clause(clause_object);
-                            }
-                        }
-                        continue;
-                    }
-
-                    if (is_selected()) {
-                        auto on_cancel = selected_clause_->create_on_cancellation_action(
-                            this, internal_result_);
-                        if (on_cancel) {
-                            auto ctx = get_context();
-                            void* res = internal_result_;
-                            cont.resume([on_cancel, res, ctx](std::exception_ptr cause) {
-                                on_cancel(cause, res, ctx);
+                    auto state = load_state();
+                    if (state->marker == STATE_REG()) {
+                        auto owner = dynamic_cast<CancellableContinuationImpl<void>&>(cont).shared_from_this();
+                        if (cas_state(state, std::make_shared<State>(std::move(owner)))) {
+                            std::weak_ptr<SelectImplementation<R>> select = this->shared_from_this();
+                            cont.invoke_on_cancellation([select](std::exception_ptr cause) {
+                                if (auto owner = select.lock()) owner->invoke(cause);
                             });
-                        } else {
-                            cont.resume();
+                            return;
                         }
-                        return;  // Don't suspend
-                    }
-
-                    throw std::runtime_error("unexpected state in waitUntilSelected");
+                    } else if (!state->reregister.empty()) {
+                        auto list = state->reregister;
+                        if (cas_state(state, std::make_shared<State>(STATE_REG()))) {
+                            for (void* object : list) reregister_clause(object);
+                        }
+                    } else if (state->clause) {
+                        auto on_cancel = state->clause->create_on_cancellation_action(this, internal_result_.load());
+                        if (on_cancel) {
+                            auto context = get_context();
+                            auto value = internal_result_.load();
+                            cont.resume([on_cancel, value, context](std::exception_ptr cause) {
+                                on_cancel(cause, value, context);
+                            });
+                        } else cont.resume();
+                        return;
+                    } else throw std::runtime_error("unexpected state in waitUntilSelected");
                 }
-            },
-            completion
-        );
+            }, completion);
     }
 
     // ==========================================================================
     // ==========================================================================
     void reregister_clause(void* clause_object) {
-        ClauseData* clause = find_clause(clause_object);
+        auto clause = find_clause(clause_object);
         if (!clause) throw std::logic_error("reregisterClause: clause must exist");
         clause->disposable_handle_or_segment = nullptr;
+        clause->disposable_handle.reset();
         clause->index_in_segment = -1;
         register_clause_impl(clause, true);
     }
@@ -754,62 +766,37 @@ private:
     // ==========================================================================
     int try_select_internal(void* clause_object, void* internal_result) {
         while (true) {
-            void* cur_state = state_.load(std::memory_order_acquire);
-
-            if (waiting_continuation_ != nullptr && cur_state == waiting_continuation_) {
-                ClauseData* clause = find_clause(clause_object);
-                if (!clause) continue;  // retry if clauses already null
-
-                auto on_cancellation = clause->create_on_cancellation_action(this, internal_result);
-
-                void* expected = cur_state;
-                if (state_.compare_exchange_strong(expected, clause)) {
-                    internal_result_ = internal_result;
-                    selected_clause_ = clause;
-
-                    auto* cont = waiting_continuation_;
-                    waiting_continuation_ = nullptr;
-                    if (try_resume_with_on_cancellation(cont, on_cancellation)) {
-                        return TRY_SELECT_SUCCESSFUL;
-                    }
-                    internal_result_ = NO_RESULT();
-                    selected_clause_ = nullptr;
+            auto state = load_state();
+            if (state->continuation) {
+                auto clause = find_clause(clause_object);
+                if (!clause) continue;
+                auto on_cancel = clause->create_on_cancellation_action(this, internal_result);
+                auto cont = state->continuation;
+                if (cas_state(state, std::make_shared<State>(clause))) {
+                    internal_result_.store(internal_result);
+                    if (try_resume_with_on_cancellation(cont.get(), on_cancel)) return TRY_SELECT_SUCCESSFUL;
+                    internal_result_.store(NO_RESULT());
                     return TRY_SELECT_CANCELLED;
                 }
-                continue;
-            }
-
-            if (cur_state == STATE_COMPLETED() || is_selected()) {
+            } else if (state->marker == STATE_COMPLETED() || state->clause) {
                 return TRY_SELECT_ALREADY_SELECTED;
-            }
-
-            if (cur_state == STATE_CANCELLED()) {
+            } else if (state->marker == STATE_CANCELLED()) {
                 return TRY_SELECT_CANCELLED;
-            }
-
-            if (cur_state == STATE_REG() && reregister_list_ == nullptr) {
-                reregister_list_ = std::make_unique<std::vector<void*>>();
-                reregister_list_->push_back(clause_object);
-                return TRY_SELECT_REREGISTER;
-            }
-
-            if (reregister_list_ != nullptr) {
-                reregister_list_->push_back(clause_object);
-                return TRY_SELECT_REREGISTER;
-            }
-
-            throw std::runtime_error("Unexpected state in trySelectInternal");
+            } else if (state->marker == STATE_REG() || !state->reregister.empty()) {
+                auto list = state->reregister;
+                list.push_back(clause_object);
+                if (cas_state(state, std::make_shared<State>(std::move(list)))) return TRY_SELECT_REREGISTER;
+            } else throw std::runtime_error("Unexpected state in trySelectInternal");
         }
     }
 
     // ==========================================================================
     // ==========================================================================
-    ClauseData* find_clause(void* clause_object) {
-        if (!clauses_) return nullptr;
-        for (auto& clause : *clauses_) {
-            if (clause->clause_object == clause_object) {
-                return clause.get();
-            }
+    std::shared_ptr<ClauseData> find_clause(void* clause_object) {
+        auto clauses = load_clauses();
+        if (!clauses) return nullptr;
+        for (auto& clause : *clauses) {
+            if (clause->clause_object == clause_object) return clause;
         }
         throw std::runtime_error("Clause with object is not found");
     }
@@ -819,13 +806,7 @@ private:
     void* complete(Continuation<void*>* completion) {
         assert(is_selected());
 
-        std::shared_ptr<ClauseData> selected;
-        for (auto& clause : *clauses_) {
-            if (clause.get() == selected_clause_) {
-                selected = clause;
-                break;
-            }
-        }
+        auto selected = load_state()->clause;
         assert(selected);
 
         void* result = internal_result_;
@@ -841,51 +822,53 @@ private:
     void cleanup(ClauseData* selected_clause) {
         assert(is_selected());
 
-        if (!clauses_) return;
+        auto clauses = load_clauses();
+        if (!clauses) return;
 
-        for (auto& clause : *clauses_) {
+        for (auto& clause : *clauses) {
             if (clause.get() != selected_clause) {
                 clause->dispose(context_);
             }
         }
 
-        state_.store(STATE_COMPLETED(), std::memory_order_release);
+        store_state(std::make_shared<State>(STATE_COMPLETED()));
         internal_result_ = NO_RESULT();
-        delete clauses_;
-        clauses_ = nullptr;
+        clear_clauses();
     }
 
 public:
     // ==========================================================================
     // ==========================================================================
     void invoke(std::exception_ptr cause) override {
-        void* cur = state_.load(std::memory_order_acquire);
+        auto cur = load_state();
         while (true) {
-            if (cur == STATE_COMPLETED()) return;
-            if (state_.compare_exchange_weak(cur, STATE_CANCELLED())) break;
+            if (cur->marker == STATE_COMPLETED()) return;
+            if (cas_state(cur, std::make_shared<State>(STATE_CANCELLED()))) break;
         }
 
-        if (!clauses_) return;
+        auto clauses = load_clauses();
+        if (!clauses) return;
 
-        for (auto& clause : *clauses_) {
+        for (auto& clause : *clauses) {
             clause->dispose(context_);
         }
 
         internal_result_ = NO_RESULT();
-        delete clauses_;
-        clauses_ = nullptr;
+        clear_clauses();
     }
 
     // ==========================================================================
     // ==========================================================================
     void dispose_on_completion(std::shared_ptr<DisposableHandle> handle) override {
         disposable_handle_or_segment_ = handle.get();
+        disposable_handle_ = std::move(handle);
     }
 
     // ==========================================================================
     // ==========================================================================
     void invoke_on_cancellation(internal::SegmentBase* segment, int index) override {
         disposable_handle_or_segment_ = segment;
+        disposable_handle_.reset();
         index_in_segment_ = index;
     }
 
@@ -966,41 +949,31 @@ private:
             std::move(on_cancellation_constructor)
         );
 
-        ClauseData* clause_ptr = clause.get();
-        clauses_->push_back(std::move(clause));
-
-        register_clause_impl(clause_ptr, false);
-
-        // If clause was selected during registration, update selected_clause_
-        if (internal_result_ != NO_RESULT()) {
-            selected_clause_ = clause_ptr;
-        }
+        register_clause_impl(clause, false);
     }
 
-    void register_clause_impl(ClauseData* clause, bool reregister) {
-        assert(state_.load() != STATE_CANCELLED());
-
+    void register_clause_impl(const std::shared_ptr<ClauseData>& clause, bool reregister) {
+        assert(!is_cancelled());
         if (is_selected()) return;
-
-        if (!reregister) {
-            check_clause_object(clause->clause_object);
-        }
-
+        if (!reregister) check_clause_object(clause->clause_object);
         if (clause->try_register_as_waiter(this)) {
+            if (!reregister) load_clauses()->push_back(clause);
             clause->disposable_handle_or_segment = disposable_handle_or_segment_;
+            clause->disposable_handle = std::move(disposable_handle_);
+            if (!clause->receiver_owner) clause->receiver_owner = clause->disposable_handle;
             clause->index_in_segment = index_in_segment_;
             disposable_handle_or_segment_ = nullptr;
             index_in_segment_ = -1;
+        } else {
+            store_state(std::make_shared<State>(clause));
         }
-        // else: clause was selected, state already updated via select_in_registration_phase
     }
 
-    // ==========================================================================
-    // ==========================================================================
     void check_clause_object(void* clause_object) {
-        if (!clauses_) return;
-        for (size_t i = 0; i < clauses_->size() - 1; ++i) {  // -1 because current clause already added
-            if ((*clauses_)[i]->clause_object == clause_object) {
+        auto clauses = load_clauses();
+        if (!clauses) return;
+        for (auto& clause : *clauses) {
+            if (clause->clause_object == clause_object) {
                 throw std::runtime_error("Cannot use select clauses on the same object");
             }
         }

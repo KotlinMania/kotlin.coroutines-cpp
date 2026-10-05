@@ -1312,3 +1312,55 @@ Clause2/legacy nullable channel argument representations and unbiased selection
 are not accepted by this slice. Owning channel-cell publication remains reserved
 pending scope decision. Evidence and revision-pinned review are under workspace
 automation-artifacts/select-typed-completion-20261005/.
+
+
+## Suspended select initial-wait lowering and stored owners — 2026-10-05
+
+Card t_037fc89b advances the select slice accepted in1525a0f5. Original
+Select.kt:450-456 has two suspend calls: waitUntilSelected, then complete.
+DoSelectFrame now retains the select and parent, uses computed-goto awaits for
+both calls, and releases its select on terminal success/failure. complete still
+cleans up, processes the result and directly tail-invokes the user's block.
+The unchanged-production pending Deferred regression failed0/1 in8.47s under
+ASan with heap-use-after-free in SelectOnAwaitCompletionHandler::invoke at
+JobSupport.cpp:329: select() returned suspended and destroyed its implementation.
+
+Internal atomic shared select-state snapshots carry the original registration
+marker, immutable re-registration list, actual CCI, selected ClauseData and
+terminal markers. CAS transitions and list append/retry order match
+Select.kt:569-685. A loaded waiting snapshot retains its CCI; a selected snapshot
+retains its clause through cleanup. The registered clause vector has atomic
+shared snapshots for concurrent cleanup reads. Internal-result reference access
+is atomic; result publication still precedes tryResume. Registration now adds
+only waiting clauses to the list and stores immediate selection in the owning
+state, matching Select.kt:484-527. No new locking or channel-cell state protocol.
+
+The cancellation handler is installed only after the WAITING CAS succeeds.
+It weak-locks the actual retained select. Job completion nodes similarly lock a
+weak select owner during their callbacks, while the registered disposable wrapper
+retains its actual job receiver. The clause retains that receiver guard across
+re-registration until completion. Disposal forwards to the original handle.
+Segment disposal uses its actual on_cancellation method instead of treating a
+segment pointer as a DisposableHandle; raw segment reclamation remains separate.
+Existing Waiter ownership and continuation-retention mechanisms are used without
+a new public ABI or continuation/result representation.
+
+Existing-target regressions cover no-Job pending success, caller cancellation
+before and after matching, exceptional Deferred completion, a second suspension
+inside the selected block and cancellation there. They drop public caller and
+Deferred handles while suspended; check exact causes, callback counts, typed
+results and caller/select/receiver weak-reference expiry. A completed-during-builder
+case exercises re-registration after dropping the Deferred handle. Actual join
+registration through SelectClause0Impl and register_select_for_on_join exercises
+losing/cancelled handler disposal and late receiver completion. The public Job
+on_join getter is absent from the current source and is not introduced here.
+
+Focused AsyncTest + test_continuation_dispatch + test_channel_as_flow_smoke:
+Debug3/3 in1.11s and optimized ASan3/3 in1.02s. The completion-phase docstring now
+states the C++ cleanup/process/block order. No new harness/target, CI/config edit,
+push, Result<exception_ptr> representation change or pending channel-cell work.
+Remaining select scope includes channel-clause receiver ownership and typed
+Clause2/legacy nullable argument contracts, unbiased select and public join-clause
+exposure. No complete channel-selection, TSan/all-race or interop acceptance.
+Evidence: workspace automation-artifacts/select-wait-lowering-20261005/receipt.json
+and baseline/final build and CTest logs.
