@@ -19,6 +19,7 @@
  */
 
 #include "kotlinx/coroutines/flow/Transform.hpp"
+#include "kotlinx/coroutines/flow/Merge.hpp"
 #include "kotlinx/coroutines/testing/TestBase.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
@@ -966,11 +967,82 @@ void test_real_action_and_operation_cancellation() {
     }
 }
 
+void test_flatten_concat_retains_suspended_collector() {
+    Trace first, second;
+    first.pause_upstream = second.pause_upstream = true;
+    auto outer = flow_of<std::shared_ptr<Flow<int>>>({source(first, 2), source(second, 2)});
+    auto merged = flatten_merge<int>(outer, 1);
+    Collector<int> sink;
+    Completion completion;
+    assert_true(intrinsics::is_coroutine_suspended(merged->collect(&sink, &completion)));
+    first.upstream.resume();
+    assert_equals(1, first.finally_calls);
+    assert_equals(1, second.collection_starts);
+    assert_equals(0, completion.resumes);
+    second.upstream.resume();
+    assert_true(sink.values == (std::vector<int>{1, 2, 1, 2}));
+    assert_equals(1, completion.resumes);
+    assert_true(completion.result.is_success());
+}
+
+void test_flatten_concat_owns_transient_inner(int mode) {
+    Trace trace;
+    trace.pause_upstream = true;
+    std::weak_ptr<Flow<int>> inner_lifetime;
+    std::weak_ptr<BaseContinuationImpl> collect_lifetime;
+    auto outer = kotlinx::coroutines::flow::internal::unsafe_flow<std::shared_ptr<Flow<int>>>(
+        [&](auto* collector, auto* completion) -> void* {
+            collect_lifetime = dynamic_cast<BaseContinuationImpl*>(completion)->weak_from_this();
+            auto inner = source(trace, 2);
+            inner_lifetime = inner;
+            return collector->emit(std::move(inner), completion);
+        });
+    std::weak_ptr<Flow<std::shared_ptr<Flow<int>>>> outer_lifetime = outer;
+    auto merged = flatten_concat<int>(outer);
+    Collector<int> sink;
+    sink.pause = true;
+    Completion completion;
+    auto job = mode == 3 ? JobImpl::create(nullptr) : nullptr;
+    if (job) completion.context = job;
+    assert_true(intrinsics::is_coroutine_suspended(merged->collect(&sink, &completion)));
+    outer.reset(); merged.reset();
+    assert_false(outer_lifetime.expired());
+    assert_false(inner_lifetime.expired());
+    assert_false(collect_lifetime.expired());
+    auto failure = std::make_exception_ptr(std::runtime_error("flatten failure"));
+    if (mode == 3) { job->cancel(); failure = job->get_cancellation_exception(); }
+    trace.upstream.resume(mode == 1 ? Result<void*>::failure(failure) : Result<void*>::success(nullptr));
+    if (mode == 0 || mode == 2) {
+        assert_true(sink.values == (std::vector<int>{1}));
+        assert_equals(0, completion.resumes);
+        assert_false(inner_lifetime.expired());
+        sink.pending.resume(mode == 2 ? Result<void*>::failure(failure) : Result<void*>::success(nullptr));
+        if (mode == 0) {
+            assert_true(sink.values == (std::vector<int>{1, 2}));
+            assert_equals(0, completion.resumes);
+            sink.pending.resume();
+        }
+    }
+    assert_equals(1, completion.resumes);
+    assert_equals(1, trace.finally_calls);
+    if (mode == 0) assert_true(completion.result.is_success());
+    else {
+        assert_true(completion.result.exception_or_null() == failure);
+        assert_true(trace.failure == failure);
+    }
+    assert_true(collect_lifetime.expired());
+    assert_true(trace.frame.expired());
+    assert_true(inner_lifetime.expired());
+    assert_true(outer_lifetime.expired());
+}
+
 } // namespace
 
 int main() {
     std::cout << "Running test_transform_suspension..." << std::endl;
 
+    test_flatten_concat_retains_suspended_collector();
+    for (int mode : {0, 1, 2, 3}) test_flatten_concat_owns_transient_inner(mode);
     test_filter_and_filter_not_nominal();
     std::cout << "  test_filter_and_filter_not_nominal passed" << std::endl;
 

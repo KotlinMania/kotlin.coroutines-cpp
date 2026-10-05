@@ -1364,3 +1364,47 @@ Clause2/legacy nullable argument contracts, unbiased select and public join-clau
 exposure. No complete channel-selection, TSan/all-race or interop acceptance.
 Evidence: workspace automation-artifacts/select-wait-lowering-20261005/receipt.json
 and baseline/final build and CTest logs.
+
+
+## Sequential merge collection lifetime prerequisite — 2026-10-05
+
+Card t_356e6dfc has a bounded independent repair of flattenConcat and the existing
+flatten_merge(concurrency1) delegation against Merge.kt:80-81,133-140. Collection
+now uses the original unsafe-flow builder alias. A computed-goto collection frame
+owns upstream and its collector until outer collection terminates; each emission
+owns its inner flow through collection suspension. Inner collection still completes
+before the outer proceeds to another flow. Parent continuations use established
+retain_continuation ownership; frames release their self guards on both terminal
+paths. Public function signatures, suspension/result ABI and algorithms unchanged.
+
+The unchanged-production regression used an actual as_flow outer with two delayed
+inner sources. ASan0/1 in3.38s reported stack-buffer-overflow in SafeCollector emit
+while AsFlowContinuation emitted the next inner through the expired stack concat
+collector. Instantiating the concurrency1 public entry separately exposed a compile
+error: collect_to treated create_semaphore's existing shared_ptr return as a raw
+pointer with deleter. The factory assignment is corrected to its actual shared
+return; no concurrent collection/thread algorithm acceptance is established.
+
+Existing test_transform_suspension coverage now includes actual flatten_merge(...,1)
+with delayed inner sources, no premature next-inner start, ordered values and one
+terminal completion. Transient inner flow construction checks that upstream/inner
+owners survive dropping public wrappers, downstream repeated suspension, exact
+inner/downstream failure and real Job cancellation observed at emission, finally
+execution and terminal frame/receiver owner expiry. The cancellation fixture has
+an uncancellable manual pause and resumes it before observing the Job check; no
+prompt termination of arbitrary uncancellable user suspensions is claimed.
+
+Focused test_transform_suspension + test_continuation_dispatch +
+test_sharing_suspension: Debug3/3 in0.71s; optimized ASan3/3 in0.99s. No new harness,
+target, CI/config/push or public ABI change. Unbiased-select public API, channel-cell
+ownership and Result<exception_ptr> decisions remain reserved and unchanged.
+
+Source comparison also confirms a separate helper mismatch: Kotlin emitAll's
+ensureActive checks ThrowingCollector (Emitters.kt:197-199); C++ Collect.hpp:216
+checks the Job and has no ThrowingCollector counterpart. This slice retains the
+existing direct inner collect path and does not insert that different Job check.
+The helper semantic is not accepted here. Concurrent ChannelFlowMerge and
+ChannelLimitedFlowMerge still use threads/NoopContinuation and discard genuine
+collect suspension; their coroutine/permit/sibling cancellation gates, all combine/
+zip algorithms and full library parity remain unaccepted. Evidence under workspace
+automation-artifacts/flatten-concat-lifetime-20261005/receipt.json and logs.

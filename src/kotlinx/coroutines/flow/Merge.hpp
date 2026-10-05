@@ -51,28 +51,65 @@ inline int DEFAULT_CONCURRENCY = kotlinx::coroutines::internal::system_prop_int(
  *
  * Inner flows are collected by this operator *sequentially*.
  *
- * Kotlin source: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
- *   public fun <T> Flow<Flow<T>>.flattenConcat(): Flow<T> = flow { collect { value -> emitAll(value) } }
+ * The collection frame retains the upstream and its collector through suspension.
+ * Each inner collection retains its flow until completion, then collection proceeds to the next flow.
  */
 template <typename T>
 std::shared_ptr<Flow<T>> flatten_concat(std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> upstream) {
-    return flow<T>([upstream](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
-        class EmitAllCollector : public FlowCollector<std::shared_ptr<Flow<T>>> {
-        public:
-            explicit EmitAllCollector(FlowCollector<T>* downstream) : downstream_(downstream) {}
-
-            void* emit(std::shared_ptr<Flow<T>> value, Continuation<void*>* continuation) override {
-                // Kotlin: emitAll(value)
-                // Tail call: safe to return the inner collect result directly.
-                return value->collect(downstream_, continuation);
-            }
-
-        private:
+    return internal::unsafe_flow<T>([upstream](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
+        class CollectFrame final : public ContinuationImpl,
+                                   public FlowCollector<std::shared_ptr<Flow<T>>> {
+            std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> upstream_;
             FlowCollector<T>* downstream_;
+            std::shared_ptr<BaseContinuationImpl> self_ref_;
+            void* _label = nullptr;
+        public:
+            CollectFrame(std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> upstream,
+                         FlowCollector<T>* downstream, Continuation<void*>* completion)
+                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+                  upstream_(std::move(upstream)), downstream_(downstream) {}
+            void retain() { self_ref_ = shared_from_this(); }
+            void* invoke_suspend(Result<void*> result) override {
+                coroutine_begin(this)
+                coroutine_yield(this, upstream_->collect(this, this));
+                coroutine_end(this)
+            }
+            void* emit(std::shared_ptr<Flow<T>> inner, Continuation<void*>* completion) override {
+                class EmitFrame final : public ContinuationImpl {
+                    std::shared_ptr<Flow<T>> inner_;
+                    FlowCollector<T>* downstream_;
+                    std::shared_ptr<BaseContinuationImpl> self_ref_;
+                    void* _label = nullptr;
+                public:
+                    EmitFrame(std::shared_ptr<Flow<T>> inner, FlowCollector<T>* downstream,
+                              Continuation<void*>* completion)
+                        : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+                          inner_(std::move(inner)), downstream_(downstream) {}
+                    void retain() { self_ref_ = shared_from_this(); }
+                    void* invoke_suspend(Result<void*> result) override {
+                        coroutine_begin(this)
+                        coroutine_yield(this, inner_->collect(downstream_, this));
+                        coroutine_end(this)
+                    }
+                protected:
+                    void release_intercepted() override {
+                        ContinuationImpl::release_intercepted();
+                        self_ref_.reset();
+                    }
+                };
+                auto frame = std::make_shared<EmitFrame>(std::move(inner), downstream_, completion);
+                frame->retain();
+                return frame->start(Result<void*>::success(nullptr));
+            }
+        protected:
+            void release_intercepted() override {
+                ContinuationImpl::release_intercepted();
+                self_ref_.reset();
+            }
         };
-
-        EmitAllCollector inner(collector);
-        return upstream->collect(&inner, cont);
+        auto frame = std::make_shared<CollectFrame>(upstream, collector, completion);
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
     });
 }
 

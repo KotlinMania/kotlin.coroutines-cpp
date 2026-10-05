@@ -257,8 +257,7 @@ public:
         //   }
         // }
 
-        // Semaphore is an interface; wrap the factory result in a shared_ptr for use across threads.
-        auto semaphore = std::shared_ptr<Semaphore>(create_semaphore(concurrency_), [](Semaphore* s) { delete s; });
+        auto semaphore = create_semaphore(concurrency_);
         SendingCollector<T> collector(scope);
 
         std::shared_ptr<Job> job;
