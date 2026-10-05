@@ -28,4 +28,9 @@ DeepInventory extract_deep_inventory(const std::vector<std::string>& paths,
 void print_deep_inventory(const Codebase& source, const Codebase& target,
                           const CodebaseComparator& comparison,
                           std::ostream& output);
+// Review explicit Kotlin suspension contracts against parsed target syntax.
+// Evidence is lexical/structural; compiled IR and behavior require separate checks.
+void print_suspension_review(const std::vector<std::string>& source_paths,
+                             const std::vector<std::string>& target_paths,
+                             std::ostream& output);
 } // namespace ast_distance

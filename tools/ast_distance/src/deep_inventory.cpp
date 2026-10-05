@@ -1,5 +1,6 @@
 #include "deep_inventory.hpp"
 #include "codebase.hpp"
+#include "callable_identity.hpp"
 #include <functional>
 #include <fstream>
 #include <sstream>
@@ -217,5 +218,149 @@ void print_deep_inventory(const Codebase& source, const Codebase& target,
     }
     output << "Inventory totals: present=" << matched_count << ", declaration_only=" << declared_count
            << ", missing=" << missing_count << '\n';
+}
+
+namespace {
+struct SuspensionDeclaration {
+    FunctionInfo function;
+    std::string path;
+    int suspend_words = 0;
+    std::vector<int> yields, begins, markers, indirect_gotos;
+    bool sole_return_call = false, errors = false, found_span = false;
+};
+std::vector<SuspensionDeclaration> suspension_declarations(const std::vector<std::string>& paths, Language language) {
+    std::vector<SuspensionDeclaration> declarations;
+    for (const auto& path : paths) {
+        std::ifstream input(path);
+        if (!input) throw std::runtime_error("Cannot read suspension review input: " + path);
+        const std::string original(std::istreambuf_iterator<char>(input), {});
+        const auto adapted = language == Language::KOTLIN ? kotlin_grammar_input(original).text : cpp_grammar_input(original).text;
+        ASTParser inventory;
+        auto functions = inventory.extract_function_infos(original, language);
+        auto* parser = ts_parser_new();
+        ts_parser_set_language(parser, language == Language::KOTLIN ? tree_sitter_kotlin() : tree_sitter_cpp());
+        auto* tree = ts_parser_parse_string(parser, nullptr, adapted.data(), adapted.size());
+        const bool errors = inventory.last_extraction_has_errors() || ts_node_has_error(ts_tree_root_node(tree));
+        for (auto& function : functions) {
+            SuspensionDeclaration declaration;
+            declaration.function = std::move(function); declaration.path = path; declaration.errors = errors;
+            std::function<void(TSNode)> locate = [&](TSNode node) {
+                const std::string kind = ts_node_type(node);
+                if (kind == (language == Language::KOTLIN ? "function_declaration" : "function_definition") &&
+                    static_cast<int>(ts_node_start_point(node).row) + 1 == declaration.function.start_line &&
+                    static_cast<int>(ts_node_end_point(node).row) + 1 == declaration.function.end_line) {
+                    auto name_node = language == Language::KOTLIN ? named_child(node, {"simple_identifier"}) : declarator_name(field(node, "declarator"));
+                    auto name = text(name_node, original);
+                    if (auto separator = name.rfind("::"); separator != std::string::npos) name.erase(0, separator + 2);
+                    if (IdentifierStats::canonicalize(name) == IdentifierStats::canonicalize(declaration.function.name)) {
+                        declaration.found_span = true;
+                        std::function<void(TSNode, bool)> inspect = [&](TSNode part, bool signature) {
+                            const std::string type = ts_node_type(part);
+                            if (type.find("comment") != std::string::npos || type.find("string") != std::string::npos ||
+                                type == "character_literal" || type == "char_literal" || type.starts_with("preproc")) return;
+                            if (language == Language::KOTLIN && type == "function_body") signature = false;
+                            if (language == Language::KOTLIN && signature && !ts_node_child_count(part) && text(part, original) == "suspend")
+                                ++declaration.suspend_words;
+                            if (language == Language::CPP && type == "call_expression") {
+                                auto callee = text(field(part, "function"), original);
+                                if (auto separator = callee.rfind("::"); separator != std::string::npos) callee.erase(0, separator + 2);
+                                const int line = static_cast<int>(ts_node_start_point(part).row) + 1;
+                                if (callee == "coroutine_yield" || callee == "coroutine_yield_value") declaration.yields.push_back(line);
+                                else if (callee == "coroutine_begin") declaration.begins.push_back(line);
+                                else if (callee == "suspend" || callee == "__kxs_suspend_point") declaration.markers.push_back(line);
+                            }
+                            if (language == Language::CPP && type == "goto_statement") {
+                                for (uint32_t c = 0; c < ts_node_child_count(part); ++c)
+                                    if (text(ts_node_child(part, c), original) == "*")
+                                        declaration.indirect_gotos.push_back(static_cast<int>(ts_node_start_point(part).row) + 1);
+                            }
+                            for (uint32_t c = 0; c < ts_node_named_child_count(part); ++c) inspect(ts_node_named_child(part, c), signature);
+                            // Kotlin's suspend modifier may be an unnamed grammar token.
+                            if (language == Language::KOTLIN && signature)
+                                for (uint32_t c = 0; c < ts_node_child_count(part); ++c) {
+                                    auto child = ts_node_child(part, c);
+                                    if (!ts_node_is_named(child) && text(child, original) == "suspend") ++declaration.suspend_words;
+                                }
+                        };
+                        inspect(node, true);
+                        if (language == Language::CPP) {
+                            auto body = field(node, "body");
+                            std::vector<TSNode> statements;
+                            for (uint32_t c = 0; c < ts_node_named_child_count(body); ++c) {
+                                auto child = ts_node_named_child(body, c);
+                                if (std::string(ts_node_type(child)).find("comment") == std::string::npos) statements.push_back(child);
+                            }
+                            if (statements.size() == 1 && std::string(ts_node_type(statements[0])) == "return_statement") {
+                                std::function<void(TSNode)> find_call = [&](TSNode child) {
+                                    if (std::string(ts_node_type(child)) == "call_expression") declaration.sole_return_call = true;
+                                    for (uint32_t c = 0; c < ts_node_named_child_count(child); ++c) find_call(ts_node_named_child(child, c));
+                                };
+                                find_call(statements[0]);
+                            }
+                        }
+                        return;
+                    }
+                }
+                for (uint32_t c = 0; c < ts_node_named_child_count(node); ++c) locate(ts_node_named_child(node, c));
+            };
+            locate(ts_tree_root_node(tree));
+            declarations.push_back(std::move(declaration));
+        }
+        ts_tree_delete(tree); ts_parser_delete(parser);
+    }
+    return declarations;
+}
+std::string review_location(const SuspensionDeclaration& declaration) {
+    return declaration.path + ":" + std::to_string(declaration.function.start_line);
+}
+void review_sites(std::ostream& output, const char* label, const std::vector<int>& lines) {
+    output << " " << label << "=";
+    if (lines.empty()) output << "none";
+    for (size_t i = 0; i < lines.size(); ++i) output << (i ? "," : "") << lines[i];
+}
+} // namespace
+void print_suspension_review(const std::vector<std::string>& source_paths,
+                             const std::vector<std::string>& target_paths,
+                             std::ostream& output) {
+    const auto sources = suspension_declarations(source_paths, Language::KOTLIN);
+    const auto targets = suspension_declarations(target_paths, Language::CPP);
+    output << "\n=== Suspension lowering review leads ===\n"
+           << "Parsed syntax evidence only: macros do not prove compiled IR or behavior.\n"
+           << "Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.\n"
+           << "Status\tKotlin contract\tSource\tTarget\tCallable\n";
+    size_t reviewed = 0;
+    for (const auto& source : sources) {
+        if (!source.function.is_suspend_function && !source.suspend_words) continue;
+        ++reviewed;
+        std::vector<const SuspensionDeclaration*> matches;
+        for (const auto& target : targets) {
+            if (IdentifierStats::canonicalize(source.function.name) != IdentifierStats::canonicalize(target.function.name) ||
+                !callable_owners_compatible(source.function, target.function)) continue;
+            if (source.function.extension_receiver.empty() && source.function.explicit_parameter_count >= 0 && target.function.explicit_parameter_count >= 0) {
+                const int abi = source.function.is_suspend_function && target.function.trailing_continuation_parameter ? 1 : 0;
+                if (target.function.explicit_parameter_count != source.function.explicit_parameter_count + abi) continue;
+            }
+            matches.push_back(&target);
+        }
+        const std::string contract = source.function.is_suspend_function ? "suspend declaration" : "suspend callback contract";
+        if (matches.empty()) {
+            output << "MISSING_TARGET_REVIEW\t" << contract << '\t' << review_location(source) << "\t-\t" << source.function.qualified_name << '\n';
+            continue;
+        }
+        for (const auto* target : matches) {
+            const char* status = !target->yields.empty() || !target->indirect_gotos.empty() ? "LOWERING_SYNTAX_PRESENT" :
+                target->sole_return_call ? "TAIL_OR_HELPER_REVIEW" :
+                !target->markers.empty() ? "MARKER_ONLY_REVIEW" : "NO_LOCAL_LOWERING_REVIEW";
+            if (!source.found_span || !target->found_span) status = "SPAN_UNRESOLVED_REVIEW";
+            output << status << '\t' << contract << '\t' << review_location(source) << '\t' << review_location(*target)
+                << '\t' << source.function.qualified_name << " -> " << target->function.qualified_name << '\n';
+            output << "  Evidence:";
+            review_sites(output, "await-macro-lines", target->yields); review_sites(output, "begin-macro-lines", target->begins);
+            review_sites(output, "marker-lines", target->markers); review_sites(output, "indirect-goto-lines", target->indirect_gotos);
+            output << " candidates=" << matches.size() << " parse=" << (source.errors || target->errors ? "provisional" : "clean") << '\n';
+        }
+    }
+    output << "Explicit suspension contracts reviewed: " << reviewed << '\n';
+    output << "Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.\n";
 }
 } // namespace ast_distance

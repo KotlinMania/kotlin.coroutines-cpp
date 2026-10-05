@@ -640,3 +640,29 @@ storage, resumed value consumption, complete spill declaration/reference rewriti
 and entry/resume lifetime cleanup. Automatic production sidecar consumption,
 Kotlin/Native binary interoperability and GPU/hardware execution are not established
 by these direct/tail tests. Compiler card t_16bf1579 retains these open findings.
+
+
+### Deep suspension review evidence (2026-10-04)
+
+ASTDistance --deep now persists callable-scoped suspension review leads beside
+its positional literal metric. Physical Kotlin/C++ locations and nested local
+frame await/begin macros, markers and computed gotos are reported; comments,
+strings and preprocessor definitions cannot supply lowering evidence. Tail or
+helper forwarding is distinguished from marker-only and absent local lowering.
+Overload candidates and provisional parse evidence remain visible. These syntax
+leads do not change scores or establish compiled IR, lifetime or cancellation parity.
+
+The real original flow/operators scan shows Transform filter at Transform.hpp:192
+with await macros at 207/210; its forwarding overloads at 240/250 are helper leads.
+Share.hpp:388 state_in is marker-only. Merge.hpp:126 flat_map_concat accepts a
+synchronous transform while the original callback contract is suspend; its collector
+forwards emission directly. Share.hpp:345 SubscribedSharedFlow::collect forwards a
+locally owned collector's raw pointer. These require callback/lifetime review in
+the relevant cards; this measurement change does not repair those runtime paths.
+
+Tool acceptance: strict CTest 8/8 in 1.56s, optimized ASan CTest 8/8 in 5.15s,
+project integration CTest 8/8 in 0.70s. Canonical task-only source commit 7bc83f3;
+inherited symbol-audit work preserved byte-for-byte and excluded. The exact tested
+binary is installed in the canonical checkout and this project's tools/ast_distance.
+Raw scan, regression logs, preservation proof and SHA receipt are at workspace
+automation-artifacts/2026-10-04-deep-suspension-review/.

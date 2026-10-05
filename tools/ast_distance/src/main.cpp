@@ -2872,6 +2872,10 @@ void cmd_deep(const std::string& src_dir, const std::string& src_lang,
             for (const auto& path : target_paths) evidence << ' ' << path;
             evidence << '\n';
             print_transliteration_distance(distance, evidence);
+            std::ostringstream suspension;
+            print_suspension_review(source_file.paths, target_paths, suspension);
+            std::cout << suspension.str();
+            evidence << suspension.str();
         }
         if (!evidence) throw std::runtime_error("Cannot write deep_transliteration_evidence.txt");
         std::cout << "Full metrics, source/emitted byte maps, ordered logic differences, missing/extra callables,\n"

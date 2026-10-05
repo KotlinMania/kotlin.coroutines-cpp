@@ -94,3 +94,19 @@ smart-pointer receiver carriers are unwrapped for this identity check; unrelated
 wrappers and class-member namesakes do not satisfy it. Generic arguments, receiver
 parameters, continuation arguments and body logic remain in the scoring input.
 These matching rules do not establish equivalent coroutine suspension behavior.
+
+
+`--deep` uses positional exact-token cosine for its emitted Kotlin/C++ distance.
+It also adds a suspension lowering review table to stdout and the persisted
+`deep_transliteration_evidence.txt`. Each explicit suspend declaration or suspend
+callback signature lists matching source/target physical-file locations, await
+macro lines, begin macros, identity/IR markers and parsed indirect-goto lines.
+Comments, strings and preprocessor definitions do not supply function evidence.
+Nested frame bodies are included in their owning operator's evidence.
+
+`NO_LOCAL_LOWERING_REVIEW` and `MARKER_ONLY_REVIEW` are investigation leads,
+not defect verdicts. `TAIL_OR_HELPER_REVIEW` identifies a sole returned call whose
+lowering may live elsewhere. `LOWERING_SYNTAX_PRESENT` still needs compiled IR
+and lifetime/result/cancellation checks. Multiple candidate overloads and parse
+limitations remain visible. Inferred suspension and external call resolution are
+not established by this syntactic inventory. Review rows never alter scores.

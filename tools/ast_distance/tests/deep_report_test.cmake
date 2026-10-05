@@ -49,3 +49,62 @@ if(status EQUAL 0 OR NOT errors MATCHES "Cannot open codebase root")
     message(FATAL_ERROR "Missing root silently reported complete: ${status}: ${output}: ${errors}")
 endif()
 message(STATUS "Deep missing files/API/functions/properties/enum/alias inventory and Rust/Kotlin totals verified")
+# Suspension review is scoped to each callable, including owned frame bodies.
+file(MAKE_DIRECTORY "${TEST_DIR}/review-source" "${TEST_DIR}/review-target")
+file(WRITE "${TEST_DIR}/review-source/Review.kt" [=[suspend fun plainValue(): Int = awaitValue()
+suspend fun markerValue(): Int { val value = awaitValue(); return value + 1 }
+suspend fun tailValue(): Int = awaitValue()
+suspend fun macroValue(): Int { awaitValue(); return 1 }
+suspend fun gotoValue(): Int { awaitValue(); return 1 }
+fun callbackPath(block: suspend (Int) -> Int): Flow<Int> = flow { emit(block(1)) }
+fun ordinaryValue(): String = "suspend coroutine_yield"
+]=])
+file(WRITE "${TEST_DIR}/review-target/Review.hpp" [=[// Transliterated from: Review.kt
+void* plain_value(Continuation<void*>* completion) {
+  // coroutine_yield(this, fake()); goto *label;
+  const char* words = "coroutine_yield coroutine_begin suspend __kxs_suspend_point";
+  return nullptr;
+}
+void* marker_value(Continuation<void*>* completion) { dsl::suspend(await_value(completion)); return nullptr; }
+void* tail_value(Continuation<void*>* completion) { return await_value(completion); }
+void* macro_value(Continuation<void*>* completion) {
+  class Frame { public:
+    void* invoke_suspend(Result<void*> result) {
+      coroutine_begin(this)
+      coroutine_yield(this, await_value(this));
+      coroutine_end(this)
+    }
+    void* _label = nullptr;
+  };
+  return run_frame(completion);
+}
+void* goto_value(Continuation<void*>* completion) { void* label = &&done; goto *label; done: return nullptr; }
+void* callback_path(void* block) { return callback_helper(block); }
+const char* ordinary_value() { return "suspend coroutine_yield"; }
+]=])
+file(WRITE "${TEST_DIR}/review-source/Supported.kt" "fun addValue(inputValue: Int): Int = inputValue + 1\n")
+file(WRITE "${TEST_DIR}/review-target/Supported.hpp" "// Transliterated from: Supported.kt\nint add_value(int input_value) { return input_value + 1; }\n")
+execute_process(COMMAND "${AST_DISTANCE}" --deep "${TEST_DIR}/review-source" kotlin "${TEST_DIR}/review-target" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_VARIABLE review ERROR_VARIABLE errors RESULT_VARIABLE status)
+file(WRITE "${TEST_DIR}/suspension-review.txt" "${review}\n${errors}")
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "Suspension review failed: ${review}: ${errors}")
+endif()
+foreach(expected "NO_LOCAL_LOWERING_REVIEW" "MARKER_ONLY_REVIEW" "TAIL_OR_HELPER_REVIEW" "LOWERING_SYNTAX_PRESENT" "suspend callback contract" "Explicit suspension contracts reviewed: 6" "Supported.kt\tSupported.hpp\t1.000000")
+    string(FIND "${review}" "${expected}" found)
+    if(found LESS 0)
+        message(FATAL_ERROR "Missing suspension/literal deep evidence ${expected}: ${review}")
+    endif()
+endforeach()
+file(READ "${TEST_DIR}/deep_transliteration_evidence.txt" receipt)
+if(NOT receipt MATCHES "score_method: positional exact-token cosine" OR NOT receipt MATCHES "Suspension lowering review leads")
+    message(FATAL_ERROR "Deep literal/suspension receipt missing: ${receipt}")
+endif()
+if(NOT review MATCHES "NO_LOCAL_LOWERING_REVIEW[^\n]*plain_value" OR
+   NOT review MATCHES "MARKER_ONLY_REVIEW[^\n]*marker_value" OR
+   NOT review MATCHES "TAIL_OR_HELPER_REVIEW[^\n]*tail_value" OR
+   NOT review MATCHES "LOWERING_SYNTAX_PRESENT[^\n]*macro_value" OR
+   NOT review MATCHES "LOWERING_SYNTAX_PRESENT[^\n]*goto_value")
+    message(FATAL_ERROR "Wrong callable-scoped review classification: ${review}")
+endif()
+message(STATUS "Deep ordered literal score and callable-scoped suspension review passed")
