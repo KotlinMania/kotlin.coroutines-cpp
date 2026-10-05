@@ -7,6 +7,7 @@
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
+#include "kotlinx/coroutines/Builders.hpp"
 #include "kotlinx/coroutines/Yield.hpp"
 #include "kotlinx/coroutines/Unconfined.hpp"
 #include "kotlinx/coroutines/Dispatchers.hpp"
@@ -361,6 +362,13 @@ void test_async_suspend_value_and_start_modes() {
         assert_equals(1, entered);
         assert_true(deferred->is_completed());
         assert_equals(42, deferred->get_completed());
+        auto parent = std::make_shared<RecordingContinuation>(dispatcher);
+        auto await_frame = std::make_shared<CallFrame>(parent, [deferred](auto* continuation) {
+            return deferred->await(continuation);
+        });
+        std::unique_ptr<int> awaited(static_cast<int*>(await_frame->start(Result<void*>::success(nullptr))));
+        assert_equals(42, *awaited);
+        assert_equals(0, parent->resumes);
         assert_true(retained.expired());
         scope->get_job()->cancel();
     }
@@ -1187,7 +1195,87 @@ void test_iterator_registration_races_completion(bool close) {
     }
 }
 
+void test_deferred_coroutine_await_typed_result(int mode) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto job = JobImpl::create(nullptr);
+    std::shared_ptr<CoroutineContext> context = (mode == 2 || mode == 3)
+        ? job->operator+(dispatcher) : dispatcher;
+    auto parent = std::make_shared<RecordingContinuation>(context);
+    auto deferred = std::make_shared<DeferredCoroutine<std::shared_ptr<int>>>(EmptyCoroutineContext::instance(), true);
+    std::weak_ptr<DeferredCoroutine<std::shared_ptr<int>>> retained_deferred = deferred;
+    auto frame = std::make_shared<CallFrame>(parent, [deferred](auto* continuation) {
+        return deferred->await(continuation);
+    });
+    std::weak_ptr<CallFrame> retained_frame = frame;
+    assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    frame.reset();
+    if (mode == 2) job->cancel();
+    auto value = std::make_shared<int>(42);
+    auto cause = std::make_exception_ptr(std::runtime_error("deferred failed"));
+    if (mode == 1) deferred->resume_with(Result<std::shared_ptr<int>>::failure(cause));
+    else deferred->resume_with(Result<std::shared_ptr<int>>::success(value));
+    auto completed_references = value.use_count();
+    if (mode == 3) job->cancel();
+    deferred.reset();
+    assert_equals(0, parent->resumes);
+    assert_equals(size_t(1), dispatcher->queue.size());
+    dispatcher->drain();
+    assert_equals(1, parent->resumes);
+    if (mode) {
+        assert_false(parent->result.is_success());
+        if (mode == 1) assert_true(parent->result.exception_or_null() == cause);
+    } else {
+        std::unique_ptr<std::shared_ptr<int>> result(
+            static_cast<std::shared_ptr<int>*>(parent->result.get_or_throw()));
+        assert_true(*result == value);
+        assert_equals(42, **result);
+    }
+    assert_true(retained_frame.expired(), "typed deferred await frame retained");
+    assert_true(retained_deferred.expired(), "typed deferred await object retained");
+    assert_equals(completed_references, value.use_count());
+}
+
+void test_deferred_coroutine_await_immediate() {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto job = JobImpl::create(nullptr);
+    job->cancel();
+    auto parent = std::make_shared<RecordingContinuation>(job->operator+(dispatcher));
+    auto deferred = std::make_shared<DeferredCoroutine<std::shared_ptr<int>>>(EmptyCoroutineContext::instance(), true);
+    auto value = std::make_shared<int>(42);
+    deferred->resume_with(Result<std::shared_ptr<int>>::success(value));
+    auto completed_references = value.use_count();
+    for (int iteration = 0; iteration < 2; ++iteration) {
+        auto frame = std::make_shared<CallFrame>(parent, [deferred](auto* continuation) {
+            return deferred->await(continuation);
+        });
+        std::weak_ptr<CallFrame> retained = frame;
+        {
+            std::unique_ptr<std::shared_ptr<int>> result(
+                static_cast<std::shared_ptr<int>*>(frame->start(Result<void*>::success(nullptr))));
+            assert_true(*result == value);
+        }
+        frame.reset();
+        assert_true(retained.expired());
+        assert_equals(completed_references, value.use_count());
+    }
+    auto failed = std::make_shared<DeferredCoroutine<int>>(EmptyCoroutineContext::instance(), true);
+    auto cause = std::make_exception_ptr(std::runtime_error("immediate await failure"));
+    failed->resume_with(Result<int>::failure(cause));
+    auto frame = std::make_shared<CallFrame>(parent, [failed](auto* continuation) {
+        return failed->await(continuation);
+    });
+    bool caught = false;
+    try { frame->start(Result<void*>::success(nullptr)); }
+    catch (...) { caught = std::current_exception() == cause; }
+    assert_true(caught);
+    assert_equals(0, parent->resumes);
+    assert_true(dispatcher->queue.empty());
+}
+
 int main() {
+    std::cerr << "test_deferred_coroutine_await_typed_result\n";
+    for (int mode : {0, 1, 2, 3}) test_deferred_coroutine_await_typed_result(mode);
+    test_deferred_coroutine_await_immediate();
     std::cerr << "test_iterator_registration_races_completion\n";
     test_iterator_registration_races_completion(false);
     test_iterator_registration_races_completion(true);

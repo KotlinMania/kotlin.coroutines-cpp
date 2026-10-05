@@ -17,6 +17,7 @@
 #include <thread>
 #include <memory>
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -112,12 +113,14 @@ namespace coroutines {
             return nullptr;
         }
 
-        /**
-         * Suspends until completion and returns result
-         * Transliterated from: override suspend fun await(): T = awaitInternal() as T
-         */
+        /** Returns an owned value box, or suspends until the value or failure is available. */
+        // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:94-101
         void* await(Continuation<void*>* continuation) override {
-            return AbstractCoroutine<T>::await_internal(continuation);
+            auto frame = std::make_shared<AwaitValueFrame>(
+                std::dynamic_pointer_cast<DeferredCoroutine<T>>(this->shared_from_this()),
+                internal::retain_continuation(continuation));
+            frame->retain();
+            return frame->start(Result<void*>::success(nullptr));
         }
 
         T await_blocking() override {
@@ -148,6 +151,34 @@ namespace coroutines {
             return *on_await_clause_;
         }
 
+    private:
+        class AwaitValueFrame final : public ContinuationImpl {
+        public:
+            AwaitValueFrame(std::shared_ptr<DeferredCoroutine<T>> deferred,
+                            std::shared_ptr<Continuation<void*>> completion)
+                : ContinuationImpl(std::move(completion)), deferred_(std::move(deferred)) {}
+            void retain() { self_ref_ = shared_from_this(); }
+            void* invoke_suspend(Result<void*> result) override {
+                try {
+                    coroutine_begin(this)
+                    coroutine_yield_value(this, result, deferred_->await_internal(this), state_);
+                    self_ref_.reset();
+                    auto* value = dynamic_cast<CompletedValue<T>*>(static_cast<JobState*>(state_));
+                    if (!value) throw std::logic_error("Unexpected await state");
+                    return new T(value->value);
+                } catch (...) {
+                    self_ref_.reset();
+                    throw;
+                }
+            }
+        private:
+            void* _label = nullptr;
+            void* state_ = nullptr; // Borrowed from the retained deferred's completion state.
+            std::shared_ptr<DeferredCoroutine<T>> deferred_;
+            std::shared_ptr<BaseContinuationImpl> self_ref_;
+        };
+
+    public:
          // Bring template start method into scope (avoids shadowing)
          using AbstractCoroutine<T>::start;
 

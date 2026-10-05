@@ -17,7 +17,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
 | t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer and receiving await/unbox frames retain collection, child job and typed results; underlying await uses the cancellable completion protocol | Implemented; focused local acceptance recorded below |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
-| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references, reusable cache ownership and raw reusable ABI wrapper and three direct channel adapters and broadcast send and iterator prerequisites repaired; other typed receiving adapters, channel receiver lifetime, segment reclamation and publication races remain | Partially implemented; bounded evidence below |
+| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references, reusable cache ownership and raw reusable ABI wrapper and three direct channel adapters and broadcast send and iterator prerequisites repaired; select typed receiving adapters, channel receiver lifetime, segment reclamation and publication races remain | Partially implemented; bounded evidence below |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
 | t_d1b9ce81 | Builders.common.kt:140-173; CoroutineScope.kt:280-287; Supervisor.kt:50-66 | withContext and scope builders substitute stack scopes for scope coroutines and omit dispatcher/child-waiting branches | Queued |
 | t_e0acb2be | ASTDistance AST identity and receiver matching | Empty companions and valid extension-to-free-function lowering cause matching false alarms; actual source-path marker equivalence needs proof | Verified, committed 9d9d49ef; 8/8 strict and 8/8 ASan tests |
@@ -1129,3 +1129,50 @@ in Debug (0.65s) and 3/3 in optimized ASan (0.93s). Final source hashes and
 focused build/test logs are in workspace
 automation-artifacts/iterator-continuation-race-20261005/receipt.json. No
 CI/configuration change or push was made.
+
+
+## DeferredCoroutine typed await receiver — 2026-10-05
+
+The owning-cell publication refactor remains reserved pending its scope decision.
+This independent t_037fc89b repair follows Builders.common.kt:94-101, whose
+DeferredCoroutine.await awaits awaitInternal then returns its typed value.
+C++ previously exposed the borrowed internal JobState pointer as if it were an
+owned T result box, so typed callers could misread or delete the job state.
+
+DeferredCoroutine now uses a retained AwaitValueFrame, matching the already
+accepted CompletableDeferred receiving-frame pattern. It retains the deferred
+and caller, awaits the existing JobSupport protocol with computed-goto macros,
+then extracts CompletedValue<T> and returns an owned T box. Immediate and resumed
+paths use the same conversion. Failures clear frame self-retention and propagate
+the original cause. No await algorithm, dispatch/cancellation branch, parent
+registration, channel cell representation or public signature changes. The
+updated await docstring describes C++ result ownership.
+
+The existing test_continuation_dispatch target verifies shared-reference typed
+results on suspended success, exact deferred failure, caller cancellation before
+completion and prompt cancellation after completion before dispatch. The outer
+deferred handle is dropped before delivery; the receiving frame retains it,
+then both deferred object and caller frame release after one queued completion.
+Result-box copies return to the completion-state reference count after use.
+Repeated immediate awaits with an already cancelled caller preserve original
+fast-path no-cancellation-check behavior; immediate failure keeps cause identity.
+Existing actual async DEFAULT/LAZY/UNDISPATCHED value checks now also consume
+typed await boxes. No target or separate harness was added.
+
+AsyncTest, test_continuation_dispatch and test_channel_as_flow_smoke pass 3/3
+in Debug (0.76s) and 3/3 in optimized ASan (1.32s). One exploratory dispatch run
+timed out after the new deferred checks, in the existing iterator concurrency
+check. Its source cause was not established; a direct run and 35 diagnostic
+repetitions passed, followed by the final focused suites. The observation is
+recorded explicitly rather than treated as race-freedom evidence. No
+ThreadSanitizer run or all-channel race acceptance is claimed. Logs, diagnostic
+outputs and source hashes are in workspace
+automation-artifacts/deferred-coroutine-await-20261005/receipt.json.
+
+Underlying JobSupport completion state is a raw atomic JobState pointer and
+its default destructor does not reclaim that allocated state. This slice checks
+release of additional result-box references, not complete reclamation of the
+underlying completion payload. That state-reclamation gap is separate from this
+receiving adapter. Select typed receiving adapters, borrowed channel receiver
+lifetime, raw segment reclamation and raw waiter publication/late owner
+installation remain. No CI/configuration change or push was made.
