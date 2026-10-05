@@ -1176,3 +1176,46 @@ underlying completion payload. That state-reclamation gap is separate from this
 receiving adapter. Select typed receiving adapters, borrowed channel receiver
 lifetime, raw segment reclamation and raw waiter publication/late owner
 installation remain. No CI/configuration change or push was made.
+
+
+## Completed typed continuation segment registration — 2026-10-05
+
+This investigation of the iterator stress timeout confirms an independent
+production defect against CancellableContinuationImpl.kt:399-460. The typed
+C++ invoke_on_cancellation_impl_segment handles Active, existing handlers,
+exceptional/cancelled state and CompletedCancellableContinuationState, but had
+no terminal branch for ordinary successful CompletedWithValue<T>. It therefore
+reloaded the same immutable completed state forever. The original else branch
+returns immediately when the handler is a Segment. C++'s void specialization
+already contained the corresponding completed-success return.
+
+The existing iterator registration stress can reach this branch: registration
+loads its owning continuation before the iterator clears the field, then the
+opposite operation successfully completes the continuation before registration
+checks the state. The test's enqueue hook starts the opposite operation after
+waiter-owner publication; the public iterator handle remains owned. Neither
+reserved late owner installation nor a released raw waiter is needed for this
+hang. The original timed-out process had no thread sample, so exact historical
+attribution remains an inference from the source and reachable test schedule.
+
+A deterministic regression in the existing test_continuation_dispatch target
+resumes a real typed Boolean reusable CCI, then registers a real ChannelSegment.
+With unchanged production code it did not return within two seconds. A macOS
+thread sample captured the hot invoke_on_cancellation_impl_segment loop. The
+own diagnostic process was then terminated. The regression returns the expected
+owned Boolean after restoring the missing original terminal return. It verifies
+no dispatch/completion side effect and frame release. No separate harness,
+production instrumentation or new target was introduced; the existing 200
+coordinated registration stress cases remain.
+
+The repair adds only the original completed-success Segment return. It does not
+change handler cardinality, cancelled/exceptional handling, index CAS, reusable
+claim protocol, cell publication, receiver lifetime or segment reclamation.
+The owning-cell representation refactor remains reserved pending its scope
+decision. There is no ThreadSanitizer or all-channel race-freedom acceptance.
+
+AsyncTest, test_continuation_dispatch and test_channel_as_flow_smoke pass 3/3
+in Debug (0.95s) and 3/3 in optimized ASan (1.09s). Baseline reproduction,
+thread sample, final source hashes and focused build/test logs are in workspace
+automation-artifacts/completed-segment-registration-20261005/receipt.json.
+No CI/configuration change or push was made.

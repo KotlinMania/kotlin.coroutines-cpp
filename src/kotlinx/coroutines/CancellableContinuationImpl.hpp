@@ -929,6 +929,9 @@ public:
             if (dynamic_cast<CompletedCancellableContinuationState<T>*>(state)) {
                 return;  // Kotlin: if (handler is Segment<*>) return
             }
+
+            // A normally completed continuation does not need a segment handler.
+            return;
         }
     }
 

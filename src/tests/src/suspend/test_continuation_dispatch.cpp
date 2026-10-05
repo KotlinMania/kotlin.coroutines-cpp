@@ -1272,7 +1272,29 @@ void test_deferred_coroutine_await_immediate() {
     assert_true(dispatcher->queue.empty());
 }
 
+void test_completed_typed_continuation_ignores_segment_registration() {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto parent = std::make_shared<RecordingContinuation>(dispatcher);
+    auto channel = std::make_shared<channels::BufferedChannel<int>>(0);
+    auto segment = std::make_shared<channels::ChannelSegment<int>>(0, nullptr, channel.get(), 0);
+    auto frame = std::make_shared<CallFrame>(parent, [segment](auto* continuation) {
+        return dsl::suspend_cancellable_coroutine_reusable<bool>(continuation, [&](auto* cont) {
+            cont->resume(true, nullptr);
+            cont->invoke_on_cancellation(segment.get(), 0);
+        });
+    });
+    std::weak_ptr<CallFrame> retained = frame;
+    std::unique_ptr<bool> result(static_cast<bool*>(frame->start(Result<void*>::success(nullptr))));
+    assert_true(*result);
+    assert_equals(0, parent->resumes);
+    assert_true(dispatcher->queue.empty());
+    frame.reset();
+    assert_true(retained.expired());
+}
+
 int main() {
+    std::cerr << "test_completed_typed_continuation_ignores_segment_registration\n";
+    test_completed_typed_continuation_ignores_segment_registration();
     std::cerr << "test_deferred_coroutine_await_typed_result\n";
     for (int mode : {0, 1, 2, 3}) test_deferred_coroutine_await_typed_result(mode);
     test_deferred_coroutine_await_immediate();
