@@ -1766,10 +1766,9 @@ namespace kotlinx {
 
         // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1373-1376
         void* JobSupport::on_await_internal_process_res_func(void* /*clause_object*/, void* /*ignored_param*/, void* result) {
-            if (auto* ex = static_cast<CompletedExceptionally*>(result)) {
-                if (dynamic_cast<CompletedExceptionally*>(ex)) {
-                    std::rethrow_exception(ex->cause);
-                }
+            auto* state = static_cast<JobState*>(result);
+            if (auto* ex = dynamic_cast<CompletedExceptionally*>(state)) {
+                std::rethrow_exception(ex->cause);
             }
             return result;
         }

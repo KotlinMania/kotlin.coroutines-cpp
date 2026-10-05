@@ -1219,3 +1219,50 @@ in Debug (0.95s) and 3/3 in optimized ASan (1.09s). Baseline reproduction,
 thread sample, final source hashes and focused build/test logs are in workspace
 automation-artifacts/completed-segment-registration-20261005/receipt.json.
 No CI/configuration change or push was made.
+
+
+## Selected deferred completion type check — 2026-10-05
+
+This independent t_037fc89b slice follows JobSupport.kt:1373-1376. The original
+onAwaitInternalProcessResFunc throws only when the result is a
+CompletedExceptionally wrapper and otherwise returns the result unchanged.
+C++ first cast every raw result to CompletedExceptionally*, then dynamic_cast
+to that same static type. That is an identity conversion, not a check of the
+actual polymorphic state. Every non-null successful completion could therefore
+be read as an exceptional wrapper and incorrectly rethrown.
+
+The processor now converts the existing raw internal state to JobState* and
+uses a checked dynamic_cast to CompletedExceptionally*. Actual failed/cancelled
+wrappers rethrow their original cause; successful states and nullptr return
+unchanged. No result allocation, completion state mutation, registration,
+selection, cancellation or cell ownership algorithm changes.
+
+Existing test_continuation_dispatch checks call the actual on_await clause
+processors for DeferredCoroutine<int> success and CompletableDeferred reference
+and exception-pointer success values, plus exact failure/cancellation causes
+from both implementations and nullptr success. A small fixture exposes the
+existing protected state accessor without adding a production API or separate
+harness. The unchanged production baseline failed at the successful
+CompletableDeferred exception-pointer value, incorrectly throwing that payload.
+The final tests retain their completion values and compare result identity; they
+do not claim completion-state reclamation.
+
+An exploratory DeferredCoroutine<exception_ptr> test also exposed a separate
+existing Result<exception_ptr> representation collision: the value and exception
+alternatives have the same type. The accepted successful exception-pointer case
+uses CompletableDeferred.complete and does not instantiate that invalid Result
+specialization. The Result representation issue is recorded, not repaired or
+accepted by this processor slice.
+
+The owning-cell publication refactor remains reserved pending its scope choice.
+SelectClause1 typed block invocation still casts a raw result pointer through
+uintptr_t to Q instead of receiving the actual typed value, and suspended select
+completion/lifetime also remain separate. No full typed select or all-race
+acceptance is claimed. Borrowed channel receiver lifetime, raw segment and
+JobSupport completion-state reclamation remain.
+
+AsyncTest, test_continuation_dispatch and test_channel_as_flow_smoke pass 3/3
+in Debug (0.94s) and 3/3 in optimized ASan (1.02s). Baseline failure, final
+source hashes and focused build/test logs are in workspace
+automation-artifacts/select-await-result-typecheck-20261005/receipt.json. No
+CI/configuration change or push was made.

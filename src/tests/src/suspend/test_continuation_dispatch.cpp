@@ -8,6 +8,7 @@
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
 #include "kotlinx/coroutines/Builders.hpp"
+#include "kotlinx/coroutines/CompletableDeferred.hpp"
 #include "kotlinx/coroutines/Yield.hpp"
 #include "kotlinx/coroutines/Unconfined.hpp"
 #include "kotlinx/coroutines/Dispatchers.hpp"
@@ -1292,7 +1293,62 @@ void test_completed_typed_continuation_ignores_segment_registration() {
     assert_true(retained.expired());
 }
 
+template<typename DeferredImplementation>
+class CompletionInspectingDeferred : public DeferredImplementation {
+public:
+    using DeferredImplementation::DeferredImplementation;
+    using DeferredImplementation::get_state_for_await;
+};
+
+void test_deferred_select_completion_processing() {
+    auto value_exception = std::make_exception_ptr(std::runtime_error("successful exception payload"));
+    auto value = std::make_shared<CompletionInspectingDeferred<CompletableDeferredImpl<std::exception_ptr>>>();
+    assert_true(value->complete(value_exception));
+    auto* state = value->get_state_for_await();
+    auto process = value->on_await().get_process_res_func();
+    assert_true(process(value.get(), nullptr, state) == state);
+    assert_true(value->get_completed() == value_exception);
+
+    auto integer = std::make_shared<CompletionInspectingDeferred<DeferredCoroutine<int>>>(EmptyCoroutineContext::instance(), true);
+    integer->resume_with(Result<int>::success(42));
+    state = integer->get_state_for_await();
+    process = integer->on_await().get_process_res_func();
+    assert_true(process(integer.get(), nullptr, state) == state);
+    assert_equals(42, integer->get_completed());
+
+    auto reference = std::make_shared<CompletionInspectingDeferred<CompletableDeferredImpl<std::shared_ptr<int>>>>();
+    auto payload = std::make_shared<int>(84);
+    assert_true(reference->complete(payload));
+    state = reference->get_state_for_await();
+    process = reference->on_await().get_process_res_func();
+    assert_true(process(reference.get(), nullptr, state) == state);
+    assert_true(reference->get_completed() == payload);
+
+    for (bool cancelled : {false, true}) {
+        auto failure = cancelled ? std::make_exception_ptr(CancellationException("selected deferred cancelled"))
+                                 : std::make_exception_ptr(std::runtime_error("selected deferred failed"));
+        auto failed = std::make_shared<CompletionInspectingDeferred<DeferredCoroutine<int>>>(EmptyCoroutineContext::instance(), true);
+        failed->resume_with(Result<int>::failure(failure));
+        process = failed->on_await().get_process_res_func();
+        bool caught = false;
+        try { process(failed.get(), nullptr, failed->get_state_for_await()); }
+        catch (...) { caught = std::current_exception() == failure; }
+        assert_true(caught);
+
+        auto completable = std::make_shared<CompletionInspectingDeferred<CompletableDeferredImpl<int>>>();
+        assert_true(completable->complete_exceptionally(failure));
+        process = completable->on_await().get_process_res_func();
+        caught = false;
+        try { process(completable.get(), nullptr, completable->get_state_for_await()); }
+        catch (...) { caught = std::current_exception() == failure; }
+        assert_true(caught);
+    }
+    assert_true(JobSupport::on_await_internal_process_res_func(nullptr, nullptr, nullptr) == nullptr);
+}
+
 int main() {
+    std::cerr << "test_deferred_select_completion_processing\n";
+    test_deferred_select_completion_processing();
     std::cerr << "test_completed_typed_continuation_ignores_segment_registration\n";
     test_completed_typed_continuation_ignores_segment_registration();
     std::cerr << "test_deferred_coroutine_await_typed_result\n";
