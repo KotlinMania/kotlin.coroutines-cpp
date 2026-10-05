@@ -3,6 +3,7 @@
 #include "symbol_analysis.hpp"
 #include "imports.hpp"
 #include "callable_identity.hpp"
+#include "logic_similarity.hpp"
 #include <cassert>
 #include <filesystem>
 #include <iostream>
@@ -58,6 +59,60 @@ class Started {
     assert(adapted.text.size() == lexical.size());
     assert(adapted.text.substr(0, lexical.find("fun /* nested")) == lexical.substr(0, lexical.find("fun /* nested")));
     parser.extract_function_infos("fun broken( {", Language::KOTLIN);
+    assert(parser.last_extraction_has_errors());
+
+    auto local_source = parser.extract_function_infos(
+        "fun collectWhile() { val collector = object { fun emit(value: Int) { predicate(value) } }; collect(collector) }", Language::KOTLIN);
+    auto local_target = parser.extract_function_infos(
+        "void drop() { class Collector { void emit(int value) { predicate(value); } }; }\n"
+        "void collect_while() { class Collector { void emit(int value) { changed(value); } }; }", Language::CPP);
+    assert(local_source.size() == 2 && local_target.size() == 4);
+    assert(local_source[1].enclosing_functions == std::vector<std::string>{"collectWhile"});
+    assert(local_target[1].enclosing_functions == std::vector<std::string>{"drop"});
+    assert(!callable_owners_compatible(local_source[1], local_target[1]));
+    assert(callable_owners_compatible(local_source[1], local_target[3]));
+
+    const std::string macros = "void* invoke_suspend() {\n  coroutine_begin(this)\n  coroutine_yield(this, emit(value, this));\n  coroutine_end(this)\n  }\nvoid release_intercepted() { release(); }\n";
+    auto macro_input = cpp_grammar_input(macros);
+    assert(macro_input.text.size() == macros.size());
+    assert(std::count(macro_input.text.begin(), macro_input.text.end(), '\n') == std::count(macros.begin(), macros.end(), '\n'));
+    assert(macro_input.statement_macro_lines == (std::vector<int>{2, 4}));
+    auto macro_tree = parser.parse_string(macros, Language::CPP);
+    auto terminated_tree = parser.parse_string(macro_input.text, Language::CPP);
+    assert(normalized_logic_tokens(macro_tree.get()) == normalized_logic_tokens(terminated_tree.get()));
+    for (size_t i = 0; i < macros.size(); ++i)
+        if (macros[i] != macro_input.text[i]) assert(std::isspace(static_cast<unsigned char>(macros[i])) && macros[i] != '\n' && macro_input.text[i] == ';');
+    auto macro_functions = parser.extract_function_infos(macros, Language::CPP);
+    assert(!parser.last_extraction_has_errors() && macro_functions.size() == 2);
+    assert(parser.last_cpp_statement_macro_lines() == (std::vector<int>{2, 4}));
+    assert(macro_functions[0].name == "invoke_suspend" && macro_functions[0].start_line == 1 && macro_functions[0].end_line == 5);
+    assert(macro_functions[1].name == "release_intercepted" && macro_functions[1].start_line == 6);
+    assert(macro_functions[0].identifiers.canonical_freq.contains("coroutinebegin"));
+    assert(macro_functions[0].identifiers.canonical_freq.contains("coroutineyield"));
+    assert(macro_functions[0].identifiers.canonical_freq.contains("coroutineend"));
+    assert(!macro_functions[0].identifiers.canonical_freq.contains("releaseintercepted"));
+    auto changed_macro_source = macros;
+    changed_macro_source.replace(changed_macro_source.find("emit(value"), 4, "omit");
+    auto changed_macro_functions = parser.extract_function_infos(changed_macro_source, Language::CPP);
+    assert(!parser.last_extraction_has_errors());
+    assert(normalized_logic_similarity(macro_functions[0].body_tree.get(), changed_macro_functions[0].body_tree.get()) < 1.0f);
+    const std::string macro_lexical = R"literal(// coroutine_begin(this)
+/* coroutine_end(this) */
+#define coroutine_begin(c) ignored(c)
+const char* text = "coroutine_begin(this)";
+const char* raw = R"tag(coroutine_end(this)
+ coroutine_begin(this))tag";
+void work() { coroutine_begin(this); coroutine_end(this); }
+int count = 1'000;
+char delimiter = '\'';
+)literal";
+    assert(cpp_grammar_input(macro_lexical).text == macro_lexical);
+    assert(cpp_grammar_input("void work() { unknown_begin(this)\n  finish(); }").statement_macro_lines.empty());
+    assert(cpp_grammar_input("void work() { auto value = coroutine_begin(this); }").statement_macro_lines.empty());
+    assert(cpp_grammar_input("void work() {\ncoroutine_end(this)\n}").statement_macro_lines.empty());
+    parser.extract_function_infos("void work() { unknown_begin(this)\n  finish(); }", Language::CPP);
+    assert(parser.last_extraction_has_errors());
+    parser.extract_function_infos("void* broken() {\n  coroutine_begin(this)\n  return (;\n  }", Language::CPP);
     assert(parser.last_extraction_has_errors());
 
     ImportExtractor imports;

@@ -18,13 +18,30 @@ Otherwise they use the existing similarity-ranked one-to-one matcher with an
 ambiguity warning for multiple candidates. Owner/signature context is not
 semantic proof. Helper/frame functions remain visible as unmatched targets.
 
+Local functions and methods also retain their enclosing callable names, ordered
+from outermost to innermost. When both sides have that lexical evidence, the
+canonicalized enclosing paths must agree before similarity ranking. An anonymous
+Kotlin collector method inside `collectWhile` cannot match a C++ collector method
+inside `drop` simply because its name or copied body is closer. This constraint
+also applies in reverse comparisons; it does not infer the identity of helpers
+moved outside their enclosing callable.
+
 The vendored Kotlin grammar predates `fun interface`. Function extraction blanks
 that single modifier in parser input outside comments, strings, character
 literals and backticks. This is a byte-offset-preserving compatibility adapter:
 original source supplies text, parameters and line locations. The CLI announces
 adapted locations. Remaining Kotlin or C++ parse errors generate a warning that
-the inventory may be incomplete. In particular, suspend macros and an explicit
-C++ template instantiation can trigger grammar diagnostics. Name coverage and
+the inventory may be incomplete. C++ parsing and function extraction recognize
+standalone `coroutine_begin`/`coroutine_end` invocations whose macro expansion
+supplies a statement terminator. A bounded compatibility adapter replaces one
+available whitespace byte with a parser-only semicolon, preserving all byte
+offsets, newlines, original macro/argument text and scored calls. It skips comments,
+ordinary/raw strings, preprocessor directives, already terminated calls and
+expression uses. The CLI reports each adapted source line and explicitly leaves
+the expansion unverified. Unknown macros, malformed payloads, and invocations
+without available non-newline whitespace remain parser diagnostics. This is
+syntax support, not macro expansion or de-lowering. Explicit C++ template
+instantiation can also trigger grammar diagnostics. Name coverage and
 body similarity are provisional measurements, not behavioral certification.
 
 All symbol reports now print the complete inventory by default:
@@ -73,6 +90,9 @@ separators/width suffixes. It does not map operation synonyms, ignore collection
 calls, hide helper frames, or count comments as logic. Kotlin jump expressions are
 distinguished as return/throw/break/continue. Grammar soft-keyword identifiers use
 original source spelling instead of the parser node name.
+Prefix and postfix increment/decrement retain the exact `++`/`--` operator and
+its position relative to the operand; changing, moving or omitting an update
+changes ordered logic evidence.
 
 The combined function score is `(0.40 * identifier_cosine + 0.20 * AST_cosine +
 0.40 * ordered_logic_similarity) * ordered_logic_similarity`. For bodies with no
@@ -101,3 +121,13 @@ bindings. Comments do not alter the body metric, and the stuffed implementations
 remain well below the faithful implementations and the existing excellent
 threshold. The excellent/good/critical distribution bookkeeping remains intact;
 excellent counts are included in both status and summary reports.
+
+The local Limit continuation regression is a useful boundary case: correcting
+its lexical method match, statement macro parsing and update operators changes
+the function score from 0.050 to 0.045, with all eight source functions paired.
+The previous collector `emit` was paired with a method in the wrong operator.
+The remaining low score is not corrected by raising weights or erasing target
+frame helpers: this comparator has no verified transformation from Kotlin
+suspension points to the C++ frame/ownership representation. Those terms and
+unsupported mappings stay visible. Runtime/IR acceptance and literal normalized
+body similarity provide different evidence.

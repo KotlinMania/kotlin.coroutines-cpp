@@ -3359,6 +3359,9 @@ int main(int argc, char* argv[]) {
                 for (int line : parser.last_fun_interface_lines())
                     std::cerr << "Info: " << path << ':' << line
                         << " parsed fun interface with offset-preserving grammar compatibility adapter\n";
+                for (int line : parser.last_cpp_statement_macro_lines())
+                    std::cerr << "Info: " << path << ':' << line
+                        << " parsed coroutine statement macro with offset-preserving terminator adapter; expansion remains unverified\n";
                 if (parser.last_extraction_has_errors())
                     std::cerr << "Warning: " << path << " has parser errors; function inventory may be incomplete\n";
                 for (const auto& diagnostic : parser.last_extraction_diagnostics())

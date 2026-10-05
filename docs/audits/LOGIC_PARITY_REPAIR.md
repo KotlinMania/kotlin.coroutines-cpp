@@ -189,3 +189,62 @@ retains its weekly schedule plus workflow_dispatch, with no push/pull_request
 triggers. No remote workflow state was changed. Fetch succeeded; the active
 local branch was preserved. No PR, push, merge or deployment was performed.
 The eight other production repair cards remain open under the umbrella.
+
+## ASTDistance score repair — 2026-10-04
+
+Sydney authorized canonical scorer debugging after the Limit checkpoint. New
+card t_1cfd2fcb records the bounded repair; t_e0acb2be remains the completed
+historical namespace/provenance repair. Canonical commit
+30b232a86107c0667f59e189152666376601375c repairs three reproduced defects:
+
+- Ordered logic previously omitted both increment and decrement: `++x` and
+  `--x` scored identically at 1.0. Exact operators and prefix/postfix position
+  now remain in the sequence; the changed-operator probe scores 0.833333,
+  while its faithful comparison remains 1.0.
+- Local collector methods lacked enclosing-function identity. Kotlin's
+  collectWhile emit at Limit.kt:125 was incorrectly paired with drop's emit
+  at Limit.hpp:57. It now pairs with collect_while's emit at Limit.hpp:354;
+  lexical paths constrain matching before body ranking, in either direction.
+- Unexpanded coroutine_begin/coroutine_end calls omitted parser-visible
+  semicolons and mixed neighboring declaration/method evidence. A bounded
+  syntax adapter adds a terminator only in available whitespace, preserving
+  bytes, lines, original arguments and scored calls. The CLI announces each
+  adapted line and leaves macro expansion unverified. Unknown macros,
+  malformed bodies and layouts without available whitespace remain errors.
+
+The unchanged Limit runtime source now pairs 8/8 with no parser errors. Its
+corrected body score is **0.045**, compared with the historical **0.050**. The
+wrong collector pairing had inflated the earlier score. No weights, missing
+source penalties, call/operation terms, or helper/frame evidence were suppressed.
+The remaining low value reflects a normalization boundary: this scorer does not
+provide a verified correspondence between Kotlin suspension points and the C++
+continuation/frame/ownership representation. It cannot certify or refute Kotlin
+algorithm parity from this aggregate alone. The executable Limit and IR receipts
+above remain independent evidence.
+
+Nine committed scorer source/docs/test files were copied into tools/ast_distance
+and verified by SHA-256 against the canonical commit. Inherited canonical
+symbol-audit/Python-Rust edits were neither copied nor committed; their working
+content was verified against the initial hashes. Canonical work used
+session/2026-10-04-ast-limit-score, preserving the existing dirty tree. Project
+work remained on solace/sharing-transliteration with no runtime source edits.
+
+Validation passed:
+
+- Canonical strict Release: 9/9 native/CLI tests, 1.58s.
+- Canonical optimized AddressSanitizer: 9/9 tests, 6.09s.
+- Integrated project scorer strict Release: 8/8 tests, 1.50s.
+- Full project optimized AddressSanitizer: 33/33 CTests, 36.09s, including
+  test_limit_suspension and test_ir_pipeline.
+
+Regression coverage includes lexical-owner adversaries and reverse matching,
+increment/decrement changes, update omission/position, macro payload changes,
+preserved source offsets, lexical exclusions, and remaining malformed/unknown
+syntax. Existing operator/literal/call/control-flow drift, vocabulary-stuffing,
+namespace/provenance and missing-source checks continue to pass.
+
+Before/after probes, complete comparison output, all build/CTest logs, source
+copy manifests and source/binary hashes are retained under
+`/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-ast-limit-score/`.
+Only local commits and developer executables were produced; no push, release,
+deployment or workflow changes were performed.

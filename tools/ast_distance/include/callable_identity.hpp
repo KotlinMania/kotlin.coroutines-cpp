@@ -30,6 +30,15 @@ inline std::string callable_owner_key(const FunctionInfo& function) {
     return callable_type_key(owner);
 }
 inline bool callable_owners_compatible(const FunctionInfo& source, const FunctionInfo& target) {
+    // Local methods/functions keep the enclosing callable as identity evidence.
+    // Reused anonymous/named collector classes in separate operators must not
+    // match merely because their methods share a spelling or similar bodies.
+    if (!source.enclosing_functions.empty() && !target.enclosing_functions.empty()) {
+        if (source.enclosing_functions.size() != target.enclosing_functions.size()) return false;
+        for (size_t i = 0; i < source.enclosing_functions.size(); ++i)
+            if (IdentifierStats::canonicalize(source.enclosing_functions[i]) !=
+                IdentifierStats::canonicalize(target.enclosing_functions[i])) return false;
+    }
     if (!source.extension_receiver.empty() && target.is_namespace_function)
         return callable_type_names_compatible(source.extension_receiver, target.first_parameter_type);
     if (!target.extension_receiver.empty() && source.is_namespace_function)

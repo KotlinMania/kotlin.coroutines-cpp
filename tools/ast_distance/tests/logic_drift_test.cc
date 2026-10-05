@@ -89,6 +89,21 @@ int main() {
     assert(normalized_number("0x3e8") == "1000");
     assert(normalized_number("077") == "63");
     assert(normalized_number("1'000") == "1000");
+    for (const auto& expression : {std::string("++x"), std::string("x++"), std::string("--x"), std::string("x--")}) {
+        auto source_update = "fun update(x: Int): Int { return " + expression + " }";
+        auto target_update = "int update(int x) { return " + expression + "; }";
+        auto same_update = score(parser, source_update, target_update);
+        auto operation = expression.find("++") != std::string::npos ? "++" : "--";
+        auto reversed_update = score(parser, source_update,
+            replace_once(target_update, operation, std::string(operation) == "++" ? "--" : "++"));
+        auto removed_update = score(parser, source_update, "int update(int x) { return x; }");
+        assert(same_update.logic == 1.0f);
+        assert(reversed_update.logic < same_update.logic && reversed_update.combined < same_update.combined);
+        assert(removed_update.logic < same_update.logic && removed_update.combined < same_update.combined);
+    }
+    auto prefix_update = score(parser, "fun update(x: Int): Int { return ++x }", "int update(int x) { return ++x; }");
+    auto postfix_drift = score(parser, "fun update(x: Int): Int { return ++x }", "int update(int x) { return x++; }");
+    assert(postfix_drift.logic < prefix_update.logic);
     Tree first(static_cast<int>(NodeType::NUMBER), "50"), second(static_cast<int>(NodeType::NUMBER), "500");
     IdentifierStats empty;
     assert(ASTSimilarity::function_parameter_body_cosine_similarity(&first, &second, empty, empty) < 0.5f);

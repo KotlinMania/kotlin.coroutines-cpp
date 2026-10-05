@@ -2,6 +2,7 @@
 
 #include "tree.hpp"
 #include "kotlin_grammar_compat.hpp"
+#include "cpp_grammar_compat.hpp"
 #include "node_types.hpp"
 #include <tree_sitter/api.h>
 #include <string>
@@ -267,6 +268,7 @@ struct FunctionInfo {
     // Matching evidence only: bodies keep every receiver/continuation/type token.
     std::string extension_receiver;
     std::string first_parameter_type;
+    std::vector<std::string> enclosing_functions;
     bool is_namespace_function = false;
     bool has_class_owner = false;
     TreePtr body_tree;
@@ -344,9 +346,10 @@ public:
             throw std::runtime_error("Failed to set parser language");
         }
 
-        // Parse
+        // Use the same bounded C++ syntax adapter as function extraction.
+        auto compatible = lang == Language::CPP ? cpp_grammar_input(source) : CppGrammarInput{source, {}};
         TSTree* ts_tree = ts_parser_parse_string(
-            parser_, nullptr, source.c_str(), source.length());
+            parser_, nullptr, compatible.text.c_str(), compatible.text.length());
 
         if (!ts_tree) {
             throw std::runtime_error("Failed to parse source");
@@ -494,6 +497,7 @@ public:
     bool last_extraction_has_errors() const { return last_extraction_has_errors_; }
     const std::vector<std::string>& last_extraction_diagnostics() const { return last_extraction_diagnostics_; }
     const std::vector<int>& last_fun_interface_lines() const { return last_fun_interface_lines_; }
+    const std::vector<int>& last_cpp_statement_macro_lines() const { return last_cpp_statement_macro_lines_; }
 
     std::vector<FunctionInfo> extract_function_infos(
             const std::string& source, Language lang) {
@@ -516,6 +520,12 @@ public:
         auto compatible = lang == Language::KOTLIN
             ? kotlin_grammar_input(source) : KotlinGrammarInput{source, {}};
         last_fun_interface_lines_ = compatible.fun_interface_lines;
+        last_cpp_statement_macro_lines_.clear();
+        if (lang == Language::CPP) {
+            auto cpp = cpp_grammar_input(source);
+            compatible.text = std::move(cpp.text);
+            last_cpp_statement_macro_lines_ = std::move(cpp.statement_macro_lines);
+        }
         TSTree* ts_tree = ts_parser_parse_string(
             parser_, nullptr, compatible.text.c_str(), compatible.text.length());
 
@@ -776,6 +786,7 @@ public:
     bool last_extraction_has_errors_ = false;
     std::vector<std::string> last_extraction_diagnostics_;
     std::vector<int> last_fun_interface_lines_;
+    std::vector<int> last_cpp_statement_macro_lines_;
     TSParser* parser_;
     std::map<std::string, int> unmapped_node_types_;
 
@@ -1270,7 +1281,8 @@ public:
 
                 // Arithmetic operators
                 if (op_str == "+" || op_str == "-" || op_str == "*" ||
-                    op_str == "/" || op_str == "%" || op_str == "**") {
+                    op_str == "/" || op_str == "%" || op_str == "**" ||
+                    op_str == "++" || op_str == "--") {
                     auto op_node = std::make_shared<Tree>(
                         static_cast<int>(NodeType::ARITHMETIC_OP), child_type);
                     tree_node->add_child(op_node);
@@ -1917,6 +1929,11 @@ public:
             FunctionInfo info;
             info.name = func_name;
             info.qualified_name = func_name;
+            for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
+                if (is_function_node(ts_node_type(parent), lang))
+                    info.enclosing_functions.push_back(extract_function_name(parent, lang, source));
+            }
+            std::reverse(info.enclosing_functions.begin(), info.enclosing_functions.end());
             if (lang == Language::CPP) {
                 TSNode d = ts_node_child_by_field_name(node, "declarator", 10);
                 while (!ts_node_is_null(d) && std::string(ts_node_type(d)) != "function_declarator")

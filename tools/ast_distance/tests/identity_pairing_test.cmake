@@ -133,4 +133,39 @@ execute_process(COMMAND "${AST_DISTANCE}" --compare-functions "${TEST_DIR}/exten
 if(NOT status EQUAL 0 OR NOT output MATCHES "Strict matched pairs: 0 / 1")
     message(FATAL_ERROR "Namesake accepted without extension receiver: ${output}: ${errors}")
 endif()
-message(STATUS "Namespace/provenance identity, duplicates, companion conflicts, and full deep emission verified")
+# Local collectors in separate operators cannot pair by copied method bodies.
+file(MAKE_DIRECTORY "${TEST_DIR}/local-source" "${TEST_DIR}/local-target")
+file(WRITE "${TEST_DIR}/local-source/Local.kt" "package beta.core\nfun collectWhile() { val collector = object { fun emit(value: Int) { predicate(value) } }; collect(collector) }\n")
+file(WRITE "${TEST_DIR}/local-target/Local.hpp" "// Transliterated from: Local.kt\nnamespace beta::core { void drop() { class Wrong { void emit(int value) { predicate(value); } }; } void collect_while() { class Correct { void emit(int value) { changed(value); } }; } }\n")
+execute_process(COMMAND "${AST_DISTANCE}" --compare-functions "${TEST_DIR}/local-source/Local.kt" kotlin "${TEST_DIR}/local-target/Local.hpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+file(WRITE "${TEST_DIR}/local-owner.report.txt" "${output}\n${errors}")
+if(NOT status EQUAL 0 OR NOT output MATCHES "emit:2 -> beta::core::Correct::emit:2" OR output MATCHES "emit:2 -> beta::core::Wrong::emit:2")
+    message(FATAL_ERROR "Wrong enclosing callable paired local method: ${output}: ${errors}")
+endif()
+execute_process(COMMAND "${AST_DISTANCE}" --compare-functions "${TEST_DIR}/local-target/Local.hpp" cpp "${TEST_DIR}/local-source/Local.kt" kotlin
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+file(WRITE "${TEST_DIR}/local-owner.reverse-report.txt" "${output}\n${errors}")
+if(NOT status EQUAL 0 OR NOT output MATCHES "Strict matched pairs: 2 / 4" OR output MATCHES "Wrong::emit:2 -> emit:2")
+    message(FATAL_ERROR "Reverse local callable pairing lost owner evidence: ${output}: ${errors}")
+endif()
+
+file(WRITE "${TEST_DIR}/local-source/Macro.kt" "package beta.core\nfun invokeSuspend() { emit(value) }\n")
+file(WRITE "${TEST_DIR}/local-target/Macro.hpp" [=[// Transliterated from: Macro.kt
+namespace beta::core {
+void* invoke_suspend() {
+  coroutine_begin(this)
+  coroutine_yield(this, emit(value, this));
+  coroutine_end(this)
+  }
+void release_intercepted() { release(); }
+}
+]=])
+execute_process(COMMAND "${AST_DISTANCE}" --compare-functions "${TEST_DIR}/local-source/Macro.kt" kotlin "${TEST_DIR}/local-target/Macro.hpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+file(WRITE "${TEST_DIR}/macro.report.txt" "${output}\n${errors}")
+if(NOT status EQUAL 0 OR NOT output MATCHES "Strict matched pairs: 1 / 1" OR errors MATCHES "has parser errors" OR
+    NOT errors MATCHES "parsed coroutine statement macro with offset-preserving terminator adapter; expansion remains unverified")
+    message(FATAL_ERROR "Statement macro adaptation was incomplete or undisclosed: ${output}: ${errors}")
+endif()
+message(STATUS "Namespace/provenance and lexical callable identity, bounded statement macros, duplicates, companion conflicts, and full deep emission verified")
