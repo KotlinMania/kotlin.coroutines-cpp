@@ -29,6 +29,16 @@ inline std::string callable_owner_key(const FunctionInfo& function) {
     if (owner.ends_with("::Companion")) owner.erase(owner.size() - 11);
     return callable_type_key(owner);
 }
+inline bool extension_argument_counts_compatible(const FunctionInfo& extension, const FunctionInfo& lowered) {
+    if (extension.explicit_parameter_count < 0 || lowered.explicit_parameter_count < 0) return true;
+    // The free-function receiver and a trailing erased-ABI continuation are
+    // carriers, not replacements for Kotlin's explicit user arguments.
+    int user_arguments = lowered.explicit_parameter_count - 1;
+    // Only an actually suspend declaration gains an implicit ABI argument.
+    // A user-supplied Continuation in a non-suspend API is an ordinary argument.
+    if (extension.is_suspend_function && lowered.trailing_continuation_parameter) --user_arguments;
+    return user_arguments == extension.explicit_parameter_count;
+}
 inline bool callable_owners_compatible(const FunctionInfo& source, const FunctionInfo& target) {
     // Local methods/functions keep the enclosing callable as identity evidence.
     // Reused anonymous/named collector classes in separate operators must not
@@ -40,9 +50,11 @@ inline bool callable_owners_compatible(const FunctionInfo& source, const Functio
                 IdentifierStats::canonicalize(target.enclosing_functions[i])) return false;
     }
     if (!source.extension_receiver.empty() && target.is_namespace_function)
-        return callable_type_names_compatible(source.extension_receiver, target.first_parameter_type);
+        return callable_type_names_compatible(source.extension_receiver, target.first_parameter_type) &&
+            extension_argument_counts_compatible(source, target);
     if (!target.extension_receiver.empty() && source.is_namespace_function)
-        return callable_type_names_compatible(target.extension_receiver, source.first_parameter_type);
+        return callable_type_names_compatible(target.extension_receiver, source.first_parameter_type) &&
+            extension_argument_counts_compatible(target, source);
     // A receiver extension cannot be hidden inside an unrelated class method.
     // Companion extensions are the explicit static-member lowering exception.
     if (!source.extension_receiver.empty() && target.has_class_owner && !source.extension_receiver.ends_with(".Companion")) return false;

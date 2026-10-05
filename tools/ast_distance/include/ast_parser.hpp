@@ -268,6 +268,11 @@ struct FunctionInfo {
     // Matching evidence only: bodies keep every receiver/continuation/type token.
     std::string extension_receiver;
     std::string first_parameter_type;
+    // CST argument inventory for receiver-to-free-function matching only.
+    // -1 means unavailable; scored signatures/bodies remain unchanged.
+    int explicit_parameter_count = -1;
+    bool trailing_continuation_parameter = false;
+    bool is_suspend_function = false;
     std::vector<std::string> enclosing_functions;
     bool is_namespace_function = false;
     bool has_class_owner = false;
@@ -1944,12 +1949,21 @@ public:
                 TSNode parameters = ts_node_is_null(d) ? TSNode{} : ts_node_child_by_field_name(d, "parameters", 10);
                 if (!ts_node_is_null(parameters)) {
                     info.signature = source.substr(ts_node_start_byte(parameters), ts_node_end_byte(parameters) - ts_node_start_byte(parameters));
+                    info.explicit_parameter_count = 0;
                     for (uint32_t i = 0; i < ts_node_named_child_count(parameters); ++i) {
                         TSNode parameter = ts_node_named_child(parameters, i);
                         std::string kind = ts_node_type(parameter);
+                        if (kind == "variadic_parameter" || kind == "variadic_parameter_declaration") {
+                            info.explicit_parameter_count = -1;
+                            break;
+                        }
                         if (kind != "parameter_declaration" && kind != "optional_parameter_declaration") continue;
-                        info.first_parameter_type = receiver_type_from_cpp_node(ts_node_child_by_field_name(parameter, "type", 4), source);
-                        break;
+                        auto parameter_type = receiver_type_from_cpp_node(ts_node_child_by_field_name(parameter, "type", 4), source);
+                        // A sole C-style void parameter denotes an empty list.
+                        if (parameter_type == "void" && ts_node_is_null(ts_node_child_by_field_name(parameter, "declarator", 10))) continue;
+                        if (info.explicit_parameter_count == 0) info.first_parameter_type = parameter_type;
+                        ++info.explicit_parameter_count;
+                        info.trailing_continuation_parameter = parameter_type == "Continuation" || parameter_type.ends_with("::Continuation");
                     }
                 }
                 for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
@@ -1960,8 +1974,22 @@ public:
             } else if (lang == Language::KOTLIN) {
                 for (uint32_t i = 0; i < ts_node_named_child_count(node); ++i) {
                     TSNode child = ts_node_named_child(node, i);
-                    if (std::string(ts_node_type(child)) == "function_value_parameters")
+                    if (std::string(ts_node_type(child)) == "modifiers") {
+                        std::function<void(TSNode)> find_suspend = [&](TSNode modifier) {
+                            if (std::string(ts_node_type(modifier)) == "suspend") info.is_suspend_function = true;
+                            for (uint32_t j = 0; j < ts_node_child_count(modifier); ++j)
+                                find_suspend(ts_node_child(modifier, j));
+                        };
+                        find_suspend(child);
+                    }
+                    if (std::string(ts_node_type(child)) == "function_value_parameters") {
                         info.signature = source.substr(ts_node_start_byte(child), ts_node_end_byte(child) - ts_node_start_byte(child));
+                        info.explicit_parameter_count = 0;
+                        for (uint32_t j = 0; j < ts_node_named_child_count(child); ++j) {
+                            auto kind = std::string(ts_node_type(ts_node_named_child(child, j)));
+                            if (kind == "parameter") ++info.explicit_parameter_count;
+                        }
+                    }
                 }
             }
             if (lang == Language::KOTLIN ||

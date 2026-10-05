@@ -169,3 +169,21 @@ if(NOT status EQUAL 0 OR NOT output MATCHES "Strict matched pairs: 1 / 1" OR err
     message(FATAL_ERROR "Statement macro adaptation was incomplete or undisclosed: ${output}: ${errors}")
 endif()
 message(STATUS "Namespace/provenance and lexical callable identity, bounded statement macros, duplicates, companion conflicts, and full deep emission verified")
+
+# Runtime-class overloads cannot be credited to receiver-only template overloads.
+file(MAKE_DIRECTORY "${TEST_DIR}/overload-source" "${TEST_DIR}/overload-target")
+file(WRITE "${TEST_DIR}/overload-source/Reflection.kt" "package beta.core\ninline fun <reified R> Flow<Any>.filterIsInstance(): Flow<R> = this\nfun <R> Flow<Any>.filterIsInstance(klass: KClass<R>): Flow<R> = this\n")
+file(WRITE "${TEST_DIR}/overload-target/Reflection.hpp" "// Transliterated from: Reflection.kt\nnamespace beta::core { template<class R, class T> Flow<R> filter_is_instance(Flow<T> upstream) { return upstream; } template<class R, class T> Flow<R> filter_is_instance(std::shared_ptr<Flow<T>> upstream) { return *upstream; } }\n")
+execute_process(COMMAND "${AST_DISTANCE}" --compare-functions "${TEST_DIR}/overload-source/Reflection.kt" kotlin "${TEST_DIR}/overload-target/Reflection.hpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+file(WRITE "${TEST_DIR}/missing-runtime-class.txt" "${output}\n${errors}")
+if(NOT status EQUAL 0 OR NOT output MATCHES "Strict matched pairs: 1 / 2" OR NOT output MATCHES "unmatched source: 1" OR NOT output MATCHES "klass: KClass")
+    message(FATAL_ERROR "Receiver-only overloads hid runtime-class parameter: ${output}: ${errors}")
+endif()
+file(WRITE "${TEST_DIR}/overload-target/Reflection.hpp" "// Transliterated from: Reflection.kt\nnamespace beta::core { template<class R, class T> Flow<R> filter_is_instance(Flow<T> upstream) { return upstream; } template<class R, class T> Flow<R> filter_is_instance(Flow<T> upstream, KClass<R> klass) { return upstream; } }\n")
+execute_process(COMMAND "${AST_DISTANCE}" --compare-functions "${TEST_DIR}/overload-source/Reflection.kt" kotlin "${TEST_DIR}/overload-target/Reflection.hpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+file(WRITE "${TEST_DIR}/present-runtime-class.txt" "${output}\n${errors}")
+if(NOT status EQUAL 0 OR NOT output MATCHES "Strict matched pairs: 2 / 2")
+    message(FATAL_ERROR "Genuine runtime-class overload was rejected: ${output}: ${errors}")
+endif()

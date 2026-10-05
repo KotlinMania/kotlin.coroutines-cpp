@@ -3,6 +3,7 @@
 #include "symbol_analysis.hpp"
 #include "imports.hpp"
 #include "callable_identity.hpp"
+#include "codebase.hpp"
 #include "logic_similarity.hpp"
 #include <cassert>
 #include <filesystem>
@@ -129,6 +130,39 @@ char delimiter = '\'';
     auto lowered = parser.extract_function_infos("namespace kotlinx::coroutines::flow { template<class T> std::shared_ptr<Flow<T>> drop(std::shared_ptr<Flow<T>> upstream, int count) { return upstream; } }", Language::CPP);
     assert(lowered.size() == 1 && lowered[0].is_namespace_function && lowered[0].first_parameter_type == "Flow");
     assert(callable_owners_compatible(extension[0], lowered[0]));
+    auto runtime_type_filter = parser.extract_function_infos("fun <R> Flow<Any>.filterIsInstance(klass: KClass<R>): Flow<R> = this", Language::KOTLIN);
+    auto reified_filter = parser.extract_function_infos("inline fun <reified R> Flow<Any>.filterIsInstance(): Flow<R> = this", Language::KOTLIN);
+    auto pointer_filter = parser.extract_function_infos("namespace flow { template<class R, class T> Flow<R*> filter_is_instance(Flow<T*> upstream) { return {}; } }", Language::CPP);
+    assert(runtime_type_filter[0].explicit_parameter_count == 1);
+    assert(reified_filter[0].explicit_parameter_count == 0);
+    assert(pointer_filter[0].explicit_parameter_count == 1);
+    assert(!callable_owners_compatible(runtime_type_filter[0], pointer_filter[0]));
+    assert(CodebaseComparator::compare_function_sets(runtime_type_filter, pointer_filter).matched_pairs == 0);
+    assert(!callable_owners_compatible(pointer_filter[0], runtime_type_filter[0]));
+    assert(callable_owners_compatible(reified_filter[0], pointer_filter[0]));
+    auto runtime_lowered = parser.extract_function_infos("namespace flow { template<class R, class T> Flow<R*> filter_is_instance(Flow<T*> upstream, KClass<R> klass) { return {}; } }", Language::CPP);
+    assert(callable_owners_compatible(runtime_type_filter[0], runtime_lowered[0]));
+    assert(CodebaseComparator::compare_function_sets(runtime_type_filter, runtime_lowered).matched_pairs == 1);
+    auto suspended_extension = parser.extract_function_infos("suspend fun Flow<Int>.process(value: Int = 1): Unit {}", Language::KOTLIN);
+    auto continuation_lowered = parser.extract_function_infos("namespace flow { void* process(Flow<int> upstream, int value = 1, std::shared_ptr<Continuation<void*>> completion = nullptr) { return nullptr; } }", Language::CPP);
+    assert(suspended_extension[0].explicit_parameter_count == 1 && suspended_extension[0].is_suspend_function);
+    assert(continuation_lowered[0].explicit_parameter_count == 3 && continuation_lowered[0].trailing_continuation_parameter);
+    assert(callable_owners_compatible(suspended_extension[0], continuation_lowered[0]));
+    auto missing_value = parser.extract_function_infos("namespace flow { void* process(Flow<int> upstream, Continuation<void*>* completion) { return nullptr; } }", Language::CPP);
+    assert(!callable_owners_compatible(suspended_extension[0], missing_value[0]));
+    auto nested_callback = parser.extract_function_infos("namespace flow { void* process(Flow<int> upstream, std::function<void*(int, Continuation<void*>*)> value) { return nullptr; } }", Language::CPP);
+    assert(nested_callback[0].explicit_parameter_count == 2 && !nested_callback[0].trailing_continuation_parameter);
+    assert(callable_owners_compatible(suspended_extension[0], nested_callback[0]));
+    auto explicit_continuation = parser.extract_function_infos("fun Flow<Int>.process(value: Continuation<Unit>): Unit {}", Language::KOTLIN);
+    assert(!explicit_continuation[0].is_suspend_function);
+    assert(callable_owners_compatible(explicit_continuation[0], missing_value[0]));
+    auto non_suspend_factory = parser.extract_function_infos("fun Flow<Int>.process(value: suspend (Int) -> Unit): Unit {}", Language::KOTLIN);
+    assert(!non_suspend_factory[0].is_suspend_function);
+    assert(!callable_owners_compatible(non_suspend_factory[0], continuation_lowered[0]));
+    auto zero_extension = parser.extract_function_infos("fun Flow<Int>.ready(): Boolean = true", Language::KOTLIN);
+    auto no_parameters = parser.extract_function_infos("namespace flow { bool ready(void) { return true; } }", Language::CPP);
+    assert(no_parameters[0].explicit_parameter_count == 0);
+    assert(!callable_owners_compatible(zero_extension[0], no_parameters[0]));
     auto wrong_receiver = parser.extract_function_infos("namespace kotlinx::coroutines::flow { int drop(int count) { return count; } }", Language::CPP);
     assert(!callable_owners_compatible(extension[0], wrong_receiver[0]));
     auto wrong_wrapper = parser.extract_function_infos("namespace kotlinx::coroutines::flow { template<class T> int drop(Wrapper<Flow<T>> value) { return 0; } }", Language::CPP);
