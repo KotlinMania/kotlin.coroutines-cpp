@@ -13,6 +13,7 @@
 #include "kotlinx/coroutines/Delay.hpp"
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/dsl/CancellableReusable.hpp"
+#include "kotlinx/coroutines/channels/BufferedChannel.hpp"
 #include "kotlinx/coroutines/testing/TestBase.hpp"
 #include <deque>
 #include <iostream>
@@ -710,7 +711,200 @@ void test_reusable_raw_wrapper_block_failure_and_plain_completion() {
     assert_equals(0, parent->resumes);
 }
 
+void test_channel_sender_dispatch_and_cancellation(int capacity, int cancel_mode) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto job = JobImpl::create(nullptr);
+    std::shared_ptr<CoroutineContext> context = cancel_mode ? job->operator+(dispatcher) : dispatcher;
+    auto parent = std::make_shared<RecordingContinuation>(context);
+    std::vector<int> undelivered;
+    auto channel = std::make_shared<channels::BufferedChannel<std::shared_ptr<int>>>(
+        capacity, [&](auto value) { undelivered.push_back(*value); });
+    if (capacity) assert_true(channel->try_send(std::make_shared<int>(0)).is_success());
+    auto value = std::make_shared<int>(42);
+    std::weak_ptr<int> retained_value = value;
+    auto frame = std::make_shared<CallFrame>(parent, [channel, value](auto* continuation) {
+        return channel->send(value, continuation);
+    });
+    std::weak_ptr<CallFrame> retained_frame = frame;
+    assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    frame.reset();
+    value.reset();
+    assert_false(retained_frame.expired());
+    if (cancel_mode == 1) job->cancel();
+    if (capacity) {
+        auto seed = channel->try_receive();
+        assert_true(seed.is_success());
+        assert_equals(0, *seed.get_or_throw());
+    }
+    {
+        auto received = channel->try_receive();
+        if (cancel_mode == 1) assert_true(received.is_failure());
+        else {
+            assert_true(received.is_success());
+            assert_equals(42, *received.get_or_throw());
+        }
+    }
+    if (cancel_mode == 2) job->cancel();
+    assert_equals(0, parent->resumes);
+    assert_equals(size_t(1), dispatcher->queue.size());
+    dispatcher->drain();
+    assert_equals(1, parent->resumes);
+    if (cancel_mode) assert_false(parent->result.is_success());
+    else assert_true(parent->result.get_or_throw() == nullptr);
+    assert_true(undelivered == (cancel_mode == 1 ? std::vector<int>({42}) : std::vector<int>{}));
+    assert_true(retained_frame.expired(), "completed channel sender frame retained");
+    assert_true(retained_value.expired(), "completed channel sender value retained");
+}
+
+void test_channel_receiver_dispatch_and_cancellation(bool catching, int capacity, int cancel_mode) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto job = JobImpl::create(nullptr);
+    std::shared_ptr<CoroutineContext> context = cancel_mode ? job->operator+(dispatcher) : dispatcher;
+    auto parent = std::make_shared<RecordingContinuation>(context);
+    std::vector<int> undelivered;
+    auto channel = std::make_shared<channels::BufferedChannel<std::shared_ptr<int>>>(
+        capacity, [&](auto value) { undelivered.push_back(*value); });
+    auto frame = std::make_shared<CallFrame>(parent, [channel, catching](auto* continuation) {
+        return catching ? channel->receive_catching(continuation) : channel->receive(continuation);
+    });
+    std::weak_ptr<CallFrame> retained_frame = frame;
+    assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    frame.reset();
+    assert_false(retained_frame.expired());
+    if (cancel_mode == 1) {
+        job->cancel();
+        dispatcher->drain();
+        assert_equals(1, parent->resumes);
+        assert_false(parent->result.is_success());
+        assert_true(retained_frame.expired(), "receiver frame retained");
+    }
+    auto value = std::make_shared<int>(42);
+    std::weak_ptr<int> retained_value = value;
+    auto sent = channel->try_send(value);
+    value.reset();
+    if (cancel_mode == 1) {
+        if (capacity) {
+            assert_true(sent.is_success());
+            auto received = channel->try_receive();
+            assert_equals(42, *received.get_or_throw());
+        } else assert_true(sent.is_failure());
+        assert_true(undelivered.empty());
+        if (capacity) assert_true(retained_value.expired(), "received buffered value retained");
+        return;
+    }
+    assert_true(sent.is_success());
+    assert_equals(0, parent->resumes);
+    assert_equals(size_t(1), dispatcher->queue.size());
+    if (cancel_mode == 2) job->cancel();
+    dispatcher->drain();
+    assert_equals(1, parent->resumes);
+    if (cancel_mode == 2) assert_false(parent->result.is_success());
+    else if (catching) {
+        std::unique_ptr<channels::ChannelResult<std::shared_ptr<int>>> result(
+            static_cast<channels::ChannelResult<std::shared_ptr<int>>*>(parent->result.get_or_throw()));
+        assert_true(result->is_success());
+        assert_equals(42, *result->get_or_throw());
+    } else {
+        std::unique_ptr<std::shared_ptr<int>> result(
+            static_cast<std::shared_ptr<int>*>(parent->result.get_or_throw()));
+        assert_equals(42, **result);
+    }
+    assert_true(undelivered == (cancel_mode == 2 ? std::vector<int>({42}) : std::vector<int>{}));
+    assert_true(retained_value.expired(), "receiver value retained");
+    assert_true(retained_frame.expired(), "receiver frame retained");
+}
+
+void test_channel_suspended_receive_close(bool catching, bool exceptional) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    auto parent = std::make_shared<RecordingContinuation>(dispatcher);
+    auto channel = std::make_shared<channels::BufferedChannel<int>>(0);
+    auto frame = std::make_shared<CallFrame>(parent, [channel, catching](auto* continuation) {
+        return catching ? channel->receive_catching(continuation) : channel->receive(continuation);
+    });
+    std::weak_ptr<CallFrame> retained_frame = frame;
+    assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    frame.reset();
+    std::exception_ptr cause = exceptional ? std::make_exception_ptr(std::runtime_error("channel close")) : nullptr;
+    assert_true(channel->close(cause));
+    assert_equals(0, parent->resumes);
+    assert_equals(size_t(1), dispatcher->queue.size());
+    dispatcher->drain();
+    assert_equals(1, parent->resumes);
+    if (catching) {
+        std::unique_ptr<channels::ChannelResult<int>> result(
+            static_cast<channels::ChannelResult<int>*>(parent->result.get_or_throw()));
+        assert_true(result->is_closed());
+        assert_true(result->exception_or_null() == cause);
+    } else {
+        assert_false(parent->result.is_success());
+        if (exceptional) assert_true(parent->result.exception_or_null() == cause);
+        else {
+            bool closed = false;
+            try { std::rethrow_exception(parent->result.exception_or_null()); }
+            catch (const channels::ClosedReceiveChannelException&) { closed = true; }
+            assert_true(closed);
+        }
+    }
+    assert_true(retained_frame.expired());
+}
+
+void test_channel_cancel_retains_queued_senders(int capacity) {
+    auto dispatcher = std::make_shared<QueueDispatcher>();
+    std::vector<int> undelivered;
+    auto channel = std::make_shared<channels::BufferedChannel<std::shared_ptr<int>>>(
+        capacity, [&](auto value) { undelivered.push_back(*value); });
+    if (capacity) assert_true(channel->try_send(std::make_shared<int>(0)).is_success());
+    std::vector<std::shared_ptr<RecordingContinuation>> parents;
+    std::vector<std::weak_ptr<CallFrame>> frames;
+    std::vector<std::weak_ptr<int>> values;
+    for (int index = 0; index < 2; ++index) {
+        auto parent = std::make_shared<RecordingContinuation>(dispatcher);
+        parents.push_back(parent);
+        auto value = std::make_shared<int>(42 + index);
+        values.push_back(value);
+        auto frame = std::make_shared<CallFrame>(parent, [channel, value](auto* cont) {
+            return channel->send(value, cont);
+        });
+        frames.push_back(frame);
+        assert_true(intrinsics::is_coroutine_suspended(frame->start(Result<void*>::success(nullptr))));
+    }
+    auto cause = std::make_exception_ptr(std::runtime_error("channel cancelled"));
+    channel->cancel(cause);
+    assert_true(undelivered == (capacity ? std::vector<int>({43, 42, 0}) : std::vector<int>({43, 42})));
+    assert_equals(size_t(2), dispatcher->queue.size());
+    {
+        auto first = std::move(dispatcher->queue.front());
+        dispatcher->queue.pop_front();
+        first->run();
+        assert_equals(1, parents[0]->resumes);
+        assert_equals(0, parents[1]->resumes);
+    }
+    dispatcher->drain();
+    for (size_t index = 0; index < parents.size(); ++index) {
+        assert_equals(1, parents[index]->resumes);
+        assert_true(parents[index]->result.exception_or_null() == cause);
+        assert_true(frames[index].expired());
+        assert_true(values[index].expired());
+    }
+}
+
 int main() {
+    std::cerr << "test_channel_sender_dispatch_and_cancellation\n";
+    for (int capacity : {0, 1}) for (int mode : {0, 1, 2}) {
+        std::cerr << "  sender capacity=" << capacity << " cancel=" << mode << '\n';
+        test_channel_sender_dispatch_and_cancellation(capacity, mode);
+    }
+    std::cerr << "test_channel_receiver_dispatch_and_cancellation\n";
+    for (bool catching : {false, true}) for (int capacity : {0, 1}) for (int mode : {0, 1, 2}) {
+        std::cerr << "  receiver catching=" << catching << " capacity=" << capacity << " cancel=" << mode << '\n';
+        test_channel_receiver_dispatch_and_cancellation(catching, capacity, mode);
+    }
+    std::cerr << "test_channel_cancel_retains_queued_senders\n";
+    test_channel_cancel_retains_queued_senders(0);
+    test_channel_cancel_retains_queued_senders(1);
+    std::cerr << "test_channel_suspended_receive_close\n";
+    for (bool catching : {false, true}) for (bool exceptional : {false, true})
+        test_channel_suspended_receive_close(catching, exceptional);
     std::cerr << "test_reusable_raw_wrapper_reuses_typed_delegate\n";
     test_reusable_raw_wrapper_reuses_typed_delegate();
     std::cerr << "test_reusable_raw_wrapper_void_dispatch_and_failure\n";

@@ -24,6 +24,7 @@
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/CancellableReusable.hpp"
 #include "kotlinx/coroutines/Waiter.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
 #include "kotlinx/coroutines/internal/ConcurrentLinkedList.hpp"
@@ -47,11 +48,6 @@ namespace channels {
 // Forward declarations
 template <typename E> class BufferedChannel;
 template <typename E> class ChannelSegment;
-
-namespace detail {
-// NOTE(port): Concrete Unit-to-erased continuation adapter for the templated send path.
-std::shared_ptr<Continuation<void>> adapt_send_completion(Continuation<void*>* completion);
-}
 
 // ============================================================================
 // Lines 2962-2973: Buffer end constants
@@ -511,12 +507,12 @@ class ChannelSegment : public internal::Segment<ChannelSegment<E>> {
 private:
     BufferedChannel<E>* channel_;
 
-    // 2 registers per slot: state + element
-    std::atomic<void*> data_[SEGMENT_SIZE * 2];
+    // Two logical registers per slot: an owning element reference and a CAS state.
+    std::array<std::shared_ptr<E>, SEGMENT_SIZE> elements_;
+    std::atomic<void*> states_[SEGMENT_SIZE];
 
-    // C++ lifetime management: holds shared_ptr to waiters stored in state slots.
-    // In Kotlin, GC keeps waiters alive. In C++, we need explicit ownership.
-    // The raw void* in data_[] is used for CAS operations; this array keeps the object alive.
+    // Owns waiters while their raw pointers are stored in state slots.
+    // Raw state pointers are used for CAS; these references retain owned waiter objects.
     std::array<std::shared_ptr<Waiter>, SEGMENT_SIZE> waiter_refs_;
 
 public:
@@ -524,8 +520,8 @@ public:
     ChannelSegment(int64_t id, ChannelSegment<E>* prev, BufferedChannel<E>* channel, int pointers)
         : internal::Segment<ChannelSegment<E>>(id, prev, pointers)
         , channel_(channel) {
-        for (int i = 0; i < SEGMENT_SIZE * 2; ++i) {
-            data_[i].store(nullptr, std::memory_order_relaxed);
+        for (int i = 0; i < SEGMENT_SIZE; ++i) {
+            states_[i].store(nullptr, std::memory_order_relaxed);
         }
     }
 
@@ -541,65 +537,39 @@ public:
     // ########################################
     //
     // Lines 2817-2851: Each slot in the segment stores two values:
-    // - The element (at even indices: index * 2)
-    // - The state (at odd indices: index * 2 + 1)
+    // - An owning element reference in elements_[index]
+    // - A CAS state in states_[index]
     //
     // The element field stores the value being sent through the channel.
     // Following the safe publication pattern, the element is stored BEFORE
     // updating the state, ensuring receivers always see a valid element.
 
-    /**
-     * Stores an element in the specified slot.
-     * The element is heap-allocated to allow type-erased storage.
-     *
-     * Transliterated from: fun storeElement(index: Int, value: E)
-     */
+    /** Stores an owning element reference before publishing the cell state. */
     void store_element(int index, E element) {
-        set_element_lazy(index, reinterpret_cast<void*>(new E(std::move(element))));
+        set_element_lazy(index, std::make_shared<E>(std::move(element)));
     }
 
-    /**
-     * Retrieves the element from the specified slot without removing it.
-     *
-     * Transliterated from: fun getElement(index: Int): E
-     */
+    /** Copies the element while retaining its loaded reference. */
     E get_element(int index) const {
-        void* ptr = data_[index * 2].load(std::memory_order_acquire);
-        if (ptr == nullptr) return E{};
-        return *reinterpret_cast<E*>(ptr);
+        auto element = std::atomic_load_explicit(&elements_[index], std::memory_order_acquire);
+        return element ? *element : E{};
     }
 
-    /**
-     * Retrieves and removes the element from the specified slot.
-     * This combines get_element and clean_element for atomic retrieval.
-     *
-     * Transliterated from: fun retrieveElement(index: Int): E
-     */
+    /** Copies the element, then clears the stored reference. */
     E retrieve_element(int index) {
-        E elem = get_element(index);
+        E element = get_element(index);
         clean_element(index);
-        return elem;
+        return element;
     }
 
-    /**
-     * Cleans (removes) the element from the specified slot.
-     * Frees the heap-allocated element to avoid memory leaks.
-     *
-     * Transliterated from: fun cleanElement(index: Int)
-     */
+    /** Releases the stored element reference. */
     void clean_element(int index) {
-        void* ptr = data_[index * 2].exchange(nullptr, std::memory_order_acq_rel);
-        if (ptr != nullptr) {
-            delete reinterpret_cast<E*>(ptr);
-        }
+        set_element_lazy(index, nullptr);
     }
 
-    /**
-     * Lazily sets the element in the specified slot.
-     * Uses release semantics for safe publication.
-     */
-    void set_element_lazy(int index, void* value) {
-        data_[index * 2].store(value, std::memory_order_release);
+    /** Publishes an element reference with release semantics. */
+    void set_element_lazy(int index, std::shared_ptr<E> value) {
+        std::atomic_store_explicit(&elements_[index], std::move(value), std::memory_order_release);
     }
 
     // ######################################
@@ -616,42 +586,34 @@ public:
 
     /**
      * Reads the current state of the specified slot.
-     *
-     * Transliterated from: fun getState(index: Int): Any?
      */
     void* get_state(int index) const {
-        return data_[index * 2 + 1].load(std::memory_order_acquire);
+        return states_[index].load(std::memory_order_acquire);
     }
 
     /**
      * Sets the state of the specified slot unconditionally.
      * Used when the caller has already established exclusive access.
-     *
-     * Transliterated from: fun setState(index: Int, value: Any?)
      */
     void set_state(int index, void* value) {
-        data_[index * 2 + 1].store(value, std::memory_order_release);
+        states_[index].store(value, std::memory_order_release);
     }
 
     /**
      * Atomically compares and sets the state of the specified slot.
      * Returns true if the CAS succeeded (state was 'from' and is now 'to').
-     *
-     * Transliterated from: fun casState(index: Int, from: Any?, to: Any?): Boolean
      */
     bool cas_state(int index, void* from, void* to) {
-        return data_[index * 2 + 1].compare_exchange_strong(from, to,
+        return states_[index].compare_exchange_strong(from, to,
             std::memory_order_acq_rel, std::memory_order_acquire);
     }
 
     /**
      * Atomically exchanges the state and returns the previous value.
      * Used for unconditional state updates that need the old value.
-     *
-     * Transliterated from: fun getAndSetState(index: Int, update: Any?): Any?
      */
     void* get_and_set_state(int index, void* update) {
-        return data_[index * 2 + 1].exchange(update, std::memory_order_acq_rel);
+        return states_[index].exchange(update, std::memory_order_acq_rel);
     }
 
     // ##################################
@@ -661,17 +623,17 @@ public:
     // Store a shared_ptr to keep the waiter alive while its raw pointer is in the state slot.
     // Call this when storing a waiter in the segment state.
     void set_waiter_ref(int index, std::shared_ptr<Waiter> waiter) {
-        waiter_refs_[index] = std::move(waiter);
+        std::atomic_store(&waiter_refs_[index], std::move(waiter));
     }
 
     // Clear the waiter ref when the waiter is no longer needed (resumed, cancelled, etc.)
     void clear_waiter_ref(int index) {
-        waiter_refs_[index].reset();
+        std::atomic_store(&waiter_refs_[index], std::shared_ptr<Waiter>{});
     }
 
     // Get the waiter ref (for cases where we need to pass it on)
     std::shared_ptr<Waiter> get_waiter_ref(int index) const {
-        return waiter_refs_[index];
+        return std::atomic_load(&waiter_refs_[index]);
     }
 
     // ########################
@@ -1349,6 +1311,7 @@ public:
                 if (segment->cas_state(index, state, static_cast<void*>(&RESUMING_BY_EB()))) {
                     // Try to resume the sender
                     bool resumed = try_resume_sender(state, segment, index);
+                    segment->clear_waiter_ref(index);
                     if (resumed) {
                         segment->set_state(index, static_cast<void*>(&BUFFERED()));
                         return true;
@@ -1405,6 +1368,7 @@ public:
                     // The cell stores a suspended sender
                     if (segment->cas_state(index, state, static_cast<void*>(&RESUMING_BY_EB()))) {
                         bool resumed = try_resume_sender(state, segment, index);
+                        segment->clear_waiter_ref(index);
                         if (resumed) {
                             segment->set_state(index, static_cast<void*>(&BUFFERED()));
                             return true;
@@ -2040,17 +2004,14 @@ private:
         int64_t s,
         Continuation<void*>* completion
     ) {
-        auto cont = std::make_shared<CancellableContinuationImpl<void>>(
-            detail::adapt_send_completion(completion), MODE_CANCELLABLE_REUSABLE
-        );
-
-        send_impl_on_no_waiter(
-            segment, index, element, s,
-            cont.get(),
-            [cont]() { cont->resume({}); },
-            [this, element, cont]() { on_closed_send_on_no_waiter_suspend(element, cont.get()); }
-        );
-        return cont->get_result();
+        return dsl::suspend_cancellable_coroutine_reusable_void(completion, [&](auto* cont) {
+            send_impl_on_no_waiter(
+                segment, index, element, s,
+                cont,
+                [cont]() { cont->resume(nullptr); },
+                [this, element, cont]() { on_closed_send_on_no_waiter_suspend(element, cont); }
+            );
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -2088,50 +2049,22 @@ private:
         int64_t r,
         Continuation<void*>* completion
     ) {
-        class ReceiveContinuationAdapter : public Continuation<E> {
-            Continuation<void*>* completion_;
-        public:
-            explicit ReceiveContinuationAdapter(Continuation<void*>* completion)
-                : completion_(completion) {}
-
-            std::shared_ptr<CoroutineContext> get_context() const override {
-                return completion_ ? completion_->get_context() : nullptr;
-            }
-
-            void resume_with(Result<E> result) override {
-                if (!completion_) return;
-                if (result.is_success()) {
-                    completion_->resume_with(Result<void*>::success(new E(result.get_or_throw())));
-                } else {
-                    completion_->resume_with(Result<void*>::failure(result.exception_or_null()));
-                }
-            }
-        };
-
-        auto adapter = std::make_shared<ReceiveContinuationAdapter>(completion);
-        auto cont = std::make_shared<CancellableContinuationImpl<E>>(
-            adapter, MODE_CANCELLABLE_REUSABLE
-        );
-        cont->init_cancellability();
-
-        receive_impl_on_no_waiter(
-            segment, index, r,
-            cont.get(),
-            [this, cont](E element) {
-                std::function<void(std::exception_ptr)> on_cancellation = nullptr;
-                if (on_undelivered_element_) {
-                    on_cancellation = [this, element](std::exception_ptr) {
-                        on_undelivered_element_(element);
-                    };
-                }
-                cont->resume(std::move(element), on_cancellation);
-            },
-            [this, cont]() {
-                on_closed_receive_on_no_waiter_suspend(cont.get());
-            }
-        );
-
-        return cont->get_result();
+        return dsl::suspend_cancellable_coroutine_reusable<E>(completion, [&](auto* cont) {
+            receive_impl_on_no_waiter(
+                segment, index, r,
+                cont,
+                [this, cont](E element) {
+                    std::function<void(std::exception_ptr)> on_cancellation = nullptr;
+                    if (on_undelivered_element_) {
+                        on_cancellation = [this, element](std::exception_ptr) {
+                            on_undelivered_element_(element);
+                        };
+                    }
+                    cont->resume(std::move(element), on_cancellation);
+                },
+                [this, cont]() { on_closed_receive_on_no_waiter_suspend(cont); }
+            );
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -2143,52 +2076,23 @@ private:
         int64_t r,
         Continuation<void*>* completion
     ) {
-        class ReceiveCatchingContinuationAdapter : public Continuation<ChannelResult<E>> {
-            Continuation<void*>* completion_;
-        public:
-            explicit ReceiveCatchingContinuationAdapter(Continuation<void*>* completion)
-                : completion_(completion) {}
-
-            std::shared_ptr<CoroutineContext> get_context() const override {
-                return completion_ ? completion_->get_context() : nullptr;
-            }
-
-            void resume_with(Result<ChannelResult<E>> result) override {
-                if (!completion_) return;
-                if (result.is_success()) {
-                    completion_->resume_with(Result<void*>::success(new ChannelResult<E>(result.get_or_throw())));
-                } else {
-                    completion_->resume_with(Result<void*>::failure(result.exception_or_null()));
-                }
-            }
-        };
-
-        auto adapter = std::make_shared<ReceiveCatchingContinuationAdapter>(completion);
-        auto cont = std::make_shared<CancellableContinuationImpl<ChannelResult<E>>>(
-            adapter, MODE_CANCELLABLE_REUSABLE
-        );
-        cont->init_cancellability();
-
-        auto waiter = std::make_shared<ReceiveCatching<E>>(cont);
-
-        receive_impl_on_no_waiter(
-            segment, index, r,
-            waiter.get(),
-            [this, cont](E element) {
-                std::function<void(std::exception_ptr)> on_cancellation = nullptr;
-                if (on_undelivered_element_) {
-                    on_cancellation = [this, element](std::exception_ptr) {
-                        on_undelivered_element_(element);
-                    };
-                }
-                cont->resume(ChannelResult<E>::success(std::move(element)), on_cancellation);
-            },
-            [this, cont]() {
-                on_closed_receive_catching_on_no_waiter_suspend(cont.get());
-            }
-        );
-
-        return cont->get_result();
+        return dsl::suspend_cancellable_coroutine_reusable<ChannelResult<E>>(completion, [&](auto* cont) {
+            auto waiter = std::make_shared<ReceiveCatching<E>>(cont->shared_from_this());
+            receive_impl_on_no_waiter(
+                segment, index, r,
+                waiter.get(),
+                [this, cont](E element) {
+                    std::function<void(std::exception_ptr)> on_cancellation = nullptr;
+                    if (on_undelivered_element_) {
+                        on_cancellation = [this, element](std::exception_ptr) {
+                            on_undelivered_element_(element);
+                        };
+                    }
+                    cont->resume(ChannelResult<E>::success(std::move(element)), on_cancellation);
+                },
+                [this, cont]() { on_closed_receive_catching_on_no_waiter_suspend(cont); }
+            );
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -2647,11 +2551,16 @@ public:
             sb->cont->resume_with(Result<bool>::success(false));
             return;
         }
-        // Check if it's a CancellableContinuation (via CancellableContinuationImpl)
-        if (auto* cc = dynamic_cast<CancellableContinuationImpl<void*>*>(waiter)) {
-            auto exc = receiver ? receive_exception() : send_exception();
-            cc->resume_with(Result<void*>::failure(exc));
-            return;
+        if (receiver) {
+            if (auto* cont = dynamic_cast<CancellableContinuationImpl<E>*>(waiter)) {
+                cont->resume_with(Result<E>::failure(receive_exception()));
+                return;
+            }
+        } else {
+            if (auto* cont = dynamic_cast<CancellableContinuationImpl<void>*>(waiter)) {
+                cont->resume_with(Result<void>::failure(send_exception()));
+                return;
+            }
         }
         // Check if it's a ReceiveCatching
         if (auto* rc = dynamic_cast<ReceiveCatching<E>*>(waiter)) {
@@ -2751,7 +2660,8 @@ public:
                 continue;
             } else {
                 segment->clean_prev();
-                return ChannelResult<E>::success(*reinterpret_cast<E*>(result));
+                std::unique_ptr<E> element(static_cast<E*>(result));
+                return ChannelResult<E>::success(std::move(*element));
             }
         }
     }
@@ -2759,7 +2669,7 @@ public:
     int update_cell_send(ChannelSegment<E>* segment, int index, E element,
                          int64_t s, void* waiter, bool closed) {
         // Fast path
-        segment->store_element(index, std::move(element));
+        segment->store_element(index, element);
         if (closed) return update_cell_send_slow(segment, index, element, s, waiter, closed);
 
         void* state = segment->get_state(index);
@@ -3198,6 +3108,7 @@ public:
         auto on_undelivered_element = on_undelivered_element_;
         std::exception_ptr undelivered_element_exception = nullptr;
         std::vector<Waiter*> suspended_senders;
+        std::vector<std::shared_ptr<Waiter>> sender_owners;
         ChannelSegment<E>* segment = last_segment;
         bool process_segments_done = false;
         while (!process_segments_done) {
@@ -3243,6 +3154,8 @@ public:
                             static_cast<WaiterEB*>(state)->waiter :
                             static_cast<Waiter*>(state);
                         if (segment->cas_state(index, state, static_cast<void*>(&CHANNEL_CLOSED()))) {
+                            sender_owners.push_back(segment->get_waiter_ref(index));
+                            segment->clear_waiter_ref(index);
                             if (on_undelivered_element) {
                                 E element = segment->get_element(index);
                                 std::exception_ptr ex = call_undelivered_element_catching_exception(element, undelivered_element_exception);
@@ -3280,6 +3193,7 @@ public:
 
     void cancel_suspended_receive_requests(ChannelSegment<E>* last_segment, int64_t senders_counter_val) {
         std::vector<Waiter*> suspended_receivers;
+        std::vector<std::shared_ptr<Waiter>> receiver_owners;
         ChannelSegment<E>* segment = last_segment;
         bool process_segments_done = false;
         while (segment != nullptr && !process_segments_done) {
@@ -3299,12 +3213,16 @@ public:
                     } else if (is_waiter_eb(state)) {
                         if (segment->cas_state(index, state, static_cast<void*>(&CHANNEL_CLOSED()))) {
                             suspended_receivers.push_back(static_cast<WaiterEB*>(state)->waiter);
+                            receiver_owners.push_back(segment->get_waiter_ref(index));
+                            segment->clear_waiter_ref(index);
                             segment->on_cancelled_request(index, true);
                             cell_update_done = true;
                         }
                     } else if (is_waiter(state)) {
                         if (segment->cas_state(index, state, static_cast<void*>(&CHANNEL_CLOSED()))) {
                             suspended_receivers.push_back(static_cast<Waiter*>(state));
+                            receiver_owners.push_back(segment->get_waiter_ref(index));
+                            segment->clear_waiter_ref(index);
                             segment->on_cancelled_request(index, true);
                             cell_update_done = true;
                         }

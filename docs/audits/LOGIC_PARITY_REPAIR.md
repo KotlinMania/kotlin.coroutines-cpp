@@ -17,7 +17,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
 | t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer and receiving await/unbox frames retain collection, child job and typed results; underlying await uses the cancellable completion protocol | Implemented; focused local acceptance recorded below |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
-| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references, reusable cache ownership and raw reusable ABI wrapper repaired; direct channel interception and other typed receiving adapters remain | Partially implemented; bounded evidence below |
+| t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt; Share.kt:411-428 | JobSupport await, subscribed collection/action lifetime, flow stored references, reusable cache ownership and raw reusable ABI wrapper and three direct channel adapters repaired; iterator/broadcast, other typed receiving adapters, segment reclamation and publication races remain | Partially implemented; bounded evidence below |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
 | t_d1b9ce81 | Builders.common.kt:140-173; CoroutineScope.kt:280-287; Supervisor.kt:50-66 | withContext and scope builders substitute stack scopes for scope coroutines and omit dispatcher/child-waiting branches | Queued |
 | t_e0acb2be | ASTDistance AST identity and receiver matching | Empty companions and valid extension-to-free-function lowering cause matching false alarms; actual source-path marker equivalence needs proof | Verified, committed 9d9d49ef; 8/8 strict and 8/8 ASan tests |
@@ -935,3 +935,54 @@ workspace automation-artifacts/reusable-wrapper-20261005/. Direct BufferedChanne
 send/receive/receive-catching, iterator/broadcast paths and other typed receiving
 adapters remain on the card. This accepts the reusable wrapper, not those direct
 call sites or every race. No CI/configuration change or push was made.
+
+
+## Direct channel reusable adapters — 2026-10-05
+
+This slice advances t_037fc89b against BufferedChannel.kt:141-164, 708-780,
+2041-2210 and ChannelSegment:2803-2855, using the reusable wrapper from 5f09e202.
+The send, receive and receive-catching no-waiter suspension paths now call that
+factory, which retains/intercepts the compiler frame and adapts its typed result.
+They preserve waiter registration, cell callbacks, undelivered handling and
+getResult order. The redundant send/raw receive adapters and eager normal-factory
+init_cancellability calls are removed. ReceiveCatching owns its actual CCI.
+
+Reference-valued regressions exposed necessary prerequisites: store_element must
+copy the local element before rendezvous rather than consume it; each segment
+element register must own its replacement and loaded value; try_receive must
+consume its temporary E box. Element retrieval still loads then clears, and
+cleaning publishes null, following the original register operations. Logical
+cell states, CAS branches and memory ordering are retained. Waiter owner loads
+and stores use C++17 atomic shared-pointer operations. Buffer expansion releases
+the sender owner after resumption at its terminal transitions. Closed-channel
+resumption recognizes the actual typed receive and void send CCI instances.
+Close sweeps retain available owned waiter references across terminal cell
+cleanup and later resumption, preserving reverse cell traversal, undelivered
+callback order and FIFO resume order. This does not establish race safety for
+raw cell publication or late owner installation. Touched register docstrings
+describe the C++ operations and storage.
+
+Existing CallFrame/QueueDispatcher checks exercise capacities zero and one: six
+sender variants and twelve plain/catching receiver variants cover normal queued
+delivery, cancellation before matching and cancellation after matching before
+dispatch. They check exactly one completion, typed result boxes, undelivered
+counts and waiter/frame release while the channel remains alive. Four close
+cases check normal and exceptional plain/catching receives, including exception
+identity. Two cancellation cases check queued senders' FIFO completion, reverse
+undelivered order, exact cause and value/frame release. No harness or target was
+added.
+
+A rejected test assumption is recorded explicitly: original trySend failure
+can leave its element in an INTERRUPTED_SEND cell until segment reclamation;
+that path does not call the undelivered handler. No extra cell-cleaning branch
+was added to satisfy an immediate weak-reference assertion. The C++ channel
+currently allocates raw segments and its destructor only closes; segment
+reclamation remains a confirmed lifetime gap. Iterator/broadcast, select and
+other DeferredCoroutine typed adapters also remain. No full channel, all-race,
+segment reclamation or interop acceptance is claimed.
+
+AsyncTest, test_continuation_dispatch and test_channel_as_flow_smoke pass 3/3
+in Debug (1.15s) and 3/3 in optimized ASan (1.41s). Final focused build/test
+logs and source hashes are recorded in workspace
+automation-artifacts/channel-direct-adapters-20261005/receipt.json. No
+CI/configuration change or push was made.
