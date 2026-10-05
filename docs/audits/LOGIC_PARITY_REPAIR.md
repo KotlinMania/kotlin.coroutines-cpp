@@ -396,3 +396,73 @@ other originally linked production repairs remain open. The only workflow is
 unchanged. No push, PR, deployment, release, new Hermes worker or model API
 dispatch was performed. Iris collaboration used the expressly authorized
 existing desktop conversation.
+
+
+## Current-card staleness revalidation — 2026-10-04
+
+Sydney requested fresh ASTDistance measurement and verification that the remaining
+repair claims describe current source. Checked clean solace/sharing-transliteration
+at 2b6ef08663081d8b187abe18a2c5431a364dde20. Nineteen direct function comparisons were
+run with the existing scorer, unmodified sources and repository configuration.
+Sixteen exited successfully; reusable, compiler generator and liveness comparisons
+were refused for namespace mismatches. Compiler comparisons also report Kotlin
+parser errors. BufferedChannel, Builders and CoroutineScope inventories have
+parser warnings; repeated-owner pairing warnings are retained. No failed
+comparison is converted into a numerical score.
+
+| Comparison | Source matches | Body score |
+|---|---|---|
+| Transform | 13/13 | 0.086 |
+| Internal Merge | 9/9 | 0.260 |
+| Internal Combine | 2/2 | 0.048 |
+| Share | 12/13 | 0.216 |
+| BufferedChannel | 100/111 | 0.296 |
+| StateFlow | 17/19 | 0.286 |
+| SharedFlow | 26/31 | 0.424 |
+| Builders | 6/14 | 0.086 |
+| CoroutineScope | 3/8 | 0.121 |
+| Supervisor | 5/5 | 0.243 |
+| Collect | 8/8 | 0.125 |
+| Count | 2/2 | 0.026 |
+| Collection | 3/3 | 0.112 |
+| Validated Logic control | 3/3 | 0.018 |
+
+JobSupport is split across its header and implementation: header 7/91, body
+0.316; implementation 48/91, body 0.202. These inventories cannot be summed
+or treated as a count of missing implementations. Scope's unmatched coroutineScope
+is in Builders.hpp, not the scored CoroutineScope.hpp. All target helper and
+unmatched-source evidence remains in the raw reports; named-function matching
+is not proof of suspension or algorithmic parity. Logic's bounded validated
+implementation demonstrates why a low aggregate score alone cannot support a
+defect claim.
+
+All seven active repair areas retain concrete source gaps on inspection against
+their original Kotlin, rather than from score thresholds:
+
+- t_f2155697: Confirmed current: Transform.hpp:92-93 returns collection with a stack TransformCollector; :142-155 suspending filter forwards the caller directly to predicate and has no retained post-predicate emission continuation. ASTDistance Transform 13/13 source matches, 32 unmatched target, body 0.086. Named matches do not restore the missing resumed branch.
+
+- t_356e6dfc: Confirmed current: internal/Merge.hpp:296 blocking acquire, :304-310 raw worker thread/NoopContinuation collection, :343-347 outer collect result discarded and worker joins; limited merge :403-424 likewise. Original Merge.kt:51-71,89-94 uses coroutine acquire/launch and collect/finally release. Existing TransformLatest retained join at :107 is correct and excluded. ASTDistance 9/9, body 0.260; scope remains concurrent/limited merge.
+
+- t_1f9908aa: Confirmed current: internal/Combine.hpp:155 collects into stack collector with nullptr in worker, :216 joins threads; :280 zip channel capacity1 versus original rendezvous restriction, :296 starts worker, :373 forwards collection completion without complete original context/transform/finally chain. Original Combine.kt launch/send/yield/receive/epoch/transform and zip contexts re-read. ASTDistance 2/2, body 0.048; pairing ambiguity warning retained.
+
+- t_eedecb8e: Confirmed current: Share.hpp:282-324 launches synchronous block with stack collector and state reference, upstream collect :313 uses nullptr and ignores suspension; state_in :399-404 forwards await to parent so resumed path skips get_or_throw/StateFlow boxing. Original Share.kt:322-353 awaits then unwraps, child coroutine job retained. ASTDistance Share 12/13, body 0.216; both deferred entry functions are matched, not absent.
+
+- t_037fc89b: Confirmed current: BufferedChannel.hpp:2043,2112,2167,3638 creates cancellable continuations over raw adapters without explicit intercepted delegate. StateFlow.hpp:501 stores &c into atomic slot; SharedFlow.hpp:797,802 stores raw continuation; Reusable.hpp:51-52 returns no-op-deleter shared_ptr. More precise JobSupport finding: .cpp:689-718 does NOT construct the defined AwaitContinuation; it registers ResumeAwaitOnCompletion directly on caller instead of original JobSupport.kt:1337-1347 intercepted AwaitContinuation/init/dispose/getResult. Channel receive placeholder claim on older t_d347fa2c is stale: receive suspend methods exist. Fresh AST: BufferedChannel100/111 body0.296, StateFlow17/19 body0.286, SharedFlow26/31 body0.424. JobSupport split hpp7/91 and cpp48/91 must not be summed or called missing implementation counts. Reusable comparison refused namespace mismatch; no score.
+
+- t_d1b9ce81: Confirmed current Builders.hpp:336-369 with_context stack scope/direct block omits original context merge/ensureActive/dispatcher paths; :380-420 coroutine_scope/supervisor_scope use ContextScope. Qualification: separate Supervisor.hpp:110-117 DOES construct SupervisorCoroutine and start_undispatched_or_return; narrow defect to Builders overloads and reconcile actual ABI/call sites, not claim all supervisor implementations absent. No acceptance executed for alternate overload. AST Builders6/14 body0.086 and Scope3/8 body0.121 have parser warnings; Supervisor5/5 body0.243. Older t_c4d34d9a missing/stub/synchronous-only premise is stale (suspend async exists).
+
+- t_16bf1579: Confirmed current plugin CMakeLists.txt:24-26 only compiles KotlinxSuspendPlugin.cpp, omitting SuspendFunctionAnalyzer.cpp. Generator .cpp:433-437 accepts constructor args without storing them; :451-495 traverses top-level marker statements, emits original call text/discards resumed value; .kx.cpp sidecar output :179 not consumed by production CMake path. Analyzer:43-44 excludes destructor CFG; :277 caps fixed point100. Both configured builds plugin/injector OFF. Production macro cleanup IS wired at root CMakeLists.txt:109-114, and verified Logic IR is existing retained frame cleanup, not automatic extraction. Strict compiler/liveness comparisons refused namespace mismatch with Kotlin parser warnings; no reliable direct score, no namespace rewrite to manufacture one.
+
+Older card specifications were qualified without changing owners, statuses or
+dependencies. t_d347fa2c's placeholder receive exception is obsolete: suspend
+receive implementations exist. t_c4d34d9a's missing/stub/synchronous-only builder
+premise is obsolete. t_fc954ad2 already has Count/Collection retained frames;
+remaining Collect stack collectors still need attention. Those partial advances
+are preserved, with no new runtime completion claim.
+
+Exact commands, source/scorer hashes, complete stdout/stderr and findings are
+under /Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-epic-staleness/.
+This is static staleness verification; no runtime tests, compiler builds, source
+implementation edits, scorer repairs, namespace overrides, worker dispatches or
+pushes were performed. Earlier runtime receipts remain valid only for their
+recorded bounded scenarios and revisions.
