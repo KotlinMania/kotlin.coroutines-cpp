@@ -278,50 +278,88 @@ inline std::shared_ptr<Job> launch_sharing(
         });
 }
 
+namespace detail {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Share.kt:333-353
+template <typename T>
+class DeferredSharingFrame final : public ContinuationImpl {
+public:
+    DeferredSharingFrame(
+        std::shared_ptr<Flow<T>> upstream,
+        std::shared_ptr<CompletableDeferred<Result<std::shared_ptr<StateFlow<T>>>>> result,
+        std::shared_ptr<Continuation<void*>> completion)
+        : ContinuationImpl(std::move(completion)), upstream_(std::move(upstream)),
+          result_(std::move(result)), collector_(*this) {}
+
+    void retain() { self_ref_ = shared_from_this(); }
+
+    void* invoke_suspend(Result<void*> result) override {
+        try {
+            coroutine_begin(this)
+            coroutine_yield(this, upstream_->collect(&collector_, this));
+            if (!state_) {
+                result_->complete(Result<std::shared_ptr<StateFlow<T>>>::failure(
+                    std::make_exception_ptr(std::out_of_range("Flow is empty"))));
+            }
+            self_ref_.reset();
+            coroutine_end(this)
+        } catch (...) {
+            auto exception = std::current_exception();
+            self_ref_.reset();
+            // Notify the waiter that the flow has failed.
+            result_->complete_exceptionally(exception);
+            // Still cancel the scope where the state was produced.
+            std::rethrow_exception(exception);
+        }
+    }
+
+private:
+    class DeferredCollector final : public FlowCollector<T> {
+    public:
+        explicit DeferredCollector(DeferredSharingFrame& owner) : owner_(owner) {}
+
+        void* emit(T value, Continuation<void*>*) override {
+            if (owner_.state_) {
+                owner_.state_->set_value(value);
+            } else {
+                owner_.state_ = make_mutable_state_flow<T>(value);
+                auto job = std::dynamic_pointer_cast<Job>(
+                    owner_.get_context()->get(Job::type_key));
+                owner_.result_->complete(Result<std::shared_ptr<StateFlow<T>>>::success(
+                    std::make_shared<ReadonlyStateFlow<T>>(owner_.state_, std::move(job))));
+            }
+            return nullptr;
+        }
+
+    private:
+        DeferredSharingFrame& owner_;
+    };
+
+    void* _label = nullptr;
+    std::shared_ptr<Flow<T>> upstream_;
+    std::shared_ptr<CompletableDeferred<Result<std::shared_ptr<StateFlow<T>>>>> result_;
+    std::shared_ptr<MutableStateFlow<T>> state_;
+    DeferredCollector collector_;
+    std::shared_ptr<BaseContinuationImpl> self_ref_;
+};
+
+} // namespace detail
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Share.kt:333-353
 template <typename T>
 inline void launch_sharing_deferred(
     CoroutineScope* scope,
     std::shared_ptr<CoroutineContext> context,
     std::shared_ptr<Flow<T>> upstream,
     std::shared_ptr<CompletableDeferred<Result<std::shared_ptr<StateFlow<T>>>>> result) {
-    launch(scope, context, CoroutineStart::DEFAULT, [scope, upstream, result](CoroutineScope*) {
-        try {
-            std::shared_ptr<MutableStateFlow<T>> state;
-            class DeferredCollector : public FlowCollector<T> {
-            public:
-                CoroutineScope* scope_;
-                std::shared_ptr<CompletableDeferred<Result<std::shared_ptr<StateFlow<T>>>>> result_;
-                std::shared_ptr<MutableStateFlow<T>>& state_;
-
-                DeferredCollector(CoroutineScope* s, std::shared_ptr<CompletableDeferred<Result<std::shared_ptr<StateFlow<T>>>>> r, std::shared_ptr<MutableStateFlow<T>>& st)
-                    : scope_(s), result_(r), state_(st) {}
-
-                void* emit(T value, Continuation<void*>*) override {
-                    if (state_) {
-                        state_->set_value(value);
-                    } else {
-                        state_ = make_mutable_state_flow<T>(value);
-                        auto job_el = scope_->get_coroutine_context()->get(Job::type_key);
-                        auto job = std::dynamic_pointer_cast<Job>(job_el);
-                        result_->complete(Result<std::shared_ptr<StateFlow<T>>>::success(
-                            std::shared_ptr<ReadonlyStateFlow<T>>(new ReadonlyStateFlow<T>(state_, job))));
-                    }
-                    return nullptr;
-                }
-            };
-            DeferredCollector collector(scope, result, state);
-            upstream->collect(&collector, nullptr);
-            if (!state) {
-                result->complete(Result<std::shared_ptr<StateFlow<T>>>::failure(
-                    std::make_exception_ptr(
-                        std::out_of_range("Flow is empty"))));
-            }
-        } catch (...) {
-            auto exception = std::current_exception();
-            result->complete_exceptionally(exception);
-            std::rethrow_exception(exception);
-        }
-    });
+    launch(scope, std::move(context), CoroutineStart::DEFAULT,
+        [upstream = std::move(upstream), result = std::move(result)](
+            CoroutineScope*, std::shared_ptr<Continuation<void*>> completion) -> void* {
+            auto frame = std::make_shared<detail::DeferredSharingFrame<T>>(
+                upstream, result, std::move(completion));
+            frame->retain();
+            return frame->start(Result<void*>::success(nullptr));
+        });
 }
 
 template <typename T>

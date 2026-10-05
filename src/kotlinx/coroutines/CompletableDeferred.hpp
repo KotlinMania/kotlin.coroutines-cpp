@@ -8,6 +8,7 @@
  */
 
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
+#include "kotlinx/coroutines/CompletedValue.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Deferred.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
@@ -16,6 +17,7 @@
 
 #include <exception>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 
 namespace kotlinx::coroutines {
@@ -82,34 +84,29 @@ inline bool complete_with(CompletableDeferred<T>* deferred, Result<T> result) {
 }
 
 /**
- * Concrete implementation of [CompletableDeferred].
- *
- * Upstream:
- *   @OptIn(InternalForInheritanceCoroutinesApi::class)
- *   @Suppress("UNCHECKED_CAST")
- *   private class CompletableDeferredImpl<T>(parent: Job?) : JobSupport(true), CompletableDeferred<T> {
- *       init { initParentJob(parent) }
- *       override val onCancelComplete get() = true
- *       override fun getCompleted(): T = getCompletedInternal() as T
- *       override suspend fun await(): T = awaitInternal() as T
- *       override val onAwait: SelectClause1<T> get() = onAwaitInternal as SelectClause1<T>
- *       override fun complete(value: T): Boolean = makeCompleting(value)
- *       override fun completeExceptionally(exception: Throwable): Boolean =
- *           makeCompleting(CompletedExceptionally(exception))
- *   }
+ * Active deferred backed by the job state machine. Factories register the parent
+ * after shared ownership is established, before returning the deferred.
+ * Successful completion stores a typed value in a polymorphic job-state box.
  */
 template <typename T>
 class CompletableDeferredImpl : public JobSupport, public CompletableDeferred<T> {
 public:
-    explicit CompletableDeferredImpl(std::shared_ptr<Job> parent) : JobSupport(true) {
-        this->init_parent_job(std::move(parent));
+    CompletableDeferredImpl() : JobSupport(true) {}
+    using JobSupport::init_parent_job;
+
+    bool get_on_cancel_complete() const override { return true; }
+
+    std::exception_ptr get_completion_exception_or_null() const override {
+        return JobSupport::get_completion_exception_or_null();
     }
 
-    bool on_cancel_complete() const override { return true; }
-
-    /** Upstream: override fun getCompleted(): T = getCompletedInternal() as T */
+    /** Returns a copy of the completed value, or throws for failure or incomplete state. */
     T get_completed() const override {
-        return *static_cast<T*>(this->get_completed_internal());
+        auto* state = this->get_completed_internal();
+        if (auto* value = dynamic_cast<CompletedValue<T>*>(state)) {
+            return value->value;
+        }
+        throw std::logic_error("Unexpected completion state");
     }
 
     /** Upstream: override suspend fun await(): T = awaitInternal() as T */
@@ -141,9 +138,9 @@ public:
         return *on_await_clause_;
     }
 
-    /** Upstream: override fun complete(value: T): Boolean = makeCompleting(value) */
+    /** Completes the job with a typed value; an already completed job is unchanged. */
     bool complete(T value) override {
-        return this->make_completing(new T(std::move(value)));
+        return this->make_completing(new CompletedValue<T>(std::move(value)));
     }
 
     /**
@@ -159,31 +156,20 @@ private:
     std::unique_ptr<selects::SelectClause1Impl<T>> on_await_clause_;
 };
 
-/**
- * Creates a [CompletableDeferred] in an _active_ state.
- *
- * Upstream:
- *   @Suppress("FunctionName")
- *   public fun <T> CompletableDeferred(parent: Job? = null): CompletableDeferred<T> =
- *       CompletableDeferredImpl(parent)
- */
+/** Creates an active deferred, optionally attached to a parent job. */
 template <typename T>
 inline std::shared_ptr<CompletableDeferred<T>> make_completable_deferred(
     std::shared_ptr<Job> parent = nullptr) {
-    return std::make_shared<CompletableDeferredImpl<T>>(std::move(parent));
+    auto deferred = std::make_shared<CompletableDeferredImpl<T>>();
+    deferred->init_parent_job(std::move(parent));
+    return deferred;
 }
 
-/**
- * Creates an already _completed_ [CompletableDeferred] with a given [value].
- *
- * Upstream:
- *   @Suppress("FunctionName")
- *   public fun <T> CompletableDeferred(value: T): CompletableDeferred<T> =
- *       CompletableDeferredImpl<T>(null).apply { complete(value) }
- */
+/** Creates a parentless deferred already completed with the given value. */
 template <typename T>
 inline std::shared_ptr<CompletableDeferred<T>> make_completable_deferred(T value) {
-    auto deferred = std::make_shared<CompletableDeferredImpl<T>>(nullptr);
+    auto deferred = std::make_shared<CompletableDeferredImpl<T>>();
+    deferred->init_parent_job(nullptr);
     deferred->complete(std::move(value));
     return deferred;
 }

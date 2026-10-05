@@ -15,7 +15,7 @@ coroutine repairs locally; these cards do not request Hermes worker runs.
 | t_f2155697 | flow/operators/Transform.kt | Suspended filter/map/onEach/fold/reduce results bypass remaining algorithm; runningFold skips collection after suspended initial emission; stack collectors and chunk finalization do not survive suspension | Queued |
 | t_356e6dfc | flow/internal/Merge.kt:47-94 | Concurrent and limited merge use OS threads, synchronous semaphore acquisition and joins, and discard collection suspension | Queued |
 | t_1f9908aa | flow/internal/Combine.kt:16-138 | combine workers/polling replace coroutine launch/send/receive/yield; resumed transform loses batching state; zip uses capacity 1 rather than rendezvous, and lacks upstream context/cancellation and suspend-transform structure | Queued |
-| t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred stateIn collects without a continuation, uses stack state/collector, and resumed await bypasses unwrapping | Queued |
+| t_eedecb8e | flow/operators/Share.kt:322-353 | Deferred sharing producer retains collection and child job; stateIn resumed await still bypasses unwrapping and its generic await adapter needs cancellation/boxing repair | Producer implemented; await acceptance remains open |
 | t_16bf1579 | NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt | Generator emits unconsumed sidecars, lacks faithful nested/value/argument/liveness/finally lowering, does not retain constructor parameters correctly; plugin target omits analyzer implementation | Queued |
 | t_037fc89b | CancellableContinuation.kt:423-490; BufferedChannel.kt; StateFlow.kt; SharedFlow.kt | Raw channel/await/reusable adapters bypass interception; raw flow slots and reusable pointers lack Kotlin GC reference ownership | Queued |
 | t_ee048b83 | AsyncTest.kt:266-298; JobTest.kt:141-157; CollectLatestTest.kt:18-21; Builders.common.kt:79-111 | Simplified tests replace suspend/finally order; suspend async overload and erased value unboxing are absent; IR fixture omits prebuilt-library sanitizer link flags | Verified in this checkpoint |
@@ -666,3 +666,37 @@ inherited symbol-audit work preserved byte-for-byte and excluded. The exact test
 binary is installed in the canonical checkout and this project's tools/ast_distance.
 Raw scan, regression logs, preservation proof and SHA receipt are at workspace
 automation-artifacts/2026-10-04-deep-suspension-review/.
+
+
+## Deferred sharing producer repair — 2026-10-05
+
+Card t_eedecb8e has a bounded producer repair against Share.kt:333-353.
+Share.hpp:285 retains the upstream, mutable state, collector and launch completion
+in a computed-goto frame. Collection receives that frame and the empty-flow
+check runs only after collection completes. The first value wraps the state with
+the sharing child's job; later values update the same state. Resumed failure
+completes the result exceptionally and is rethrown to cancel the sharing scope.
+
+Instantiating the real Result<StateFlow> deferred exposed prerequisite defects
+in CompletableDeferred.hpp: its cancellation override had the wrong name, the
+completion-exception override was missing, construction registered a parent
+before shared ownership existed, and completion attempted to pass a raw typed
+value to JobSupport's polymorphic state API. Factories now attach the parent
+after construction and completion/get_completed use the existing CompletedValue
+representation. Updated comments describe the C++ construction and ownership.
+
+The existing test_sharing_suspension fixture covers delayed first value, a second
+update, cancellation of the sharing child without cancelling the parent, parent
+cancellation before the first value, empty completion, failure before/after the
+first value, and release of both retained frames. It also instantiates both
+deferred factories and checks typed completion, repeated completion and parent
+cancellation. No disposable harness or new test infrastructure was added.
+
+Focused acceptance: test_sharing_suspension and test_share_hot_flow_smoke pass
+2/2 in Debug (1.54s) and 2/2 in optimized ASan (1.89s). Raw build/test logs are
+under workspace automation-artifacts/deferred-sharing-producer-20261005/. This
+is producer acceptance, not completed state_in acceptance: Share.hpp:427 still
+forwards await to the parent and unwraps only on immediate return; the generic
+CompletableDeferred await exposes JobState rather than a typed ABI box, and
+JobSupport await's raw continuation path lacks the Kotlin cancellable await
+protocol. Those receiving-path repairs remain on the card.

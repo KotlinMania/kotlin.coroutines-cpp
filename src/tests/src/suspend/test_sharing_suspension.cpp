@@ -337,6 +337,134 @@ void test_lazy_command_starts_once_and_releases_on_cancellation() {
     assert_equals(1, completions);
 }
 
+// Regression for the deferred sharing launch: delay the first value, update,
+// then remain suspended until cancellation or fail after the update.
+class DeferredUpstreamFrame final : public ContinuationImpl {
+public:
+    DeferredUpstreamFrame(FlowCollector<int>* collector, bool empty, bool fail,
+                          Continuation<void*>* completion)
+        : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+          collector_(collector), empty_(empty), fail_(fail) {}
+    void retain() { self_ref_ = shared_from_this(); }
+    void* invoke_suspend(Result<void*> result) override {
+        try {
+            coroutine_begin(this)
+            coroutine_yield(this, delay(10, shared_from_this()));
+            if (empty_) {
+                if (fail_) throw std::runtime_error("upstream failed");
+            } else {
+                coroutine_yield(this, collector_->emit(10, this));
+                coroutine_yield(this, delay(10, shared_from_this()));
+                coroutine_yield(this, collector_->emit(20, this));
+                if (fail_) throw std::runtime_error("upstream failed");
+                coroutine_yield(this, await_cancellation(shared_from_this()));
+            }
+            self_ref_.reset();
+            coroutine_end(this)
+        } catch (...) {
+            self_ref_.reset();
+            throw;
+        }
+    }
+private:
+    void* _label = nullptr;
+    FlowCollector<int>* collector_;
+    bool empty_;
+    bool fail_;
+    std::shared_ptr<BaseContinuationImpl> self_ref_;
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Share.kt:333-353
+void test_deferred_sharing_retains_collection(bool empty, bool fail, bool cancel_before_first = false) {
+    auto clock = std::make_shared<VirtualDispatcher>();
+    auto parent = make_job();
+    auto scope = create_coroutine_scope(
+        std::dynamic_pointer_cast<CoroutineContext>(parent)->operator+(clock));
+    auto deferred = make_completable_deferred<Result<std::shared_ptr<StateFlow<int>>>>(parent);
+    std::weak_ptr<BaseContinuationImpl> upstream_frame;
+    std::weak_ptr<BaseContinuationImpl> sharing_frame;
+    std::weak_ptr<Job> child;
+    auto upstream = flow::flow<int>([&](FlowCollector<int>* collector, Continuation<void*>* cont) {
+        sharing_frame = dynamic_cast<BaseContinuationImpl*>(cont)->shared_from_this();
+        child = std::dynamic_pointer_cast<Job>(cont->get_context()->get(Job::type_key));
+        assert_true(child.lock() != parent);
+        auto frame = std::make_shared<DeferredUpstreamFrame>(collector, empty, fail, cont);
+        upstream_frame = frame;
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
+    });
+    launch_sharing_deferred<int>(scope.get(), EmptyCoroutineContext::instance(), upstream, deferred);
+    upstream.reset();
+    clock->run_current();
+    assert_false(deferred->is_completed());
+    assert_false(sharing_frame.expired());
+    clock->advance_by(9);
+    assert_false(deferred->is_completed());
+    if (cancel_before_first) {
+        auto sharing_child = child.lock();
+        assert_true(sharing_child != nullptr);
+        parent->cancel();
+        clock->advance_by(1);
+        assert_true(deferred->is_cancelled());
+        assert_true(sharing_child->is_completed());
+        assert_true(upstream_frame.expired());
+        assert_true(sharing_frame.expired());
+        return;
+    }
+    clock->advance_by(1);
+    assert_true(deferred->is_completed());
+    if (empty) {
+        bool caught = false;
+        try {
+            (void)deferred->get_completed().get_or_throw();
+        } catch (const std::out_of_range& error) {
+            assert_false(fail);
+            assert_true(std::string(error.what()) == "Flow is empty");
+            caught = true;
+        } catch (const std::runtime_error& error) {
+            assert_true(fail);
+            assert_true(std::string(error.what()) == "upstream failed");
+            caught = true;
+        }
+        assert_true(caught);
+        assert_true(parent->is_cancelled() == fail);
+    } else {
+        auto state = deferred->get_completed().get_or_throw();
+        assert_equals(10, state->value());
+        clock->advance_by(10);
+        assert_equals(20, state->value());
+        assert_true(deferred->get_completed().get_or_throw() == state);
+        assert_true(parent->is_cancelled() == fail);
+        if (!fail) {
+            auto sharing_child = child.lock();
+            assert_true(sharing_child != nullptr);
+            assert_false(sharing_child->is_completed());
+            sharing_child->cancel();
+            clock->run_current();
+            assert_true(sharing_child->is_completed());
+            assert_true(parent->is_active());
+        }
+    }
+    assert_true(upstream_frame.expired());
+    assert_true(sharing_frame.expired());
+    parent->cancel();
+    clock->run_current();
+}
+
+void test_completable_deferred_typed_completion() {
+    auto completed = make_completable_deferred<int>(42);
+    assert_equals(42, completed->get_completed());
+    assert_equals(42, completed->await_blocking());
+    assert_true(completed->get_completion_exception_or_null() == nullptr);
+    assert_false(completed->complete(99));
+    assert_equals(42, completed->get_completed());
+    auto parent = make_job();
+    auto pending = make_completable_deferred<int>(parent);
+    parent->cancel();
+    assert_true(pending->is_completed());
+    assert_true(pending->get_completion_exception_or_null() != nullptr);
+}
+
 int main() {
     test_stop_and_expiration_with_resubscription();
     test_zero_expiration();
@@ -345,5 +473,11 @@ int main() {
     test_infinite_stop_timeout_is_cancellable();
     test_latest_waits_for_suspended_cleanup();
     test_lazy_command_starts_once_and_releases_on_cancellation();
+    test_deferred_sharing_retains_collection(false, false);
+    test_deferred_sharing_retains_collection(false, true);
+    test_deferred_sharing_retains_collection(true, false);
+    test_deferred_sharing_retains_collection(true, true);
+    test_deferred_sharing_retains_collection(false, false, true);
+    test_completable_deferred_typed_completion();
     std::cout << "Sharing suspension and virtual-time tests passed\n";
 }
