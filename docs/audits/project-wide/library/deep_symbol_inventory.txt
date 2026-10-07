@@ -3005,33 +3005,25 @@ EXTRA_TARGET_SYMBOL function ThreadSafeHeap::ThreadSafeHeap at /Volumes/stuff/Pr
 EXTRA_TARGET_SYMBOL function ThreadSafeHeap::~ThreadSafeHeap at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ThreadSafeHeap.hpp:45
 EXTRA_TARGET_SYMBOL function ThreadSafeHeap::clear at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ThreadSafeHeap.hpp:51
 EXTRA_TARGET_SYMBOL function ThreadSafeHeap::set_size at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ThreadSafeHeap.hpp:162
-PRESENT function startCoroutineCancellable at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:14 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:34
-PRESENT function startCoroutineCancellable at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:23 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:34
-PRESENT function startCoroutineCancellable at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:33 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:34
+PRESENT function startCoroutineCancellable at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:14 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:52
+PRESENT function startCoroutineCancellable at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:23 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:52
+PRESENT function startCoroutineCancellable at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:33 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:52
 PRESENT function runSafely at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:44 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:25
 PRESENT function dispatcherFailure at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:52 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:10
-EXTRA_TARGET_SYMBOL function as_continuation_impl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:25
-EXTRA_TARGET_SYMBOL type LambdaContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:30
-EXTRA_TARGET_SYMBOL property LambdaContinuation::block_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:31
-EXTRA_TARGET_SYMBOL property LambdaContinuation::completion_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:32
-EXTRA_TARGET_SYMBOL function LambdaContinuation::LambdaContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:35
-EXTRA_TARGET_SYMBOL function LambdaContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:41
-EXTRA_TARGET_SYMBOL function LambdaContinuation::get_context at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:50
-EXTRA_TARGET_SYMBOL type ReceiverLambdaContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:56
-EXTRA_TARGET_SYMBOL property ReceiverLambdaContinuation::block_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:57
-EXTRA_TARGET_SYMBOL property ReceiverLambdaContinuation::receiver_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:58
-EXTRA_TARGET_SYMBOL property ReceiverLambdaContinuation::completion_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:59
-EXTRA_TARGET_SYMBOL function ReceiverLambdaContinuation::ReceiverLambdaContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:62
-EXTRA_TARGET_SYMBOL function ReceiverLambdaContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:69
-EXTRA_TARGET_SYMBOL function ReceiverLambdaContinuation::get_context at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:77
-EXTRA_TARGET_SYMBOL function create_coroutine_unintercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:84
-EXTRA_TARGET_SYMBOL function create_coroutine_unintercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:92
-EXTRA_TARGET_SYMBOL function start_coroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:176
-EXTRA_TARGET_SYMBOL function start_coroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:196
-EXTRA_TARGET_SYMBOL function start_coroutine_undispatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:216
-EXTRA_TARGET_SYMBOL function start_coroutine_undispatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:239
-MISSING_FILE kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt
-MISSING_SYMBOL function startCoroutineUndispatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13
+EXTRA_TARGET_SYMBOL function start_coroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:32
+EXTRA_TARGET_SYMBOL function start_coroutine_undispatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:34
+EXTRA_TARGET_SYMBOL function retain_start_completion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:40
+EXTRA_TARGET_SYMBOL function start_coroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:72
+EXTRA_TARGET_SYMBOL function start_coroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:78
+EXTRA_TARGET_SYMBOL function start_coroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:83
+EXTRA_TARGET_SYMBOL function start_coroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:93
+EXTRA_TARGET_SYMBOL function start_coroutine_undispatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:98
+EXTRA_TARGET_SYMBOL function start_coroutine_undispatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:104
+EXTRA_TARGET_SYMBOL function start_coroutine_undispatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:109
+EXTRA_TARGET_SYMBOL function start_coroutine_undispatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:119
+EXTRA_TARGET_SYMBOL function resume_cancellable_start at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:35
+EXTRA_TARGET_SYMBOL function start_coroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:58
+PRESENT function startCoroutineUndispatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Undispatched.cpp:8
 MISSING_SYMBOL function startUndispatchedOrReturn at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:41
 MISSING_SYMBOL function startUndispatchedOrReturnIgnoreTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:48
 MISSING_SYMBOL function startUndspatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:61
@@ -6113,4 +6105,4 @@ MISSING_SYMBOL property isNative at /Volumes/stuff/Projects/kotlinmania/kotlin.c
 MISSING_SYMBOL property isBoundByJsTestTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:61
 MISSING_SYMBOL property isJavaAndWindows at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:63
 MISSING_SYMBOL property usesSharedEventLoop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:65
-Inventory totals: present=2424, declaration_only=101, missing=2072
+Inventory totals: present=2425, declaration_only=101, missing=2071

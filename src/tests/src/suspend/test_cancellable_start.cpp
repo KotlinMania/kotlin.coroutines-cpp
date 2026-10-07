@@ -163,6 +163,231 @@ void dispatched_contract() {
         CHECK(frame_lifetime.expired() && lifetime.expired());
     }
 }
+// Contracts from Native IntrinsicsNative.kt:142-189,221-263,296-324.
+void cold_creation_contract() {
+    auto completion = std::make_shared<Completion>();
+    int entered = 0;
+    intrinsics::ErasedSuspendFunction body = [&](std::shared_ptr<Continuation<void*>> frame) -> void* {
+        ++entered;
+        CHECK(frame.get() != completion.get());
+        CHECK(dynamic_cast<RestrictedContinuationImpl*>(frame.get()));
+        return reinterpret_cast<void*>(42);
+    };
+    auto first = intrinsics::create_coroutine_unintercepted(body, completion);
+    auto second = intrinsics::create_coroutine_unintercepted(body, completion);
+    CHECK(first != second && !entered);
+    CHECK(dynamic_cast<RestrictedContinuationImpl*>(first.get()));
+    first->resume_with(Result<void*>::success(nullptr));
+    CHECK(entered == 1 && completion->resumes == 1 && completion->value == reinterpret_cast<void*>(42));
+    auto original = std::make_exception_ptr(std::runtime_error("initial failure"));
+    second->resume_with(Result<void*>::failure(original));
+    CHECK(entered == 1 && completion->resumes == 2 && completion->failure == original);
+    // A resumed callable-wrapper result follows the actual 1 -> 2 branch.
+    first->resume_with(Result<void*>::success(reinterpret_cast<void*>(17)));
+    CHECK(entered == 1 && completion->value == reinterpret_cast<void*>(17));
+    first->resume_with(Result<void*>::success(nullptr));
+    CHECK(bool(completion->failure));
+
+    completion->context = std::make_shared<Dispatcher>();
+    auto contextual = intrinsics::create_coroutine_unintercepted(body, completion);
+    CHECK(dynamic_cast<ContinuationImpl*>(contextual.get()));
+    std::weak_ptr<Continuation<void*>> lifetime = contextual;
+    contextual.reset();
+    CHECK(lifetime.expired()); // Creating a cold wrapper does not root it.
+}
+
+void typed_immediate_and_prototype_contract() {
+    int observed = 0;
+    int resumes = 0;
+    auto completion = make_continuation<int>(EmptyCoroutineContext::instance(), [&](Result<int> result) {
+        observed = result.get_or_throw(); ++resumes;
+    });
+    std::function<void*(int, Continuation<int>*)> receiver_body = [](int receiver, auto* frame) -> void* {
+        CHECK(dynamic_cast<internal::ResultBoxCompletion<int>*>(frame));
+        return new int(receiver + 1); // The receiving typed adapter unboxes and deletes.
+    };
+    intrinsics::start_coroutine_cancellable<int, int>(receiver_body, 54, completion);
+    CHECK(observed == 55 && resumes == 1);
+    intrinsics::start_coroutine<int, int>(receiver_body, 64, completion);
+    CHECK(observed == 65 && resumes == 2);
+    intrinsics::start_coroutine_undispatched<int, int>(receiver_body, 74, completion);
+    CHECK(observed == 75 && resumes == 3);
+
+    int unit_resumes = 0;
+    auto unit_completion = make_continuation<Unit>(EmptyCoroutineContext::instance(), [&](Result<Unit> result) {
+        result.get_or_throw(); ++unit_resumes;
+    });
+    std::function<void*(Continuation<Unit>*)> unit_body = [](auto*) -> void* { return nullptr; };
+    intrinsics::start_coroutine_cancellable<Unit>(unit_body, unit_completion);
+    CHECK(unit_resumes == 1);
+
+    class Prototype final : public ContinuationImpl {
+    public:
+        bool entered = false;
+        int observed = 0;
+        Prototype() : ContinuationImpl(std::make_shared<Completion>()) {}
+        void* invoke_suspend(Result<void*>) override { throw std::logic_error("prototype is not the fresh frame"); }
+        std::shared_ptr<Continuation<void*>> create(std::shared_ptr<Continuation<void*>> completion) override {
+            return std::make_shared<Frame>(completion, std::make_shared<int>(8), &entered, &observed);
+        }
+        std::shared_ptr<Continuation<void*>> create(void* receiver, std::shared_ptr<Continuation<void*>> completion) override {
+            return std::make_shared<Frame>(completion, std::make_shared<int>(*static_cast<int*>(receiver)), &entered, &observed);
+        }
+    } prototype;
+    auto erased_completion = std::make_shared<Completion>();
+    auto first = intrinsics::create_coroutine_unintercepted(prototype, erased_completion);
+    int receiver = 19;
+    auto second = intrinsics::create_coroutine_unintercepted(prototype, &receiver, erased_completion);
+    CHECK(first != second && !prototype.entered);
+    first->resume_with(Result<void*>::success(nullptr));
+    CHECK(prototype.entered && prototype.observed == 8);
+    second->resume_with(Result<void*>::success(nullptr));
+    CHECK(prototype.observed == 19 && erased_completion->resumes == 2);
+}
+
+void cold_start_modes_contract() {
+    for (int mode : {0, 1, 2}) {
+        auto dispatcher = std::make_shared<Dispatcher>();
+        auto job = JobImpl::create(nullptr);
+        auto completion = std::make_shared<Completion>();
+        completion->context = dispatcher->operator+(job);
+        auto resource = std::make_shared<int>(91);
+        std::weak_ptr<int> lifetime = resource;
+        bool entered = false;
+        intrinsics::ErasedSuspendFunction body = [resource, &entered](std::shared_ptr<Continuation<void*>> frame) -> void* {
+            CHECK(dynamic_cast<ContinuationImpl*>(frame.get()));
+            CHECK(*resource == 91);
+            entered = true;
+            return nullptr;
+        };
+        if (mode == 0) intrinsics::start_coroutine_cancellable(body, completion);
+        if (mode == 1) intrinsics::start_coroutine(body, completion);
+        if (mode == 2) intrinsics::start_coroutine_undispatched(body, completion);
+        body = nullptr;
+        resource.reset();
+        if (mode != 2) {
+            CHECK(!entered && !lifetime.expired());
+            job->cancel(nullptr);
+            dispatcher->drain();
+        }
+        CHECK(entered == (mode != 0) && completion->resumes == 1);
+        CHECK(bool(completion->failure) == (mode == 0));
+        CHECK(lifetime.expired());
+    }
+
+    for (int mode : {0, 1, 2}) {
+        auto dispatcher = std::make_shared<Dispatcher>();
+        auto original = std::make_exception_ptr(std::runtime_error("start dispatch failure"));
+        dispatcher->failure = original;
+        auto completion = std::make_shared<Completion>();
+        completion->context = dispatcher;
+        auto resource = std::make_shared<int>(1);
+        std::weak_ptr<int> lifetime = resource;
+        intrinsics::ErasedSuspendFunction body = [resource](auto) -> void* { return reinterpret_cast<void*>(31); };
+        std::exception_ptr thrown;
+        try {
+            if (mode == 0) intrinsics::start_coroutine_cancellable(body, completion);
+            if (mode == 1) intrinsics::start_coroutine(body, completion);
+            if (mode == 2) intrinsics::start_coroutine_undispatched(body, completion);
+        } catch (...) { thrown = std::current_exception(); }
+        body = nullptr;
+        resource.reset();
+        if (mode == 0) CHECK(thrown == original && completion->failure == original && completion->resumes == 1);
+        if (mode == 1) {
+            CHECK(thrown && !completion->resumes);
+            try { std::rethrow_exception(thrown); }
+            catch (const internal::DispatchException& failure) { CHECK(failure.cause == original); }
+        }
+        if (mode == 2) CHECK(!thrown && completion->value == reinterpret_cast<void*>(31));
+        CHECK(lifetime.expired());
+    }
+}
+
+void typed_suspension_contract() {
+    for (int mode : {0, 1, 2}) for (bool failure : {false, true}) {
+        auto dispatcher = std::make_shared<Dispatcher>();
+        dispatcher->immediate = true;
+        int resumes = 0;
+        int observed = 0;
+        std::exception_ptr observed_failure;
+        auto completion = make_continuation<int>(dispatcher, [&](Result<int> result) {
+            ++resumes;
+            observed_failure = result.exception_or_null();
+            if (!observed_failure) observed = result.get_or_throw();
+        });
+        std::weak_ptr<Continuation<int>> completion_lifetime = completion;
+        Continuation<int>* pending = nullptr;
+        std::weak_ptr<Continuation<void*>> frame_lifetime;
+        auto resource = std::make_shared<int>(71);
+        std::weak_ptr<int> lifetime = resource;
+        std::function<void*(Continuation<int>*)> body = [resource, &pending, &frame_lifetime](Continuation<int>* frame) -> void* {
+            CHECK(*resource == 71);
+            auto projection = dynamic_cast<internal::ResultBoxCompletion<int>*>(frame);
+            CHECK(projection);
+            frame_lifetime = projection->completion();
+            pending = frame;
+            return COROUTINE_SUSPENDED;
+        };
+        if (mode == 0) intrinsics::start_coroutine_cancellable<int>(body, completion);
+        if (mode == 1) intrinsics::start_coroutine<int>(body, completion);
+        if (mode == 2) intrinsics::start_coroutine_undispatched<int>(body, completion);
+        body = nullptr;
+        completion.reset();
+        resource.reset();
+        CHECK(pending && !resumes && !completion_lifetime.expired() && !frame_lifetime.expired() && !lifetime.expired());
+        auto original = std::make_exception_ptr(std::runtime_error("resumed body failure"));
+        if (failure) pending->resume_with(Result<int>::failure(original));
+        else pending->resume_with(Result<int>::success(71));
+        CHECK(resumes == 1 && (failure ? observed_failure == original : observed == 71));
+        CHECK(completion_lifetime.expired() && frame_lifetime.expired() && lifetime.expired());
+    }
+
+    // The same callable can create independent suspended computations.
+    std::vector<Continuation<int>*> pending_calls;
+    std::function<void*(Continuation<int>*)> shared_body = [&](Continuation<int>* frame) -> void* {
+        pending_calls.push_back(frame); return COROUTINE_SUSPENDED;
+    };
+    auto erased_body = intrinsics::erase_suspend_function<int>(shared_body);
+    int first_value = 0, second_value = 0;
+    auto first_completion = make_continuation<int>(EmptyCoroutineContext::instance(), [&](Result<int> r) { first_value = r.get_or_throw(); });
+    auto second_completion = make_continuation<int>(EmptyCoroutineContext::instance(), [&](Result<int> r) { second_value = r.get_or_throw(); });
+    intrinsics::start_coroutine_cancellable(erased_body, to_void_continuation(first_completion));
+    intrinsics::start_coroutine_cancellable(erased_body, to_void_continuation(second_completion));
+    CHECK(pending_calls.size() == 2 && pending_calls[0] != pending_calls[1]);
+    pending_calls[1]->resume_with(Result<int>::success(2));
+    pending_calls[0]->resume_with(Result<int>::success(1));
+    CHECK(first_value == 1 && second_value == 2);
+
+    Completion borrowed;
+    std::function<void*(Continuation<void*>*)> raw_body = [&](Continuation<void*>* frame) -> void* {
+        CHECK(frame != &borrowed);
+        return reinterpret_cast<void*>(83);
+    };
+    intrinsics::start_coroutine_cancellable<void*>(raw_body, &borrowed);
+    CHECK(borrowed.resumes == 1 && borrowed.value == reinterpret_cast<void*>(83));
+
+    int void_resumes = 0;
+    auto void_completion = make_continuation<void>(EmptyCoroutineContext::instance(), [&](Result<void> result) {
+        result.get_or_throw(); ++void_resumes;
+    });
+    std::function<void*(Continuation<void>*)> void_body = [](auto* frame) -> void* {
+        frame->resume_with(Result<void>::success());
+        return COROUTINE_SUSPENDED; // Inline resume must not reroot a completed frame.
+    };
+    std::weak_ptr<Continuation<void>> void_lifetime = void_completion;
+    intrinsics::start_coroutine_undispatched<void>(void_body, void_completion);
+    void_completion.reset(); void_body = nullptr;
+    CHECK(void_resumes == 1 && void_lifetime.expired());
+
+    Completion throwing;
+    auto original = std::make_exception_ptr(std::runtime_error("completion throws"));
+    throwing.resume_failure = original;
+    std::exception_ptr thrown;
+    try { intrinsics::start_coroutine_undispatched<void*>(raw_body, &throwing); }
+    catch (...) { thrown = std::current_exception(); }
+    CHECK(thrown == original && throwing.resumes == 1); // Completion invocation lies outside the body catch.
+}
+
 }
 
 int main() {
@@ -170,6 +395,10 @@ int main() {
         plain_continuation_contract();
         failure_contract();
         dispatched_contract();
+        cold_creation_contract();
+        typed_immediate_and_prototype_contract();
+        cold_start_modes_contract();
+        typed_suspension_contract();
     } catch (const std::exception& exception) {
         std::cerr << exception.what() << '\n';
         return 1;

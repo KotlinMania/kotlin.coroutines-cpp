@@ -57,58 +57,7 @@ public:
 
     // This implementation is final. This fact is used to unroll resumeWith recursion.
     // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:21-45
-    void resume_with(Result<void*> result) override final {
-        // Upstream: invoke `probeCoroutineResumed(this)` exactly once even though the
-        // loop below resumes previous frames as well. The C++ port relies on
-        // internal::probe_coroutine_resumed, which is a no-op on every target except a
-        // future JVM-style debug-agent integration; the call site is left commented so
-        // the no-op evaluation does not appear in the resume hot path.
-
-        // This loop unrolls recursion in current.resumeWith(param) to make saner and shorter stack traces on resume
-        auto current = this;
-        Result<void*> param = std::move(result);
-
-        while (true) {
-            // NOTE(port): Kotlin's GC keeps both frames alive while the loop
-            // releases interception and transfers the completed Result.
-            auto current_guard = current->weak_from_this().lock();
-            auto completion_guard = current->completion;
-            // with(current)
-            auto* completion_ptr = completion_guard.get();
-            if (!completion_ptr) {
-                // fail fast when trying to resume continuation without completion
-                // throw std::runtime_error("Trying to resume continuation without completion");
-                return;
-            }
-
-            Result<void*> outcome;
-            try {
-                // val outcome = invokeSuspend(param)
-                void* suspend_result = current->invoke_suspend(param);
-
-                if (intrinsics::is_coroutine_suspended(suspend_result)) {
-                    return; 
-                }
-
-                outcome = Result<void*>::success(suspend_result);
-            } catch (...) {
-                outcome = Result<void*>::failure(std::current_exception());
-            }
-
-            current->release_intercepted(); // this state machine instance is terminating
-
-            auto* base_completion = dynamic_cast<BaseContinuationImpl*>(completion_ptr);
-            if (base_completion) {
-                // unrolling recursion via loop
-                current = base_completion;
-                param = std::move(outcome);
-            } else {
-                // top-level completion reached -- invoke and return
-                completion_ptr->resume_with(std::move(outcome));
-                return;
-            }
-        }
-    }
+    void resume_with(Result<void*> result) override final;
 
     virtual void* invoke_suspend(Result<void*> result) = 0;
 
@@ -121,49 +70,40 @@ public:
         // does nothing here, overridden in ContinuationImpl
     }
 
-    virtual std::shared_ptr<Continuation<void>> create(
-        std::shared_ptr<Continuation<void*>> completion
-    ) {
-        throw std::runtime_error("create(Continuation) has not been overridden");
-    }
-
-    virtual std::shared_ptr<Continuation<void>> create(
-        void* value,
-        std::shared_ptr<Continuation<void*>> completion
-    ) {
-        throw std::runtime_error("create(Any?, Continuation) has not been overridden");
-    }
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:55-57
+    virtual std::shared_ptr<Continuation<void*>> create(std::shared_ptr<Continuation<void*>> completion);
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:59-61
+    virtual std::shared_ptr<Continuation<void*>> create(void* value, std::shared_ptr<Continuation<void*>> completion);
 
     std::string to_string() const {
         return "Continuation @ BaseContinuationImpl";
     }
 };
 
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:75-88
 class RestrictedContinuationImpl : public BaseContinuationImpl {
 public:
-    explicit RestrictedContinuationImpl(std::shared_ptr<Continuation<void*>> completion)
-        : BaseContinuationImpl(std::move(completion)) {}
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:75-85
+    explicit RestrictedContinuationImpl(std::shared_ptr<Continuation<void*>> completion);
 
-    std::shared_ptr<CoroutineContext> get_context() const override {
-        return EmptyCoroutineContext::instance();
-    }
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:87-88
+    std::shared_ptr<CoroutineContext> get_context() const override;
 };
 
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:95-115
 class ContinuationImpl : public BaseContinuationImpl {
 public:
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:95-98
     ContinuationImpl(
         std::shared_ptr<Continuation<void*>> completion,
         std::shared_ptr<CoroutineContext> context
-    ) : BaseContinuationImpl(std::move(completion)),
-        context_(std::move(context)) {}
+    );
 
-    explicit ContinuationImpl(std::shared_ptr<Continuation<void*>> completion)
-        : BaseContinuationImpl(completion),
-          context_(completion ? completion->get_context() : nullptr) {}
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:99-99
+    explicit ContinuationImpl(std::shared_ptr<Continuation<void*>> completion);
 
-    std::shared_ptr<CoroutineContext> get_context() const override {
-        return context_ ? context_ : EmptyCoroutineContext::instance();
-    }
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:101-102
+    std::shared_ptr<CoroutineContext> get_context() const override;
 
     // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:104-107
     std::shared_ptr<Continuation<void*>> intercepted();

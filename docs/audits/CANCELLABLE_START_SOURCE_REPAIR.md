@@ -1,5 +1,8 @@
 # Already-created cancellable start repair
 
+Historical receipt for commit `9705693c`; source coordinates below refer to that
+commit. Cold entries are subsequently repaired in [the cold-start audit](COLD_START_SOURCE_REPAIR.md).
+
 Date: 2026-10-07. Read complete Cancellable.kt, Undispatched.kt and the consumed
 Native IntrinsicsNative.kt and ContinuationImpl.kt before editing. CoroutineStart
 is sixth in the dependency priority report; its actual intrinsic dependencies
@@ -57,7 +60,7 @@ matched body names, 341/560 types, average body similarity 0.26 and 122 scoring
 failures. Cancellable remains 5/5 matched names; similarity is 0.14, previously
 0.16. These scores and name presence do not establish complete Cancellable parity.
 
-Cold callable start remains demonstrably incomplete. An explicit instantiation
+At that commit, cold callable start was demonstrably incomplete. An explicit instantiation
 of start_coroutine_cancellable<void*> fails because Continuation has no
 shared_from_this member (`cancellable-start-cold-probe.log`, header :126). The
 LambdaContinuation/ReceiverLambdaContinuation bodies also construct an abstract
@@ -65,5 +68,5 @@ Continuation<void>, bypass the source wrapper frame as their block argument, and
 lack Native's label-0/1/completed callable-wrapper algorithm. Native sources
 IntrinsicsNative.kt:142-152,177-189,221-263,296-324 contain the needed contracts.
 The same mixed header's Atomic/Undispatched callable entries and CoroutineStart's
-custom dispatch body remain incomplete. They were not counted as repaired by
+custom dispatch body remain incomplete. They were not counted as repaired in that commit by
 the already-created-entry tests or by a successful uninstantiated library build.
