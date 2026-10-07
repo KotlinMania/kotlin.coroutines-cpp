@@ -26,9 +26,12 @@ public:
     // Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:27-29
     bool equals(const std::exception* other) const override;
 
+    // Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:30-31
+    std::int32_t hash_code() const override;
+
 private:
     // NOTE(port): The existing raw Job reference remains borrowed.
-    Job* job_;
+    Job* const job_;
 };
 
 } // namespace kotlinx::coroutines

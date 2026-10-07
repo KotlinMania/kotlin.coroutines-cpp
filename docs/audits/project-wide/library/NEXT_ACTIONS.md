@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 250/354 (70.6%)
-- **Function parity:** 803/2918 matched (target 3014) — 27.5%
+- **Function parity:** 804/2918 matched (target 3018) — 27.6%
 - **Class/type parity:** 358/560 matched (target 521) — 63.9%
-- **Combined symbol parity:** 1161/3478 matched (target 3535) — 33.4%
+- **Combined symbol parity:** 1162/3478 matched (target 3539) — 33.4%
 - **Average inline-code cosine:** 0.26 (function body across 141 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 141 matched files)
 - **Cheat-zeroed Files:** 123
@@ -97,11 +97,11 @@ Every matched file is listed below with function and type symbol parity.
 ### 4. native.Exceptions
 
 - **Target:** `native.Exceptions`
-- **Similarity:** 0.14
+- **Similarity:** 0.15
 - **Dependents:** 6
-- **Priority Score:** 6030608.5
-- **Functions:** 2/4 matched (target 17)
-- **Missing functions:** `JobCancellationException::toString`, `JobCancellationException::hashCode`
+- **Priority Score:** 6020608.5
+- **Functions:** 3/4 matched (target 21)
+- **Missing functions:** `JobCancellationException::toString`
 - **Types:** 1/2 matched
 - **Missing types:** `CancellationException`
 - **Lint issues:** 3

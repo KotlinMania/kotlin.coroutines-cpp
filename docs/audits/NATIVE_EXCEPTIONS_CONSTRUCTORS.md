@@ -52,10 +52,97 @@ algorithms. Generated evidence remains under `project-wide/library` and
 
 Incomplete source behavior remains: the cause-only constructor needs Native
 Throwable.toString(), including the actual qualified class-name contract.
-JobCancellationException.toString() and hashCode() remain absent. Equality and
+JobCancellationException.toString() remains absent. The hashCode source repair is recorded below. Equality and
 the matching Native class layout were subsequently repaired; see
 [NATIVE_JOB_CANCELLATION_EQUALITY.md](NATIVE_JOB_CANCELLATION_EQUALITY.md). Their
 dependencies include source Throwable text, structural equality for message/job/
 cause, UTF-16 String hashing, and the Job/Any hash contract. These have not been
 replaced with C++ what(), std::hash, or an invented pointer registry. The Native
 RECOVER_STACK_TRACES=false constant is retained as specified by its source.
+
+## Native JobCancellationException hash source repair
+
+The complete Native Exceptions.kt, common coroutine-context sources and their
+C++ counterparts were read for this checkpoint. The Native Any and String
+sources, consumed identity primitive and polynomial hash kernel were also read.
+Native Exceptions is still fourth in the dependency priority report with six
+dependents. Its missing hashCode body is now implemented at
+`native/Exceptions.cpp:147`, with the surface at `native/Exceptions.hpp:30`.
+The actual expression preserves message, Job and nullable-cause operands,
+virtual hash dispatch and Kotlin's wrapping Int arithmetic. Operands evaluate
+in source order; a failure in Job hashing prevents cause hashing. The borrowed
+Job property is const, matching the source val, and is not adopted as an owner.
+
+CancellationException's inherited Any hash at `native/Exceptions.cpp:72` and the
+context base at `context_impl.cpp:13` use the actual low-32-bit Native identity
+primitive from Natives.cpp:40-49 on C++ object storage. An initial attempt to
+reuse the compiler-object Runtime helper failed at link time because that helper
+is not part of the standalone core archive. The final bodies directly project
+the same source primitive and have no compiler-object or Kotlin runtime link
+dependency. No alternate object identity registry is introduced.
+
+Message hashing at :83 converts the existing UTF-8 C++ message representation
+to UTF-16 using Native's actual utfcpp dependency, then computes its polynomial
+hash over code units. Native object-header hash caching is unnecessary for this
+C++ value representation. The three dependency headers under third_party/utfcpp
+are copied byte-for-byte from the checked-in Native runtime dependency, including
+all copyright/license notices; ORIGIN.txt identifies their source. They require
+no installed Kotlin toolchain. Invalid UTF-8 uses the same replacement conversion
+as Native's non-validating UTF-8 input boundary. This C++ text representation does
+not expose arbitrary unpaired UTF-16 surrogates as independent String values.
+
+Cause hashing at :97 rethrows the actual exception_ptr to invoke an overridden
+CancellationException hash. Other std::exception carriers inherit the source
+Throwable identity primitive; null contributes zero. Non-std C++ thrown values
+are outside the existing Throwable carrier projection and propagate on hashing,
+rather than receiving a fabricated hash. Equality and hashing use the same actual
+retained exceptions. Nested JobCancellationException causes hash recursively.
+
+Context hashing requires the real source dependencies. EmptyCoroutineContext's
+hash at `context_impl.cpp:170` returns source zero. CombinedContext's hash at :65
+returns left.hashCode + element.hashCode, wrapping exactly as Kotlin Int. The
+existing pending context implementations are captured with this prerequisite:
+get/for_each/minus_key, source plus ordering and interceptor placement, structural
+CombinedContext equality and source text. Public context headers expose the
+surface; CombinedContext remains concrete/private in .cpp. The earlier header
+shortcut that represented empty context as nullptr is removed in the committed
+state. Existing unrelated work outside these context prerequisites is preserved.
+This does not complete polymorphic keys, serialization or the full stdlib port.
+
+`src/tests/src/suspend/test_channel_consumption.cpp:150` adds source hash
+regressions: golden ASCII, Unicode and supplementary-code-point hashes, embedded
+NUL, long overflowing inputs and invalid UTF-8 replacement; structurally equal
+Jobs and causes; recursive causes; exact exceptions from Job/cause overrides;
+source operand order; real borrowed exception identity; empty and combined
+context hashes, ordering invariance and key removal. The Job hash default uses
+the canonical C++ CoroutineContext subobject identity. This preserves C++ object
+identity without interpreting it as a Kotlin GC object.
+
+The full core archive and ten focused executables build. Ten CTests finish with
+zero failures in 2.55 seconds. Receipts are
+build/ir-recovery/native-exception-hash-focused-{build,tests}.log. The regression
+fixture, Native Exceptions.cpp and context_impl.cpp are directly instrumented
+with AddressSanitizer and UndefinedBehaviorSanitizer, compiled with the existing
+LLVM/Clang plugins and linked with the ordinary C++ core archive. Execution exits
+zero with no diagnostics; receipts are native-exception-hash-sanitizer-{build,tests}.log.
+An ordinary C++ application also compiles without any Clang plugin flags and runs
+with the repaired exceptions as std::unordered_set keys. Equal cancellation
+values deduplicate, distinct messages remain distinct, lookups succeed, and the
+borrowed Job has no added shared owner. otool lists only libSystem and libc++ as
+dynamic dependencies. Receipts are native-exception-hash-standalone-{build,tests}.log;
+its source is build/ir-recovery/native_exception_hash_standalone.cpp.
+
+Eighty-seven ranged provenance references across six library files resolve;
+no prohibited source markers occur there. These checks do not establish the full
+Native/MLX product acceptance paths or whole-library translation completion.
+
+Both complete-root deep scans finish with exit zero. The library report now
+records 804/2918 matched body names, 358/560 types, average body similarity 0.26
+and 123 scoring failures. Native Exceptions is 3/4 body names (was 2/4), with
+body similarity 0.15. Its toString body remains absent and its CancellationException
+actual typealias remains an expect/actual inventory limitation. The compiler-root
+report still lists CoroutineContextImpl as unmatched, despite the inspected
+consumed bodies under the library's kotlinx::coroutines namespace; namespace/file
+projection requires further investigation. No score is overridden and no source
+provenance is changed to conceal this report. Deep receipts are
+native-exception-hash-{library,compiler}-deep.log.

@@ -146,6 +146,113 @@ void job_cancellation_equality_contract() {
     CHECK(outer_left.equals(&outer_right));
 }
 
+// Native Exceptions.kt:30-31 and CoroutineContextImpl.kt:126,194.
+void job_cancellation_hash_contract() {
+    class HashedJob final : public JobSupport {
+    public:
+        HashedJob(int hash, std::vector<int>* order = nullptr, std::exception_ptr failure = nullptr)
+            : JobSupport(true), hash_(hash), order_(order), failure_(failure) {}
+        std::int32_t hash_code() const override {
+            if (order_) order_->push_back(1);
+            if (failure_) std::rethrow_exception(failure_);
+            return hash_;
+        }
+        bool equals(const CoroutineContext* other) const override {
+            auto* job = dynamic_cast<const HashedJob*>(other);
+            return job && job->hash_ == hash_;
+        }
+    private:
+        int hash_;
+        std::vector<int>* order_;
+        std::exception_ptr failure_;
+    };
+    HashedJob job(17);
+    struct MessageCase { std::string message; std::int32_t expected; };
+    // Golden values include a supplementary code point, embedded NUL and overflowing Int arithmetic.
+    std::vector<MessageCase> messages{{"", 527}, {"abc", 92596721}, {"é", 224440},
+        {"🙂", 1703819892}, {"é🙂", 1919000285}, {std::string("a\0b", 3), 89676242},
+        {std::string(10000, 'z'), 1964547087}, {std::string(1, static_cast<char>(0xff)), 62977740}};
+    for (const auto& test : messages) {
+        JobCancellationException exception(test.message, nullptr, &job);
+        CHECK(exception.hash_code() == test.expected);
+    }
+    class HashedCause final : public CancellationException {
+    public:
+        HashedCause(int hash, std::vector<int>* order, std::exception_ptr failure = nullptr)
+            : CancellationException("cause"), hash_(hash), order_(order), failure_(failure) {}
+        std::int32_t hash_code() const override {
+            order_->push_back(2);
+            if (failure_) std::rethrow_exception(failure_);
+            return hash_;
+        }
+        bool equals(const std::exception* other) const override {
+            auto* cause = dynamic_cast<const HashedCause*>(other);
+            return cause && hash_ == cause->hash_;
+        }
+    private:
+        int hash_;
+        std::vector<int>* order_;
+        std::exception_ptr failure_;
+    };
+    std::vector<int> order;
+    HashedJob first_job(17, &order), second_job(17, &order);
+    auto first_cause = std::make_exception_ptr(HashedCause(-50, &order));
+    auto second_cause = std::make_exception_ptr(HashedCause(-50, &order));
+    JobCancellationException first("abc", first_cause, &first_job);
+    JobCancellationException second("abc", second_cause, &second_job);
+    CHECK(first.equals(&second));
+    CHECK(first.hash_code() == 92596671 && order == std::vector<int>({1, 2}));
+    order.clear();
+    CHECK(second.hash_code() == first.hash_code());
+    CHECK(order == std::vector<int>({1, 2, 1, 2}));
+    // Recursively hash a distinct but structurally equal JobCancellationException cause.
+    auto nested_first = std::make_exception_ptr(first);
+    auto nested_second = std::make_exception_ptr(second);
+    JobCancellationException outer_first("nested", nested_first, &first_job);
+    JobCancellationException outer_second("nested", nested_second, &second_job);
+    CHECK(outer_first.equals(&outer_second) && outer_first.hash_code() == outer_second.hash_code());
+    for (bool job_fails : {false, true}) {
+        order.clear();
+        auto failure = std::make_exception_ptr(std::runtime_error("actual hash failure"));
+        HashedJob failing_job(17, &order, job_fails ? failure : nullptr);
+        auto cause = std::make_exception_ptr(HashedCause(5, &order, job_fails ? nullptr : failure));
+        JobCancellationException exception("abc", cause, &failing_job);
+        std::exception_ptr observed;
+        try { exception.hash_code(); } catch (...) { observed = std::current_exception(); }
+        CHECK(observed == failure);
+        CHECK(order == (job_fails ? std::vector<int>{1} : std::vector<int>{1, 2}));
+    }
+    auto identity_cause = std::make_exception_ptr(std::runtime_error("identity"));
+    std::uint32_t cause_hash = 0;
+    try { std::rethrow_exception(identity_cause); }
+    catch (const std::exception& exception) { cause_hash = static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(&exception)); }
+    CHECK(static_cast<std::uint32_t>(JobCancellationException("", identity_cause, &job).hash_code()) == 527 + cause_hash);
+    CHECK(EmptyCoroutineContext::instance()->hash_code() == 0);
+    auto identity_job = std::make_shared<JobSupport>(true);
+    CHECK(static_cast<std::uint32_t>(identity_job->hash_code()) ==
+          static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(static_cast<CoroutineContext*>(identity_job.get()))));
+    class HashedElement final : public AbstractCoroutineContextElement {
+    public:
+        HashedElement(CoroutineContext::Key* key, int hash) : AbstractCoroutineContextElement(key), hash_(hash) {}
+        std::int32_t hash_code() const override { return hash_; }
+        bool equals(const CoroutineContext* other) const override {
+            auto* element = dynamic_cast<const HashedElement*>(other);
+            return element && element->key() == key() && element->hash_ == hash_;
+        }
+    private:
+        int hash_;
+    };
+    CoroutineContext::Key left_key, right_key;
+    auto left = std::make_shared<HashedElement>(&left_key, 2147483647);
+    auto right = std::make_shared<HashedElement>(&right_key, 1);
+    auto context = left->operator+(right);
+    auto reverse = right->operator+(left);
+    CHECK(context->equals(reverse.get()));
+    CHECK(context->hash_code() == -2147483647 - 1 && context->hash_code() == reverse->hash_code());
+    CHECK(context->minus_key(&left_key)->hash_code() == 1);
+    CHECK(context->minus_key(&right_key)->hash_code() == 2147483647);
+}
+
 // ChannelFlow.kt:118-121 uses CoroutineScope.kt:279-288 directly: the
 // scoped continuation's caller frame is the actual caller, with no intermediary.
 void channel_scope_contract() {
@@ -676,6 +783,7 @@ void list_resource_contract() {
 int main() {
     try {
         job_cancellation_equality_contract();
+        job_cancellation_hash_contract();
         channel_scope_contract();
         sending_collector_contract();
         combine_contract();

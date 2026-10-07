@@ -2510,7 +2510,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.common.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.324860
+translated_ast_cosine: 0.325543
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
@@ -2536,15 +2536,15 @@ Diagnostic: 13: unsupported function_declaration
 Diagnostic: 15: unsupported class_declaration
 Diagnostic: 23: unsupported class_declaration
 Diagnostic: 26: unsupported property_declaration
-Extra target function: kotlinx::coroutines::NoSuchElementException::NoSuchElementException:26
-Extra target function: kotlinx::coroutines::IllegalStateException::IllegalStateException:36
-Extra target function: kotlinx::coroutines::IllegalStateException::IllegalStateException:38
-Extra target function: kotlinx::coroutines::CompletionHandlerException::CompletionHandlerException:50
-Extra target function: kotlinx::coroutines::CompletionHandlerException::get_cause:53
-Extra target function: kotlinx::coroutines::CoroutinesInternalError::CoroutinesInternalError:110
-Extra target function: kotlinx::coroutines::CoroutinesInternalError::get_cause:113
-Extra target function: kotlinx::coroutines::to_cancellation_exception:140
-Extra target function: kotlinx::coroutines::is_cancellation_exception:170
+Extra target function: kotlinx::coroutines::NoSuchElementException::NoSuchElementException:27
+Extra target function: kotlinx::coroutines::IllegalStateException::IllegalStateException:37
+Extra target function: kotlinx::coroutines::IllegalStateException::IllegalStateException:39
+Extra target function: kotlinx::coroutines::CompletionHandlerException::CompletionHandlerException:51
+Extra target function: kotlinx::coroutines::CompletionHandlerException::get_cause:54
+Extra target function: kotlinx::coroutines::CoroutinesInternalError::CoroutinesInternalError:114
+Extra target function: kotlinx::coroutines::CoroutinesInternalError::get_cause:117
+Extra target function: kotlinx::coroutines::to_cancellation_exception:144
+Extra target function: kotlinx::coroutines::is_cancellation_exception:174
 === Emitted target buffer ===
 namespace kotlinx::coroutines {
 __ast_distance_unmapped__("class_declaration", "@InternalCoroutinesApi\npublic class CompletionHandlerException(message: String, cause: Throwable) : RuntimeException(message, cause)")
@@ -7356,10 +7356,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.299115
-function_name_parity: 0.500000
+translated_ast_cosine: 0.354973
+function_name_parity: 0.750000
 normalized_logic: 0.000000
-documentation_correspondence: 0.148110
+documentation_correspondence: 0.111737
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -7381,28 +7381,33 @@ Diagnostic: 21: unsupported class_declaration
 Diagnostic: 35: unsupported property_declaration
 Diagnostic: Source grammar errors; emitted source is provisional
 Diagnostic: 24: ERROR ERROR bytes 1041:1048
-Function CancellationException:11 -> CancellationException::CancellationException:47 | normalized logic: 0.000000
+Function CancellationException:11 -> CancellationException::CancellationException:53 | normalized logic: 0.000000
   Ordered logic sequences are equal
-Function JobCancellationException::equals:27 -> JobCancellationException::equals:135 | normalized logic: 0.000000
+Function JobCancellationException::equals:27 -> JobCancellationException::equals:176 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:other identifier:std type:exception node:1 identifier:other operator:== node:5 literal:53:true identifier:cancellation operator:= node:43 identifier:dynamiccast type:jobcancellationexception operator:* identifier:other node:5 identifier:cancellation operator:&& node:43 identifier:cancellation identifier:getmessage operator:== node:43 identifier:getmessage operator:&& identifier:cancellation identifier:job node:43 identifier:cancellation identifier:job identifier:equals identifier:job identifier:job operator:== operator:&& node:43 identifier:exceptionequals node:43 identifier:cancellation identifier:getcause node:43 identifier:getcause
+Function JobCancellationException::hashCode:30 -> JobCancellationException::hash_code:185 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: identifier:messagehash operator:= node:43 identifier:stringhashcode node:43 node:43 identifier:getmessage identifier:value identifier:jobhash operator:= node:43 identifier:staticcast identifier:std type:unsigned32 node:43 identifier:hashcode identifier:job identifier:causehash operator:= node:43 identifier:exceptionhashcode node:43 identifier:getcause node:5 node:43 identifier:std identifier:bitcast identifier:std type:signed32 identifier:messagehash operator:* literal:51:31 operator:+ identifier:jobhash operator:* literal:51:31 operator:+ identifier:causehash
 Missing source function: JobCancellationException::toString:26
-Missing source function: JobCancellationException::hashCode:30
-Extra target function: CancellationException::CancellationException:50
-Extra target function: CancellationException::CancellationException:54
-Extra target function: CancellationException::CancellationException:58
-Extra target function: CancellationException::CancellationException:63
-Extra target function: CancellationException::CancellationException:68
-Extra target function: CancellationException::CancellationException:72
-Extra target function: CancellationException::get_message:76
-Extra target function: CancellationException::get_cause:79
-Extra target function: kotlinx::coroutines::cancellation_exception:83
-Extra target function: kotlinx::coroutines::cancellation_exception:88
-Extra target function: kotlinx::coroutines::cancellation_exception:93
-Extra target function: CancellationException::equals:98
-Extra target function: kotlinx::coroutines::exception_equals:108
-Extra target function: JobCancellationException::JobCancellationException:127
-Extra target function: JobCancellationException::get_job:132
+Extra target function: CancellationException::CancellationException:56
+Extra target function: CancellationException::CancellationException:60
+Extra target function: CancellationException::CancellationException:64
+Extra target function: CancellationException::CancellationException:69
+Extra target function: CancellationException::CancellationException:74
+Extra target function: CancellationException::CancellationException:78
+Extra target function: CancellationException::get_message:82
+Extra target function: CancellationException::get_cause:85
+Extra target function: kotlinx::coroutines::cancellation_exception:89
+Extra target function: kotlinx::coroutines::cancellation_exception:94
+Extra target function: kotlinx::coroutines::cancellation_exception:99
+Extra target function: CancellationException::equals:104
+Extra target function: CancellationException::hash_code:110
+Extra target function: kotlinx::coroutines::string_hash_code:121
+Extra target function: kotlinx::coroutines::exception_hash_code:135
+Extra target function: kotlinx::coroutines::exception_equals:149
+Extra target function: JobCancellationException::JobCancellationException:168
+Extra target function: JobCancellationException::get_job:173
 === Emitted target buffer ===
 namespace kotlinx::coroutines {
 __ast_distance_unmapped__("type_alias", "public actual typealias CancellationException = kotlin.coroutines.cancellation.CancellationException")

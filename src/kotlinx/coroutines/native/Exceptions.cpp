@@ -5,6 +5,9 @@
 #include "kotlinx/coroutines/native/Exceptions.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include <utility>
+#include <bit>
+#include <iterator>
+#include "../../../../third_party/utfcpp/utf8/with_replacement.h"
 
 namespace kotlinx::coroutines {
 
@@ -64,7 +67,42 @@ bool CancellationException::equals(const std::exception* other) const {
     return this == other;
 }
 
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:41-41
+// Transliterated from: kotlin-native/runtime/src/main/cpp/Natives.cpp:40-49
+std::int32_t CancellationException::hash_code() const {
+    // NOTE(port): Inline the actual Native identity primitive for ordinary C++ object storage.
+    return std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(this)));
+}
+
 namespace {
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/String.kt:19-21
+// Transliterated from: kotlin-native/runtime/src/main/cpp/KString.cpp:125-145,543-564
+// Transliterated from: kotlin-native/runtime/src/main/cpp/polyhash/naive.h:11-17
+// NOTE(port): Existing C++ messages use UTF-8. Use Native's actual UTF-8 conversion dependency,
+// then hash UTF-16 code units. Native object-header caching is unnecessary for C++ value storage.
+std::uint32_t string_hash_code(const std::string& message) {
+    std::u16string units;
+    utf8::with_replacement::utf8to16(message.begin(), message.end(), std::back_inserter(units));
+    std::uint32_t result = 0;
+    auto current = units.begin();
+    while (current != units.end()) result = result * 31 + static_cast<std::uint16_t>(*current++);
+    return result;
+}
+
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:31-31
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:41-41
+// Transliterated from: kotlin-native/runtime/src/main/cpp/Natives.cpp:40-49
+// NOTE(port): The actual std::exception carrier stays borrowed. CancellationException dispatches
+// its virtual source hash; other exception carriers inherit Throwable's identity hash.
+std::uint32_t exception_hash_code(std::exception_ptr cause) {
+    if (!cause) return 0;
+    try { std::rethrow_exception(cause); }
+    catch (const CancellationException& exception) { return static_cast<std::uint32_t>(exception.hash_code()); }
+    catch (const std::exception& exception) {
+        return static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(&exception));
+    }
+}
+
 // Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:29-29
 // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:31-31
 // NOTE(port): exception_ptr preserves the actual thrown object identity. Open
@@ -103,6 +141,15 @@ bool JobCancellationException::equals(const std::exception* other) const {
     return cancellation && cancellation->get_message() == get_message() &&
         (cancellation->job_ ? cancellation->job_->equals(job_) : job_ == nullptr) &&
         exception_equals(cancellation->get_cause(), get_cause());
+}
+
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:30-31
+std::int32_t JobCancellationException::hash_code() const {
+    // NOTE(port): Kotlin Int arithmetic wraps; unsigned intermediates retain its low 32 bits.
+    const auto message_hash = string_hash_code(get_message().value());
+    const auto job_hash = static_cast<std::uint32_t>(job_->hash_code());
+    const auto cause_hash = exception_hash_code(get_cause());
+    return std::bit_cast<std::int32_t>((message_hash * 31 + job_hash) * 31 + cause_hash);
 }
 
 // For use in tests.

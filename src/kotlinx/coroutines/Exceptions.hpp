@@ -11,6 +11,7 @@
 #include <string>
 #include <exception>
 #include <optional>
+#include <cstdint>
 
 namespace kotlinx {
 namespace coroutines {
@@ -92,6 +93,9 @@ public:
     // NOTE(port): The C++ Throwable carrier is std::exception. Other objects
     // cannot be a JobCancellationException and are outside this typed projection.
     virtual bool equals(const std::exception* other) const;
+
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:41-41
+    virtual std::int32_t hash_code() const;
 
     ~CancellationException() override = default;
 };

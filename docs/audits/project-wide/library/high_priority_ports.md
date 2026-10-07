@@ -13,7 +13,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 1 | `flow.Channels` | `flow.Channels` | 0.22 | 65 | 12/12 matched (target 23) | _none_ | 1/1 matched (target 3) | _none_ | 0 | 13 | 65001308.0 |
 | 2 | `flow.Flow` | `flow.Flow` | 0.16 | 28 | 1/1 matched (target 6) | _none_ | 2/2 matched (target 5) | _none_ | 0 | 3 | 28000308.0 |
 | 3 | `internal.Concurrent` | `internal.Concurrent` | 0.36 | 14 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | 1 | 9 | 14010906.0 |
-| 4 | `native.Exceptions` | `native.Exceptions` | 0.14 | 6 | 2/4 matched (target 17) | `JobCancellationException::toString`, `JobCancellationException::hashCode` | 1/2 matched | `CancellationException` | 3 | 6 | 6030608.5 |
+| 4 | `native.Exceptions` | `native.Exceptions` | 0.15 | 6 | 3/4 matched (target 21) | `JobCancellationException::toString` | 1/2 matched | `CancellationException` | 2 | 6 | 6020608.5 |
 | 5 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 6 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | 1 | 12 | 6011208.0 |
 | 6 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.13 | 2 | 1/1 matched (target 8) | _none_ | 1/1 matched (target 3) | _none_ | 0 | 2 | 2000208.6 |
 | 7 | `channels.BufferOverflow` | `channels.BufferOverflow` | 1.00 | 2 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 2000100.0 |
@@ -419,10 +419,10 @@ These files need immediate attention:
   - Lint issues: 2
 
 - **native.Exceptions** → `native.Exceptions`
-  - Function similarity: 0.14
+  - Function similarity: 0.15
   - Dependencies: 6
-  - Functions: 2/4 matched (target 17)
-  - Missing functions: `JobCancellationException::toString`, `JobCancellationException::hashCode`
+  - Functions: 3/4 matched (target 21)
+  - Missing functions: `JobCancellationException::toString`
   - Types: 1/2 matched
   - Missing types: `CancellationException`
   - Lint issues: 3
