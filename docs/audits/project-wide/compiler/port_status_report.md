@@ -20,8 +20,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Missing source symbol files | 538 | 7571 symbols |
 | Cheat/scoring failures | 24 | forced to 0% |
 | Total source files | 676 | 100% |
-| Target units (paired) | 593 | - |
-| Target files (total) | 773 | - |
+| Target units (paired) | 594 | - |
+| Target files (total) | 774 | - |
 | Porting progress | 100 | 14.8% (matched) |
 | Missing files | 576 | 85.2% |
 

@@ -1,44 +1,19 @@
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/FlowExceptions.common.kt
+ */
 #pragma once
-#include "kotlinx/coroutines/Exceptions.hpp"
-#include <stdexcept>
-#include <exception>
-#include <string>
+// port-lint: source kotlinx-coroutines-core/common/src/flow/internal/FlowExceptions.common.kt
 
-namespace kotlinx {
-namespace coroutines {
-namespace flow {
-namespace internal {
+namespace kotlinx::coroutines::flow::internal {
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/FlowExceptions.common.kt:13-15
+class AbortFlowException;
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/FlowExceptions.common.kt:24-24
+class ChildCancelledException;
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/FlowExceptions.common.kt:17-19
+void check_ownership(AbortFlowException* receiver, void* owner);
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/FlowExceptions.common.kt:28-33
+int check_index_overflow(int index);
+} // namespace kotlinx::coroutines::flow::internal
 
-class AbortFlowException : public CancellationException {
-public:
-    void* owner;
-    
-    explicit AbortFlowException(void* owner_) 
-        : CancellationException("Flow was aborted, this exception should not be seen")
-        , owner(owner_) {
-        (void)owner_;
-    }
-
-    void check_ownership(void* other) {
-        if (owner != other) {
-            throw *this;
-        }
-    }
-};
-
-class ChildCancelledException : public CancellationException {
-public:
-    ChildCancelledException();
-};
-
-inline int check_index_overflow(int index) {
-    if (index < 0) {
-        throw std::overflow_error("Index overflow has happened");
-    }
-    return index;
-}
-
-} // namespace internal
-} // namespace flow
-} // namespace coroutines
-} // namespace kotlinx
+// NOTE(port): The common expect classes are supplied by the matching Native actual.
+#include "kotlinx/coroutines/native/flow/internal/FlowExceptions.hpp"

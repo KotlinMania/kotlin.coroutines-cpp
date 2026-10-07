@@ -2,6 +2,7 @@
 // kotlinx-coroutines-core/common/src/flow/Channels.kt:104-108,119-134.
 #include "kotlinx/coroutines/channels/Channels.hpp"
 #include "kotlinx/coroutines/flow/Channels.hpp"
+#include "kotlinx/coroutines/flow/internal/Combine.hpp"
 #include "kotlinx/coroutines/native/Exceptions.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/CompletableJob.hpp"
@@ -307,6 +308,188 @@ void sending_collector_contract() {
     CHECK(lifetime.expired());
 }
 
+// Combine.kt:17-80: real child collection, suspending receive/transform and batching.
+void combine_contract() {
+    class QueueDispatcher final : public CoroutineDispatcher {
+    public:
+        mutable std::deque<std::shared_ptr<Runnable>> queue;
+        void dispatch(const CoroutineContext&, std::shared_ptr<Runnable> task) const override {
+            queue.push_back(std::move(task));
+        }
+        void drain() {
+            while (!queue.empty()) {
+                auto task = std::move(queue.front());
+                queue.pop_front();
+                task->run();
+            }
+        }
+    };
+    class ContextCompletion final : public Continuation<void*> {
+    public:
+        std::shared_ptr<CoroutineContext> context;
+        int resumes = 0;
+        std::exception_ptr failure;
+        std::shared_ptr<CoroutineContext> get_context() const override { return context; }
+        void resume_with(Result<void*> result) override {
+            ++resumes;
+            failure = result.exception_or_null();
+            if (!failure) CHECK(result.get_or_throw() == nullptr);
+        }
+    };
+    for (bool copy_array : {false, true}) for (bool fails : {false, true}) {
+        auto dispatcher = std::make_shared<QueueDispatcher>();
+        ContextCompletion completion;
+        completion.context = dispatcher;
+        auto left = create_channel<std::any>(8);
+        auto right = create_channel<std::any>(8);
+        std::vector<std::shared_ptr<flow::Flow<std::any>>> sources{
+            flow::receive_as_flow<std::any>(left), flow::receive_as_flow<std::any>(right)};
+        std::vector<std::vector<int>> batches;
+        std::shared_ptr<Continuation<void*>> paused;
+        const std::vector<std::any>* suspended_values = nullptr;
+        auto resource = std::make_shared<int>(43);
+        std::weak_ptr<int> lifetime = resource;
+        int factories = 0;
+        auto outcome = flow::internal::combine_internal<int>(nullptr, sources,
+            [&]() -> std::vector<std::any>* {
+                ++factories;
+                return copy_array ? new std::vector<std::any>(2) : nullptr;
+            },
+            [&, resource](flow::FlowCollector<int>*, const std::vector<std::any>& values,
+                          Continuation<void*>* frame) -> void* {
+                CHECK(*resource == 43);
+                batches.push_back({std::any_cast<int>(values[0]), std::any_cast<int>(values[1])});
+                if (batches.size() == 1) {
+                    paused = kotlinx::coroutines::internal::retain_continuation(frame);
+                    suspended_values = &values;
+                    return intrinsics::get_COROUTINE_SUSPENDED();
+                }
+                return nullptr;
+            }, &completion);
+        resource.reset();
+        CHECK(intrinsics::is_coroutine_suspended(outcome));
+        dispatcher->drain();
+        CHECK(batches.empty() && completion.resumes == 0);
+        CHECK(left->try_send(1).is_success());
+        dispatcher->drain();
+        CHECK(batches.empty());
+        CHECK(right->try_send(10).is_success());
+        dispatcher->drain();
+        CHECK(batches == std::vector<std::vector<int>>({{1, 10}}) && paused && factories == 1);
+        CHECK(left->try_send(2).is_success() && right->try_send(20).is_success());
+        dispatcher->drain();
+        CHECK(std::any_cast<int>((*suspended_values)[0]) == 1);
+        CHECK(std::any_cast<int>((*suspended_values)[1]) == 10);
+        CHECK(!lifetime.expired() && completion.resumes == 0);
+        auto failure = std::make_exception_ptr(std::runtime_error("resumed combine transform failure"));
+        paused->resume_with(fails ? Result<void*>::failure(failure) : Result<void*>::success(nullptr));
+        dispatcher->drain();
+        if (!fails) {
+            CHECK(batches == std::vector<std::vector<int>>({{1, 10}, {2, 20}}) && factories == 2);
+            // Exercise Byte epoch wrap while both source coroutines remain active.
+            for (int epoch = 0; epoch < 260; ++epoch) {
+                CHECK(left->try_send(100 + epoch).is_success());
+                CHECK(right->try_send(1000 + epoch).is_success());
+                dispatcher->drain();
+                CHECK(batches.back() == std::vector<int>({100 + epoch, 1000 + epoch}));
+                CHECK(completion.resumes == 0);
+            }
+            left->close();
+            right->close();
+            dispatcher->drain();
+        }
+        CHECK(completion.resumes == 1 && completion.failure == (fails ? failure : nullptr));
+        CHECK(lifetime.expired()); // Even while the completed frame is independently retained.
+    }
+}
+
+// Combine.kt:82-139: second completion cancels first collection, but not downstream.
+void zip_contract() {
+    class QueueDispatcher final : public CoroutineDispatcher {
+    public:
+        mutable std::deque<std::shared_ptr<Runnable>> queue;
+        void dispatch(const CoroutineContext&, std::shared_ptr<Runnable> task) const override {
+            queue.push_back(std::move(task));
+        }
+        void drain() {
+            while (!queue.empty()) {
+                auto task = std::move(queue.front());
+                queue.pop_front();
+                task->run();
+            }
+        }
+    };
+    class ContextCompletion final : public Continuation<void*> {
+    public:
+        std::shared_ptr<CoroutineContext> context;
+        int resumes = 0;
+        std::exception_ptr failure;
+        std::shared_ptr<CoroutineContext> get_context() const override { return context; }
+        void resume_with(Result<void*> result) override {
+            ++resumes;
+            failure = result.exception_or_null();
+        }
+    };
+    class PausedCollector final : public flow::FlowCollector<std::shared_ptr<int>> {
+    public:
+        std::shared_ptr<Continuation<void*>> paused;
+        std::shared_ptr<Job> emission_job;
+        std::shared_ptr<int> value;
+        void* emit(std::shared_ptr<int> received, Continuation<void*>* frame) override {
+            value = std::move(received);
+            emission_job = std::dynamic_pointer_cast<Job>(frame->get_context()->get(Job::type_key));
+            paused = kotlinx::coroutines::internal::retain_continuation(frame);
+            return intrinsics::get_COROUTINE_SUSPENDED();
+        }
+    };
+    for (int failure_point : {0, 1, 2}) {
+        auto dispatcher = std::make_shared<QueueDispatcher>();
+        ContextCompletion completion;
+        completion.context = dispatcher;
+        auto left = create_channel<int>(8);
+        auto right = create_channel<int>(8);
+        std::shared_ptr<Continuation<void*>> transform_frame;
+        std::shared_ptr<Job> transform_job;
+        auto resource = std::make_shared<int>(47);
+        auto identity = resource.get();
+        std::weak_ptr<int> lifetime = resource;
+        auto zipped = flow::internal::zip_impl<int, int, std::shared_ptr<int>>(
+            flow::receive_as_flow<int>(left), flow::receive_as_flow<int>(right),
+            std::function<void*(int, int, Continuation<void*>*)>(
+                [&, resource](int first, int second, Continuation<void*>* frame) -> void* {
+                    CHECK(first == 1 && second == 10 && resource.get() == identity);
+                    transform_job = std::dynamic_pointer_cast<Job>(frame->get_context()->get(Job::type_key));
+                    transform_frame = kotlinx::coroutines::internal::retain_continuation(frame);
+                    return intrinsics::get_COROUTINE_SUSPENDED();
+                }));
+        PausedCollector collector;
+        CHECK(intrinsics::is_coroutine_suspended(zipped->collect(&collector, &completion)));
+        resource.reset();
+        zipped.reset();
+        dispatcher->drain();
+        CHECK(left->try_send(1).is_success() && right->try_send(10).is_success());
+        right->close();
+        dispatcher->drain();
+        CHECK(transform_frame && transform_job->is_active() && completion.resumes == 0);
+        CHECK(!lifetime.expired());
+        auto failure = std::make_exception_ptr(std::runtime_error("zip transform failure"));
+        if (failure_point == 1) transform_frame->resume_with(Result<void*>::failure(failure));
+        else transform_frame->resume_with(Result<void*>::success(new std::shared_ptr<int>(lifetime.lock())));
+        dispatcher->drain();
+        if (failure_point != 1) {
+            CHECK(collector.paused && collector.value.get() == identity);
+            CHECK(collector.emission_job == transform_job && transform_job->is_active());
+            CHECK(completion.resumes == 0);
+            collector.paused->resume_with(failure_point == 2
+                ? Result<void*>::failure(failure) : Result<void*>::success(nullptr));
+            dispatcher->drain();
+            collector.value.reset();
+        }
+        CHECK(completion.resumes == 1 && completion.failure == (failure_point ? failure : nullptr));
+        CHECK(lifetime.expired());
+    }
+}
+
 void cancellation_contract() {
     for (int kind : {0, 1, 2}) {
         RecordingChannel channel;
@@ -495,6 +678,8 @@ int main() {
         job_cancellation_equality_contract();
         channel_scope_contract();
         sending_collector_contract();
+        combine_contract();
+        zip_contract();
         cancellation_contract();
         iteration_contract();
         list_contract();

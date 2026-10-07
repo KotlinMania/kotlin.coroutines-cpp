@@ -34,11 +34,21 @@ namespace kotlinx::coroutines::flow {
  *   public fun <T1, T2, R> Flow<T1>.zip(other: Flow<T2>, transform: suspend (T1, T2) -> R): Flow<R> =
  *       zipImpl(this, other, transform)
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:327-327
 template <typename T1, typename T2, typename R>
 inline std::shared_ptr<Flow<R>> zip(
     std::shared_ptr<Flow<T1>> first,
     std::shared_ptr<Flow<T2>> other,
     std::function<R(T1, T2)> transform) {
+    return internal::zip_impl<T1, T2, R>(std::move(first), std::move(other), std::move(transform));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:327-327
+// NOTE(port): The suspend transform returns an owning R box through the Continuation ABI.
+template <typename T1, typename T2, typename R>
+inline std::shared_ptr<Flow<R>> zip(
+    std::shared_ptr<Flow<T1>> first, std::shared_ptr<Flow<T2>> other,
+    std::function<void*(T1, T2, Continuation<void*>*)> transform) {
     return internal::zip_impl<T1, T2, R>(std::move(first), std::move(other), std::move(transform));
 }
 
@@ -55,7 +65,7 @@ inline std::shared_ptr<Flow<R>> combine(
     std::shared_ptr<Flow<T1>> first,
     std::shared_ptr<Flow<T2>> second,
     std::function<R(T1, T2)> transform) {
-    return flow<R>([first, second, transform](
+    return internal::unsafe_flow<R>([first, second, transform](
                        FlowCollector<R>* collector,
                        Continuation<void*>* completion) -> void* {
         std::vector<std::shared_ptr<Flow<std::any>>> sources;
