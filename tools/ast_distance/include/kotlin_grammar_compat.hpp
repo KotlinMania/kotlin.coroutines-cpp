@@ -3,6 +3,10 @@
 #include <cctype>
 #include <string>
 #include <vector>
+#include <string_view>
+#include <functional>
+#include <iterator>
+#include <tree_sitter/api.h>
 
 namespace ast_distance {
 // The vendored Kotlin grammar predates fun interfaces. Blank only the SAM
@@ -11,6 +15,32 @@ struct KotlinGrammarInput {
     std::string text;
     std::vector<int> fun_interface_lines;
 };
+// Tree-sitter permits a word to become an identifier when its keyword token
+// is not expected in that parse state. Kotlin's lexical contract still forbids
+// bare hard keywords (KtTokens.java:350-359); backticks and soft keywords remain
+// legal. Validate the original CST spans without changing or hiding tokens.
+// This diagnoses a parser classification, not the validity of the source:
+// valid declarations can also reach this state through grammar limitations.
+inline std::vector<std::string> kotlin_identifier_diagnostics(TSNode root, const std::string& source) {
+    static constexpr std::string_view hard_keywords[] = {
+        "as", "break", "class", "continue", "do", "else", "false", "for", "fun",
+        "if", "in", "interface", "is", "null", "object", "package", "return",
+        "super", "this", "throw", "true", "try", "typealias", "typeof", "val", "var", "when", "while"};
+    std::vector<std::string> diagnostics;
+    std::function<void(TSNode)> visit = [&](TSNode node) {
+        if (std::string_view(ts_node_type(node)) == "simple_identifier") {
+            const auto begin = ts_node_start_byte(node), end = ts_node_end_byte(node);
+            const std::string_view spelling(source.data() + begin, end - begin);
+            if (std::find(std::begin(hard_keywords), std::end(hard_keywords), spelling) != std::end(hard_keywords))
+                diagnostics.push_back(std::to_string(ts_node_start_point(node).row + 1) +
+                    ": grammar treated hard keyword as identifier: " + std::string(spelling) +
+                    " bytes " + std::to_string(begin) + ":" + std::to_string(end));
+        }
+        for (uint32_t i = 0; i < ts_node_named_child_count(node); ++i) visit(ts_node_named_child(node, i));
+    };
+    visit(root);
+    return diagnostics;
+}
 inline KotlinGrammarInput kotlin_grammar_input(const std::string& source) {
     KotlinGrammarInput result{source, {}};
     std::vector<std::pair<std::string, size_t>> tokens;

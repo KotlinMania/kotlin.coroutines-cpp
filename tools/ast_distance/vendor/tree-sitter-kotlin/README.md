@@ -1,5 +1,49 @@
 # Kotlin Grammar for Tree-sitter
 
+This vendored grammar is based on fwcd/tree-sitter-kotlin commit
+`e1a2d5ad1f61f5740677183cd4125bb071cd2f30` (package version 0.3.8).
+The original generated parser matched the checkout under `build/_deps` byte
+for byte. Local grammar changes retain bracket destructuring, parenthesized
+entry renaming and trailing commas, and the half-open `..<` range operator.
+Kotlin's source authority is `KotlinParsing.java:1622-1685`
+(`parseMultiDeclarationEntry`) and `KotlinExpressionParsing.java`
+(`parseFor` and `RANGE_UNTIL` expression tokens) under
+`tmp/kotlin/compiler/psi/parser/src/org/jetbrains/kotlin/parsing/`.
+This extension covers short entries and full declarations with individual
+`val`/`var` entries, including the renamed entry in
+`UpgradeCallableReferences.kt:157`. Loop entries with individual `val` keywords
+still require the separate `FULL_VAL_ONLY` context rule.
+
+Named context parameter lists follow `KotlinParsing.java:701-745`, reached
+through the declaration modifier loop at :610-625. Empty lists and missing
+parameter types remain syntax errors. Legacy unnamed context receiver lists
+are not covered by this extension. `when` entry guards follow
+`KotlinExpressionParsing.java:936-956`; the `if` ambiguity retains the two
+parses until the next token distinguishes an ordinary `else` body from the
+`else ->` entry described by the upstream lookahead at :1566-1598. Regression
+checks retain ordinary nested-if association as well as separate when entries.
+`context` remains an ordinary identifier outside a context list, including
+constructor parameters, properties, function parameters and expressions.
+`KtTokens.java:302,350-359,361-372` distinguishes this soft keyword from the
+hard keyword set. The analyzer validates original identifier CST spans against
+that hard set while retaining Unicode names, keyword prefixes/suffixes and
+backtick identifiers. Tree-sitter can otherwise parse `context() fun broken()`
+as an infix expression with `fun` as its name. Shared extraction, emission and
+inventory diagnostics flag this CST classification for review without altering
+its tokens or disturbing valid infix expressions such as `mask and permissions`.
+Valid source can also trigger the diagnostic when another grammar limitation
+misclassifies a declaration keyword; it is not a claim that the source is invalid.
+These Java sources are present in the nested compiler checkout's Git objects;
+the sparse working tree does not currently materialize them. Inspection
+receipts are `build/ir-recovery/context-KotlinParsing.java` and
+`build/ir-recovery/context-KotlinExpressionParsing.java`.
+
+Generated files are checked in. Regenerate from this directory with
+`tree-sitter generate --abi 14 --no-bindings`, using tree-sitter-cli 0.22.6.
+Ordinary CMake builds use those files without downloads or a generator.
+`kotlin_grammar_native` checks original byte locations and distinguishes
+delimiters/operators, including rejected bracket renaming and malformed input.
+
 [![Build](https://github.com/fwcd/tree-sitter-kotlin/actions/workflows/build.yml/badge.svg)](https://github.com/fwcd/tree-sitter-kotlin/actions/workflows/build.yml)
 [![NPM](https://img.shields.io/npm/v/tree-sitter-kotlin)](https://www.npmjs.com/package/tree-sitter-kotlin)
 [![crates.io](https://img.shields.io/crates/v/tree-sitter-kotlin)](https://crates.io/crates/tree-sitter-kotlin)

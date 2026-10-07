@@ -131,7 +131,24 @@ int main() {
     assert(packaged_score.score > .99f && !packaged_score.translated_parse_errors);
     auto defaults = transliterate("fun addValue(x: Int = 5): Int = x + 1", Language::KOTLIN, Language::CPP);
     assert(defaults.rule_misses == 0 && defaults.buffer.find("int x = 5") != std::string::npos);
-    for (const auto& unsupported : {"suspend fun awaitValue(): Int = 1", "fun nullable(): Int? = null", "fun <T> identity(x: T): T = x", "fun String.extension(): Int = 1", "fun callback(): () -> Int = { 1 }", "class Hidden { fun run(): Int = 1 }", "fun rangeValue(): Int { for (i in 0 until 5) { next(i) }; return 1 }", "fun inferred() = 1", "fun named(): Int = next(value = 1)", "fun varargValue(vararg values: Int): Int = 1", "fun localNullable(): Int { val value: Int? = null; return 1 }"}) {
+    for (const std::string visibility : {"public", "internal", "private"}) {
+        const std::string visible_source = visibility +
+            " fun checkValue(input: Int): Int { if (input > 3) { return input + 1 } else { return 0 } }";
+        auto visible = transliterate(visible_source, Language::KOTLIN, Language::CPP);
+        assert(visible.rule_misses == 0 && visible.rule_coverage == 1);
+        assert(visible.buffer.starts_with(visibility == "private" ? "static int" : "int"));
+        auto faithful = transliteration_distance(visible_source, Language::KOTLIN, visible.buffer, Language::CPP);
+        assert(faithful.normalized_logic == 1 && !faithful.translated_parse_errors);
+        auto drift = transliteration_distance(visible_source, Language::KOTLIN,
+            changed(visible.buffer, "> 3", "< 3"), Language::CPP);
+        assert(drift.normalized_logic < faithful.normalized_logic && drift.score < faithful.score);
+    }
+    for (const auto& modifier : {"internal suspend", "private inline", "protected"}) {
+        auto unsupported_modifier = transliterate(std::string(modifier) + " fun value(): Int = 1",
+            Language::KOTLIN, Language::CPP);
+        assert(unsupported_modifier.rule_misses > 0 && !unsupported_modifier.diagnostics.empty());
+    }
+    for (const auto& unsupported : {"suspend fun awaitValue(): Int = 1", "fun nullable(): Int? = null", "fun <T> identity(x: T): T = x", "fun String.extension(): Int = 1", "fun callback(): () -> Int = { 1 }", "class Hidden(val value: Int) { fun run(): Int = value }", "class Child : Parent() { fun run(): Int = 1 }", "fun rangeValue(): Int { for (i in 0 until 5) { next(i) }; return 1 }", "fun inferred() = 1", "fun named(): Int = next(value = 1)", "fun varargValue(vararg values: Int): Int = 1", "fun localNullable(): Int { val value: Int? = null; return 1 }"}) {
         auto fallback = transliterate(unsupported, Language::KOTLIN, Language::CPP);
         assert(fallback.rule_misses > 0 && fallback.rule_coverage == 0 && !fallback.diagnostics.empty());
         assert(fallback.buffer.find("__ast_distance_unmapped__") != std::string::npos);
@@ -139,6 +156,45 @@ int main() {
         assert(report.score < 1 && report.score == report.translated_text_cosine);
         assert(report.fallback_penalty == 1 && report.translation.rule_misses > 0);
     }
+    const std::string member_source = "class Counter {\n"
+        " /** Returns the adjusted [inputValue]. */\n"
+        " fun nextValue(inputValue: Int): Int = inputValue + 1\n"
+        " private fun checkValue(inputValue: Int): Int = inputValue - 1\n"
+        " fun nextValue(inputValue: Int, offsetValue: Int): Int = inputValue + offsetValue\n}\n"
+        "class Other { fun nextValue(inputValue: Int): Int = inputValue + 9 }";
+    const auto member_output = transliterate(member_source, Language::KOTLIN, Language::CPP);
+    assert(member_output.rule_misses == 0 && member_output.rule_coverage == 1);
+    assert(member_output.buffer.find("class Counter final") != std::string::npos);
+    assert(member_output.buffer.find("private:\nint check_value") != std::string::npos);
+    const auto member_report = transliteration_distance(member_source, Language::KOTLIN, member_output.buffer, Language::CPP);
+    assert(!member_report.translated_parse_errors && !member_report.target_parse_errors);
+    assert(member_report.functions.size() == 4 && member_report.normalized_logic == 1);
+    assert(member_report.score == 1 && member_report.documentation_parity == 1);
+    const auto member_drift = transliteration_distance(member_source, Language::KOTLIN,
+        changed(member_output.buffer, "input_value + 1", "input_value - 1"), Language::CPP);
+    assert(member_drift.normalized_logic < 1 && member_drift.score < 1);
+    const auto lost_member = transliteration_distance(member_source, Language::KOTLIN,
+        changed(member_output.buffer, "next_value(int input_value, int offset_value)", "different_value(int input_value, int offset_value)"), Language::CPP);
+    assert(lost_member.functions.size() == 3 && lost_member.symbol_parity == .75f);
+    for (const std::string unsupported_class : {
+        "public interface Contract { fun run(): Int }",
+        "private class Hidden { fun run(): Int = 1 }",
+        "class WithField { val value: Int = 1; fun run(): Int = value }",
+        "class `odd name` { fun run(): Int = 1 }"}) {
+        const auto class_output = transliterate(unsupported_class, Language::KOTLIN, Language::CPP);
+        assert(class_output.rule_misses > 0 && class_output.rule_coverage == 0);
+        assert(class_output.buffer.find("class_declaration") != std::string::npos);
+    }
+    const std::string partial_class = "class Partial { "
+        "suspend fun nextValue(inputValue: Int): Int = inputValue + 1; "
+        "fun nextValue(inputValue: Int, offsetValue: Int): Int = inputValue + offsetValue }";
+    const auto partial_output = transliterate(partial_class, Language::KOTLIN, Language::CPP);
+    assert(partial_output.rule_misses > 0 && partial_output.rule_coverage == 0);
+    const auto partial_report = transliteration_distance(partial_class, Language::KOTLIN,
+        "class Partial final { public: int next_value(int input_value) { return input_value + 1; } "
+        "int next_value(int input_value, int offset_value) { return input_value + offset_value; } };", Language::CPP);
+    assert(partial_report.normalized_logic == 0 && partial_report.functions.size() == 2);
+    for (const auto& method : partial_report.functions) assert(method.emitted_tokens.empty());
     bool rejected = false;
     try { (void)transliterate("int foo(){return 1;}", Language::CPP, Language::KOTLIN); }
     catch (const std::runtime_error&) { rejected = true; }

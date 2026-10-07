@@ -50,6 +50,12 @@ file(WRITE "${TEST_DIR}/target/Example.cpp" "namespace helper {} namespace beta:
 compare(empty_helper_scope "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "pass")
 file(WRITE "${TEST_DIR}/target/Example.cpp" "namespace unrelated { int helper() { return 1; } } namespace beta::core { int next_value(int value) { return value + 1; } }\n")
 compare(mixed_sibling_scopes "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "Identity conflict")
+file(WRITE "${TEST_DIR}/target/Example.cpp" "namespace clang { class ASTContext; class FunctionDecl; }\nnamespace beta::core { int next_value(int value) { return value + 1; } }\n")
+compare(foreign_forward_types "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "pass")
+file(WRITE "${TEST_DIR}/target/Example.cpp" "class External;\nnamespace beta::core { int next_value(int value) { return value + 1; } }\n")
+compare(global_forward_type "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "pass")
+file(WRITE "${TEST_DIR}/target/Example.cpp" "namespace unrelated { class ActualType {}; }\nnamespace beta::core { int next_value(int value) { return value + 1; } }\n")
+compare(foreign_type_definition "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "Identity conflict")
 # A missing marker may use an exact basename only with the declared namespace.
 file(WRITE "${TEST_DIR}/target/Example.cpp" "namespace beta::core { int next_value(int value) { return value + 1; } }\n")
 execute_process(COMMAND "${AST_DISTANCE}" --deep "${TEST_DIR}/source" kotlin "${TEST_DIR}/target" cpp

@@ -1168,9 +1168,9 @@ Every matched file is listed below with function and type symbol parity.
 ### 86. internal.DispatchedTask
 
 - **Target:** `common.DispatchedTaskDispatch`
-- **Similarity:** 0.11
+- **Similarity:** 0.12
 - **Dependents:** 0
-- **Priority Score:** 61208.9
+- **Priority Score:** 61208.8
 - **Functions:** 6/10 matched (target 6)
 - **Missing functions:** `DispatchedTask::cancelCompletedResult`, `DispatchedTask::getSuccessfulResult`, `DispatchedTask::getExceptionalResult`, `DispatchedTask<*>::runUnconfinedEventLoop`
 - **Types:** 0/2 matched (target 0)
@@ -3028,19 +3028,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 
-### 233. common.Yield
-
-- **Target:** `coroutines.Yield`
-- **Similarity:** 0.01
-- **Dependents:** 0
-- **Priority Score:** 109.9
-- **Functions:** 1/1 matched
-- **Missing functions:** _none_
-- **Types:** 0/0 matched
-- **Missing types:** _none_
-- **Lint issues:** 4
-
-### 234. selects.WhileSelect
+### 233. selects.WhileSelect
 
 - **Target:** `selects.WhileSelect`
 - **Similarity:** 0.04
@@ -3051,7 +3039,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 0/0 matched
 - **Missing types:** _none_
 
-### 235. kotlinx-coroutines-core.nativeDarwin.test.Launcher
+### 234. kotlinx-coroutines-core.nativeDarwin.test.Launcher
 
 - **Target:** `test.Launcher`
 - **Similarity:** 0.07
@@ -3062,6 +3050,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 0/0 matched
 - **Missing types:** _none_
 - **Lint issues:** 3
+
+### 235. common.Yield
+
+- **Target:** `coroutines.Yield`
+- **Similarity:** 0.17
+- **Dependents:** 0
+- **Priority Score:** 108.3
+- **Functions:** 1/1 matched
+- **Missing functions:** _none_
+- **Types:** 0/0 matched
+- **Missing types:** _none_
+- **Lint issues:** 4
 
 ### 236. concurrent.MultithreadedDispatchers.common
 

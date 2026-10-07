@@ -41,4 +41,21 @@ execute_process(COMMAND "${AST_DISTANCE}" --compare-functions "${TEST_DIR}/sourc
 if(status EQUAL 0 OR NOT error MATCHES "Cannot open source")
     message(FATAL_ERROR "Missing input was not rejected: ${status}: ${output}: ${error}")
 endif()
-message(STATUS "Redirected comparison, captured JSON, complete human report and input failure assertions passed")
+file(WRITE "${TEST_DIR}/source/Pair.kt" "package sample.unit\nfun firstValue(x: Int): Int = x + 1\nfun secondValue(x: Int): Int = x - 1\n")
+file(WRITE "${TEST_DIR}/target/Pair.hpp" "// port-lint: source Pair.kt\nnamespace sample::unit {\ninline int first_value(int x) { return x + 1; }\nint second_value(int x);\n}\n")
+file(WRITE "${TEST_DIR}/target/Pair.cpp" "// port-lint: source Pair.kt\n#include \"Pair.hpp\"\nnamespace sample::unit {\nint second_value(int x) { return x - 1; }\n}\n")
+execute_process(COMMAND "${AST_DISTANCE}" --compare-functions "${TEST_DIR}/source/Pair.kt" kotlin "${TEST_DIR}/target/Pair.cpp" cpp --with-companions
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+file(WRITE "${TEST_DIR}/companion-comparison.txt" "${output}\n${error}")
+if(NOT status EQUAL 0 OR NOT output MATCHES "Strict matched pairs: 2 / 2" OR
+   NOT output MATCHES "Pair.hpp:sample::unit::first_value:3" OR NOT output MATCHES "Pair.cpp:sample::unit::second_value:4" OR
+   NOT output MATCHES "NormalizedLogic" OR NOT output MATCHES "Ordered Normalized Logic Evidence")
+    message(FATAL_ERROR "Companion bodies or physical locations lost: ${status}: ${output}: ${error}")
+endif()
+file(WRITE "${TEST_DIR}/target/Pair.hpp" "// port-lint: source Pair.kt\nnamespace unrelated { inline int first_value(int x) { return x + 1; } }\n")
+execute_process(COMMAND "${AST_DISTANCE}" --compare-functions "${TEST_DIR}/source/Pair.kt" kotlin "${TEST_DIR}/target/Pair.cpp" cpp --with-companions
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(status EQUAL 0 OR NOT error MATCHES "Identity conflict")
+    message(FATAL_ERROR "Companion option bypassed namespace identity: ${status}: ${output}: ${error}")
+endif()
+message(STATUS "Captured reports, companion bodies/locations and identity rejection verified")

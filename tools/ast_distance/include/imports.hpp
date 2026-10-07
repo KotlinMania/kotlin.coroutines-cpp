@@ -644,7 +644,15 @@ private:
                                           PackageDecl& pkg) {
         // Determine the namespace of declarations, rather than letting an empty
         // namespace placed first claim unrelated implementations later in a file.
-        std::vector<std::vector<std::string>> declaration_scopes, declared_scopes;
+        std::vector<std::vector<std::string>> declaration_scopes, forward_scopes, declared_scopes;
+        auto forward_type = [](TSNode declaration) {
+            std::string kind = ts_node_type(declaration);
+            if (kind == "declaration" && ts_node_named_child_count(declaration) == 1)
+                declaration = ts_node_named_child(declaration, 0);
+            kind = ts_node_type(declaration);
+            return (kind == "class_specifier" || kind == "struct_specifier" || kind == "enum_specifier") &&
+                ts_node_is_null(ts_node_child_by_field_name(declaration, "body", 4));
+        };
         std::function<void(TSNode, std::vector<std::string>)> visit = [&](TSNode current, std::vector<std::string> scope) {
             std::string kind = ts_node_type(current);
             if (kind == "namespace_definition") {
@@ -666,12 +674,16 @@ private:
             } else if (kind == "function_definition" || kind == "declaration" || kind == "template_declaration" ||
                        kind == "class_specifier" || kind == "struct_specifier" || kind == "enum_specifier" ||
                        kind == "alias_declaration" || kind == "type_definition") {
-                declaration_scopes.push_back(std::move(scope));
+                if (forward_type(current)) forward_scopes.push_back(std::move(scope));
+                else declaration_scopes.push_back(std::move(scope));
             }
         };
         visit(node, {});
         if (declared_scopes.empty()) return;
         pkg.declared = true;
+        // Foreign type forwards describe dependencies, not this unit's ported
+        // namespace. Preserve their identity when the file contains only forwards.
+        if (declaration_scopes.empty() && !forward_scopes.empty()) declaration_scopes = std::move(forward_scopes);
         // Empty classic namespace chains contribute their terminal scope, not
         // each intermediate opening. Populated declaration scopes still win.
         std::vector<std::vector<std::string>> terminal_scopes;

@@ -140,6 +140,14 @@ add_custom_command(TARGET ast_distance POST_BUILD
 # Native algorithm and captured CLI regression tests are registered below.
 include(CTest)
 
+if(BUILD_TESTING)
+    add_executable(kotlin_grammar_test tests/kotlin_grammar_test.cc)
+    target_include_directories(kotlin_grammar_test PRIVATE include)
+    target_compile_options(kotlin_grammar_test PRIVATE -UNDEBUG)
+    target_link_libraries(kotlin_grammar_test PRIVATE tree-sitter-core tree-sitter-kotlin-parser)
+    add_test(NAME kotlin_grammar_native COMMAND kotlin_grammar_test)
+endif()
+
 # Install
 install(TARGETS ast_distance RUNTIME DESTINATION bin)
 

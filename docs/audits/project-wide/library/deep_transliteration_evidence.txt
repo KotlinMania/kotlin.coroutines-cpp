@@ -374,44 +374,29 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Yield.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Yield.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.753706
+translated_ast_cosine: 0.697831
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.006447
-span_rule_coverage: 0.015781
-unsupported_fraction (diagnostic only): 0.984219
+span_rule_coverage: 0.000000
+unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: yes (provisional)
-Rule hits: 5 | misses: 4 | documentation misses: 0 | supported code-byte coverage: 0.015781
+Rule hits: 3 | misses: 1 | documentation misses: 0 | supported code-byte coverage: 0.000000
 Source line	Source bytes	Emitted bytes	Node	Supported
 1	0:26	0:31	package_header	yes
 3	28:6530	32:32	import_list	yes
-145	6531:6677	33:234	function_declaration	fallback
-148	6682:6763	235:372	property_declaration	fallback
-149	6768:7725	373:1395	if_expression	fallback
-165	7730:7749	1396:1415	simple_identifier	yes
-166	7750:7751	1416:1455	ERROR	fallback
+145	6531:7751	33:1331	function_declaration	fallback
 Diagnostic: 145: unsupported function_declaration
-Diagnostic: 148: unsupported elvis_expression
-Diagnostic: 149: unsupported if_expression
-Diagnostic: 166: unsupported ERROR
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 146: ERROR ERROR bytes 6627:6636
-Diagnostic: 147: MISSING } bytes 6662:6662
-Diagnostic: 166: ERROR ERROR bytes 7750:7751
 Function yield:145 -> kotlinx::coroutines::yield:27 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:completion node:1 operator:! identifier:completion node:5 identifier:context operator:= node:43 identifier:completion identifier:getcontext node:1 identifier:context identifier:job operator:= node:43 identifier:dynamicpointercast identifier:std type:job node:43 identifier:context identifier:get identifier:job identifier:typekey node:1 identifier:job operator:&& operator:! node:43 identifier:job identifier:isactive node:43 identifier:std identifier:rethrowexception node:43 identifier:job identifier:getcancellationexception identifier:cont operator:= node:43 identifier:dynamicpointercast identifier:internal identifier:std type:dispatchedcontinuation type:void operator:* node:43 identifier:intercepted identifier:intrinsics node:43 identifier:completion identifier:move identifier:std node:1 operator:! identifier:cont node:5 node:1 node:43 identifier:internal identifier:safeisdispatchneeded operator:* identifier:cont identifier:dispatcher operator:* identifier:context node:43 identifier:cont identifier:dispatchyield operator:* identifier:context node:43 identifier:staticcast type:void operator:* identifier:yieldcontext operator:= node:43 identifier:makeshared identifier:std type:yieldcontext node:43 identifier:cont identifier:dispatchyield operator:* node:43 identifier:context operator:+ identifier:yieldcontext node:43 identifier:staticcast type:void operator:* node:1 identifier:yieldcontext identifier:dispatcherwasunconfined node:5 node:43 identifier:yieldundispatched operator:* identifier:cont identifier:coroutinesuspended node:5 identifier:coroutinesuspended
 === Emitted target buffer ===
 namespace kotlinx::coroutines {
 
-__ast_distance_unmapped__("function_declaration", "public suspend fun yield(): Unit = suspendCoroutineUninterceptedOrReturn sc@ { uCont ->\n    val context = uCont.context\n    context.ensureActive()")
-const auto cont = __ast_distance_unmapped__("elvis_expression", "uCont.intercepted() as? DispatchedContinuation<Unit> ?: return@sc Unit")
-__ast_distance_unmapped__("if_expression", "if (cont.dispatcher.safeIsDispatchNeeded(context)) {\n        // this is a regular dispatcher -- do simple dispatchYield\n        cont.dispatchYield(context, Unit)\n    } else {\n        // This is either an \"immediate\" dispatcher or the Unconfined dispatcher\n        // This code detects the Unconfined dispatcher even if it was wrapped into another dispatcher\n        val yieldContext = YieldContext()\n        cont.dispatchYield(context + yieldContext, Unit)\n        // Special case for the unconfined dispatcher that can yield only in existing unconfined loop\n        if (yieldContext.dispatcherWasUnconfined) {\n            // Means that the Unconfined dispatcher got the call, but did not do anything.\n            // See also code of \"Unconfined.dispatch\" function.\n            return@sc if (cont.yieldUndispatched()) COROUTINE_SUSPENDED else Unit\n        }\n        // Otherwise, it was some other dispatcher that successfully dispatched the coroutine\n    }")
-coroutine_suspended
-__ast_distance_unmapped__("ERROR", "}")
+__ast_distance_unmapped__("function_declaration", "public suspend fun yield(): Unit = suspendCoroutineUninterceptedOrReturn sc@ { uCont ->\n    val context = uCont.context\n    context.ensureActive()\n    val cont = uCont.intercepted() as? DispatchedContinuation<Unit> ?: return@sc Unit\n    if (cont.dispatcher.safeIsDispatchNeeded(context)) {\n        // this is a regular dispatcher -- do simple dispatchYield\n        cont.dispatchYield(context, Unit)\n    } else {\n        // This is either an \"immediate\" dispatcher or the Unconfined dispatcher\n        // This code detects the Unconfined dispatcher even if it was wrapped into another dispatcher\n        val yieldContext = YieldContext()\n        cont.dispatchYield(context + yieldContext, Unit)\n        // Special case for the unconfined dispatcher that can yield only in existing unconfined loop\n        if (yieldContext.dispatcherWasUnconfined) {\n            // Means that the Unconfined dispatcher got the call, but did not do anything.\n            // See also code of \"Unconfined.dispatch\" function.\n            return@sc if (cont.yieldUndispatched()) COROUTINE_SUSPENDED else Unit\n        }\n        // Otherwise, it was some other dispatcher that successfully dispatched the coroutine\n    }\n    COROUTINE_SUSPENDED\n}")
 }
 
 === Suspension lowering review leads ===
@@ -651,7 +636,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Builders.common.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Builders.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/DispatchedCoroutine.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.549081
+translated_ast_cosine: 0.536875
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.007187
@@ -661,7 +646,7 @@ score: 0.000000
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: yes (provisional)
-Rule hits: 34 | misses: 23 | documentation misses: 0 | supported code-byte coverage: 0.000000
+Rule hits: 16 | misses: 20 | documentation misses: 0 | supported code-byte coverage: 0.000000
 Source line	Source bytes	Emitted bytes	Node	Supported
 1	0:23	0:71	file_annotation	fallback
 2	24:51	72:149	file_annotation	fallback
@@ -686,15 +671,12 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 187	9228:9558	7986:8374	class_declaration	fallback
 197	9560:9906	8375:8780	class_declaration	fallback
 208	9908:9982	8781:8855	line_comment	yes
-209	9983:10091	8856:9016	class_declaration	fallback
-212	10092:10095	9017:9058	ERROR	fallback
-212	10096:10146	9059:9161	comparison_expression	fallback
-215	10147:10178	9162:9246	property_declaration	fallback
-216	10179:10208	9247:9329	property_declaration	fallback
-218	10210:10264	9330:9384	line_comment	yes
-219	10265:10364	9385:9536	class_declaration	fallback
-222	10365:10368	9537:9578	ERROR	fallback
-222	10369:12171	9579:11481	call_expression	fallback
+209	9983:10113	8856:9039	class_declaration	fallback
+214	10115:10146	9040:9124	property_declaration	fallback
+215	10147:10178	9125:9209	property_declaration	fallback
+216	10179:10208	9210:9292	property_declaration	fallback
+218	10210:10264	9293:9347	line_comment	yes
+219	10265:12171	9348:11358	class_declaration	fallback
 Diagnostic: 1: unsupported file_annotation
 Diagnostic: 2: unsupported file_annotation
 Diagnostic: 3: unsupported file_annotation
@@ -711,19 +693,10 @@ Diagnostic: 181: unsupported function_declaration
 Diagnostic: 187: unsupported class_declaration
 Diagnostic: 197: unsupported class_declaration
 Diagnostic: 209: unsupported class_declaration
-Diagnostic: 212: unsupported ERROR
-Diagnostic: 214: unsupported infix_expression
+Diagnostic: 214: unsupported property_declaration
 Diagnostic: 215: unsupported property_declaration
 Diagnostic: 216: unsupported property_declaration
 Diagnostic: 219: unsupported class_declaration
-Diagnostic: 222: unsupported ERROR
-Diagnostic: 222: unsupported annotated_lambda
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 209: ERROR ERROR bytes 10032:10074
-Diagnostic: 212: ERROR ERROR bytes 10092:10095
-Diagnostic: 214: ERROR ERROR bytes 10143:10144
-Diagnostic: 219: ERROR ERROR bytes 10305:10347
-Diagnostic: 222: ERROR ERROR bytes 10365:10368
 Function CoroutineScope::launch:44 -> kotlinx::coroutines::launch:23 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:scope type:coroutinescope node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr node:66 identifier:start type:coroutinestart node:66 identifier:std type:function type:void operator:* node:66 type:coroutinescope operator:* node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:block identifier:newcontext operator:= node:43 identifier:newcoroutinecontext identifier:scope node:43 identifier:context identifier:move identifier:std identifier:coroutine identifier:std type:sharedptr type:standalonecoroutine node:1 identifier:start operator:== identifier:coroutinestart identifier:lazy identifier:coroutine operator:= node:43 identifier:std identifier:makeshared type:lazystandalonecoroutine identifier:newcontext identifier:block identifier:coroutine operator:= node:43 identifier:std identifier:makeshared type:standalonecoroutine identifier:newcontext literal:53:true node:43 identifier:coroutine identifier:start identifier:start node:43 identifier:staticcast type:coroutinescope operator:* node:43 identifier:coroutine identifier:get node:43 identifier:std identifier:move identifier:block node:5 identifier:coroutine
@@ -751,19 +724,19 @@ Function StandaloneCoroutine::handleJobException:191 -> StandaloneCoroutine::han
 Function LazyStandaloneCoroutine::onStart:203 -> LazyStandaloneCoroutine::on_start:98 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:1 identifier:suspendblock node:43 identifier:start identifier:coroutinestart identifier:default node:43 identifier:staticcast type:coroutinescope operator:* node:43 identifier:std identifier:move identifier:suspendblock node:5 node:9 node:1 identifier:block node:43 identifier:block node:43 identifier:resumewith node:43 type:result type:void identifier:success node:43 identifier:unit node:43 identifier:resumewith node:43 type:result type:void identifier:failure node:43 identifier:std identifier:currentexception
-Function trySuspend:227 -> kotlinx::coroutines::DispatchedCoroutine::try_suspend:679 | normalized logic: 0.000000
+Function DispatchedCoroutine::trySuspend:227 -> kotlinx::coroutines::DispatchedCoroutine::try_suspend:679 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:3 literal:53:true identifier:decision type:signed32 operator:= node:43 identifier:decision identifier:load node:4 identifier:decision identifier:undecided node:1 node:43 identifier:decision identifier:compareexchangestrong identifier:decision identifier:suspended node:5 literal:53:true node:8 identifier:resumed node:5 literal:53:false node:10 node:43 identifier:std identifier:logicerror literal:52:"Already suspended"
-Function tryResume:237 -> kotlinx::coroutines::DispatchedCoroutine::try_resume:693 | normalized logic: 0.000000
+Function DispatchedCoroutine::tryResume:237 -> kotlinx::coroutines::DispatchedCoroutine::try_resume:693 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:3 literal:53:true identifier:decision type:signed32 operator:= node:43 identifier:decision identifier:load node:4 identifier:decision identifier:undecided node:1 node:43 identifier:decision identifier:compareexchangestrong identifier:decision identifier:resumed node:5 literal:53:true node:8 identifier:suspended node:5 literal:53:false node:10 node:43 identifier:std identifier:logicerror literal:52:"Already resumed"
-Function afterCompletion:247 -> kotlinx::coroutines::DispatchedCoroutine::after_completion:666 | normalized logic: 0.000000
+Function DispatchedCoroutine::afterCompletion:247 -> kotlinx::coroutines::DispatchedCoroutine::after_completion:666 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:state type:jobstate node:43 identifier:afterresume identifier:state
-Function afterResume:253 -> kotlinx::coroutines::DispatchedCoroutine::after_resume:669 | normalized logic: 0.000000
+Function DispatchedCoroutine::afterResume:253 -> kotlinx::coroutines::DispatchedCoroutine::after_resume:669 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:state type:jobstate identifier:owner operator:= node:43 identifier:jobsupport identifier:sharedfromthis node:43 identifier:erasedcompletion identifier:reset node:1 node:43 identifier:tryresume node:5 node:43 identifier:kotlinx identifier:coroutines identifier:resumecancellablewith node:43 identifier:intercepteducont node:43 identifier:recoverresult type:t identifier:state node:43 identifier:ucont identifier:get
-Function getResult:259 -> kotlinx::coroutines::DispatchedCoroutine::get_result:653 | normalized logic: 0.000000
+Function DispatchedCoroutine::getResult:259 -> kotlinx::coroutines::DispatchedCoroutine::get_result:653 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:1 node:43 identifier:trysuspend node:5 node:43 identifier:intrinsics identifier:getcoroutinesuspended identifier:state operator:= node:43 identifier:getstateforawait node:1 identifier:failure operator:= node:43 identifier:dynamiccast type:completedexceptionally operator:* identifier:state node:43 identifier:std identifier:rethrowexception identifier:failure identifier:cause identifier:value operator:= node:43 node:43 identifier:recoverresult identifier:state type:t node:43 identifier:get identifier:getorthrow identifier:ucont node:1 identifier:std identifier:issamev type:t type:void operator:* node:5 identifier:value node:1 identifier:std identifier:issamev type:t type:void node:5 node:5 type:t node:43 identifier:std identifier:move identifier:value
 Extra target function: kotlinx::coroutines::launch:40
@@ -878,15 +851,12 @@ __ast_distance_unmapped__("function_declaration", "public suspend inline operato
 __ast_distance_unmapped__("class_declaration", "private open class StandaloneCoroutine(\n    parentContext: CoroutineContext,\n    active: Boolean\n) : AbstractCoroutine<Unit>(parentContext, initParentJob = true, active = active) {\n    override fun handleJobException(exception: Throwable): Boolean {\n        handleCoroutineException(context, exception)\n        return true\n    }\n}")
 __ast_distance_unmapped__("class_declaration", "private class LazyStandaloneCoroutine(\n    parentContext: CoroutineContext,\n    block: suspend CoroutineScope.() -> Unit\n) : StandaloneCoroutine(parentContext, active = false) {\n    private val continuation = block.createCoroutineUnintercepted(this, this)\n\n    override fun onStart() {\n        continuation.startCoroutineCancellable(this)\n    }\n}")
 // Used by withContext when context changes, but dispatcher stays the same
-__ast_distance_unmapped__("class_declaration", "internal expect class UndispatchedCoroutine<in T>(\n    context: CoroutineContext,\n    uCont: Continuation<T>")
-__ast_distance_unmapped__("ERROR", ") :")
-scope_coroutine < t > __ast_distance_unmapped__("infix_expression", "private const val UNDECIDED = 0")
+__ast_distance_unmapped__("class_declaration", "internal expect class UndispatchedCoroutine<in T>(\n    context: CoroutineContext,\n    uCont: Continuation<T>\n) : ScopeCoroutine<T>")
+__ast_distance_unmapped__("property_declaration", "private const val UNDECIDED = 0")
 __ast_distance_unmapped__("property_declaration", "private const val SUSPENDED = 1")
 __ast_distance_unmapped__("property_declaration", "private const val RESUMED = 2")
 // Used by withContext when context dispatcher changes
-__ast_distance_unmapped__("class_declaration", "internal class DispatchedCoroutine<in T>(\n    context: CoroutineContext,\n    uCont: Continuation<T>")
-__ast_distance_unmapped__("ERROR", ") :")
-scope_coroutine<T>(context,u_cont)__ast_distance_unmapped__("annotated_lambda", "{\n    // this is copy-and-paste of a decision state machine inside AbstractionContinuation\n    // todo: we may some-how abstract it via inline class\n    private val _decision = atomic(UNDECIDED)\n\n    private fun trySuspend(): Boolean {\n        _decision.loop { decision ->\n            when (decision) {\n                UNDECIDED -> if (this._decision.compareAndSet(UNDECIDED, SUSPENDED)) return true\n                RESUMED -> return false\n                else -> error(\"Already suspended\")\n            }\n        }\n    }\n\n    private fun tryResume(): Boolean {\n        _decision.loop { decision ->\n            when (decision) {\n                UNDECIDED -> if (this._decision.compareAndSet(UNDECIDED, RESUMED)) return true\n                SUSPENDED -> return false\n                else -> error(\"Already resumed\")\n            }\n        }\n    }\n\n    override fun afterCompletion(state: Any?) {\n        // Call afterResume from afterCompletion and not vice-versa, because stack-size is more\n        // important for afterResume implementation\n        afterResume(state)\n    }\n\n    override fun afterResume(state: Any?) {\n        if (tryResume()) return // completed before getResult invocation -- bail out\n        // Resume in a cancellable way because we have to switch back to the original dispatcher\n        uCont.intercepted().resumeCancellableWith(recoverResult(state, uCont))\n    }\n\n    internal fun getResult(): Any? {\n        if (trySuspend()) return COROUTINE_SUSPENDED\n        // otherwise, onCompletionInternal was already invoked & invoked tryResume, and the result is in the state\n        val state = this.state.unboxState()\n        if (state is CompletedExceptionally) throw state.cause\n        @Suppress(\"UNCHECKED_CAST\")\n        return state as T\n    }\n}")
+__ast_distance_unmapped__("class_declaration", "internal class DispatchedCoroutine<in T>(\n    context: CoroutineContext,\n    uCont: Continuation<T>\n) : ScopeCoroutine<T>(context, uCont) {\n    // this is copy-and-paste of a decision state machine inside AbstractionContinuation\n    // todo: we may some-how abstract it via inline class\n    private val _decision = atomic(UNDECIDED)\n\n    private fun trySuspend(): Boolean {\n        _decision.loop { decision ->\n            when (decision) {\n                UNDECIDED -> if (this._decision.compareAndSet(UNDECIDED, SUSPENDED)) return true\n                RESUMED -> return false\n                else -> error(\"Already suspended\")\n            }\n        }\n    }\n\n    private fun tryResume(): Boolean {\n        _decision.loop { decision ->\n            when (decision) {\n                UNDECIDED -> if (this._decision.compareAndSet(UNDECIDED, RESUMED)) return true\n                SUSPENDED -> return false\n                else -> error(\"Already resumed\")\n            }\n        }\n    }\n\n    override fun afterCompletion(state: Any?) {\n        // Call afterResume from afterCompletion and not vice-versa, because stack-size is more\n        // important for afterResume implementation\n        afterResume(state)\n    }\n\n    override fun afterResume(state: Any?) {\n        if (tryResume()) return // completed before getResult invocation -- bail out\n        // Resume in a cancellable way because we have to switch back to the original dispatcher\n        uCont.intercepted().resumeCancellableWith(recoverResult(state, uCont))\n    }\n\n    internal fun getResult(): Any? {\n        if (trySuspend()) return COROUTINE_SUSPENDED\n        // otherwise, onCompletionInternal was already invoked & invoked tryResume, and the result is in the state\n        val state = this.state.unboxState()\n        if (state is CompletedExceptionally) throw state.cause\n        @Suppress(\"UNCHECKED_CAST\")\n        return state as T\n    }\n}")
 }
 
 === Suspension lowering review leads ===
@@ -894,7 +864,7 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Builders.common.kt:44	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Builders.common.cpp:23	CoroutineScope::launch -> kotlinx::coroutines::launch
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
 TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Builders.common.kt:44	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Builders.hpp:214	CoroutineScope::launch -> kotlinx::coroutines::launch
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
 TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Builders.common.kt:79	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Builders.hpp:249	CoroutineScope::async -> kotlinx::coroutines::async
@@ -1927,9 +1897,6 @@ Diagnostic: 309: unsupported property_declaration
 Diagnostic: 311: unsupported property_declaration
 Diagnostic: 312: unsupported property_declaration
 Diagnostic: 313: unsupported property_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 256: ERROR ERROR bytes 11052:11060
-Diagnostic: 273: ERROR ERROR bytes 11751:11759
 Function Mutex::withLock:117 -> kotlinx::coroutines::sync::with_lock:123 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:mutex type:mutex node:66 identifier:owner type:void node:66 identifier:action type:actionfunc node:43 identifier:mutex identifier:lock identifier:owner node:9 identifier:result type:t operator:= node:43 identifier:action node:43 identifier:mutex identifier:unlock identifier:owner node:5 identifier:result node:43 identifier:mutex identifier:unlock identifier:owner node:10
@@ -2015,11 +1982,11 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/sync/Mutex.kt:117	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Mutex.hpp:123	Mutex::withLock -> kotlinx::coroutines::sync::with_lock
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/sync/Mutex.kt:166	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Mutex.cpp:64	MutexImpl::lock -> kotlinx::coroutines::sync::MutexImpl::lock
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/sync/Mutex.kt:171	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Mutex.cpp:153	MutexImpl::lockSuspend -> kotlinx::coroutines::sync::MutexImpl::lock_suspend
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 3
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/flow/terminal/Count.kt -> kotlinx/coroutines/flow/Count.hpp ===
@@ -2124,18 +2091,18 @@ Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Supervisor.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Supervisor.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Supervisor.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.009217
-translated_ast_cosine: 0.566608
+translated_text_cosine: 0.011288
+translated_ast_cosine: 0.550687
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.009445
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.009217
+score: 0.011288
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
-Rule hits: 33 | misses: 10 | documentation misses: 0 | supported code-byte coverage: 0.000000
+Rule hits: 19 | misses: 8 | documentation misses: 0 | supported code-byte coverage: 0.000000
 Source line	Source bytes	Emitted bytes	Node	Supported
 1	0:41	0:89	file_annotation	fallback
 2	42:107	90:207	file_annotation	fallback
@@ -2148,9 +2115,7 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 35	1605:2637	789:1861	multiline_comment	yes
 50	2638:2994	1862:2279	function_declaration	fallback
 60	2996:3130	2280:2466	class_declaration	fallback
-64	3132:3230	2467:2617	class_declaration	fallback
-67	3231:3234	2618:2659	ERROR	fallback
-67	3235:3339	2660:2815	call_expression	fallback
+64	3132:3339	2467:2729	class_declaration	fallback
 Diagnostic: 1: unsupported file_annotation
 Diagnostic: 2: unsupported file_annotation
 Diagnostic: 26: unsupported annotation
@@ -2159,11 +2124,6 @@ Diagnostic: 30: unsupported function_declaration
 Diagnostic: 50: unsupported function_declaration
 Diagnostic: 60: unsupported class_declaration
 Diagnostic: 64: unsupported class_declaration
-Diagnostic: 67: unsupported ERROR
-Diagnostic: 67: unsupported annotated_lambda
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 64: ERROR ERROR bytes 3171:3213
-Diagnostic: 67: ERROR ERROR bytes 3231:3234
 Function SupervisorJob:27 -> kotlinx::coroutines::SupervisorJob:36 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:parent identifier:std type:job type:sharedptr node:5 node:43 identifier:std identifier:makeshared type:supervisorjobimpl node:43 identifier:std identifier:move identifier:parent
@@ -2176,7 +2136,7 @@ Function supervisorScope:50 -> kotlinx::coroutines::supervisor_scope:145 | norma
 Function SupervisorJobImpl::childCancelled:61 -> kotlinx::coroutines::SupervisorJobImpl::child_cancelled:30 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:exceptionptr node:5 literal:53:false
-Function childCancelled:68 -> kotlinx::coroutines::internal_supervisor::SupervisorCoroutine::child_cancelled:95 | normalized logic: 0.000000
+Function SupervisorCoroutine::childCancelled:68 -> kotlinx::coroutines::internal_supervisor::SupervisorCoroutine::child_cancelled:95 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:exceptionptr node:5 literal:53:false
 Extra target function: kotlinx::coroutines::SupervisorJobImpl::SupervisorJobImpl:27
@@ -2208,9 +2168,7 @@ __ast_distance_unmapped__("function_declaration", "@Suppress(\"FunctionName\")\n
  */
 __ast_distance_unmapped__("function_declaration", "public suspend fun <R> supervisorScope(block: suspend CoroutineScope.() -> R): R {\n    contract {\n        callsInPlace(block, InvocationKind.EXACTLY_ONCE)\n    }\n    return suspendCoroutineUninterceptedOrReturn { uCont ->\n        val coroutine = SupervisorCoroutine(uCont.context, uCont)\n        coroutine.startUndispatchedOrReturn(coroutine, block)\n    }\n}")
 __ast_distance_unmapped__("class_declaration", "private class SupervisorJobImpl(parent: Job?) : JobImpl(parent) {\n    override fun childCancelled(cause: Throwable): Boolean = false\n}")
-__ast_distance_unmapped__("class_declaration", "private class SupervisorCoroutine<in T>(\n    context: CoroutineContext,\n    uCont: Continuation<T>")
-__ast_distance_unmapped__("ERROR", ") :")
-scope_coroutine<T>(context,u_cont)__ast_distance_unmapped__("annotated_lambda", "{\n    override fun childCancelled(cause: Throwable): Boolean = false\n}")
+__ast_distance_unmapped__("class_declaration", "private class SupervisorCoroutine<in T>(\n    context: CoroutineContext,\n    uCont: Continuation<T>\n) : ScopeCoroutine<T>(context, uCont) {\n    override fun childCancelled(cause: Throwable): Boolean = false\n}")
 }
 
 === Suspension lowering review leads ===
@@ -2218,7 +2176,7 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Supervisor.kt:50	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Supervisor.hpp:100	supervisorScope -> kotlinx::coroutines::supervisor_scope
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 1
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/Unconfined.kt -> kotlinx/coroutines/Unconfined.hpp ===
@@ -4063,8 +4021,6 @@ Diagnostic: 65: unsupported function_declaration
 Diagnostic: 87: unsupported function_declaration
 Diagnostic: 95: unsupported class_declaration
 Diagnostic: 154: unsupported function_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 98: ERROR ERROR bytes 4586:4636
 Function FlowCollector<T>::emitAll:25 -> kotlinx::coroutines::flow::emit_all:302 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:receiver type:flowcollector type:t node:66 identifier:channel identifier:channels type:receivechannel type:t node:66 type:continuation type:void operator:* identifier:completion node:5 node:43 identifier:emitallimpl identifier:receiver identifier:channel literal:53:true identifier:completion
@@ -4194,21 +4150,21 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:25	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:302	FlowCollector<T>::emitAll -> kotlinx::coroutines::flow::emit_all
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:28	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:189	FlowCollector<T>::emitAllImpl -> kotlinx::coroutines::flow::emit_all_impl
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=5 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=5 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:28	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:214	FlowCollector<T>::emitAllImpl -> kotlinx::coroutines::flow::emit_all_impl
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=5 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=5 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:28	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:235	FlowCollector<T>::emitAllImpl -> kotlinx::coroutines::flow::emit_all_impl
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=5 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=5 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:28	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:257	FlowCollector<T>::emitAllImpl -> kotlinx::coroutines::flow::emit_all_impl
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=5 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=5 parse=clean
 TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:28	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:280	FlowCollector<T>::emitAllImpl -> kotlinx::coroutines::flow::emit_all_impl
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=5 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=5 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:116	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:357	ChannelAsFlow::collectTo -> kotlinx::coroutines::flow::ChannelAsFlow::collect_to
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:127	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:373	ChannelAsFlow::collect -> kotlinx::coroutines::flow::ChannelAsFlow::collect
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 4
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/flow/StateFlow.kt -> kotlinx/coroutines/flow/StateFlow.hpp ===
@@ -4892,9 +4848,6 @@ Diagnostic: 894: unsupported property_declaration
 Diagnostic: 895: unsupported property_declaration
 Diagnostic: 899: unsupported property_declaration
 Diagnostic: 903: unsupported property_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 221: ERROR ERROR bytes 10389:10397
-Diagnostic: 866: ERROR ERROR bytes 44352:44360
 Function select:50 -> kotlinx::coroutines::selects::select:1020 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:builder type:builderfunc node:66 type:continuation type:void operator:* identifier:continuation identifier:context operator:= node:43 identifier:continuation identifier:getcontext identifier:impl operator:= node:43 identifier:context identifier:sharedptr identifier:std type:r type:r type:selectimplementation type:selectimplementation node:43 identifier:builder operator:* identifier:impl node:5 node:43 identifier:impl identifier:doselect identifier:continuation
@@ -5131,28 +5084,28 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:50	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:1001	select -> kotlinx::coroutines::selects::select
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:93	-	SelectBuilder::invoke
 MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:103	-	SelectBuilder::onTimeout
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:442	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:680	SelectImplementation::doSelect -> kotlinx::coroutines::selects::SelectImplementation::do_select
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:450	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:711	SelectImplementation::doSelectSuspend -> kotlinx::coroutines::selects::SelectImplementation::do_select_suspend
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:463	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:854	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:466	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:854	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:469	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:897	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:469	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:910	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
 TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:569	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:718	SelectImplementation::waitUntilSelected -> kotlinx::coroutines::selects::SelectImplementation::wait_until_selected
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:700	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:818	SelectImplementation::complete -> kotlinx::coroutines::selects::SelectImplementation::complete
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 MISSING_TARGET_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:726	-	SelectImplementation::processResultAndInvokeBlockRecoveringException
 TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:830	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:581	SelectImplementation::ClauseData::invokeBlock -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::invoke_block
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 12
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/sync/Semaphore.kt -> kotlinx/coroutines/sync/Semaphore.hpp ===
@@ -6460,8 +6413,6 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 34	1640:5892	119:4535	class_declaration	fallback
 Diagnostic: 1: unsupported file_annotation
 Diagnostic: 34: unsupported class_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 57: ERROR ERROR bytes 2605:2613
 Function AbstractCoroutine::onCompleted:70 -> kotlinx::coroutines::AbstractCoroutine::on_completed:168 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:value type:t
@@ -6570,15 +6521,6 @@ Diagnostic: 628: unsupported object_declaration
 Diagnostic: 640: unsupported class_declaration
 Diagnostic: 674: unsupported class_declaration
 Diagnostic: 692: unsupported class_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 38: ERROR ERROR bytes 1227:1235
-Diagnostic: 248: ERROR ERROR bytes 10303:10311
-Diagnostic: 367: ERROR ERROR bytes 15487:15495
-Diagnostic: 477: ERROR ERROR bytes 20653:20661
-Diagnostic: 496: ERROR ERROR bytes 21702:21710
-Diagnostic: 532: ERROR ERROR bytes 23399:23407
-Diagnostic: 581: ERROR ERROR bytes 25361:25369
-Diagnostic: 679: ERROR ERROR bytes 29475:29483
 Function decisionAndIndex:19 -> kotlinx::coroutines::decision_and_index:107 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:decision type:signed32 node:66 identifier:index type:signed32 node:5 identifier:decision operator:<< identifier:decisionshift operator:+ identifier:index
@@ -6970,9 +6912,6 @@ Diagnostic: 242: documentation example retains unsupported Kotlin syntax
 Diagnostic: 303: unsupported function_declaration
 Diagnostic: 306: unsupported class_declaration
 Diagnostic: 322: unsupported class_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 308: ERROR ERROR bytes 10573:10623
-Diagnostic: 324: ERROR ERROR bytes 11238:11288
 Function flow:52 -> kotlinx::coroutines::flow::flow:82 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:function type:void operator:* node:66 type:flowcollector type:t operator:* node:66 type:continuation type:void operator:* operator:* identifier:block type:safeflow type:abstractflow type:t identifier:std type:function type:void operator:* node:66 type:flowcollector type:t operator:* node:66 type:continuation type:void operator:* operator:* identifier:block identifier:safeflow node:66 identifier:std type:function type:void operator:* node:66 type:flowcollector type:t operator:* node:66 type:continuation type:void operator:* operator:* identifier:b identifier:block identifier:b type:void identifier:collectsafely node:66 identifier:collector type:flowcollector type:t node:66 type:continuation type:void operator:* identifier:continuation node:5 node:43 identifier:block identifier:collector identifier:continuation node:5 node:43 identifier:std identifier:makeshared type:safeflow node:43 identifier:std identifier:move identifier:block
@@ -7250,22 +7189,22 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:52	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:82	flow -> kotlinx::coroutines::flow::flow
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
 TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:52	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:103	flow -> kotlinx::coroutines::flow::flow
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
 TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:56	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:90	SafeFlow::collectSafely -> kotlinx::coroutines::flow::SafeFlow::collect_safely
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:78	-	asFlow
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:141	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:380	EmptyFlow::collect -> kotlinx::coroutines::flow::EmptyFlow::collect
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:239	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:577	channelFlow -> kotlinx::coroutines::flow::channel_flow
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:303	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:586	callbackFlow -> kotlinx::coroutines::flow::callback_flow
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:315	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:488	ChannelFlowBuilder::collectTo -> kotlinx::coroutines::flow::internal::ChannelFlowBuilder::collect_to
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 LOWERING_SYNTAX_PRESENT	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:329	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:508	CallbackFlowBuilder::collectTo -> kotlinx::coroutines::flow::internal::CallbackFlowBuilder::collect_to
-  Evidence: await-macro-lines=523 begin-macro-lines=522 marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=523 begin-macro-lines=522 marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 8
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/channels/Channels.common.kt -> kotlinx/coroutines/channels/Channels.hpp ===
@@ -7534,8 +7473,6 @@ Diagnostic: 15: unsupported annotation
 Diagnostic: 16: unsupported function_declaration
 Diagnostic: 25: unsupported function_declaration
 Diagnostic: 34: unsupported class_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 56: ERROR ERROR bytes 2041:2050
 Function SelectBuilder<R>::onTimeout:16 -> kotlinx::coroutines::selects::on_timeout:118 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:builder type:r type:selectbuilder node:66 identifier:std identifier:timemillis type:signed64 node:66 identifier:std type:function type:void operator:* node:66 type:continuation type:void operator:* operator:* identifier:block identifier:timeout operator:= node:43 identifier:makeshared identifier:std identifier:timemillis type:ontimeout identifier:clause operator:= node:43 identifier:selectclause identifier:timeout node:43 identifier:builder identifier:invoke operator:* identifier:clause node:43 identifier:std identifier:move identifier:block
@@ -7572,17 +7509,17 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:16	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.hpp:107	SelectBuilder<R>::onTimeout -> kotlinx::coroutines::selects::on_timeout
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:16	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.hpp:125	SelectBuilder<R>::onTimeout -> kotlinx::coroutines::selects::on_timeout
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:16	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.hpp:135	SelectBuilder<R>::onTimeout -> SelectBuilder<R>::on_timeout
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:25	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.hpp:107	SelectBuilder<R>::onTimeout -> kotlinx::coroutines::selects::on_timeout
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:25	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.hpp:125	SelectBuilder<R>::onTimeout -> kotlinx::coroutines::selects::on_timeout
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:25	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.hpp:135	SelectBuilder<R>::onTimeout -> SelectBuilder<R>::on_timeout
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=clean
 Explicit suspension contracts reviewed: 2
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/flow/FlowCollector.kt -> kotlinx/coroutines/flow/FlowCollector.hpp ===
@@ -7858,10 +7795,6 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 Diagnostic: 9: unsupported class_declaration
 Diagnostic: 37: unsupported class_declaration
 Diagnostic: 76: unsupported class_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 12: ERROR ERROR bytes 345:395
-Diagnostic: 40: ERROR ERROR bytes 1556:1606
-Diagnostic: 78: ERROR ERROR bytes 3131:3181
 Function ChannelFlowTransformLatest::create:16 -> kotlinx::coroutines::flow::internal::ChannelFlowTransformLatest::create:176 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr node:66 identifier:capacity type:signed32 node:66 identifier:onbufferoverflow type:bufferoverflow node:5 type:channelflowtransformlatest type:t type:r identifier:transform node:43 identifier:upstream node:43 identifier:std identifier:move identifier:context identifier:capacity identifier:onbufferoverflow
@@ -7930,11 +7863,11 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:19	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp:182	ChannelFlowTransformLatest::flowCollect -> kotlinx::coroutines::flow::internal::ChannelFlowTransformLatest::flow_collect
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 LOWERING_SYNTAX_PRESENT	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:51	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp:227	ChannelFlowMerge::collectTo -> kotlinx::coroutines::flow::internal::ChannelFlowMerge::collect_to
-  Evidence: await-macro-lines=249,280,321 begin-macro-lines=248,273,320 marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=249,280,321 begin-macro-lines=248,273,320 marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 LOWERING_SYNTAX_PRESENT	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:89	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp:402	ChannelLimitedFlowMerge::collectTo -> kotlinx::coroutines::flow::internal::ChannelLimitedFlowMerge::collect_to
-  Evidence: await-macro-lines=419 begin-macro-lines=418 marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=419 begin-macro-lines=418 marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 3
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/flow/SharingStarted.kt -> kotlinx/coroutines/flow/SharingStarted.hpp ===
@@ -8293,8 +8226,6 @@ Diagnostic: 44: unsupported function_declaration
 Diagnostic: 45: unsupported function_declaration
 Diagnostic: 46: unsupported property_declaration
 Diagnostic: 48: unsupported class_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 49: ERROR ERROR bytes 1971:1997
 Function DefaultExecutor::dispatch:10 -> kotlinx::coroutines::DefaultExecutor::dispatch:150 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:context type:coroutinecontext node:66 identifier:block identifier:std type:runnable type:sharedptr node:43 node:43 identifier:dispatchers identifier:getdefault identifier:dispatch identifier:context node:43 identifier:std identifier:move identifier:block
@@ -8487,8 +8418,6 @@ Diagnostic: 18: unsupported annotation
 Diagnostic: 18: unsupported callable_reference
 Diagnostic: 19: unsupported function_declaration
 Diagnostic: 36: unsupported class_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 37: ERROR ERROR bytes 1364:1389
 Function selectUnbiased:19 -> kotlinx::coroutines::selects::select_unbiased:182 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr node:66 identifier:std type:function type:void node:66 type:r type:selectbuilder operator:& identifier:builder identifier:impl type:r type:unbiasedselectimplementation node:66 identifier:std type:move node:66 type:context node:43 identifier:builder identifier:impl node:5 node:43 identifier:impl identifier:doselect
@@ -8533,11 +8462,11 @@ MISSING_TARGET_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/ko
 MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/SelectUnbiased.kt:40	-	UnbiasedSelectImplementation::invoke
 MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/SelectUnbiased.kt:44	-	UnbiasedSelectImplementation::invoke
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/SelectUnbiased.kt:48	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/SelectUnbiased.hpp:66	UnbiasedSelectImplementation::invoke -> kotlinx::coroutines::selects::UnbiasedSelectImplementation::invoke
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/SelectUnbiased.kt:48	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/SelectUnbiased.hpp:84	UnbiasedSelectImplementation::invoke -> kotlinx::coroutines::selects::UnbiasedSelectImplementation::invoke
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/SelectUnbiased.kt:52	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/SelectUnbiased.hpp:123	UnbiasedSelectImplementation::doSelect -> kotlinx::coroutines::selects::UnbiasedSelectImplementation::do_select
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 5
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/internal/ThreadSafeHeap.kt -> kotlinx/coroutines/internal/ThreadSafeHeap.hpp ===
@@ -8964,7 +8893,6 @@ Diagnostic: 1516: ERROR ERROR bytes 74676:74679
 Diagnostic: 1517: ERROR ERROR bytes 74775:74778
 Diagnostic: 1525: ERROR ERROR bytes 75172:75175
 Diagnostic: 1526: ERROR ERROR bytes 75271:75274
-Diagnostic: 2953: ERROR ERROR bytes 146322:146330
 Function constructEBCompletedAndPauseFlag:3114 -> kotlinx::coroutines::channels::construct_eb_completed_and_pause_flag:378 | normalized logic: 0.692308
   Emitted logic: node:66 identifier:counter type:signed64 node:66 identifier:pauseeb type:bool node:5 node:43 identifier:astdistanceunmapped literal:52:"if_expression" literal:52:"if (pauseEB) EB_COMPLETED_PAUSE_EXPAND_BUFFERS_BIT else 0" operator:+ identifier:counter
   Target logic: node:66 identifier:counter type:signed64 node:66 identifier:pauseeb type:bool node:5 identifier:pauseeb identifier:ebcompletedpauseexpandbuffersbit literal:51:0 operator:+ identifier:counter
@@ -10109,7 +10037,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.620408
+translated_ast_cosine: 0.580645
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.551519
@@ -10119,31 +10047,24 @@ score: 0.000000
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
-Rule hits: 18 | misses: 5 | documentation misses: 0 | supported code-byte coverage: 0.000000
+Rule hits: 4 | misses: 3 | documentation misses: 0 | supported code-byte coverage: 0.000000
 Source line	Source bytes	Emitted bytes	Node	Supported
 1	0:40	0:47	package_header	yes
 3	42:798	48:48	import_list	yes
 26	799:1076	49:383	function_declaration	fallback
 32	1078:1395	384:704	multiline_comment	yes
 45	1396:1566	705:931	function_declaration	fallback
-50	1568:1657	932:1073	class_declaration	fallback
-53	1658:1661	1074:1115	ERROR	fallback
-53	1662:1857	1116:1365	call_expression	fallback
+50	1568:1857	932:1279	class_declaration	fallback
 Diagnostic: 26: unsupported function_declaration
 Diagnostic: 45: unsupported function_declaration
 Diagnostic: 50: unsupported class_declaration
-Diagnostic: 53: unsupported ERROR
-Diagnostic: 53: unsupported annotated_lambda
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 50: ERROR ERROR bytes 1598:1640
-Diagnostic: 53: ERROR ERROR bytes 1658:1661
 Function flowScope:26 -> kotlinx::coroutines::flow::internal::flow_scope:103 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:function type:void operator:* node:66 type:coroutinescope operator:* node:66 type:continuation type:void operator:* operator:* identifier:block node:66 type:continuation type:void operator:* identifier:completion identifier:ucont operator:= node:43 identifier:completion identifier:coroutines identifier:internal identifier:kotlinx identifier:retaincontinuation identifier:coroutine operator:= node:43 identifier:makeshared identifier:std type:flowcoroutine node:43 identifier:getcontext identifier:ucont identifier:ucont node:43 identifier:coroutine identifier:retain node:9 identifier:result type:void operator:= node:43 identifier:coroutine identifier:startundispatchedorreturn node:45 identifier:block identifier:coroutine operator:= node:43 identifier:block identifier:move identifier:std node:66 type:continuation type:void operator:* identifier:continuation node:5 node:43 identifier:block node:43 identifier:continuation identifier:coroutine identifier:get node:1 operator:! node:43 identifier:intrinsics identifier:iscoroutinesuspended identifier:result node:43 identifier:coroutine identifier:release node:5 identifier:result node:43 identifier:coroutine identifier:release node:10
 Function scopedFlow:45 -> kotlinx::coroutines::flow::internal::scoped_flow:49 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:function type:void operator:* node:66 type:coroutinescope operator:* node:66 type:flowcollector type:r operator:* node:66 type:continuation type:void operator:* operator:* identifier:block node:5 node:43 identifier:std identifier:makeshared type:flowimpl type:r node:45 identifier:block operator:= node:43 identifier:std identifier:move identifier:block node:66 identifier:collector type:flowcollector type:r node:66 type:continuation type:void operator:* identifier:completion type:void operator:* node:5 node:43 identifier:flowscope node:45 identifier:block identifier:collector node:66 identifier:scope type:coroutinescope node:66 type:continuation type:void operator:* identifier:continuation node:5 node:43 identifier:block identifier:scope identifier:collector identifier:continuation identifier:completion
-Function childCancelled:54 -> kotlinx::coroutines::flow::internal::FlowCoroutine::child_cancelled:76 | normalized logic: 0.000000
+Function FlowCoroutine::childCancelled:54 -> kotlinx::coroutines::flow::internal::FlowCoroutine::child_cancelled:76 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:cause identifier:std type:exceptionptr node:9 node:43 identifier:std identifier:rethrowexception identifier:cause node:66 type:childcancelledexception operator:& node:5 literal:53:true node:5 node:43 identifier:cancelimpl identifier:cause
 Extra target function: kotlinx::coroutines::flow::internal::FlowCoroutine::FlowCoroutine:72
@@ -10169,9 +10090,7 @@ __ast_distance_unmapped__("function_declaration", "internal suspend fun <R> flow
  * To cancel child without cancelling itself, `cancel(ChildCancelledException())` should be used.
  */
 __ast_distance_unmapped__("function_declaration", "internal fun <R> scopedFlow(@BuilderInference block: suspend CoroutineScope.(FlowCollector<R>) -> Unit): Flow<R> =\n    flow {\n        flowScope { block(this@flow) }\n    }")
-__ast_distance_unmapped__("class_declaration", "private class FlowCoroutine<T>(\n    context: CoroutineContext,\n    uCont: Continuation<T>")
-__ast_distance_unmapped__("ERROR", ") :")
-scope_coroutine<T>(context,u_cont)__ast_distance_unmapped__("annotated_lambda", "{\n    override fun childCancelled(cause: Throwable): Boolean {\n        if (cause is ChildCancelledException) return true\n        return cancelImpl(cause)\n    }\n}")
+__ast_distance_unmapped__("class_declaration", "private class FlowCoroutine<T>(\n    context: CoroutineContext,\n    uCont: Continuation<T>\n) : ScopeCoroutine<T>(context, uCont) {\n    override fun childCancelled(cause: Throwable): Boolean {\n        if (cause is ChildCancelledException) return true\n        return cancelImpl(cause)\n    }\n}")
 }
 
 === Suspension lowering review leads ===
@@ -10179,9 +10098,9 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/FlowCoroutine.kt:26	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.cpp:43	flowScope -> kotlinx::coroutines::flow::internal::flow_scope
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/FlowCoroutine.kt:45	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.hpp:49	scopedFlow -> kotlinx::coroutines::flow::internal::scoped_flow
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 2
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt -> kotlinx/coroutines/flow/internal/NullSurrogate.hpp ===
@@ -10518,7 +10437,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/DispatchedTaskDispatch.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.592100
+translated_ast_cosine: 0.598218
 function_name_parity: 0.600000
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
@@ -10528,7 +10447,7 @@ score: 0.000000
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
-Rule hits: 8 | misses: 14 | documentation misses: 0 | supported code-byte coverage: 0.000000
+Rule hits: 11 | misses: 15 | documentation misses: 0 | supported code-byte coverage: 0.000000
 Source line	Source bytes	Emitted bytes	Node	Supported
 1	0:26	0:31	package_header	yes
 3	28:339	32:32	import_list	yes
@@ -10548,9 +10467,10 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 156	7159:7698	7473:8074	function_declaration	fallback
 167	7700:8202	8075:8641	function_declaration	fallback
 180	8204:8854	8642:9365	function_declaration	fallback
-202	8856:9036	9366:9604	function_declaration	fallback
-207	9038:9411	9605:9983	multiline_comment	yes
-215	9412:9644	9984:10272	class_declaration	fallback
+202	8856:8886	9366:9443	prefix_expression	fallback
+203	8887:9036	9444:9648	function_declaration	fallback
+207	9038:9411	9649:10027	multiline_comment	yes
+215	9412:9644	10028:10316	class_declaration	fallback
 Diagnostic: 13: unsupported property_declaration
 Diagnostic: 21: unsupported property_declaration
 Diagnostic: 29: unsupported property_declaration
@@ -10563,13 +10483,9 @@ Diagnostic: 136: unsupported function_declaration
 Diagnostic: 156: unsupported function_declaration
 Diagnostic: 167: unsupported function_declaration
 Diagnostic: 180: unsupported function_declaration
-Diagnostic: 202: unsupported function_declaration
+Diagnostic: 202: unsupported annotation
+Diagnostic: 203: unsupported function_declaration
 Diagnostic: 215: unsupported class_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 83: ERROR ERROR bytes 3427:3436
-Diagnostic: 91: ERROR ERROR bytes 3950:3957
-Diagnostic: 143: ERROR ERROR bytes 6748:6778
-Diagnostic: 218: ERROR ERROR bytes 9522:9548
 Function DispatchedTask::run:77 -> DispatchedTask<T>::run:48 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:43 identifier:assert identifier:resumemode operator:!= identifier:modeuninitialized identifier:delegate operator:= node:43 identifier:getdelegate node:9 identifier:dispatcheddelegate operator:= node:43 identifier:delegate identifier:dynamicpointercast identifier:internal identifier:std type:dispatchedcontinuation type:t identifier:continuation operator:= identifier:continuation identifier:delegate identifier:dispatcheddelegate identifier:dispatcheddelegate identifier:countorelement type:void operator:= identifier:countorelement identifier:dispatcheddelegate identifier:dispatcheddelegate node:43 identifier:withcontinuationcontext type:void type:t identifier:continuation identifier:countorelement node:45 identifier:continuation identifier:dispatcheddelegate identifier:context operator:= node:43 identifier:continuation identifier:getcontext identifier:state operator:= node:43 identifier:takestate identifier:exception operator:= node:43 identifier:getexceptionalresult identifier:state identifier:job identifier:std type:job type:sharedptr operator:= node:1 operator:! identifier:exception operator:&& node:43 identifier:iscancellablemode identifier:resumemode operator:&& identifier:context identifier:jobelement operator:= node:43 identifier:context identifier:get identifier:job identifier:typekey identifier:job operator:= node:43 identifier:std identifier:dynamicpointercast type:job identifier:jobelement node:1 identifier:job operator:&& operator:! node:43 identifier:job identifier:isactive identifier:cause operator:= node:43 identifier:getcancellationexception identifier:job node:43 identifier:cancelcompletedresult identifier:state identifier:cause node:43 identifier:resumewithstacktrace operator:* identifier:continuation identifier:cause node:1 identifier:exception node:43 identifier:continuation identifier:resumewith node:43 type:result type:t identifier:failure identifier:exception node:1 identifier:std identifier:isvoidv type:t node:43 identifier:continuation identifier:resumewith node:43 type:result type:void identifier:success node:43 identifier:continuation identifier:resumewith node:43 type:result type:t identifier:success node:43 identifier:getsuccessfulresult type:t identifier:state node:5 node:66 identifier:e identifier:internal type:dispatchexception node:1 identifier:delegate identifier:ctx operator:= node:43 identifier:delegate identifier:getcontext node:1 identifier:ctx node:43 identifier:handlecoroutineexception operator:* identifier:ctx identifier:e identifier:cause node:43 identifier:handlefatalexception node:43 identifier:std identifier:currentexception
@@ -10585,7 +10501,7 @@ Function DispatchedTask<T>::resume:156 -> kotlinx::coroutines::resume:150 | norm
 Function DispatchedTask<*>::resumeUnconfined:167 -> kotlinx::coroutines::resume_unconfined:101 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:task type:dispatchedtask type:t identifier:eventloop operator:= node:43 identifier:geteventloop identifier:threadlocaleventloop node:1 operator:! identifier:eventloop node:43 identifier:resume identifier:task node:43 identifier:task identifier:getdelegate literal:53:true node:5 node:1 node:43 identifier:eventloop identifier:isunconfinedloopactive node:43 identifier:eventloop identifier:dispatchunconfined node:43 identifier:task identifier:sharedtask node:5 node:43 identifier:eventloop identifier:incrementusecount literal:53:true node:9 node:43 identifier:resume identifier:task node:43 identifier:task identifier:getdelegate literal:53:true node:3 literal:53:true node:1 operator:! node:43 identifier:eventloop identifier:processunconfinedevent node:8 node:43 identifier:eventloop identifier:decrementusecount literal:53:true node:43 identifier:task identifier:handlefatalexception node:43 identifier:std identifier:currentexception node:43 identifier:eventloop identifier:decrementusecount literal:53:true
-Function Continuation<*>::resumeWithStackTrace:202 -> kotlinx::coroutines::resume_with_stack_trace:28 | normalized logic: 0.000000
+Function Continuation<*>::resumeWithStackTrace:203 -> kotlinx::coroutines::resume_with_stack_trace:28 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:continuation type:continuation type:t node:66 identifier:exception identifier:std type:exceptionptr node:43 identifier:continuation identifier:resumewith node:43 type:result type:t identifier:failure identifier:exception
 Missing source function: DispatchedTask::cancelCompletedResult:56
@@ -10626,7 +10542,8 @@ __ast_distance_unmapped__("function_declaration", "internal fun <T> DispatchedTa
 __ast_distance_unmapped__("function_declaration", "internal fun <T> DispatchedTask<T>.resume(delegate: Continuation<T>, undispatched: Boolean) {\n    // This resume is never cancellable. The result is always delivered to delegate continuation.\n    val state = takeState()\n    val exception = getExceptionalResult(state)\n    val result = if (exception != null) Result.failure(exception) else Result.success(getSuccessfulResult<T>(state))\n    when {\n        undispatched -> (delegate as DispatchedContinuation).resumeUndispatchedWith(result)\n        else -> delegate.resumeWith(result)\n    }\n}")
 __ast_distance_unmapped__("function_declaration", "private fun DispatchedTask<*>.resumeUnconfined() {\n    val eventLoop = ThreadLocalEventLoop.eventLoop\n    if (eventLoop.isUnconfinedLoopActive) {\n        // When unconfined loop is active -- dispatch continuation for execution to avoid stack overflow\n        eventLoop.dispatchUnconfined(this)\n    } else {\n        // Was not active -- run event loop until all unconfined tasks are executed\n        runUnconfinedEventLoop(eventLoop) {\n            resume(delegate, undispatched = true)\n        }\n    }\n}")
 __ast_distance_unmapped__("function_declaration", "internal inline fun DispatchedTask<*>.runUnconfinedEventLoop(\n    eventLoop: EventLoop,\n    block: () -> Unit\n) {\n    eventLoop.incrementUseCount(unconfined = true)\n    try {\n        block()\n        while (true) {\n            // break when all unconfined continuations where executed\n            if (!eventLoop.processUnconfinedEvent()) break\n        }\n    } catch (e: Throwable) {\n        /*\n         * This exception doesn't happen normally, only if we have a bug in implementation.\n         * Report it as a fatal exception.\n         */\n        handleFatalException(e)\n    } finally {\n        eventLoop.decrementUseCount(unconfined = true)\n    }\n}")
-__ast_distance_unmapped__("function_declaration", "@Suppress(\"NOTHING_TO_INLINE\")\ninternal inline fun Continuation<*>.resumeWithStackTrace(exception: Throwable) {\n    resumeWith(Result.failure(recoverStackTrace(exception, this)))\n}")
+__ast_distance_unmapped__("annotation", "@Suppress") ( "NOTHING_TO_INLINE" ) 
+__ast_distance_unmapped__("function_declaration", "internal inline fun Continuation<*>.resumeWithStackTrace(exception: Throwable) {\n    resumeWith(Result.failure(recoverStackTrace(exception, this)))\n}")
 /**
  * This exception holds an exception raised in \ref CoroutineDispatcher::dispatch method.
  * When dispatcher methods fail unexpectedly, it is likely a user-induced programmatic bug,
@@ -18185,8 +18102,6 @@ Diagnostic: 307: unsupported function_declaration
 Diagnostic: 311: unsupported class_declaration
 Diagnostic: 319: unsupported class_declaration
 Diagnostic: 328: unsupported property_declaration
-Diagnostic: Source grammar errors; emitted source is provisional
-Diagnostic: 202: ERROR ERROR bytes 9681:9706
 Function TestScope:162 -> kotlinx::coroutines::test::TestScope::TestScope:22 | normalized logic: 0.034483
   Emitted logic: type:coroutinecontext identifier:context operator:= identifier:emptycoroutinecontext identifier:ctxwithdispatcher operator:= node:43 identifier:context identifier:withdelayskipping node:43 identifier:astdistanceunmapped literal:52:"property_declaration" literal:52:"var scope: TestScopeImpl? = null" identifier:exceptionhandler operator:= node:43 identifier:astdistanceunmapped literal:52:"when_expression" literal:52:"when (ctxWithDispatcher[CoroutineExceptionHandler]) {\n        null -> CoroutineExceptionHandler { _, exception ->\n            scope!!.reportException(exception)\n        }\n        else -> throw IllegalArgumentException(\n            \"A CoroutineExceptionHandler was passed to TestScope. \" +\n                \"Please pass it as an argument to a `launch` or `async` block on an already-created scope \" +\n                \"if uncaught exceptions require special treatment.\"\n        )\n    }" node:5 node:43 node:43 identifier:testscopeimpl identifier:ctxwithdispatcher operator:+ identifier:exceptionhandler identifier:alsoastdistanceunmapped literal:52:"annotated_lambda" literal:52:"{ scope = it }"
   Target logic: node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr
@@ -20776,18 +20691,18 @@ Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-test/common/src/TestCoroutineScheduler.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/tests/src/TestCoroutineScheduler.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.002865
-translated_ast_cosine: 0.559180
+translated_text_cosine: 0.002903
+translated_ast_cosine: 0.557837
 function_name_parity: 0.947368
 normalized_logic: 0.086449
 documentation_correspondence: 0.006491
 span_rule_coverage: 0.025984
 unsupported_fraction (diagnostic only): 0.974016
-score: 0.002865
+score: 0.002903
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
-Rule hits: 58 | misses: 9 | documentation misses: 0 | supported code-byte coverage: 0.025984
+Rule hits: 58 | misses: 8 | documentation misses: 0 | supported code-byte coverage: 0.025984
 Source line	Source bytes	Emitted bytes	Node	Supported
 1	0:31	0:37	package_header	yes
 3	33:1125	38:38	import_list	yes
@@ -20799,15 +20714,14 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 234	10250:10982	9430:10234	class_declaration	fallback
 252	10984:11015	10235:10266	line_comment	yes
 253	11016:11117	10267:10438	function_declaration	fallback
-255	11119:11507	10439:11021	function_declaration	fallback
-264	11509:11639	11022:11157	multiline_comment	yes
-268	11640:11862	11158:11438	object_declaration	fallback
-275	11864:12004	11439:11633	function_declaration	fallback
+255	11119:11507	10439:10977	function_declaration	fallback
+264	11509:11639	10978:11113	multiline_comment	yes
+268	11640:11862	11114:11394	object_declaration	fallback
+275	11864:12004	11395:11589	function_declaration	fallback
 Diagnostic: 26: unsupported class_declaration
 Diagnostic: 234: unsupported class_declaration
 Diagnostic: 253: unsupported annotated_lambda
-Diagnostic: 256: unsupported ERROR
-Diagnostic: 256: unsupported collection_literal
+Diagnostic: 256: unsupported indexing_expression
 Diagnostic: 256: unsupported navigation_suffix
 Diagnostic: 256: unsupported annotated_lambda
 Diagnostic: 268: unsupported object_declaration
@@ -20816,7 +20730,6 @@ Diagnostic: Source grammar errors; emitted source is provisional
 Diagnostic: 111: ERROR ERROR bytes 5174:5177
 Diagnostic: 247: ERROR ERROR bytes 10811:10814
 Diagnostic: 247: ERROR ERROR bytes 10839:10842
-Diagnostic: 256: ERROR ERROR bytes 11224:11231
 Function currentTimeAheadOfEvents:228 -> kotlinx::coroutines::test::current_time_ahead_of_events:307 | normalized logic: 0.666667
   Emitted logic: node:5 node:43 identifier:invalidschedulerstate
   Target logic: node:43 identifier:invalidschedulerstate
@@ -20824,7 +20737,7 @@ Function addClamping:253 -> kotlinx::coroutines::test::add_clamping:365 | normal
   Emitted logic: node:66 identifier:a type:signed64 node:66 identifier:b type:signed64 node:5 node:43 identifier:a operator:+ identifier:b identifier:letastdistanceunmapped literal:52:"annotated_lambda" literal:52:"{ if (it >= 0) it else Long.MAX_VALUE }"
   Target logic: node:66 identifier:a type:signed64 node:66 identifier:b type:signed64 identifier:result type:signed64 operator:= identifier:a operator:+ identifier:b node:5 identifier:result operator:>= literal:51:0 identifier:result identifier:llongmax
 Function checkSchedulerInContext:255 -> kotlinx::coroutines::test::check_scheduler_in_context:370 | normalized logic: 0.275862
-  Emitted logic: node:66 identifier:scheduler type:testcoroutinescheduler node:66 identifier:context type:coroutinecontext node:43 identifier:astdistanceunmapped literal:52:"ERROR" literal:52:"context" node:43 identifier:astdistanceunmapped literal:52:"collection_literal" literal:52:"[TestCoroutineScheduler]" node:43 identifier:astdistanceunmapped literal:52:"navigation_suffix" literal:52:"?.let" node:43 identifier:astdistanceunmapped literal:52:"annotated_lambda" literal:52:"{\n        check(it === scheduler) {\n            \"Detected use of different schedulers. If you need to use several test coroutine dispatchers, \" +\n                \"create one `TestCoroutineScheduler` and pass it to each of them.\"\n        }\n    }"
+  Emitted logic: node:66 identifier:scheduler type:testcoroutinescheduler node:66 identifier:context type:coroutinecontext node:43 identifier:astdistanceunmapped literal:52:"indexing_expression" literal:52:"context[TestCoroutineScheduler]" node:43 identifier:astdistanceunmapped literal:52:"navigation_suffix" literal:52:"?.let" node:43 identifier:astdistanceunmapped literal:52:"annotated_lambda" literal:52:"{\n        check(it === scheduler) {\n            \"Detected use of different schedulers. If you need to use several test coroutine dispatchers, \" +\n                \"create one `TestCoroutineScheduler` and pass it to each of them.\"\n        }\n    }"
   Target logic: node:66 identifier:scheduler type:testcoroutinescheduler node:66 identifier:context type:coroutinecontext identifier:ctxscheduler operator:= identifier:context identifier:key identifier:testcoroutinescheduler node:1 identifier:ctxscheduler operator:!= node:1 identifier:ctxscheduler operator:!= operator:& identifier:scheduler node:10 node:43 identifier:std identifier:logicerror literal:52:"Detected use of different schedulers. If you need to use several test coroutine dispatchers, " operator:+ node:43 identifier:std identifier:string literal:52:"create one `TestCoroutineScheduler` and pass it to each of them."
 Function invalidSchedulerState:230 -> kotlinx::coroutines::test::invalid_scheduler_state:311 | normalized logic: 0.200000
   Emitted logic: node:5 identifier:throw node:43 identifier:illegalstateexception literal:52:"The test scheduler entered an invalid state. Please report this at https://github.com/Kotlin/kotlinx.coroutines/issues."
@@ -20891,7 +20804,7 @@ static Nothing invalid_scheduler_state() { return throw illegal_state_exception(
 __ast_distance_unmapped__("class_declaration", "private class TestDispatchEvent<T>(\n    @JvmField val dispatcher: TestDispatcher,\n    private val count: Long,\n    @JvmField val time: Long,\n    @JvmField val marker: T,\n    @JvmField val isForeground: Boolean,\n    // TODO: remove once the deprecated API is gone\n    @JvmField val isCancelled: () -> Boolean\n) : Comparable<TestDispatchEvent<*>>, ThreadSafeHeapNode {\n    override var heap: ThreadSafeHeap<*>? = null\n    override var index: Int = 0\n\n    override fun compareTo(other: TestDispatchEvent<*>) =\n        compareValuesBy(this, other, TestDispatchEvent<*>::time, TestDispatchEvent<*>::count)\n\n    override fun toString() = \"TestDispatchEvent(time=$time, dispatcher=$dispatcher${if (isForeground) \"\" else \", background\"})\"\n}")
 // works with positive `a`, `b`
 static long long add_clamping(long long a, long long b) { return  ( a + b ) .let__ast_distance_unmapped__("annotated_lambda", "{ if (it >= 0) it else Long.MAX_VALUE }"); }
-void check_scheduler_in_context(TestCoroutineScheduler scheduler, CoroutineContext context) { __ast_distance_unmapped__("ERROR", "context"); { __ast_distance_unmapped__("collection_literal", "[TestCoroutineScheduler]")__ast_distance_unmapped__("navigation_suffix", "?.let")__ast_distance_unmapped__("annotated_lambda", "{\n        check(it === scheduler) {\n            \"Detected use of different schedulers. If you need to use several test coroutine dispatchers, \" +\n                \"create one `TestCoroutineScheduler` and pass it to each of them.\"\n        }\n    }");  }  }
+void check_scheduler_in_context(TestCoroutineScheduler scheduler, CoroutineContext context) { __ast_distance_unmapped__("indexing_expression", "context[TestCoroutineScheduler]")__ast_distance_unmapped__("navigation_suffix", "?.let")__ast_distance_unmapped__("annotated_lambda", "{\n        check(it === scheduler) {\n            \"Detected use of different schedulers. If you need to use several test coroutine dispatchers, \" +\n                \"create one `TestCoroutineScheduler` and pass it to each of them.\"\n        }\n    }");  }
 /**
  * A coroutine context key denoting that the work is to be executed in the background.
  * @see \ref TestScope::background_scope

@@ -41,6 +41,17 @@ bool callable_declarator(TSNode node) {
     return false;
 }
 std::string owner_key(std::string owner) {
+    // A template-id identifies the same declared class as its Kotlin generic
+    // owner. Ignore arguments only in this owner-presence key; signatures and
+    // bodies retain their original type text for the parity comparisons.
+    std::string unparameterized;
+    int arguments = 0;
+    for (char character : owner) {
+        if (character == '<') ++arguments;
+        else if (character == '>' && arguments) --arguments;
+        else if (!arguments) unparameterized += character;
+    }
+    owner = std::move(unparameterized);
     auto companion = owner.rfind("::Companion");
     if (companion != std::string::npos && companion + 11 == owner.size()) owner.erase(companion);
     return IdentifierStats::canonicalize(owner);
@@ -72,6 +83,11 @@ DeepInventory extract_deep_inventory(const std::vector<std::string>& paths, Lang
         std::ostringstream stream; stream << input.rdbuf();
         std::string source = stream.str();
         auto adapted = language == Language::KOTLIN ? kotlin_grammar_input(source) : KotlinGrammarInput{source, {}};
+        CppGrammarInput cpp_adapted;
+        if (language == Language::CPP) {
+            cpp_adapted = cpp_grammar_input(source);
+            adapted.text = cpp_adapted.text;
+        }
         const TSLanguage* grammar = nullptr;
         switch (language) {
             case Language::KOTLIN: grammar = tree_sitter_kotlin(); break;
@@ -100,6 +116,10 @@ DeepInventory extract_deep_inventory(const std::vector<std::string>& paths, Lang
             errors(ts_tree_root_node(tree));
         }
         for (int line : adapted.fun_interface_lines) inventory.diagnostics.push_back(path + ":" + std::to_string(line) + ": offset-preserving fun-interface grammar adaptation");
+        if (language == Language::KOTLIN)
+            for (const auto& diagnostic : kotlin_identifier_diagnostics(ts_tree_root_node(tree), source))
+                inventory.diagnostics.push_back(path + ":" + diagnostic);
+        for (int line : cpp_adapted.statement_macro_lines) inventory.diagnostics.push_back(path + ":" + std::to_string(line) + ": offset-preserving coroutine statement-macro grammar adaptation");
         std::function<void(TSNode, std::string, int)> walk = [&](TSNode node, std::string owner, int functions) {
             std::string kind = ts_node_type(node);
             auto add = [&](std::string name, std::string category, bool definition = true) {

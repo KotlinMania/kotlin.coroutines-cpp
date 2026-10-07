@@ -1,8 +1,69 @@
-# AST Distance
+# ast_distance
 
 Cross-language AST similarity measurement and porting analysis tool.
 
+## Required porting criteria
+
+`ast_distance` is the oracle for current porting status and repair priorities,
+and a required porting acceptance check. A port must meet the
+applicable ASTDistance criteria; running the tool and treating its results as
+optional suggestions does not satisfy that requirement. Record the criteria,
+measured results, and unresolved gaps in the port's audit evidence.
+
+The tool is still being refined and developed. Its reports identify real gaps,
+but parser, matching, and emission limitations can affect individual findings.
+Inspect the reported source/target evidence and document demonstrated tool
+limitations explicitly. A tool limitation does not waive the acceptance check
+or make all reported gaps optional. `ast_distance` does not by itself prove runtime
+semantic equivalence.
+
+Generated gap inventories and priority documents are part of the porting
+workflow. Use them to choose and sequence repairs, and refresh them after
+relevant source or tool changes. Numeric thresholds and the authoritative
+scoring model must be stated explicitly in the applicable acceptance criteria.
+
+For this repository, regenerate the current common-source reports from
+`docs/audits/`:
+
+```sh
+../../tools/ast_distance/ast_distance --deep \
+  ../../tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src kotlin \
+  ../../src/kotlinx/coroutines cpp
+```
+
+The CLI writes its Markdown reports and full symbol/transliteration evidence to
+the working directory. Use the generated reports for current figures and work
+order; do not maintain separate static completion estimates. Additional source
+sets require corresponding source/target roots and an explicit scope record.
+
 Inspired by the [ASTERIA paper](https://arxiv.org/abs/2108.06082) which uses Tree-LSTM for binary code similarity detection, this tool measures similarity between Rust and Kotlin source files to help verify porting accuracy.
+
+For full project scope, use the two commands in
+[the project-wide audit scope record](../../docs/audits/project-wide/README.md).
+Those inventories include all vendored library/compiler source sets and the
+complete C++ source tree; the common-source command above is a narrower diagnostic.
+
+Function-body parity counts include functions with bodies. Abstract/interface
+signatures appear separately in the complete deep symbol inventory. That
+inventory applies the same byte-preserving coroutine statement-macro adaptation
+as function extraction, and matches generic owner names against out-of-class
+C++ template definitions. Template arguments remain in signature/body evidence;
+`PRESENT` records name/owner presence and does not establish their fidelity.
+
+The Kotlin-to-C++ emitter handles ordinary free functions with `public`,
+`internal`, or `private` visibility. File-private functions emit C++ `static`
+linkage. Kotlin `internal` visibility relies on the port's module boundary;
+this rule measures the translated body, not module export enforcement. Combined
+modifiers, suspend declarations and extension receivers still require separate
+lowering rules. Plain final classes containing ordinary typed methods and comments
+now emit C++ class structure and instance methods with public/private access.
+Every member must be supported; a partial class retains an unsupported diagnostic
+and no emitted method-body evidence.
+Constructor, inheritance, field, interface, generic and file-private class lowering
+remain unsupported. Method comparisons retain their owner and source-declaration
+order, including overloads. Unsupported shapes produce explicit diagnostics. An empty
+emitted-logic field with an unsupported declaration is not a measured comparison
+of that Kotlin body.
 
 ## Features
 
@@ -189,7 +250,20 @@ are supported.
 ./ast_distance --transliterate source.kt kotlin cpp > emitted.cpp 2> rules.txt
 ./ast_distance --translit-distance source.kt kotlin target.cpp cpp > distance.txt
 ./ast_distance --compare-functions source.kt kotlin target.cpp cpp > functions.txt
+./ast_distance --compare-functions source.kt kotlin target.cpp cpp --with-companions > unit-functions.txt
 ```
+
+Use `--with-companions` when Kotlin's implementation is split between a C++
+header and source, including public templates that must remain in headers.
+The option compares bodies from the requested C++ file and its existing
+same-stem header/source companions. Each physical file is parsed separately:
+the report retains its actual path and local line number rather than assigning
+lines in a concatenated buffer. Declarations without bodies do not count as
+implementations. Namespace and provenance checks still apply to the complete
+logical unit; the option does not relax identity or change body scoring.
+Without the option, body extraction covers only the requested physical file.
+This option is specific to `--compare-functions`; `--deep` already inventories
+logical header/source units.
 
 For Kotlin-to-C++ file comparisons, the primary score is literal cosine against
 an in-memory C++ buffer emitted from Kotlin AST-scoped replacement rules. Vector
@@ -223,3 +297,26 @@ namespace/package components must agree exactly. Same basenames in another
 namespace, contradictory companion metadata and ambiguous source-set ties are
 reported instead of silently paired. See [DEEP_INVENTORY.md](DEEP_INVENTORY.md)
 for the complete inventory and deep emitted-evidence receipts.
+
+Foreign class/struct/enum forward declarations describe type dependencies and
+do not override a populated implementation namespace. A unit containing only
+forward declarations retains their namespace identity. Definitions in unrelated
+namespaces still produce an identity conflict. The identity regression covers
+foreign and global forwards as well as conflicting type definitions.
+
+The vendored Kotlin grammar now accepts short bracket destructuring, full
+declarations with individual `val`/`var` entries, and the `..<` half-open range
+operator used in the compiler sources. It preserves
+original tokens and byte positions; it does not rewrite brackets to parentheses
+or half-open ranges to inclusive ranges. Parenthesized entry renaming remains
+distinct, and bracket renaming remains a syntax error. The grammar and generated
+ABI 14 parser are checked in with regeneration provenance in the vendored README.
+This repairs source parsing only. Unsupported C++ emission rules and actual port
+gaps continue to appear in the deep report.
+
+Named context parameters and `when` entry guards also retain their original
+tokens and byte positions. An `else ->` entry after an unbraced `if` is kept
+separate, while an ordinary nested `if/else` retains its inner association.
+The grammar regression rejects empty context lists, missing parameter types
+and missing guard expressions. Upstream parser references and remaining
+context-receiver limitations are recorded in the vendored grammar README.

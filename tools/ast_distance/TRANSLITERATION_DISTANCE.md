@@ -1,6 +1,6 @@
 # Transliteration Distance
 
-ASTDistance should compare ports by first making the source look as much like the
+`ast_distance` compares ports by first making the source look as much like the
 target language as deterministic parser rules allow, then scoring the translated
 buffer against the target buffer and target AST.
 
@@ -50,7 +50,13 @@ rust function_item
   body: block -> block
 ```
 
-## Scoring
+## Historical scoring proposal
+
+The weighted formula in this section is a historical proposal, not the current
+Kotlin-to-C++ CLI scoring contract. The local CLI reports positional exact-token
+cosine after in-memory emission as its primary score. Structural metrics,
+normalized logic, symbol correspondence, coverage, and unsupported fractions
+are separate evidence. See [the current CLI contract](README.md#inspecting-a-literal-transliteration).
 
 The comparison should report separate sub-scores:
 
@@ -104,7 +110,8 @@ The other language-pair rule packs above remain design work; invoking them fails
 explicitly.
 
 Supported emission includes package-to-namespace declarations, typed ordinary
-functions, default parameters, explicit return types, expression-body returns,
+functions, plain final classes with typed ordinary instance methods, default
+parameters, explicit return types, expression-body returns,
 primitive types, type arguments, basic local bindings, statement `if`/`else`,
 `while`, ordinary calls/member access, return/throw/break/continue, basic literals
 and arithmetic/comparison/logical/assignment expressions. Name lowering changes
@@ -125,8 +132,9 @@ Line comments inside bodies retain their newline so they cannot swallow code.
 
 Unmapped nodes emit `__ast_distance_unmapped__(node_type, original_source)` and
 record the original line and byte span. Suspend functions, generic function
-signatures, extension receivers, nullable/function types, non-public modifiers,
-named arguments, varargs, classes, ranges, lambdas, inference-dependent expression
+signatures, extension receivers, nullable/function types, protected/combined modifiers,
+named arguments, varargs, constructor/inheritance/field/interface/generic and
+file-private class declarations, ranges, lambdas, inference-dependent expression
 return types and additional Kotlin idioms currently require rules. They are
 visible fallbacks rather than invented algorithms. This engine does not generate
 C++ coroutines or claim to implement the coroutine DSL/IR lowering.
@@ -139,9 +147,13 @@ Inspect and capture a complete generated buffer and rule receipt:
 ```
 
 The span map currently covers complete top-level parsed declarations/comments,
-including functions with their bodies, rather than claiming a separate map for
+including classes and functions with their bodies, rather than claiming a separate map for
 all nested expressions. Offsets refer to original source bytes and assembled
-emitted bytes. Rule hit/miss counts count visited rewrite nodes. Coverage is the
+emitted bytes. Methods are matched within their enclosing emitted class span,
+retaining owner identity and declaration order; each emitted overload is used
+once. A class with any unsupported member remains wholly unsupported, preventing
+an unsupported overload from borrowing another method’s emitted body. Rule
+hit/miss counts count visited rewrite nodes. Coverage is the
 fraction of top-level executable/declaration source bytes fully handled without
 a fallback anywhere in that declaration. Comments, package/import metadata are
 excluded from the coverage denominator. Imports are metadata only in this pack;
@@ -156,9 +168,9 @@ compatible callable evidence. Known incompatible callable owners do not match.
 The standalone function-name subscore is not a type/test/API proof; `--deep`
 provides the complete extracted symbol inventory beside implementation metrics.
 
-The design's weighted score is additionally multiplied by ordered normalized
-logic to prevent copied vocabulary or matching node histograms from rescuing
-missing behavior:
+An earlier weighted design additionally multiplied its score by ordered
+normalized logic. This formula is retained only to explain the historical
+proposal; the current CLI does not use it as its primary score:
 
 ```text
 base = .35 * translated_text_cosine + .35 * translated_ast_cosine
@@ -169,7 +181,8 @@ score = max(0, base - fallback_penalty) * normalized_logic
 Generated fallback argument strings are excluded from translated text vocabulary.
 Parsed comments never raise implementation metrics. Documentation correspondence
 is reported separately as ordered comment-word correspondence, lowering only
-identifier-bearing reference/tag syntax, with no contribution to `score`. Documentation terms are compared after the
+identifier-bearing reference/tag syntax, with no contribution to the primary
+literal score. Documentation terms are compared after the
 same bounded reference/tag lowering, preserving narrative spelling; comment delimiters
 and punctuation are excluded. Anchored `Transliterated from:` and `port-lint:`
 metadata lines are preserved but excluded from narrative correspondence. Separate `documentation_misses` record unsupported

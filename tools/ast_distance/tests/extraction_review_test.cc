@@ -35,6 +35,25 @@ void ns::Qualified::command(double x) { (void)x; }
     assert(names.count("command") == 2 && names.count("inline_method") == 1);
     assert(functions.back().qualified_name == "ns::Qualified::command");
     assert(functions[6].signature != functions[7].signature);
+    auto reference_returns = parser.extract_function_infos(R"(
+namespace compiler {
+const Visibility& Visibility::normalize() const { return *this; }
+int& Record::get(int index) { return values[index]; }
+Payload&& Factory::move(Payload& value) { return static_cast<Payload&&>(value); }
+const Name& get_name(const Owner& owner) { return owner.name; }
+}
+)", Language::CPP);
+    assert(!parser.last_extraction_has_errors() && reference_returns.size() == 4);
+    assert(reference_returns[0].name == "normalize");
+    assert(reference_returns[0].qualified_name == "Visibility::normalize");
+    assert(reference_returns[0].signature == "()" && reference_returns[0].explicit_parameter_count == 0);
+    assert(!reference_returns[0].is_namespace_function);
+    assert(reference_returns[1].name == "get" && reference_returns[1].explicit_parameter_count == 1);
+    assert(reference_returns[1].qualified_name == "Record::get");
+    assert(reference_returns[2].name == "move" && reference_returns[2].first_parameter_type == "Payload");
+    assert(reference_returns[2].qualified_name == "Factory::move");
+    assert(reference_returns[3].name == "get_name" && reference_returns[3].is_namespace_function);
+    assert(reference_returns[3].first_parameter_type == "Owner");
     std::string kotlin = R"(fun interface SharingStarted {
  companion object {
   fun WhileSubscribed(stop: Long = 0): SharingStarted = Started(stop)
@@ -61,6 +80,9 @@ class Started {
     assert(adapted.text.substr(0, lexical.find("fun /* nested")) == lexical.substr(0, lexical.find("fun /* nested")));
     parser.extract_function_infos("fun broken( {", Language::KOTLIN);
     assert(parser.last_extraction_has_errors());
+    parser.extract_function_infos("context() fun broken() {}", Language::KOTLIN);
+    assert(parser.last_extraction_has_errors());
+    assert(!parser.last_extraction_diagnostics().empty());
 
     auto local_source = parser.extract_function_infos(
         "fun collectWhile() { val collector = object { fun emit(value: Int) { predicate(value) } }; collect(collector) }", Language::KOTLIN);

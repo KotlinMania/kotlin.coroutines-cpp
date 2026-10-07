@@ -6,7 +6,7 @@ Priority = deps * 1,000,000 + SymDeficit * 10,000 + SrcSymbols * 100 + (1 - func
 
 Dependency fanout is ranked first so the ladder favors ports that clear downstream compilation failures fastest.
 
-This list is complete and includes function/type detail for every matched file. Function similarity is the required body/parameter comparison; file-level shape does not rescue a port.
+This list is complete and includes function/type detail for every matched file. Function similarity is the required body/parameter comparison; file-level shape does not rescue a port. Function counts cover bodies; abstract/interface signatures are listed separately in deep_symbol_inventory.txt.
 
 | Rank | Source | Target | Function similarity | Deps | Functions | Missing functions | Types | Missing types | SymDeficit | SrcSymbols | Priority |
 |------|--------|--------|------------|------|-----------|-------------------|-------|---------------|-----------|------------|----------|
@@ -95,7 +95,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 83 | `sync.MutexStressTest` | `sync.MutexStressTest [STUB]` | 0.00 | 0 | 1/8 matched | `MutexStressTest::testDefaultDispatcher`, `MutexStressTest::testSingleThreadContext`, `MutexStressTest::testMultiThreadedContextWithSingleWorker`, `MutexStressTest::testMultiThreadedContext`, `MutexStressTest::stressUnlockCancelRace`, `MutexStressTest::stressUnlockCancelRaceWithSelect`, `MutexStressTest::testShouldBeUnlockedOnCancellation` | 1/1 matched | _none_ | 7 | 9 | 70910.0 |
 | 84 | `native.Dispatchers` | `native.Dispatchers [STUB]` | 0.00 | 0 | 0/5 matched (target 18) | `Dispatchers::injectMain`, `DefaultIoScheduler::limitedParallelism`, `DefaultIoScheduler::dispatch`, `DefaultIoScheduler::dispatchYield`, `DefaultIoScheduler::toString` | 0/2 matched (target 1) | `Dispatchers`, `DefaultIoScheduler` | 7 | 7 | 70710.0 |
 | 85 | `native.Builders` | `native.Builders [ZERO]` | 0.00 | 0 | 0/5 matched (target 0) | `runBlocking`, `ThreadLocalKeepAlive::addCheck`, `ThreadLocalKeepAlive::keepAlive`, `BlockingCoroutine::afterCompletion`, `BlockingCoroutine::joinBlocking` | 0/2 matched (target 0) | `ThreadLocalKeepAlive`, `BlockingCoroutine` | 7 | 7 | 70710.0 |
-| 86 | `internal.DispatchedTask` | `common.DispatchedTaskDispatch` | 0.11 | 0 | 6/10 matched (target 6) | `DispatchedTask::cancelCompletedResult`, `DispatchedTask::getSuccessfulResult`, `DispatchedTask::getExceptionalResult`, `DispatchedTask<*>::runUnconfinedEventLoop` | 0/2 matched (target 0) | `DispatchedTask`, `DispatchException` | 6 | 12 | 61208.9 |
+| 86 | `internal.DispatchedTask` | `common.DispatchedTaskDispatch` | 0.12 | 0 | 6/10 matched (target 6) | `DispatchedTask::cancelCompletedResult`, `DispatchedTask::getSuccessfulResult`, `DispatchedTask::getExceptionalResult`, `DispatchedTask<*>::runUnconfinedEventLoop` | 0/2 matched (target 0) | `DispatchedTask`, `DispatchException` | 6 | 12 | 61208.8 |
 | 87 | `operators.ScanTest` | `operators.ScanTest [STUB]` | 0.00 | 0 | 1/7 matched | `ScanTest::testScan`, `ScanTest::testScanWithInitial`, `ScanTest::testFoldWithInitial`, `ScanTest::testNulls`, `ScanTest::testEmptyFlow`, `ScanTest::testErrorCancelsUpstream` | 1/1 matched | _none_ | 6 | 8 | 60810.0 |
 | 88 | `channels.ConflatedChannelTest` | `channels.ConflatedChannelTest [STUB]` | 0.00 | 0 | 1/7 matched | `ConflatedChannelTest::testBasicConflationOfferTryReceive`, `ConflatedChannelTest::testConflatedSend`, `ConflatedChannelTest::testConflatedClose`, `ConflatedChannelTest::testConflationSendReceive`, `ConflatedChannelTest::testConsumeAll`, `ConflatedChannelTest::testCancelWithCause` | 1/1 matched | _none_ | 6 | 8 | 60810.0 |
 | 89 | `sync.SemaphoreStressTest` | `sync.SemaphoreStressTest [STUB]` | 0.00 | 0 | 0/6 matched | `SemaphoreStressTest::testStressTestAsMutex`, `SemaphoreStressTest::testStress`, `SemaphoreStressTest::testStressAsMutex`, `SemaphoreStressTest::testStressCancellation`, `SemaphoreStressTest::testStressReleaseCancelRace`, `SemaphoreStressTest::testShouldBeUnlockedOnCancellation` | 1/1 matched | _none_ | 6 | 7 | 60710.0 |
@@ -242,9 +242,9 @@ This list is complete and includes function/type detail for every matched file. 
 | 230 | `test.ConcurrentTestUtilities` | `test.ConcurrentTestUtilities` | 0.50 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 205.0 |
 | 231 | `kotlin.SharedFlowBaseline` | `benchmarks.SharedFlowBaseline` | 0.66 | 0 | 1/1 matched | _none_ | 1/1 matched | _none_ | 0 | 2 | 203.4 |
 | 232 | `common.Runnable.common` | `coroutines.Runnable [ZERO]` | 0.00 | 0 | 0/0 matched (target 3) | _none_ | 1/1 matched (target 2) | _none_ | 0 | 1 | 110.0 |
-| 233 | `common.Yield` | `coroutines.Yield` | 0.01 | 0 | 1/1 matched | _none_ | 0/0 matched | _none_ | 0 | 1 | 109.9 |
-| 234 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 0 | 1/1 matched | _none_ | 0/0 matched | _none_ | 0 | 1 | 109.6 |
-| 235 | `kotlinx-coroutines-core.nativeDarwin.test.Launcher` | `test.Launcher` | 0.07 | 0 | 1/1 matched | _none_ | 0/0 matched | _none_ | 0 | 1 | 109.3 |
+| 233 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 0 | 1/1 matched | _none_ | 0/0 matched | _none_ | 0 | 1 | 109.6 |
+| 234 | `kotlinx-coroutines-core.nativeDarwin.test.Launcher` | `test.Launcher` | 0.07 | 0 | 1/1 matched | _none_ | 0/0 matched | _none_ | 0 | 1 | 109.3 |
+| 235 | `common.Yield` | `coroutines.Yield` | 0.17 | 0 | 1/1 matched | _none_ | 0/0 matched | _none_ | 0 | 1 | 108.3 |
 | 236 | `concurrent.MultithreadedDispatchers.common` | `coroutines.MultithreadedDispatchers` | 0.83 | 0 | 1/1 matched (target 8) | _none_ | 0/0 matched (target 1) | _none_ | 0 | 1 | 101.7 |
 | 237 | `common.CompletionHandler.common` | `coroutines.CompletionHandler` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |
 | 238 | `flow.FlowCollector` | `flow.FlowCollector` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |

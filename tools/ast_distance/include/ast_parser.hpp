@@ -549,6 +549,11 @@ public:
             for (uint32_t i = 0; i < ts_node_named_child_count(current); ++i) diagnose(ts_node_named_child(current, i));
         };
         if (last_extraction_has_errors_) diagnose(root);
+        if (lang == Language::KOTLIN) {
+            auto lexical = kotlin_identifier_diagnostics(root, source);
+            last_extraction_has_errors_ |= !lexical.empty();
+            last_extraction_diagnostics_.insert(last_extraction_diagnostics_.end(), lexical.begin(), lexical.end());
+        }
         extract_function_infos_recursive(root, source, lang, functions);
 
         ts_tree_delete(ts_tree);
@@ -1487,6 +1492,18 @@ public:
         return false;
     }
 
+    TSNode cpp_declarator_child(TSNode node) const {
+        TSNode child = ts_node_child_by_field_name(node, "declarator", 10);
+        // The vendored C++ grammar puts a reference's sole declarator child
+        // under reference_declarator without naming the declarator field.
+        // Follow that exact wrapper, preserving the function's name and params.
+        if (ts_node_is_null(child) && std::string(ts_node_type(node)) == "reference_declarator" &&
+            ts_node_named_child_count(node) == 1) {
+            return ts_node_named_child(node, 0);
+        }
+        return child;
+    }
+
     std::string extract_function_name(TSNode node, Language lang, const std::string& source) const {
         if (lang == Language::CPP) {
             TSNode declarator = ts_node_child_by_field_name(node, "declarator", 10);
@@ -1507,7 +1524,7 @@ public:
                 if (type == "qualified_identifier" || type == "template_function" || type == "template_type") {
                     declarator = ts_node_child_by_field_name(declarator, "name", 4);
                 } else {
-                    TSNode next = ts_node_child_by_field_name(declarator, "declarator", 10);
+                    TSNode next = cpp_declarator_child(declarator);
                     if (ts_node_is_null(next) && type == "operator_cast") {
                         // Conversion operators have a type instead of an ordinary name.
                         TSNode conversion_type = ts_node_child_by_field_name(declarator, "type", 4);
@@ -1942,7 +1959,7 @@ public:
             if (lang == Language::CPP) {
                 TSNode d = ts_node_child_by_field_name(node, "declarator", 10);
                 while (!ts_node_is_null(d) && std::string(ts_node_type(d)) != "function_declarator")
-                    d = ts_node_child_by_field_name(d, "declarator", 10);
+                    d = cpp_declarator_child(d);
                 TSNode name_node = ts_node_is_null(d) ? TSNode{} : ts_node_child_by_field_name(d, "declarator", 10);
                 if (!ts_node_is_null(name_node)) info.qualified_name = source.substr(
                     ts_node_start_byte(name_node), ts_node_end_byte(name_node) - ts_node_start_byte(name_node));

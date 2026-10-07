@@ -5,8 +5,24 @@ file(REMOVE_RECURSE "${TEST_DIR}")
 file(MAKE_DIRECTORY "${TEST_DIR}/source" "${TEST_DIR}/target" "${TEST_DIR}/rust" "${TEST_DIR}/kotlin")
 file(WRITE "${TEST_DIR}/source/Example.kt" "class Example {\n val count: Int = 1\n fun implemented(x: Int): Int = x\n fun declared(x: Int): Int = x\n fun missing(x: Int): Int = x\n}\nenum class Mode { START, STOP }\ntypealias Alias = Int\nconst val LIMIT: Int = 5\n")
 file(WRITE "${TEST_DIR}/source/Absent.kt" "class Absent\n")
+file(WRITE "${TEST_DIR}/source/Lexical.kt" "context() fun broken() {}\n")
+file(WRITE "${TEST_DIR}/target/Lexical.hpp" "// Transliterated from: Lexical.kt\n")
 file(WRITE "${TEST_DIR}/target/Example.hpp" "// Transliterated from: Example.kt\nclass Example { public: int count = 1; int implemented(int x) { return x; } int declared(int x); };\nenum class Mode { START };\nusing Alias = int;\nconstexpr int LIMIT = 5;\n")
 file(WRITE "${TEST_DIR}/target/Example.cpp" "// Implementation is inline in the companion header.\n#include \"Example.hpp\"\n")
+file(WRITE "${TEST_DIR}/source/Flow.kt" "abstract class Flow<T> {\n abstract fun collect(value: T)\n}\nabstract class AbstractFlow<T> : Flow<T>() {\n override fun collect(value: T) { emit(value) }\n abstract fun collectSafely(value: T)\n}\n")
+file(WRITE "${TEST_DIR}/target/Flow.hpp" [=[// Transliterated from: Flow.kt
+template<class T> class Flow { public: virtual void collect(T value) = 0; };
+template<class T> class AbstractFlow : public Flow<T> { public:
+ void collect(T value) override;
+ virtual void collect_safely(T value) = 0;
+};
+template<class T> void AbstractFlow<T>::collect(T value) {
+  coroutine_begin(this)
+  emit(value);
+  coroutine_end(this)
+  return;
+}
+]=])
 execute_process(COMMAND "${AST_DISTANCE}" --deep "${TEST_DIR}/source" kotlin "${TEST_DIR}/target" cpp
     WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_FILE "${TEST_DIR}/deep.txt" ERROR_FILE "${TEST_DIR}/deep.stderr" RESULT_VARIABLE status)
 file(READ "${TEST_DIR}/deep.txt" report)
@@ -14,7 +30,7 @@ file(READ "${TEST_DIR}/deep.stderr" errors)
 if(NOT status EQUAL 0)
     message(FATAL_ERROR "Deep comparison failed: ${status}: ${report}: ${errors}")
 endif()
-foreach(expected "MISSING_FILE Absent.kt" "MISSING_SYMBOL type Absent" "MISSING_SYMBOL function Example::missing" "DECLARATION_ONLY function Example::declared" "PRESENT property Example::count" "PRESENT property LIMIT" "PRESENT type_alias Alias" "MISSING_SYMBOL enum_variant Mode::STOP")
+foreach(expected "MISSING_FILE Absent.kt" "MISSING_SYMBOL type Absent" "MISSING_SYMBOL function Example::missing" "DECLARATION_ONLY function Example::declared" "PRESENT property Example::count" "PRESENT property LIMIT" "PRESENT type_alias Alias" "MISSING_SYMBOL enum_variant Mode::STOP" "PRESENT function AbstractFlow::collect" "DECLARATION_ONLY function AbstractFlow::collectSafely" "DECLARATION_ONLY function Flow::collect")
     string(FIND "${report}" "${expected}" found)
     if(found LESS 0)
         message(FATAL_ERROR "Missing inventory evidence ${expected}: ${report}")
@@ -27,6 +43,14 @@ if(report MATCHES "Example.*\\[STUB\\]")
     message(FATAL_ERROR "Inline companion implementation misclassified as stub: ${report}")
 endif()
 file(READ "${TEST_DIR}/deep_symbol_inventory.txt" saved)
+if(NOT saved MATCHES "grammar treated hard keyword as identifier: fun")
+    message(FATAL_ERROR "Malformed declaration lost its lexical diagnostic: ${saved}")
+endif()
+file(READ "${TEST_DIR}/deep_transliteration_evidence.txt" lexical_receipt)
+if(NOT lexical_receipt MATCHES "grammar treated hard keyword as identifier: fun" OR
+   NOT lexical_receipt MATCHES "Source grammar errors; emitted source is provisional")
+    message(FATAL_ERROR "Emission lost the malformed declaration diagnostic: ${lexical_receipt}")
+endif()
 if(NOT saved MATCHES "MISSING_SYMBOL function Example::missing")
     message(FATAL_ERROR "Deep inventory was not persisted")
 endif()

@@ -45,4 +45,31 @@ execute_process(COMMAND "${AST_DISTANCE}" --transliterate "${TEST_DIR}/missing.k
 if(result EQUAL 0 OR NOT error MATCHES "Cannot read transliteration input")
     message(FATAL_ERROR "Missing source did not fail explicitly: ${result}: ${error}")
 endif()
+file(WRITE "${TEST_DIR}/class.kt" [=[class Counter {
+    fun nextValue(inputValue: Int): Int = inputValue + 5
+    private fun previousValue(inputValue: Int): Int = inputValue - 1
+}
+]=])
+execute_process(COMMAND "${AST_DISTANCE}" --transliterate "${TEST_DIR}/class.kt" kotlin cpp
+    WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_FILE "${TEST_DIR}/class.cpp" ERROR_VARIABLE diagnostics RESULT_VARIABLE result)
+if(NOT result EQUAL 0 OR NOT diagnostics MATCHES "misses: 0")
+    message(FATAL_ERROR "Class emission failed: ${result}: ${diagnostics}")
+endif()
+execute_process(COMMAND "${AST_DISTANCE}" --translit-distance "${TEST_DIR}/class.kt" kotlin "${TEST_DIR}/class.cpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE result)
+file(WRITE "${TEST_DIR}/class.report.txt" "${output}\n${error}")
+if(NOT result EQUAL 0 OR NOT output MATCHES "normalized_logic: 1.000000" OR
+   NOT output MATCHES "score: 1.000000" OR NOT output MATCHES "Generated parse errors: no" OR
+   NOT output MATCHES "Counter::next_value")
+    message(FATAL_ERROR "Class method evidence missing: ${result}: ${output}: ${error}")
+endif()
+file(READ "${TEST_DIR}/class.cpp" emitted_class)
+string(REPLACE "+ 5" "- 5" class_drift "${emitted_class}")
+file(WRITE "${TEST_DIR}/class-drift.cpp" "${class_drift}")
+execute_process(COMMAND "${AST_DISTANCE}" --translit-distance "${TEST_DIR}/class.kt" kotlin "${TEST_DIR}/class-drift.cpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_VARIABLE output ERROR_VARIABLE error RESULT_VARIABLE result)
+file(WRITE "${TEST_DIR}/class-drift.report.txt" "${output}\n${error}")
+if(NOT result EQUAL 0 OR output MATCHES "normalized_logic: 1.000000" OR output MATCHES "score: 1.000000")
+    message(FATAL_ERROR "Class method drift invisible: ${result}: ${output}: ${error}")
+endif()
 message(STATUS "Captured emitted target buffer and full metric report passed")

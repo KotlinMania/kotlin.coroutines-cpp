@@ -165,6 +165,47 @@ public:
         } else if (kind == "import_list" || kind == "import_header" || kind == "modifiers") {
             // Declaration metadata is accounted for separately from executable logic.
             result = "";
+        } else if (kind == "class_declaration") {
+            const auto name = child_of(node, "type_identifier");
+            const auto body = child_of(node, "class_body");
+            const auto modifiers = child_of(node, "modifiers");
+            const auto visibility = ts_node_is_null(modifiers) ? "" : text(modifiers);
+            bool class_supported = !ts_node_is_null(name) && !ts_node_is_null(body) &&
+                (visibility.empty() || visibility == "public" || visibility == "internal") &&
+                !text(name).starts_with("`");
+            for (const auto child : children) {
+                const std::string child_kind = ts_node_type(child);
+                if (child_kind != "type_identifier" && child_kind != "class_body" && child_kind != "modifiers")
+                    class_supported = false;
+            }
+            // Constructors, inheritance, fields and non-class declarations need
+            // their own structural rules; do not emit a reduced class for them.
+            for (uint32_t index = 0; index < ts_node_child_count(node); ++index)
+                if (text(ts_node_child(node, index)) == "interface") class_supported = false;
+            for (const auto child : named(body)) {
+                const std::string child_kind = ts_node_type(child);
+                if (child_kind != "function_declaration" && child_kind != "line_comment" &&
+                    child_kind != "multiline_comment") class_supported = false;
+                if (child_kind == "function_declaration" && ts_node_is_null(child_of(child, "function_body")))
+                    class_supported = false;
+            }
+            if (!class_supported) supported = false;
+            else {
+                const auto misses_before = output.rule_misses;
+                result = "class " + text(name) + " final {\n";
+                for (const auto child : named(body)) {
+                    if (std::string(ts_node_type(child)) == "function_declaration") {
+                        const auto member_modifiers = child_of(child, "modifiers");
+                        result += !ts_node_is_null(member_modifiers) && text(member_modifiers) == "private"
+                            ? "private:\n" : "public:\n";
+                    }
+                    result += emit(child) + '\n';
+                }
+                result += "};";
+                // A partial class must not assign a supported overload
+                // to a different unsupported declaration with the same name.
+                if (output.rule_misses != misses_before) supported = false;
+            }
         } else if (kind == "function_declaration") {
             auto name = child_of(node, "simple_identifier"), params = child_of(node, "function_value_parameters"), body = child_of(node, "function_body");
             auto modifiers = child_of(node, "modifiers");
@@ -177,7 +218,14 @@ public:
                     else explicit_return = true;
                 } else if (child_kind != "modifiers" && child_kind != "simple_identifier" && child_kind != "function_body") signature_supported = false;
             }
-            if ((!ts_node_is_null(modifiers) && text(modifiers) != "public") || !signature_supported || ts_node_is_null(name) || ts_node_is_null(params)) {
+            // Visibility alone does not change a free function's executable
+            // body. File-private Kotlin functions use C++ internal linkage;
+            // internal visibility is enforced by the port's module boundary.
+            // Other modifiers require their own lowering and stay unsupported.
+            const std::string visibility = ts_node_is_null(modifiers) ? "" : text(modifiers);
+            const bool visibility_supported = visibility.empty() || visibility == "public" ||
+                visibility == "internal" || visibility == "private";
+            if (!visibility_supported || !signature_supported || ts_node_is_null(name) || ts_node_is_null(params)) {
                 supported = false;
             } else {
                 std::string return_type = "void";
@@ -187,7 +235,9 @@ public:
                     if (ts_node_eq(child, params)) { after_params = true; continue; }
                     if (after_params && std::string(ts_node_type(child)) == "user_type") return_type = emit(child);
                 }
-                result = return_type + " " + snake(text(name)) + "(" + emit(params) + ")";
+                const bool class_member = std::string(ts_node_type(ts_node_parent(node))) == "class_body";
+                result = (visibility == "private" && !class_member ? "static " : "") + return_type + " " +
+                    snake(text(name)) + "(" + emit(params) + ")";
                 result += ts_node_is_null(body) ? ";" : emit(body);
             }
         } else if (kind == "function_value_parameters") {
@@ -432,7 +482,8 @@ TransliterationOutput transliterate(const std::string& source, Language source_l
     if (!tree) { ts_parser_delete(parser); throw std::runtime_error("Cannot parse transliteration source"); }
     KotlinCppEmitter emitter(source);
     emitter.output.buffer = emitter.emit(ts_tree_root_node(tree));
-    if (ts_node_has_error(ts_tree_root_node(tree))) {
+    const auto lexical = kotlin_identifier_diagnostics(ts_tree_root_node(tree), source);
+    if (ts_node_has_error(ts_tree_root_node(tree)) || !lexical.empty()) {
         emitter.output.diagnostics.push_back("Source grammar errors; emitted source is provisional");
         std::function<void(TSNode)> diagnose = [&](TSNode node) {
             if (ts_node_is_error(node) || ts_node_is_missing(node))
@@ -442,6 +493,7 @@ TransliterationOutput transliterate(const std::string& source, Language source_l
             for (uint32_t i = 0; i < ts_node_child_count(node); ++i) diagnose(ts_node_child(node, i));
         };
         diagnose(ts_tree_root_node(tree));
+        emitter.output.diagnostics.insert(emitter.output.diagnostics.end(), lexical.begin(), lexical.end());
     }
     size_t accounted_bytes = 0, supported_bytes = 0;
     for (const auto& span : emitter.output.spans) {
@@ -466,15 +518,26 @@ TransliterationDistance transliteration_distance(const std::string& source, Lang
     result.target_parse_errors = parser.last_extraction_has_errors();
     struct Candidate { size_t source, target; const FunctionInfo* emitted; float score; };
     std::vector<Candidate> candidates;
+    std::vector<bool> emitted_used(emitted.size(), false);
     for (size_t i = 0; i < original.size(); ++i) {
         const FunctionInfo* transformed = nullptr;
         for (const auto& span : result.translation.spans) {
-            if (span.node_type != "function_declaration" || span.source_line != original[i].start_line) continue;
+            if (span.node_type != "function_declaration" && span.node_type != "class_declaration") continue;
+            const int last_source_line = 1 + std::count(source.begin(), source.begin() + span.source_end, '\n');
+            if (original[i].start_line < span.source_line || original[i].start_line > last_source_line) continue;
             int first_line = 1 + std::count(result.translation.buffer.begin(), result.translation.buffer.begin() + span.target_start, '\n');
             int last_line = 1 + std::count(result.translation.buffer.begin(), result.translation.buffer.begin() + span.target_end, '\n');
-            for (const auto& function : emitted)
-                if (function.start_line >= first_line && function.start_line <= last_line &&
-                    IdentifierStats::canonicalize(function.name) == IdentifierStats::canonicalize(original[i].name)) { transformed = &function; break; }
+            for (size_t index = 0; index < emitted.size(); ++index) {
+                const auto& function = emitted[index];
+                if (!emitted_used[index] && function.start_line >= first_line && function.start_line <= last_line &&
+                    callable_owners_compatible(original[i], function) &&
+                    IdentifierStats::canonicalize(function.name) == IdentifierStats::canonicalize(original[i].name)) {
+                    transformed = &function;
+                    emitted_used[index] = true;
+                    break;
+                }
+            }
+            if (transformed) break;
         }
         for (size_t j = 0; j < actual.size(); ++j) {
             if (!callable_owners_compatible(original[i], actual[j]) || IdentifierStats::canonicalize(original[i].name) != IdentifierStats::canonicalize(actual[j].name)) continue;

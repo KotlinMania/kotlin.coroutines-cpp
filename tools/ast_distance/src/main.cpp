@@ -720,7 +720,7 @@ void print_usage(const char* program) {
     std::cerr << "      Reporting is always full-detail (file-by-file + function-by-function).\n\n";
     std::cerr << "  " << program << " <file1> <lang1> <file2> <lang2>\n";
     std::cerr << "      Compare AST similarity between two files\n\n";
-    std::cerr << "  " << program << " --compare-functions <file1> <lang1> <file2> <lang2>\n";
+    std::cerr << "  " << program << " --compare-functions <file1> <lang1> <file2> <lang2> [--with-companions]\n";
     std::cerr << "      Compare strict function-name parity and per-function cosine/line similarity\n\n";
     std::cerr << "  " << program << " --transliterate <source_file> kotlin cpp\n";
     std::cerr << "      Emit AST-driven C++ buffer on stdout; complete span/rule evidence on stderr\n\n";
@@ -2049,6 +2049,7 @@ void generate_reports(const Codebase& source, const Codebase& target,
         report << "**Target:** " << target_display_path << "\n\n";
         
         report << "## Executive Summary\n\n";
+        report << "Function counts below cover bodies; abstract/interface signatures are listed separately in deep_symbol_inventory.txt.\n\n";
         report << "| Metric | Count | Percentage |\n";
         report << "|--------|-------|------------|\n";
         report << "| Function parity | "
@@ -2248,7 +2249,8 @@ void generate_reports(const Codebase& source, const Codebase& target,
         report << "Dependency fanout is ranked first so the ladder favors ports that clear"
                   " downstream compilation failures fastest.\n\n";
         report << "This list is complete and includes function/type detail for every matched file. "
-                  "Function similarity is the required body/parameter comparison; file-level shape does not rescue a port.\n\n";
+                  "Function similarity is the required body/parameter comparison; file-level shape does not rescue a port. "
+                  "Function counts cover bodies; abstract/interface signatures are listed separately in deep_symbol_inventory.txt.\n\n";
         report << "| Rank | Source | Target | Function similarity | Deps | Functions | Missing functions | Types | Missing types | SymDeficit | SrcSymbols | Priority |\n";
         report << "|------|--------|--------|------------|------|-----------|-------------------|-------|---------------|-----------|------------|----------|\n";
 
@@ -3349,6 +3351,9 @@ int main(int argc, char* argv[]) {
             auto report = transliteration_distance(source_text, parse_language(argv[3]), target_text, parse_language(argv[5]));
             print_transliteration_distance(report, std::cout);
         } else if (mode == "--compare-functions" && argc >= 6) {
+            const bool with_companions = argc == 7 && std::string(argv[6]) == "--with-companions";
+            if (argc != 6 && !with_companions)
+                throw std::runtime_error("Usage: --compare-functions file1 lang1 file2 lang2 [--with-companions]");
             ASTParser parser;
             std::string file1 = argv[2];
             Language lang1 = parse_language(argv[3]);
@@ -3389,8 +3394,37 @@ int main(int argc, char* argv[]) {
             if (!stream2.is_open()) throw std::runtime_error("Cannot open target: " + file2);
             verify_comparison_identity(file1, lang1, file2, lang2);
             auto funcs2 = parser.extract_function_infos(file2_text, lang2);
+            std::vector<std::string> target_locations(funcs2.size(), file2);
             auto target_unmapped = parser.get_unmapped_node_types();
             print_extraction_diagnostics(file2);
+            if (with_companions) {
+                if (lang2 != Language::CPP)
+                    throw std::runtime_error("--with-companions requires a C++ target");
+                Codebase target_unit(file2, "cpp");
+                target_unit.scan();
+                if (target_unit.files.size() != 1)
+                    throw std::runtime_error("Companion comparison requires one logical C++ unit");
+                for (const auto& path : target_unit.files.begin()->second.paths) {
+                    if (path == file2) continue;
+                    std::ifstream companion_stream(path);
+                    if (!companion_stream.is_open()) throw std::runtime_error("Cannot open companion: " + path);
+                    std::stringstream companion_buffer;
+                    companion_buffer << companion_stream.rdbuf();
+                    parser.clear_unmapped();
+                    auto companion_functions = parser.extract_function_infos(companion_buffer.str(), lang2);
+                    print_extraction_diagnostics(path);
+                    for (const auto& [kind, count] : parser.get_unmapped_node_types()) target_unmapped[kind] += count;
+                    std::cout << "Companion " << path << ": " << companion_functions.size() << " function bodies\n";
+                    target_locations.insert(target_locations.end(), companion_functions.size(), path);
+                    funcs2.insert(funcs2.end(), std::make_move_iterator(companion_functions.begin()),
+                                  std::make_move_iterator(companion_functions.end()));
+                }
+            }
+            auto target_label = [&](int index) {
+                const auto& function = funcs2[index];
+                return (with_companions ? target_locations[index] + ":" : "") + function.qualified_name +
+                    ":" + std::to_string(function.start_line) + " " + function.signature;
+            };
 
             std::cout << "Found " << funcs2.size() << " " << language_name(lang2) << " functions\n";
 
@@ -3560,7 +3594,7 @@ int main(int argc, char* argv[]) {
                 FunctionPairReport report;
                 report.source_name = source_func.qualified_name + ":" + std::to_string(source_func.start_line) + " " + source_func.signature;
                 report.expected_name = expected_target_function_name(source_func.name, lang1, lang2);
-                report.target_name = target_func.qualified_name + ":" + std::to_string(target_func.start_line) + " " + target_func.signature;
+                report.target_name = target_label(candidate.target_index);
                 report.source_lines = source_func.line_count;
                 report.target_lines = target_func.line_count;
                 report.line_gap = target_func.line_count - source_func.line_count;
@@ -3737,7 +3771,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "\nExtra target functions not matched by strict source-name parity:\n";
                 for (int j = 0; j < static_cast<int>(funcs2.size()); ++j) {
                     if (!target_used[j]) {
-                        std::cout << "  - " << funcs2[j].qualified_name << ":" << funcs2[j].start_line
+                        std::cout << "  - " << (with_companions ? target_locations[j] + ":" : "") << funcs2[j].qualified_name << ":" << funcs2[j].start_line
                                   << " (" << funcs2[j].line_count << " lines)\n";
                     }
                 }
@@ -3809,17 +3843,17 @@ int main(int argc, char* argv[]) {
                 // Print only the actual selected pair, not rejected overload candidates.
                 auto selected = std::find_if(reports.begin(), reports.end(), [&](const auto& report) {
                     return report.source_name == source.qualified_name + ":" + std::to_string(source.start_line) + " " + source.signature &&
-                           report.target_name == target.qualified_name + ":" + std::to_string(target.start_line) + " " + target.signature;
+                           report.target_name == target_label(candidate.target_index);
                 });
                 if (selected == reports.end()) continue;
                 auto source_tokens = normalized_logic_tokens(source.body_tree.get());
                 auto target_tokens = normalized_logic_tokens(target.body_tree.get());
                 if (source_tokens == target_tokens) {
-                    std::cout << source.qualified_name << ':' << source.start_line << " -> " << target.qualified_name << ':' << target.start_line
+                    std::cout << source.qualified_name << ':' << source.start_line << " -> " << (with_companions ? target_locations[candidate.target_index] + ":" : "") << target.qualified_name << ':' << target.start_line
                               << ": exact normalized logic sequence (" << source_tokens.size() << " tokens)\n";
                     continue;
                 }
-                std::cout << source.qualified_name << ':' << source.start_line << " -> " << target.qualified_name << ':' << target.start_line << '\n';
+                std::cout << source.qualified_name << ':' << source.start_line << " -> " << (with_companions ? target_locations[candidate.target_index] + ":" : "") << target.qualified_name << ':' << target.start_line << '\n';
                 auto print_sequence = [](const char* side, const auto& tokens) {
                     std::cout << "  " << side << ":";
                     for (size_t i = 0; i < tokens.size(); ++i) std::cout << ' ' << i + 1 << '=' << tokens[i];
