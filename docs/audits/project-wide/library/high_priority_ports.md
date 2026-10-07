@@ -13,7 +13,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 1 | `flow.Channels` | `flow.Channels` | 0.22 | 65 | 12/12 matched (target 24) | _none_ | 1/1 matched (target 2) | _none_ | 0 | 13 | 65001308.0 |
 | 2 | `flow.Flow` | `flow.Flow` | 0.04 | 28 | 1/1 matched (target 4) | _none_ | 2/2 matched (target 5) | _none_ | 0 | 3 | 28000310.0 |
 | 3 | `internal.Concurrent` | `internal.Concurrent` | 0.36 | 14 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | 1 | 9 | 14010906.0 |
-| 4 | `native.Exceptions` | `native.Exceptions` | 0.00 | 6 | 0/4 matched (target 1) | `CancellationException`, `JobCancellationException::toString`, `JobCancellationException::equals`, `JobCancellationException::hashCode` | 0/2 matched (target 0) | `CancellationException`, `JobCancellationException` | 6 | 6 | 6060610.0 |
+| 4 | `native.Exceptions` | `native.Exceptions` | 0.11 | 6 | 1/4 matched (target 12) | `JobCancellationException::toString`, `JobCancellationException::equals`, `JobCancellationException::hashCode` | 0/2 matched (target 0) | `CancellationException`, `JobCancellationException` | 5 | 6 | 6050609.0 |
 | 5 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 6 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | 1 | 12 | 6011208.0 |
 | 6 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.00 | 2 | 0/1 matched (target 4) | `CoroutineStart::invoke` | 1/1 matched (target 3) | _none_ | 1 | 2 | 2010210.0 |
 | 7 | `channels.BufferOverflow` | `channels.BufferOverflow` | 1.00 | 2 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 2000100.0 |
@@ -225,7 +225,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 213 | `common.Supervisor` | `coroutines.Supervisor` | 0.25 | 0 | 5/5 matched (target 8) | _none_ | 2/2 matched (target 3) | _none_ | 0 | 7 | 707.5 |
 | 214 | `common.Unconfined` | `coroutines.Unconfined` | 0.47 | 0 | 4/4 matched (target 7) | _none_ | 2/2 matched (target 3) | _none_ | 0 | 6 | 605.3 |
 | 215 | `intrinsics.Cancellable` | `intrinsics.Cancellable` | 0.16 | 0 | 5/5 matched (target 19) | _none_ | 0/0 matched (target 2) | _none_ | 0 | 5 | 508.4 |
-| 216 | `common.Exceptions.common` | `coroutines.Exceptions [ZERO]` | 0.00 | 0 | 0/0 matched (target 14) | _none_ | 4/4 matched (target 7) | _none_ | 0 | 4 | 410.0 |
+| 216 | `common.Exceptions.common` | `coroutines.Exceptions [ZERO]` | 0.00 | 0 | 0/0 matched (target 11) | _none_ | 4/4 matched (target 7) | _none_ | 0 | 4 | 410.0 |
 | 217 | `common.MainCoroutineDispatcher` | `coroutines.MainCoroutineDispatcher` | 0.08 | 0 | 3/3 matched | _none_ | 1/1 matched | _none_ | 0 | 4 | 409.2 |
 | 218 | `internal.FlowCoroutine` | `internal.FlowCoroutine` | 0.19 | 0 | 3/3 matched (target 8) | _none_ | 1/1 matched | _none_ | 0 | 4 | 408.1 |
 | 219 | `internal.OnUndeliveredElement` | `internal.OnUndeliveredElement` | 0.32 | 0 | 2/2 matched (target 3) | _none_ | 2/2 matched | _none_ | 0 | 4 | 406.8 |
@@ -411,12 +411,13 @@ These files need immediate attention:
   - Lint issues: 2
 
 - **native.Exceptions** → `native.Exceptions`
-  - Function similarity: 0.00
+  - Function similarity: 0.11
   - Dependencies: 6
-  - Functions: 0/4 matched (target 1)
-  - Missing functions: `CancellationException`, `JobCancellationException::toString`, `JobCancellationException::equals`, `JobCancellationException::hashCode`
+  - Functions: 1/4 matched (target 12)
+  - Missing functions: `JobCancellationException::toString`, `JobCancellationException::equals`, `JobCancellationException::hashCode`
   - Types: 0/2 matched (target 0)
   - Missing types: `CancellationException`, `JobCancellationException`
+  - Lint issues: 2
 
 - **native.CoroutineContext** → `coroutines.UndispatchedCoroutine`
   - Function similarity: 0.22

@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 243/354 (68.6%)
-- **Function parity:** 780/2918 matched (target 2844) — 26.7%
+- **Function parity:** 781/2918 matched (target 2852) — 26.8%
 - **Class/type parity:** 341/560 matched (target 490) — 60.9%
-- **Combined symbol parity:** 1121/3478 matched (target 3334) — 32.2%
+- **Combined symbol parity:** 1122/3478 matched (target 3342) — 32.3%
 - **Average inline-code cosine:** 0.26 (function body across 134 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 134 matched files)
 - **Cheat-zeroed Files:** 122
@@ -97,13 +97,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 4. native.Exceptions
 
 - **Target:** `native.Exceptions`
-- **Similarity:** 0.00
+- **Similarity:** 0.11
 - **Dependents:** 6
-- **Priority Score:** 6060610.0
-- **Functions:** 0/4 matched (target 1)
-- **Missing functions:** `CancellationException`, `JobCancellationException::toString`, `JobCancellationException::equals`, `JobCancellationException::hashCode`
+- **Priority Score:** 6050609.0
+- **Functions:** 1/4 matched (target 12)
+- **Missing functions:** `JobCancellationException::toString`, `JobCancellationException::equals`, `JobCancellationException::hashCode`
 - **Types:** 0/2 matched (target 0)
 - **Missing types:** `CancellationException`, `JobCancellationException`
+- **Lint issues:** 2
 
 ### 5. native.CoroutineContext
 
@@ -2833,11 +2834,11 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.00
 - **Dependents:** 0
 - **Priority Score:** 410.0
-- **Functions:** 0/0 matched (target 14)
+- **Functions:** 0/0 matched (target 11)
 - **Missing functions:** _none_
 - **Types:** 4/4 matched (target 7)
 - **Missing types:** _none_
-- **Lint issues:** 7
+- **Lint issues:** 6
 
 ### 217. common.MainCoroutineDispatcher
 

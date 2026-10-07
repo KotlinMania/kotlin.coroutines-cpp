@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <exception>
+#include <optional>
 
 namespace kotlinx {
 namespace coroutines {
@@ -52,26 +53,41 @@ public:
 };
 
 /**
- * Thrown by cancellable suspending functions if the Job of the coroutine is cancelled
- * while it is suspending.
- *
- * Unlike most other exceptions, this exception is caught by the parent coroutine's machinery
- * and does not cause its parent to fail.
+ * Thrown by cancellable suspending functions if the Job of the coroutine is
+ * cancelled while it is suspending. It indicates normal cancellation of a coroutine.
+ * It is not printed to console/log by the default uncaught exception handler.
+ * See CoroutineExceptionHandler.
  */
-class CancellationException : public std::runtime_error {
+// Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:11-16
+// Transliterated from: kotlinx-coroutines-core/common/src/Exceptions.common.kt:12-14
+class CancellationException : public IllegalStateException {
 private:
+    std::optional<std::string> message_;
     std::exception_ptr cause_;
 
 public:
-    explicit CancellationException(const std::string& message)
-        : std::runtime_error(message), cause_(nullptr) {}
+    // Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:12-12
+    CancellationException();
+    // Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:13-13
+    explicit CancellationException(std::optional<std::string> message);
+    // Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:13-13
+    explicit CancellationException(const std::string& message);
+    // Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:13-13
+    explicit CancellationException(const char* message);
 
-    CancellationException(const std::string& message, std::exception_ptr cause)
-        : std::runtime_error(message), cause_(cause) {}
+    // Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:14-14
+    CancellationException(std::optional<std::string> message, std::exception_ptr cause);
+    // Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:14-14
+    CancellationException(const std::string& message, std::exception_ptr cause);
+    // Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:14-14
+    CancellationException(const char* message, std::exception_ptr cause);
 
-    std::exception_ptr get_cause() const { return cause_; }
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:26-27
+    virtual const std::optional<std::string>& get_message() const;
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:27-27
+    virtual std::exception_ptr get_cause() const;
 
-    virtual ~CancellationException() = default;
+    ~CancellationException() override = default;
 };
 
 /**
@@ -106,9 +122,16 @@ public:
 };
 
 /**
- * Factory function to create a CancellationException.
+ * Factory function to create a CancellationException with its original cause.
+ * The caller owns and deletes the returned exception.
+ *
+ * Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:13-14
  */
-CancellationException* make_cancellation_exception(const std::string& message, std::exception_ptr cause);
+CancellationException* cancellation_exception(const std::string& message, std::exception_ptr cause);
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:13-14
+CancellationException* cancellation_exception(std::optional<std::string> message, std::exception_ptr cause);
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:13-14
+CancellationException* cancellation_exception(const char* message, std::exception_ptr cause);
 
 /**
  * Converts an exception_ptr to a CancellationException.
