@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 781/2918 matched (target 2862) | 26.8% |
+| Function parity | 781/2918 matched (target 2861) | 26.8% |
 | Class/type parity | 341/560 matched (target 492) | 60.9% |
-| Combined symbol parity | 1122/3478 matched (target 3354) | 32.3% |
+| Combined symbol parity | 1122/3478 matched (target 3353) | 32.3% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 735 | 0% parity until ported |
@@ -20,8 +20,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Missing source symbol files | 107 | 901 symbols |
 | Cheat/scoring failures | 122 | forced to 0% |
 | Total source files | 354 | 100% |
-| Target units (paired) | 591 | - |
-| Target files (total) | 769 | - |
+| Target units (paired) | 592 | - |
+| Target files (total) | 770 | - |
 | Porting progress | 243 | 68.6% (matched) |
 | Missing files | 111 | 31.4% |
 
@@ -212,9 +212,9 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 168 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 12) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
 | 169 | `common.EventLoop.common` | `coroutines.EventLoop.common` | 0.14 | 11/38 matched (target 24) | `EventLoop::limitedParallelism`, `delayToNanos`, `delayNanosToMillis`, `EventLoopImplBase::shutdown`, `EventLoopImplBase::scheduleResumeAfterDelay`, `EventLoopImplBase::scheduleInvokeOnTimeout`, `EventLoopImplBase::processNextEvent`, `EventLoopImplBase::dispatch`, `EventLoopImplBase::enqueue`, `EventLoopImplBase::enqueueImpl`, `EventLoopImplBase::dequeue`, `EventLoopImplBase::enqueueDelayedTasks`, `EventLoopImplBase::closeQueue`, `EventLoopImplBase::schedule`, `EventLoopImplBase::shouldUnpark`, `EventLoopImplBase::scheduleImpl`, `EventLoopImplBase::resetAll`, `EventLoopImplBase::rescheduleAllDelayed`, `EventLoopImplBase::DelayedTask::compareTo`, `EventLoopImplBase::DelayedTask::timeToExecute`, `EventLoopImplBase::DelayedTask::scheduleTask`, `EventLoopImplBase::DelayedTask::dispose`, `EventLoopImplBase::DelayedTask::toString`, `EventLoopImplBase::DelayedResumeTask::run`, `EventLoopImplBase::DelayedResumeTask::toString`, `EventLoopImplBase::DelayedRunnableTask::run`, `EventLoopImplBase::DelayedRunnableTask::toString` | 2/10 matched (target 3) | `Queue`, `EventLoopImplPlatform`, `EventLoopImplBase`, `DelayedTask`, `DelayedResumeTask`, `DelayedRunnableTask`, `DelayedTaskQueue`, `DefaultExecutor` | - | 35 | 354808.6 |
 | 170 | `channels.Broadcast` | `channels.Broadcast` | 0.14 | 3/10 matched (target 11) | `ReceiveChannel<E>::broadcast`, `CoroutineScope::broadcast`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancelInternal`, `LazyBroadcastCoroutine::openSubscription`, `LazyBroadcastCoroutine::onStart` | 2/2 matched | _none_ | - | 7 | 71208.6 |
-| 171 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | - | 1 | 11608.5 |
-| 172 | `test.CoroutineScopeTest` | `tests.CoroutineScopeTest` | 0.15 | 1/24 matched (target 5) | `CoroutineScopeTest::testScope`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testScopeCancelledFromWithin`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testExceptionFromWithin`, `CoroutineScopeTest::testScopeBlockThrows`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testOuterJobIsCancelled`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testAsyncCancellationFirst`, `CoroutineScopeTest::failedConcurrentSumFirst`, `CoroutineScopeTest::testAsyncCancellationSecond`, `CoroutineScopeTest::failedConcurrentSumSecond`, `CoroutineScopeTest::testDocumentationExample`, `CoroutineScopeTest::loadData`, `CoroutineScopeTest::testCoroutineScopeCancellationVsException`, `CoroutineScopeTest::testLaunchContainsDefaultDispatcher`, `CoroutineScopeTest::testNewCoroutineContextDispatcher`, `CoroutineScopeTest::newContextDispatcher`, `CoroutineScopeTest::testScopePlusContext`, `CoroutineScopeTest::testIncompleteScopeState`, `CoroutineScopeTest::testIsActiveWithoutJob`, `CoroutineScopeTest::testIsActive` | 1/1 matched | _none_ | 0/14 | 23 | 232508.5 |
-| 173 | `intrinsics.Cancellable` | `intrinsics.Cancellable` | 0.16 | 5/5 matched (target 19) | _none_ | 0/0 matched (target 2) | _none_ | - | 0 | 508.4 |
+| 171 | `intrinsics.Cancellable` | `intrinsics.Cancellable` | 0.14 | 5/5 matched (target 18) | _none_ | 0/0 matched (target 2) | _none_ | - | 0 | 508.6 |
+| 172 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | - | 1 | 11608.5 |
+| 173 | `test.CoroutineScopeTest` | `tests.CoroutineScopeTest` | 0.15 | 1/24 matched (target 5) | `CoroutineScopeTest::testScope`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testScopeCancelledFromWithin`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testExceptionFromWithin`, `CoroutineScopeTest::testScopeBlockThrows`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testOuterJobIsCancelled`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testAsyncCancellationFirst`, `CoroutineScopeTest::failedConcurrentSumFirst`, `CoroutineScopeTest::testAsyncCancellationSecond`, `CoroutineScopeTest::failedConcurrentSumSecond`, `CoroutineScopeTest::testDocumentationExample`, `CoroutineScopeTest::loadData`, `CoroutineScopeTest::testCoroutineScopeCancellationVsException`, `CoroutineScopeTest::testLaunchContainsDefaultDispatcher`, `CoroutineScopeTest::testNewCoroutineContextDispatcher`, `CoroutineScopeTest::newContextDispatcher`, `CoroutineScopeTest::testScopePlusContext`, `CoroutineScopeTest::testIncompleteScopeState`, `CoroutineScopeTest::testIsActiveWithoutJob`, `CoroutineScopeTest::testIsActive` | 1/1 matched | _none_ | 0/14 | 23 | 232508.5 |
 | 174 | `common.CompletableDeferred` | `coroutines.CompletableDeferred` | 0.16 | 5/7 matched (target 16) | `CompletableDeferred`, `CompletableDeferred` | 2/2 matched (target 3) | _none_ | - | 2 | 20908.4 |
 | 175 | `internal.SendingCollector` | `internal.SendingCollector` | 0.16 | 1/1 matched (target 2) | _none_ | 1/1 matched | _none_ | - | 0 | 208.4 |
 | 176 | `selects.SelectUnbiased` | `selects.SelectUnbiased` | 0.16 | 6/6 matched (target 8) | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 708.4 |
@@ -585,9 +585,9 @@ These files need significant work:
 - `internal.SafeCollector.common` -> `internal.SafeCollector.common` (0.12)
 - `common.EventLoop.common` -> `coroutines.EventLoop.common` (0.14)
 - `channels.Broadcast` -> `channels.Broadcast` (0.14)
+- `intrinsics.Cancellable` -> `intrinsics.Cancellable` (0.14)
 - `channels.BroadcastChannel` -> `channels.BroadcastChannel` (0.15)
 - `test.CoroutineScopeTest` -> `tests.CoroutineScopeTest` (0.15)
-- `intrinsics.Cancellable` -> `intrinsics.Cancellable` (0.16)
 - `common.CompletableDeferred` -> `coroutines.CompletableDeferred` (0.16)
 - `internal.SendingCollector` -> `internal.SendingCollector` (0.16)
 - `selects.SelectUnbiased` -> `selects.SelectUnbiased` (0.16)
@@ -791,7 +791,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7083 / 7063 lines (100%)
+**Documentation line amount:** 7071 / 7063 lines (100%)
 
 Documentation gaps (>20%), complete list:
 

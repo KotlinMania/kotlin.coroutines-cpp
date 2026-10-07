@@ -8299,10 +8299,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.742062
+translated_ast_cosine: 0.728346
 function_name_parity: 1.000000
-normalized_logic: 0.096000
-documentation_correspondence: 0.010051
+normalized_logic: 0.078947
+documentation_correspondence: 0.004035
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -8326,19 +8326,19 @@ Diagnostic: 23: unsupported function_declaration
 Diagnostic: 33: unsupported function_declaration
 Diagnostic: 44: unsupported function_declaration
 Diagnostic: 61: unsupported if_expression
-Function dispatcherFailure:52 -> kotlinx::coroutines::intrinsics::dispatcher_failure:101 | normalized logic: 0.480000
+Function dispatcherFailure:52 -> kotlinx::coroutines::intrinsics::dispatcher_failure:268 | normalized logic: 0.394737
   Emitted logic: node:66 type:continuation operator:* identifier:completion node:66 identifier:e type:throwable identifier:reportexception operator:= node:43 identifier:astdistanceunmapped literal:52:"if_expression" literal:52:"if (e is DispatchException) e.cause else e" node:43 identifier:completion identifier:resumewith node:43 identifier:result identifier:failure identifier:reportexception node:10 identifier:reportexception
-  Target logic: node:66 type:continuation type:void operator:* identifier:completion node:66 identifier:e identifier:std type:exceptionptr identifier:reportexception operator:= identifier:e node:43 identifier:completion identifier:resumewith node:43 type:result type:void operator:* identifier:failure identifier:reportexception node:43 identifier:std identifier:rethrowexception identifier:reportexception
-Function startCoroutineCancellable:14 -> kotlinx::coroutines::intrinsics::start_coroutine_cancellable:135 | normalized logic: 0.000000
+  Target logic: node:66 type:continuation type:void operator:* identifier:completion node:66 identifier:exception identifier:std type:exceptionptr identifier:reportexception operator:= identifier:exception node:9 node:43 identifier:std identifier:rethrowexception identifier:exception node:66 identifier:failure identifier:internal type:dispatchexception identifier:reportexception operator:= identifier:failure identifier:cause node:43 identifier:completion identifier:resumewith node:43 type:result type:void operator:* identifier:failure identifier:reportexception node:43 identifier:std identifier:rethrowexception identifier:reportexception
+Function startCoroutineCancellable:14 -> kotlinx::coroutines::intrinsics::start_coroutine_cancellable:120 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:function type:void operator:* node:66 type:continuation type:t operator:* identifier:block node:66 identifier:completion type:continuation type:t identifier:sharedcompletion operator:= node:43 identifier:dynamicpointercast identifier:std type:continuation type:t node:43 identifier:completion identifier:sharedfromthis node:1 operator:! identifier:sharedcompletion node:5 node:9 identifier:coroutine operator:= node:43 identifier:block identifier:createcoroutineunintercepted identifier:sharedcompletion identifier:intercepted operator:= node:43 node:43 identifier:coroutine identifier:dynamicpointercast identifier:intercepted identifier:std type:continuationimpl node:43 identifier:resumecancellablewith identifier:intercepted node:43 type:result type:void operator:* identifier:success identifier:ex operator:= node:43 identifier:currentexception identifier:std node:43 identifier:sharedcompletion identifier:resumewith node:43 type:result type:t identifier:failure identifier:ex node:10
-Function startCoroutineCancellable:23 -> kotlinx::coroutines::intrinsics::start_coroutine_cancellable:164 | normalized logic: 0.000000
+Function startCoroutineCancellable:23 -> kotlinx::coroutines::intrinsics::start_coroutine_cancellable:149 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:function type:void operator:* node:66 type:r node:66 type:continuation type:t operator:* identifier:block node:66 identifier:receiver type:r node:66 identifier:completion type:continuation type:t identifier:sharedcompletion operator:= node:43 identifier:dynamicpointercast identifier:std type:continuation type:t node:43 identifier:completion identifier:sharedfromthis node:1 operator:! identifier:sharedcompletion node:5 node:9 identifier:coroutine operator:= node:43 identifier:block identifier:createcoroutineunintercepted identifier:receiver identifier:sharedcompletion identifier:intercepted operator:= node:43 node:43 identifier:coroutine identifier:dynamicpointercast identifier:intercepted identifier:std type:continuationimpl node:43 identifier:resumecancellablewith identifier:intercepted node:43 type:result type:void operator:* identifier:success identifier:ex operator:= node:43 identifier:currentexception identifier:std node:43 identifier:sharedcompletion identifier:resumewith node:43 type:result type:t identifier:failure identifier:ex node:10
-Function Continuation<Unit>::startCoroutineCancellable:33 -> kotlinx::coroutines::intrinsics::start_coroutine_cancellable:183 | normalized logic: 0.000000
+Function Continuation<Unit>::startCoroutineCancellable:33 -> kotlinx::coroutines::intrinsics::start_coroutine_cancellable:292 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 type:continuation type:void operator:* identifier:continuation node:66 type:continuation type:void operator:* identifier:fatalcompletion node:43 identifier:runsafely identifier:fatalcompletion node:45 identifier:continuation identifier:impl operator:= node:43 identifier:dynamiccast type:continuationimpl operator:* identifier:continuation node:1 identifier:impl identifier:intercepted operator:= node:43 identifier:impl identifier:intercepted node:43 identifier:resumecancellablewith identifier:intercepted node:43 type:result type:void operator:* identifier:success
-Function runSafely:44 -> kotlinx::coroutines::intrinsics::run_safely:117 | normalized logic: 0.000000
+  Target logic: node:66 type:continuation type:void operator:* identifier:continuation node:66 type:continuation type:void operator:* identifier:fatalcompletion identifier:owner operator:= node:43 identifier:continuation identifier:internal identifier:retaincontinuation node:43 identifier:runsafely identifier:fatalcompletion node:45 identifier:owner operator:= node:43 identifier:std identifier:move identifier:owner node:9 identifier:interceptedcontinuation operator:= node:43 identifier:intercepted identifier:owner node:43 identifier:resumecancellablewith identifier:interceptedcontinuation node:43 type:result type:void operator:* identifier:success node:1 identifier:frame operator:= node:43 identifier:dynamicpointercast identifier:owner identifier:std type:basecontinuationimpl node:43 identifier:frame identifier:releaseintercepted node:10
+Function runSafely:44 -> kotlinx::coroutines::intrinsics::run_safely:283 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 type:continuation type:void operator:* identifier:completion node:66 identifier:block identifier:std type:function type:void node:9 node:43 identifier:block node:43 identifier:dispatcherfailure identifier:completion node:43 identifier:std identifier:currentexception
 Extra target function: kotlinx::coroutines::intrinsics::as_continuation_impl:25
@@ -8350,11 +8350,10 @@ Extra target function: kotlinx::coroutines::intrinsics::ReceiverLambdaContinuati
 Extra target function: kotlinx::coroutines::intrinsics::ReceiverLambdaContinuation::get_context:77
 Extra target function: kotlinx::coroutines::intrinsics::create_coroutine_unintercepted:84
 Extra target function: kotlinx::coroutines::intrinsics::create_coroutine_unintercepted:92
-Extra target function: kotlinx::coroutines::intrinsics::start_coroutine:202
-Extra target function: kotlinx::coroutines::intrinsics::start_coroutine:222
-Extra target function: kotlinx::coroutines::intrinsics::start_coroutine_undispatched:242
-Extra target function: kotlinx::coroutines::intrinsics::start_coroutine_undispatched:265
-Extra target function: kotlinx::coroutines::intrinsics::dispatcher_failure:312
+Extra target function: kotlinx::coroutines::intrinsics::start_coroutine:176
+Extra target function: kotlinx::coroutines::intrinsics::start_coroutine:196
+Extra target function: kotlinx::coroutines::intrinsics::start_coroutine_undispatched:216
+Extra target function: kotlinx::coroutines::intrinsics::start_coroutine_undispatched:239
 === Emitted target buffer ===
 namespace kotlinx::coroutines::intrinsics {
 
@@ -8391,9 +8390,9 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:14	-	startCoroutineCancellable
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:23	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:135	startCoroutineCancellable -> kotlinx::coroutines::intrinsics::start_coroutine_cancellable
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:23	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:120	startCoroutineCancellable -> kotlinx::coroutines::intrinsics::start_coroutine_cancellable
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:23	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp:183	startCoroutineCancellable -> kotlinx::coroutines::intrinsics::start_coroutine_cancellable
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:23	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp:34	startCoroutineCancellable -> kotlinx::coroutines::intrinsics::start_coroutine_cancellable
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
 Explicit suspension contracts reviewed: 2
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.

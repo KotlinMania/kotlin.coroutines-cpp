@@ -224,7 +224,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 212 | `selects.SelectUnbiased` | `selects.SelectUnbiased` | 0.16 | 0 | 6/6 matched (target 8) | _none_ | 1/1 matched (target 2) | _none_ | 0 | 7 | 708.4 |
 | 213 | `common.Supervisor` | `coroutines.Supervisor` | 0.25 | 0 | 5/5 matched (target 8) | _none_ | 2/2 matched (target 3) | _none_ | 0 | 7 | 707.5 |
 | 214 | `common.Unconfined` | `coroutines.Unconfined` | 0.47 | 0 | 4/4 matched (target 7) | _none_ | 2/2 matched (target 3) | _none_ | 0 | 6 | 605.3 |
-| 215 | `intrinsics.Cancellable` | `intrinsics.Cancellable` | 0.16 | 0 | 5/5 matched (target 19) | _none_ | 0/0 matched (target 2) | _none_ | 0 | 5 | 508.4 |
+| 215 | `intrinsics.Cancellable` | `intrinsics.Cancellable` | 0.14 | 0 | 5/5 matched (target 18) | _none_ | 0/0 matched (target 2) | _none_ | 0 | 5 | 508.6 |
 | 216 | `common.Exceptions.common` | `coroutines.Exceptions [ZERO]` | 0.00 | 0 | 0/0 matched (target 11) | _none_ | 4/4 matched (target 7) | _none_ | 0 | 4 | 410.0 |
 | 217 | `common.MainCoroutineDispatcher` | `coroutines.MainCoroutineDispatcher` | 0.08 | 0 | 3/3 matched | _none_ | 1/1 matched | _none_ | 0 | 4 | 409.2 |
 | 218 | `internal.FlowCoroutine` | `internal.FlowCoroutine` | 0.19 | 0 | 3/3 matched (target 8) | _none_ | 1/1 matched | _none_ | 0 | 4 | 408.1 |

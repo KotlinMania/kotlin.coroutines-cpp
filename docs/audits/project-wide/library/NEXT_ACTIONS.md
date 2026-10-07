@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 243/354 (68.6%)
-- **Function parity:** 781/2918 matched (target 2862) — 26.8%
+- **Function parity:** 781/2918 matched (target 2861) — 26.8%
 - **Class/type parity:** 341/560 matched (target 492) — 60.9%
-- **Combined symbol parity:** 1122/3478 matched (target 3354) — 32.3%
+- **Combined symbol parity:** 1122/3478 matched (target 3353) — 32.3%
 - **Average inline-code cosine:** 0.26 (function body across 134 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 134 matched files)
 - **Cheat-zeroed Files:** 122
@@ -2819,14 +2819,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 215. intrinsics.Cancellable
 
 - **Target:** `intrinsics.Cancellable`
-- **Similarity:** 0.16
+- **Similarity:** 0.14
 - **Dependents:** 0
-- **Priority Score:** 508.4
-- **Functions:** 5/5 matched (target 19)
+- **Priority Score:** 508.6
+- **Functions:** 5/5 matched (target 18)
 - **Missing functions:** _none_
 - **Types:** 0/0 matched (target 2)
 - **Missing types:** _none_
-- **Lint issues:** 3
+- **Lint issues:** 2
 
 ### 216. common.Exceptions.common
 

@@ -1,3 +1,4 @@
+// port-lint: source kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt
 #pragma once
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt
@@ -5,9 +6,8 @@
  * Kotlin file header (translated):
  *   package kotlinx.coroutines.intrinsics
  *
- * The two free helpers `runSafely` and `dispatcherFailure` are kept as inline functions in
- * this header; the three `startCoroutineCancellable` overloads (no-receiver, with-receiver,
- * and pre-built continuation) follow exactly the Kotlin file's structure.
+ * Concrete failure helpers and the already-created continuation entry live in
+ * Cancellable.cpp. Public generic callable entries are instantiated in this header.
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -97,30 +97,15 @@ std::shared_ptr<Continuation<void*>> create_coroutine_unintercepted(
     return std::make_shared<ReceiverLambdaContinuation<R, T>>(block, receiver, completion);
 }
 
-// Internal helper for dispatcherFailure
-inline void dispatcher_failure(Continuation<void*>* completion, std::exception_ptr e) {
-    auto report_exception = e;
-    // if (e is DispatchException) e.cause else e -- simplified for now
-    
-    // We can't easily access resumeWith on raw pointer without knowing type T. 
-    // This signature uses void*, implying Unit.
-    completion->resume_with(Result<void*>::failure(report_exception));
-    std::rethrow_exception(report_exception);
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:52-64
+void dispatcher_failure(Continuation<void*>* completion, std::exception_ptr exception);
 
 /**
- * Runs given block and completes completion with its exception if it occurs.
- * Rationale: [startCoroutineCancellable] is invoked when we are about to run coroutine asynchronously in its own dispatcher.
- * Thus if dispatcher throws an exception during coroutine start, coroutine never completes, so we should treat dispatcher exception
- * as its cause and resume completion.
+ * Runs the block and completes completion with its exception if it occurs.
+ * Dispatcher failure must complete the coroutine and rethrow to the caller.
  */
-inline void run_safely(Continuation<void*>* completion, std::function<void()> block) {
-    try {
-        block();
-    } catch (...) {
-        dispatcher_failure(completion, std::current_exception());
-    }
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:44-50
+void run_safely(Continuation<void*>* completion, std::function<void()> block);
 
 // Specialization for typed continuation (not void*) is tricky without template. 
 // We implement the template logic inside start_coroutine_cancellable.
@@ -180,23 +165,12 @@ void start_coroutine_cancellable(std::function<void*(R, Continuation<T>*)> block
  * Similar to [startCoroutineCancellable], but for already created coroutine.
  * [fatalCompletion] is used only when interception machinery throws an exception
  */
-inline void start_coroutine_cancellable(Continuation<void*>* continuation, Continuation<void*>* fatal_completion) {
-    // Note: We use raw pointers here since the caller manages lifetime.
-    // The Kotlin version uses implicit shared ownership through the coroutine machinery.
-    
-    run_safely(fatal_completion, [continuation]() {
-        // Try to cast to ContinuationImpl to get intercepted continuation
-        auto impl = dynamic_cast<ContinuationImpl*>(continuation);
-        if (impl) {
-            auto intercepted = impl->intercepted();
-            resume_cancellable_with(intercepted, Result<void*>::success(nullptr));
-        }
-    });
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:33-36
+void start_coroutine_cancellable(Continuation<void*>* continuation, Continuation<void*>* fatal_completion);
 
 /**
  * Starts a coroutine in non-cancellable (ATOMIC) mode.
- * Transliterated from: kotlin-stdlib/common/src/kotlin/coroutines/intrinsics/Intrinsics.kt:114-124
+ * Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:112-116
  */
 template <typename T>
 void start_coroutine(std::function<void*(Continuation<T>*)> block, Continuation<T>* completion) {
@@ -216,7 +190,7 @@ void start_coroutine(std::function<void*(Continuation<T>*)> block, Continuation<
 
 /**
  * Starts a coroutine with receiver in non-cancellable (ATOMIC) mode.
- * Transliterated from: kotlin-stdlib/common/src/kotlin/coroutines/intrinsics/Intrinsics.kt:126-137
+ * Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:125-130
  */
 template <typename R, typename T>
 void start_coroutine(std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
