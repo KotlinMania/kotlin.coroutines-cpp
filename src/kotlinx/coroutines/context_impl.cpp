@@ -8,6 +8,46 @@
 #include <bit>
 
 namespace kotlinx::coroutines {
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:56-61
+internal::AbstractCoroutineContextKeyBase::AbstractCoroutineContextKeyBase(
+    CoroutineContext::Key* base_key,
+    std::function<std::shared_ptr<CoroutineContext::Element>(
+        std::shared_ptr<CoroutineContext::Element>)> safe_cast)
+    : topmost_key_(dynamic_cast<AbstractCoroutineContextKeyBase*>(base_key)
+          ? dynamic_cast<AbstractCoroutineContextKeyBase*>(base_key)->topmost_key_ : base_key),
+      safe_cast_(std::move(safe_cast)) {}
+
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:63-63
+std::shared_ptr<CoroutineContext::Element> internal::AbstractCoroutineContextKeyBase::try_cast(
+    std::shared_ptr<CoroutineContext::Element> element) const {
+    return safe_cast_(std::move(element));
+}
+
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:64-64
+bool internal::AbstractCoroutineContextKeyBase::is_sub_key(const CoroutineContext::Key* key) const {
+    return key == dynamic_cast<const CoroutineContext::Key*>(this) || topmost_key_ == key;
+}
+
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:81-89
+std::shared_ptr<CoroutineContext::Element> get_polymorphic_element(
+    std::shared_ptr<CoroutineContext::Element> element, CoroutineContext::Key* key) {
+    if (auto* polymorphic = dynamic_cast<internal::AbstractCoroutineContextKeyBase*>(key)) {
+        return polymorphic->is_sub_key(element->key()) ? polymorphic->try_cast(element) : nullptr;
+    }
+    return element->key() == key ? element : nullptr;
+}
+
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:106-112
+std::shared_ptr<CoroutineContext> minus_polymorphic_key(
+    std::shared_ptr<CoroutineContext::Element> element, CoroutineContext::Key* key) {
+    if (auto* polymorphic = dynamic_cast<internal::AbstractCoroutineContextKeyBase*>(key)) {
+        return polymorphic->is_sub_key(element->key()) && polymorphic->try_cast(element)
+            ? std::static_pointer_cast<CoroutineContext>(EmptyCoroutineContext::instance()) : element;
+    }
+    return element->key() == key
+        ? std::static_pointer_cast<CoroutineContext>(EmptyCoroutineContext::instance()) : element;
+}
+
 // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:41-41
 // Transliterated from: kotlin-native/runtime/src/main/cpp/Natives.cpp:40-49
 std::int32_t CoroutineContext::hash_code() const {

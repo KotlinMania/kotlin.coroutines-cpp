@@ -74,7 +74,7 @@ in source order; a failure in Job hashing prevents cause hashing. The borrowed
 Job property is const, matching the source val, and is not adopted as an owner.
 
 CancellationException's inherited Any hash at `native/Exceptions.cpp:72` and the
-context base at `context_impl.cpp:13` use the actual low-32-bit Native identity
+context base at `context_impl.cpp:53` use the actual low-32-bit Native identity
 primitive from Natives.cpp:40-49 on C++ object storage. An initial attempt to
 reuse the compiler-object Runtime helper failed at link time because that helper
 is not part of the standalone core archive. The final bodies directly project
@@ -99,7 +99,7 @@ rather than receiving a fabricated hash. Equality and hashing use the same actua
 retained exceptions. Nested JobCancellationException causes hash recursively.
 
 Context hashing requires the real source dependencies. EmptyCoroutineContext's
-hash at `context_impl.cpp:170` returns source zero. CombinedContext's hash at :65
+hash at `context_impl.cpp:210` returns source zero. CombinedContext's hash at :105
 returns left.hashCode + element.hashCode, wrapping exactly as Kotlin Int. The
 existing pending context implementations are captured with this prerequisite:
 get/for_each/minus_key, source plus ordering and interceptor placement, structural
@@ -107,7 +107,7 @@ CombinedContext equality and source text. Public context headers expose the
 surface; CombinedContext remains concrete/private in .cpp. The earlier header
 shortcut that represented empty context as nullptr is removed in the committed
 state. Existing unrelated work outside these context prerequisites is preserved.
-This does not complete polymorphic keys, serialization or the full stdlib port.
+The consumed polymorphic-key repair is now recorded in [COROUTINE_CONTEXT_POLYMORPHIC_KEYS.md](COROUTINE_CONTEXT_POLYMORPHIC_KEYS.md); serialization and the full stdlib port remain incomplete.
 
 `src/tests/src/suspend/test_channel_consumption.cpp:150` adds source hash
 regressions: golden ASCII, Unicode and supplementary-code-point hashes, embedded

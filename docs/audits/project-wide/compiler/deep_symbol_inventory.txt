@@ -17468,6 +17468,12 @@ MISSING_SYMBOL function startCoroutine at /Volumes/stuff/Projects/kotlinmania/ko
 MISSING_SYMBOL function startCoroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:123
 MISSING_SYMBOL function suspendCoroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:140
 MISSING_SYMBOL property coroutineContext at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:154
+MISSING_FILE libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt
+MISSING_SYMBOL type ContinuationInterceptor at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt:19
+MISSING_SYMBOL function ContinuationInterceptor::interceptContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt:37
+MISSING_SYMBOL function ContinuationInterceptor::releaseInterceptedContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt:48
+MISSING_SYMBOL function ContinuationInterceptor::get at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt:52
+MISSING_SYMBOL function ContinuationInterceptor::minusKey at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt:64
 MISSING_FILE libraries/stdlib/src/kotlin/coroutines/CoroutineContext.kt
 MISSING_SYMBOL type CoroutineContext at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/CoroutineContext.kt:13
 MISSING_SYMBOL function CoroutineContext::get at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/CoroutineContext.kt:18
@@ -18099,4 +18105,4 @@ MISSING_SYMBOL property buildProperties at /Volumes/stuff/Projects/kotlinmania/k
 MISSING_SYMBOL property composeRuntimeSnapshotVersions at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/settings.gradle.kts:106
 MISSING_SYMBOL property mirrorRepo at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/settings.gradle.kts:134
 MISSING_SYMBOL property buildProperties at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/settings.gradle.kts:141
-Inventory totals: present=712, declaration_only=87, missing=14974
+Inventory totals: present=712, declaration_only=87, missing=14979

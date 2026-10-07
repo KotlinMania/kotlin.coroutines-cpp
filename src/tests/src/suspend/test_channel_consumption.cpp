@@ -253,6 +253,123 @@ void job_cancellation_hash_contract() {
     CHECK(context->minus_key(&right_key)->hash_code() == 2147483647);
 }
 
+// CoroutineContextImpl.kt:56-65,81-89,106-112; ContinuationInterceptor.kt:52-71;
+// CoroutineDispatcher.kt:65-67. Exercise root/nested keys, source cast order and context identity.
+void polymorphic_context_contract() {
+    class BaseElement : public AbstractCoroutineContextElement {
+    public:
+        explicit BaseElement(CoroutineContext::Key* key) : AbstractCoroutineContextElement(key) {}
+        std::shared_ptr<Element> get(CoroutineContext::Key* key) const override {
+            return get_polymorphic_element(std::dynamic_pointer_cast<Element>(
+                std::const_pointer_cast<CoroutineContext>(shared_from_this())), key);
+        }
+        std::shared_ptr<CoroutineContext> minus_key(CoroutineContext::Key* key) const override {
+            return minus_polymorphic_key(std::dynamic_pointer_cast<Element>(
+                std::const_pointer_cast<CoroutineContext>(shared_from_this())), key);
+        }
+    };
+    class DerivedElement : public BaseElement { public: using BaseElement::BaseElement; };
+    class LeafElement final : public DerivedElement { public: using DerivedElement::DerivedElement; };
+    class DerivedKey final : public AbstractCoroutineContextKey<BaseElement, DerivedElement> {
+    public:
+        DerivedKey(CoroutineContext::KeyTyped<BaseElement>* base, int* calls, std::exception_ptr failure = nullptr)
+            : AbstractCoroutineContextKey(base, [calls, failure](std::shared_ptr<CoroutineContext::Element> element) {
+                ++*calls;
+                if (failure) std::rethrow_exception(failure);
+                return std::dynamic_pointer_cast<DerivedElement>(element);
+            }) {}
+    };
+    class LeafKey final : public AbstractCoroutineContextKey<DerivedElement, LeafElement> {
+    public:
+        explicit LeafKey(CoroutineContext::KeyTyped<DerivedElement>* base)
+            : AbstractCoroutineContextKey(base, [](std::shared_ptr<CoroutineContext::Element> element) {
+                return std::dynamic_pointer_cast<LeafElement>(element);
+            }) {}
+    };
+    CoroutineContext::KeyTyped<BaseElement> root, unrelated;
+    int calls = 0;
+    DerivedKey derived_key(&root, &calls);
+    LeafKey leaf_key(&derived_key);
+    CHECK(derived_key.is_sub_key(&root) && derived_key.is_sub_key(&derived_key));
+    CHECK(leaf_key.is_sub_key(&root) && leaf_key.is_sub_key(&leaf_key));
+    CHECK(!leaf_key.is_sub_key(&derived_key) && !derived_key.is_sub_key(&unrelated));
+    auto base = std::make_shared<BaseElement>(&root);
+    auto derived = std::make_shared<DerivedElement>(&root);
+    auto leaf = std::make_shared<LeafElement>(&root);
+    CHECK(get_polymorphic_element<BaseElement>(derived, &root) == derived);
+    CHECK(get_polymorphic_element<DerivedElement>(derived, &derived_key) == derived && calls == 1);
+    CHECK(get_polymorphic_element<LeafElement>(leaf, &leaf_key) == leaf);
+    CHECK(!base->get(&derived_key) && calls == 2);
+    CHECK(base->minus_key(&derived_key) == base && calls == 3);
+    CHECK(derived->minus_key(&derived_key) == EmptyCoroutineContext::instance() && calls == 4);
+    CHECK(leaf->minus_key(&leaf_key) == EmptyCoroutineContext::instance());
+    auto foreign = std::make_shared<DerivedElement>(&unrelated);
+    CHECK(!foreign->get(&derived_key) && foreign->minus_key(&derived_key) == foreign && calls == 4);
+    CHECK(derived->get(&root) == derived && !derived->get(&unrelated));
+    CHECK(derived->minus_key(&root) == EmptyCoroutineContext::instance());
+    // The source also recognizes the polymorphic key itself, but not an intermediate key.
+    auto own_key = std::make_shared<DerivedElement>(&derived_key);
+    CHECK(own_key->get(&derived_key) == own_key && calls == 5);
+    CHECK(own_key->minus_key(&derived_key) == EmptyCoroutineContext::instance() && calls == 6);
+    auto intermediate = std::make_shared<LeafElement>(&derived_key);
+    CHECK(!intermediate->get(&leaf_key) && intermediate->minus_key(&leaf_key) == intermediate);
+    auto failure = std::make_exception_ptr(std::runtime_error("actual safe cast failure"));
+    DerivedKey throwing(&root, &calls, failure);
+    for (bool remove : {false, true}) {
+        try {
+            if (remove) derived->minus_key(&throwing); else derived->get(&throwing);
+            CHECK(false);
+        } catch (...) { CHECK(std::current_exception() == failure); }
+    }
+    CHECK(!foreign->get(&throwing) && foreign->minus_key(&throwing) == foreign && calls == 8);
+    auto combined = foreign->operator+(leaf);
+    CHECK(combined->get(&leaf_key) == leaf);
+    CHECK(combined->minus_key(&leaf_key) == foreign);
+    CHECK(combined->minus_key(&unrelated) == leaf);
+    try { combined->minus_key(&throwing); CHECK(false); }
+    catch (...) { CHECK(std::current_exception() == failure); }
+
+    class Dispatcher final : public CoroutineDispatcher {
+    public:
+        void dispatch(const CoroutineContext&, std::shared_ptr<Runnable> block) const override { block->run(); }
+    };
+    class DispatcherSubtypeKey final : public AbstractCoroutineContextKey<CoroutineDispatcher, Dispatcher> {
+    public:
+        DispatcherSubtypeKey() : AbstractCoroutineContextKey(&CoroutineDispatcher::KEY,
+            [](std::shared_ptr<CoroutineContext::Element> element) { return std::dynamic_pointer_cast<Dispatcher>(element); }) {}
+    };
+    class IdentityInterceptor final : public ContinuationInterceptor {
+    public:
+        std::shared_ptr<Continuation<void*>> intercept_continuation(std::shared_ptr<Continuation<void*>> continuation) override {
+            return continuation;
+        }
+    };
+    auto dispatcher = std::make_shared<Dispatcher>();
+    auto interceptor = std::make_shared<IdentityInterceptor>();
+    IdentityInterceptor borrowed_interceptor;
+    CHECK(!borrowed_interceptor.get(&unrelated));
+    CHECK(!borrowed_interceptor.get(&derived_key));
+    DispatcherSubtypeKey subtype;
+    CHECK(dispatcher->get(ContinuationInterceptor::type_key) == dispatcher);
+    CHECK(dispatcher->get(&CoroutineDispatcher::KEY) == dispatcher && dispatcher->get(&subtype) == dispatcher);
+    CHECK(!interceptor->get(&CoroutineDispatcher::KEY));
+    CHECK(interceptor->minus_key(&CoroutineDispatcher::KEY) == interceptor);
+    CHECK(dispatcher->minus_key(&subtype) == EmptyCoroutineContext::instance());
+    CHECK(dispatcher->minus_key(&CoroutineDispatcher::KEY) == EmptyCoroutineContext::instance());
+    auto dispatcher_context = leaf->operator+(dispatcher);
+    CHECK(dispatcher_context->get(&subtype) == dispatcher);
+    CHECK(dispatcher_context->minus_key(&CoroutineDispatcher::KEY) == leaf);
+    CHECK(dispatcher_context->minus_key(&leaf_key) == dispatcher);
+    auto replacement = dispatcher_context->operator+(interceptor);
+    CHECK(!replacement->get(&CoroutineDispatcher::KEY));
+    CHECK(replacement->get(ContinuationInterceptor::type_key) == interceptor);
+    CHECK(replacement->minus_key(ContinuationInterceptor::type_key) == leaf);
+    // Ordinary Element retains its exact-key behavior unless it opts into the source helpers.
+    auto exact = std::make_shared<AbstractCoroutineContextElement>(&root);
+    CHECK(!exact->get(&derived_key) && exact->minus_key(&derived_key) == exact);
+
+}
+
 // ChannelFlow.kt:118-121 uses CoroutineScope.kt:279-288 directly: the
 // scoped continuation's caller frame is the actual caller, with no intermediary.
 void channel_scope_contract() {
@@ -784,6 +901,7 @@ int main() {
     try {
         job_cancellation_equality_contract();
         job_cancellation_hash_contract();
+        polymorphic_context_contract();
         channel_scope_contract();
         sending_collector_contract();
         combine_contract();

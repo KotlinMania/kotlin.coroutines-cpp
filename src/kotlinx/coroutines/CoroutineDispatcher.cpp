@@ -1,3 +1,4 @@
+// port-lint: source kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt
  * @file CoroutineDispatcher.cpp
@@ -21,6 +22,15 @@
 
 namespace kotlinx {
     namespace coroutines {
+        // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt:65-67
+        CoroutineDispatcher::Key::Key()
+            : AbstractCoroutineContextKey(&ContinuationInterceptor::key_instance,
+                [](std::shared_ptr<CoroutineContext::Element> element) {
+                    return std::dynamic_pointer_cast<CoroutineDispatcher>(element);
+                }) {}
+        // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt:65-67
+        CoroutineDispatcher::Key CoroutineDispatcher::KEY;
+
         // CoroutineDispatcher implementation
 
         CoroutineDispatcher::CoroutineDispatcher() : AbstractCoroutineContextElement(ContinuationInterceptor::type_key) {

@@ -10,20 +10,20 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 804/2918 matched (target 3018) | 27.6% |
-| Class/type parity | 358/560 matched (target 521) | 63.9% |
-| Combined symbol parity | 1162/3478 matched (target 3539) | 33.4% |
+| Function parity | 811/2918 matched (target 3028) | 27.8% |
+| Class/type parity | 359/560 matched (target 523) | 64.1% |
+| Combined symbol parity | 1170/3478 matched (target 3551) | 33.6% |
 | Average function body similarity | 0.26 | inline-code cosine |
-| Average documentation similarity | 0.37 | doc text cosine |
-| Missing source functions | 691 | 0% parity until ported |
-| Missing source classes/types | 151 | 0% parity until ported |
-| Missing source symbol files | 100 | 842 symbols |
+| Average documentation similarity | 0.38 | doc text cosine |
+| Missing source functions | 683 | 0% parity until ported |
+| Missing source classes/types | 150 | 0% parity until ported |
+| Missing source symbol files | 99 | 833 symbols |
 | Cheat/scoring failures | 123 | forced to 0% |
 | Total source files | 354 | 100% |
 | Target units (paired) | 594 | - |
 | Target files (total) | 774 | - |
-| Porting progress | 250 | 70.6% (matched) |
-| Missing files | 104 | 29.4% |
+| Porting progress | 251 | 70.9% (matched) |
+| Missing files | 103 | 29.1% |
 
 ## Port Quality Analysis
 
@@ -32,7 +32,7 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 Similarity in this report is the required function-by-function body/parameter score. Class/type parity and symbol deficits are reported beside it; whole-file shape is diagnostic only.
 
 **Work Distribution:**
-- Critical (<0.60): 232 files (92.8% of matched)
+- Critical (<0.60): 233 files (92.8% of matched)
 - Needs review (0.60-0.84): 9 files (3.6% of matched)
 - Excellent (>=0.85): 9 files (3.6% of matched)
 
@@ -260,38 +260,39 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 216 | `test.CompletableDeferredTest` | `tests.CompletableDeferredTest` | 0.38 | 5/18 matched (target 9) | `CompletableDeferredTest::testFresh`, `CompletableDeferredTest::testComplete`, `CompletableDeferredTest::testCompleteWithIncompleteResult`, `CompletableDeferredTest::testCancelWithException`, `CompletableDeferredTest::testCompleteWithResultOK`, `CompletableDeferredTest::testCompleteWithResultException`, `CompletableDeferredTest::testParentCancelsChild`, `CompletableDeferredTest::testParentActiveOnChildCompletion`, `CompletableDeferredTest::testParentCancelledOnChildException`, `CompletableDeferredTest::testParentActiveOnChildCancellation`, `CompletableDeferredTest::testAwait`, `CompletableDeferredTest::testCancelAndAwaitParentWaitChildren`, `CompletableDeferredTest::testCompleteAndAwaitParentWaitChildren` | 1/1 matched | _none_ | 0/13 | 13 | 131906.2 |
 | 217 | `channels.FlowCallbackTest` | `channels.FlowCallbackTest` | 0.38 | 0/2 matched | `FlowCallbackTest::testClosedPrematurely`, `FlowCallbackTest::testNotClosedPrematurely` | 1/1 matched | _none_ | 0/2 | 2 | 20306.2 |
 | 218 | `internal.NamedDispatcher` | `internal.NamedDispatcher` | 0.39 | 2/4 matched | `NamedDispatcher::isDispatchNeeded`, `NamedDispatcher::dispatchYield` | 1/1 matched | _none_ | - | 2 | 20506.1 |
-| 219 | `channels.ChannelBuildersFlowTest` | `channels.ChannelBuildersFlowTest` | 0.39 | 0/10 matched | `ChannelBuildersFlowTest::testChannelConsumeAsFlow`, `ChannelBuildersFlowTest::testChannelReceiveAsFlow`, `ChannelBuildersFlowTest::testConsumeAsFlowCancellation`, `ChannelBuildersFlowTest::testReceiveAsFlowCancellation`, `ChannelBuildersFlowTest::testConsumeAsFlowException`, `ChannelBuildersFlowTest::testReceiveAsFlowException`, `ChannelBuildersFlowTest::testConsumeAsFlowProduceFusing`, `ChannelBuildersFlowTest::testReceiveAsFlowProduceFusing`, `ChannelBuildersFlowTest::testConsumeAsFlowProduceBuffered`, `ChannelBuildersFlowTest::testProduceInAtomicity` | 1/1 matched | _none_ | 0/10 | 10 | 101106.1 |
-| 220 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.39 | 9/9 matched (target 16) | _none_ | 1/1 matched | _none_ | - | 0 | 1006.1 |
-| 221 | `test.DelayTest` | `tests.DelayTest` | 0.41 | 1/5 matched | `DelayTest::testCancellation`, `DelayTest::testMaxLongValue`, `DelayTest::testMaxIntValue`, `DelayTest::testRegularDelay` | 1/1 matched | _none_ | 0/4 | 4 | 40605.9 |
-| 222 | `channels.ChannelFlowTest` | `channels.ChannelFlowTest` | 0.41 | 2/16 matched (target 15) | `ChannelFlowTest::testRegular`, `ChannelFlowTest::testBuffer`, `ChannelFlowTest::testConflated`, `ChannelFlowTest::testFailureCancelsChannel`, `ChannelFlowTest::testFailureInSourceCancelsConsumer`, `ChannelFlowTest::testScopedCancellation`, `ChannelFlowTest::testMergeOneCoroutineWithCancellation`, `ChannelFlowTest::testMergeTwoCoroutinesWithCancellation`, `ChannelFlowTest::testBufferWithTimeout`, `ChannelFlowTest::bufferWithTimeout`, `ChannelFlowTest::testChildCancellation`, `ChannelFlowTest::testClosedPrematurely`, `ChannelFlowTest::testNotClosedPrematurely`, `ChannelFlowTest::testCancelledOnCompletion` | 1/1 matched | _none_ | 0/13 | 14 | 141705.9 |
-| 223 | `test.DurationToMillisTest` | `tests.DurationToMillisTest` | 0.41 | 0/11 matched (target 13) | `DurationToMillisTest::testNegativeDurationCoercedToZeroMillis`, `DurationToMillisTest::testZeroDurationCoercedToZeroMillis`, `DurationToMillisTest::testOneNanosecondCoercedToOneMillisecond`, `DurationToMillisTest::testOneSecondCoercedTo1000Milliseconds`, `DurationToMillisTest::testMixedComponentDurationRoundedUpToNextMillisecond`, `DurationToMillisTest::testOneExtraNanosecondRoundedUpToNextMillisecond`, `DurationToMillisTest::testInfiniteDurationCoercedToLongMaxValue`, `DurationToMillisTest::testNegativeInfiniteDurationCoercedToZero`, `DurationToMillisTest::testNanosecondOffByOneInfinityDoesNotOverflow`, `DurationToMillisTest::testMillisecondOffByOneInfinityDoesNotIncrement`, `DurationToMillisTest::testOutOfBoundsNanosecondsButFiniteDoesNotIncrement` | 1/1 matched | _none_ | 0/11 | 11 | 111205.9 |
-| 224 | `internal.Scopes` | `internal.ScopeCoroutine` | 0.47 | 4/5 matched (target 13) | `ContextScope::toString` | 1/2 matched | `ContextScope` | - | 2 | 20705.3 |
-| 225 | `common.Unconfined` | `coroutines.Unconfined` | 0.47 | 4/4 matched (target 7) | _none_ | 2/2 matched (target 3) | _none_ | - | 0 | 605.3 |
-| 226 | `test.CancelledParentAttachTest` | `tests.CancelledParentAttachTest` | 0.48 | 4/9 matched | `CancelledParentAttachTest::testAsync`, `CancelledParentAttachTest::testLaunch`, `CancelledParentAttachTest::testProduce`, `CancelledParentAttachTest::testBroadcast`, `CancelledParentAttachTest::testScopes` | 1/1 matched | _none_ | 0/5 | 5 | 51005.2 |
-| 227 | `internal.FlowExceptions.common` | `internal.FlowExceptions` | 0.50 | 2/2 matched (target 3) | _none_ | 2/2 matched | _none_ | - | 0 | 405.0 |
-| 228 | `test.ConcurrentTestUtilities` | `test.ConcurrentTestUtilities` | 0.50 | 2/2 matched | _none_ | 0/0 matched | _none_ | - | 0 | 205.0 |
-| 229 | `flow.VirtualTime` | `flow.VirtualTime` | 0.51 | 7/7 matched (target 11) | _none_ | 2/2 matched | _none_ | - | 0 | 904.9 |
-| 230 | `test.DelayDurationTest` | `tests.DelayDurationTest` | 0.53 | 1/5 matched | `DelayDurationTest::testCancellation`, `DelayDurationTest::testInfinite`, `DelayDurationTest::testRegularDelay`, `DelayDurationTest::testNanoDelay` | 1/1 matched | _none_ | 0/4 | 4 | 40604.7 |
-| 231 | `test.AwaitCancellationTest` | `tests.AwaitCancellationTest` | 0.53 | 0/1 matched | `AwaitCancellationTest::testCancellation` | 1/1 matched | _none_ | 0/1 | 1 | 10204.7 |
-| 232 | `internal.FlowScopeTest` | `internal.FlowScopeTest` | 0.57 | 0/4 matched | `FlowScopeTest::testCancellation`, `FlowScopeTest::testCancellationWithChildCancelled`, `FlowScopeTest::testCancellationWithSuspensionPoint`, `FlowScopeTest::testNestedScopes` | 1/1 matched | _none_ | 0/4 | 4 | 40504.3 |
-| 233 | `test.BuilderContractsTest` | `tests.BuilderContractsTest` | 0.61 | 1/2 matched | `BuilderContractsTest::testContracts` | 1/1 matched | _none_ | 0/1 | 1 | 10303.9 |
-| 234 | `kotlin.SharedFlowBaseline` | `benchmarks.SharedFlowBaseline` | 0.66 | 1/1 matched | _none_ | 1/1 matched | _none_ | - | 0 | 203.4 |
-| 235 | `test.MainDispatcherTest` | `test.MainDispatcherTest` | 0.66 | 2/3 matched (target 2) | `MainDispatcherTest::scheduleOnMainQueue` | 1/1 matched | _none_ | - | 1 | 10403.4 |
-| 236 | `test.AtomicCancellationCommonTest` | `tests.AtomicCancellationCommonTest` | 0.66 | 0/8 matched | `AtomicCancellationCommonTest::testCancellableLaunch`, `AtomicCancellationCommonTest::testAtomicLaunch`, `AtomicCancellationCommonTest::testUndispatchedLaunch`, `AtomicCancellationCommonTest::testUndispatchedLaunchWithUnconfinedContext`, `AtomicCancellationCommonTest::testDeferredAwaitCancellable`, `AtomicCancellationCommonTest::testJobJoinCancellable`, `AtomicCancellationCommonTest::testLockCancellable`, `AtomicCancellationCommonTest::testSelectLockCancellable` | 1/1 matched | _none_ | 0/8 | 8 | 80903.4 |
-| 237 | `test.DelayExceptionTest` | `test.DelayExceptionTest` | 0.70 | 0/1 matched | `DelayExceptionTest::testMaxDelay` | 1/1 matched | _none_ | 0/1 | 1 | 10203.0 |
-| 238 | `test.CompletableJobTest` | `tests.CompletableJobTest` | 0.70 | 1/6 matched | `CompletableJobTest::testComplete`, `CompletableJobTest::testCompleteWithException`, `CompletableJobTest::testCompleteWithChildren`, `CompletableJobTest::testExceptionIsNotReportedToChildren`, `CompletableJobTest::testCompleteExceptionallyDoesntAffectDeferred` | 1/1 matched | _none_ | 0/5 | 5 | 50703.0 |
-| 239 | `test.WorkerTest` | `test.WorkerTest` | 0.72 | 0/3 matched | `WorkerTest::testLaunchInWorker`, `WorkerTest::testLaunchInWorkerThroughGlobalScope`, `WorkerTest::testRunBlockingInTerminatedWorker` | 1/1 matched | _none_ | 0/3 | 3 | 30402.8 |
-| 240 | `test.CoroutineExceptionHandlerTest` | `tests.CoroutineExceptionHandlerTest` | 0.73 | 0/2 matched | `CoroutineExceptionHandlerTest::testJob`, `CoroutineExceptionHandlerTest::testCompletableDeferred` | 1/1 matched | _none_ | 0/2 | 2 | 20302.7 |
-| 241 | `concurrent.MultithreadedDispatchers.common` | `coroutines.MultithreadedDispatchers` | 0.83 | 1/1 matched (target 8) | _none_ | 0/0 matched (target 1) | _none_ | - | 0 | 101.7 |
-| 242 | `channels.BufferOverflow` | `channels.BufferOverflow` | 1.00 | 0/0 matched | _none_ | 1/1 matched | _none_ | - | 0 | 2000100.0 |
-| 243 | `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1.00 | 0/0 matched | _none_ | 0/1 matched (target 0) | `LocalAtomicInt` | - | 1 | 10100.0 |
-| 244 | `native.CloseableCoroutineDispatcher` | `native.CloseableCoroutineDispatcher` | 1.00 | 0/0 matched | _none_ | 0/1 matched (target 0) | `CloseableCoroutineDispatcher` | - | 1 | 10100.0 |
-| 245 | `native.SchedulerTask` | `native.SchedulerTask` | 1.00 | 0/0 matched | _none_ | 0/1 matched (target 0) | `SchedulerTask` | - | 1 | 10100.0 |
-| 246 | `common.CompletionHandler.common` | `coroutines.CompletionHandler` | 1.00 | 0/0 matched | _none_ | 1/1 matched | _none_ | - | 0 | 100.0 |
-| 247 | `common.Deferred` | `coroutines.Deferred` | 1.00 | 0/0 matched | _none_ | 1/1 matched | _none_ | - | 0 | 100.0 |
-| 248 | `concurrent.Builders.concurrent` | `concurrent.Builders.concurrent` | 1.00 | 0/0 matched | _none_ | 0/0 matched | _none_ | - | 0 | 0.0 |
-| 249 | `concurrent.Dispatchers` | `concurrent.Dispatchers` | 1.00 | 0/0 matched | _none_ | 0/0 matched | _none_ | - | 0 | 0.0 |
-| 250 | `flow.FlowCollector` | `flow.FlowCollector` | 1.00 | 0/0 matched | _none_ | 1/1 matched | _none_ | - | 0 | 100.0 |
+| 219 | `common.CoroutineDispatcher` | `coroutines.CoroutineDispatcher` | 0.39 | 7/8 matched (target 10) | `CoroutineDispatcher::limitedParallelism` | 1/1 matched (target 2) | _none_ | - | 1 | 10906.1 |
+| 220 | `channels.ChannelBuildersFlowTest` | `channels.ChannelBuildersFlowTest` | 0.39 | 0/10 matched | `ChannelBuildersFlowTest::testChannelConsumeAsFlow`, `ChannelBuildersFlowTest::testChannelReceiveAsFlow`, `ChannelBuildersFlowTest::testConsumeAsFlowCancellation`, `ChannelBuildersFlowTest::testReceiveAsFlowCancellation`, `ChannelBuildersFlowTest::testConsumeAsFlowException`, `ChannelBuildersFlowTest::testReceiveAsFlowException`, `ChannelBuildersFlowTest::testConsumeAsFlowProduceFusing`, `ChannelBuildersFlowTest::testReceiveAsFlowProduceFusing`, `ChannelBuildersFlowTest::testConsumeAsFlowProduceBuffered`, `ChannelBuildersFlowTest::testProduceInAtomicity` | 1/1 matched | _none_ | 0/10 | 10 | 101106.1 |
+| 221 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.39 | 9/9 matched (target 16) | _none_ | 1/1 matched | _none_ | - | 0 | 1006.1 |
+| 222 | `test.DelayTest` | `tests.DelayTest` | 0.41 | 1/5 matched | `DelayTest::testCancellation`, `DelayTest::testMaxLongValue`, `DelayTest::testMaxIntValue`, `DelayTest::testRegularDelay` | 1/1 matched | _none_ | 0/4 | 4 | 40605.9 |
+| 223 | `channels.ChannelFlowTest` | `channels.ChannelFlowTest` | 0.41 | 2/16 matched (target 15) | `ChannelFlowTest::testRegular`, `ChannelFlowTest::testBuffer`, `ChannelFlowTest::testConflated`, `ChannelFlowTest::testFailureCancelsChannel`, `ChannelFlowTest::testFailureInSourceCancelsConsumer`, `ChannelFlowTest::testScopedCancellation`, `ChannelFlowTest::testMergeOneCoroutineWithCancellation`, `ChannelFlowTest::testMergeTwoCoroutinesWithCancellation`, `ChannelFlowTest::testBufferWithTimeout`, `ChannelFlowTest::bufferWithTimeout`, `ChannelFlowTest::testChildCancellation`, `ChannelFlowTest::testClosedPrematurely`, `ChannelFlowTest::testNotClosedPrematurely`, `ChannelFlowTest::testCancelledOnCompletion` | 1/1 matched | _none_ | 0/13 | 14 | 141705.9 |
+| 224 | `test.DurationToMillisTest` | `tests.DurationToMillisTest` | 0.41 | 0/11 matched (target 13) | `DurationToMillisTest::testNegativeDurationCoercedToZeroMillis`, `DurationToMillisTest::testZeroDurationCoercedToZeroMillis`, `DurationToMillisTest::testOneNanosecondCoercedToOneMillisecond`, `DurationToMillisTest::testOneSecondCoercedTo1000Milliseconds`, `DurationToMillisTest::testMixedComponentDurationRoundedUpToNextMillisecond`, `DurationToMillisTest::testOneExtraNanosecondRoundedUpToNextMillisecond`, `DurationToMillisTest::testInfiniteDurationCoercedToLongMaxValue`, `DurationToMillisTest::testNegativeInfiniteDurationCoercedToZero`, `DurationToMillisTest::testNanosecondOffByOneInfinityDoesNotOverflow`, `DurationToMillisTest::testMillisecondOffByOneInfinityDoesNotIncrement`, `DurationToMillisTest::testOutOfBoundsNanosecondsButFiniteDoesNotIncrement` | 1/1 matched | _none_ | 0/11 | 11 | 111205.9 |
+| 225 | `internal.Scopes` | `internal.ScopeCoroutine` | 0.47 | 4/5 matched (target 13) | `ContextScope::toString` | 1/2 matched | `ContextScope` | - | 2 | 20705.3 |
+| 226 | `common.Unconfined` | `coroutines.Unconfined` | 0.47 | 4/4 matched (target 7) | _none_ | 2/2 matched (target 3) | _none_ | - | 0 | 605.3 |
+| 227 | `test.CancelledParentAttachTest` | `tests.CancelledParentAttachTest` | 0.48 | 4/9 matched | `CancelledParentAttachTest::testAsync`, `CancelledParentAttachTest::testLaunch`, `CancelledParentAttachTest::testProduce`, `CancelledParentAttachTest::testBroadcast`, `CancelledParentAttachTest::testScopes` | 1/1 matched | _none_ | 0/5 | 5 | 51005.2 |
+| 228 | `internal.FlowExceptions.common` | `internal.FlowExceptions` | 0.50 | 2/2 matched (target 3) | _none_ | 2/2 matched | _none_ | - | 0 | 405.0 |
+| 229 | `test.ConcurrentTestUtilities` | `test.ConcurrentTestUtilities` | 0.50 | 2/2 matched | _none_ | 0/0 matched | _none_ | - | 0 | 205.0 |
+| 230 | `flow.VirtualTime` | `flow.VirtualTime` | 0.51 | 7/7 matched (target 11) | _none_ | 2/2 matched | _none_ | - | 0 | 904.9 |
+| 231 | `test.DelayDurationTest` | `tests.DelayDurationTest` | 0.53 | 1/5 matched | `DelayDurationTest::testCancellation`, `DelayDurationTest::testInfinite`, `DelayDurationTest::testRegularDelay`, `DelayDurationTest::testNanoDelay` | 1/1 matched | _none_ | 0/4 | 4 | 40604.7 |
+| 232 | `test.AwaitCancellationTest` | `tests.AwaitCancellationTest` | 0.53 | 0/1 matched | `AwaitCancellationTest::testCancellation` | 1/1 matched | _none_ | 0/1 | 1 | 10204.7 |
+| 233 | `internal.FlowScopeTest` | `internal.FlowScopeTest` | 0.57 | 0/4 matched | `FlowScopeTest::testCancellation`, `FlowScopeTest::testCancellationWithChildCancelled`, `FlowScopeTest::testCancellationWithSuspensionPoint`, `FlowScopeTest::testNestedScopes` | 1/1 matched | _none_ | 0/4 | 4 | 40504.3 |
+| 234 | `test.BuilderContractsTest` | `tests.BuilderContractsTest` | 0.61 | 1/2 matched | `BuilderContractsTest::testContracts` | 1/1 matched | _none_ | 0/1 | 1 | 10303.9 |
+| 235 | `kotlin.SharedFlowBaseline` | `benchmarks.SharedFlowBaseline` | 0.66 | 1/1 matched | _none_ | 1/1 matched | _none_ | - | 0 | 203.4 |
+| 236 | `test.MainDispatcherTest` | `test.MainDispatcherTest` | 0.66 | 2/3 matched (target 2) | `MainDispatcherTest::scheduleOnMainQueue` | 1/1 matched | _none_ | - | 1 | 10403.4 |
+| 237 | `test.AtomicCancellationCommonTest` | `tests.AtomicCancellationCommonTest` | 0.66 | 0/8 matched | `AtomicCancellationCommonTest::testCancellableLaunch`, `AtomicCancellationCommonTest::testAtomicLaunch`, `AtomicCancellationCommonTest::testUndispatchedLaunch`, `AtomicCancellationCommonTest::testUndispatchedLaunchWithUnconfinedContext`, `AtomicCancellationCommonTest::testDeferredAwaitCancellable`, `AtomicCancellationCommonTest::testJobJoinCancellable`, `AtomicCancellationCommonTest::testLockCancellable`, `AtomicCancellationCommonTest::testSelectLockCancellable` | 1/1 matched | _none_ | 0/8 | 8 | 80903.4 |
+| 238 | `test.DelayExceptionTest` | `test.DelayExceptionTest` | 0.70 | 0/1 matched | `DelayExceptionTest::testMaxDelay` | 1/1 matched | _none_ | 0/1 | 1 | 10203.0 |
+| 239 | `test.CompletableJobTest` | `tests.CompletableJobTest` | 0.70 | 1/6 matched | `CompletableJobTest::testComplete`, `CompletableJobTest::testCompleteWithException`, `CompletableJobTest::testCompleteWithChildren`, `CompletableJobTest::testExceptionIsNotReportedToChildren`, `CompletableJobTest::testCompleteExceptionallyDoesntAffectDeferred` | 1/1 matched | _none_ | 0/5 | 5 | 50703.0 |
+| 240 | `test.WorkerTest` | `test.WorkerTest` | 0.72 | 0/3 matched | `WorkerTest::testLaunchInWorker`, `WorkerTest::testLaunchInWorkerThroughGlobalScope`, `WorkerTest::testRunBlockingInTerminatedWorker` | 1/1 matched | _none_ | 0/3 | 3 | 30402.8 |
+| 241 | `test.CoroutineExceptionHandlerTest` | `tests.CoroutineExceptionHandlerTest` | 0.73 | 0/2 matched | `CoroutineExceptionHandlerTest::testJob`, `CoroutineExceptionHandlerTest::testCompletableDeferred` | 1/1 matched | _none_ | 0/2 | 2 | 20302.7 |
+| 242 | `concurrent.MultithreadedDispatchers.common` | `coroutines.MultithreadedDispatchers` | 0.83 | 1/1 matched (target 8) | _none_ | 0/0 matched (target 1) | _none_ | - | 0 | 101.7 |
+| 243 | `channels.BufferOverflow` | `channels.BufferOverflow` | 1.00 | 0/0 matched | _none_ | 1/1 matched | _none_ | - | 0 | 2000100.0 |
+| 244 | `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1.00 | 0/0 matched | _none_ | 0/1 matched (target 0) | `LocalAtomicInt` | - | 1 | 10100.0 |
+| 245 | `native.CloseableCoroutineDispatcher` | `native.CloseableCoroutineDispatcher` | 1.00 | 0/0 matched | _none_ | 0/1 matched (target 0) | `CloseableCoroutineDispatcher` | - | 1 | 10100.0 |
+| 246 | `native.SchedulerTask` | `native.SchedulerTask` | 1.00 | 0/0 matched | _none_ | 0/1 matched (target 0) | `SchedulerTask` | - | 1 | 10100.0 |
+| 247 | `common.CompletionHandler.common` | `coroutines.CompletionHandler` | 1.00 | 0/0 matched | _none_ | 1/1 matched | _none_ | - | 0 | 100.0 |
+| 248 | `common.Deferred` | `coroutines.Deferred` | 1.00 | 0/0 matched | _none_ | 1/1 matched | _none_ | - | 0 | 100.0 |
+| 249 | `concurrent.Builders.concurrent` | `concurrent.Builders.concurrent` | 1.00 | 0/0 matched | _none_ | 0/0 matched | _none_ | - | 0 | 0.0 |
+| 250 | `concurrent.Dispatchers` | `concurrent.Dispatchers` | 1.00 | 0/0 matched | _none_ | 0/0 matched | _none_ | - | 0 | 0.0 |
+| 251 | `flow.FlowCollector` | `flow.FlowCollector` | 1.00 | 0/0 matched | _none_ | 1/1 matched | _none_ | - | 0 | 100.0 |
 
 ## Cheat Detection / Scoring Failures
 
@@ -641,6 +642,7 @@ These files need significant work:
 - `test.CompletableDeferredTest` -> `tests.CompletableDeferredTest` (0.38)
 - `channels.FlowCallbackTest` -> `channels.FlowCallbackTest` (0.38)
 - `internal.NamedDispatcher` -> `internal.NamedDispatcher` (0.39)
+- `common.CoroutineDispatcher` -> `coroutines.CoroutineDispatcher` (0.39)
 - `channels.ChannelBuildersFlowTest` -> `channels.ChannelBuildersFlowTest` (0.39)
 - `common.AbstractCoroutine` -> `coroutines.AbstractCoroutine` (0.39)
 - `test.DelayTest` -> `tests.DelayTest` (0.41)
@@ -674,8 +676,8 @@ present in the Rust source file.
 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 2/7 | `UserSupplied`, `CompletedContinuation` |
 | `channels.TestChannelKind` | `channels.TestChannelKind [ZERO]` | 1/2 | `ChannelViaBroadcast` |
 | `sync.Mutex` | `sync.Mutex` | 2/4 | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` |
-| `native.Dispatchers` | `native.Dispatchers [STUB]` | 2/2 | `Dispatchers`, `DefaultIoScheduler` |
 | `native.Builders` | `native.Builders [ZERO]` | 2/2 | `ThreadLocalKeepAlive`, `BlockingCoroutine` |
+| `native.Dispatchers` | `native.Dispatchers [STUB]` | 2/2 | `Dispatchers`, `DefaultIoScheduler` |
 | `common.TestDispatcher` | `test.TestDispatcher` | 1/2 | `CancellableContinuationRunnable` |
 | `common.CompletionState` | `coroutines.CompletionState` | 2/2 | `CompletedExceptionally`, `CancelledContinuation` |
 | `internal.Concurrent.common` | `internal.Concurrent.common [ZERO]` | 3/3 | `ReentrantLock`, `BenignDataRace`, `WorkaroundAtomicReference` |
@@ -684,8 +686,8 @@ present in the Rust source file.
 | `operators.Share` | `flow.Share` | 1/5 | `SubscribedFlowCollector` |
 | `internal.Scopes` | `internal.ScopeCoroutine` | 1/2 | `ContextScope` |
 | `common.Builders.common` | `coroutines.Builders.common` | 1/6 | `UndispatchedCoroutine` |
-| `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1/1 | `LocalAtomicInt` |
 | `native.SchedulerTask` | `native.SchedulerTask` | 1/1 | `SchedulerTask` |
+| `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1/1 | `LocalAtomicInt` |
 | `native.CloseableCoroutineDispatcher` | `native.CloseableCoroutineDispatcher` | 1/1 | `CloseableCoroutineDispatcher` |
 
 ## High Priority Missing Files
@@ -725,81 +727,80 @@ present in the Rust source file.
 | 31 | `nativeOther.Dispatchers` | `kotlinx-coroutines-core.nativeOther.src.Dispatchers` | 0 | 8 | 2 | 10 | `kotlinx-coroutines-core/nativeOther/src/Dispatchers.kt` | `kotlinx-coroutines-core/nativeOther/src/Dispatchers.cpp` |
 | 32 | `selects.SelectDeferredTest` | `kotlinx-coroutines-core.common.test.selects.SelectDeferredTest` | 0 | 8 | 2 | 10 | `kotlinx-coroutines-core/common/test/selects/SelectDeferredTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectDeferredTest.cpp` |
 | 33 | `common.CancellableContinuation` | `kotlinx-coroutines-core.common.src.CancellableContinuation` | 0 | 7 | 2 | 9 | `kotlinx-coroutines-core/common/src/CancellableContinuation.kt` | `kotlinx-coroutines-core/common/src/CancellableContinuation.cpp` |
-| 34 | `common.CoroutineDispatcher` | `kotlinx-coroutines-core.common.src.CoroutineDispatcher` | 0 | 8 | 1 | 9 | `kotlinx-coroutines-core/common/src/CoroutineDispatcher.kt` | `kotlinx-coroutines-core/common/src/CoroutineDispatcher.cpp` |
-| 35 | `common.TestCoroutineDispatchers` | `kotlinx-coroutines-test.common.src.TestCoroutineDispatchers` | 0 | 7 | 2 | 9 | `kotlinx-coroutines-test/common/src/TestCoroutineDispatchers.kt` | `kotlinx-coroutines-test/common/src/TestCoroutineDispatchers.cpp` |
-| 36 | `selects.SelectOldTest` | `kotlinx-coroutines-core.common.test.selects.SelectOldTest` | 0 | 8 | 1 | 9 | `kotlinx-coroutines-core/common/test/selects/SelectOldTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectOldTest.cpp` |
-| 37 | `terminal.SingleTest` | `kotlinx-coroutines-core.common.test.flow.terminal.SingleTest` | 0 | 8 | 1 | 9 | `kotlinx-coroutines-core/common/test/flow/terminal/SingleTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/SingleTest.cpp` |
-| 38 | `channels.ChannelsTest` | `kotlinx-coroutines-core.common.test.channels.ChannelsTest` | 0 | 7 | 1 | 8 | `kotlinx-coroutines-core/common/test/channels/ChannelsTest.kt` | `kotlinx-coroutines-core/common/test/channels/ChannelsTest.cpp` |
-| 39 | `channels.ChannelFactoryTest` | `kotlinx-coroutines-core.common.test.channels.ChannelFactoryTest` | 0 | 6 | 1 | 7 | `kotlinx-coroutines-core/common/test/channels/ChannelFactoryTest.kt` | `kotlinx-coroutines-core/common/test/channels/ChannelFactoryTest.cpp` |
-| 40 | `flow.TakeWhileBenchmark` | `kotlinx-coroutines-core.benchmarks.jvm.kotlin.kotlinx.coroutines.flow.TakeWhileBenchmark` | 0 | 6 | 1 | 7 | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/flow/TakeWhileBenchmark.kt` | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/flow/TakeWhileBenchmark.cpp` |
-| 41 | `native.EventLoop` | `kotlinx-coroutines-core.native.src.EventLoop` | 0 | 5 | 2 | 7 | `kotlinx-coroutines-core/native/src/EventLoop.kt` | `kotlinx-coroutines-core/native/src/EventLoop.cpp` |
-| 42 | `test.CancellableContinuationTest` | `kotlinx-coroutines-core.common.test.CancellableContinuationTest` | 0 | 6 | 1 | 7 | `kotlinx-coroutines-core/common/test/CancellableContinuationTest.kt` | `kotlinx-coroutines-core/common/test/CancellableContinuationTest.cpp` |
-| 43 | `test.ImmediateYieldTest` | `kotlinx-coroutines-core.common.test.ImmediateYieldTest` | 0 | 5 | 2 | 7 | `kotlinx-coroutines-core/common/test/ImmediateYieldTest.kt` | `kotlinx-coroutines-core/common/test/ImmediateYieldTest.cpp` |
-| 44 | `test.UnconfinedCancellationTest` | `kotlinx-coroutines-core.common.test.UnconfinedCancellationTest` | 0 | 6 | 1 | 7 | `kotlinx-coroutines-core/common/test/UnconfinedCancellationTest.kt` | `kotlinx-coroutines-core/common/test/UnconfinedCancellationTest.cpp` |
-| 45 | `native.TestBase` | `test-utils.native.src.TestBase` | 0 | 3 | 3 | 6 | `test-utils/native/src/TestBase.kt` | `test-utils/native/src/TestBase.cpp` |
-| 46 | `terminal.LastTest` | `kotlinx-coroutines-core.common.test.flow.terminal.LastTest` | 0 | 5 | 1 | 6 | `kotlinx-coroutines-core/common/test/flow/terminal/LastTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/LastTest.cpp` |
-| 47 | `terminal.ReduceTest` | `kotlinx-coroutines-core.common.test.flow.terminal.ReduceTest` | 0 | 5 | 1 | 6 | `kotlinx-coroutines-core/common/test/flow/terminal/ReduceTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/ReduceTest.cpp` |
-| 48 | `common.CoroutineExceptionHandler` | `kotlinx-coroutines-core.common.src.CoroutineExceptionHandler` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/src/CoroutineExceptionHandler.kt` | `kotlinx-coroutines-core/common/src/CoroutineExceptionHandler.cpp` |
-| 49 | `coroutines.SemaphoreBenchmark` | `kotlinx-coroutines-core.benchmarks.jvm.kotlin.kotlinx.coroutines.SemaphoreBenchmark` | 0 | 3 | 2 | 5 | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/SemaphoreBenchmark.kt` | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/SemaphoreBenchmark.cpp` |
-| 50 | `flow.BuildersTest` | `kotlinx-coroutines-core.common.test.flow.BuildersTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/flow/BuildersTest.kt` | `kotlinx-coroutines-core/common/test/flow/BuildersTest.cpp` |
-| 51 | `internal.ThreadLocal` | `kotlinx-coroutines-core.native.src.internal.ThreadLocal` | 0 | 3 | 2 | 5 | `kotlinx-coroutines-core/native/src/internal/ThreadLocal.kt` | `kotlinx-coroutines-core/native/src/internal/ThreadLocal.cpp` |
-| 52 | `selects.SelectTimeoutDurationTest` | `kotlinx-coroutines-core.common.test.selects.SelectTimeoutDurationTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/selects/SelectTimeoutDurationTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectTimeoutDurationTest.cpp` |
-| 53 | `selects.SelectTimeoutTest` | `kotlinx-coroutines-core.common.test.selects.SelectTimeoutTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/selects/SelectTimeoutTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectTimeoutTest.cpp` |
-| 54 | `sharing.SharingStartedWhileSubscribedTest` | `kotlinx-coroutines-core.common.test.flow.sharing.SharingStartedWhileSubscribedTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/flow/sharing/SharingStartedWhileSubscribedTest.kt` | `kotlinx-coroutines-core/common/test/flow/sharing/SharingStartedWhileSubscribedTest.cpp` |
-| 55 | `terminal.CollectLatestTest` | `kotlinx-coroutines-core.common.test.flow.terminal.CollectLatestTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/flow/terminal/CollectLatestTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/CollectLatestTest.cpp` |
-| 56 | `terminal.CountTest` | `kotlinx-coroutines-core.common.test.flow.terminal.CountTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/flow/terminal/CountTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/CountTest.cpp` |
-| 57 | `test.NonCancellableTest` | `kotlinx-coroutines-core.common.test.NonCancellableTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/NonCancellableTest.kt` | `kotlinx-coroutines-core/common/test/NonCancellableTest.cpp` |
-| 58 | `channels.SimpleChannelBenchmark` | `kotlinx-coroutines-core.benchmarks.jvm.kotlin.kotlinx.coroutines.channels.SimpleChannelBenchmark` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/channels/SimpleChannelBenchmark.kt` | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/channels/SimpleChannelBenchmark.cpp` |
-| 59 | `internal.LocalAtomics` | `kotlinx-coroutines-core.native.src.internal.LocalAtomics` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-core/native/src/internal/LocalAtomics.kt` | `kotlinx-coroutines-core/native/src/internal/LocalAtomics.cpp` |
-| 60 | `native.TestBuilders` | `kotlinx-coroutines-test.native.src.TestBuilders` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-test/native/src/TestBuilders.kt` | `kotlinx-coroutines-test/native/src/TestBuilders.cpp` |
-| 61 | `selects.SelectJobTest` | `kotlinx-coroutines-core.common.test.selects.SelectJobTest` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-core/common/test/selects/SelectJobTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectJobTest.cpp` |
-| 62 | `terminal.FoldTest` | `kotlinx-coroutines-core.common.test.flow.terminal.FoldTest` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-core/common/test/flow/terminal/FoldTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/FoldTest.cpp` |
-| 63 | `terminal.LaunchInTest` | `kotlinx-coroutines-core.common.test.flow.terminal.LaunchInTest` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-core/common/test/flow/terminal/LaunchInTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/LaunchInTest.cpp` |
-| 64 | `internal.CoroutineExceptionHandlerImpl` | `kotlinx-coroutines-core.native.src.internal.CoroutineExceptionHandlerImpl` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/native/src/internal/CoroutineExceptionHandlerImpl.kt` | `kotlinx-coroutines-core/native/src/internal/CoroutineExceptionHandlerImpl.cpp` |
-| 65 | `internal.CoroutineExceptionHandlerImpl.common` | `kotlinx-coroutines-core.common.src.internal.CoroutineExceptionHandlerImpl.common` | 0 | 1 | 2 | 3 | `kotlinx-coroutines-core/common/src/internal/CoroutineExceptionHandlerImpl.common.kt` | `kotlinx-coroutines-core/common/src/internal/CoroutineExceptionHandlerImpl.common.cpp` |
-| 66 | `internal.SafeCollector` | `kotlinx-coroutines-core.native.src.flow.internal.SafeCollector` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt` | `kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.cpp` |
-| 67 | `kotlinx-coroutines-core.build.gradle` | `kotlinx-coroutines-core.build.gradle` | 0 | 3 | 0 | 3 | `kotlinx-coroutines-core/build.gradle.kts` | `kotlinx-coroutines-core/build.gradle.cpp` |
-| 68 | `selects.SelectBiasTest` | `kotlinx-coroutines-core.common.test.selects.SelectBiasTest` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/common/test/selects/SelectBiasTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectBiasTest.cpp` |
-| 69 | `selects.SelectMutexTest` | `kotlinx-coroutines-core.common.test.selects.SelectMutexTest` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/common/test/selects/SelectMutexTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectMutexTest.cpp` |
-| 70 | `terminal.ToCollectionTest` | `kotlinx-coroutines-core.common.test.flow.terminal.ToCollectionTest` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/common/test/flow/terminal/ToCollectionTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/ToCollectionTest.cpp` |
-| 71 | `test.ConcurrentTestUtilities.common` | `kotlinx-coroutines-core.concurrent.test.ConcurrentTestUtilities.common` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/concurrent/test/ConcurrentTestUtilities.common.kt` | `kotlinx-coroutines-core/concurrent/test/ConcurrentTestUtilities.common.cpp` |
-| 72 | `channels.SelectBenchmark` | `kotlinx-coroutines-core.benchmarks.jvm.kotlin.kotlinx.coroutines.channels.SelectBenchmark` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/channels/SelectBenchmark.kt` | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/channels/SelectBenchmark.cpp` |
-| 73 | `common.CoroutineName` | `kotlinx-coroutines-core.common.src.CoroutineName` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-core/common/src/CoroutineName.kt` | `kotlinx-coroutines-core/common/src/CoroutineName.cpp` |
-| 74 | `common.Guidance` | `kotlinx-coroutines-core.common.src.Guidance` | 0 | 2 | 0 | 2 | `kotlinx-coroutines-core/common/src/Guidance.kt` | `kotlinx-coroutines-core/common/src/Guidance.cpp` |
-| 75 | `internal.LockFreeLinkedList.common` | `kotlinx-coroutines-core.common.src.internal.LockFreeLinkedList.common` | 0 | 0 | 2 | 2 | `kotlinx-coroutines-core/common/src/internal/LockFreeLinkedList.common.kt` | `kotlinx-coroutines-core/common/src/internal/LockFreeLinkedList.common.cpp` |
-| 76 | `internal.ProbesSupport` | `kotlinx-coroutines-core.native.src.internal.ProbesSupport` | 0 | 2 | 0 | 2 | `kotlinx-coroutines-core/native/src/internal/ProbesSupport.kt` | `kotlinx-coroutines-core/native/src/internal/ProbesSupport.cpp` |
-| 77 | `internal.ReportingSupervisorJob` | `kotlinx-coroutines-test.common.src.internal.ReportingSupervisorJob` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-test/common/src/internal/ReportingSupervisorJob.kt` | `kotlinx-coroutines-test/common/src/internal/ReportingSupervisorJob.cpp` |
-| 78 | `internal.StackTraceRecovery.common` | `kotlinx-coroutines-core.common.src.internal.StackTraceRecovery.common` | 0 | 0 | 2 | 2 | `kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.kt` | `kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.cpp` |
-| 79 | `internal.Synchronized` | `kotlinx-coroutines-core.native.src.internal.Synchronized` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-core/native/src/internal/Synchronized.kt` | `kotlinx-coroutines-core/native/src/internal/Synchronized.cpp` |
-| 80 | `kotlinx-coroutines-test.common.test.Helpers` | `kotlinx-coroutines-test.common.test.Helpers` | 0 | 2 | 0 | 2 | `kotlinx-coroutines-test/common/test/Helpers.kt` | `kotlinx-coroutines-test/common/test/Helpers.cpp` |
-| 81 | `native.Runnable` | `kotlinx-coroutines-core.native.src.Runnable` | 0 | 2 | 0 | 2 | `kotlinx-coroutines-core/native/src/Runnable.kt` | `kotlinx-coroutines-core/native/src/Runnable.cpp` |
-| 82 | `selects.SelectLoopTest` | `kotlinx-coroutines-core.common.test.selects.SelectLoopTest` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-core/common/test/selects/SelectLoopTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectLoopTest.cpp` |
-| 83 | `selects.SelectUnlimitedChannelTest` | `kotlinx-coroutines-core.common.test.selects.SelectUnlimitedChannelTest` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-core/common/test/selects/SelectUnlimitedChannelTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectUnlimitedChannelTest.cpp` |
-| 84 | `common.Annotations` | `kotlinx-coroutines-core.common.src.Annotations` | 5 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/Annotations.kt` | `kotlinx-coroutines-core/common/src/Annotations.cpp` |
-| 85 | `internal.TestMainDispatcher` | `kotlinx-coroutines-test.native.src.internal.TestMainDispatcher` | 1 | 1 | 0 | 1 | `kotlinx-coroutines-test/native/src/internal/TestMainDispatcher.kt` | `kotlinx-coroutines-test/native/src/internal/TestMainDispatcher.cpp` |
-| 86 | `build.gradle` | `build.gradle` | 0 | 1 | 0 | 1 | `build.gradle.kts` | `build.gradle.cpp` |
-| 87 | `common.CloseableCoroutineDispatcher` | `kotlinx-coroutines-core.common.src.CloseableCoroutineDispatcher` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/CloseableCoroutineDispatcher.kt` | `kotlinx-coroutines-core/common/src/CloseableCoroutineDispatcher.cpp` |
-| 88 | `common.CompletableJob` | `kotlinx-coroutines-core.common.src.CompletableJob` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/CompletableJob.kt` | `kotlinx-coroutines-core/common/src/CompletableJob.cpp` |
-| 89 | `common.Debug.common` | `kotlinx-coroutines-core.common.src.Debug.common` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/Debug.common.kt` | `kotlinx-coroutines-core/common/src/Debug.common.cpp` |
-| 90 | `common.Dispatchers.common` | `kotlinx-coroutines-core.common.src.Dispatchers.common` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/Dispatchers.common.kt` | `kotlinx-coroutines-core/common/src/Dispatchers.common.cpp` |
-| 91 | `common.SchedulerTask.common` | `kotlinx-coroutines-core.common.src.SchedulerTask.common` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/SchedulerTask.common.kt` | `kotlinx-coroutines-core/common/src/SchedulerTask.common.cpp` |
-| 92 | `common.Waiter` | `kotlinx-coroutines-core.common.src.Waiter` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/Waiter.kt` | `kotlinx-coroutines-core/common/src/Waiter.cpp` |
-| 93 | `coroutines.BenchmarkUtils` | `kotlinx-coroutines-core.benchmarks.jvm.kotlin.kotlinx.coroutines.BenchmarkUtils` | 0 | 1 | 0 | 1 | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/BenchmarkUtils.kt` | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/BenchmarkUtils.cpp` |
-| 94 | `internal.InternalAnnotations.common` | `kotlinx-coroutines-core.common.src.internal.InternalAnnotations.common` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/internal/InternalAnnotations.common.kt` | `kotlinx-coroutines-core/common/src/internal/InternalAnnotations.common.cpp` |
-| 95 | `internal.SystemProps` | `kotlinx-coroutines-core.native.src.internal.SystemProps` | 0 | 1 | 0 | 1 | `kotlinx-coroutines-core/native/src/internal/SystemProps.kt` | `kotlinx-coroutines-core/native/src/internal/SystemProps.cpp` |
-| 96 | `internal.ThreadContext` | `kotlinx-coroutines-core.native.src.internal.ThreadContext` | 0 | 1 | 0 | 1 | `kotlinx-coroutines-core/native/src/internal/ThreadContext.kt` | `kotlinx-coroutines-core/native/src/internal/ThreadContext.cpp` |
-| 97 | `internal.ThreadLocal.common` | `kotlinx-coroutines-core.common.src.internal.ThreadLocal.common` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/internal/ThreadLocal.common.kt` | `kotlinx-coroutines-core/common/src/internal/ThreadLocal.common.cpp` |
-| 98 | `settings.gradle` | `settings.gradle` | 0 | 1 | 0 | 1 | `settings.gradle.kts` | `settings.gradle.cpp` |
-| 99 | `test.Helpers` | `kotlinx-coroutines-test.native.test.Helpers` | 0 | 1 | 0 | 1 | `kotlinx-coroutines-test/native/test/Helpers.kt` | `kotlinx-coroutines-test/native/test/Helpers.cpp` |
-| 100 | `test.Launcher` | `kotlinx-coroutines-core.nativeOther.test.Launcher` | 0 | 1 | 0 | 1 | `kotlinx-coroutines-core/nativeOther/test/Launcher.kt` | `kotlinx-coroutines-core/nativeOther/test/Launcher.cpp` |
-| 101 | `common.CoroutineContext.common` | `kotlinx-coroutines-core.common.src.CoroutineContext.common` | 0 | 0 | 0 | 0 | `kotlinx-coroutines-core/common/src/CoroutineContext.common.kt` | `kotlinx-coroutines-core/common/src/CoroutineContext.common.cpp` |
-| 102 | `internal.ThreadContext.common` | `kotlinx-coroutines-core.common.src.internal.ThreadContext.common` | 0 | 0 | 0 | 0 | `kotlinx-coroutines-core/common/src/internal/ThreadContext.common.kt` | `kotlinx-coroutines-core/common/src/internal/ThreadContext.common.cpp` |
-| 103 | `kotlinx-coroutines-test.build.gradle` | `kotlinx-coroutines-test.build.gradle` | 0 | 0 | 0 | 0 | `kotlinx-coroutines-test/build.gradle.kts` | `kotlinx-coroutines-test/build.gradle.cpp` |
-| 104 | `test-utils.build.gradle` | `test-utils.build.gradle` | 0 | 0 | 0 | 0 | `test-utils/build.gradle.kts` | `test-utils/build.gradle.cpp` |
+| 34 | `common.TestCoroutineDispatchers` | `kotlinx-coroutines-test.common.src.TestCoroutineDispatchers` | 0 | 7 | 2 | 9 | `kotlinx-coroutines-test/common/src/TestCoroutineDispatchers.kt` | `kotlinx-coroutines-test/common/src/TestCoroutineDispatchers.cpp` |
+| 35 | `selects.SelectOldTest` | `kotlinx-coroutines-core.common.test.selects.SelectOldTest` | 0 | 8 | 1 | 9 | `kotlinx-coroutines-core/common/test/selects/SelectOldTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectOldTest.cpp` |
+| 36 | `terminal.SingleTest` | `kotlinx-coroutines-core.common.test.flow.terminal.SingleTest` | 0 | 8 | 1 | 9 | `kotlinx-coroutines-core/common/test/flow/terminal/SingleTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/SingleTest.cpp` |
+| 37 | `channels.ChannelsTest` | `kotlinx-coroutines-core.common.test.channels.ChannelsTest` | 0 | 7 | 1 | 8 | `kotlinx-coroutines-core/common/test/channels/ChannelsTest.kt` | `kotlinx-coroutines-core/common/test/channels/ChannelsTest.cpp` |
+| 38 | `channels.ChannelFactoryTest` | `kotlinx-coroutines-core.common.test.channels.ChannelFactoryTest` | 0 | 6 | 1 | 7 | `kotlinx-coroutines-core/common/test/channels/ChannelFactoryTest.kt` | `kotlinx-coroutines-core/common/test/channels/ChannelFactoryTest.cpp` |
+| 39 | `flow.TakeWhileBenchmark` | `kotlinx-coroutines-core.benchmarks.jvm.kotlin.kotlinx.coroutines.flow.TakeWhileBenchmark` | 0 | 6 | 1 | 7 | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/flow/TakeWhileBenchmark.kt` | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/flow/TakeWhileBenchmark.cpp` |
+| 40 | `native.EventLoop` | `kotlinx-coroutines-core.native.src.EventLoop` | 0 | 5 | 2 | 7 | `kotlinx-coroutines-core/native/src/EventLoop.kt` | `kotlinx-coroutines-core/native/src/EventLoop.cpp` |
+| 41 | `test.CancellableContinuationTest` | `kotlinx-coroutines-core.common.test.CancellableContinuationTest` | 0 | 6 | 1 | 7 | `kotlinx-coroutines-core/common/test/CancellableContinuationTest.kt` | `kotlinx-coroutines-core/common/test/CancellableContinuationTest.cpp` |
+| 42 | `test.ImmediateYieldTest` | `kotlinx-coroutines-core.common.test.ImmediateYieldTest` | 0 | 5 | 2 | 7 | `kotlinx-coroutines-core/common/test/ImmediateYieldTest.kt` | `kotlinx-coroutines-core/common/test/ImmediateYieldTest.cpp` |
+| 43 | `test.UnconfinedCancellationTest` | `kotlinx-coroutines-core.common.test.UnconfinedCancellationTest` | 0 | 6 | 1 | 7 | `kotlinx-coroutines-core/common/test/UnconfinedCancellationTest.kt` | `kotlinx-coroutines-core/common/test/UnconfinedCancellationTest.cpp` |
+| 44 | `native.TestBase` | `test-utils.native.src.TestBase` | 0 | 3 | 3 | 6 | `test-utils/native/src/TestBase.kt` | `test-utils/native/src/TestBase.cpp` |
+| 45 | `terminal.LastTest` | `kotlinx-coroutines-core.common.test.flow.terminal.LastTest` | 0 | 5 | 1 | 6 | `kotlinx-coroutines-core/common/test/flow/terminal/LastTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/LastTest.cpp` |
+| 46 | `terminal.ReduceTest` | `kotlinx-coroutines-core.common.test.flow.terminal.ReduceTest` | 0 | 5 | 1 | 6 | `kotlinx-coroutines-core/common/test/flow/terminal/ReduceTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/ReduceTest.cpp` |
+| 47 | `common.CoroutineExceptionHandler` | `kotlinx-coroutines-core.common.src.CoroutineExceptionHandler` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/src/CoroutineExceptionHandler.kt` | `kotlinx-coroutines-core/common/src/CoroutineExceptionHandler.cpp` |
+| 48 | `coroutines.SemaphoreBenchmark` | `kotlinx-coroutines-core.benchmarks.jvm.kotlin.kotlinx.coroutines.SemaphoreBenchmark` | 0 | 3 | 2 | 5 | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/SemaphoreBenchmark.kt` | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/SemaphoreBenchmark.cpp` |
+| 49 | `flow.BuildersTest` | `kotlinx-coroutines-core.common.test.flow.BuildersTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/flow/BuildersTest.kt` | `kotlinx-coroutines-core/common/test/flow/BuildersTest.cpp` |
+| 50 | `internal.ThreadLocal` | `kotlinx-coroutines-core.native.src.internal.ThreadLocal` | 0 | 3 | 2 | 5 | `kotlinx-coroutines-core/native/src/internal/ThreadLocal.kt` | `kotlinx-coroutines-core/native/src/internal/ThreadLocal.cpp` |
+| 51 | `selects.SelectTimeoutDurationTest` | `kotlinx-coroutines-core.common.test.selects.SelectTimeoutDurationTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/selects/SelectTimeoutDurationTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectTimeoutDurationTest.cpp` |
+| 52 | `selects.SelectTimeoutTest` | `kotlinx-coroutines-core.common.test.selects.SelectTimeoutTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/selects/SelectTimeoutTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectTimeoutTest.cpp` |
+| 53 | `sharing.SharingStartedWhileSubscribedTest` | `kotlinx-coroutines-core.common.test.flow.sharing.SharingStartedWhileSubscribedTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/flow/sharing/SharingStartedWhileSubscribedTest.kt` | `kotlinx-coroutines-core/common/test/flow/sharing/SharingStartedWhileSubscribedTest.cpp` |
+| 54 | `terminal.CollectLatestTest` | `kotlinx-coroutines-core.common.test.flow.terminal.CollectLatestTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/flow/terminal/CollectLatestTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/CollectLatestTest.cpp` |
+| 55 | `terminal.CountTest` | `kotlinx-coroutines-core.common.test.flow.terminal.CountTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/flow/terminal/CountTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/CountTest.cpp` |
+| 56 | `test.NonCancellableTest` | `kotlinx-coroutines-core.common.test.NonCancellableTest` | 0 | 4 | 1 | 5 | `kotlinx-coroutines-core/common/test/NonCancellableTest.kt` | `kotlinx-coroutines-core/common/test/NonCancellableTest.cpp` |
+| 57 | `channels.SimpleChannelBenchmark` | `kotlinx-coroutines-core.benchmarks.jvm.kotlin.kotlinx.coroutines.channels.SimpleChannelBenchmark` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/channels/SimpleChannelBenchmark.kt` | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/channels/SimpleChannelBenchmark.cpp` |
+| 58 | `internal.LocalAtomics` | `kotlinx-coroutines-core.native.src.internal.LocalAtomics` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-core/native/src/internal/LocalAtomics.kt` | `kotlinx-coroutines-core/native/src/internal/LocalAtomics.cpp` |
+| 59 | `native.TestBuilders` | `kotlinx-coroutines-test.native.src.TestBuilders` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-test/native/src/TestBuilders.kt` | `kotlinx-coroutines-test/native/src/TestBuilders.cpp` |
+| 60 | `selects.SelectJobTest` | `kotlinx-coroutines-core.common.test.selects.SelectJobTest` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-core/common/test/selects/SelectJobTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectJobTest.cpp` |
+| 61 | `terminal.FoldTest` | `kotlinx-coroutines-core.common.test.flow.terminal.FoldTest` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-core/common/test/flow/terminal/FoldTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/FoldTest.cpp` |
+| 62 | `terminal.LaunchInTest` | `kotlinx-coroutines-core.common.test.flow.terminal.LaunchInTest` | 0 | 3 | 1 | 4 | `kotlinx-coroutines-core/common/test/flow/terminal/LaunchInTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/LaunchInTest.cpp` |
+| 63 | `internal.CoroutineExceptionHandlerImpl` | `kotlinx-coroutines-core.native.src.internal.CoroutineExceptionHandlerImpl` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/native/src/internal/CoroutineExceptionHandlerImpl.kt` | `kotlinx-coroutines-core/native/src/internal/CoroutineExceptionHandlerImpl.cpp` |
+| 64 | `internal.CoroutineExceptionHandlerImpl.common` | `kotlinx-coroutines-core.common.src.internal.CoroutineExceptionHandlerImpl.common` | 0 | 1 | 2 | 3 | `kotlinx-coroutines-core/common/src/internal/CoroutineExceptionHandlerImpl.common.kt` | `kotlinx-coroutines-core/common/src/internal/CoroutineExceptionHandlerImpl.common.cpp` |
+| 65 | `internal.SafeCollector` | `kotlinx-coroutines-core.native.src.flow.internal.SafeCollector` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt` | `kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.cpp` |
+| 66 | `kotlinx-coroutines-core.build.gradle` | `kotlinx-coroutines-core.build.gradle` | 0 | 3 | 0 | 3 | `kotlinx-coroutines-core/build.gradle.kts` | `kotlinx-coroutines-core/build.gradle.cpp` |
+| 67 | `selects.SelectBiasTest` | `kotlinx-coroutines-core.common.test.selects.SelectBiasTest` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/common/test/selects/SelectBiasTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectBiasTest.cpp` |
+| 68 | `selects.SelectMutexTest` | `kotlinx-coroutines-core.common.test.selects.SelectMutexTest` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/common/test/selects/SelectMutexTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectMutexTest.cpp` |
+| 69 | `terminal.ToCollectionTest` | `kotlinx-coroutines-core.common.test.flow.terminal.ToCollectionTest` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/common/test/flow/terminal/ToCollectionTest.kt` | `kotlinx-coroutines-core/common/test/flow/terminal/ToCollectionTest.cpp` |
+| 70 | `test.ConcurrentTestUtilities.common` | `kotlinx-coroutines-core.concurrent.test.ConcurrentTestUtilities.common` | 0 | 2 | 1 | 3 | `kotlinx-coroutines-core/concurrent/test/ConcurrentTestUtilities.common.kt` | `kotlinx-coroutines-core/concurrent/test/ConcurrentTestUtilities.common.cpp` |
+| 71 | `channels.SelectBenchmark` | `kotlinx-coroutines-core.benchmarks.jvm.kotlin.kotlinx.coroutines.channels.SelectBenchmark` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/channels/SelectBenchmark.kt` | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/channels/SelectBenchmark.cpp` |
+| 72 | `common.CoroutineName` | `kotlinx-coroutines-core.common.src.CoroutineName` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-core/common/src/CoroutineName.kt` | `kotlinx-coroutines-core/common/src/CoroutineName.cpp` |
+| 73 | `common.Guidance` | `kotlinx-coroutines-core.common.src.Guidance` | 0 | 2 | 0 | 2 | `kotlinx-coroutines-core/common/src/Guidance.kt` | `kotlinx-coroutines-core/common/src/Guidance.cpp` |
+| 74 | `internal.LockFreeLinkedList.common` | `kotlinx-coroutines-core.common.src.internal.LockFreeLinkedList.common` | 0 | 0 | 2 | 2 | `kotlinx-coroutines-core/common/src/internal/LockFreeLinkedList.common.kt` | `kotlinx-coroutines-core/common/src/internal/LockFreeLinkedList.common.cpp` |
+| 75 | `internal.ProbesSupport` | `kotlinx-coroutines-core.native.src.internal.ProbesSupport` | 0 | 2 | 0 | 2 | `kotlinx-coroutines-core/native/src/internal/ProbesSupport.kt` | `kotlinx-coroutines-core/native/src/internal/ProbesSupport.cpp` |
+| 76 | `internal.ReportingSupervisorJob` | `kotlinx-coroutines-test.common.src.internal.ReportingSupervisorJob` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-test/common/src/internal/ReportingSupervisorJob.kt` | `kotlinx-coroutines-test/common/src/internal/ReportingSupervisorJob.cpp` |
+| 77 | `internal.StackTraceRecovery.common` | `kotlinx-coroutines-core.common.src.internal.StackTraceRecovery.common` | 0 | 0 | 2 | 2 | `kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.kt` | `kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.cpp` |
+| 78 | `internal.Synchronized` | `kotlinx-coroutines-core.native.src.internal.Synchronized` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-core/native/src/internal/Synchronized.kt` | `kotlinx-coroutines-core/native/src/internal/Synchronized.cpp` |
+| 79 | `kotlinx-coroutines-test.common.test.Helpers` | `kotlinx-coroutines-test.common.test.Helpers` | 0 | 2 | 0 | 2 | `kotlinx-coroutines-test/common/test/Helpers.kt` | `kotlinx-coroutines-test/common/test/Helpers.cpp` |
+| 80 | `native.Runnable` | `kotlinx-coroutines-core.native.src.Runnable` | 0 | 2 | 0 | 2 | `kotlinx-coroutines-core/native/src/Runnable.kt` | `kotlinx-coroutines-core/native/src/Runnable.cpp` |
+| 81 | `selects.SelectLoopTest` | `kotlinx-coroutines-core.common.test.selects.SelectLoopTest` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-core/common/test/selects/SelectLoopTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectLoopTest.cpp` |
+| 82 | `selects.SelectUnlimitedChannelTest` | `kotlinx-coroutines-core.common.test.selects.SelectUnlimitedChannelTest` | 0 | 1 | 1 | 2 | `kotlinx-coroutines-core/common/test/selects/SelectUnlimitedChannelTest.kt` | `kotlinx-coroutines-core/common/test/selects/SelectUnlimitedChannelTest.cpp` |
+| 83 | `common.Annotations` | `kotlinx-coroutines-core.common.src.Annotations` | 5 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/Annotations.kt` | `kotlinx-coroutines-core/common/src/Annotations.cpp` |
+| 84 | `internal.TestMainDispatcher` | `kotlinx-coroutines-test.native.src.internal.TestMainDispatcher` | 1 | 1 | 0 | 1 | `kotlinx-coroutines-test/native/src/internal/TestMainDispatcher.kt` | `kotlinx-coroutines-test/native/src/internal/TestMainDispatcher.cpp` |
+| 85 | `build.gradle` | `build.gradle` | 0 | 1 | 0 | 1 | `build.gradle.kts` | `build.gradle.cpp` |
+| 86 | `common.CloseableCoroutineDispatcher` | `kotlinx-coroutines-core.common.src.CloseableCoroutineDispatcher` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/CloseableCoroutineDispatcher.kt` | `kotlinx-coroutines-core/common/src/CloseableCoroutineDispatcher.cpp` |
+| 87 | `common.CompletableJob` | `kotlinx-coroutines-core.common.src.CompletableJob` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/CompletableJob.kt` | `kotlinx-coroutines-core/common/src/CompletableJob.cpp` |
+| 88 | `common.Debug.common` | `kotlinx-coroutines-core.common.src.Debug.common` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/Debug.common.kt` | `kotlinx-coroutines-core/common/src/Debug.common.cpp` |
+| 89 | `common.Dispatchers.common` | `kotlinx-coroutines-core.common.src.Dispatchers.common` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/Dispatchers.common.kt` | `kotlinx-coroutines-core/common/src/Dispatchers.common.cpp` |
+| 90 | `common.SchedulerTask.common` | `kotlinx-coroutines-core.common.src.SchedulerTask.common` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/SchedulerTask.common.kt` | `kotlinx-coroutines-core/common/src/SchedulerTask.common.cpp` |
+| 91 | `common.Waiter` | `kotlinx-coroutines-core.common.src.Waiter` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/Waiter.kt` | `kotlinx-coroutines-core/common/src/Waiter.cpp` |
+| 92 | `coroutines.BenchmarkUtils` | `kotlinx-coroutines-core.benchmarks.jvm.kotlin.kotlinx.coroutines.BenchmarkUtils` | 0 | 1 | 0 | 1 | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/BenchmarkUtils.kt` | `kotlinx-coroutines-core/benchmarks/jvm/kotlin/kotlinx/coroutines/BenchmarkUtils.cpp` |
+| 93 | `internal.InternalAnnotations.common` | `kotlinx-coroutines-core.common.src.internal.InternalAnnotations.common` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/internal/InternalAnnotations.common.kt` | `kotlinx-coroutines-core/common/src/internal/InternalAnnotations.common.cpp` |
+| 94 | `internal.SystemProps` | `kotlinx-coroutines-core.native.src.internal.SystemProps` | 0 | 1 | 0 | 1 | `kotlinx-coroutines-core/native/src/internal/SystemProps.kt` | `kotlinx-coroutines-core/native/src/internal/SystemProps.cpp` |
+| 95 | `internal.ThreadContext` | `kotlinx-coroutines-core.native.src.internal.ThreadContext` | 0 | 1 | 0 | 1 | `kotlinx-coroutines-core/native/src/internal/ThreadContext.kt` | `kotlinx-coroutines-core/native/src/internal/ThreadContext.cpp` |
+| 96 | `internal.ThreadLocal.common` | `kotlinx-coroutines-core.common.src.internal.ThreadLocal.common` | 0 | 0 | 1 | 1 | `kotlinx-coroutines-core/common/src/internal/ThreadLocal.common.kt` | `kotlinx-coroutines-core/common/src/internal/ThreadLocal.common.cpp` |
+| 97 | `settings.gradle` | `settings.gradle` | 0 | 1 | 0 | 1 | `settings.gradle.kts` | `settings.gradle.cpp` |
+| 98 | `test.Helpers` | `kotlinx-coroutines-test.native.test.Helpers` | 0 | 1 | 0 | 1 | `kotlinx-coroutines-test/native/test/Helpers.kt` | `kotlinx-coroutines-test/native/test/Helpers.cpp` |
+| 99 | `test.Launcher` | `kotlinx-coroutines-core.nativeOther.test.Launcher` | 0 | 1 | 0 | 1 | `kotlinx-coroutines-core/nativeOther/test/Launcher.kt` | `kotlinx-coroutines-core/nativeOther/test/Launcher.cpp` |
+| 100 | `common.CoroutineContext.common` | `kotlinx-coroutines-core.common.src.CoroutineContext.common` | 0 | 0 | 0 | 0 | `kotlinx-coroutines-core/common/src/CoroutineContext.common.kt` | `kotlinx-coroutines-core/common/src/CoroutineContext.common.cpp` |
+| 101 | `internal.ThreadContext.common` | `kotlinx-coroutines-core.common.src.internal.ThreadContext.common` | 0 | 0 | 0 | 0 | `kotlinx-coroutines-core/common/src/internal/ThreadContext.common.kt` | `kotlinx-coroutines-core/common/src/internal/ThreadContext.common.cpp` |
+| 102 | `kotlinx-coroutines-test.build.gradle` | `kotlinx-coroutines-test.build.gradle` | 0 | 0 | 0 | 0 | `kotlinx-coroutines-test/build.gradle.kts` | `kotlinx-coroutines-test/build.gradle.cpp` |
+| 103 | `test-utils.build.gradle` | `test-utils.build.gradle` | 0 | 0 | 0 | 0 | `test-utils/build.gradle.kts` | `test-utils/build.gradle.cpp` |
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7271 / 7224 lines (101%)
+**Documentation line amount:** 7426 / 7437 lines (100%)
 
 Documentation gaps (>20%), complete list:
 
@@ -816,6 +817,7 @@ Documentation gaps (>20%), complete list:
 - `flow.Builders` - 41% gap (201 → 118 lines)
 - `common.CancellableContinuationImpl` - 83% gap (83 → 14 lines)
 - `operators.Merge` - 46% gap (142 → 77 lines)
+- `common.CoroutineDispatcher` - 27% gap (213 → 155 lines)
 - `operators.Emitters` - 54% gap (105 → 48 lines)
 - `operators.Zip` - 43% gap (133 → 76 lines)
 - `channels.Deprecated` - 100% gap (48 → 0 lines)
@@ -830,8 +832,8 @@ Documentation gaps (>20%), complete list:
 - `common.Deferred` - 25% gap (84 → 63 lines)
 - `common.MainDispatcherTestBase` - 100% gap (19 → 0 lines)
 - `common.TestDispatcher` - 100% gap (17 → 0 lines)
-- `test.WithTimeoutTest` - 100% gap (15 → 0 lines)
 - `test.WithTimeoutDurationTest` - 100% gap (15 → 0 lines)
+- `test.WithTimeoutTest` - 100% gap (15 → 0 lines)
 - `concurrent.Builders.concurrent` - 63% gap (19 → 7 lines)
 - `test.WithTimeoutOrNullTest` - 100% gap (12 → 0 lines)
 - `test.WithTimeoutOrNullDurationTest` - 100% gap (12 → 0 lines)
