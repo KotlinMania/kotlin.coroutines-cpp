@@ -10,8 +10,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 772/2918 matched (target 2906) | 26.5% |
-| Class/type parity | 343/560 matched (target 498) | 61.2% |
+| Function parity | 772/2918 matched (target 2905) | 26.5% |
+| Class/type parity | 343/560 matched (target 499) | 61.2% |
 | Combined symbol parity | 1115/3478 matched (target 3404) | 32.1% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
@@ -231,7 +231,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 187 | `selects.Select` | `selects.Select` | 0.21 | 24/30 matched (target 71) | `SelectBuilder::invoke`, `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | - | 6 | 1064608.0 |
 | 188 | `test.CoroutineDispatcherOperatorFunInvokeTest` | `tests.CoroutineDispatcherOperatorFunInvokeTest` | 0.22 | 3/8 matched (target 12) | `CoroutineDispatcherOperatorFunInvokeTest::testThrowException`, `CoroutineDispatcherOperatorFunInvokeTest::testWithContextChildWaitSameContext`, `CoroutineDispatcherOperatorFunInvokeTest::dispatch`, `CoroutineDispatcherOperatorFunInvokeTest::isDispatchNeeded`, `CoroutineDispatcherOperatorFunInvokeTest::dispatchYield` | 2/2 matched (target 3) | _none_ | 0/2 | 5 | 51007.8 |
 | 189 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
-| 190 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 24) | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 65001308.0 |
+| 190 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 23) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 65001308.0 |
 | 191 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | - | 0 | 1007.8 |
 | 192 | `sync.Mutex` | `sync.Mutex` | 0.23 | 11/16 matched (target 20) | `Mutex`, `MutexImpl::CancellableContinuationWithOwner::tryResume`, `MutexImpl::CancellableContinuationWithOwner::resume`, `MutexImpl::SelectInstanceWithOwner::trySelect`, `MutexImpl::SelectInstanceWithOwner::selectInRegistrationPhase` | 2/4 matched (target 2) | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` | - | 7 | 72007.7 |
 | 193 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.24 | 7/7 matched (target 8) | _none_ | 1/1 matched | _none_ | - | 0 | 807.6 |
@@ -792,7 +792,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7153 / 7153 lines (100%)
+**Documentation line amount:** 7139 / 7153 lines (100%)
 
 Documentation gaps (>20%), complete list:
 

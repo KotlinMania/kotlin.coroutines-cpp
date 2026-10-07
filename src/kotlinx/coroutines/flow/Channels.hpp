@@ -11,14 +11,12 @@
 
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
-#include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/channels/Channels.hpp"
-#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/flow/internal/ThrowingCollector.hpp"
@@ -48,6 +46,7 @@ void* emit_all_impl(
 
 #include <atomic>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -57,156 +56,68 @@ namespace kotlinx::coroutines::flow {
 template <typename T>
 class ChannelAsFlow;
 
-/**
- * Coroutine state machine for emitAllImpl.
- *
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
- */
+namespace internal {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
+// NOTE(port): Type erasure keeps the private loop and lowered suspension frame
+// concrete in Channels.cpp. The bindings below carry actual iterator/element types.
+void* emit_all_erased(
+    std::function<void()> make_iterator,
+    std::function<void*(Continuation<void*>*)> has_next,
+    std::function<void*(Continuation<void*>*)> emit_next,
+    std::function<void()> finish_emit,
+    std::function<void(std::exception_ptr)> cancel_consumed,
+    bool consume,
+    std::shared_ptr<Continuation<void*>> completion);
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
+// NOTE(port): These are typed frame spills, not an independent coroutine state
+// machine. Shared owners stay owned; raw arguments stay explicitly borrowed.
 template <typename T>
-class EmitAllContinuation : public ContinuationImpl {
-public:
-    void* _label = nullptr;
-    std::shared_ptr<FlowCollector<T>> receiver_shared_;
-    FlowCollector<T>* receiver_;
-    channels::ReceiveChannel<T>* channel_;
-    std::shared_ptr<channels::ReceiveChannel<T>> channel_owner_;
-    bool consume_;
-    std::unique_ptr<channels::ChannelIterator<T>> iterator_;
-    std::optional<T> element_;
-    void* has_next_box_ = nullptr;
-    void* emit_box_ = nullptr;
-    bool has_next_ = false;
-    std::exception_ptr cause_ = nullptr;
-    std::shared_ptr<EmitAllContinuation<T>> keep_alive_;
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
-    EmitAllContinuation(
-        FlowCollector<T>* receiver,
-        channels::ReceiveChannel<T>* channel,
-        bool consume,
-        std::shared_ptr<Continuation<void*>> completion)
-        : ContinuationImpl(std::move(completion)),
-          receiver_shared_(nullptr),
-          receiver_(receiver),
-          channel_(channel),
-          consume_(consume) {}
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
-    EmitAllContinuation(
-        std::shared_ptr<FlowCollector<T>> receiver,
-        channels::ReceiveChannel<T>* channel,
-        bool consume,
-        std::shared_ptr<Continuation<void*>> completion)
-        : ContinuationImpl(std::move(completion)),
-          receiver_shared_(receiver),
-          receiver_(receiver.get()),
-          channel_(channel),
-          consume_(consume) {}
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
-    // NOTE(port): A Kotlin channel reference remains GC-reachable across suspension.
-    // Preserve the actual shared owner when supplied, without taking ownership of borrowed raw channels.
-    EmitAllContinuation(
-        FlowCollector<T>* receiver,
-        std::shared_ptr<channels::ReceiveChannel<T>> channel,
-        bool consume,
-        std::shared_ptr<Continuation<void*>> completion)
-        : EmitAllContinuation(receiver, channel.get(), consume, std::move(completion)) {
-        channel_owner_ = std::move(channel);
-    }
-
-    void retain() {
-        keep_alive_ = std::static_pointer_cast<EmitAllContinuation<T>>(shared_from_this());
-    }
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
-    // NOTE(port): Kotlin's terminated frame and iterator can form a GC cycle.
-    // Release completed C++ frame locals after finally to break the iterator's
-    // cancelled-continuation link without changing borrowed ownership.
-    void release() {
-        auto self = std::move(keep_alive_);
-        iterator_.reset();
-        element_.reset();
-        channel_owner_.reset();
-        receiver_shared_ = nullptr;
-    }
-
-    void release_intercepted() override {
-        ContinuationImpl::release_intercepted();
-        release();
-    }
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
-    void* invoke_suspend(Result<void*> result) override {
-        try {
-            coroutine_begin(this)
-
-            iterator_ = channel_->iterator();
-            while (true) {
-                // Suspend point 1: has_next
-                coroutine_yield_value(this, result, iterator_->has_next(this), has_next_box_);
-
-                // NOTE(port): has_next returns an owning bool box; this consumer unboxes and deletes it.
-                has_next_ = *static_cast<bool*>(has_next_box_);
-                delete static_cast<bool*>(has_next_box_);
-                has_next_box_ = nullptr;
-
-                if (!has_next_) {
-                    break;
-                }
-
-                element_.emplace(iterator_->next());
-
-                // Suspend point 2: emit
-                coroutine_yield_value(this, result, receiver_->emit(std::move(*element_), this), emit_box_);
-                element_.reset();
-            }
-        } catch (...) {
-            cause_ = std::current_exception();
-            if (consume_) {
-                channels::cancel_consumed(channel_, cause_);
-            }
-            element_.reset();
-            std::rethrow_exception(cause_);
-        }
-
-        if (consume_) {
-            channels::cancel_consumed(channel_, cause_);
-        }
-        element_.reset();
-
-        coroutine_end(this)
-    }
+struct EmitAllArguments {
+    FlowCollector<T>* receiver;
+    channels::ReceiveChannel<T>* channel;
+    std::shared_ptr<FlowCollector<T>> receiver_owner;
+    std::shared_ptr<channels::ReceiveChannel<T>> channel_owner;
+    std::unique_ptr<channels::ChannelIterator<T>> iterator;
+    std::optional<T> element;
 };
 
-/**
- * Private helper. Iterates the channel and emits to the collector; cancels the channel
- * on the way out when `consume` is true. Mirrors the upstream `emitAllImpl` private function.
- *
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
- */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
+template <typename T>
+inline void* bind_emit_all(
+    FlowCollector<T>* receiver,
+    channels::ReceiveChannel<T>* channel,
+    bool consume,
+    std::shared_ptr<Continuation<void*>> completion,
+    std::shared_ptr<FlowCollector<T>> receiver_owner = nullptr,
+    std::shared_ptr<channels::ReceiveChannel<T>> channel_owner = nullptr) {
+    ensure_active(receiver);
+    auto args = std::make_shared<EmitAllArguments<T>>(EmitAllArguments<T>{
+        receiver, channel, std::move(receiver_owner), std::move(channel_owner), {}, {}});
+    return emit_all_erased(
+        [args] { args->iterator = args->channel->iterator(); },
+        [args](Continuation<void*>* frame) { return args->iterator->has_next(frame); },
+        [args](Continuation<void*>* frame) {
+            args->element.emplace(args->iterator->next());
+            return args->receiver->emit(std::move(*args->element), frame);
+        },
+        [args] { args->element.reset(); },
+        [args](std::exception_ptr cause) { channels::cancel_consumed(args->channel, cause); },
+        consume, std::move(completion));
+}
+
+} // namespace internal
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
 template <typename T>
 inline void* emit_all_impl(
     FlowCollector<T>* receiver,
     channels::ReceiveChannel<T>* channel,
     bool consume,
     Continuation<void*>* completion) {
-    ensure_active(receiver);
-    auto completion_shared = kotlinx::coroutines::internal::retain_continuation(completion);
-    auto coro = std::make_shared<EmitAllContinuation<T>>(
-        receiver, channel, consume, std::move(completion_shared));
-    coro->retain();
-    void* res = nullptr;
-    try {
-        res = coro->start(Result<void*>::success(nullptr));
-        if (res != intrinsics::get_COROUTINE_SUSPENDED()) {
-            coro->release();
-        }
-    } catch (...) {
-        coro->release();
-        throw;
-    }
-    return res;
+    return internal::bind_emit_all(receiver, channel, consume,
+        kotlinx::coroutines::internal::retain_continuation(completion));
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
@@ -216,18 +127,9 @@ inline void* emit_all_impl(
     std::shared_ptr<channels::ReceiveChannel<T>> channel,
     bool consume,
     std::shared_ptr<Continuation<void*>> completion) {
-    ensure_active(receiver);
-    auto coro = std::make_shared<EmitAllContinuation<T>>(
-        receiver, std::move(channel), consume, std::move(completion));
-    coro->retain();
-    try {
-        auto result = coro->start(Result<void*>::success(nullptr));
-        if (!intrinsics::is_coroutine_suspended(result)) coro->release();
-        return result;
-    } catch (...) {
-        coro->release();
-        throw;
-    }
+    auto* channel_ptr = channel.get();
+    return internal::bind_emit_all<T>(receiver, channel_ptr, consume,
+        std::move(completion), nullptr, std::move(channel));
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
@@ -237,19 +139,10 @@ inline void* emit_all_impl(
     std::shared_ptr<channels::ReceiveChannel<T>> channel,
     bool consume,
     std::shared_ptr<Continuation<void*>> completion) {
-    ensure_active(receiver.get());
-    auto coro = std::make_shared<EmitAllContinuation<T>>(
-        receiver.get(), std::move(channel), consume, std::move(completion));
-    coro->receiver_shared_ = std::move(receiver);
-    coro->retain();
-    try {
-        auto result = coro->start(Result<void*>::success(nullptr));
-        if (!intrinsics::is_coroutine_suspended(result)) coro->release();
-        return result;
-    } catch (...) {
-        coro->release();
-        throw;
-    }
+    auto* receiver_ptr = receiver.get();
+    auto* channel_ptr = channel.get();
+    return internal::bind_emit_all(receiver_ptr, channel_ptr, consume,
+        std::move(completion), std::move(receiver), std::move(channel));
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
@@ -259,22 +152,11 @@ inline void* emit_all_impl(
     channels::ReceiveChannel<T>* channel,
     bool consume,
     std::shared_ptr<Continuation<void*>> completion) {
-    ensure_active(receiver.get());
-    auto coro = std::make_shared<EmitAllContinuation<T>>(
-        std::move(receiver), channel, consume, std::move(completion));
-    coro->retain();
-    void* res = nullptr;
-    try {
-        res = coro->start(Result<void*>::success(nullptr));
-        if (res != intrinsics::get_COROUTINE_SUSPENDED()) {
-            coro->release();
-        }
-    } catch (...) {
-        coro->release();
-        throw;
-    }
-    return res;
+    auto* receiver_ptr = receiver.get();
+    return internal::bind_emit_all(receiver_ptr, channel, consume,
+        std::move(completion), std::move(receiver));
 }
+
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
 template <typename T>
 inline void* emit_all_impl(

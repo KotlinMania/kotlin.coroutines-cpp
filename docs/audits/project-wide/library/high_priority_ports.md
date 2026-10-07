@@ -10,7 +10,7 @@ This list is complete and includes function/type detail for every matched file. 
 
 | Rank | Source | Target | Function similarity | Deps | Functions | Missing functions | Types | Missing types | SymDeficit | SrcSymbols | Priority |
 |------|--------|--------|------------|------|-----------|-------------------|-------|---------------|-----------|------------|----------|
-| 1 | `flow.Channels` | `flow.Channels` | 0.22 | 65 | 12/12 matched (target 24) | _none_ | 1/1 matched (target 2) | _none_ | 0 | 13 | 65001308.0 |
+| 1 | `flow.Channels` | `flow.Channels` | 0.22 | 65 | 12/12 matched (target 23) | _none_ | 1/1 matched (target 3) | _none_ | 0 | 13 | 65001308.0 |
 | 2 | `flow.Flow` | `flow.Flow` | 0.16 | 28 | 1/1 matched (target 6) | _none_ | 2/2 matched (target 5) | _none_ | 0 | 3 | 28000308.0 |
 | 3 | `internal.Concurrent` | `internal.Concurrent` | 0.36 | 14 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | 1 | 9 | 14010906.0 |
 | 4 | `native.Exceptions` | `native.Exceptions` | 0.11 | 6 | 1/4 matched (target 12) | `JobCancellationException::toString`, `JobCancellationException::equals`, `JobCancellationException::hashCode` | 0/2 matched (target 0) | `CancellationException`, `JobCancellationException` | 5 | 6 | 6050609.0 |
@@ -388,11 +388,11 @@ These files need immediate attention:
 - **flow.Channels** → `flow.Channels`
   - Function similarity: 0.22
   - Dependencies: 65
-  - Functions: 12/12 matched (target 24)
+  - Functions: 12/12 matched (target 23)
   - Missing functions: _none_
-  - Types: 1/1 matched (target 2)
+  - Types: 1/1 matched (target 3)
   - Missing types: _none_
-  - Lint issues: 2
+  - Lint issues: 1
 
 - **flow.Flow** → `flow.Flow`
   - Function similarity: 0.16

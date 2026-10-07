@@ -5,8 +5,8 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 245/354 (69.2%)
-- **Function parity:** 772/2918 matched (target 2906) — 26.5%
-- **Class/type parity:** 343/560 matched (target 498) — 61.2%
+- **Function parity:** 772/2918 matched (target 2905) — 26.5%
+- **Class/type parity:** 343/560 matched (target 499) — 61.2%
 - **Combined symbol parity:** 1115/3478 matched (target 3404) — 32.1%
 - **Average inline-code cosine:** 0.26 (function body across 136 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 136 matched files)
@@ -21,9 +21,9 @@ Based on AST analysis, here are the concrete next steps.
 - **Similarity:** 0.22 (needs 63% improvement)
 - **Dependencies:** 65
 - **Priority Score:** 65001308.0
-- **Functions:** 12/12 matched (target 24)
+- **Functions:** 12/12 matched (target 23)
 - **Missing functions:** _none_
-- **Types:** 1/1 matched (target 2)
+- **Types:** 1/1 matched (target 3)
 - **Missing types:** _none_
 - **Action:** Deep review - likely missing major functionality
 
@@ -64,11 +64,11 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.22
 - **Dependents:** 65
 - **Priority Score:** 65001308.0
-- **Functions:** 12/12 matched (target 24)
+- **Functions:** 12/12 matched (target 23)
 - **Missing functions:** _none_
-- **Types:** 1/1 matched (target 2)
+- **Types:** 1/1 matched (target 3)
 - **Missing types:** _none_
-- **Lint issues:** 2
+- **Lint issues:** 1
 
 ### 2. flow.Flow
 
