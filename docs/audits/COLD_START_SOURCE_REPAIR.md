@@ -1,5 +1,8 @@
 # Cold callable start source repair
 
+Receipt for commit `3e5c6158`. The generic CoroutineStart shortcut described below
+is subsequently replaced in [the strategy audit](COROUTINE_START_SOURCE_REPAIR.md).
+
 Date: 2026-10-07. Complete Cancellable.kt, Undispatched.kt and the consumed
 Native IntrinsicsNative.kt, ContinuationImpl.kt and DebugProbes.kt were read.
 This closes a consumed dependency of the high-fanout CoroutineStart priority.
@@ -54,8 +57,8 @@ All 61 provenance ranges in the five intrinsic files resolve to source files
 with valid bounds. No prohibited markers occur in the eight affected library
 files. Those checks do not establish whole-file semantic parity.
 
-Remaining source mismatches are explicit: CoroutineStart's generic C++ invoke
-still has a custom dispatcher body; Native callback-continuation helper and
+At that commit, CoroutineStart's generic C++ invoke still had a custom dispatcher
+body; Native callback-continuation helper and
 receiver-plus-parameter surface are not covered by this repair. Kotlin compiler
 fallback lowering, complete stdlib exception hierarchy, move-only typed Result
 support, and the required complete standalone/Native shared-state-machine MLX

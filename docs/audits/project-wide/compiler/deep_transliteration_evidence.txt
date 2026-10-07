@@ -6211,7 +6211,7 @@ Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/co
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.014991
 translated_ast_cosine: 0.318551
-function_name_parity: 0.000000
+function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.613469
 span_rule_coverage: 0.000000
@@ -6226,18 +6226,22 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 6	210:244	209:250	package_header	yes
 8	246:1349	251:1448	class_declaration	fallback
 Diagnostic: 8: unsupported class_declaration
-Missing source function: Variance::allowsPosition:18
-Missing source function: Variance::superpose:25
-Missing source function: Variance::opposite:35
-Missing source function: Variance::toString:43
+Function Variance::allowsPosition:18 -> org::jetbrains::kotlin::types::allows_position:66 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:variance type:variance node:66 identifier:position type:variance node:4 identifier:position identifier:variance identifier:invariance node:5 node:43 identifier:allowsinposition identifier:variance identifier:variance identifier:outvariance node:5 node:43 identifier:allowsoutposition identifier:variance identifier:variance identifier:invariant node:5 node:43 identifier:allowsinposition identifier:variance operator:&& node:43 identifier:allowsoutposition identifier:variance node:43 identifier:builtinunreachable
+Function Variance::superpose:25 -> org::jetbrains::kotlin::types::superpose:75 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:variance type:variance node:66 identifier:other type:variance identifier:r operator:= node:43 identifier:properties identifier:superpositionfactor identifier:variance operator:* node:43 identifier:other identifier:properties identifier:superpositionfactor node:4 identifier:r literal:51:0 node:5 identifier:variance identifier:invariant literal:51:-1 node:5 identifier:variance identifier:invariance literal:51:+1 node:5 identifier:variance identifier:outvariance node:10 node:43 identifier:std identifier:logicerror literal:52:"Illegal factor: " operator:+ node:43 identifier:std identifier:tostring identifier:r
+Function Variance::opposite:35 -> org::jetbrains::kotlin::types::opposite:85 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:variance type:variance node:4 identifier:variance identifier:variance identifier:invariant node:5 identifier:variance identifier:invariant identifier:variance identifier:invariance node:5 identifier:variance identifier:outvariance identifier:variance identifier:outvariance node:5 identifier:variance identifier:invariance node:43 identifier:builtinunreachable
+Function Variance::toString:43 -> org::jetbrains::kotlin::types::to_string:94 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:variance type:variance node:5 node:43 identifier:label identifier:variance
 Extra target function: org::jetbrains::kotlin::types::properties:55
 Extra target function: org::jetbrains::kotlin::types::label:60
 Extra target function: org::jetbrains::kotlin::types::allows_in_position:62
 Extra target function: org::jetbrains::kotlin::types::allows_out_position:64
-Extra target function: org::jetbrains::kotlin::types::allows_position:66
-Extra target function: org::jetbrains::kotlin::types::superpose:75
-Extra target function: org::jetbrains::kotlin::types::opposite:85
-Extra target function: org::jetbrains::kotlin::types::to_string:94
 === Emitted target buffer ===
 /*
  * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.

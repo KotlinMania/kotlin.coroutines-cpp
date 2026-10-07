@@ -4714,14 +4714,14 @@ Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.010692
-translated_ast_cosine: 0.570181
-function_name_parity: 0.000000
+translated_text_cosine: 0.000000
+translated_ast_cosine: 0.589790
+function_name_parity: 1.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.021500
+documentation_correspondence: 0.025650
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.010692
+score: 0.000000
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -4731,11 +4731,16 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 3	28:1079	32:32	import_list	yes
 23	1080:16639	33:16066	class_declaration	fallback
 Diagnostic: 23: unsupported class_declaration
-Missing source function: CoroutineStart::invoke:355
-Extra target function: kotlinx::coroutines::invoke:379
-Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:534
-Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:556
-Extra target function: kotlinx::coroutines::CoroutineStartExtensions::is_lazy:578
+Function CoroutineStart::invoke:355 -> kotlinx::coroutines::invoke:451 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:start type:coroutinestart node:66 identifier:block type:block node:66 identifier:receiver type:r node:66 identifier:completion identifier:std type:continuation type:sharedptr type:t node:1 node:43 identifier:islazy identifier:start node:5 node:43 identifier:invoke identifier:start node:43 identifier:internal identifier:erasestartblock type:t node:43 identifier:std identifier:forward type:block identifier:block node:43 identifier:std identifier:forward type:r identifier:receiver node:43 identifier:tovoidcontinuation node:43 identifier:std identifier:move identifier:completion
+Extra target function: kotlinx::coroutines::invoke:7
+Extra target function: kotlinx::coroutines::is_lazy:24
+Extra target function: kotlinx::coroutines::internal::retain_start_argument:400
+Extra target function: kotlinx::coroutines::internal::erase_start_block:413
+Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:463
+Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:469
+Extra target function: kotlinx::coroutines::CoroutineStartExtensions::is_lazy:473
 === Emitted target buffer ===
 namespace kotlinx::coroutines {
 

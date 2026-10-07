@@ -1,6 +1,8 @@
 // Source contracts: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:33-64;
 // kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:201-202.
 #include "kotlinx/coroutines/intrinsics/Cancellable.hpp"
+#include "kotlinx/coroutines/CoroutineStart.hpp"
+#include <vector>
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
 #include <deque>
@@ -388,6 +390,125 @@ void typed_suspension_contract() {
     CHECK(thrown == original && throwing.resumes == 1); // Completion invocation lies outside the body catch.
 }
 
+// CoroutineStart.kt:356-362 delegates to actual start intrinsics, including
+// interception by ordinary ContinuationInterceptor implementations.
+void coroutine_start_interceptor_contract() {
+    class Interceptor final : public ContinuationInterceptor {
+    public:
+        int interceptions = 0, resumptions = 0, releases = 0;
+        std::weak_ptr<Continuation<void*>> actual_frame;
+        class Wrapped final : public Continuation<void*> {
+        public:
+            Interceptor* interceptor;
+            std::shared_ptr<Continuation<void*>> actual;
+            Wrapped(Interceptor* interceptor, std::shared_ptr<Continuation<void*>> actual)
+                : interceptor(interceptor), actual(std::move(actual)) {}
+            std::shared_ptr<CoroutineContext> get_context() const override { return actual->get_context(); }
+            void resume_with(Result<void*> result) override { ++interceptor->resumptions; actual->resume_with(std::move(result)); }
+        };
+        std::shared_ptr<Continuation<void*>> intercept_continuation(std::shared_ptr<Continuation<void*>> frame) override {
+            ++interceptions;
+            actual_frame = frame;
+            return std::make_shared<Wrapped>(this, std::move(frame));
+        }
+        void release_intercepted_continuation(std::shared_ptr<Continuation<void*>> frame) override {
+            CHECK(dynamic_cast<Wrapped*>(frame.get())); ++releases;
+        }
+    };
+    for (auto mode : {CoroutineStart::DEFAULT, CoroutineStart::ATOMIC, CoroutineStart::UNDISPATCHED, CoroutineStart::LAZY}) {
+        auto interceptor = std::make_shared<Interceptor>();
+        int observed = 0, resumes = 0;
+        auto completion = make_continuation<int>(interceptor, [&](Result<int> result) { observed = result.get_or_throw(); ++resumes; });
+        bool entered = false;
+        invoke(mode, [&](int receiver, std::shared_ptr<Continuation<void*>> frame) -> int {
+            CHECK(frame.get() != dynamic_cast<Continuation<void*>*>(completion.get()));
+            CHECK(dynamic_cast<ContinuationImpl*>(frame.get()));
+            entered = true; return receiver + 4;
+        }, 23, completion);
+        bool lazy = mode == CoroutineStart::LAZY;
+        CHECK(CoroutineStartExtensions::is_lazy(mode) == lazy);
+        CHECK(entered == !lazy && resumes == (lazy ? 0 : 1));
+        if (!lazy) CHECK(observed == 27);
+        int interceptions = mode == CoroutineStart::DEFAULT || mode == CoroutineStart::ATOMIC ? 1 : 0;
+        CHECK(interceptor->interceptions == interceptions);
+        CHECK(interceptor->resumptions == interceptions && interceptor->releases == interceptions);
+        CHECK(interceptor->actual_frame.expired());
+    }
+
+    auto dispatcher = std::make_shared<Dispatcher>();
+    auto completion = std::make_shared<Completion>();
+    completion->context = dispatcher;
+    auto original = std::make_exception_ptr(std::runtime_error("strategy dispatch failure"));
+    dispatcher->failure = original;
+    std::exception_ptr thrown;
+    try { invoke(CoroutineStart::DEFAULT, [](Unit) {}, Unit{}, std::static_pointer_cast<Continuation<void*>>(completion)); }
+    catch (...) { thrown = std::current_exception(); }
+    CHECK(thrown == original && completion->failure == original && completion->resumes == 1);
+
+    auto throwing = std::make_shared<Completion>();
+    throwing->resume_failure = original;
+    thrown = nullptr;
+    try { invoke(CoroutineStart::UNDISPATCHED, [](Unit) -> void* { return reinterpret_cast<void*>(67); }, Unit{},
+                 std::static_pointer_cast<Continuation<void*>>(throwing)); }
+    catch (...) { thrown = std::current_exception(); }
+    CHECK(thrown == original && throwing->resumes == 1 && throwing->value == reinterpret_cast<void*>(67));
+}
+
+void coroutine_start_ownership_contract() {
+    struct Body {
+        std::unique_ptr<std::shared_ptr<int>> resource;
+        bool* entered;
+        int operator()(int receiver) { *entered = true; return **resource + receiver; }
+    };
+    for (auto mode : {CoroutineStart::DEFAULT, CoroutineStart::ATOMIC, CoroutineStart::UNDISPATCHED, CoroutineStart::LAZY}) {
+        auto dispatcher = std::make_shared<Dispatcher>();
+        auto job = JobImpl::create(nullptr);
+        int observed = 0, resumes = 0;
+        std::exception_ptr failure;
+        auto completion = make_continuation<int>(dispatcher->operator+(job), [&](Result<int> result) {
+            ++resumes; failure = result.exception_or_null(); if (!failure) observed = result.get_or_throw();
+        });
+        auto resource = std::make_shared<int>(100);
+        std::weak_ptr<int> lifetime = resource;
+        bool entered = false;
+        Body body{std::make_unique<std::shared_ptr<int>>(resource), &entered};
+        resource.reset();
+        if (mode == CoroutineStart::UNDISPATCHED) job->cancel(nullptr);
+        invoke(mode, std::move(body), 9, completion);
+        if (mode == CoroutineStart::LAZY) {
+            CHECK(body.resource && !entered && !resumes && dispatcher->queue.empty());
+            body.resource.reset();
+        } else {
+            CHECK(!body.resource);
+            if (mode != CoroutineStart::UNDISPATCHED) {
+                CHECK(!entered && !resumes && !lifetime.expired());
+                job->cancel(nullptr); dispatcher->drain();
+            }
+            CHECK(resumes == 1 && entered == (mode != CoroutineStart::DEFAULT));
+            if (mode == CoroutineStart::DEFAULT) CHECK(failure && is_cancellation_exception(failure));
+            else CHECK(!failure && observed == 109);
+        }
+        CHECK(lifetime.expired());
+    }
+
+    // Ordinary C++ noncopyable lvalue receivers stay borrowed, retaining identity.
+    auto receiver = std::make_unique<int>(19);
+    int observed = 0;
+    auto completion = make_continuation<int>(EmptyCoroutineContext::instance(), [&](Result<int> r) { observed = r.get_or_throw(); });
+    invoke(CoroutineStart::UNDISPATCHED, [](std::unique_ptr<int>& value) { return *value; }, receiver, completion);
+    CHECK(receiver && observed == 19);
+
+    // Public typed compatibility overloads resume through the same native wrappers.
+    Continuation<int>* pending = nullptr;
+    std::function<void*(int, Continuation<int>*)> body = [&](int value, Continuation<int>* frame) -> void* {
+        CHECK(value == 13); pending = frame; return COROUTINE_SUSPENDED;
+    };
+    CoroutineStartExtensions::invoke(CoroutineStart::DEFAULT, body, 13, completion.get());
+    CHECK(pending);
+    pending->resume_with(Result<int>::success(29));
+    CHECK(observed == 29);
+}
+
 }
 
 int main() {
@@ -399,6 +520,8 @@ int main() {
         typed_immediate_and_prototype_contract();
         cold_start_modes_contract();
         typed_suspension_contract();
+        coroutine_start_interceptor_contract();
+        coroutine_start_ownership_contract();
     } catch (const std::exception& exception) {
         std::cerr << exception.what() << '\n';
         return 1;

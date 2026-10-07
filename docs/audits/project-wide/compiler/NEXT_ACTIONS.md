@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 98/676 (14.5%)
-- **Function parity:** 453/7653 matched (target 979) — 5.9%
+- **Function parity:** 457/7653 matched (target 979) — 6.0%
 - **Class/type parity:** 156/1725 matched (target 263) — 9.0%
-- **Combined symbol parity:** 609/9378 matched (target 1242) — 6.5%
+- **Combined symbol parity:** 613/9378 matched (target 1242) — 6.5%
 - **Average inline-code cosine:** 0.34 (function body across 98 matched files)
 - **Average documentation cosine:** 0.61 (doc text across 98 matched files)
 - **Cheat-zeroed Files:** 24
@@ -390,11 +390,11 @@ Every matched file is listed below with function and type symbol parity.
 ### 17. types.Variance
 
 - **Target:** `types.Variance`
-- **Similarity:** 0.00
+- **Similarity:** 0.19
 - **Dependents:** 9
-- **Priority Score:** 9040510.0
-- **Functions:** 0/4 matched (target 8)
-- **Missing functions:** `Variance::allowsPosition`, `Variance::superpose`, `Variance::opposite`, `Variance::toString`
+- **Priority Score:** 9000508.0
+- **Functions:** 4/4 matched (target 8)
+- **Missing functions:** _none_
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 

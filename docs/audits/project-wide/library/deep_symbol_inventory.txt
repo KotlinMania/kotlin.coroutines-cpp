@@ -538,13 +538,14 @@ PRESENT enum_variant CoroutineStart::DEFAULT at /Volumes/stuff/Projects/kotlinma
 PRESENT enum_variant CoroutineStart::LAZY at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:163 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:176
 PRESENT enum_variant CoroutineStart::ATOMIC at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:240 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:253
 PRESENT enum_variant CoroutineStart::UNDISPATCHED at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:343 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:355
-MISSING_SYMBOL function CoroutineStart::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:355
-MISSING_SYMBOL property CoroutineStart::isLazy at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:369
-EXTRA_TARGET_SYMBOL function invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:363
-EXTRA_TARGET_SYMBOL type CoroutineStartExtensions at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:504
-EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:518
-EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:540
-EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::is_lazy at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:562
+PRESENT function CoroutineStart::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:355 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:425
+PRESENT property CoroutineStart::isLazy at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:369 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.cpp:24
+EXTRA_TARGET_SYMBOL function retain_start_argument at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:374
+EXTRA_TARGET_SYMBOL function erase_start_block at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:387
+EXTRA_TARGET_SYMBOL type CoroutineStartExtensions at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:433
+EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:437
+EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:443
+EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::is_lazy at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:447
 MISSING_FILE kotlinx-coroutines-core/common/src/Debug.common.kt
 MISSING_SYMBOL property DEBUG at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Debug.common.kt:3
 MISSING_SYMBOL property hexAddress at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Debug.common.kt:4
@@ -6105,4 +6106,4 @@ MISSING_SYMBOL property isNative at /Volumes/stuff/Projects/kotlinmania/kotlin.c
 MISSING_SYMBOL property isBoundByJsTestTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:61
 MISSING_SYMBOL property isJavaAndWindows at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:63
 MISSING_SYMBOL property usesSharedEventLoop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:65
-Inventory totals: present=2425, declaration_only=101, missing=2071
+Inventory totals: present=2427, declaration_only=101, missing=2069

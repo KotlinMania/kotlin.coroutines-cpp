@@ -15,7 +15,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 3 | `internal.Concurrent` | `internal.Concurrent` | 0.36 | 14 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | 1 | 9 | 14010906.0 |
 | 4 | `native.Exceptions` | `native.Exceptions` | 0.11 | 6 | 1/4 matched (target 12) | `JobCancellationException::toString`, `JobCancellationException::equals`, `JobCancellationException::hashCode` | 0/2 matched (target 0) | `CancellationException`, `JobCancellationException` | 5 | 6 | 6050609.0 |
 | 5 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 6 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | 1 | 12 | 6011208.0 |
-| 6 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.00 | 2 | 0/1 matched (target 4) | `CoroutineStart::invoke` | 1/1 matched (target 3) | _none_ | 1 | 2 | 2010210.0 |
+| 6 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.13 | 2 | 1/1 matched (target 8) | _none_ | 1/1 matched (target 3) | _none_ | 0 | 2 | 2000208.6 |
 | 7 | `channels.BufferOverflow` | `channels.BufferOverflow` | 1.00 | 2 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 2000100.0 |
 | 8 | `selects.Select` | `selects.Select` | 0.21 | 1 | 24/30 matched (target 71) | `SelectBuilder::invoke`, `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | 6 | 46 | 1064608.0 |
 | 9 | `internal.Combine` | `internal.Combine` | 0.02 | 1 | 1/2 matched (target 23) | `FlowCollector<R>::combineInternal` | 1/1 matched (target 9) | _none_ | 1 | 3 | 1010309.8 |
@@ -429,10 +429,10 @@ These files need immediate attention:
   - Missing types: _none_
 
 - **common.CoroutineStart** → `coroutines.CoroutineStart`
-  - Function similarity: 0.00
+  - Function similarity: 0.13
   - Dependencies: 2
-  - Functions: 0/1 matched (target 4)
-  - Missing functions: `CoroutineStart::invoke`
+  - Functions: 1/1 matched (target 8)
+  - Missing functions: _none_
   - Types: 1/1 matched (target 3)
   - Missing types: _none_
   - Lint issues: 19
