@@ -4,6 +4,8 @@
 #include "kotlinx/coroutines/flow/Channels.hpp"
 #include "kotlinx/coroutines/native/Exceptions.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
+#include "kotlinx/coroutines/CompletableJob.hpp"
+#include <deque>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -141,6 +143,117 @@ void job_cancellation_equality_contract() {
     JobCancellationException outer_left("outer", nested_left, job.get());
     JobCancellationException outer_right("outer", nested_right, job.get());
     CHECK(outer_left.equals(&outer_right));
+}
+
+// ChannelFlow.kt:118-121 uses CoroutineScope.kt:279-288 directly: the
+// scoped continuation's caller frame is the actual caller, with no intermediary.
+void channel_scope_contract() {
+    class FrameCompletion final : public Continuation<void*>, public kotlinx::coroutines::internal::CoroutineStackFrame {
+    public:
+        int resumes = 0;
+        std::exception_ptr failure;
+        std::shared_ptr<CoroutineContext> get_context() const override { return EmptyCoroutineContext::instance(); }
+        void resume_with(Result<void*> result) override {
+            ++resumes;
+            failure = result.exception_or_null();
+            if (!failure) CHECK(result.get_or_throw() == nullptr);
+        }
+        kotlinx::coroutines::internal::CoroutineStackFrame* get_caller_frame() const override { return nullptr; }
+        kotlinx::coroutines::internal::StackTraceElement* get_stack_trace_element() const override { return nullptr; }
+    };
+    for (bool suspended : {false, true}) for (bool fails : {false, true}) {
+        FrameCompletion caller;
+        std::shared_ptr<Continuation<void*>> paused;
+        auto failure = std::make_exception_ptr(std::runtime_error("scope source failure"));
+        int starts = 0;
+        std::exception_ptr observed;
+        void* outcome = nullptr;
+        try {
+            outcome = flow::internal::collect_in_scope(
+                [&](CoroutineScope* receiver, std::shared_ptr<Continuation<void*>> continuation) -> void* {
+                    ++starts;
+                    auto* scope = dynamic_cast<kotlinx::coroutines::internal::ScopeCoroutine<void*>*>(receiver);
+                    CHECK(scope && scope == dynamic_cast<kotlinx::coroutines::internal::ScopeCoroutine<void*>*>(continuation.get()));
+                    CHECK(scope->get_caller_frame() == &caller);
+                    CHECK(scope->u_cont.get() == &caller);
+                    CHECK(scope->get_coroutine_context()->get(Job::type_key).get() ==
+                          static_cast<CoroutineContext::Element*>(scope));
+                    if (suspended) {
+                        paused = std::move(continuation);
+                        return intrinsics::get_COROUTINE_SUSPENDED();
+                    }
+                    if (fails) std::rethrow_exception(failure);
+                    return nullptr;
+                }, &caller);
+        } catch (...) { observed = std::current_exception(); }
+        CHECK(starts == 1 && caller.resumes == 0);
+        if (suspended) {
+            CHECK(!observed && intrinsics::is_coroutine_suspended(outcome) && paused);
+            paused->resume_with(fails ? Result<void*>::failure(failure) : Result<void*>::success(nullptr));
+            CHECK(caller.resumes == 1 && caller.failure == (fails ? failure : nullptr));
+        } else CHECK(observed == (fails ? failure : nullptr) && outcome == nullptr);
+    }
+
+    // A successful body still waits for its actual attached child before
+    // returning to the original caller. Child failure becomes scope failure.
+    for (bool fails : {false, true}) {
+        FrameCompletion caller;
+        std::shared_ptr<CompletableJob> child;
+        auto failure = std::make_exception_ptr(std::runtime_error("scope child failure"));
+        auto outcome = flow::internal::collect_in_scope(
+            [&](CoroutineScope* receiver, std::shared_ptr<Continuation<void*>>) -> void* {
+                child = make_job(receiver->get_job());
+                return nullptr;
+            }, &caller);
+        CHECK(intrinsics::is_coroutine_suspended(outcome) && caller.resumes == 0 && child->is_active());
+        if (fails) child->complete_exceptionally(failure);
+        else child->complete();
+        CHECK(caller.resumes == 1 && caller.failure == (fails ? failure : nullptr));
+    }
+    // Child completion must use the actual compiler caller's interceptor.
+    // Wrapping that caller in a non-frame completion silently bypasses it.
+    class QueueDispatcher final : public CoroutineDispatcher {
+    public:
+        mutable std::deque<std::shared_ptr<Runnable>> queue;
+        void dispatch(const CoroutineContext&, std::shared_ptr<Runnable> task) const override {
+            queue.push_back(std::move(task));
+        }
+        void drain() {
+            while (!queue.empty()) {
+                auto task = std::move(queue.front());
+                queue.pop_front();
+                task->run();
+            }
+        }
+    };
+    class CallerFrame final : public ContinuationImpl {
+    public:
+        CallerFrame(std::shared_ptr<Continuation<void*>> completion, std::shared_ptr<CoroutineContext> context)
+            : ContinuationImpl(std::move(completion), std::move(context)) {}
+        int resumes = 0;
+        void* invoke_suspend(Result<void*> result) override {
+            ++resumes;
+            return result.get_or_throw();
+        }
+    };
+    for (bool fails : {false, true}) {
+        auto dispatcher = std::make_shared<QueueDispatcher>();
+        auto outer = std::make_shared<Completion>();
+        auto caller = std::make_shared<CallerFrame>(outer, dispatcher);
+        std::shared_ptr<CompletableJob> child;
+        auto failure = std::make_exception_ptr(std::runtime_error("intercepted child failure"));
+        auto outcome = flow::internal::collect_in_scope(
+            [&](CoroutineScope* receiver, std::shared_ptr<Continuation<void*>>) -> void* {
+                child = make_job(receiver->get_job());
+                return nullptr;
+            }, caller.get());
+        CHECK(intrinsics::is_coroutine_suspended(outcome) && caller->resumes == 0 && outer->resumes == 0);
+        if (fails) child->complete_exceptionally(failure);
+        else child->complete();
+        CHECK(caller->resumes == 0 && outer->resumes == 0 && dispatcher->queue.size() == 1);
+        dispatcher->drain();
+        CHECK(caller->resumes == 1 && outer->resumes == 1 && outer->failure == (fails ? failure : nullptr));
+    }
 }
 
 void cancellation_contract() {
@@ -329,6 +442,7 @@ void list_resource_contract() {
 int main() {
     try {
         job_cancellation_equality_contract();
+        channel_scope_contract();
         cancellation_contract();
         iteration_contract();
         list_contract();

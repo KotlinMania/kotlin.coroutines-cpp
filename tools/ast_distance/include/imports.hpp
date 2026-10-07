@@ -645,10 +645,53 @@ private:
         // Determine the namespace of declarations, rather than letting an empty
         // namespace placed first claim unrelated implementations later in a file.
         std::vector<std::vector<std::string>> declaration_scopes, forward_scopes, declared_scopes;
-        auto forward_type = [](TSNode declaration) {
+        std::function<bool(TSNode)> forward_declaration = [&](TSNode declaration) {
             std::string kind = ts_node_type(declaration);
-            if (kind == "declaration" && ts_node_named_child_count(declaration) == 1)
-                declaration = ts_node_named_child(declaration, 0);
+            if (kind == "template_declaration") {
+                for (uint32_t i = 0; i < ts_node_named_child_count(declaration); ++i) {
+                    TSNode child = ts_node_named_child(declaration, i);
+                    std::string child_kind = ts_node_type(child);
+                    if (child_kind == "declaration" || child_kind == "class_specifier" ||
+                        child_kind == "struct_specifier" || child_kind == "enum_specifier")
+                        return forward_declaration(child);
+                }
+                return false;
+            }
+            if (kind == "declaration") {
+                // A prototype is dependency evidence, not an implementation in
+                // this namespace. Function-pointer variables remain definitions.
+                auto function_prototype = [](TSNode declarator) {
+                    std::string binding;
+                    while (!ts_node_is_null(declarator)) {
+                        std::string declarator_kind = ts_node_type(declarator);
+                        if (declarator_kind == "init_declarator") break;
+                        if (declarator_kind == "function_declarator" || declarator_kind == "pointer_declarator" ||
+                            declarator_kind == "reference_declarator" || declarator_kind == "array_declarator")
+                            binding = declarator_kind;
+                        if (declarator_kind == "identifier" || declarator_kind == "qualified_identifier" ||
+                            declarator_kind == "operator_name" || declarator_kind == "destructor_name") {
+                            if (binding == "function_declarator") return true;
+                            break;
+                        }
+                        TSNode nested = ts_node_child_by_field_name(declarator, "declarator", 10);
+                        if (ts_node_is_null(nested) && declarator_kind == "parenthesized_declarator" &&
+                            ts_node_named_child_count(declarator) == 1) nested = ts_node_named_child(declarator, 0);
+                        declarator = nested;
+                    }
+                    return false;
+                };
+                bool has_declarator = false;
+                for (uint32_t i = 0; i < ts_node_child_count(declaration); ++i) {
+                    const char* field = ts_node_field_name_for_child(declaration, i);
+                    if (field && std::string(field) == "declarator") {
+                        has_declarator = true;
+                        if (!function_prototype(ts_node_child(declaration, i))) return false;
+                    }
+                }
+                if (has_declarator) return true;
+                if (ts_node_named_child_count(declaration) == 1)
+                    declaration = ts_node_named_child(declaration, 0);
+            }
             kind = ts_node_type(declaration);
             return (kind == "class_specifier" || kind == "struct_specifier" || kind == "enum_specifier") &&
                 ts_node_is_null(ts_node_child_by_field_name(declaration, "body", 4));
@@ -674,14 +717,14 @@ private:
             } else if (kind == "function_definition" || kind == "declaration" || kind == "template_declaration" ||
                        kind == "class_specifier" || kind == "struct_specifier" || kind == "enum_specifier" ||
                        kind == "alias_declaration" || kind == "type_definition") {
-                if (forward_type(current)) forward_scopes.push_back(std::move(scope));
+                if (forward_declaration(current)) forward_scopes.push_back(std::move(scope));
                 else declaration_scopes.push_back(std::move(scope));
             }
         };
         visit(node, {});
         if (declared_scopes.empty()) return;
         pkg.declared = true;
-        // Foreign type forwards describe dependencies, not this unit's ported
+        // Foreign type/function forwards describe dependencies, not this unit's ported
         // namespace. Preserve their identity when the file contains only forwards.
         if (declaration_scopes.empty() && !forward_scopes.empty()) declaration_scopes = std::move(forward_scopes);
         // Empty classic namespace chains contribute their terminal scope, not

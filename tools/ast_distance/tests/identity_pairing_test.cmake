@@ -56,6 +56,28 @@ file(WRITE "${TEST_DIR}/target/Example.cpp" "class External;\nnamespace beta::co
 compare(global_forward_type "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "pass")
 file(WRITE "${TEST_DIR}/target/Example.cpp" "namespace unrelated { class ActualType {}; }\nnamespace beta::core { int next_value(int value) { return value + 1; } }\n")
 compare(foreign_type_definition "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "Identity conflict")
+# Foreign function prototypes must not pull an implemented unit up to their
+# namespace. Template prototypes have the same dependency-only role.
+file(WRITE "${TEST_DIR}/target/Example.cpp" "// Transliterated from: beta/Example.kt\nnamespace beta { int foreign(int); int* pointer_result(int); template<class T> T foreign_template(T); template<class T> class Forward; }\nnamespace beta::core { int next_value(int value) { return value + 1; } }\n")
+compare(parent_function_forwards "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "pass")
+file(WRITE "${TEST_DIR}/target/Example.hpp" "// Transliterated from: beta/Example.kt\nnamespace beta { int foreign(int); int* pointer_result(int); template<class T> T foreign_template(T); }\nnamespace beta::core { inline int next_value(int value) { return value + 1; } }\n")
+file(WRITE "${TEST_DIR}/target/Example.cpp" "#include \"Example.hpp\"\nnamespace beta::core { int helper(int value) { return value; } }\n")
+compare(parent_forward_companion "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.hpp" "pass")
+execute_process(COMMAND "${AST_DISTANCE}" --deep "${TEST_DIR}/source" kotlin "${TEST_DIR}/target" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+if(NOT status EQUAL 0 OR output MATCHES "MISSING_FILE beta/Example.kt" OR NOT output MATCHES "PRESENT function nextValue")
+    message(FATAL_ERROR "Function forward namespace hid implemented companion: ${output}: ${errors}")
+endif()
+# A foreign body is still contradictory, even with the correct namespace later.
+file(REMOVE "${TEST_DIR}/target/Example.hpp")
+file(WRITE "${TEST_DIR}/target/Example.cpp" "// Transliterated from: beta/Example.kt\nnamespace beta { int foreign(int value) { return value; } }\nnamespace beta::core { int next_value(int value) { return value + 1; } }\n")
+compare(parent_function_definition "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "Namespace/package mismatch")
+file(WRITE "${TEST_DIR}/target/Example.cpp" "// Transliterated from: beta/Example.kt\nnamespace beta { int (*callback)(int); }\nnamespace beta::core { int next_value(int value) { return value + 1; } }\n")
+compare(parent_function_pointer_variable "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "Namespace/package mismatch")
+file(WRITE "${TEST_DIR}/target/Example.cpp" "// Transliterated from: beta/Example.kt\nnamespace beta { int foreign(int), variable; }\nnamespace beta::core { int next_value(int value) { return value + 1; } }\n")
+compare(mixed_prototype_and_variable "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "Namespace/package mismatch")
+file(WRITE "${TEST_DIR}/target/Example.cpp" "// Transliterated from: beta/Example.kt\nnamespace beta { int foreign(int), second(int); }\nnamespace beta::core { int next_value(int value) { return value + 1; } }\n")
+compare(multiple_function_prototypes "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.cpp" "pass")
 # A missing marker may use an exact basename only with the declared namespace.
 file(WRITE "${TEST_DIR}/target/Example.cpp" "namespace beta::core { int next_value(int value) { return value + 1; } }\n")
 execute_process(COMMAND "${AST_DISTANCE}" --deep "${TEST_DIR}/source" kotlin "${TEST_DIR}/target" cpp

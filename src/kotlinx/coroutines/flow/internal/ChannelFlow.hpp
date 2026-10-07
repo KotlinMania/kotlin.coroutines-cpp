@@ -51,6 +51,13 @@ void* collect_in_scope(
     std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block,
     Continuation<void*>* completion);
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
+// NOTE(port): Typed bindings carry the source arguments; the concrete private
+// suspend frame and termination cleanup live in ChannelFlow.cpp.
+void* collect_channel_flow(
+    std::function<void*(Continuation<void*>*)> collect,
+    std::shared_ptr<Continuation<void*>> completion);
+
 // Forward declarations and using statements
 using kotlinx::coroutines::channels::Channel;
 using kotlinx::coroutines::channels::BufferOverflow;
@@ -236,98 +243,30 @@ inline int ChannelFlow<T>::produce_capacity() const {
 template <typename T>
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:114-115
 inline std::shared_ptr<ReceiveChannel<T>> ChannelFlow<T>::produce_impl(CoroutineScope* scope) {
-    // Kotlin: scope.produce(context, produceCapacity, onBufferOverflow, start = ATOMIC, block = collectToFun)
-    // NOTE(port): Retain the existing C++ owner of Kotlin's captured receiver.
+    // NOTE(port): Retain an existing flow owner across queued producer start.
     // A stack/raw receiver remains borrowed and must outlive its producer.
     auto owner = this->weak_from_this().lock();
     return channels::produce<T>(
-        scope,
-        context_,
-        produce_capacity(),
-        on_overflow_,
-        CoroutineStart::ATOMIC,
+        scope, context_, produce_capacity(), on_overflow_, CoroutineStart::ATOMIC,
         [this, owner = std::move(owner)](ProducerScope<T>* scope,
                                        std::shared_ptr<Continuation<void*>> completion) -> void* {
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56
-            class CollectToFrame final : public ContinuationImpl {
-            public:
-                // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56
-                CollectToFrame(ChannelFlow<T>* flow, std::shared_ptr<Flow<T>> owner,
-                               ProducerScope<T>* scope, std::shared_ptr<Continuation<void*>> completion)
-                    : ContinuationImpl(std::move(completion)), flow_(flow),
-                      owner_(std::move(owner)), scope_(scope) {}
-
-                // NOTE(port): Keep the lowered lambda frame alive until its suspend call completes.
-                void retain() { self_ref_ = this->shared_from_this(); }
-
-                // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56
-                void* invoke_suspend(Result<void*> result) override {
-                    try {
-                        coroutine_begin(this)
-                        coroutine_yield(this, flow_->collect_to(scope_, this->shared_from_this()));
-                        self_ref_.reset();
-                        coroutine_end(this)
-                    } catch (...) {
-                        self_ref_.reset();
-                        throw;
-                    }
-                }
-
-            private:
-                void* _label = nullptr;
-                ChannelFlow<T>* flow_;
-                std::shared_ptr<Flow<T>> owner_;
-                ProducerScope<T>* scope_;
-                std::shared_ptr<BaseContinuationImpl> self_ref_;
-            };
-            auto frame = std::make_shared<CollectToFrame>(this, owner, scope, std::move(completion));
-            frame->retain();
-            return frame->start(Result<void*>::success(nullptr));
-        }
-    );
+            return collect_channel_flow(
+                [this, owner, scope](Continuation<void*>* frame) {
+                    return collect_to(scope, kotlinx::coroutines::internal::retain_continuation(frame));
+                }, std::move(completion));
+        });
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120
 template <typename T>
 inline void* ChannelFlow<T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {
-    class CollectFrame final : public ContinuationImpl {
-    public:
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120
-        CollectFrame(ChannelFlow<T>* flow, FlowCollector<T>* collector, CoroutineScope* scope,
-                     std::shared_ptr<Continuation<void*>> completion)
-            : ContinuationImpl(std::move(completion)), flow_(flow),
-              flow_owner_(flow->weak_from_this().lock()), collector_(collector), scope_(scope) {}
-
-        void retain() { self_ref_ = shared_from_this(); }
-
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120,151-152
-        void* invoke_suspend(Result<void*> result) override {
-            try {
-                coroutine_begin(this)
-                channel_ = flow_->produce_impl(scope_);
-                coroutine_yield(this, kotlinx::coroutines::flow::emit_all(collector_, channel_.get(), this));
-                self_ref_.reset();
-                coroutine_end(this)
-            } catch (...) {
-                self_ref_.reset();
-                throw;
-            }
-        }
-
-    private:
-        void* _label = nullptr;
-        ChannelFlow<T>* flow_;
-        std::shared_ptr<Flow<T>> flow_owner_;
-        FlowCollector<T>* collector_;
-        CoroutineScope* scope_;
-        std::shared_ptr<ReceiveChannel<T>> channel_;
-        std::shared_ptr<BaseContinuationImpl> self_ref_;
-    };
-    return collect_in_scope([this, collector](
+    return collect_in_scope([this, collector, owner = this->weak_from_this().lock()](
         CoroutineScope* scope, std::shared_ptr<Continuation<void*>> completion) -> void* {
-        auto frame = std::make_shared<CollectFrame>(this, collector, scope, std::move(completion));
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+        auto channel = produce_impl(scope);
+        return collect_channel_flow(
+            [collector, channel = std::move(channel), owner](Continuation<void*>* frame) {
+                return kotlinx::coroutines::flow::emit_all(collector, channel.get(), frame);
+            }, std::move(completion));
     }, continuation);
 }
 
@@ -386,39 +325,11 @@ protected:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:151-152
     void* collect_to(ProducerScope<T>* scope,
                      std::shared_ptr<Continuation<void*>> completion) override {
-        class CollectToFrame final : public ContinuationImpl {
-        public:
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:151-152
-            CollectToFrame(ChannelFlowOperator<S, T>* flow, ProducerScope<T>* scope,
-                           std::shared_ptr<Continuation<void*>> completion)
-                : ContinuationImpl(std::move(completion)), flow_(flow),
-                  flow_owner_(flow->weak_from_this().lock()), collector_(scope) {}
-
-            void retain() { self_ref_ = shared_from_this(); }
-
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120,151-152
-            void* invoke_suspend(Result<void*> result) override {
-                try {
-                    coroutine_begin(this)
-                    coroutine_yield(this, flow_->flow_collect(&collector_, this));
-                    self_ref_.reset();
-                    coroutine_end(this)
-                } catch (...) {
-                    self_ref_.reset();
-                    throw;
-                }
-            }
-
-        private:
-            void* _label = nullptr;
-            ChannelFlowOperator<S, T>* flow_;
-            std::shared_ptr<Flow<T>> flow_owner_;
-            SendingCollector<T> collector_;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
-        };
-        auto frame = std::make_shared<CollectToFrame>(this, scope, std::move(completion));
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+        auto collector = std::make_shared<SendingCollector<T>>(scope);
+        return collect_channel_flow(
+            [this, owner = this->weak_from_this().lock(), collector](Continuation<void*>* frame) {
+                return flow_collect(collector.get(), frame);
+            }, std::move(completion));
     }
 
 public:
@@ -570,46 +481,15 @@ template <typename S, typename T>
 inline void* ChannelFlowOperator<S, T>::collect_with_context_undispatched(
     FlowCollector<T>* collector, std::shared_ptr<CoroutineContext> new_context,
     Continuation<void*>* completion) {
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:144-148
-    class CollectFrame final : public ContinuationImpl {
-    public:
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:144-148
-        CollectFrame(ChannelFlowOperator<S, T>* flow, FlowCollector<T>* collector,
-                     std::shared_ptr<CoroutineContext> new_context, Continuation<void*>* completion)
-            : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)), flow_(flow),
-              flow_owner_(flow->weak_from_this().lock()),
-              collector_(with_undispatched_context_collector(collector, completion->get_context())),
-              new_context_(std::move(new_context)) {}
-
-        void retain() { self_ref_ = shared_from_this(); }
-
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:145-147
-        void* invoke_suspend(Result<void*> result) override {
-            try {
-                coroutine_begin(this)
-                coroutine_yield(this, with_context_undispatched<void*>(new_context_, collector_.get(),
-                    [this](FlowCollector<T>* sink, Continuation<void*>* continuation) {
-                        return flow_->flow_collect(sink, continuation);
-                    }, this));
-                self_ref_.reset();
-                coroutine_end(this)
-            } catch (...) {
-                self_ref_.reset();
-                throw;
-            }
-        }
-
-    private:
-        void* _label = nullptr;
-        ChannelFlowOperator<S, T>* flow_;
-        std::shared_ptr<Flow<T>> flow_owner_;
-        std::shared_ptr<FlowCollector<T>> collector_;
-        std::shared_ptr<CoroutineContext> new_context_;
-        std::shared_ptr<BaseContinuationImpl> self_ref_;
-    };
-    auto frame = std::make_shared<CollectFrame>(this, collector, std::move(new_context), completion);
-    frame->retain();
-    return frame->start(Result<void*>::success(nullptr));
+    auto original_context_collector = with_undispatched_context_collector(collector, completion->get_context());
+    return collect_channel_flow(
+        [this, owner = this->weak_from_this().lock(), original_context_collector,
+         new_context = std::move(new_context)](Continuation<void*>* frame) {
+            return with_context_undispatched<void*>(new_context, original_context_collector.get(),
+                [this](FlowCollector<T>* sink, Continuation<void*>* continuation) {
+                    return flow_collect(sink, continuation);
+                }, frame);
+        }, kotlinx::coroutines::internal::retain_continuation(completion));
 }
 
 } // namespace internal

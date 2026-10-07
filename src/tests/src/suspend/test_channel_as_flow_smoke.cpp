@@ -558,6 +558,8 @@ int main() {
         if (lifetime.expired() || resource_lifetime.expired() || paused) return ownership_failure(__LINE__);
         dispatcher->drain();
         if (!paused || lifetime.expired() || resource_lifetime.expired()) return ownership_failure(__LINE__);
+        // A retained completed frame must release its actual source/captures.
+        auto retained_frame = dynamic_cast<kotlinx::coroutines::BaseContinuationImpl*>(paused)->shared_from_this();
         auto failure = std::make_exception_ptr(std::runtime_error("producer resumed failure"));
         paused->resume_with(fail ? kotlinx::coroutines::Result<void*>::failure(failure) :
             kotlinx::coroutines::Result<void*>::success(nullptr));

@@ -1,87 +1,133 @@
+// port-lint: source kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt
  * and kotlinx-coroutines-core/common/src/CoroutineScope.kt
  */
 #include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
 #include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
-#include <atomic>
+#include "kotlinx/coroutines/internal/CoroutineStackFrame.hpp"
+#include "kotlinx/coroutines/common/CoroutineContextUtils.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 
 namespace kotlinx::coroutines::flow::internal {
 namespace {
 
-// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/SafeContinuationNative.kt:17-63
-class ScopeCompletion final : public Continuation<void*> {
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
+// NOTE(port): Concrete lowered frame for these single suspend-call bodies. Only
+// their typed argument/call bindings require header instantiation.
+class CollectContinuation final : public ContinuationImpl {
 public:
-    explicit ScopeCompletion(Continuation<void*>* delegate) : delegate_(delegate) {}
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
+    CollectContinuation(std::function<void*(Continuation<void*>*)> collect,
+                        std::shared_ptr<Continuation<void*>> completion)
+        : ContinuationImpl(std::move(completion)), collect_(std::move(collect)) {}
 
-    ~ScopeCompletion() override {
-        void* value = result_.load();
-        if (value != &UNDECIDED && value != &RESUMED &&
-            !intrinsics::is_coroutine_suspended(value)) {
-            delete static_cast<Result<void*>*>(value);
-        }
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
+    // NOTE(port): Retain the actual C++ frame while its source call is suspended.
+    void retain() { self_ref_ = shared_from_this(); }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
+    void* invoke_suspend(Result<void*> result) override {
+        coroutine_begin(this)
+        coroutine_yield(this, std::function(collect_)(this));
+        coroutine_end(this)
     }
 
-    std::shared_ptr<CoroutineContext> get_context() const override {
-        return delegate_ ? delegate_->get_context() : EmptyCoroutineContext::instance();
-    }
-
-    void resume_with(Result<void*> result) override {
-        auto boxed = std::make_unique<Result<void*>>(result);
-        while (true) {
-            void* current = result_.load();
-            if (current == &UNDECIDED) {
-                if (result_.compare_exchange_strong(current, boxed.get())) {
-                    boxed.release();
-                    return;
-                }
-            } else if (intrinsics::is_coroutine_suspended(current)) {
-                if (result_.compare_exchange_strong(current, &RESUMED)) {
-                    if (delegate_) delegate_->resume_with(std::move(result));
-                    return;
-                }
-            } else {
-                throw std::logic_error("Already resumed");
-            }
-        }
-    }
-
-    void* get_or_throw() {
-        void* result = result_.load();
-        if (result == &UNDECIDED) {
-            if (result_.compare_exchange_strong(result, intrinsics::get_COROUTINE_SUSPENDED())) {
-                return intrinsics::get_COROUTINE_SUSPENDED();
-            }
-        }
-        if (result == &RESUMED || intrinsics::is_coroutine_suspended(result)) {
-            return intrinsics::get_COROUTINE_SUSPENDED();
-        }
-        return static_cast<Result<void*>*>(result)->get_or_throw();
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
+    // NOTE(port): Terminated spills release flow/channel/collector owners even
+    // when the completed frame remains independently retained by its caller.
+    void release_intercepted() override {
+        auto self = std::move(self_ref_);
+        collect_ = {};
+        ContinuationImpl::release_intercepted();
     }
 
 private:
-    static inline int UNDECIDED = 0;
-    static inline int RESUMED = 0;
-    Continuation<void*>* delegate_;
-    std::atomic<void*> result_{&UNDECIDED};
+    void* _label = nullptr;
+    std::function<void*(Continuation<void*>*)> collect_;
+    std::shared_ptr<BaseContinuationImpl> self_ref_;
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:228-240
+class StackFrameContinuation final : public Continuation<void*>,
+                                     public kotlinx::coroutines::internal::CoroutineStackFrame,
+                                     public std::enable_shared_from_this<StackFrameContinuation> {
+public:
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:228-230
+    StackFrameContinuation(Continuation<void*>* continuation, std::shared_ptr<CoroutineContext> context)
+        : continuation_(kotlinx::coroutines::internal::retain_continuation(continuation)),
+          context_(std::move(context)) {}
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:229-229
+    std::shared_ptr<CoroutineContext> get_context() const override { return context_; }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:232-233
+    kotlinx::coroutines::internal::CoroutineStackFrame* get_caller_frame() const override {
+        return dynamic_cast<kotlinx::coroutines::internal::CoroutineStackFrame*>(continuation_.get());
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:235-237
+    void resume_with(Result<void*> result) override {
+        auto lifetime = std::move(self_ref_);
+        continuation_->resume_with(std::move(result));
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:239-239
+    kotlinx::coroutines::internal::StackTraceElement* get_stack_trace_element() const override { return nullptr; }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:215-240
+    // NOTE(port): Kotlin GC keeps the continuation alive while its callee is suspended.
+    void retain() { self_ref_ = shared_from_this(); }
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:215-240
+    void release() { self_ref_.reset(); }
+
+private:
+    std::shared_ptr<Continuation<void*>> continuation_;
+    std::shared_ptr<CoroutineContext> context_;
+    std::shared_ptr<StackFrameContinuation> self_ref_;
 };
 
 } // namespace
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
+void* collect_channel_flow(
+    std::function<void*(Continuation<void*>*)> collect,
+    std::shared_ptr<Continuation<void*>> completion) {
+    auto frame = std::make_shared<CollectContinuation>(std::move(collect), std::move(completion));
+    frame->retain();
+    return frame->start(Result<void*>::success(nullptr));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:215-225
+void* call_with_context_undispatched(
+    std::shared_ptr<CoroutineContext> new_context, void* count_or_element,
+    std::function<void*(Continuation<void*>*)> block, Continuation<void*>* completion) {
+    return with_coroutine_context<void*>(new_context, count_or_element, [&]() -> void* {
+        auto frame = std::make_shared<StackFrameContinuation>(completion, new_context);
+        frame->retain();
+        try {
+            void* result = block(frame.get());
+            if (!intrinsics::is_coroutine_suspended(result)) frame->release();
+            return result;
+        } catch (...) {
+            frame->release();
+            throw;
+        }
+    });
+}
+
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:118-121
-// and kotlinx-coroutines-core/common/src/CoroutineScope.kt:280-288
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineScope.kt:279-288
 void* collect_in_scope(
     std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block,
     Continuation<void*>* completion) {
-    auto safe_completion = std::make_shared<ScopeCompletion>(completion);
+    auto caller = kotlinx::coroutines::internal::retain_continuation(completion);
     auto scope = std::make_shared<kotlinx::coroutines::internal::ScopeCoroutine<void*>>(
-        safe_completion->get_context(), safe_completion);
-    scope->start(CoroutineStart::UNDISPATCHED, static_cast<CoroutineScope*>(scope.get()), std::move(block));
-    if (!completion && !scope->is_completed()) {
-        // NOTE(port): Retain the legacy blocking entry point when no continuation is supplied.
-        scope->join_blocking();
-    }
-    return safe_completion->get_or_throw();
+        caller->get_context(), caller);
+    return scope->start_undispatched_or_return(
+        [scope, block = std::move(block)](std::shared_ptr<Continuation<void*>> continuation) {
+            return block(static_cast<CoroutineScope*>(scope.get()), std::move(continuation));
+        });
 }
 
 } // namespace kotlinx::coroutines::flow::internal
