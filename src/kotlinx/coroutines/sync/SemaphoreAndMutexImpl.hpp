@@ -21,18 +21,18 @@
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
 #include "kotlinx/coroutines/internal/ConcurrentLinkedList.hpp"
 
+
+
 namespace kotlinx {
 namespace coroutines {
 
 // Forward declaration
 namespace selects {
-    template <typename R> class SelectInstance;
+    class SelectInstanceBase;
 }
 
 namespace sync {
 
-// Forward declaration for Waiter concept
-// We use void* to represent the polymorphic waiter
 
 /**
  * Line 90-353: SemaphoreAndMutexImpl
@@ -63,6 +63,7 @@ namespace sync {
  *              +---------------------------------> | BROKEN | (BOTH FAILED)
  *                     but `acquire` has not come   +--------+
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:90-353
 class SemaphoreAndMutexImpl {
 protected:
     std::atomic<SemaphoreSegment*> head_;
@@ -81,87 +82,35 @@ public:
     /**
      * Line 90, 131-137: Constructor
      */
-    SemaphoreAndMutexImpl(int permits, int acquired_permits)
-        : permits_(permits)
-        , available_permits_(permits - acquired_permits)
-    {
-        if (permits <= 0) {
-            throw std::invalid_argument(
-                "Semaphore should have at least 1 permit, but had " + std::to_string(permits));
-        }
-        if (acquired_permits < 0 || acquired_permits > permits) {
-            throw std::invalid_argument(
-                "The number of acquired permits should be in 0.." + std::to_string(permits));
-        }
-        auto s = new SemaphoreSegment(0, nullptr, 2);
-        head_.store(s, std::memory_order_relaxed);
-        tail_.store(s, std::memory_order_relaxed);
-
-        on_cancellation_release_ = [this](std::exception_ptr, void*, std::shared_ptr<CoroutineContext>) {
-            release();
-        };
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:90-149
+    SemaphoreAndMutexImpl(int permits, int acquired_permits);
 
     virtual ~SemaphoreAndMutexImpl() {
         // Segment cleanup managed by remove() calls during operation
     }
 
-    int available_permits() const {
-        return std::max(available_permits_.load(std::memory_order_acquire), 0);
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:147-147
+    int available_permits() const;
 
     /**
      * Line 151-168: tryAcquire
      */
-    bool try_acquire() {
-        while (true) {
-            int p = available_permits_.load(std::memory_order_acquire);
-
-            if (p > permits_) {
-                coerce_available_permits_at_maximum();
-                continue;
-            }
-
-            if (p <= 0) return false;
-            if (available_permits_.compare_exchange_weak(p, p - 1,
-                    std::memory_order_release, std::memory_order_relaxed)) {
-                return true;
-            }
-        }
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:151-168
+    bool try_acquire();
 
     /**
      * Line 170-180: acquire (suspend function)
      *
      * This is the suspend entry point. Returns COROUTINE_SUSPENDED or nullptr.
      */
-    void* acquire(Continuation<void*>* cont) {
-        int p = dec_permits();
-        if (p > 0) {
-            return nullptr; // Permit acquired, return Unit
-        }
-        return acquire_slow_path(cont);
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:170-180
+    void* acquire(Continuation<void*>* cont);
 
     /**
      * Line 242-262: release
      */
-    void release() {
-        while (true) {
-            int p = available_permits_.fetch_add(1, std::memory_order_acq_rel);
-
-            if (p >= permits_) {
-                coerce_available_permits_at_maximum();
-                throw std::logic_error(
-                    "The number of released permits cannot be greater than " +
-                    std::to_string(permits_));
-            }
-
-            if (p >= 0) return;
-
-            if (try_resume_next_from_queue()) return;
-        }
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:242-262
+    void release();
 
 protected:
     /**
@@ -169,15 +118,8 @@ protected:
      *
      * For use by subclasses (MutexImpl)
      */
-    void acquire_waiter(CancellableContinuation<void>* waiter) {
-        acquire_internal(
-            waiter,
-            [this](CancellableContinuation<void>* cont) { return add_acquire_to_queue(cont); },
-            [this](CancellableContinuation<void>* cont) {
-                cont->resume([this](std::exception_ptr) { release(); });
-            }
-        );
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:192-196
+    void acquire_waiter(CancellableContinuation<void>* waiter);
 
     /**
      * Line 215-220: onAcquireRegFunction (for select)
@@ -185,10 +127,8 @@ protected:
      * Called during select registration phase. Implements acquire semantics
      * for select clause on Semaphore/Mutex.
      */
-    template <typename R>
-    void on_acquire_reg_function(selects::SelectInstance<R>* select, void* ignored_param) {
-        // Select support requires SelectInstance::selectInRegistrationPhase
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:215-220
+    void on_acquire_reg_function(selects::SelectInstanceBase* select, void*);
 
 private:
     /**
@@ -196,30 +136,15 @@ private:
      *
      * suspendCancellableCoroutineReusable<Unit> { cont -> ... }
      */
-    void* acquire_slow_path(Continuation<void*>* cont) {
-        return suspend_cancellable_coroutine<void>(
-            [this](CancellableContinuation<void>& cancellable_cont) {
-                if (add_acquire_to_queue(&cancellable_cont)) return;
-                acquire_waiter(&cancellable_cont);
-            },
-            cont
-        );
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:182-189
+    void* acquire_slow_path(Continuation<void*>* cont);
 
     /**
      * Line 199-211: acquire internal loop
      */
-    template <typename W, typename SuspendFunc, typename OnAcquiredFunc>
-    void acquire_internal(W waiter, SuspendFunc suspend_func, OnAcquiredFunc on_acquired) {
-        while (true) {
-            int p = dec_permits();
-            if (p > 0) {
-                on_acquired(waiter);
-                return;
-            }
-            if (suspend_func(waiter)) return;
-        }
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:199-211
+    void acquire_internal(Waiter* waiter, std::function<bool(Waiter*)> suspend_func,
+                          std::function<void(Waiter*)> on_acquired);
 
     /**
      * Line 229-240: decPermits
@@ -227,13 +152,8 @@ private:
      * Decrements the number of available permits and ensures it is not
      * greater than permits at the point of decrement.
      */
-    int dec_permits() {
-        while (true) {
-            int p = available_permits_.fetch_sub(1, std::memory_order_acq_rel);
-            if (p > permits_) continue;
-            return p;
-        }
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:229-240
+    int dec_permits();
 
     /**
      * Line 269-275: coerceAvailablePermitsAtMaximum
@@ -241,16 +161,8 @@ private:
      * Changes the number of available permits to permits if it became
      * greater due to an incorrect release() call.
      */
-    void coerce_available_permits_at_maximum() {
-        while (true) {
-            int cur = available_permits_.load(std::memory_order_acquire);
-            if (cur <= permits_) break;
-            if (available_permits_.compare_exchange_weak(cur, permits_,
-                    std::memory_order_release, std::memory_order_relaxed)) {
-                break;
-            }
-        }
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:269-275
+    void coerce_available_permits_at_maximum();
 
     /**
      * Line 280-310: addAcquireToQueue
@@ -258,114 +170,26 @@ private:
      * Returns false if the received permit cannot be used and the calling
      * operation should restart.
      */
-    bool add_acquire_to_queue(void* waiter) {
-        SemaphoreSegment* cur_tail = tail_.load(std::memory_order_acquire);
-
-        long enq_idx = enq_idx_.fetch_add(1, std::memory_order_acq_rel);
-
-        auto result = internal::find_segment_and_move_forward(
-            tail_,
-            enq_idx / SEGMENT_SIZE(),
-            cur_tail,
-            create_segment
-        );
-        SemaphoreSegment* segment = result.segment();
-
-        int i = static_cast<int>(enq_idx % SEGMENT_SIZE());
-
-        void* expected = nullptr;
-        if (segment->cas(i, expected, waiter)) {
-            install_cancellation_handler(waiter, segment, i);
-            return true;
-        }
-
-        if (segment->cas(i, static_cast<void*>(&PERMIT()), static_cast<void*>(&TAKEN()))) {
-            resume_waiter_with_permit(waiter);
-            return true;
-        }
-
-        assert(segment->get(i) == static_cast<void*>(&BROKEN()));
-        return false;
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:280-310
+    bool add_acquire_to_queue(Waiter* waiter);
 
     /**
      * Line 313-337: tryResumeNextFromQueue
      */
-    bool try_resume_next_from_queue() {
-        SemaphoreSegment* cur_head = head_.load(std::memory_order_acquire);
-
-        long deq_idx = deq_idx_.fetch_add(1, std::memory_order_acq_rel);
-
-        long segment_id = deq_idx / SEGMENT_SIZE();
-
-        auto result = internal::find_segment_and_move_forward(
-            head_,
-            segment_id,
-            cur_head,
-            create_segment
-        );
-        SemaphoreSegment* segment = result.segment();
-
-        segment->clean_prev();
-
-        if (segment->id > segment_id) return false;
-
-        int i = static_cast<int>(deq_idx % SEGMENT_SIZE());
-
-        void* cell_state = segment->get_and_set(i, static_cast<void*>(&PERMIT()));
-
-        if (cell_state == nullptr) {
-            for (int spin = 0; spin < MAX_SPIN_CYCLES(); ++spin) {
-                if (segment->get(i) == static_cast<void*>(&TAKEN())) {
-                    return true;
-                }
-            }
-            return !segment->cas(i, static_cast<void*>(&PERMIT()), static_cast<void*>(&BROKEN()));
-        }
-
-        if (cell_state == static_cast<void*>(&CANCELLED())) {
-            return false;
-        }
-
-        return try_resume_acquire(cell_state);
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:313-337
+    bool try_resume_next_from_queue();
 
     /**
      * Line 339-352: tryResumeAcquire
      *
      * Try to resume a waiter that was stored in the cell.
      */
-    bool try_resume_acquire(void* waiter) {
-        // In Kotlin, this dispatches on waiter type (CancellableContinuation or SelectInstance)
-        // In C++, we need to cast based on actual type
-        // For now, assume it's always a CancellableContinuation<void>
-        auto* cont = static_cast<CancellableContinuation<void>*>(waiter);
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:339-352
+    bool try_resume_acquire(Waiter* waiter);
 
-        void* token = cont->try_resume(nullptr);
-        if (token != nullptr) {
-            cont->complete_resume(token);
-            return true;
-        }
-        return false;
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:296-305
+    void resume_waiter_with_permit(Waiter* waiter);
 
-    /**
-     * Helper: Install cancellation handler on waiter
-     */
-    void install_cancellation_handler(void* waiter, SemaphoreSegment* segment, int index) {
-        auto* cont = static_cast<CancellableContinuation<void>*>(waiter);
-        cont->invoke_on_cancellation([segment, index](std::exception_ptr cause) {
-            segment->on_cancellation(index, cause, nullptr);
-        });
-    }
-
-    /**
-     * Helper: Resume waiter with permit (elimination happened)
-     */
-    void resume_waiter_with_permit(void* waiter) {
-        auto* cont = static_cast<CancellableContinuation<void>*>(waiter);
-        cont->resume([this](std::exception_ptr) { release(); });
-    }
 };
 
 } // namespace sync

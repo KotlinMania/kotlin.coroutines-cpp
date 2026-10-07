@@ -1,484 +1,196 @@
-# Kotlin Native GC Integration Specification
+# Kotlin/Native reference and root boundary
 
-**Version**: 1.0.0  
-**Date**: 2024-12-10  
-**Status**: Reference Implementation Complete
+The production target is Kotlin/Native on bare metal. The compiler may run on a
+host computer. A JVM program cannot establish the target object, continuation,
+collector or coroutine-frame ABI. Host Native tests provide bounded evidence;
+they do not establish execution on a bare-metal target.
 
-## 1. Executive Summary
+## Source authority
 
-This specification defines the integration layer between C++ coroutine libraries and Kotlin Native's garbage collector. The solution provides zero-overhead GC coordination for C++ code that may be called from Kotlin Native, using weak linking to maintain standalone compatibility.
+Compiler/runtime source is pinned to
+`fee29910d8dddd2b1f7b44036c00533cee493351` in `tmp/kotlin`.
+The consumed runtime is already C++: its actual declarations and root-holder
+algorithm are preserved in `src/kotlinx/coroutines/KotlinGCBridge.hpp` and `.cpp`,
+with per-file port-lint and per-function source ranges. This is the runtime
+boundary needed by Kotlin-generated object references; it is not an alternative
+coroutine implementation.
 
-### 1.1 Key Features
+| Pinned source | Required behavior |
+|---|---|
+| `kotlin-native/runtime/src/main/cpp/Memory.h:180-234` | Real allocation, global registration, stack/heap updates, reference atomics, result slots and frame entry/exit. |
+| `Memory.h:254-264` | Actual Native/Runnable transitions and compiler safe-point entry points. |
+| `Memory.h:272-311` | Actual FrameOverlay layout and ObjHolder algorithm. |
+| `kotlin-native/runtime/src/main/cpp/mm/Memory.cpp:105-205` | Native runtime allocation, barriers, seq_cst reference compare/exchange, root slots and shadow-stack operations. |
+| `kotlin-native/runtime/src/main/cpp/mm/ReferenceOps.hpp` and `.cpp` | Source reference accessors and collector hooks. |
+| `kotlin-native/runtime/src/main/cpp/mm/ShadowStack.hpp` and `.cpp` | Per-thread frame chain and scanning of registered object slots. |
+| `kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/Annotations.kt` | Actual ExportForCppRuntime and GCUnsafeCall compiler boundary. |
+| `kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:734-778` | Object loads retained in result/stack slots and actual source store/update operations. |
 
-- **Zero-overhead standalone operation**: When not linked with Kotlin Native, all GC functions are inlined no-ops
-- **Automatic GC coordination**: RAII guards manage thread state transitions
-- **Explicit control**: Manual state switching for fine-grained control
-- **Thread-safe**: Per-thread state management
-- **Portable**: Single codebase works with or without Kotlin Native
+## Mandatory runtime operations
 
-### 1.2 Scope
+The declarations have strong linkage. A Native consumer must link the actual
+runtime definitions. There are no inline no-op definitions, weak optional symbols
+or availability predicates. `KOTLIN_NATIVE_RUNTIME_AVAILABLE` now enables the
+optional Native host test; it does not change production reference semantics.
+Disabling that test does not supply a substitute collector.
 
-This specification covers:
-- Thread state management APIs
-- RAII guard implementation
-- Safepoint checking mechanisms
-- Build configuration options
-- Safety guarantees and constraints
+`ObjHeader` and `TypeInfo` remain opaque identities owned by Native. Neither a
+C++ smart pointer nor an ordinary C++ allocation is a Native object. Native
+object-returning runtime functions take the caller's final `ObjHeader**` root
+slot as well as returning `ObjHeader*`. Every adapter must preserve that slot;
+returning only an unrooted pointer is insufficient.
 
-## 2. Architecture
+Reference compare-and-set, compare-and-exchange and exchange call the actual
+Native runtime operations. Those operations use source reference accessors and
+collector hooks, with sequential consistency. Pointer atomics cannot stand in
+for them. Mutable object loads also require the compiler's real stack/root
+handling; there is no invented exported heap-load helper.
 
-### 2.1 Thread State Model
+## Stack-root lifetime
 
-Kotlin Native uses a two-state model for thread management:
+`FrameOverlay` stores the previous frame and the source parameter/count fields.
+`ObjHolder` stores that overlay followed by one object-reference slot. Its default
+constructor initializes the slot to null and enters a frame. Its object-taking
+constructor enters a frame and calls UpdateStackRef. Its destructor calls
+LeaveFrame. Clearing the holder calls ZeroStackRef. These bodies are the pinned
+source algorithm, split into the repository's header/implementation layout.
+They are required lifetime management, not temporary proof guards.
 
-| State | Description | GC Behavior | Capabilities |
-|-------|-------------|-------------|--------------|
-| **kRunnable** | Thread can execute Kotlin code | Waits at safepoints | Can access Kotlin objects, call Kotlin functions |
-| **kNative** | Thread is in native code | Proceeds without waiting | Cannot access Kotlin objects, unrestricted C++ |
+Object access and frame operations require a registered Runnable Native thread.
+Switching into Native state is only appropriate while code does not access Native
+objects. The exported state-switch functions do not encode a nesting policy.
+The removed wrapper did not remember the incoming thread state; that wrapper's
+claims about nested transitions were unsupported. Source ThreadStateGuard and
+its old-state restoration are a separate real runtime dependency, not presently
+translated here.
 
-### 2.2 State Transitions
+## Current execution evidence: 2026-10-06
 
-```
-┌──────────────┐  switchThreadStateNative()   ┌──────────────┐
-│              │─────────────────────────────>│              │
-│  kRunnable   │                              │   kNative    │
-│              │<─────────────────────────────│              │
-└──────────────┘  switchThreadStateRunnable() └──────────────┘
-```
+The optional `native_reference_contract` CMake target builds a macOS ARM64 Native
+executable with explicitly supplied Kotlin/Native and its matching LLVM Clang.
+C++ bitcode is linked through Kotlin/Native's `-native-library` input. This is
+verification of the runtime ABI; production coroutine compilation still uses
+the mandatory in-process KotlinxCoroutinePass, without an IR text launcher.
 
-**Transition Costs**:
-- Standalone: 0 cycles (inlined away)
-- With Kotlin Native: ~10-50 cycles (atomic operation + state check)
+The fixture creates real Native objects and observes WeakReference after forced
+GC. Assertions exist only in the fixture. Ten contract groups cover stack-root
+retention/release, nested frame links/restoration, C++ exception unwinding,
+failed compare-and-set, failed compare-and-exchange return identity, successful
+compare-and-set, exchange return-root retention/release, and actual thread-state
+and safe-point calls. An additional Native caller receives an object through
+UpdateReturnRef, forces collection after the C++ holder exits, and reads the
+object's original field. Execution prints:
 
-### 2.3 Component Architecture
-
-```
-┌─────────────────────────────────────────┐
-│  C++ Application Code                    │
-├─────────────────────────────────────────┤
-│  KotlinGCBridge.hpp                     │
-│  ┌─────────────────────────────────────┐│
-│  │ KotlinNativeStateGuard (RAII)      ││
-│  │ check_safepoint()                   ││
-│  │ is_kotlin_native_runtime_available()││
-│  └─────────────────────────────────────┘│
-├─────────────────────────────────────────┤
-│  Weak-Linked Function Declarations      │
-│  ┌─────────────────────────────────────┐│
-│  │ Kotlin_mm_switchThreadStateNative()││
-│  │ Kotlin_mm_switchThreadStateRunnable()│
-│  │ Kotlin_mm_safePointWhileLoopBody()  ││
-│  └─────────────────────────────────────┘│
-└────────────┬────────────────────┬────────┘
-             │                    │
-    Standalone Mode      Kotlin Native Mode
-             │                    │
-      ┌──────▼──────┐      ┌──────▼───────┐
-      │ Inline Stubs│      │ Kotlin Native│
-      │ (no-ops)    │      │ Runtime      │
-      └─────────────┘      │ Memory.cpp   │
-                           └──────────────┘
-```
-
-## 3. API Specification
-
-### 3.1 Core Functions
-
-#### 3.1.1 `Kotlin_mm_switchThreadStateNative()`
-
-```cpp
-extern "C" void Kotlin_mm_switchThreadStateNative();
+```text
+native-roots=10
+native-return-slot=1
 ```
 
-**Purpose**: Transition current thread from kRunnable to kNative state.
-
-**Preconditions**:
-- Thread must be in kRunnable state
-- No Kotlin objects on C++ stack (undefined behavior if accessed afterward)
-
-**Postconditions**:
-- Thread is in kNative state
-- GC will not wait for this thread
-- Cannot safely access Kotlin-managed objects
-
-**Complexity**: O(1) - atomic store + state check
-
-#### 3.1.2 `Kotlin_mm_switchThreadStateRunnable()`
-
-```cpp
-extern "C" void Kotlin_mm_switchThreadStateRunnable();
-```
-
-**Purpose**: Transition current thread from kNative to kRunnable state.
-
-**Preconditions**:
-- Thread must be in kNative state
-
-**Postconditions**:
-- Thread is in kRunnable state
-- May access Kotlin-managed objects
-- GC will coordinate with this thread at safepoints
-
-**Complexity**: O(1) - atomic store + potential safepoint check
-
-#### 3.1.3 `Kotlin_mm_safePointWhileLoopBody()`
-
-```cpp
-extern "C" void Kotlin_mm_safePointWhileLoopBody();
-```
-
-**Purpose**: Check if GC requires thread suspension.
-
-**Preconditions**:
-- Thread should be in kRunnable state (no effect if kNative)
-
-**Postconditions**:
-- If GC pending: thread pauses until GC completes
-- Otherwise: immediate return
-
-**Complexity**: O(1) - atomic load, rare conditional pause
-
-### 3.2 C++ API
-
-#### 3.2.1 `KotlinNativeStateGuard`
-
-```cpp
-class KotlinNativeStateGuard {
-public:
-    KotlinNativeStateGuard();
-    ~KotlinNativeStateGuard();
-    
-    // Non-copyable, non-movable
-    KotlinNativeStateGuard(const KotlinNativeStateGuard&) = delete;
-    KotlinNativeStateGuard& operator=(const KotlinNativeStateGuard&) = delete;
-};
-```
-
-**Purpose**: RAII guard for automatic thread state management.
-
-**Behavior**:
-- **Constructor**: Calls `Kotlin_mm_switchThreadStateNative()`
-- **Destructor**: Calls `Kotlin_mm_switchThreadStateRunnable()`
-
-**Thread Safety**: Thread-local, no synchronization required.
-
-**Exception Safety**: Strong guarantee - destructor always called.
-
-#### 3.2.2 `check_safepoint()`
-
-```cpp
-inline void check_safepoint();
-```
-
-**Purpose**: Insert explicit safepoint check.
-
-**Use Cases**:
-- Long-running loops (>1ms iteration time)
-- Reducing GC pause latency
-- Periodic coordination with GC
-
-**Performance**:
-- Standalone: 0 cycles (inlined away)
-- With Kotlin Native: ~5-10 cycles (atomic load)
-
-#### 3.2.3 `is_kotlin_native_runtime_available()`
-
-```cpp
-inline bool is_kotlin_native_runtime_available();
-```
-
-**Purpose**: Runtime detection of Kotlin Native presence.
-
-**Returns**:
-- `true`: Functions resolve to Kotlin Native runtime
-- `false`: Functions are inlined stubs
-
-**Use Case**: Conditional logic for dual-mode operation.
-
-## 4. Build Configuration
-
-### 4.1 CMake Options
-
-```cmake
-option(KOTLIN_NATIVE_RUNTIME_AVAILABLE
-    "Link with Kotlin Native runtime" OFF)
-```
-
-**Values**:
-- `OFF` (default): Standalone mode, inline stubs
-- `ON`: Kotlin Native mode, weak-linked functions
-
-### 4.2 Compiler Definitions
-
-```cpp
-#define KOTLIN_NATIVE_RUNTIME_AVAILABLE 0  // Standalone
-#define KOTLIN_NATIVE_RUNTIME_AVAILABLE 1  // With Kotlin Native
-```
-
-### 4.3 Link Time Behavior
-
-**Standalone**:
-```bash
-clang++ -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=0 source.cpp
-# Functions are inlined away
-# Zero runtime overhead
-```
-
-**With Kotlin Native**:
-```bash
-clang++ -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=1 source.cpp -c
-kotlinc-native kotlin_code.kt -library source.o
-# Weak symbols resolved by Kotlin Native runtime
-# GC coordination active
-```
-
-## 5. Safety Guarantees
-
-### 5.1 Thread State Constraints
-
-| Operation | kRunnable | kNative |
-|-----------|-----------|---------|
-| Access Kotlin objects | ✓ Safe | ✗ Undefined Behavior |
-| Call Kotlin functions | ✓ Safe | ✗ Undefined Behavior |
-| Allocate Kotlin objects | ✓ Safe | ✗ Undefined Behavior |
-| C++ operations | ✓ Safe | ✓ Safe |
-| Heavy computation | ⚠ Blocks GC | ✓ Safe |
-| Safepoint checks | ✓ Active | ✗ No effect |
-
-### 5.2 RAII Safety
-
-`KotlinNativeStateGuard` provides:
-- **Constructor throws**: Not applicable (no failure modes)
-- **Destructor throws**: `noexcept` guarantee (C++ standard)
-- **Exception safety**: Strong - always restores state
-- **Stack unwinding**: Safe - destructor always invoked
-
-### 5.3 Race Conditions
-
-**Thread-local state**: Each thread has independent state.
-- **No data races**: State transitions are thread-local
-- **No synchronization needed**: Between state switches
-- **GC coordination**: Managed by Kotlin Native runtime
-
-## 6. Performance Characteristics
-
-### 6.1 Overhead Analysis
-
-| Operation | Standalone | With Kotlin Native |
-|-----------|------------|-------------------|
-| State switch | 0 cycles | ~10-50 cycles |
-| Safepoint check | 0 cycles | ~5-10 cycles |
-| Guard construction | 0 cycles | ~10-50 cycles |
-| Guard destruction | 0 cycles | ~10-50 cycles |
-
-### 6.2 Memory Overhead
-
-- **Code size**: +0 bytes standalone (inlined away)
-- **Data size**: 0 bytes (no static state)
-- **Stack size**: sizeof(KotlinNativeStateGuard) = 1 byte (empty class)
-
-### 6.3 Scalability
-
-- **Thread scaling**: O(1) - per-thread state
-- **GC coordination**: O(threads in kRunnable) - GC waits only for kRunnable threads
-- **Safepoint overhead**: O(1) - atomic load
-
-## 7. Usage Patterns
-
-### 7.1 Long-Running Operations
-
-```cpp
-extern "C" void mlx_inference(int64_t model_ptr, int64_t input_ptr) {
-    kotlinx::coroutines::KotlinNativeStateGuard guard;
-    
-    auto* model = reinterpret_cast<mlx::core::nn::Module*>(model_ptr);
-    auto* input = reinterpret_cast<mlx::core::array*>(input_ptr);
-    
-    // Heavy computation - GC doesn't wait
-    auto result = model->forward(*input);
-    
-    return reinterpret_cast<int64_t>(new mlx::core::array(result));
-}
-```
-
-**Analysis**:
-- **GC impact**: Zero - thread in kNative during inference
-- **Latency**: Minimal - two state switches (~20-100 cycles)
-- **Safety**: Guaranteed by RAII guard
-
-### 7.2 Mixed Kotlin/C++ Operations
-
-```cpp
-extern "C" void process_with_callbacks(
-    void (*progress_callback)(int),
-    int iterations
-) {
-    kotlinx::coroutines::KotlinNativeStateGuard guard;
-    
-    for (int i = 0; i < iterations; i++) {
-        // Heavy C++ work in kNative
-        process_batch(i);
-        
-        // Need to call Kotlin? Switch back temporarily
-        Kotlin_mm_switchThreadStateRunnable();
-        progress_callback(i);
-        Kotlin_mm_switchThreadStateNative();
-    }
-    
-    // Guard destructor handles final state transition
-}
-```
-
-**Analysis**:
-- **GC coordination**: Automatic during callbacks
-- **Overhead**: 2 state switches per iteration
-- **Flexibility**: Full control over state transitions
-
-### 7.3 Interruptible Operations
-
-```cpp
-extern "C" void long_computation(int items) {
-    kotlinx::coroutines::KotlinNativeStateGuard guard;
-    
-    for (int i = 0; i < items; i++) {
-        process_item(i);
-        
-        // Periodic safepoint for responsiveness
-        if (i % 1000 == 0) {
-            Kotlin_mm_switchThreadStateRunnable();
-            kotlinx::coroutines::check_safepoint();
-            Kotlin_mm_switchThreadStateNative();
-        }
-    }
-}
-```
-
-**Analysis**:
-- **GC latency**: Bounded by safepoint frequency
-- **Overhead**: ~40-200 cycles per 1000 iterations
-- **Interruptibility**: Allows GC to run periodically
-
-## 8. Testing
-
-### 8.1 Test Suite
-
-Located in `tests/gc_bridge/`:
-
-| Test | Purpose | Coverage |
-|------|---------|----------|
-| `test_kotlin_gc_bridge.cpp` | Standalone mode validation | Memory, threading, performance |
-| `test_kotlin_gc_bridge_impl.cpp` | Kotlin Native integration | State transitions, GC coordination |
-| `test_kotlin_gc_bridge.kt` | Kotlin-side testing | End-to-end integration |
-
-### 8.2 Validation Criteria
-
-**Standalone Mode**:
-- ✓ Zero performance overhead
-- ✓ No memory leaks
-- ✓ Thread-safe operation
-- ✓ Functions inlined away
-
-**Kotlin Native Mode**:
-- ✓ Correct state transitions
-- ✓ GC coordination works
-- ✓ No deadlocks
-- ✓ Callback safety
-
-### 8.3 Performance Benchmarks
-
-From `tests/gc_bridge/test_kotlin_gc_bridge.cpp`:
-
-```
-=== Standalone C++ ===
-Test 1 (without guard): 153 ms
-Test 2 (with guard):    153 ms  ← Same performance!
-Test 3 (safepoints):    110 ms
-Multi-threaded:          55 ms
-
-Memory delta: 0 MB (no leaks)
-```
-
-**Conclusion**: Zero overhead validated empirically.
-
-## 9. Integration Guide
-
-### 9.1 Adding to Existing Projects
-
-#### Step 1: Include Header
-```cpp
-#include "kotlinx/coroutines/KotlinGCBridge.hpp"
-```
-
-#### Step 2: Wrap Long Operations
-```cpp
-extern "C" void your_function() {
-    kotlinx::coroutines::KotlinNativeStateGuard guard;
-    // Your existing code here
-}
-```
-
-#### Step 3: Build Configuration
-```cmake
-# Standalone
-target_compile_definitions(your_target PRIVATE
-    KOTLIN_NATIVE_RUNTIME_AVAILABLE=0)
-
-# With Kotlin Native
-target_compile_definitions(your_target PRIVATE
-    KOTLIN_NATIVE_RUNTIME_AVAILABLE=1)
-```
-
-### 9.2 Kotlin Native Integration
-
-#### Define C++ Functions
-```cpp
-extern "C" void long_operation() {
-    kotlinx::coroutines::KotlinNativeStateGuard guard;
-    do_work();
-}
-```
-
-#### Kotlin Bindings
-```kotlin
-@kotlin.native.internal.GCUnsafeCall("long_operation")
-external fun longOperation()
-```
-
-#### Usage
-```kotlin
-fun main() {
-    longOperation()  // C++ runs in kNative, zero GC latency
-}
-```
-
-## 10. References
-
-### 10.1 Source Files
-
-- `src/kotlinx/coroutines/KotlinGCBridge.hpp` - API implementation
-- `tests/gc_bridge/` - Test suite
-- `docs/suspension/SUSPEND_IMPLEMENTATION.md` - Suspend implementation and compiler lowering notes
-
-### 10.2 External References
-
-- Kotlin Native Runtime: `tmp/kotlin/kotlin-native/runtime/src/main/cpp/Memory.h`
-- Thread State Implementation: `tmp/kotlin/kotlin-native/runtime/src/mm/cpp/ThreadState.hpp`
-- GC Implementation: `tmp/kotlin/kotlin-native/runtime/src/gc/`
-
-### 10.3 Related Specifications
-
-- [Kotlin Coroutines Guide](https://kotlinlang.org/docs/coroutines-guide.html)
-- [Kotlin Native Memory Management](https://kotlinlang.org/docs/native-memory-manager.html)
-- [C++ Coroutines (P0057R8)](https://wg21.link/P0057R8)
-
-## 11. Revision History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2024-12-10 | Initial specification and reference implementation |
-
----
-
-**Document Status**: Approved for Production Use  
-**Implementation Status**: Complete and Tested  
-**Maintenance**: Active
+The atomic-operation locations in this fixture are actual shadow-stack root
+slots. This verifies operation results and root lifetime, not heap-field layout,
+heap/global registration or concurrent Native AtomicReference behavior. The
+fixture uses installed Native 2.4.10, not a compiler/runtime built from the pinned
+revision. Its internal-annotation compiler warnings remain recorded.
+
+A real global-registration link attempt exposed a source/runtime mismatch:
+the pinned source declares RegisterGlobal; the installed runtime's mm bitcode
+defines InitAndRegisterGlobal instead. The pinned declaration remains unchanged.
+Global-root acceptance requires a matching pinned runtime. No alias or synthesized
+runtime implementation has been introduced. Compiler source and installed runtime
+versions must be checked together before broader ABI claims.
+
+The former test directory contained an empty interface target and a script that
+changed to standalone C++ after Native compile/toolchain failures. Those paths
+are replaced by the real Native executable. Missing tools, compilation failures
+and link failures produce nonzero exits; none executes a substitute fixture.
+The test README records the exact command and host scope.
+
+Receipts, 41 pinned source ranges, build/test logs and runtime symbol diagnostics
+are under `build/ir-recovery/native-references/`. Current project-wide parity and
+repair order come from [both mandatory deep reports](../audits/project-wide/README.md).
+The Kotlin-only scanner does not measure this C++-origin runtime unit as a Kotlin
+pair; source-range checks and execution do not waive other oracle criteria.
+
+## Native array reference boundary: 2026-10-06
+
+The source array boundary now also exists in
+`tools/kotlinc_native_ref/kotlin/collections/NativeArrayUtil.hpp/.cpp` under the
+coroutine source root. Runtime get/set/length/fill/copy declarations have strong
+linkage and preserve the actual ObjHeader pointers. Object get has the final
+caller result slot. The two source reset bodies call Kotlin_Array_set and
+Kotlin_Array_fillImpl with null. They do not inspect guessed object layouts,
+convert to C++ arrays, or replace the source heap write barrier.
+
+The linked `native_array_contract` fixture executes copies between real Native
+arrays and within one array in both overlap directions. Kotlin observes object
+identity after C++ writes, resets and fill. C++ get updates the Native result slot;
+its caller retains the result after a separate creation frame clears the array and
+exits, followed by GC. C++ reset clears the last array reference, verified with a
+Native WeakReference. This adds bounded array heap-write/reference evidence;
+non-array heap fields, global registration and concurrent reference objects are
+still unverified. Assertion/observation code belongs only in test fixtures.
+
+The same fixture compares 862 array utility observations with compiler-owned C++
+storage. Compiler arrays use C++ ownership, not ObjHeader/ArrayHeader or GC layouts.
+Implementation-dependent uninitialized reads are explicitly grouped with null in
+that comparison; no equality of the two storage layouts is claimed. Installed
+Native 2.4.10 source bodies match the consumed pinned utility bodies. Its runtime
+version, macOS host and internal annotation warnings remain explicit limits.
+
+Receipts are under `build/ir-recovery/native-map-dependencies/`. Both full-root deep
+reports retain low similarity, provisional zero logic and incorrect primitive
+function matches. A matching pinned runtime and actual bare-metal shared coroutine
+frames remain required. Production coroutine compilation continues to use the
+in-process LLVM pass; this test's native-library inputs do not change that pipeline.
+
+## Pinned Native build discovery: 2026-10-06
+
+The offline :kotlin-native:dist --dry-run probe with Native enabled and Xcode
+validation requested exited 1 in settings configuration: the exact source included
+build repo/kotlin-build-helpers is absent from the sparse checkout. No compiler or
+runtime compilation started. Pinned source documents Xcode 27 for the macOS host
+build; this host has 26.6. The probe stopped before checking that requirement.
+Receipts and the unchanged relevant source build definitions are in
+build/ir-recovery/pinned-native-build/.
+
+Complete the pinned build dependency/toolchain closure, then compile and link that
+actual runtime. Installed Native 2.4.10 and its LLVM 21 remain the bounded host-fixture
+toolchain only. No symbol alias, older ABI assertion, toolchain check suppression or
+host success substitutes for matching source and actual bare-metal execution.
+The real Native Kotlin fixture is now explicitly included by .gitignore's narrow
+exception; the global *.kt ignore rule had hidden this required test source.
+
+## Remaining requirements
+
+- Build and link a runtime from the pinned compiler revision; verify global roots,
+  source heap-field layout, barriers and initialization on actual Native storage.
+- Translate Native AtomicReference, real CurrentThread Any identity, reentrant Lock
+  and Lazy algorithms and factories before accepting the parameter lazy delegate.
+- Complete real IR declaration ownership/binding and suspension scopes, preserving
+  object result slots in VariableManager and code generation.
+- Translate and execute spills, cleanup, resumed results and direct Kotlin/C++
+  use of the same Kotlin-generated coroutine frame/state machine.
+- Establish the actual bare-metal toolchain/runtime target and execute there.
+  The macOS fixture supplies no OS-free runtime, scheduler or allocator claim.
+
+These requirements remain open on the existing compiler cards. No whole-runtime,
+whole-project, performance, leak-free or complete docking-ring claim follows from
+the bounded reference fixture.
+
+
+## Native integer-array boundary: 2026-10-06
+
+NativeArrayUtil.hpp declares the actual strong Kotlin_IntArray get/set/getArrayLength/
+fillImpl/copyImpl symbols from pinned runtime Arrays.cpp:519-590. Primitive get
+returns KInt directly; it does not use the object getter's caller result slot.
+The host fixture retains actual Native arrays through the translated ObjHolder
+while calling the actual runtime operations. Kotlin observes mutation of its
+original arrays, including both overlap directions. No Native array is converted
+to compiler-owned C++ IntArray storage, and no substitute runtime is selected.
+
+Compiler-owned IntArray has explicit fixed-length C++ slot ownership and is not a
+Native ArrayHeader layout claim. The installed Native 2.4.10 fixture verifies the
+bounded declared ABI on macOS ARM64. Matching pinned runtime construction, allocator/
+GC target integration, Kotlin/C++ shared continuation frames and bare-metal execution
+remain required. Source/algorithm/ABI evidence and limits are recorded in
+build/ir-recovery/native-int-array/ and the IR identity dependency ledger.

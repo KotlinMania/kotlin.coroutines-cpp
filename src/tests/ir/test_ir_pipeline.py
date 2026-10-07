@@ -1,4 +1,4 @@
-"""Regressions for preserving Kotlin/Native state/result handoffs in IR cleanup."""
+"""Regressions for mandatory Kotlin/Native LLVM dispatch injection."""
 
 import argparse
 import importlib.util
@@ -16,70 +16,73 @@ OPTIONS = None
 TRANSFORM = None
 
 
-class IrCleanupTests(unittest.TestCase):
-    def test_unmarked_input_is_identical(self):
-        original = b'; call void @__kxs_suspend_point(i32 1)\r\n!0 = !{!"text; text"}\r\n'
-        cleaned, count = TRANSFORM.strip_markers(original)
-        self.assertEqual((cleaned, count), (original, 0))
-
-    def test_marker_text_inside_multiline_string_is_preserved(self):
-        original = b'@text = constant [64 x i8] c"line; data\n  call void @__kxs_suspend_point(i32 1)\nend"\n'
-        self.assertEqual(TRANSFORM.strip_markers(original), (original, 0))
-
-    def test_multiple_functions_preserve_dispatch_and_results(self):
-        before = b'''declare void @__kxs_suspend_point(i32)
-define ptr @"first coroutine"(ptr %frame) {
-  call void @__kxs_suspend_point(i32 noundef 17) #0, !dbg !1 ; marker
-  %label = load ptr, ptr %frame
-  indirectbr ptr %label, [label %resume]
+MODULE = '''
+declare void @__kxs_coroutine_begin(ptr)
+declare void @__kxs_suspend_point(i32, ptr, ptr)
+define ptr @f(ptr %label_field, ptr %result) {
+  call void @__kxs_coroutine_begin(ptr %label_field)
+  call void @__kxs_suspend_point(i32 1, ptr %label_field, ptr blockaddress(@f, %resume))
+  ret ptr null
 resume:
-  %value = call ptr @get_or_throw(ptr %frame)
-  ret ptr %value
-}
-define ptr @second(ptr %frame) {
-  store ptr blockaddress(@second, %resume), ptr %frame
-  call void @"__kxs_suspend_point"(i32 17)
-  call void @side_effect()
-  br label %resume
-resume:
-  ret ptr %frame
+  ret ptr %result
 }
 '''
-        expected = b'\n'.join(line for line in before.split(b'\n')
-                              if line.lstrip().startswith(b'call void @__kxs_suspend_point') is False
-                              and line.lstrip().startswith(b'call void @"__kxs_suspend_point"') is False)
-        cleaned, count = TRANSFORM.strip_markers(before)
-        self.assertEqual(count, 2)
-        self.assertEqual(cleaned, expected)
-        self.assertEqual(TRANSFORM.strip_markers(cleaned), (cleaned, 0))
 
-    def test_unrecognized_calls_and_symbol_uses_survive(self):
-        original = b'''@callback = global ptr @__kxs_suspend_point
-declare void @__kxs_suspend_point(i32)
-; call void @__kxs_suspend_point(i32 1)
-  invoke void @__kxs_suspend_point(i32 1) to label %ok unwind label %error
-  call void @__kxs_suspend_point(i32 %dynamic)
-  call void @__kxs_suspend_point_extra(i32 1)
-  call void @__kxs_suspend_point(i32 1) [ "funclet"(token %pad) ]
-  call void @other(i32 1)
-'''
-        self.assertEqual(TRANSFORM.strip_markers(original), (original, 0))
+
+class IrInjectionTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == 'darwin', 'Apple Clang version regression requires macOS')
+    def test_mismatched_plugin_package_is_rejected(self):
+        with tempfile.TemporaryDirectory(dir=OPTIONS.work_dir, prefix='mismatch ') as directory:
+            directory = Path(directory)
+            (directory / 'main.cpp').write_text('int main() { return 0; }\n')
+            (directory / 'CMakeLists.txt').write_text(f'''
+cmake_minimum_required(VERSION 3.18)
+project(mismatch LANGUAGES CXX)
+include("{OPTIONS.modules}/KotlinxCoroutineTransform.cmake")
+add_executable(example main.cpp)
+kxs_enable_coroutine_transform(example)
+''')
+            version = subprocess.run([OPTIONS.compiler, '-dumpversion'],
+                                     capture_output=True, text=True, check=True).stdout.strip()
+            selected = subprocess.run(['/usr/bin/clang++', '-dumpversion'],
+                                      capture_output=True, text=True, check=True).stdout.strip()
+            if version == selected:
+                self.skipTest('compiler versions match')
+            result = subprocess.run([OPTIONS.cmake, '-S', str(directory),
+                '-B', str(directory / 'build'), '-DCMAKE_CXX_COMPILER=/usr/bin/clang++',
+                '-DKXS_LLVM_PASS_PLUGIN=' + OPTIONS.plugin,
+                '-DKXS_LLVM_PASS_PLUGIN_VERSION=' + version], capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('KotlinxCoroutinePass requires Clang', result.stdout + result.stderr)
 
     def test_standalone_cmake_paths_with_spaces(self):
         with tempfile.TemporaryDirectory(dir=OPTIONS.work_dir, prefix='script space ') as directory:
             directory = Path(directory)
             input_file = directory / 'input file.ll'
             output_file = directory / 'output file.ll'
-            input_file.write_bytes(b'  call void @__kxs_suspend_point(i32 1)\r\n; kept; comment\r\n')
+            input_file.write_text(MODULE)
             self.run_command([OPTIONS.cmake, f'-DINPUT_FILE={input_file}',
-                              f'-DOUTPUT_FILE={output_file}', '-P',
+                              f'-DOUTPUT_FILE={output_file}',
+                              f'-DKXS_INJECT_EXECUTABLE={OPTIONS.injector}', '-P',
                               str(Path(OPTIONS.modules) / 'kxs_transform_ir.cmake')])
-            self.assertEqual(output_file.read_bytes(), b'; kept; comment\r\n')
+            self.assertIn('indirectbr', output_file.read_text())
+            self.assertNotIn('call void @__kxs_', output_file.read_text())
             wrapper = directory / 'wrapper.cmake'
-            wrapper.write_text(f'include("{OPTIONS.modules}/KotlinxCoroutineTransform.cmake")\n'
+            wrapper.write_text(f'set(KXS_INJECT_EXECUTABLE "{OPTIONS.injector}")\n'
+                               f'include("{OPTIONS.modules}/KotlinxCoroutineTransform.cmake")\n'
                                f'kxs_transform_ir("{input_file}" "{output_file}")\n')
             self.run_command([OPTIONS.cmake, '-P', str(wrapper)])
-            self.assertEqual(output_file.read_bytes(), b'; kept; comment\r\n')
+            self.assertIn('indirectbr', output_file.read_text())
+
+    def test_python_wrapper_requires_native_injector(self):
+        with tempfile.TemporaryDirectory(dir=OPTIONS.work_dir) as directory:
+            source = Path(directory) / 'input.ll'
+            output = Path(directory) / 'output.ll'
+            source.write_text(MODULE)
+            TRANSFORM.transform_file(source, output, OPTIONS.injector)
+            self.assertIn('store ptr blockaddress', output.read_text())
+            with self.assertRaises(ValueError):
+                TRANSFORM.transform_file(source, output, str(Path(directory) / 'missing-tool'))
 
     def run_command(self, command):
         result = subprocess.run(command, stdout=subprocess.PIPE,
@@ -93,8 +96,10 @@ declare void @__kxs_suspend_point(i32)
         directory = Path(tempfile.mkdtemp(dir=OPTIONS.work_dir, prefix='compile space '))
         modules = directory / 'modules'
         modules.mkdir()
-        for name in ('KotlinxCoroutineTransform.cmake', 'kxs_compile.py', 'kxs_transform_ir.py'):
+        for name in ('KotlinxCoroutineTransform.cmake',):
             shutil.copy2(Path(OPTIONS.modules) / name, modules / name)
+        plugin = directory / Path(OPTIONS.plugin).name
+        shutil.copy2(OPTIONS.plugin, plugin)
         proxy = directory / 'previous_launcher.py'
         trace = directory / 'launcher.log'
         proxy.write_text('import json, subprocess, sys\n'
@@ -114,9 +119,6 @@ declare void @__kxs_suspend_point(i32)
             '#include "settings.hpp"\nint right_value() { return pipeline_value; }\n')
         main = Path(OPTIONS.core_test).read_text()
         main = '#include "settings.hpp"\n#include <span>\n' + main
-        # Define the marker locally; the prebuilt library supplies runtime helpers.
-        main = main.replace('int main() {',
-                            'extern "C" void __kxs_suspend_point(int) noexcept {}\nint main() {')
         main = main.replace('int main() {', '''
 int left_value();
 int right_value();
@@ -149,7 +151,7 @@ target_compile_options(settings INTERFACE -Werror -Wno-gnu-label-as-value -UNDEB
 target_link_options(settings INTERFACE {library_link_options})
 set_source_files_properties(left/shared.cpp PROPERTIES COMPILE_DEFINITIONS KXS_SOURCE_OPTION=5)
 file(GENERATE OUTPUT "${{CMAKE_CURRENT_BINARY_DIR}}/generated.cpp" CONTENT "int generated_value() {{ return 9; }}")
-foreach(name baseline transformed)
+foreach(name transformed)
   add_executable(${{name}} main.cpp left/shared.cpp right/shared.cpp "${{CMAKE_CURRENT_BINARY_DIR}}/generated.cpp")
   target_link_libraries(${{name}} PRIVATE settings "{OPTIONS.library}")
 endforeach()
@@ -159,24 +161,16 @@ kxs_enable_coroutine_transform(transformed)
 ''')
         build = directory / 'build'
         self.run_command([OPTIONS.cmake, '-S', str(directory), '-B', str(build), '-G', generator,
-                          f'-DCMAKE_CXX_COMPILER={OPTIONS.compiler}', f'-DCMAKE_BUILD_TYPE={config}'])
+                          f'-DCMAKE_CXX_COMPILER={OPTIONS.compiler}', f'-DKXS_LLVM_PASS_PLUGIN={plugin}', f'-DCMAKE_BUILD_TYPE={config}'])
         self.run_command([OPTIONS.cmake, '--build', str(build), '--config', config, '-j', '2'])
         binary_dir = build / config if 'Multi-Config' in generator else build
-        baseline = self.run_command([str(binary_dir / 'baseline')])
         transformed = self.run_command([str(binary_dir / 'transformed')])
-        self.assertEqual(transformed, baseline)
-        self.assertEqual(trace.read_text().count('-emit-llvm'), 4)
+        self.assertNotIn('-emit-llvm', trace.read_text())
+        self.assertEqual(trace.read_text().count('-fpass-plugin='), 4)
         self.assertIn('test_resumed_exception_stops_continuation... PASSED', transformed)
         self.assertIn('test_independent_frames... PASSED', transformed)
-        ir_files = list(build.rglob('*.kxs.cleaned.ll'))
-        self.assertEqual(len(ir_files), 4)
-        main_ir = next(path for path in ir_files if 'main.cpp.o.' in path.name)
-        ir = main_ir.read_bytes()
-        self.assertIn(b'indirectbr', ir)
-        self.assertIn(b'blockaddress', ir)
-        self.assertNotIn(b'call void @__kxs_suspend_point', ir)
-        self.assertNotIn(b'invoke void @__kxs_suspend_point', ir)
-        object_file = main_ir.with_name(main_ir.name[:-len('.kxs.cleaned.ll')])
+        self.assertFalse(list(build.rglob('*.kxs*.ll')), 'production serialized IR unexpectedly')
+        object_file = next(path for path in build.rglob('main.cpp.o') if 'transformed.dir' in str(path))
         all_objects = list(build.rglob('*.o'))
         max_mtime = max((p.stat().st_mtime_ns for p in all_objects), default=object_file.stat().st_mtime_ns)
         # macOS's bundled Make compares whole-second modification times; ensure sleep crosses into next whole second.
@@ -184,14 +178,13 @@ kxs_enable_coroutine_transform(transformed)
         header.write_text('inline constexpr int pipeline_value = 8;\n')
         self.run_command([OPTIONS.cmake, '--build', str(build), '--config', config, '-j', '2'])
         self.assertGreater(object_file.stat().st_mtime_ns, max_mtime, 'header dependency was lost')
-        self.assertEqual(self.run_command([str(binary_dir / 'transformed')]), baseline)
+        self.assertEqual(self.run_command([str(binary_dir / 'transformed')]), transformed)
         all_objects = list(build.rglob('*.o'))
         max_mtime = max((p.stat().st_mtime_ns for p in all_objects), default=object_file.stat().st_mtime_ns)
         time.sleep(max(1.1, (max_mtime // 1_000_000_000) + 1.1 - time.time()))
-        with (modules / 'kxs_transform_ir.py').open('a') as helper:
-            helper.write('\n# Exercise helper dependency tracking.\n')
+        plugin.touch()
         self.run_command([OPTIONS.cmake, '--build', str(build), '--config', config, '-j', '2'])
-        self.assertGreater(object_file.stat().st_mtime_ns, max_mtime, 'helper dependency was lost')
+        self.assertGreater(object_file.stat().st_mtime_ns, max_mtime, 'plugin dependency was lost')
 
     def test_make_debug_pipeline(self):
         self.build_fixture('Unix Makefiles', 'Debug')
@@ -215,6 +208,8 @@ def main():
     parser.add_argument('--library-link-options', default='')
     parser.add_argument('--work-dir', required=True)
     parser.add_argument('--compiler', required=True)
+    parser.add_argument('--injector', required=True)
+    parser.add_argument('--plugin', required=True)
     parser.add_argument('--cmake', required=True)
     OPTIONS, remaining = parser.parse_known_args()
     Path(OPTIONS.work_dir).mkdir(parents=True, exist_ok=True)

@@ -2,7 +2,7 @@
  * Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt
  */
 #pragma once
-// port-lint: source Builders.common.kt
+// port-lint: source kotlinx-coroutines-core/common/src/Builders.common.kt
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
@@ -13,6 +13,10 @@
 #include "kotlinx/coroutines/CoroutineStart.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
 #include "kotlinx/coroutines/internal/Scopes.hpp"
+#include "kotlinx/coroutines/UndispatchedCoroutine.hpp"
+#include "kotlinx/coroutines/DispatchedCoroutine.hpp"
+#include "kotlinx/coroutines/Supervisor.hpp"
+#include "kotlinx/coroutines/common/CoroutineContextUtils.hpp"
 #include <functional>
 #include <thread>
 #include <memory>
@@ -205,37 +209,16 @@ namespace coroutines {
     // Builder Implementations
     // ------------------------------------------------------------------
 
-    // Stub for empty context
-    // Use shared EmptyCoroutineContext
-    inline std::shared_ptr<CoroutineContext> empty_context() {
-        return EmptyCoroutineContext::instance();
-    }
-
-    // Full launch with all parameters
-    inline std::shared_ptr<struct Job> launch(
-        CoroutineScope* scope,
-        std::shared_ptr<CoroutineContext> context,
-        CoroutineStart start,
-        std::function<void(CoroutineScope*)> block
-    ) {
-        if (!context) context = empty_context();
-        auto new_context = scope->get_coroutine_context()->operator+(context); 
-
-        std::shared_ptr<StandaloneCoroutine> coroutine;
-        if (start == CoroutineStart::LAZY) {
-             coroutine = std::make_shared<LazyStandaloneCoroutine>(new_context, block);
-        } else {
-             coroutine = std::make_shared<StandaloneCoroutine>(new_context, true);
-        }
-        
-        // Wrap block to return Unit
-        std::function<Unit(CoroutineScope*)> wrapped_block = [block](CoroutineScope* s) -> Unit {
-            if (block) block(s);
-            return Unit();
-        };
-
-        coroutine->start(start, static_cast<CoroutineScope*>(coroutine.get()), wrapped_block);
-        return coroutine;
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:43-54
+    // NOTE(port): Ordinary C++ blocks enter the same suspend builder and return erased Unit.
+    inline std::shared_ptr<Job> launch(CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+        CoroutineStart start, std::function<void(CoroutineScope*)> block) {
+        return launch(scope, std::move(context), start,
+            std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)>(
+                [block = std::move(block)](CoroutineScope* receiver, std::shared_ptr<Continuation<void*>>) -> void* {
+                    block(receiver);
+                    return nullptr;
+                }));
     }
 
     // Overload: launch(scope, block) - no context, default start
@@ -243,7 +226,7 @@ namespace coroutines {
         CoroutineScope* scope,
         std::function<void(CoroutineScope*)> block
     ) {
-        return launch(scope, nullptr, CoroutineStart::DEFAULT, block);
+        return launch(scope, EmptyCoroutineContext::instance(), CoroutineStart::DEFAULT, std::move(block));
     }
 
     // Overload: launch(scope, context, block) - no start parameter
@@ -255,21 +238,22 @@ namespace coroutines {
         return launch(scope, context, CoroutineStart::DEFAULT, block);
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:78-89
     template<typename T>
-    std::shared_ptr<Deferred<T>> async(
-        CoroutineScope* scope,
-        std::shared_ptr<CoroutineContext> context,
-        CoroutineStart start,
-        std::function<T(CoroutineScope*)> block
-    ) {
-        if (!context) context = empty_context();
-        auto new_context = scope->get_coroutine_context()->operator+(context);
+    std::shared_ptr<Deferred<T>> async(CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+        CoroutineStart start, std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block);
 
-        std::shared_ptr<DeferredCoroutine<T>> coroutine;
-        coroutine = std::make_shared<DeferredCoroutine<T>>(new_context, true);
-        // Cast to CoroutineScope* to match the block signature
-        coroutine->start(start, static_cast<CoroutineScope*>(coroutine.get()), block);
-        return coroutine;
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:78-89
+    // NOTE(port): An ordinary C++ result is boxed for the existing suspend entry.
+    template<typename T>
+    std::shared_ptr<Deferred<T>> async(CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+        CoroutineStart start, std::function<T(CoroutineScope*)> block) {
+        return async<T>(scope, std::move(context), start,
+            std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)>(
+                [block = std::move(block)](CoroutineScope* receiver, std::shared_ptr<Continuation<void*>>) -> void* {
+                    if constexpr (std::is_same_v<T, Unit>) { block(receiver); return nullptr; }
+                    else return new T(block(receiver));
+                }));
     }
 
     // Overload: async(scope, block) - no context, default start
@@ -278,7 +262,7 @@ namespace coroutines {
         CoroutineScope* scope,
         std::function<T(CoroutineScope*)> block
     ) {
-        return async<T>(scope, nullptr, CoroutineStart::DEFAULT, block);
+        return async<T>(scope, EmptyCoroutineContext::instance(), CoroutineStart::DEFAULT, std::move(block));
     }
 
     // Overload: async(scope, context, block) - no start
@@ -311,7 +295,6 @@ namespace coroutines {
         CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
         CoroutineStart start,
         std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
-        if (!context) context = empty_context();
         auto new_context = new_coroutine_context(scope, std::move(context));
         std::shared_ptr<DeferredCoroutine<T>> coroutine;
         if (start == CoroutineStart::LAZY) {
@@ -328,7 +311,7 @@ namespace coroutines {
     std::shared_ptr<Deferred<T>> async(
         CoroutineScope* scope,
         std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
-        return async<T>(scope, nullptr, CoroutineStart::DEFAULT, std::move(block));
+        return async<T>(scope, EmptyCoroutineContext::instance(), CoroutineStart::DEFAULT, std::move(block));
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:78-89
@@ -339,118 +322,118 @@ namespace coroutines {
         return async<T>(scope, std::move(context), CoroutineStart::DEFAULT, std::move(block));
     }
 
-    // Transliterated from Builders.common.kt: suspend fun <T> withContext(context: CoroutineContext, block: suspend CoroutineScope.() -> T): T
-    // C++: [[suspend]] void* with_context(context, block, completion)
-    //
-    // This is a suspend function. In C++, it must be called from within a suspend
-    // state machine.
-    //
-    // Preferred Kotlin‑aligned DSL:
-    //   [[suspend]] void* foo(std::shared_ptr<Continuation<void*>> completion) {
-    //       auto r = suspend(with_context(ctx, block, completion));
-    //       ...
-    //   }
-    // The Clang suspend plugin rewrites the DSL into a Kotlin‑Native‑shape state machine.
-    //
-    // Manual state machines may still call this directly and propagate
-    // COROUTINE_SUSPENDED explicitly.
-    //
-    // Implementation pattern from NativeSuspendFunctionLowering.kt:
-    // - State machine with label field tracks suspension points
-    // - invoke_suspend() is the state machine method
-    // - ContinuationImpl is the base class
-    //
-    // @param context The context to switch to
-    // @param block The suspend block to execute
-    // @param continuation The continuation to resume (passed by state machine)
-    // @return Result or COROUTINE_SUSPENDED
-    // Implemented as a suspend function that handles context switching logic.
-
+    /**
+     * Calls the specified suspending block with a given coroutine context, suspends until it completes, and returns
+     * the result.
+     *
+     * The resulting context for the [block] is derived by merging the current [coroutineContext] with the
+     * specified [context] using `coroutineContext + context` (see [CoroutineContext.plus]).
+     * This suspending function is cancellable. It immediately checks for cancellation of
+     * the resulting context and throws [CancellationException] if it is not [active][CoroutineContext.isActive].
+     *
+     * Calls to [withContext] whose [context] argument provides a [CoroutineDispatcher] that is
+     * different from the current one, by necessity, perform additional dispatches: the [block]
+     * can not be executed immediately and needs to be dispatched for execution on
+     * the passed [CoroutineDispatcher], and then when the [block] completes, the execution
+     * has to shift back to the original dispatcher.
+     *
+     * Note that the result of `withContext` invocation is dispatched into the original context in a cancellable way
+     * with a **prompt cancellation guarantee**, which means that if the original [coroutineContext]
+     * in which `withContext` was invoked is cancelled by the time its dispatcher starts to execute the code,
+     * it discards the result of `withContext` and throws [CancellationException].
+     *
+     * The cancellation behaviour described above is enabled if and only if the dispatcher is being changed.
+     * For example, when using `withContext(NonCancellable) { ... }` there is no change in dispatcher and
+     * this call will not be cancelled neither on entry to the block inside `withContext` nor on exit from it.
+     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:140-173
     template<typename T, typename Block>
-    void* with_context(
-        std::shared_ptr<CoroutineContext> context,
-        Block&& block,
-        std::shared_ptr<Continuation<void*>> completion
-    ) {
-        using namespace kotlinx::coroutines::dsl;
-
-        if (!context) {
-            throw std::invalid_argument("with_context requires a non-null context");
-        }
-        if (!completion) {
-            throw std::invalid_argument("with_context requires non-null completion");
-        }
-
-        // Upstream's `withContext` checks whether the new context introduces a new
-        // ContinuationInterceptor and, if so, hops the block onto the new dispatcher
-        // via DispatchedContinuation. The C++ port runs the block on the current thread
-        // with the new context installed; the dispatcher hop is owned by the call site's
-        // outer launch / dispatchedContinuation chain.
-
-        // Create a scope with the given context
-        class WithContextScope : public CoroutineScope {
-            std::shared_ptr<CoroutineContext> ctx_;
-        public:
-            explicit WithContextScope(std::shared_ptr<CoroutineContext> ctx) : ctx_(ctx) {}
-            std::shared_ptr<CoroutineContext> get_coroutine_context() const override { return ctx_; }
+    void* with_context(std::shared_ptr<CoroutineContext> context, Block&& block,
+                       std::shared_ptr<Continuation<void*>> completion) {
+        using Value = std::conditional_t<std::is_void_v<T>, Unit, T>;
+        auto old_context = completion->get_context();
+        auto new_context = new_coroutine_context(old_context, std::move(context));
+        context_ensure_active(*new_context);
+        auto typed_completion = internal::result_box_completion<Value>(completion);
+        auto start_block = [&block](auto coroutine) -> void* {
+            return coroutine->start_undispatched_or_return(
+                [coroutine, block = std::forward<Block>(block)](std::shared_ptr<Continuation<void*>> continuation) mutable -> void* {
+                    return block(static_cast<CoroutineScope*>(coroutine.get()), std::move(continuation));
+                });
         };
-        WithContextScope scope(context);
-
-        // Execute the block.
-        // Block is expected to accept (CoroutineScope*, std::shared_ptr<Continuation<void*>>)
-        // and return either a boxed result or COROUTINE_SUSPENDED.
-        auto result = suspend(block(&scope, completion));
-        return result;
+        // FAST PATH #1: The new context is the same as the old one.
+        if (new_context == old_context)
+            return start_block(std::make_shared<internal::ScopeCoroutine<Value>>(new_context, typed_completion));
+        auto new_interceptor = new_context->get(ContinuationInterceptor::type_key);
+        auto old_interceptor = old_context->get(ContinuationInterceptor::type_key);
+        // Equality is used by design for dispatcher wrappers.
+        if (new_interceptor ? new_interceptor->equals(old_interceptor.get()) : !old_interceptor) {
+            auto coroutine = std::make_shared<UndispatchedCoroutine<Value>>(new_context, typed_completion);
+            return with_coroutine_context<void*>(coroutine->get_context(), nullptr,
+                [&]() -> void* { return start_block(coroutine); });
+        }
+        // SLOW PATH: Use the new dispatcher and switch back cancellably.
+        auto coroutine = std::make_shared<DispatchedCoroutine<Value>>(new_context, typed_completion);
+        coroutine->start(CoroutineStart::DEFAULT, static_cast<CoroutineScope*>(coroutine.get()),
+            std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)>(std::forward<Block>(block)));
+        return coroutine->get_result();
     }
 
     /**
-     * coroutine_scope builder.
-     * Creates a CoroutineScope and calls the specified suspend block with this scope.
-     * The provided scope inherits its coroutine_context from the outer scope, but overrides
-     * the Job context element to ensure that it cancels all children when the scope is cancelled.
-     * Use this function to manage the lifecycle of concurrent operations.
+     * Calls the specified suspending block with the given CoroutineDispatcher,
+     * suspends until it completes, and returns the result. This calls with_context.
      */
-    template<typename T, typename Block>
-    void* coroutine_scope(
-        Block&& block,
-        std::shared_ptr<Continuation<void*>> completion
-    ) {
-         using namespace kotlinx::coroutines::dsl;
-         
-         // Upstream:
-         //   public suspend fun <R> coroutineScope(block: suspend CoroutineScope.() -> R): R =
-         //       suspendCoroutineUninterceptedOrReturn { uCont ->
-         //           val coroutine = ScopeCoroutine(uCont.context, uCont)
-         //           coroutine.startUndispatchedOrReturn(coroutine, block)
-         //       }
-         //
-         // ScopeCoroutine waits for all children before completing. The C++ port uses a
-         // plain SimpleScope wrapper because the AbstractCoroutine child-tracking is
-         // owned by the launched coroutine itself — `coroutine_scope` callers route any
-         // child waiting through their own join semantics on the AbstractCoroutine.
-
-         if (!completion) throw std::invalid_argument("coroutine_scope requires non-null completion");
-         
-         internal::ContextScope scope(completion->get_context());
-         return suspend(block(&scope, completion));
+    // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:181-183
+    template <typename T, typename Block>
+    void* invoke(std::shared_ptr<CoroutineDispatcher> dispatcher, Block&& block,
+                 std::shared_ptr<Continuation<void*>> completion) {
+        return with_context<T>(std::move(dispatcher), std::forward<Block>(block), std::move(completion));
     }
 
-     /**
-     * supervisor_scope builder.
-     * Creates a CoroutineScope with SupervisorJob and calls the specified suspend block with this scope.
-     * The children failure does not cause this scope to fail and does not affect other children.
+    /**
+     * Creates a [CoroutineScope] and calls the specified suspend block with this scope.
+     * The provided scope inherits its [coroutineContext][CoroutineScope.coroutineContext] from the outer scope, using the
+     * [Job] from that context as the parent for a new [Job].
+     *
+     * This function is designed for _concurrent decomposition_ of work. When any child coroutine in this scope fails,
+     * this scope fails, cancelling all the other children (for a different behavior, see [supervisorScope]).
+     * This function returns as soon as the given block and all its child coroutines are completed.
+     * A usage of a scope looks like this:
+     *
+     * ```kotlin
+     * suspend fun showSomeData() = coroutineScope {
+     *     val data = async(Dispatchers.IO) { // <- extension on current scope
+     *      ... load some UI data for the Main thread ...
+     *     }
+     *
+     *     withContext(Dispatchers.Main) {
+     *         doSomeWork()
+     *         val result = data.await()
+     *         display(result)
+     *     }
+     * }
+     * ```
+     *
+     * The scope in this example has the following semantics:
+     * 1) `showSomeData` returns as soon as the data is loaded and displayed in the UI.
+     * 2) If `doSomeWork` throws an exception, then the `async` task is cancelled and `showSomeData` rethrows that exception.
+     * 3) If the outer scope of `showSomeData` is cancelled, both started `async` and `withContext` blocks are cancelled.
+     * 4) If the `async` block fails, `withContext` will be cancelled.
+     *
+     * The method may throw a [CancellationException] if the current job was cancelled externally,
+     * rethrow the exception thrown by [block], or throw an unhandled [Throwable] if there is one
+     * (for example, from a crashed coroutine that was started with [launch][CoroutineScope.launch] in this scope).
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineScope.kt:279-288
     template<typename T, typename Block>
-    void* supervisor_scope(
-        Block&& block,
-        std::shared_ptr<Continuation<void*>> completion
-    ) {
-         using namespace kotlinx::coroutines::dsl;
-         
-         if (!completion) throw std::invalid_argument("supervisor_scope requires non-null completion");
-         
-         internal::ContextScope scope(completion->get_context());
-         return suspend(block(&scope, completion));
+    void* coroutine_scope(Block&& block, std::shared_ptr<Continuation<void*>> completion) {
+        using Value = std::conditional_t<std::is_void_v<T>, Unit, T>;
+        auto coroutine = std::make_shared<internal::ScopeCoroutine<Value>>(
+            completion->get_context(), internal::result_box_completion<Value>(completion));
+        return coroutine->start_undispatched_or_return(
+            [coroutine, block = std::forward<Block>(block)](std::shared_ptr<Continuation<void*>> continuation) mutable -> void* {
+                return block(static_cast<CoroutineScope*>(coroutine.get()), std::move(continuation));
+            });
     }
 
     // BlockingCoroutine implementation
@@ -504,8 +487,7 @@ namespace coroutines {
         std::shared_ptr<CoroutineContext> context,
         std::function<T(CoroutineScope*)> block
     ) {
-         if (!context) context = empty_context();
-
+ 
          auto event_loop = std::make_shared<BlockingEventLoop>(nullptr);
          auto old_loop = ThreadLocalEventLoop::current_or_null();
          ThreadLocalEventLoop::set_event_loop(event_loop);

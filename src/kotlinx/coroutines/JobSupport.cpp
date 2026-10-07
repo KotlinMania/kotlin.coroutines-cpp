@@ -202,8 +202,10 @@ namespace kotlinx {
         public:
             explicit InvokeOnCancelling(std::function<void(std::exception_ptr)> h) : handler_(std::move(h)) {}
 
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1569-1569
             bool get_on_cancelling() const override { return true; }
 
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1570-1572
             void invoke(std::exception_ptr cause) override {
                 bool expected = false;
                 if (invoked_.compare_exchange_strong(expected, true)) {
@@ -226,31 +228,44 @@ namespace kotlinx {
             }
         };
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1575-1582
         class ChildHandleNode : public JobNode, public ChildHandle {
+            std::shared_ptr<ChildJob> child_job_;
         public:
-            std::shared_ptr<ChildJob> child_job;
 
-            explicit ChildHandleNode(std::shared_ptr<ChildJob> child) : child_job(std::move(child)) {
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1575-1577
+            explicit ChildHandleNode(std::shared_ptr<ChildJob> child) : child_job_(std::move(child)) {
             }
 
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1576-1576
+            std::shared_ptr<ChildJob> child_job() const { return std::atomic_load(&child_job_); }
+
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1579-1579
             bool get_on_cancelling() const override { return true; }
 
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1580-1580
             void invoke(std::exception_ptr cause) override {
-                if (child_job && job) {
-                    child_job->parent_cancelled(dynamic_cast<ParentJob *>(job));
+                if (auto child = child_job()) {
+                    child->parent_cancelled(dynamic_cast<ParentJob *>(job));
                 }
             }
 
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1581-1581
             bool child_cancelled(std::exception_ptr cause) override {
                 return job ? job->child_cancelled(cause) : false;
             }
 
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1578-1578
             std::shared_ptr<Job> get_parent() const override {
                 return job ? std::dynamic_pointer_cast<Job>(job->shared_from_this()) : nullptr;
             }
 
+            // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1475-1475
             void dispose() override {
                 JobNode::dispose();
+                // NOTE(port): Removal ends the parent's ownership of the child.
+                // Atomic readers retain a removed node's child through an in-flight callback.
+                std::atomic_store(&child_job_, std::shared_ptr<ChildJob>{});
             }
         };
 
@@ -488,7 +503,13 @@ namespace kotlinx {
         JobSupport::JobSupport(bool active) : impl_(std::make_unique<Impl>(active)) {
         }
 
-        JobSupport::~JobSupport() = default;
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:127-127
+        // NOTE(port): Kotlin GC owns the terminal Any? value. Release its C++
+        // state box when the last owning job handle is destroyed.
+        JobSupport::~JobSupport() {
+            auto* state = impl_->state.load();
+            if (!dynamic_cast<Incomplete*>(state)) delete state;
+        }
 
         std::shared_ptr<Job> JobSupport::get_parent() const {
             auto *handle = impl_->parent_handle.load(std::memory_order_acquire);
@@ -742,16 +763,18 @@ namespace kotlinx {
             return s;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1001-1008
         std::vector<std::shared_ptr<Job> > JobSupport::get_children() const {
             std::vector<std::shared_ptr<Job> > result;
             auto *s = impl_->state.load(std::memory_order_acquire);
-            if (auto *incomplete = dynamic_cast<Incomplete *>(s)) {
+            if (auto* child_node = dynamic_cast<ChildHandleNode*>(s)) {
+                if (auto child = child_node->child_job()) result.push_back(std::static_pointer_cast<Job>(std::move(child)));
+            } else if (auto *incomplete = dynamic_cast<Incomplete *>(s)) {
                 if (auto *list = incomplete->get_list()) {
                     list->for_each([&](internal::LockFreeLinkedListNode *node) {
                         if (auto *child_node = dynamic_cast<ChildHandleNode *>(node)) {
-                            if (child_node->child_job) {
-                                // child_job is now stored as shared_ptr<ChildJob>, which inherits from Job
-                                result.push_back(std::static_pointer_cast<Job>(child_node->child_job));
+                            if (auto child = child_node->child_job()) {
+                                result.push_back(std::static_pointer_cast<Job>(std::move(child)));
                             }
                         }
                     });
@@ -1581,10 +1604,16 @@ namespace kotlinx {
             }
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:954-962
         bool JobSupport::Impl::try_wait_for_child(JobSupport *job, Finishing *finishing,
                                                   ChildHandleNode *child, JobState *proposed) {
+            auto child_job = child->child_job();
+            if (!child_job) {
+                auto* next = next_child(child);
+                return next && try_wait_for_child(job, finishing, next, proposed);
+            }
             auto *completion = new ChildCompletion(job, finishing, child, proposed);
-            auto handle = child->child_job->invoke_on_completion(false, false,
+            auto handle = child_job->invoke_on_completion(false, false,
                                                                  [completion](std::exception_ptr cause) {
                                                                      completion->invoke(cause);
                                                                  });

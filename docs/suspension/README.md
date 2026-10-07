@@ -12,7 +12,7 @@ This directory documents the coroutine suspension subsystem, compiler lowering s
 - Clang computed-goto macros (`src/kotlinx/coroutines/dsl/Suspend.hpp`)
 - Runtime handoffs: continuation passing, `COROUTINE_SUSPENDED` sentinel, frame state transitions
 - Persistent frame state: retaining live state across suspension points vs stack locals
-- Optional IR marker cleanup and compiler launcher integration (`__kxs_suspend_point`, `kxs_transform_ir.py`)
+- Mandatory in-compiler LLVM lowering (`KotlinxCoroutinePass`, `-fpass-plugin`)
 
 ### [IR_SUSPEND_LOWERING_SPEC.md](IR_SUSPEND_LOWERING_SPEC.md)
 **Purpose:** Specification for IR-level suspend lowering matching Kotlin/Native's continuation protocol.  

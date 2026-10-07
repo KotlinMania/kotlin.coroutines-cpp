@@ -2,6 +2,11 @@
 
 This directory contains comprehensive audit documentation for the kotlinx.coroutines-cpp port project. These documents track implementation status, API completeness, namespace organization, and transliteration progress.
 
+Current project-wide status and repair order start with [the project-wide deep audit](project-wide/README.md), [library priorities](project-wide/library/NEXT_ACTIONS.md), and [compiler priorities](project-wide/compiler/NEXT_ACTIONS.md). Historical estimates below are not current acceptance evidence.
+
+The first-priority compiler dependency frontier and its executable evidence are
+recorded in [IR_IDENTITY_DEPENDENCIES.md](IR_IDENTITY_DEPENDENCIES.md).
+
 ---
 
 ## 📊 Overview Documents
@@ -10,7 +15,7 @@ This directory contains comprehensive audit documentation for the kotlinx.corout
 **Purpose:** IR lowering, compiler launcher, tooling boundaries, and coroutine handoffs audit
 **Updated:** October 2026
 **Contents:**
-- Repaired findings across native tool (kxs_inject), CMake compiler launcher (kxs_compile.py), text cleanup (kxs_transform_ir.py)
+- Mandatory in-process LLVM injection and compiler suspension lowering; historical launcher findings are retained in the review
 - Ground truth from Kotlin/Native compiler (tmp/kotlin) and library snapshot (tmp/kotlinx.coroutines)
 - Validation across test_suspension_core, test_ir_pipeline, test_kxs_inject
 - Delineation of tested cleanup/macro contracts vs compiler-driven automatic spilling
@@ -30,16 +35,16 @@ This directory contains comprehensive audit documentation for the kotlinx.corout
 **Read this** before porting any suspending functions, flow operators, or channel operations.
 
 ### [COMPREHENSIVE_AUDIT_REPORT.md](COMPREHENSIVE_AUDIT_REPORT.md)
-**Purpose:** Definitive reference for overall implementation status
+**Purpose:** Historical implementation review
 **Updated:** December 10, 2025
 **Contents:**
-- Executive summary with 65-70% completion estimate
+- Historical observations requiring refreshed deep evidence
 - Module-by-module analysis (11 audit blocks)
 - Critical missing components
 - Implementation priority matrix
 - Risk assessment and mitigation strategies
 
-**Read this first** for a high-level understanding of project status.
+Use this for historical context; use the project-wide deep reports for current status.
 
 ### [NAMESPACE_STRUCTURE_AUDIT.md](NAMESPACE_STRUCTURE_AUDIT.md)
 **Purpose:** Folder structure and namespace mapping reference
@@ -96,21 +101,21 @@ This directory contains comprehensive audit documentation for the kotlinx.corout
 Detailed implementation analysis organized by functional area:
 
 ### Test Infrastructure
-- [audit_block_01_test_utils.md](audit_block_01_test_utils.md) - Test utilities (8% complete)
-- [audit_block_05_test_module.md](audit_block_05_test_module.md) - Test module (70% complete)
+- [audit_block_01_test_utils.md](audit_block_01_test_utils.md) - Test utilities (historical review)
+- [audit_block_05_test_module.md](audit_block_05_test_module.md) - Test module (historical review)
 
 ### Debug & Diagnostics
-- [audit_block_03_debug_tests.md](audit_block_03_debug_tests.md) - Debug tests (0% functional)
-- [audit_block_04_debug_src.md](audit_block_04_debug_src.md) - Debug source (45% complete)
+- [audit_block_03_debug_tests.md](audit_block_03_debug_tests.md) - Debug tests (historical review)
+- [audit_block_04_debug_src.md](audit_block_04_debug_src.md) - Debug source (historical review)
 
 ### Platform Support
-- [audit_block_06_core_native.md](audit_block_06_core_native.md) - Native platform (26% complete)
-- [audit_block_07_core_native_darwin.md](audit_block_07_core_native_darwin.md) - Darwin/macOS (0% complete) ⚠️
-- [audit_block_08_core_native_other.md](audit_block_08_core_native_other.md) - Linux/Windows native (0% complete) ⚠️
+- [audit_block_06_core_native.md](audit_block_06_core_native.md) - Native platform (historical review)
+- [audit_block_07_core_native_darwin.md](audit_block_07_core_native_darwin.md) - Darwin/macOS (historical review)
+- [audit_block_08_core_native_other.md](audit_block_08_core_native_other.md) - Linux/Windows native (historical review)
 
 ### Core Implementation
-- [audit_block_09_core_common_tests.md](audit_block_09_core_common_tests.md) - Common tests (53% complete)
-- [audit_block_10_core_common_src.md](audit_block_10_core_common_src.md) - Core source (70-75% complete)
+- [audit_block_09_core_common_tests.md](audit_block_09_core_common_tests.md) - Common tests (historical review)
+- [audit_block_10_core_common_src.md](audit_block_10_core_common_src.md) - Core source (historical review)
 
 ### Integration & Benchmarks
 - [audit_block_02_integration_play_services.md](audit_block_02_integration_play_services.md) - Play Services (partial)
@@ -155,7 +160,7 @@ Detailed implementation analysis organized by functional area:
 ### [port_status_report.md](port_status_report.md)
 **Purpose:** AST-based code port progress report
 **Contents:**
-- Executive summary of function parity (633/900 matched, 70.3%)
+- Generated function parity for its recorded source scope; the project-wide reports above include broader source sets
 - Average inline-code cosine similarity and documentation similarity
 - Port quality distribution (excellent, good, critical files)
 - Type coverage analysis and missing types per file
@@ -212,7 +217,7 @@ Detailed implementation analysis organized by functional area:
 ## 🚀 Quick Reference
 
 ### For New Contributors
-1. Read [COMPREHENSIVE_AUDIT_REPORT.md](COMPREHENSIVE_AUDIT_REPORT.md) - Understand project status
+1. Read [project-wide deep audit](project-wide/README.md) - Inspect current evidence and scope
 2. Read [NAMESPACE_STRUCTURE_AUDIT.md](NAMESPACE_STRUCTURE_AUDIT.md) - Learn folder organization
 3. Read [API_TRANSLATION.md](API_TRANSLATION.md) - Learn translation patterns
 4. Check [TODO_CHECKLIST.md](TODO_CHECKLIST.md) - Find tasks to work on
@@ -230,7 +235,7 @@ Detailed implementation analysis organized by functional area:
 ### For Progress Tracking
 1. Update [TRANSLITERATION_STATUS.md](TRANSLITERATION_STATUS.md) - Mark files complete
 2. Update [TODO_CHECKLIST.md](TODO_CHECKLIST.md) - Check off completed tasks
-3. Update relevant block audit (01-11) - Update completion percentages
+3. Refresh the project-wide deep reports and update relevant audit source references
 
 ### For Porting & Parity
 1. Check [port_status_report.md](port_status_report.md) - Review global AST parity and similarity metrics
@@ -252,7 +257,7 @@ Detailed implementation analysis organized by functional area:
 
 ### Monthly (Phases 2-3)
 - Full audit review and update
-- Update completion percentages
+- Regenerate project-wide deep inventories and measured criteria
 - Revise priority matrix
 
 ### As Needed
@@ -295,10 +300,10 @@ python analyze_packages.py
 
 - **Project:** kotlinx.coroutines-cpp (Kotlin Coroutines C++ Port)
 - **Audit Period:** December 2025 - Present
-- **Next Major Review:** January 10, 2026
+- **Next Review:** After relevant source or oracle changes
 
 For questions about audit documents, see `CLAUDE.md` in project root.
 
 ---
 
-*Last updated: December 11, 2025*
+*Index updated: October 5, 2026; linked documents retain their own evidence dates.*

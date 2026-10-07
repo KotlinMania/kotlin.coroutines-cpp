@@ -1,3 +1,4 @@
+// port-lint: source kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt
  *                 and kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt
@@ -5,7 +6,7 @@
 
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
 #include "kotlinx/coroutines/Job.hpp"
-#include "kotlinx/coroutines/JobSupport.hpp"
+#include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include <limits>
@@ -26,8 +27,7 @@ std::shared_ptr<Job> transitive_coroutine_parent(
         if (cur.get() == collect_job.get()) {
             return cur;
         }
-        auto* js = dynamic_cast<JobSupport*>(cur.get());
-        if (!js || !js->get_is_scoped_coroutine()) {
+        if (!dynamic_cast<kotlinx::coroutines::internal::ScopeCoroutineBase*>(cur.get())) {
             return cur;
         }
         cur = cur->get_parent();
@@ -36,8 +36,8 @@ std::shared_ptr<Job> transitive_coroutine_parent(
 }
 
 // Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:7-14
-SafeCollectorBase::SafeCollectorBase(std::shared_ptr<CoroutineContext> collectContext)
-    : collect_context_(collectContext ? std::move(collectContext) : EmptyCoroutineContext::instance()),
+SafeCollectorBase::SafeCollectorBase(std::shared_ptr<CoroutineContext> collect_context)
+    : collect_context_(std::move(collect_context)),
       collect_context_size_(0),
       last_emission_context_(nullptr) {
     collect_context_size_ = collect_context_->fold<int>(0, [](int count, std::shared_ptr<CoroutineContext::Element>) {
@@ -46,11 +46,10 @@ SafeCollectorBase::SafeCollectorBase(std::shared_ptr<CoroutineContext> collectCo
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:22-90
-void SafeCollectorBase::check_context(const CoroutineContext& currentContext) {
-    const int INT_MIN_VALUE = std::numeric_limits<int>::min() / 2;
+void SafeCollectorBase::check_context(const CoroutineContext& current_context) {
+    const int INT_MIN_VALUE = std::numeric_limits<int>::min();
 
-    int result = currentContext.fold<int>(0, [&](int count, std::shared_ptr<CoroutineContext::Element> element) -> int {
-        if (!element) return count;
+    int result = current_context.fold<int>(0, [&](int count, std::shared_ptr<CoroutineContext::Element> element) -> int {
         auto* key = element->key();
         auto collect_element = collect_context_->get(key);
 
@@ -86,7 +85,7 @@ void SafeCollectorBase::check_context(const CoroutineContext& currentContext) {
 
     if (result != collect_context_size_) {
         std::string collect_str = collect_context_ ? collect_context_->to_string() : "null";
-        std::string current_str = currentContext.to_string();
+        std::string current_str = current_context.to_string();
         throw IllegalStateException(
             "Flow invariant is violated:\n"
             "\t\tFlow was collected in " + collect_str + ",\n"

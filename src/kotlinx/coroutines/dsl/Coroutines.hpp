@@ -3,12 +3,13 @@
  * @file Coroutines.hpp
  * @brief Master DSL header for kotlinx.coroutines suspend functions.
  *
- * Include this single header to get all DSL wrappers for use with
+ * Include this header for the translated APIs and continuation types used with
  * coroutine_begin/coroutine_yield/coroutine_end macros.
  *
  * Usage:
  * ```cpp
  * #include <kotlinx/coroutines/dsl/Coroutines.hpp>
+ * using namespace kotlinx::coroutines;
  * using namespace kotlinx::coroutines::dsl;
  *
  * class MyCoroutine : public ContinuationImpl {
@@ -19,8 +20,6 @@
  *
  *         coroutine_yield(this, delay(100, completion_));
  *         coroutine_yield(this, yield(completion_));
- *         coroutine_yield(this, send(channel, value, completion_));
- *         coroutine_yield(this, receive(channel, completion_));
  *
  *         coroutine_end(this)
  *     }
@@ -34,6 +33,10 @@
 // Suspend function wrappers
 #include "kotlinx/coroutines/dsl/Await.hpp"
 #include "kotlinx/coroutines/dsl/Cancellable.hpp"
+
+// Translated suspend APIs
+#include "kotlinx/coroutines/Delay.hpp"
+#include "kotlinx/coroutines/Yield.hpp"
 
 // Core types
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -53,20 +56,6 @@
 namespace kotlinx {
 namespace coroutines {
 namespace dsl {
-
-// =============================================================================
-// Delay functions
-// =============================================================================
-
-void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> cont);
-void* delay(std::chrono::milliseconds duration, std::shared_ptr<Continuation<void*>> cont);
-void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void*>> cont);
-
-// =============================================================================
-// Yield
-// =============================================================================
-
-void* yield(std::shared_ptr<Continuation<void*>> cont);
 
 // =============================================================================
 // Job operations

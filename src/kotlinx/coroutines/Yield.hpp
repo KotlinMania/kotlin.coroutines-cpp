@@ -1,12 +1,12 @@
 #pragma once
-// port-lint: source Yield.kt
+// port-lint: source kotlinx-coroutines-core/common/src/Yield.kt
 /**
  * @file Yield.hpp
  * @brief Yield function declaration
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/Yield.kt
  *
- * Provides the suspend yield() function and test helper.
+ * Provides yield authoring syntax and its continuation ABI entry.
  */
 #include <memory>
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -88,42 +88,28 @@ namespace coroutines {
  * For custom implementations of CoroutineDispatcher, this function checks CoroutineDispatcher::is_dispatch_needed and
  * then invokes CoroutineDispatcher::dispatch regardless of the result; no way is provided to change this behavior.
  *
- * Transliterated from: kotlinx-coroutines-core/common/src/Yield.kt:128
- * public suspend fun yield(): Unit
+ * Transliterated from: kotlinx-coroutines-core/common/src/Yield.kt:6-144
  */
-
-/**
- * Thread-yield fallback for tests / non-suspend callers that cannot thread a
- * `Continuation<void*>` through. This is intentionally an OS-level
- * `std::this_thread::yield()` and is **not** the upstream `yield()` semantics — the
- * real Kotlin `yield()` lives in the suspend-ABI overload below. See `Yield.cpp`.
- */
-[[deprecated("Use yield(completion) for the upstream suspend semantics")]]
-void yield_coroutine();
 
 /**
  * Suspend function form - requires continuation.
  * This is the proper suspend function implementation.
  *
- * Transliterated from:
- * public suspend fun yield(): Unit = suspendCoroutineUninterceptedOrReturn sc@ { uCont -> ... }
+ * Transliterated from: kotlinx-coroutines-core/common/src/Yield.kt:145-166
  */
+[[clang::annotate("suspend")]]
 void* yield(std::shared_ptr<Continuation<void*>> completion);
 
 
 /**
- * No-arg yield for test compatibility.
- * In Kotlin, yield() is a suspend function called within coroutines.
- * In C++ tests not using full coroutine machinery, this provides
- * a simple OS-level thread yield as a stand-in.
+ * Transliterated from: kotlinx-coroutines-core/common/src/Yield.kt:145-166
+ * NOTE(port): Compiler intrinsic for Kotlin's implicit continuation argument.
+ * The suspend frontend replaces this call with yield(current_frame); calls
+ * outside a lowered suspend body are rejected by Clang.
  */
-inline void yield() {
-    // Suppress deprecation warning - this is the test compatibility wrapper
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    yield_coroutine();
-    #pragma clang diagnostic pop
-}
+[[clang::annotate("suspend"), clang::annotate("kxs_implicit_continuation")]]
+__attribute__((error("yield() requires suspend lowering; use yield(completion) at an explicit ABI boundary")))
+void yield();
 
 } // namespace coroutines
 } // namespace kotlinx

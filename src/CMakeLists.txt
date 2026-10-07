@@ -32,6 +32,7 @@ endif()
 file(GLOB_RECURSE CORE_SOURCES CONFIGURE_DEPENDS
     "${KOTLINX_COROUTINES_SRC_ROOT}/*.cpp"
 )
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/Duration.cpp")
 
 # Exclude non-library sources.
 list(FILTER CORE_SOURCES EXCLUDE REGEX "/tools/")
@@ -53,13 +54,6 @@ target_compile_options(kotlinx-coroutines-core PRIVATE
     -Wno-unused-private-field
     -Wno-gnu-label-as-value
 )
-
-if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN AND TARGET KotlinxSuspendPlugin)
-    target_compile_options(kotlinx-coroutines-core PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
-    add_dependencies(kotlinx-coroutines-core KotlinxSuspendPlugin)
-elseif(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
-    message(WARNING "KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=ON but KotlinxSuspendPlugin target is unavailable; building without plugin.")
-endif()
 
 # Set include directories for this target
 # Headers are now co-located with sources in src/kotlinx/coroutines/

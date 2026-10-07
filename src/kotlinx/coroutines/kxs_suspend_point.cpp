@@ -1,15 +1,13 @@
 /**
  * @file kxs_suspend_point.cpp
- * @brief Defines the IR-visible suspend-point marker used by kxs tooling.
+ * @brief Reserves compiler markers for mandatory LLVM coroutine injection.
  *
  * Kotlin/Native lowering uses explicit suspension points in the IR. In this
- * project, we tag suspension sites with calls to `__kxs_suspend_point(i32)`.
+ * project, the frontend supplies the frame label field and actual function-local
+ * block addresses to kxs-inject. These symbols have no runtime implementation.
  *
- * The IR transformation tooling (e.g. `cmake/Modules/kxs_transform_ir.cmake`
- * and `src/kotlinx/coroutines/tools/kxs_inject/`) is expected to rewrite or
- * remove these marker calls. In non-transformed builds, this symbol must exist
- * to satisfy the linker; it is intentionally a no-op.
+ * kxs-inject must replace every marker with Kotlin/Native dispatch and stores.
+ * An untransformed definition must fail to link instead of silently running
+ * without coroutine lowering.
  */
-
-extern "C" void __kxs_suspend_point(int) noexcept {}
 

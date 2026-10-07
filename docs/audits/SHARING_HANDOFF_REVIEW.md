@@ -68,7 +68,7 @@ is not a claim of binary compatibility or completed automatic variable spilling.
 | Latest collection | `flow/Collect.cpp:50`, `:120`; `flow/internal/Merge.hpp:65` | Action completion precedes Unit emission; buffer(0) rendezvous; cancel previous child, suspend on join, then UNDISPATCHED launch within coroutineScope |
 | Hot-flow loops | `flow/SharedFlow.hpp:311`; `flow/StateFlow.hpp:373` | Wait, resume loop, check cancellation, emit, and free subscription slot on exceptional exit |
 | Producer/scope handoff | `channels/Produce.hpp:187`; `flow/internal/ChannelFlow.cpp:73`; `flow/internal/ChannelFlow.hpp:230`, `:327` | Suspension leaves producer active; owned SendingCollector/channel survive; scope waits for child completion |
-| Cold-flow lifetime | `flow/FlowBuilders.hpp:146`; `flow/internal/SafeCollector.hpp:147` | Iterable frame retains index across emit; SafeCollector is released in collection's finally path |
+| Cold-flow lifetime | `flow/FlowBuilders.hpp:146`; `flow/Flow.hpp:279` | Iterable frame retains index across emit; SafeCollector is released in collection's finally path |
 | Cancellable join | `JobSupport.cpp:597` | Completion resumes a cancellable continuation; caller cancellation disposes completion registration; completed join checks caller activity |
 | Completion ordering | `JobSupport.cpp:1505`; `AbstractCoroutine.hpp:182` | Finalization invokes handlers; AbstractCoroutine afterResume or deferred child completion resumes scope once, rather than both |
 | Channel cancellation state | `CancellableContinuationImpl.hpp:884`, `:1518` | CAS the actual SegmentBase into the NotCompleted state union, so cancellation clears waiter cells before iterator destruction |

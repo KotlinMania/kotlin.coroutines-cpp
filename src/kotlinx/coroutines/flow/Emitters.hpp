@@ -1,5 +1,5 @@
 #pragma once
-// port-lint: source flow/operators/Emitters.kt
+// port-lint: source kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt
 /**
  * @file Emitters.hpp
  * @brief Flow operators that emit values: transform, onStart, onCompletion, onEmpty
@@ -7,6 +7,7 @@
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt
  */
 
+#include "kotlinx/coroutines/flow/internal/ThrowingCollector.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
@@ -45,17 +46,79 @@ std::shared_ptr<Flow<R>> transform(std::shared_ptr<Flow<T>> upstream, std::funct
  * The action is called before the upstream flow is collected. Action may emit values using
  * the collector or just perform some side effect.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:70-81
 template <typename T>
-std::shared_ptr<Flow<T>> on_start(std::shared_ptr<Flow<T>> upstream, std::function<void(FlowCollector<T>*)> action) {
-    return make_flow<T>([upstream, action](FlowCollector<T>* collector) {
-        // Upstream wraps the downstream collector in SafeCollector to enforce the
-        // context-preservation invariant — emits must come from the same context the
-        // flow was collected on. The C++ port relies on the caller to set up the
-        // SafeCollector wrapping at the outer collect site; on_start itself stays a
-        // thin "action then collect" composition.
-        action(collector);
-        upstream->collect(collector);
+std::shared_ptr<Flow<T>> on_start(
+    std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(FlowCollector<T>*, Continuation<void*>*)> action) {
+    return unsafe_flow<T>([upstream = std::move(upstream), action = std::move(action)](
+        FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
+        // NOTE(port): Retained fields represent the Kotlin compiler's spilled
+        // locals; mandatory LLVM injection supplies the resume addresses.
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:73-81
+        class StartFrame final : public ContinuationImpl {
+        public:
+            void* _label = nullptr;
+            StartFrame(std::shared_ptr<Flow<T>> upstream,
+                       std::function<void*(FlowCollector<T>*, Continuation<void*>*)> action,
+                       FlowCollector<T>* collector, Continuation<void*>* completion)
+                : ContinuationImpl(completion ? std::shared_ptr<Continuation<void*>>(
+                      completion, [](Continuation<void*>*) {}) : nullptr),
+                  upstream_(std::move(upstream)), action_(std::move(action)), collector_(collector),
+                  safe_collector_(std::make_shared<internal::SafeCollector<T>>(
+                      collector, completion ? completion->get_context() : EmptyCoroutineContext::instance())) {}
+
+            void retain() { self_ref_ = shared_from_this(); }
+            void release() { self_ref_.reset(); }
+
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:73-81
+            void* invoke_suspend(Result<void*> result) override {
+                try {
+                    coroutine_begin(this)
+                    coroutine_yield(this, action_(safe_collector_.get(), this));
+                    safe_collector_->release_intercepted();
+                    safe_collector_.reset();
+                    coroutine_yield(this, upstream_->collect(collector_, this));
+                } catch (...) {
+                    if (safe_collector_) {
+                        safe_collector_->release_intercepted();
+                        safe_collector_.reset();
+                    }
+                    release();
+                    throw;
+                }
+                release();
+                coroutine_end(this)
+            }
+
+        private:
+            std::shared_ptr<Flow<T>> upstream_;
+            std::function<void*(FlowCollector<T>*, Continuation<void*>*)> action_;
+            FlowCollector<T>* collector_;
+            std::shared_ptr<internal::SafeCollector<T>> safe_collector_;
+            std::shared_ptr<BaseContinuationImpl> self_ref_;
+        };
+        auto frame = std::make_shared<StartFrame>(upstream, action, collector, completion);
+        frame->retain();
+        try {
+            return frame->start(Result<void*>::success(nullptr));
+        } catch (...) {
+            frame->release();
+            throw;
+        }
     });
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:70-81
+template <typename T>
+std::shared_ptr<Flow<T>> on_start(
+    std::shared_ptr<Flow<T>> upstream,
+    std::function<void(FlowCollector<T>*)> action) {
+    return on_start<T>(std::move(upstream),
+        [action = std::move(action)](FlowCollector<T>* collector, Continuation<void*>*) -> void* {
+            action(collector);
+            return nullptr;
+        });
 }
 
 /**

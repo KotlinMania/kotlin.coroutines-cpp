@@ -5,6 +5,7 @@
  * @brief Terminal flow operators: collect, launch_in, collect_indexed, collect_latest, emit_all
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt
+ * NOTE(port): KDoc examples retain upstream Kotlin notation.
  */
 
 #include "kotlinx/coroutines/Builders.hpp"
@@ -18,22 +19,89 @@
 #include "kotlinx/coroutines/flow/Merge.hpp"
 #include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
 #include "kotlinx/coroutines/flow/internal/NopCollector.hpp"
+#include "kotlinx/coroutines/flow/internal/ThrowingCollector.hpp"
 
 #include <functional>
 #include <memory>
+#include <limits>
 #include <utility>
 
 namespace kotlinx::coroutines::flow {
 
+namespace internal {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26,55-59,103-113
+// NOTE(port): Kotlin GC retains the source receiver and anonymous collectors in
+// the suspended caller. This frame retains their actual C++ owners until completion.
+// A raw collector supplied by emit_all remains borrowed from its caller.
+template <typename T>
+void* collect_with_retained_arguments(std::shared_ptr<Flow<T>> upstream,
+    FlowCollector<T>* collector, std::shared_ptr<FlowCollector<T>> collector_owner,
+    std::shared_ptr<Continuation<void*>> completion) {
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26,55-59,103-113
+    class CollectFrame final : public ContinuationImpl {
+        std::shared_ptr<Flow<T>> upstream_;
+        FlowCollector<T>* collector_;
+        std::shared_ptr<FlowCollector<T>> collector_owner_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+        void* _label = nullptr;
+    public:
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26,55-59,103-113
+        CollectFrame(std::shared_ptr<Flow<T>> upstream, FlowCollector<T>* collector,
+            std::shared_ptr<FlowCollector<T>> collector_owner, std::shared_ptr<Continuation<void*>> completion)
+            : ContinuationImpl(std::move(completion)),
+              upstream_(std::move(upstream)), collector_(collector), collector_owner_(std::move(collector_owner)) {}
+        void retain() { self_ref_ = shared_from_this(); }
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26,55-59,103-113
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                coroutine_begin(this)
+                coroutine_yield(this, upstream_->collect(collector_, this));
+                self_ref_.reset();
+                coroutine_end(this)
+            } catch (...) {
+                self_ref_.reset();
+                throw;
+            }
+        }
+    };
+    auto frame = std::make_shared<CollectFrame>(std::move(upstream), collector, std::move(collector_owner), std::move(completion));
+    frame->retain();
+    return frame->start(Result<void*>::success(nullptr));
+}
+
+} // namespace internal
+
 /**
  * Terminal flow operator that collects the given flow but ignores all emitted values.
+ * If any exception occurs during collect or in the provided flow, this exception is rethrown from this method.
  *
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26
+ * It is a shorthand for `collect {}`.
+ *
+ * This operator is usually used with [onEach], [onCompletion] and [catch] operators to process all emitted values and
+ * handle an exception that might occur in the upstream flow or during processing, for example:
+ *
+ * ```kotlin
+ * flow
+ *     .onEach { value -> process(value) }
+ *     .catch { e -> handleException(e) }
+ *     .collect() // trigger collection of the flow
+ * ```
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26-26
 template <typename T>
 inline void* collect(std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
-    internal::NopCollector<T> nop;
-    return flow->collect(&nop, continuation);
+    // NOTE(port): The contravariant Kotlin object is one stable instance per C++ value type.
+    static auto nop = std::make_shared<internal::NopCollector<T>>();
+    return internal::collect_with_retained_arguments<T>(std::move(flow), nop.get(), nop, kotlinx::coroutines::internal::retain_continuation(continuation));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26-26
+// NOTE(port): Preserve actual owning completion handles at C++ coroutine-builder boundaries.
+template <typename T>
+inline void* collect(std::shared_ptr<Flow<T>> flow, std::shared_ptr<Continuation<void*>> continuation) {
+    static auto nop = std::make_shared<internal::NopCollector<T>>();
+    return internal::collect_with_retained_arguments<T>(std::move(flow), nop.get(), nop, std::move(continuation));
 }
 
 /**
@@ -46,16 +114,19 @@ inline void* collect(
     std::shared_ptr<Flow<T>> flow,
     std::function<void*(T, Continuation<void*>*)> action,
     Continuation<void*>* continuation) {
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:110-113
     class ActionCollector : public FlowCollector<T> {
         std::function<void*(T, Continuation<void*>*)> action_;
     public:
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:110-113
         ActionCollector(std::function<void*(T, Continuation<void*>*)> a) : action_(std::move(a)) {}
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:112-112
         void* emit(T value, Continuation<void*>* cont) override {
             return action_(std::move(value), cont);
         }
     };
-    ActionCollector collector(std::move(action));
-    return flow->collect(&collector, continuation);
+    auto collector = std::make_shared<ActionCollector>(std::move(action));
+    return internal::collect_with_retained_arguments<T>(std::move(flow), collector.get(), collector, kotlinx::coroutines::internal::retain_continuation(continuation));
 }
 
 /**
@@ -79,15 +150,28 @@ inline void* collect(
 
 /**
  * Terminal flow operator that [launches][launch] the [collection][collect] of the given flow in the [scope].
+ * It is a shorthand for `scope.launch { flow.collect() }`.
  *
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:45-47
+ * This operator is usually used with [onEach], [onCompletion] and [catch] operators to process all emitted values
+ * handle an exception that might occur in the upstream flow or during processing, for example:
+ *
+ * ```kotlin
+ * flow
+ *     .onEach { value -> updateUi(value) }
+ *     .onCompletion { cause -> updateUi(if (cause == null) "Done" else "Failed") }
+ *     .catch { cause -> LOG.error("Exception: $cause") }
+ *     .launchIn(uiScope)
+ * ```
+ *
+ * In this example, note that the `job` returned by [launchIn] is not used, and the provided scope takes care of cancellation.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:45-47
 template <typename T>
 inline std::shared_ptr<Job> launch_in(std::shared_ptr<Flow<T>> flow, CoroutineScope* scope) {
-    return kotlinx::coroutines::launch(scope, [flow = std::move(flow)](CoroutineScope*) {
-        internal::NopCollector<T> nop;
-        flow->collect(&nop, nullptr);
-    });
+    return kotlinx::coroutines::launch(scope, EmptyCoroutineContext::instance(), CoroutineStart::DEFAULT,
+        [flow = std::move(flow)](CoroutineScope*, std::shared_ptr<Continuation<void*>> completion) -> void* {
+            return collect<T>(flow, std::move(completion)); // tail-call
+        });
 }
 
 /**
@@ -111,29 +195,35 @@ inline std::shared_ptr<Job> launch_in(std::shared_ptr<Flow<T>> flow, const std::
 }
 
 /**
- * Terminal flow operator that collects the given flow with a provided [action] that takes the index
- * of an element (zero-based) and the element.
+ * Terminal flow operator that collects the given flow with a provided [action] that takes the index of an element (zero-based) and the element.
+ * If any exception occurs during collect or in the provided flow, this exception is rethrown from this method.
  *
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:55-59
+ * See also [collect] and [withIndex].
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:55-59
 template <typename T>
 inline void* collect_indexed(
     std::shared_ptr<Flow<T>> flow,
     std::function<void*(int, T, Continuation<void*>*)> action,
     Continuation<void*>* continuation) {
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:55-59
     class IndexedActionCollector : public FlowCollector<T> {
         std::function<void*(int, T, Continuation<void*>*)> action_;
         int index_ = 0;
     public:
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:55-59
         IndexedActionCollector(std::function<void*(int, T, Continuation<void*>*)> a)
             : action_(std::move(a)) {}
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:58-58
         void* emit(T value, Continuation<void*>* cont) override {
-            int idx = internal::check_index_overflow(index_++);
-            return action_(idx, std::move(value), cont);
+            const int index = index_;
+            // NOTE(port): Kotlin Int post-increment wraps; signed C++ overflow is undefined.
+            index_ = index_ == std::numeric_limits<int>::max() ? std::numeric_limits<int>::min() : index_ + 1;
+            return action_(internal::check_index_overflow(index), std::move(value), cont);
         }
     };
-    IndexedActionCollector collector(std::move(action));
-    return flow->collect(&collector, continuation);
+    auto collector = std::make_shared<IndexedActionCollector>(std::move(action));
+    return internal::collect_with_retained_arguments<T>(std::move(flow), collector.get(), collector, kotlinx::coroutines::internal::retain_continuation(continuation));
 }
 
 /**
@@ -166,15 +256,31 @@ void* map_latest_action(FlowCollector<Unit>* collector,
 
 /**
  * Terminal flow operator that collects the given flow with a provided [action].
- * When the original flow emits a new value, the action for the previous value is cancelled.
+ * The crucial difference from [collect] is that when the original flow emits a new value
+ * then the [action] block for the previous value is cancelled.
  *
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:82-97
+ * It can be demonstrated by the following example:
+ *
+ * ```kotlin
+ * flow {
+ *     emit(1)
+ *     delay(50)
+ *     emit(2)
+ * }.collectLatest { value ->
+ *     println("Collecting $value")
+ *     delay(100) // Emulate work
+ *     println("$value collected")
+ * }
+ * ```
+ *
+ * prints "Collecting 1, Collecting 2, 2 collected"
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:82-97
 template <typename T>
 inline void* collect_latest(
     std::shared_ptr<Flow<T>> flow,
     std::function<void*(T, Continuation<void*>*)> action,
-    Continuation<void*>* continuation = nullptr) {
+    Continuation<void*>* continuation) {
     auto mapped = transform_latest<T, Unit>(
         std::move(flow),
         [action = std::move(action)](FlowCollector<Unit>* collector, T val, Continuation<void*>* cont) -> void* {
@@ -195,7 +301,7 @@ template <typename T>
 inline void* collect_latest(
     std::shared_ptr<Flow<T>> flow,
     std::function<void(T)> action,
-    Continuation<void*>* continuation = nullptr) {
+    Continuation<void*>* continuation) {
     return collect_latest<T>(
         std::move(flow),
         [action = std::move(action)](T val, Continuation<void*>*) -> void* {
@@ -207,14 +313,12 @@ inline void* collect_latest(
 
 /**
  * Collects all the values from the given [flow] and emits them to the collector.
- *
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:103-106
+ * It is a shorthand for `flow.collect { value -> emit(value) }`.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:103-106
 template <typename T>
 inline void* emit_all(FlowCollector<T>* collector, Flow<T>* flow, Continuation<void*>* continuation) {
-    if (continuation && continuation->get_context()) {
-        context_ensure_active(*continuation->get_context());
-    }
+    ensure_active(collector);
     return flow->collect(collector, continuation);
 }
 
@@ -225,7 +329,8 @@ inline void* emit_all(FlowCollector<T>* collector, Flow<T>* flow, Continuation<v
  */
 template <typename T>
 inline void* emit_all(FlowCollector<T>* collector, std::shared_ptr<Flow<T>> flow, Continuation<void*>* continuation) {
-    return emit_all(collector, flow.get(), continuation);
+    ensure_active(collector);
+    return internal::collect_with_retained_arguments<T>(std::move(flow), collector, nullptr, kotlinx::coroutines::internal::retain_continuation(continuation));
 }
 
 } // namespace kotlinx::coroutines::flow

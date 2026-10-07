@@ -1,22 +1,7 @@
-// port-lint: source Exceptions.common.kt
+// port-lint: source kotlinx-coroutines-core/common/src/Exceptions.common.kt
 /**
- * @file Exceptions.common.cpp
- * @brief Implementation of Exceptions.
- *
- * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/Exceptions.hpp`.
+ * Transliterated from: kotlinx-coroutines-core/common/src/Exceptions.common.kt
  */
-
 #include "kotlinx/coroutines/Exceptions.hpp"
 
-namespace kotlinx {
-    namespace coroutines {
-        // Factory function matching Kotlin: CancellationException(message, cause)
-        CancellationException *make_cancellation_exception(const std::string &message, std::exception_ptr cause) {
-            return new CancellationException(message, cause);
-        }
-
-        // Global variable definition stub
-        const bool RECOVER_STACK_TRACES = false;
-    } // namespace coroutines
-} // namespace kotlinx
+// Common expect declarations are in Exceptions.hpp; Native actual bodies are in native/Exceptions.cpp.

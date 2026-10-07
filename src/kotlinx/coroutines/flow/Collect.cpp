@@ -2,13 +2,8 @@
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt
  *
- * Kotlin file header (translated):
- *   package kotlinx.coroutines.flow
- *
- * Terminal flow operators: collect, launchIn, collectIndexed, collectLatest, emitAll.
- * The templated entry points (collect / launch_in / etc.) live in the matching header
- * (flow/Flow.hpp + flow/Collect.hpp); this translation unit owns the non-templated
- * NopCollector and the check_index_overflow helper.
+ * Public generic terminal operators are in Collect.hpp. Concrete lowering
+ * frames for collect_latest and its map_latest action are implemented here.
  */
 
 #include "kotlinx/coroutines/flow/Flow.hpp"
@@ -21,25 +16,6 @@
 
 #include "kotlinx/coroutines/flow/internal/NopCollector.hpp"
 
-namespace kotlinx {
-    namespace coroutines {
-        namespace flow {
-
-            /**
- * Helper to check for index overflow.
- */
-            inline int check_index_overflow(int index) {
-                if (index < 0) {
-                    throw std::overflow_error("Index overflow has happened");
-                }
-                return index;
-            }
-
-            // Note: Template functions are declared in headers.
-            // The implementations here are for documentation and non-template helpers only.
-        } // namespace flow
-    } // namespace coroutines
-} // namespace kotlinx
 namespace kotlinx::coroutines::flow::internal {
 namespace {
 
@@ -49,8 +25,7 @@ public:
     MapLatestActionFrame(FlowCollector<Unit>* collector,
                         std::function<void*(Continuation<void*>*)> action,
                         Continuation<void*>* completion)
-        : ContinuationImpl(std::shared_ptr<Continuation<void*>>(
-              completion, [](Continuation<void*>*) {})),
+        : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
           collector_(collector), action_(std::move(action)) {}
 
     void retain() { self_ref_ = shared_from_this(); }
@@ -80,8 +55,8 @@ private:
 class CollectLatestFrame final : public ContinuationImpl {
 public:
     CollectLatestFrame(std::shared_ptr<Flow<Unit>> mapped, Continuation<void*>* completion)
-        : ContinuationImpl(std::shared_ptr<Continuation<void*>>(
-              completion, [](Continuation<void*>*) {})), mapped_(std::move(mapped)) {}
+        : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+          mapped_(std::move(mapped)) {}
 
     void retain() { self_ref_ = shared_from_this(); }
 
@@ -89,7 +64,7 @@ public:
     void* invoke_suspend(Result<void*> result) override {
         try {
             coroutine_begin(this)
-            coroutine_yield(this, mapped_->collect(&nop_, completion ? this : nullptr));
+            coroutine_yield(this, mapped_->collect(&nop_, this));
             self_ref_.reset();
             coroutine_end(this)
         } catch (...) {

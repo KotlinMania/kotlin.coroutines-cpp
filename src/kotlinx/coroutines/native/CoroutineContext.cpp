@@ -42,6 +42,12 @@ namespace kotlinx {
             return base_context->operator+(std::move(added_context));
         }
 
+        // No debugging facilities on Native.
+        // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:46-46
+        std::optional<std::string> coroutine_name(const std::shared_ptr<CoroutineContext>& context) {
+            return std::nullopt;
+        }
+
         namespace {
             /**
              * Internal DefaultExecutor singleton.

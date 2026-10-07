@@ -1,122 +1,45 @@
-// Reference transliteration seed from Kotlin/Native IrToBitcode.kt.
-//
-// Source of truth (vendored snapshot):
-//   tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt
-//
-// This header is NOT compiled by default; it exists to preserve the exact
-// coroutine‑related LLVM lowering patterns that kotlinc emits, as a guide for
-// the C++ suspend‑DSL compiler plugin.
-//
-// Kotlin line references (snapshot):
-//   - ContinuationBlock / continuationBlock(): ~989‑1025
-//   - evaluateSuspendableExpression(): ~2377‑2393
-//   - evaluateSuspensionPoint(): ~2407‑2423
-//   - indirectBr helper: CodeGenerator.kt ~1245‑1249
-
+// port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:895-939,2281-2340
 #pragma once
-
+#include <llvm-c/Core.h>
+#include <functional>
 #include <vector>
-#include <cstdint>
-
-// Forward declarations matching LLVM C API types used by Kotlin/Native.
-using LLVMValueRef = void*;
-using LLVMBasicBlockRef = void*;
-
-namespace kotlinc_native_ref {
-
-// -----------------------------------------------------------------------------
-// ContinuationBlock helper (IrToBitcode.kt continuationBlock)
-// -----------------------------------------------------------------------------
-
+namespace org::jetbrains::kotlin::backend::konan::llvm {
+class FunctionGenerationContext;
+// Represents a basic block that may expect a value. A jump to this block must
+// provide that value, which is accessible inside the block through value_phi.
+// Used to generate expressions that have a value and require branching.
+// A null value_phi means that a Unit value is passed.
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:895-907
 struct ContinuationBlock {
     LLVMBasicBlockRef block;
-    LLVMValueRef valuePhi; // nullptr if Unit
-
-    LLVMValueRef value_or_unit(LLVMValueRef unitInstance) const {
-        return valuePhi ? valuePhi : unitInstance;
-    }
+    LLVMValueRef value_phi;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:905-907
+    LLVMValueRef value(LLVMValueRef unit_instance) const;
 };
-
-// Pseudocode signature. In Kotlin this lives on FunctionGenerationContext and
-// creates a basic block with an optional phi of the given type.
-//
-// ContinuationBlock continuationBlock(IrType type, LocationInfo* loc, Fn code)
-//
-// The key semantic: "continuation_block" is a merge target receiving the value
-// produced by either normal execution or resume execution.
-
-// -----------------------------------------------------------------------------
-// SuspendableExpressionScope / SuspensionPointScope
-// -----------------------------------------------------------------------------
-
-struct SuspendableExpressionScope {
-    std::vector<LLVMBasicBlockRef>& resumePoints;
-    explicit SuspendableExpressionScope(std::vector<LLVMBasicBlockRef>& rp) : resumePoints(rp) {}
-
-    int addResumePoint(LLVMBasicBlockRef bbLabel) {
-        const int id = static_cast<int>(resumePoints.size());
-        resumePoints.push_back(bbLabel);
-        return id;
-    }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2281-2287
+class SuspendableExpressionScope {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2281
+    explicit SuspendableExpressionScope(std::vector<LLVMBasicBlockRef>& resume_points);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2282-2286
+    int add_resume_point(LLVMBasicBlockRef bb_label);
+private:
+    std::vector<LLVMBasicBlockRef>& resume_points_;
 };
-
-// Kotlin's SuspensionPointScope overrides genGetValue so that
-// the suspensionPointIdParameter reads as blockAddress(bbResume).
-struct SuspensionPointScope {
-    LLVMValueRef suspensionPointIdParameter;
-    LLVMBasicBlockRef bbResume;
-    int bbResumeId;
-};
-
-// -----------------------------------------------------------------------------
-// evaluateSuspendableExpression (exact Kotlin shape)
-// -----------------------------------------------------------------------------
-//
-// Kotlin:
-//   val suspensionPointId = evaluateExpression(expression.suspensionPointId)
-//   if (suspensionPointId == null) goto bbStart else goto bbDispatch
-//   bbDispatch: indirectBr(suspensionPointId, resumePoints)
-//
-// In C++ plugin lowering terms:
-//   if (_label == nullptr) start; else goto *_label;
-//
-inline LLVMValueRef evaluateSuspendableExpression(
-    LLVMValueRef suspensionPointId,
-    LLVMBasicBlockRef bbStart,
-    LLVMBasicBlockRef bbDispatch,
-    std::vector<LLVMBasicBlockRef>& resumePoints,
-    LLVMValueRef (*evaluateResult)(LLVMValueRef /*resultSlot*/)
-) {
-    // Pseudocode only; actual implementation will be in the compiler plugin.
-    (void)bbStart;
-    (void)bbDispatch;
-    (void)resumePoints;
-    return evaluateResult(nullptr);
+// NOTE(port): The frontend provides lowered LLVM operands and expression emitters
+// at this boundary. These callbacks emit IR; they do not execute coroutine code.
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2289-2306
+LLVMValueRef evaluate_suspendable_expression(FunctionGenerationContext& generation, LLVMValueRef suspension_point_id,
+    LLVMValueRef result_slot, std::vector<LLVMBasicBlockRef>& resume_points,
+    const std::function<LLVMValueRef(LLVMValueRef)>& evaluate_result);
+// NOTE(port): evaluate_normal receives the real resume block address that Kotlin's
+// SuspensionPointScope supplies when reading the suspension-point ID variable.
+// Source location metadata and general IrValueDeclaration resolution are separate
+// compiler dependencies, not supplied by this LLVM operand boundary.
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2320-2340
+LLVMValueRef evaluate_suspension_point(FunctionGenerationContext& generation, LLVMTypeRef result_type,
+    bool is_unit, LLVMValueRef unit_instance, SuspendableExpressionScope& scope,
+    const std::function<LLVMValueRef(LLVMValueRef)>& evaluate_normal,
+    const std::function<LLVMValueRef()>& evaluate_resume);
 }
-
-// -----------------------------------------------------------------------------
-// evaluateSuspensionPoint (exact Kotlin shape)
-// -----------------------------------------------------------------------------
-//
-// Kotlin:
-//   val bbResume = basicBlock("resume")
-//   val id = currentCodeContext.addResumePoint(bbResume)
-//   continuationBlock { normalResult = evaluate(result); jump(normalResult)
-//                       positionAtEnd(bbResume); resumeResult = evaluate(resumeResult); jump(resumeResult) }
-//
-inline LLVMValueRef evaluateSuspensionPoint(
-    LLVMValueRef /*suspensionPointIdParameter*/,
-    std::vector<LLVMBasicBlockRef>& resumePoints,
-    LLVMValueRef (*evaluateNormal)(),
-    LLVMValueRef (*evaluateResume)()
-) {
-    // Pseudocode only; actual implementation will be in the compiler plugin.
-    (void)resumePoints;
-    LLVMValueRef normal = evaluateNormal();
-    LLVMValueRef resumed = evaluateResume();
-    // Real code merges via phi; here we just return the resumed slot.
-    return resumed ? resumed : normal;
-}
-
-} // namespace kotlinc_native_ref
-

@@ -370,6 +370,103 @@ void polymorphic_context_contract() {
 
 }
 
+// SafeCollector.common.kt:22-97, Native SafeCollector.kt:16-24.
+// Scope ancestry is a runtime type contract, not the JobSupport scoped flag.
+void safe_collector_ancestry_contract() {
+    using kotlinx::coroutines::flow::internal::transitive_coroutine_parent;
+    class PretendScopedJob final : public JobSupport {
+    public:
+        explicit PretendScopedJob(std::shared_ptr<Job> parent) : JobSupport(true), parent_(std::move(parent)) {}
+        mutable int parent_reads = 0;
+        bool is_scoped_coroutine() const override { return true; }
+        std::shared_ptr<Job> get_parent() const override { ++parent_reads; return parent_; }
+    private:
+        std::shared_ptr<Job> parent_;
+    };
+    auto root = std::make_shared<JobSupport>(true);
+    auto impostor = std::make_shared<PretendScopedJob>(root);
+    CHECK(transitive_coroutine_parent(impostor, root) == impostor);
+    CHECK(impostor->parent_reads == 0);
+    CHECK(transitive_coroutine_parent(impostor, impostor) == impostor && impostor->parent_reads == 0);
+    CHECK(!transitive_coroutine_parent(nullptr, root));
+    CHECK(transitive_coroutine_parent(root, nullptr) == root);
+
+    auto completion = make_continuation<void*>(root, [](Result<void*>) {});
+    auto outer = std::make_shared<kotlinx::coroutines::internal::ScopeCoroutine<void*>>(root, completion);
+    outer->init_parent_job_if_needed();
+    auto typed_completion = make_continuation<int>(outer->get_coroutine_context(), [](Result<int>) {});
+    auto typed = std::make_shared<kotlinx::coroutines::internal::ScopeCoroutine<int>>(
+        outer->get_coroutine_context(), typed_completion);
+    typed->init_parent_job_if_needed();
+    CHECK(typed->get_parent() == outer && outer->get_parent() == root);
+    CHECK(transitive_coroutine_parent(typed, root) == root);
+    CHECK(transitive_coroutine_parent(typed, outer) == outer);
+    CHECK(transitive_coroutine_parent(typed, typed) == typed);
+    CHECK(transitive_coroutine_parent(typed, nullptr) == root);
+    auto unrelated = std::make_shared<JobSupport>(true);
+    CHECK(transitive_coroutine_parent(typed, unrelated) == root);
+    auto orphan_completion = make_continuation<void*>(EmptyCoroutineContext::instance(), [](Result<void*>) {});
+    auto orphan = std::make_shared<kotlinx::coroutines::internal::ScopeCoroutine<void*>>(
+        EmptyCoroutineContext::instance(), orphan_completion);
+    orphan->init_parent_job_if_needed();
+    CHECK(!transitive_coroutine_parent(orphan, nullptr));
+    CHECK(!transitive_coroutine_parent(orphan, root));
+
+    class EmissionCompletion final : public Continuation<void*> {
+    public:
+        std::shared_ptr<CoroutineContext> context;
+        std::shared_ptr<CoroutineContext> get_context() const override { return context; }
+        void resume_with(Result<void*>) override {}
+    };
+    class Collector final : public flow::FlowCollector<int> {
+    public:
+        int emits = 0;
+        std::exception_ptr failure;
+        void* emit(int value, Continuation<void*>*) override {
+            if (failure) std::rethrow_exception(failure);
+            emits += value;
+            return nullptr;
+        }
+    };
+    Collector downstream;
+    flow::internal::SafeCollector<int> safe(&downstream, root);
+    EmissionCompletion frame;
+    frame.context = typed->get_coroutine_context();
+    CHECK(safe.emit(1, &frame) == nullptr && downstream.emits == 1);
+    CHECK(safe.emit(2, &frame) == nullptr && downstream.emits == 3);
+    frame.context = impostor;
+    bool rejected = false;
+    try { safe.emit(4, &frame); }
+    catch (const IllegalStateException& error) {
+        rejected = std::string(error.what()).find("Emission from another coroutine is detected") != std::string::npos;
+    }
+    CHECK(rejected && downstream.emits == 3 && impostor->parent_reads == 0);
+    frame.context = unrelated;
+    rejected = false;
+    try { safe.emit(8, &frame); } catch (const IllegalStateException&) { rejected = true; }
+    CHECK(rejected && downstream.emits == 3);
+    // Failed validation does not replace lastEmissionContext; the valid scope can emit again.
+    frame.context = typed->get_coroutine_context();
+    CHECK(safe.emit(16, &frame) == nullptr && downstream.emits == 19);
+    auto failure = std::make_exception_ptr(std::runtime_error("actual downstream failure"));
+    downstream.failure = failure;
+    try { safe.emit(32, &frame); CHECK(false); }
+    catch (...) { CHECK(std::current_exception() == failure); }
+    downstream.failure = nullptr;
+    flow::internal::SafeCollector<int> empty_safe(&downstream, EmptyCoroutineContext::instance());
+    frame.context = orphan->get_coroutine_context();
+    CHECK(empty_safe.emit(64, &frame) == nullptr && downstream.emits == 83);
+    frame.context = root;
+    rejected = false;
+    try { empty_safe.emit(128, &frame); } catch (const IllegalStateException&) { rejected = true; }
+    CHECK(rejected && downstream.emits == 83);
+    // The actual scope Job relationships are disposed after these synchronous ancestry checks.
+    typed->cancel();
+    outer->cancel();
+    orphan->cancel();
+    root->cancel();
+}
+
 // ChannelFlow.kt:118-121 uses CoroutineScope.kt:279-288 directly: the
 // scoped continuation's caller frame is the actual caller, with no intermediary.
 void channel_scope_contract() {
@@ -902,6 +999,7 @@ int main() {
         job_cancellation_equality_contract();
         job_cancellation_hash_contract();
         polymorphic_context_contract();
+        safe_collector_ancestry_contract();
         channel_scope_contract();
         sending_collector_contract();
         combine_contract();

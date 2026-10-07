@@ -11,6 +11,7 @@
  */
 
 #include <atomic>
+#include <exception>
 #include <functional>
 #include <cassert>
 #include "kotlinx/coroutines/internal/Symbol.hpp"

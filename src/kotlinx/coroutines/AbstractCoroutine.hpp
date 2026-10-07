@@ -1,7 +1,9 @@
 #pragma once
-// port-lint: source AbstractCoroutine.kt
+// port-lint: source kotlinx-coroutines-core/common/src/AbstractCoroutine.kt
+/** Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt */
 #include <string>
 #include <memory>
+#include <mutex>
 #include <functional>
 #include <any>
 #include <typeinfo>
@@ -10,6 +12,7 @@
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
 #include "kotlinx/coroutines/CompletedValue.hpp"
+#include "kotlinx/coroutines/CompletionState.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
@@ -102,8 +105,11 @@ namespace kotlinx::coroutines {
             }
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:56-63
         std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
             const_cast<AbstractCoroutine<T>*>(this)->init_parent_job_if_needed();
+            std::lock_guard<std::mutex> lock(context_mutex_);
+            if (auto cached = context_cache_.lock()) return cached;
             // Return fully constructed context (parent + this)
             // This is safe to call after construction
             // Note: shared_from_this() returns shared_ptr<JobSupport>, we need to cast
@@ -112,14 +118,9 @@ namespace kotlinx::coroutines {
             // Cast self to Element
             auto self_element = std::static_pointer_cast<CoroutineContext::Element>(self_job);
 
-            if (!parent_context) {
-                return self_element;
-            }
-            auto removed = parent_context->minus_key(Job::type_key);
-            if (!removed) {
-                return self_element;
-            }
-            return std::make_shared<CombinedContext>(removed, self_element);
+            auto combined = parent_context->operator+(std::move(self_element));
+            context_cache_ = combined;
+            return combined;
         }
 
         // Continuation impl
@@ -180,16 +181,9 @@ namespace kotlinx::coroutines {
      */
         // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:98-102
         void resume_with(Result<T> result) override {
-            JobState* state;
-            if (result.is_success()) {
-                // Kotlin JobSupport stores successful completion as a value (`Any?`), which can be `Unit` or `null`.
-                // In C++ we must wrap it into a `JobState`-derived object to safely use `dynamic_cast`.
-                state = new CompletedValue<T>(result.get_or_throw());
-            } else {
-                state = new CompletedExceptionally(result.exception_or_null());
-            }
-
-            auto completing_result = JobSupport::make_completing_once(state);
+            // NOTE(port): Retain the executing receiver while finalization removes its parent handle.
+            auto owner = JobSupport::shared_from_this();
+            auto completing_result = JobSupport::make_completing_once(to_state<T>(std::move(result)));
 
             if (completing_result == CompletingResult::COMPLETING) return;
             after_resume(get_state_for_await());
@@ -202,30 +196,11 @@ namespace kotlinx::coroutines {
 
         // NOTE: T should be Unit for coroutines that don't return a value, NOT void.
         void on_completion_internal(JobState* state) override {
-            if (state == nullptr) {
-                // Kotlin can complete with `null`. For Unit-returning coroutines, a null completion can be treated as Unit.
-                if constexpr (std::is_same_v<T, Unit>) {
-                    on_completed(Unit());
-                }
-                return;
+            if (auto* failed = dynamic_cast<CompletedExceptionally*>(state)) {
+                on_cancelled(failed->cause, failed->handled.load());
+            } else {
+                on_completed(dynamic_cast<CompletedValue<T>&>(*state).value);
             }
-
-            // Try to cast to CompletedExceptionally first
-            auto* ex = dynamic_cast<CompletedExceptionally*>(state);
-            if (ex && ex->cause) {
-                on_cancelled(ex->cause, ex->handled);
-                return;
-            }
-
-            if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
-                on_completed(completed->value);
-                return;
-            }
-
-            // Unknown completion state shape — upstream's JobSupport can hand back boxed
-            // values and idempotent-result wrappers in addition to the bare Result; the
-            // C++ port treats those as opaque pass-throughs because the consumer of
-            // afterCompletion already dispatches on the well-known sentinel types.
         }
 
         void handle_on_completion_exception(std::exception_ptr exception) override {
@@ -244,11 +219,11 @@ namespace kotlinx::coroutines {
      * Transliterated from: internal override fun nameString(): String
      */
         std::string name_string() const override {
-            std::string name = coroutine_name(get_coroutine_context());
-            if (name.empty()) {
+            auto name = coroutine_name(get_coroutine_context());
+            if (!name) {
                 return JobSupport::name_string();
             }
-            return "\"" + name + "\":" + JobSupport::name_string();
+            return "\"" + *name + "\":" + JobSupport::name_string();
         }
 
         template <typename R>
@@ -257,7 +232,7 @@ namespace kotlinx::coroutines {
             invoke(start_strategy, block, receiver, std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
         }
 
-        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:136-138
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133-135
         template <typename R>
         void start(CoroutineStart start_strategy, R receiver,
                    std::function<void*(R, std::shared_ptr<Continuation<void*>>)> block) {
@@ -280,6 +255,12 @@ namespace kotlinx::coroutines {
                 }
             }
         }
+
+    private:
+        // NOTE(port): Kotlin's context property is constructed once. A weak
+        // cache preserves observable context identity without a C++ self cycle.
+        mutable std::mutex context_mutex_;
+        mutable std::weak_ptr<CoroutineContext> context_cache_;
     };
 
 }

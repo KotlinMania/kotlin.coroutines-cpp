@@ -8,6 +8,7 @@
 
 #include "kotlinx/coroutines/CancellableContinuation.hpp"
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
+#include "kotlinx/coroutines/CompletedValue.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/internal/StackTraceRecovery.hpp"
@@ -20,14 +21,15 @@ namespace kotlinx::coroutines {
  * Upstream:
  *   internal fun <T> Result<T>.toState(): Any? = getOrElse { CompletedExceptionally(it) }
  *
- * `Any?` in the C++ port is modelled as a heap-allocated payload pointer. On success the
- * value is moved onto the heap; on failure a [CompletedExceptionally] carries the cause.
- * Ownership of the returned pointer transfers to the caller.
+ * NOTE(port): JobState boxes preserve the actual runtime type of Any? so that
+ * CompletedExceptionally and successful values can be distinguished safely.
+ * Ownership transfers to the job state machine.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/CompletionState.kt:8-8
 template <typename T>
-inline void* to_state(Result<T> result) {
+inline JobState* to_state(Result<T> result) {
     if (result.is_success()) {
-        return new T(result.get_or_throw());
+        return new CompletedValue<T>(result.get_or_throw());
     }
     return new CompletedExceptionally(result.exception_or_null());
 }
@@ -37,10 +39,11 @@ inline void* to_state(Result<T> result) {
  *   internal fun <T> Result<T>.toState(caller: CancellableContinuation<*>): Any? =
  *       getOrElse { CompletedExceptionally(recoverStackTrace(it, caller)) }
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/CompletionState.kt:10-11
 template <typename T>
-inline void* to_state(Result<T> result, CancellableContinuation<void>* caller) {
+inline JobState* to_state(Result<T> result, CancellableContinuation<void>* caller) {
     if (result.is_success()) {
-        return new T(result.get_or_throw());
+        return new CompletedValue<T>(result.get_or_throw());
     }
     return new CompletedExceptionally(
         internal::recover_stack_trace(result.exception_or_null(), caller));
@@ -55,14 +58,14 @@ inline void* to_state(Result<T> result, CancellableContinuation<void>* caller) {
  *       else
  *           Result.success(state as T)
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/CompletionState.kt:14-18
 template <typename T>
-inline Result<T> recover_result(void* state, Continuation<T>* u_cont) {
-    if (auto* completed_exceptionally = dynamic_cast<CompletedExceptionally*>(
-            reinterpret_cast<CompletedExceptionally*>(state))) {
+inline Result<T> recover_result(JobState* state, Continuation<T>* u_cont) {
+    if (auto* completed_exceptionally = dynamic_cast<CompletedExceptionally*>(state)) {
         return Result<T>::failure(
             internal::recover_stack_trace(completed_exceptionally->cause, u_cont));
     }
-    return Result<T>::success(*static_cast<T*>(state));
+    return Result<T>::success(dynamic_cast<CompletedValue<T>&>(*state).value);
 }
 
 } // namespace kotlinx::coroutines

@@ -65,6 +65,19 @@ bool SuspendFunctionAnalyzer::build_cfg() {
 class LocalVariableCollector : public RecursiveASTVisitor<LocalVariableCollector> {
 public:
     std::vector<const VarDecl*> variables;
+    // NOTE(port): Local class declarations and their methods have separate
+    // analysis contexts, matching Kotlin's independent class-member lowering.
+    bool TraverseDecl(Decl* declaration) {
+        if (declaration && (isa<RecordDecl>(declaration) || isa<FunctionDecl>(declaration))) return true;
+        return RecursiveASTVisitor<LocalVariableCollector>::TraverseDecl(declaration);
+    }
+    // NOTE(port): Clang retains closures in the enclosing AST. Only capture
+    // initializers execute in this function; lambda locals belong to its call operator.
+    bool TraverseLambdaExpr(LambdaExpr* expression) {
+        for (auto* initializer : expression->capture_inits())
+            if (!TraverseStmt(initializer)) return false;
+        return true;
+    }
 
     bool VisitVarDecl(VarDecl* vd) {
         // Only collect local variables, not parameters (handled separately).
@@ -81,7 +94,7 @@ void SuspendFunctionAnalyzer::collect_local_variables() {
     // Add function parameters first.
     for (ParmVarDecl* param : fd_->parameters()) {
         // Skip the completion parameter - it's not spilled.
-        if (param->getNameAsString() != "completion") {
+        if (param != continuation_parameter(fd_)) {
             local_variables_.push_back(param);
         }
     }
@@ -92,6 +105,134 @@ void SuspendFunctionAnalyzer::collect_local_variables() {
     for (const VarDecl* vd : collector.variables) {
         local_variables_.push_back(vd);
     }
+}
+
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/AbstractSuspendFunctionsLowering.kt:159-185
+// NOTE(port): Resolve the trailing continuation through Clang's canonical types,
+// rather than requiring Kotlin's synthesized parameter spelling in C++ source.
+const ParmVarDecl* SuspendFunctionAnalyzer::continuation_parameter(const FunctionDecl* function) {
+    if (!function || function->getNumParams() == 0) return nullptr;
+    const auto* parameter = function->getParamDecl(function->getNumParams() - 1);
+    const auto* handle = dyn_cast_or_null<ClassTemplateSpecializationDecl>(parameter->getType().getCanonicalType()->getAsCXXRecordDecl());
+    if (!handle || handle->getSpecializedTemplate()->getName() != "shared_ptr" ||
+        !handle->getSpecializedTemplate()->getQualifiedNameAsString().starts_with("std::")) return nullptr;
+    const auto& arguments = handle->getTemplateArgs();
+    if (arguments.size() != 1 || arguments[0].getKind() != TemplateArgument::Type) return nullptr;
+    const auto* continuation = dyn_cast_or_null<ClassTemplateSpecializationDecl>(arguments[0].getAsType().getCanonicalType()->getAsCXXRecordDecl());
+    if (!continuation || continuation->getSpecializedTemplate()->getQualifiedNameAsString() != "kotlinx::coroutines::Continuation") return nullptr;
+    const auto& result = continuation->getTemplateArgs();
+    if (result.size() != 1 || result[0].getKind() != TemplateArgument::Type) return nullptr;
+    auto type = result[0].getAsType().getCanonicalType();
+    if (!type->isPointerType() || !type->getPointeeType()->isVoidType()) return nullptr;
+    return parameter;
+}
+
+namespace {
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:61-130
+// NOTE(port): Clang provides the selected default expressions on the call AST.
+class DefaultArgumentReferences : public PrinterHelper {
+public:
+    bool handledStmt(Stmt* statement, llvm::raw_ostream& output) override {
+        const auto* reference = dyn_cast<DeclRefExpr>(statement);
+        if (!reference || reference->hasExplicitTemplateArgs()) return false;
+        if (const auto* variable = dyn_cast<VarDecl>(reference->getDecl()); variable && variable->isLocalVarDeclOrParm()) return false;
+        output << "::" << reference->getDecl()->getQualifiedNameAsString();
+        return true;
+    }
+};
+}
+
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-130
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/coroutines/AddContinuationToFunctionCallsLowering.kt:90-99
+// NOTE(port): Preserve omitted C++ default values when selecting the ABI overload;
+// the continuation is appended after every original argument.
+std::string SuspendFunctionAnalyzer::continuation_arguments(const CallExpr* call, const std::string& continuation,
+                                                           const PrintingPolicy& policy,
+                                                           const std::vector<std::string>& defaults) {
+    std::string suffix;
+    bool preceding = false;
+    unsigned index = 0;
+    for (const auto* argument : call->arguments()) {
+        if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(argument)) {
+            if (preceding) suffix += ", ";
+            suffix += defaults.empty() ? default_argument(omitted, policy) : defaults.at(index++);
+        }
+        preceding = true;
+    }
+    if (preceding) suffix += ", ";
+    suffix += continuation;
+    return suffix;
+}
+
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:105-117
+// NOTE(port): Print the resolved Clang default expression in its caller context.
+std::string SuspendFunctionAnalyzer::default_argument(const CXXDefaultArgExpr* argument, const PrintingPolicy& policy) {
+    std::string text;
+    llvm::raw_string_ostream output(text);
+    DefaultArgumentReferences references;
+    argument->getExpr()->printPretty(output, &references, policy);
+    return text;
+}
+
+namespace {
+std::vector<const FunctionDecl*> call_candidates(const CallExpr* call) {
+    if (auto* direct = call->getDirectCallee()) return {direct};
+    std::vector<const FunctionDecl*> functions;
+    if (auto* lookup = dyn_cast<OverloadExpr>(call->getCallee()->IgnoreParenImpCasts())) {
+        for (auto* declaration : lookup->decls()) {
+            declaration = declaration->getUnderlyingDecl();
+            if (auto* function = dyn_cast<FunctionDecl>(declaration)) functions.push_back(function);
+            else if (auto* pattern = dyn_cast<FunctionTemplateDecl>(declaration))
+                functions.push_back(pattern->getTemplatedDecl());
+        }
+    }
+    return functions;
+}
+}
+
+bool SuspendFunctionAnalyzer::is_suspend_wrapper(const CallExpr* call) {
+    auto candidates = call_candidates(call);
+    return !candidates.empty() && std::all_of(candidates.begin(), candidates.end(), [](const auto* candidate) {
+        return candidate->getQualifiedNameAsString() == "kotlinx::coroutines::dsl::suspend";
+    });
+}
+
+bool SuspendFunctionAnalyzer::requires_overload_resolution(const FunctionDecl* function) {
+    class UnresolvedCalls : public RecursiveASTVisitor<UnresolvedCalls> {
+    public:
+        bool unresolved = false;
+        // NOTE(port): Local class member calls resolve in their own context.
+        bool TraverseDecl(Decl* declaration) {
+            if (declaration && (isa<RecordDecl>(declaration) || isa<FunctionDecl>(declaration))) return true;
+            return RecursiveASTVisitor<UnresolvedCalls>::TraverseDecl(declaration);
+        }
+        // NOTE(port): Resolve calls in a closure's own function context.
+        bool TraverseLambdaExpr(LambdaExpr* expression) {
+            for (auto* initializer : expression->capture_inits())
+                if (!TraverseStmt(initializer)) return false;
+            return true;
+        }
+        bool VisitCallExpr(CallExpr* call) {
+            if (call->getDirectCallee()) return true;
+            if (auto* lookup = dyn_cast<UnresolvedLookupExpr>(call->getCallee()->IgnoreParenImpCasts()))
+                unresolved |= lookup->requiresADL();
+            bool suspend = false, ordinary = false;
+            auto candidates = call_candidates(call);
+            if (candidates.empty() && call->isTypeDependent()) unresolved = true;
+            for (auto* candidate : candidates) {
+                bool annotated = false;
+                for (const auto* attribute : candidate->attrs())
+                    if (const auto* annotation = dyn_cast<AnnotateAttr>(attribute))
+                        if (annotation->getAnnotation() == kSuspendAnnot) annotated = true;
+                suspend |= annotated;
+                ordinary |= !annotated;
+            }
+            unresolved |= suspend && ordinary;
+            return true;
+        }
+    } calls;
+    calls.TraverseStmt(function->getBody());
+    return calls.unresolved;
 }
 
 bool SuspendFunctionAnalyzer::is_suspend_call(const Stmt* stmt) {
@@ -116,14 +257,14 @@ bool SuspendFunctionAnalyzer::is_suspend_call(const Stmt* stmt) {
     expr = expr->IgnoreParenImpCasts();
 
     if (const auto* call = dyn_cast<CallExpr>(expr)) {
-        if (const FunctionDecl* callee = call->getDirectCallee()) {
-            if (callee->getName() == "suspend") {
-                return true;
-            }
+        if (is_suspend_wrapper(call)) return true;
+        auto candidates = call_candidates(call);
+        if (!candidates.empty() && std::all_of(candidates.begin(), candidates.end(), [](const auto* callee) {
             for (const auto* attribute : callee->attrs())
                 if (const auto* annotation = dyn_cast<AnnotateAttr>(attribute))
                     if (annotation->getAnnotation() == kSuspendAnnot) return true;
-        }
+            return false;
+        })) return true;
     }
 
     return false;
@@ -144,7 +285,7 @@ void SuspendFunctionAnalyzer::find_suspend_points() {
                     // suspension site, rather than a second nested suspension.
                     if (const auto* expression = dyn_cast<Expr>(stmt)) {
                         const auto* call = dyn_cast<CallExpr>(expression->IgnoreParenImpCasts());
-                        if (call && call->getDirectCallee() && call->getDirectCallee()->getQualifiedNameAsString() == "kotlinx::coroutines::dsl::suspend" &&
+                        if (call && is_suspend_wrapper(call) &&
                             call->getNumArgs() == 1 && is_suspend_call(call->getArg(0)->IgnoreUnlessSpelledInSource()))
                             continue;
                     }
@@ -171,6 +312,18 @@ class UseCollector : public RecursiveASTVisitor<UseCollector> {
 public:
     std::set<const VarDecl*>& uses;
     explicit UseCollector(std::set<const VarDecl*>& u) : uses(u) {}
+    // NOTE(port): A class declaration does not execute its member bodies.
+    bool TraverseDecl(Decl* declaration) {
+        if (declaration && (isa<RecordDecl>(declaration) || isa<FunctionDecl>(declaration))) return true;
+        return RecursiveASTVisitor<UseCollector>::TraverseDecl(declaration);
+    }
+    // NOTE(port): Capture construction reads enclosing variables. The closure
+    // body executes later and has its own local-variable liveness analysis.
+    bool TraverseLambdaExpr(LambdaExpr* expression) {
+        for (auto* initializer : expression->capture_inits())
+            if (!TraverseStmt(initializer)) return false;
+        return true;
+    }
 
     bool VisitDeclRefExpr(DeclRefExpr* dre) {
         if (const VarDecl* vd = dyn_cast<VarDecl>(dre->getDecl())) {

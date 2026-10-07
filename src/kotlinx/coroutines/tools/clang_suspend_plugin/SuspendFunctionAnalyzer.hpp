@@ -22,8 +22,7 @@ struct SuspendPointInfo {
 
 /// Dispatch mode for generated state machines.
 enum class DispatchMode {
-    Switch,       // Phase 1: switch(_label) { case 0: ... }
-    ComputedGoto  // Phase 3: goto *_label; (indirectbr parity)
+    ComputedGoto  // LLVM injector constructs blockaddress/indirectbr dispatch
 };
 
 /// Spill mode for variable saving across suspension points.
@@ -63,6 +62,15 @@ public:
 
     /// Check if a statement is a suspend call (suspend(expr) or annotated).
     static bool is_suspend_call(const clang::Stmt* stmt);
+    static bool is_suspend_wrapper(const clang::CallExpr* call);
+    static bool requires_overload_resolution(const clang::FunctionDecl* function);
+    // NOTE(port): Clang adapter for the trailing lowered continuation parameter.
+    static const clang::ParmVarDecl* continuation_parameter(const clang::FunctionDecl* function);
+    // NOTE(port): Materialize omitted C++ arguments before the continuation.
+    static std::string continuation_arguments(const clang::CallExpr* call, const std::string& continuation,
+                                             const clang::PrintingPolicy& policy,
+                                             const std::vector<std::string>& defaults = {});
+    static std::string default_argument(const clang::CXXDefaultArgExpr* argument, const clang::PrintingPolicy& policy);
 
 private:
     /// Build the CFG for the function.

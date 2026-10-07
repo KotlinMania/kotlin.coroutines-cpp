@@ -22,6 +22,7 @@ namespace coroutines {
  * Kotlin: internal actual inline fun <T> withCoroutineContext(...)
  * Native actual is a no-op wrapper.
  */
+// Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:43-43
 template<typename R>
 inline R with_coroutine_context(
     const std::shared_ptr<CoroutineContext>& context,
@@ -35,6 +36,7 @@ inline R with_coroutine_context(
  * Kotlin: internal actual inline fun <T> withContinuationContext(...)
  * Native actual is a no-op wrapper.
  */
+// Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:44-44
 template<typename R, typename T>
 inline R with_continuation_context(
     const std::shared_ptr<Continuation<T>>& continuation,

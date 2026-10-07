@@ -11,6 +11,9 @@ function(add_coroutine_test TEST_NAME)
     if(NOT EXISTS "${TEST_SOURCE}")
         set(TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/${TEST_NAME}.cpp")
     endif()
+    if(NOT EXISTS "${TEST_SOURCE}")
+        set(TEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/flow/${TEST_NAME}.cpp")
+    endif()
     if(EXISTS "${TEST_SOURCE}")
         add_executable(${TEST_NAME} ${TEST_SOURCE})
         target_include_directories(${TEST_NAME} PRIVATE
@@ -41,6 +44,8 @@ add_coroutine_test(test_timeout)
 # Transliterated Kotlin tests
 add_coroutine_test(AsyncTest)
 add_coroutine_test(JobTest)
+add_coroutine_test(DurationToMillisTest)
+target_sources(DurationToMillisTest PRIVATE src/DurationToMillisTestMain.cpp)
 add_coroutine_test(test_lock_free_list)
 set_tests_properties(test_lock_free_list PROPERTIES TIMEOUT 30)
 
@@ -57,6 +62,8 @@ add_coroutine_test(test_channel_consumption)
 set_tests_properties(test_channel_consumption PROPERTIES TIMEOUT 15)
 add_coroutine_test(test_cancellable_start)
 set_tests_properties(test_cancellable_start PROPERTIES TIMEOUT 15)
+add_coroutine_test(BuildersTest)
+set_tests_properties(BuildersTest PROPERTIES TIMEOUT 15)
 add_coroutine_test(test_channel_rendezvous)
 set_tests_properties(test_channel_rendezvous PROPERTIES TIMEOUT 15)
 add_coroutine_test(test_sync)
@@ -85,15 +92,28 @@ if(TARGET test_plugin_canonical AND KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     add_dependencies(test_plugin_canonical KotlinxSuspendPlugin)
 endif()
 
-# Add gc_bridge tests if directory exists
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/gc_bridge")
-    add_subdirectory(gc_bridge)
+# Native ABI execution requires the real toolchain; no standalone substitute.
+if(KOTLIN_NATIVE_RUNTIME_AVAILABLE)
+    add_subdirectory(src/gc_bridge)
 endif()
 
-# Exercise standalone cleanup and the actual CMake compile/link pipeline.
+# Exercise native injection and the actual CMake compile/link pipeline.
 if(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang)$")
     find_package(Python3 3.8 QUIET COMPONENTS Interpreter)
     if(Python3_FOUND)
+        if(TARGET kxs-inject)
+            set(KXS_TEST_INJECTOR "$<TARGET_FILE:kxs-inject>")
+        else()
+            if(NOT KXS_INJECT_EXECUTABLE)
+                find_program(KXS_INJECT_EXECUTABLE NAMES kxs-inject REQUIRED)
+            endif()
+            set(KXS_TEST_INJECTOR "${KXS_INJECT_EXECUTABLE}")
+        endif()
+        if(TARGET KotlinxCoroutinePass)
+            set(KXS_TEST_PASS_PLUGIN "$<TARGET_FILE:KotlinxCoroutinePass>")
+        else()
+            set(KXS_TEST_PASS_PLUGIN "${KXS_LLVM_PASS_PLUGIN}")
+        endif()
         get_filename_component(KXS_TEST_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
         add_test(NAME test_ir_pipeline
             COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/ir/test_ir_pipeline.py"
@@ -105,6 +125,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang)$")
                 "--library-link-options=${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}"
                 --work-dir "${CMAKE_CURRENT_BINARY_DIR}/ir-regression"
                 --compiler "${CMAKE_CXX_COMPILER}"
+                --injector "${KXS_TEST_INJECTOR}"
+                --plugin "${KXS_TEST_PASS_PLUGIN}"
                 --cmake "${CMAKE_COMMAND}")
         set_tests_properties(test_ir_pipeline PROPERTIES TIMEOUT 120)
     endif()

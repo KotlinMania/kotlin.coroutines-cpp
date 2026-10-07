@@ -1,4 +1,4 @@
-// port-lint: source Builders.common.kt
+// port-lint: source kotlinx-coroutines-core/common/src/Builders.common.kt
 /**
  * @file Builders.common.cpp
  * @brief Implementation of coroutine builder helper classes
@@ -25,7 +25,7 @@ std::shared_ptr<Job> launch(
     CoroutineStart start,
     std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
     auto new_context = new_coroutine_context(
-        scope, context ? std::move(context) : EmptyCoroutineContext::instance());
+        scope, std::move(context));
     std::shared_ptr<StandaloneCoroutine> coroutine;
     if (start == CoroutineStart::LAZY) {
         coroutine = std::make_shared<LazyStandaloneCoroutine>(new_context, block);
@@ -40,7 +40,7 @@ std::shared_ptr<Job> launch(
 std::shared_ptr<Job> launch(
     CoroutineScope* scope,
     std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block) {
-    return launch(scope, nullptr, CoroutineStart::DEFAULT, std::move(block));
+    return launch(scope, EmptyCoroutineContext::instance(), CoroutineStart::DEFAULT, std::move(block));
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/Builders.common.kt:43-54

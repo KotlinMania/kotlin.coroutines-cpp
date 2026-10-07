@@ -1,4 +1,4 @@
-// port-lint: source Yield.kt
+// port-lint: source kotlinx-coroutines-core/common/src/Yield.kt
 /**
  * @file Yield.cpp
  * @brief Implementation of yield function
@@ -19,25 +19,9 @@
 #include "kotlinx/coroutines/EventLoop.hpp"
 #include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/Job.hpp"
-#include "kotlinx/coroutines/internal/CurrentRunningCoroutine.hpp"
-#include <thread>
 
 namespace kotlinx {
 namespace coroutines {
-
-// Legacy function - just does OS thread yield or event loop step
-void yield_coroutine() {
-    auto loop = ThreadLocalEventLoop::current_or_null();
-    if (loop && !loop->is_empty()) {
-        loop->process_next_event();
-        return;
-    }
-    if (auto cont = internal::CurrentRunningCoroutine::current) {
-        internal::CurrentRunningCoroutine::suspended = intrinsics::is_coroutine_suspended(yield(cont));
-        return;
-    }
-    std::this_thread::yield();
-}
 
 // Transliterated from: kotlinx-coroutines-core/common/src/Yield.kt:145-166
 void* yield(std::shared_ptr<Continuation<void*>> completion) {
@@ -51,13 +35,20 @@ void* yield(std::shared_ptr<Continuation<void*>> completion) {
         intrinsics::intercepted(std::move(completion)));
     if (!cont) return nullptr;
     if (internal::safe_is_dispatch_needed(*cont->dispatcher, *context)) {
+        // This is a regular dispatcher -- do simple dispatch_yield.
         cont->dispatch_yield(*context, static_cast<void*>(nullptr));
     } else {
+        // This is either an immediate dispatcher or the Unconfined dispatcher.
+        // Detect Unconfined even when it is wrapped in another dispatcher.
         auto yield_context = std::make_shared<YieldContext>();
         cont->dispatch_yield(*context->operator+(yield_context), static_cast<void*>(nullptr));
+        // Unconfined can yield only in an existing unconfined loop.
         if (yield_context->dispatcher_was_unconfined) {
+            // Unconfined received the dispatch call but did nothing.
+            // See Unconfined::dispatch.
             return yield_undispatched(*cont) ? COROUTINE_SUSPENDED : nullptr;
         }
+        // Another dispatcher successfully dispatched the coroutine.
     }
     return COROUTINE_SUSPENDED;
 }

@@ -70,6 +70,73 @@ struct RecordingContinuation final : Continuation<void*> {
     }
 };
 
+class RestrictedResultFrame final : public RestrictedContinuationImpl {
+public:
+    explicit RestrictedResultFrame(std::shared_ptr<Continuation<void*>> completion)
+        : RestrictedContinuationImpl(std::move(completion)) {}
+    void* invoke_suspend(Result<void*> result) override { return result.get_or_throw(); }
+};
+
+class ContextResultFrame final : public ContinuationImpl {
+public:
+    using ContinuationImpl::ContinuationImpl;
+    int invocations = 0;
+    void* invoke_suspend(Result<void*> result) override {
+        ++invocations;
+        return result.get_or_throw();
+    }
+};
+
+void test_continuation_required_values() {
+    auto parent_context = std::make_shared<QueueDispatcher>();
+    auto parent = std::make_shared<RecordingContinuation>(parent_context);
+    auto inherited = std::make_shared<ContextResultFrame>(parent);
+    assert_true(inherited->get_context() == parent_context);
+    auto explicit_context = EmptyCoroutineContext::instance();
+    auto explicit_frame = std::make_shared<ContextResultFrame>(parent, explicit_context);
+    assert_true(explicit_frame->get_context() == explicit_context);
+    for (auto frame : {std::make_shared<ContextResultFrame>(nullptr),
+                       std::make_shared<ContextResultFrame>(parent, nullptr)}) {
+        bool rejected = false;
+        try { frame->get_context(); }
+        catch (const std::logic_error&) { rejected = true; }
+        assert_true(rejected);
+    }
+    auto no_completion = std::make_shared<ContextResultFrame>(nullptr, explicit_context);
+    bool rejected = false;
+    try { no_completion->resume_with(Result<void*>::success(nullptr)); }
+    catch (const std::logic_error&) { rejected = true; }
+    assert_true(rejected);
+    assert_equals(0, no_completion->invocations);
+    auto restricted = std::make_shared<RestrictedResultFrame>(nullptr);
+    rejected = false;
+    try { restricted->resume_with(Result<void*>::success(nullptr)); }
+    catch (const std::logic_error&) { rejected = true; }
+    assert_true(rejected);
+    inherited->resume_with(Result<void*>::success(nullptr));
+    assert_equals(1, inherited->invocations);
+    assert_equals(1, parent->resumes);
+}
+
+void test_restricted_continuation_context() {
+    auto parent = std::make_shared<RecordingContinuation>(EmptyCoroutineContext::instance());
+    for (auto completion : {std::shared_ptr<Continuation<void*>>{}, std::static_pointer_cast<Continuation<void*>>(parent)}) {
+        auto frame = std::make_shared<RestrictedResultFrame>(completion);
+        assert_true(frame->get_context() == EmptyCoroutineContext::instance());
+        std::unique_ptr<int> value(static_cast<int*>(frame->start(Result<void*>::success(new int(42)))));
+        assert_equals(42, *value);
+    }
+    assert_equals(0, parent->resumes);
+    auto nonempty = std::make_shared<RecordingContinuation>(std::make_shared<QueueDispatcher>());
+    bool rejected = false;
+    try { auto frame = std::make_shared<RestrictedResultFrame>(nonempty); }
+    catch (const std::invalid_argument& error) {
+        rejected = true;
+        assert_equals(std::string("Coroutines with restricted suspension must have EmptyCoroutineContext"), std::string(error.what()));
+    }
+    assert_true(rejected);
+}
+
 class CallFrame final : public ContinuationImpl {
 public:
     std::function<void*(Continuation<void*>*)> operation;
@@ -1215,7 +1282,6 @@ void test_deferred_coroutine_await_typed_result(int mode) {
     auto cause = std::make_exception_ptr(std::runtime_error("deferred failed"));
     if (mode == 1) deferred->resume_with(Result<std::shared_ptr<int>>::failure(cause));
     else deferred->resume_with(Result<std::shared_ptr<int>>::success(value));
-    auto completed_references = value.use_count();
     if (mode == 3) job->cancel();
     deferred.reset();
     assert_equals(0, parent->resumes);
@@ -1233,7 +1299,7 @@ void test_deferred_coroutine_await_typed_result(int mode) {
     }
     assert_true(retained_frame.expired(), "typed deferred await frame retained");
     assert_true(retained_deferred.expired(), "typed deferred await object retained");
-    assert_equals(completed_references, value.use_count());
+    assert_equals(1L, value.use_count());
 }
 
 void test_deferred_coroutine_await_immediate() {
@@ -1603,6 +1669,8 @@ void test_select_disposes_unselected_and_cancelled_job_handlers() {
 }
 
 int main() {
+    test_continuation_required_values();
+    test_restricted_continuation_context();
     std::cerr << "test_deferred_select_wait_resumes_block\n";
     for (int mode : {0, 1, 2, 3, 4, 5}) test_deferred_select_wait_resumes_block(mode);
     test_deferred_select_reregisters_completed_clause();

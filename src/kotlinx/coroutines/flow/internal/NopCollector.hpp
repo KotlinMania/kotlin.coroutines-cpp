@@ -1,3 +1,6 @@
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NopCollector.kt
+ */
 #pragma once
 // port-lint: source flow/internal/NopCollector.kt
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
@@ -7,9 +10,14 @@ namespace coroutines {
 namespace flow {
 namespace internal {
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NopCollector.kt:5-9
 template <typename T>
 struct NopCollector : public FlowCollector<T> {
-    void* emit(T value, Continuation<void*>* continuation) override { return nullptr; }
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NopCollector.kt:6-8
+    void* emit(T value, Continuation<void*>* continuation) override {
+        // does nothing
+        return nullptr;
+    }
 };
 
 } // namespace internal

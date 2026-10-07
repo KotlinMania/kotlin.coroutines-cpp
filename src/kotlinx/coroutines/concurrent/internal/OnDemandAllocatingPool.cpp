@@ -1,5 +1,7 @@
 #include <string>
 #include <functional>
+#include <atomic>
+#include <vector>
 /**
  * Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt
  *

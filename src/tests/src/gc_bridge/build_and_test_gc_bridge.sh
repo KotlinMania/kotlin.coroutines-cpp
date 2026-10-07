@@ -1,107 +1,32 @@
 #!/bin/bash
-# build_and_test_gc_bridge.sh
-# Build and test the Kotlin GC bridge integration
-
-set -e
-
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-
-cd "$SCRIPT_DIR"
-
-echo "==================================================="
-echo "Building Kotlin Native GC Bridge Test"
-echo "==================================================="
-
-# Compile C++ implementation
-echo
-echo "Step 1: Compiling C++ implementation..."
-clang++ -std=c++17 -I "$PROJECT_ROOT/include" \
-    -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=1 \
-    -c test_kotlin_gc_bridge_impl.cpp \
-    -o test_kotlin_gc_bridge_impl.o
-
-echo "✓ C++ compiled"
-
-# Create static library
-echo
-echo "Step 2: Creating static library..."
-ar rcs libtest_gc_bridge.a test_kotlin_gc_bridge_impl.o
-echo "✓ Library created: libtest_gc_bridge.a"
-
-# Check if kotlinc-native is available
-if ! command -v kotlinc-native &> /dev/null; then
-    echo
-    echo "⚠️  kotlinc-native not found in PATH"
-    echo
-    echo "To run the full test, install Kotlin Native:"
-    echo "  brew install kotlin"
-    echo "  OR download from https://github.com/JetBrains/kotlin/releases"
-    echo
-    echo "For now, running standalone C++ test only..."
-    echo
-    
-    # Run standalone test
-    echo "Step 3: Running standalone C++ test..."
-    clang++ -std=c++17 -I "$PROJECT_ROOT/include" \
-        -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=0 \
-        test_kotlin_gc_bridge.cpp \
-        -o test_gc_bridge_standalone
-    
-    echo
-    echo "==================================================="
-    echo "Running Standalone C++ Test"
-    echo "==================================================="
-    ./test_gc_bridge_standalone
-    
-    exit 0
+# Native runtime ABI verification. Toolchains must be supplied explicitly.
+set -euo pipefail
+if [[ $# -lt 3 || $# -gt 4 ]]; then
+    echo "Usage: $0 KONANC NATIVE_CLANGXX BUILD_DIR [--build-only]" >&2
+    exit 2
 fi
-
-# Generate cinterop library
-echo
-echo "Step 3: Generating Kotlin Native cinterop..."
-cinterop -def test_gc_bridge.def \
-    -compiler-option -I"$PROJECT_ROOT/include" \
-    -o test_gc_bridge || {
-    echo "✗ cinterop failed"
-    echo "Trying with kotlinc-native directly..."
-}
-
-# Compile Kotlin code
-echo
-echo "Step 4: Compiling Kotlin code..."
-kotlinc-native test_kotlin_gc_bridge.kt \
-    -library libtest_gc_bridge.a \
-    -include-binary libtest_gc_bridge.a \
-    -o test_gc_bridge_kotlin || {
-    echo "✗ Kotlin compilation failed"
-    echo
-    echo "This is expected - we need proper cinterop setup"
-    echo "Running standalone test instead..."
-    
-    clang++ -std=c++17 -I "$PROJECT_ROOT/include" \
-        -DKOTLIN_NATIVE_RUNTIME_AVAILABLE=0 \
-        test_kotlin_gc_bridge.cpp \
-        -o test_gc_bridge_standalone
-    
-    echo
-    echo "==================================================="
-    echo "Running Standalone C++ Test"
-    echo "==================================================="
-    ./test_gc_bridge_standalone
-    
-    exit 0
-}
-
-# Run Kotlin test
-echo
-echo "==================================================="
-echo "Running Kotlin Native Test"
-echo "==================================================="
-./test_gc_bridge_kotlin.kexe
-
-echo
-echo "==================================================="
-echo "Test completed successfully!"
-echo "==================================================="
+GC_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GC_PROJECT_ROOT="$(cd "$GC_SCRIPT_DIR/../../../.." && pwd)"
+GC_KONANC="$1"
+GC_CLANGXX="$2"
+mkdir -p "$3"
+GC_BUILD_DIR="$(cd "$3" && pwd)"
+GC_NATIVE_ROOT="$(cd "$(dirname "$GC_KONANC")/.." && pwd)"
+GC_STDLIB="$GC_NATIVE_ROOT/klib/common/stdlib"
+GC_SDK="$(xcrun --show-sdk-path)"
+GC_FLAGS=(-std=c++20 -Wall -Wextra -Werror -mmacosx-version-min=12.0
+    -isysroot "$GC_SDK" -isystem "$GC_SDK/usr/include/c++/v1"
+    -I "$GC_PROJECT_ROOT/src" -emit-llvm -c)
+"$GC_CLANGXX" "${GC_FLAGS[@]}" "$GC_PROJECT_ROOT/src/kotlinx/coroutines/KotlinGCBridge.cpp" -o "$GC_BUILD_DIR/bridge.bc"
+"$GC_CLANGXX" "${GC_FLAGS[@]}" "$GC_PROJECT_ROOT/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/Runtime.cpp" -o "$GC_BUILD_DIR/identity-hash.bc"
+"$GC_CLANGXX" "${GC_FLAGS[@]}" "$GC_SCRIPT_DIR/NativeReferenceContract.cpp" -o "$GC_BUILD_DIR/contract.bc"
+"$GC_KONANC" -target macos_arm64 -friend-modules "$GC_STDLIB" -library "$GC_STDLIB" \
+    -native-library "$GC_BUILD_DIR/bridge.bc" -native-library "$GC_BUILD_DIR/identity-hash.bc" \
+    -native-library "$GC_BUILD_DIR/contract.bc" "$GC_SCRIPT_DIR/NativeReferenceContract.kt" \
+    -o "$GC_BUILD_DIR/native_reference_contract"
+if [[ $# -eq 3 ]]; then
+    "$GC_BUILD_DIR/native_reference_contract.kexe"
+elif [[ "$4" != --build-only ]]; then
+    echo "Unknown option: $4" >&2
+    exit 2
+fi

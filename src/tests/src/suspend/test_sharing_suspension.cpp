@@ -171,7 +171,7 @@ void test_zero_expiration() {
     assert_equals(1, commands.completions);
 }
 
-void test_stop_emission_suspends_before_expiration_delay() {
+void test_buffered_commands_preserve_order_while_stop_emission_suspends() {
     Commands commands(50, 100);
     commands.pause_stop = true;
     commands.subscriptions(1);
@@ -180,11 +180,14 @@ void test_stop_emission_suspends_before_expiration_delay() {
     assert_true(commands.stopped_emit != nullptr);
     commands.clock->advance_by(500);
     assert_equals(size_t(2), commands.events.size());
+    // transformLatest has a buffered output channel. Expiration continues upstream
+    // while the downstream STOP handler is suspended; RESET waits in that channel.
     commands.resume_stop();
-    commands.clock->advance_by(99);
-    assert_equals(size_t(2), commands.events.size());
-    commands.clock->advance_by(1);
-    assert_true(commands.events.back() == std::make_pair(650LL, SharingCommand::STOP_AND_RESET_REPLAY_CACHE));
+    assert_equals(size_t(3), commands.events.size());
+    assert_true(commands.events[1] == std::make_pair(50LL, SharingCommand::STOP));
+    assert_true(commands.events[2] == std::make_pair(550LL, SharingCommand::STOP_AND_RESET_REPLAY_CACHE));
+    commands.clock->advance_by(100);
+    assert_equals(size_t(3), commands.events.size());
     commands.stop();
     assert_equals(1, commands.completions);
 }
@@ -1077,7 +1080,7 @@ void test_shared_flow_replay_reference_release() {
 int main() {
     test_stop_and_expiration_with_resubscription();
     test_zero_expiration();
-    test_stop_emission_suspends_before_expiration_delay();
+    test_buffered_commands_preserve_order_while_stop_emission_suspends();
     test_resumed_failure_stops_the_sequence();
     test_infinite_stop_timeout_is_cancellable();
     test_latest_waits_for_suspended_cleanup();
@@ -1115,5 +1118,5 @@ int main() {
     test_shared_flow_queued_emitter_ownership(0, true);
     test_shared_flow_queued_emitter_ownership(1, true);
     test_shared_flow_replay_reference_release();
-    std::cout << "Sharing suspension and virtual-time tests passed\n";
+    std::cout << "Sharing suspension and virtual-time cases completed\n";
 }

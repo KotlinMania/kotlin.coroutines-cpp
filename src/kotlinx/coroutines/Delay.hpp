@@ -14,14 +14,11 @@
 #include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/DisposableHandle.hpp"
 #include <memory>
+#include "kotlin/time/Duration.hpp"
 
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
-#include "kotlinx/coroutines/internal/CurrentRunningCoroutine.hpp"
-#include <chrono>
 #include <string>
-#include <thread>
-#include <limits>
 
 namespace kotlinx {
 namespace coroutines {
@@ -30,7 +27,7 @@ namespace coroutines {
  * This dispatcher feature is implemented by CoroutineDispatcher implementations
  * that natively support scheduled execution of tasks.
  *
- * Implementation of this interface affects operation of delay() and withTimeout() functions.
+ * Implementation of this interface affects operation of delay() and with_timeout() functions.
  *
  * @internal This is an internal API and should not be used from general code.
  *
@@ -97,7 +94,6 @@ Delay& get_default_delay();
  * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:149
  */
 Delay& get_delay(const CoroutineContext& context);
-Delay& get_delay(const std::shared_ptr<CoroutineContext>& context);
 
 /**
  * Convert this duration to its millisecond value. Durations which have a nanosecond component less than
@@ -105,16 +101,10 @@ Delay& get_delay(const std::shared_ptr<CoroutineContext>& context);
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:155-158
  */
-inline long long to_delay_millis(std::chrono::nanoseconds duration) {
-    if (duration.count() > 0) {
-        auto rounded = duration + std::chrono::nanoseconds(999999);
-        return std::chrono::duration_cast<std::chrono::milliseconds>(rounded).count();
-    }
-    return 0;
-}
+long long to_delay_millis(kotlin::time::Duration duration);
 
 /**
- * Enhanced Delay interface that provides additional diagnostics for withTimeout.
+ * Enhanced Delay interface that provides additional diagnostics for with_timeout.
  *
  * @internal This is an internal API and should not be used from general code.
  *
@@ -126,13 +116,24 @@ public:
      * Returns a string that explains that the timeout has occurred,
      * and explains what can be done about it.
      *
-     * @param timeout the timeout duration in nanoseconds
+     * @param timeout the timeout duration
      * @return diagnostic message
      *
      * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:66
      */
-    virtual std::string timeout_message(std::chrono::nanoseconds timeout) = 0;
+    virtual std::string timeout_message(kotlin::time::Duration timeout) = 0;
 };
+
+// Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:146
+[[clang::annotate("suspend")]]
+void* delay(kotlin::time::Duration duration, Continuation<void*>* continuation);
+// Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:146
+[[clang::annotate("suspend")]]
+void* delay(kotlin::time::Duration duration, std::shared_ptr<Continuation<void*>> continuation);
+// Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:146
+[[clang::annotate("suspend"), clang::annotate("kxs_implicit_continuation")]]
+__attribute__((error("delay(duration) requires suspend lowering; use delay(duration, completion) at an explicit ABI boundary")))
+void delay(kotlin::time::Duration duration);
 
 // -------------------- Delay functions --------------------
 
@@ -141,21 +142,8 @@ public:
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:121-129
  */
+[[clang::annotate("suspend")]]
 void* delay(long long time_millis, Continuation<void*>* continuation);
-
-/**
- * Delays coroutine for at least the given duration.
- *
- * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:146
- */
-void* delay(std::chrono::nanoseconds duration, Continuation<void*>* continuation);
-
-/**
- * Delays coroutine for at least the given duration (milliseconds overload).
- *
- * Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:146
- */
-void* delay(std::chrono::milliseconds duration, Continuation<void*>* continuation);
 
 /**
  * Suspends the coroutine until cancellation.
@@ -167,34 +155,21 @@ void* delay(std::chrono::milliseconds duration, Continuation<void*>* continuatio
 void* await_cancellation(Continuation<void*>* continuation);
 
 // -----------------------------------------------------------------------------
-// shared_ptr Overloads (convenience wrappers)
+// Owned continuation ABI entries
 // -----------------------------------------------------------------------------
 
+// Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:121-129
+[[clang::annotate("suspend")]]
 void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> continuation);
 
-void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void*>> continuation);
-
-void* delay(std::chrono::milliseconds duration, std::shared_ptr<Continuation<void*>> continuation);
-
+// Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:103
 void* await_cancellation(std::shared_ptr<Continuation<void*>> continuation);
 
-/**
- * Synchronous delay overload for test environments and non-suspending callers.
- * Long.MAX_VALUE signals a suspension point without resuming.
- *
- * NOTE(port): Test / non-suspending helper for environments without an explicit continuation.
- */
-inline void delay(long long time_millis) {
-    if (time_millis <= 0) return;
-    if (auto cont = internal::CurrentRunningCoroutine::current) {
-        delay(time_millis, cont);
-        internal::CurrentRunningCoroutine::suspended = true;
-        return;
-    }
-    if (time_millis < std::numeric_limits<long long>::max()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(time_millis));
-    }
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/Delay.kt:121-129
+// NOTE(port): Authoring intrinsic supplies the current frame at compile time.
+[[clang::annotate("suspend"), clang::annotate("kxs_implicit_continuation")]]
+__attribute__((error("delay(time_millis) requires suspend lowering; use delay(time_millis, completion) at an explicit ABI boundary")))
+void delay(long long time_millis);
 
 } // namespace coroutines
 } // namespace kotlinx

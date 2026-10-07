@@ -304,8 +304,20 @@ public:
  * Transliterated from:
  * public sealed interface SelectInstance<in R>
  */
+// NOTE(port): Kotlin's SelectInstance<*> operations do not consume R. This virtual
+// boundary preserves the actual select instance across internal non-generic queue code.
+// Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:217-247
+class SelectInstanceBase {
+public:
+    virtual ~SelectInstanceBase() = default;
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:233-233
+    virtual bool try_select(void* clause_object, void* result) = 0;
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:246-246
+    virtual void select_in_registration_phase(void* internal_result) = 0;
+};
+
 template<typename R>
-class SelectInstance {
+class SelectInstance : public SelectInstanceBase {
 public:
     virtual ~SelectInstance() = default;
 
