@@ -8,8 +8,7 @@
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
-#include "kotlinx/coroutines/ContinuationImpl.hpp"
-#include "kotlinx/coroutines/dsl/Suspend.hpp"
+#include <functional>
 #include <memory>
 
 namespace kotlinx {
@@ -279,47 +278,31 @@ public:
 
 namespace kotlinx::coroutines::flow {
 
+namespace internal {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
+// NOTE(port): Only the typed SafeCollector binding needs header instantiation.
+// The shared continuation and finally algorithm are concrete in Flow.cpp.
+void* collect_abstract_flow(
+    std::function<void*(Continuation<void*>*)> collect_safely,
+    std::function<void()> release_intercepted,
+    Continuation<void*>* completion);
+
+} // namespace internal
+
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
 template<typename T>
 inline void* AbstractFlow<T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {
-    // NOTE(port): The frame owns SafeCollector through collectSafely and its finally block.
-    class CollectFrame final : public ContinuationImpl {
-    public:
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
-        CollectFrame(AbstractFlow<T>* flow, FlowCollector<T>* collector, Continuation<void*>* completion)
-            : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-              flow_(flow), flow_owner_(flow->weak_from_this().lock()),
-              safe_collector_(std::make_shared<internal::SafeCollector<T>>(
-                  collector, completion->get_context())) {}
-
-        void retain() { self_ref_ = shared_from_this(); }
-
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
-        void* invoke_suspend(Result<void*> result) override {
-            try {
-                coroutine_begin(this)
-                coroutine_yield(this, flow_->collect_safely(safe_collector_.get(), this));
-                safe_collector_->release_intercepted();
-                self_ref_.reset();
-                coroutine_end(this)
-            } catch (...) {
-                safe_collector_->release_intercepted();
-                self_ref_.reset();
-                throw;
-            }
-        }
-
-    private:
-        void* _label = nullptr;
-        AbstractFlow<T>* flow_;
-        std::shared_ptr<Flow<T>> flow_owner_;
-        std::shared_ptr<internal::SafeCollector<T>> safe_collector_;
-        std::shared_ptr<BaseContinuationImpl> self_ref_;
-    };
-    auto frame = std::make_shared<CollectFrame>(this, collector, continuation);
-    frame->retain();
-    return frame->start(Result<void*>::success(nullptr));
+    auto safe_collector = std::make_shared<internal::SafeCollector<T>>(
+        collector, continuation->get_context());
+    // NOTE(port): Retain an existing owner of the actual Kotlin receiver across
+    // suspension. A stack or raw receiver remains borrowed.
+    return internal::collect_abstract_flow(
+        [this, owner = this->weak_from_this().lock(), safe_collector](Continuation<void*>* frame) {
+            return collect_safely(safe_collector.get(), frame);
+        },
+        [safe_collector] { safe_collector->release_intercepted(); },
+        continuation);
 }
-
 
 } // namespace kotlinx::coroutines::flow

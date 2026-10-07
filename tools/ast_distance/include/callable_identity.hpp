@@ -40,6 +40,7 @@ inline bool extension_argument_counts_compatible(const FunctionInfo& extension, 
     return user_arguments == extension.explicit_parameter_count;
 }
 inline bool callable_owners_compatible(const FunctionInfo& source, const FunctionInfo& target) {
+    if (source.namespace_known && target.namespace_known && source.namespace_path != target.namespace_path) return false;
     // Local methods/functions keep the enclosing callable as identity evidence.
     // Reused anonymous/named collector classes in separate operators must not
     // match merely because their methods share a spelling or similar bodies.

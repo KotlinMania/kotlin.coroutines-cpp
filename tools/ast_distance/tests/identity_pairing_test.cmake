@@ -82,6 +82,28 @@ execute_process(COMMAND "${AST_DISTANCE}" --deep "${TEST_DIR}/source" kotlin "${
 if(NOT status EQUAL 0 OR output MATCHES "MISSING_FILE beta/Example.kt" OR NOT output MATCHES "PRESENT function nextValue")
     message(FATAL_ERROR "Header identity/implementation lost: ${output}: ${errors}")
 endif()
+# A private nested helper companion must not hide the public header's API.
+file(WRITE "${TEST_DIR}/target/Example.cpp" "#include \"Example.hpp\"\nnamespace beta::core::internal { int helper(int value) { return value; } }\n")
+compare(private_helper_companion "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.hpp" "pass")
+execute_process(COMMAND "${AST_DISTANCE}" --deep "${TEST_DIR}/source" kotlin "${TEST_DIR}/target" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+if(NOT status EQUAL 0 OR output MATCHES "MISSING_FILE beta/Example.kt" OR NOT output MATCHES "PRESENT function nextValue")
+    message(FATAL_ERROR "Private helper companion hid public API: ${output}: ${errors}")
+endif()
+# Same-spelled functions in the nested namespace cannot implement the public API.
+file(WRITE "${TEST_DIR}/target/Example.hpp" "// Transliterated from: beta/Example.kt\nnamespace beta::core { int next_value(int); }\n")
+file(WRITE "${TEST_DIR}/target/Example.cpp" "#include \"Example.hpp\"\nnamespace beta::core::internal { int next_value(int value) { return value + 1; } }\n")
+execute_process(COMMAND "${AST_DISTANCE}" --compare-functions "${TEST_DIR}/source/beta/Example.kt" kotlin "${TEST_DIR}/target/Example.hpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+if(NOT output MATCHES "Strict matched pairs: 0 / 1")
+    message(FATAL_ERROR "Nested namesake counted as public implementation: ${output}: ${errors}")
+endif()
+execute_process(COMMAND "${AST_DISTANCE}" --deep "${TEST_DIR}/source" kotlin "${TEST_DIR}/target" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+if(NOT status EQUAL 0 OR NOT output MATCHES "DECLARATION_ONLY function nextValue" OR output MATCHES "PRESENT function nextValue")
+    message(FATAL_ERROR "Nested namesake promoted public declaration: ${output}: ${errors}")
+endif()
+file(WRITE "${TEST_DIR}/target/Example.hpp" "// Transliterated from: beta/Example.kt\nnamespace beta::core { inline int next_value(int value) { return value + 1; } }\n")
 # Empty classic companion namespace chains retain their terminal namespace.
 file(WRITE "${TEST_DIR}/target/Example.cpp" "#include \"Example.hpp\"\nnamespace beta { namespace core {} }\n")
 compare(empty_nested_companion "${TEST_DIR}/source/beta/Example.kt" "${TEST_DIR}/target/Example.hpp" "pass")

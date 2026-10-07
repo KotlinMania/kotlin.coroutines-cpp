@@ -67,6 +67,7 @@ bool compatible(const DeepSymbol& source, const DeepSymbol& target) {
     return source.kind == "property" && target.kind == "function";
 }
 bool symbol_matches(const DeepSymbol& source, const DeepSymbol& target) {
+    if (source.namespace_known && target.namespace_known && source.namespace_path != target.namespace_path) return false;
     bool enum_projection = source.is_enum_member && target.kind == "function" && target.owner.empty() &&
         callable_type_names_compatible(source.owner, target.first_parameter_type);
     if (!compatible(source, target) || (!owners_match(source.owner, target.owner) && !enum_projection)) return false;
@@ -130,7 +131,9 @@ DeepInventory extract_deep_inventory(const std::vector<std::string>& paths, Lang
                 auto separator = name.rfind("::");
                 if (separator != std::string::npos) { actual_owner = name.substr(0, separator); name.erase(0, separator + 2); }
                 DeepSymbol symbol{name, actual_owner, category, path,
-                    static_cast<int>(ts_node_start_point(node).row) + 1, definition, false, {}};
+                    static_cast<int>(ts_node_start_point(node).row) + 1, definition, false, {}, {}, false};
+                symbol.namespace_path = declaration_namespace(node, source, language);
+                symbol.namespace_known = language == Language::CPP || (language == Language::KOTLIN && !symbol.namespace_path.empty());
                 if (language == Language::KOTLIN && (category == "function" || category == "property")) {
                     for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
                         std::string parent_kind = ts_node_type(parent);

@@ -542,7 +542,7 @@ int main() {
 
     // Flow.kt:223-230: SafeCollector collection retains its receiver and block
     // captures until the suspended collectSafely returns or throws.
-    for (bool fail : {false, true}) {
+    for (int outcome : {0, 1, 2}) {
         kotlinx::coroutines::Continuation<void*>* paused = nullptr;
         auto resource = std::make_shared<int>(81);
         std::weak_ptr<int> resource_lifetime = resource;
@@ -562,12 +562,57 @@ int main() {
         source.reset();
         resource.reset();
         if (lifetime.expired() || resource_lifetime.expired() || !paused) return ownership_failure(__LINE__);
-        auto failure = std::make_exception_ptr(std::runtime_error("safe flow resumed failure"));
-        paused->resume_with(fail ? kotlinx::coroutines::Result<void*>::failure(failure) :
+        // Keep the terminated continuation alive independently: its spills must
+        // stop owning the flow and captures when collection finishes.
+        auto retained_frame = dynamic_cast<kotlinx::coroutines::BaseContinuationImpl*>(paused)->shared_from_this();
+        auto failure = outcome == 2 ?
+            std::make_exception_ptr(kotlinx::coroutines::CancellationException("safe flow cancelled")) :
+            std::make_exception_ptr(std::runtime_error("safe flow resumed failure"));
+        paused->resume_with(outcome != 0 ? kotlinx::coroutines::Result<void*>::failure(failure) :
             kotlinx::coroutines::Result<void*>::success(nullptr));
         paused = nullptr;
-        if (!completion.completed || completion.failure != (fail ? failure : nullptr)) return ownership_failure(__LINE__);
+        if (!completion.completed || completion.failure != (outcome != 0 ? failure : nullptr)) return ownership_failure(__LINE__);
         if (!lifetime.expired() || !resource_lifetime.expired()) return ownership_failure(__LINE__);
+    }
+
+    // A stack AbstractFlow remains borrowed on immediate success and failure.
+    // The entry returns/throws directly, without resuming its completion.
+    {
+        class StackFlow final : public kotlinx::coroutines::flow::AbstractFlow<int> {
+        public:
+            explicit StackFlow(int* destructions) : destructions_(destructions) {}
+            ~StackFlow() override { ++*destructions_; }
+            std::exception_ptr failure;
+            int collections = 0;
+            void* collect_safely(kotlinx::coroutines::flow::FlowCollector<int>* collector,
+                                kotlinx::coroutines::Continuation<void*>* completion) override {
+                ++collections;
+                collector->emit(91, completion);
+                if (failure) std::rethrow_exception(failure);
+                return nullptr;
+            }
+        private:
+            int* destructions_;
+        };
+        int destructions = 0;
+        {
+            StackFlow source(&destructions);
+            std::vector<int> values;
+            VectorCollector<int> collector(&values);
+            RecordingContinuation completion;
+            if (source.collect(&collector, &completion) != nullptr || completion.completed || destructions)
+                return ownership_failure(__LINE__);
+            source.failure = std::make_exception_ptr(std::runtime_error("immediate collect failure"));
+            try {
+                source.collect(&collector, &completion);
+                return ownership_failure(__LINE__);
+            } catch (...) {
+                if (std::current_exception() != source.failure) return ownership_failure(__LINE__);
+            }
+            if (values != std::vector<int>({91, 91}) || source.collections != 2 ||
+                completion.completed || destructions) return ownership_failure(__LINE__);
+        }
+        if (destructions != 1) return ownership_failure(__LINE__);
     }
 
     return 0;

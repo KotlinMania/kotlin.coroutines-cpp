@@ -437,10 +437,25 @@ public:
                     auto package = extractor.extract_package_from_file(p);
                     if (package.ambiguous)
                         sf.identity_conflicts.push_back("Ambiguous namespace declarations: " + p + " [" + package.raw + "]");
-                    if (sf.package.declared && package.declared && sf.package.parts != package.parts)
-                        sf.identity_conflicts.push_back("Companion namespace conflict: " + p + " [" + package.path +
-                            "] vs [" + sf.package.path + "]");
-                    else if (sf.package.parts.empty() || package.declared) sf.package = std::move(package);
+                    if (sf.package.declared && package.declared && sf.package.parts != package.parts) {
+                        // A C++ source companion can hold concrete private
+                        // helpers under the header package's internal namespace.
+                        // Retain the parent unit identity, while per-callable and
+                        // deep-symbol namespace evidence stays exact.
+                        auto internal_child = [](const PackageDecl& parent, const PackageDecl& child) {
+                            return !parent.ambiguous && !child.ambiguous &&
+                                child.parts.size() == parent.parts.size() + 1 && child.parts.back() == "internal" &&
+                                std::equal(parent.parts.begin(), parent.parts.end(), child.parts.begin());
+                        };
+                        if (language == "cpp" && internal_child(sf.package, package)) {
+                            // Keep the header/parent package.
+                        } else if (language == "cpp" && internal_child(package, sf.package)) {
+                            sf.package = std::move(package);
+                        } else {
+                            sf.identity_conflicts.push_back("Companion namespace conflict: " + p + " [" + package.path +
+                                "] vs [" + sf.package.path + "]");
+                        }
+                    } else if (sf.package.parts.empty() || package.declared) sf.package = std::move(package);
                 }
             }
             sf.dependency_count = sf.imports.size();

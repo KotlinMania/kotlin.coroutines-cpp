@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 98/676 (14.5%)
-- **Function parity:** 457/7653 matched (target 979) — 6.0%
+- **Function parity:** 453/7653 matched (target 979) — 5.9%
 - **Class/type parity:** 156/1725 matched (target 263) — 9.0%
-- **Combined symbol parity:** 613/9378 matched (target 1242) — 6.5%
+- **Combined symbol parity:** 609/9378 matched (target 1242) — 6.5%
 - **Average inline-code cosine:** 0.34 (function body across 98 matched files)
 - **Average documentation cosine:** 0.61 (doc text across 98 matched files)
 - **Cheat-zeroed Files:** 24
@@ -808,11 +808,11 @@ Every matched file is listed below with function and type symbol parity.
 ### 54. collections.MutableCollections
 
 - **Target:** `collections.MutableCollections`
-- **Similarity:** 0.06
+- **Similarity:** 0.04
 - **Dependents:** 0
-- **Priority Score:** 273309.4
-- **Functions:** 6/33 matched (target 6)
-- **Missing functions:** `MutableCollection<out T>::remove`, `MutableCollection<out T>::removeAll`, `MutableCollection<out T>::retainAll`, `MutableCollection<in T>::plusAssign`, `MutableCollection<in T>::plusAssign`, `MutableCollection<in T>::plusAssign`, `MutableCollection<in T>::plusAssign`, `MutableCollection<in T>::minusAssign`, `MutableCollection<in T>::minusAssign`, `MutableCollection<in T>::minusAssign`, `MutableCollection<in T>::minusAssign`, `MutableCollection<in T>::addAll`, `MutableCollection<in T>::addAll`, `MutableCollection<in T>::addAll`, `Iterable<T>::convertToListIfNotCollection`, `MutableCollection<in T>::removeAll`, `MutableCollection<in T>::removeAll`, `MutableCollection<in T>::removeAll`, `MutableCollection<in T>::retainAll`, `MutableCollection<in T>::retainAll`, `MutableCollection<in T>::retainAll`, `MutableCollection<*>::retainNothing`, `MutableList<T>::remove`, `MutableList<T>::removeFirst`, `MutableList<T>::removeFirstOrNull`, `MutableList<T>::removeLast`, `MutableList<T>::removeLastOrNull`
+- **Priority Score:** 293309.6
+- **Functions:** 4/33 matched (target 6)
+- **Missing functions:** `MutableCollection<out T>::remove`, `MutableCollection<out T>::removeAll`, `MutableCollection<out T>::retainAll`, `MutableCollection<in T>::plusAssign`, `MutableCollection<in T>::plusAssign`, `MutableCollection<in T>::plusAssign`, `MutableCollection<in T>::plusAssign`, `MutableCollection<in T>::minusAssign`, `MutableCollection<in T>::minusAssign`, `MutableCollection<in T>::minusAssign`, `MutableCollection<in T>::minusAssign`, `MutableCollection<in T>::addAll`, `MutableCollection<in T>::addAll`, `MutableCollection<in T>::addAll`, `Iterable<T>::convertToListIfNotCollection`, `MutableCollection<in T>::removeAll`, `MutableCollection<in T>::removeAll`, `MutableCollection<in T>::removeAll`, `MutableCollection<in T>::retainAll`, `MutableCollection<in T>::retainAll`, `MutableCollection<in T>::retainAll`, `MutableCollection<*>::retainNothing`, `MutableIterable<T>::filterInPlace`, `MutableList<T>::remove`, `MutableList<T>::removeFirst`, `MutableList<T>::removeFirstOrNull`, `MutableList<T>::removeLast`, `MutableList<T>::removeLastOrNull`, `MutableList<T>::filterInPlace`
 - **Types:** 0/0 matched
 - **Missing types:** _none_
 
@@ -952,7 +952,19 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 2
 
-### 67. visitors.Deprecated
+### 67. kotlin.Array
+
+- **Target:** `kotlin.Array`
+- **Similarity:** 0.04
+- **Dependents:** 0
+- **Priority Score:** 20509.6
+- **Functions:** 1/3 matched (target 12)
+- **Missing functions:** `ArrayIterator::hasNext`, `ArrayIterator::next`
+- **Types:** 2/2 matched (target 5)
+- **Missing types:** _none_
+- **Lint issues:** 1
+
+### 68. visitors.Deprecated
 
 - **Target:** `visitors.Deprecated`
 - **Similarity:** 1.00
@@ -963,7 +975,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/3 matched (target 1)
 - **Missing types:** `IrElementVisitor`, `IrElementVisitorVoid`
 
-### 68. compiler.ir.ir.tree.org.jetbrains.kotlin.ir.symbols.IrSymbol
+### 69. compiler.ir.ir.tree.org.jetbrains.kotlin.ir.symbols.IrSymbol
 
 - **Target:** `symbols.IrSymbol [ZERO]`
 - **Similarity:** 0.00
@@ -974,7 +986,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 2/3 matched (target 5)
 - **Missing types:** `UnsafeDuringIrConstructionAPI`
 
-### 69. collections.Collection
+### 70. collections.Collection
 
 - **Target:** `collections.MutableCollection [ZERO]`
 - **Similarity:** 0.00
@@ -985,7 +997,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/2 matched (target 3)
 - **Missing types:** `Collection`
 
-### 70. collections.List
+### 71. collections.List
 
 - **Target:** `collections.MutableList [ZERO]`
 - **Similarity:** 0.00
@@ -996,7 +1008,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/2 matched
 - **Missing types:** `List`
 
-### 71. common.RestrictSuspensionUtils
+### 72. common.RestrictSuspensionUtils
 
 - **Target:** `clang_suspend_plugin.RestrictSuspensionUtils`
 - **Similarity:** 0.02
@@ -1007,7 +1019,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 0/0 matched (target 2)
 - **Missing types:** _none_
 
-### 72. descriptors.Visibilities
+### 73. descriptors.Visibilities
 
 - **Target:** `descriptors.Visibilities`
 - **Similarity:** 0.70
@@ -1019,7 +1031,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 9
 
-### 73. collections.PrimitiveIterators
+### 74. collections.PrimitiveIterators
 
 - **Target:** `collections.PrimitiveIterators`
 - **Similarity:** 1.00
@@ -1031,7 +1043,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 8
 
-### 74. mpp.DeclarationSymbolMarkers
+### 75. mpp.DeclarationSymbolMarkers
 
 - **Target:** `mpp.DeclarationSymbolMarkers`
 - **Similarity:** 1.00
@@ -1042,7 +1054,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 15/15 matched
 - **Missing types:** _none_
 
-### 75. descriptors.Visibility
+### 76. descriptors.Visibility
 
 - **Target:** `descriptors.Visibility`
 - **Similarity:** 0.53
@@ -1054,7 +1066,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 3
 
-### 76. compiler.ir.ir.tree.org.jetbrains.kotlin.ir.symbols.impl.IrSymbolImpl
+### 77. compiler.ir.ir.tree.org.jetbrains.kotlin.ir.symbols.impl.IrSymbolImpl
 
 - **Target:** `impl.IrSymbolImpl`
 - **Similarity:** 0.14
@@ -1063,18 +1075,6 @@ Every matched file is listed below with function and type symbol parity.
 - **Functions:** 3/3 matched (target 14)
 - **Missing functions:** _none_
 - **Types:** 2/2 matched
-- **Missing types:** _none_
-- **Lint issues:** 1
-
-### 77. kotlin.Array
-
-- **Target:** `kotlin.Array`
-- **Similarity:** 0.30
-- **Dependents:** 0
-- **Priority Score:** 507.0
-- **Functions:** 3/3 matched (target 12)
-- **Missing functions:** _none_
-- **Types:** 2/2 matched (target 5)
 - **Missing types:** _none_
 - **Lint issues:** 1
 
@@ -1168,18 +1168,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 86. reflect.KCallable
-
-- **Target:** `reflect.KCallable`
-- **Similarity:** 1.00
-- **Dependents:** 0
-- **Priority Score:** 100.0
-- **Functions:** 0/0 matched
-- **Missing functions:** _none_
-- **Types:** 1/1 matched (target 2)
-- **Missing types:** _none_
-
-### 87. internal.TypeInfoHolder
+### 86. internal.TypeInfoHolder
 
 - **Target:** `internal.TypeInfoHolder`
 - **Similarity:** 1.00
@@ -1190,9 +1179,9 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 
-### 88. collections.RandomAccess
+### 87. reflect.KAnnotatedElement
 
-- **Target:** `collections.RandomAccess`
+- **Target:** `reflect.KAnnotatedElement`
 - **Similarity:** 1.00
 - **Dependents:** 0
 - **Priority Score:** 100.0
@@ -1201,9 +1190,20 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 89. reflect.KAnnotatedElement
+### 88. reflect.KClassifier
 
-- **Target:** `reflect.KAnnotatedElement`
+- **Target:** `reflect.KClassifier`
+- **Similarity:** 1.00
+- **Dependents:** 0
+- **Priority Score:** 100.0
+- **Functions:** 0/0 matched
+- **Missing functions:** _none_
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+
+### 89. collections.RandomAccess
+
+- **Target:** `collections.RandomAccess`
 - **Similarity:** 1.00
 - **Dependents:** 0
 - **Priority Score:** 100.0
@@ -1245,15 +1245,15 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 
-### 93. expressions.IrVarargElement
+### 93. reflect.KCallable
 
-- **Target:** `expressions.IrVarargElement`
+- **Target:** `reflect.KCallable`
 - **Similarity:** 1.00
 - **Dependents:** 0
 - **Priority Score:** 100.0
 - **Functions:** 0/0 matched
 - **Missing functions:** _none_
-- **Types:** 1/1 matched
+- **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 
 ### 94. declarations.IrDeclarationWithVisibility
@@ -1300,9 +1300,9 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 98. reflect.KClassifier
+### 98. expressions.IrVarargElement
 
-- **Target:** `reflect.KClassifier`
+- **Target:** `expressions.IrVarargElement`
 - **Similarity:** 1.00
 - **Dependents:** 0
 - **Priority Score:** 100.0

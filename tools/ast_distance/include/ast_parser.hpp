@@ -279,7 +279,45 @@ inline bool kotlin_enum_declaration(TSNode declaration) {
  * The AST and identifiers are kept as parameters + body so transliteration
  * reports compare callable behavior, not loose whole-file shape.
  */
+// Lexical namespace evidence for individual callables and deep symbols. A
+// companion may contain private helpers, but those helpers cannot implement an
+// identically named API in its parent package.
+inline std::string declaration_namespace(TSNode node, const std::string& source, Language language) {
+    auto text = [&](TSNode n) {
+        return source.substr(ts_node_start_byte(n), ts_node_end_byte(n) - ts_node_start_byte(n));
+    };
+    std::vector<std::string> scopes;
+    if (language == Language::CPP) {
+        for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
+            if (std::string(ts_node_type(parent)) != "namespace_definition") continue;
+            auto name = ts_node_child_by_field_name(parent, "name", 4);
+            if (!ts_node_is_null(name)) scopes.push_back(text(name));
+        }
+        std::reverse(scopes.begin(), scopes.end());
+    } else if (language == Language::KOTLIN) {
+        auto root = node;
+        while (!ts_node_is_null(ts_node_parent(root))) root = ts_node_parent(root);
+        for (uint32_t i = 0; i < ts_node_named_child_count(root); ++i) {
+            auto child = ts_node_named_child(root, i);
+            if (std::string(ts_node_type(child)) != "package_header") continue;
+            for (uint32_t j = 0; j < ts_node_named_child_count(child); ++j) {
+                auto identifier = ts_node_named_child(child, j);
+                if (std::string(ts_node_type(identifier)) == "identifier") scopes.push_back(text(identifier));
+            }
+        }
+    }
+    std::string result;
+    for (const auto& scope : scopes) {
+        if (!result.empty()) result += ".";
+        result += scope;
+    }
+    for (size_t i = 0; (i = result.find("::", i)) != std::string::npos; ++i) result.replace(i, 2, ".");
+    return result;
+}
+
 struct FunctionInfo {
+    std::string namespace_path;
+    bool namespace_known = false;
     std::string name;
     std::string qualified_name;
     std::string signature;
@@ -1968,6 +2006,10 @@ public:
             std::string func_name = extract_function_name(node, lang, source);
 
             FunctionInfo info;
+            info.namespace_path = declaration_namespace(node, source, lang);
+            // Isolated Kotlin declaration excerpts have no package evidence.
+            // Full-file identity separately verifies packaged/default units.
+            info.namespace_known = lang == Language::CPP || (lang == Language::KOTLIN && !info.namespace_path.empty());
             info.name = func_name;
             info.qualified_name = func_name;
             for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {

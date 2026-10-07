@@ -18,6 +18,8 @@ struct DeepSymbol {
     bool definition = true;
     bool is_enum_member = false;
     std::string first_parameter_type;
+    std::string namespace_path;
+    bool namespace_known = false;
 };
 
 struct DeepInventory {

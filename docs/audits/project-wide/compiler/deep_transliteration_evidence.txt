@@ -269,7 +269,7 @@ Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/co
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.343197
-function_name_parity: 1.000000
+function_name_parity: 0.333333
 normalized_logic: 0.000000
 documentation_correspondence: 0.130045
 span_rule_coverage: 0.000000
@@ -292,12 +292,8 @@ Diagnostic: 88: unsupported class_declaration
 Function Array::iterator:80 -> Array<T>::iterator:153 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:5 node:43 identifier:std identifier:makeunique identifier:detail type:arrayiterator type:t operator:*
-Function ArrayIterator::hasNext:90 -> kotlin::detail::ArrayIterator::has_next:134 | normalized logic: 0.000000
-  Emitted logic:
-  Target logic: node:5 identifier:index operator:< node:43 identifier:array identifier:getsize
-Function ArrayIterator::next:91 -> kotlin::detail::ArrayIterator::next:136 | normalized logic: 0.000000
-  Emitted logic:
-  Target logic: node:1 identifier:index operator:< node:43 identifier:array identifier:getsize node:5 node:43 identifier:array identifier:get identifier:index operator:++ node:10 node:43 identifier:kotlinx identifier:coroutines identifier:nosuchelementexception node:43 identifier:std identifier:tostring identifier:index
+Missing source function: ArrayIterator::hasNext:90
+Missing source function: ArrayIterator::next:91
 Extra target function: kotlin::Array::Array:50
 Extra target function: kotlin::Array::get:70
 Extra target function: kotlin::Array::set:87
@@ -306,6 +302,8 @@ Extra target function: kotlin::Array::Array:110
 Extra target function: kotlin::Array::allocate_storage:112
 Extra target function: kotlin::Array::get_array_length:119
 Extra target function: kotlin::detail::ArrayIterator::ArrayIterator:132
+Extra target function: kotlin::detail::ArrayIterator::has_next:134
+Extra target function: kotlin::detail::ArrayIterator::next:136
 Extra target function: kotlin::detail::ArrayIterator::next_dispatch:143
 === Emitted target buffer ===
 /*
@@ -7868,7 +7866,7 @@ Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/co
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.566606
-function_name_parity: 0.181818
+function_name_parity: 0.121212
 normalized_logic: 0.000000
 documentation_correspondence: 0.103567
 span_rule_coverage: 0.000000
@@ -7994,18 +7992,12 @@ Function MutableIterable<T>::removeAll:224 -> kotlin::collections::remove_all:80
 Function MutableIterable<T>::retainAll:232 -> kotlin::collections::retain_all:91 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:iterable type:mutableiterable type:t node:66 identifier:predicate type:predicate node:5 node:43 identifier:detail identifier:filterinplace identifier:iterable identifier:predicate literal:53:false
-Function MutableIterable<T>::filterInPlace:235 -> kotlin::collections::detail::filter_in_place:23 | normalized logic: 0.000000
-  Emitted logic:
-  Target logic: node:66 identifier:iterable type:mutableiterable type:t node:66 identifier:predicate type:predicate node:66 identifier:predicateresulttoremove type:bool identifier:result type:bool operator:= literal:53:false identifier:iterator operator:= node:43 identifier:iterable identifier:iterator node:3 node:43 identifier:iterator identifier:hasnext node:1 node:43 identifier:std identifier:invoke identifier:predicate node:43 identifier:iterator identifier:next operator:== identifier:predicateresulttoremove node:43 identifier:iterator identifier:remove identifier:result operator:= literal:53:true node:5 identifier:result
 Function MutableList<T>::removeAll:289 -> kotlin::collections::remove_all:102 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:list type:mutablelist type:t node:66 identifier:predicate type:predicate node:5 node:43 identifier:detail identifier:filterinplace identifier:list identifier:predicate literal:53:true
 Function MutableList<T>::retainAll:297 -> kotlin::collections::retain_all:113 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:list type:mutablelist type:t node:66 identifier:predicate type:predicate node:5 node:43 identifier:detail identifier:filterinplace identifier:list identifier:predicate literal:53:false
-Function MutableList<T>::filterInPlace:300 -> kotlin::collections::detail::filter_in_place:38 | normalized logic: 0.000000
-  Emitted logic:
-  Target logic: node:66 identifier:list type:mutablelist type:t node:66 identifier:predicate type:predicate node:66 identifier:predicateresulttoremove type:bool node:1 node:43 identifier:dynamiccast type:randomaccess operator:* operator:& identifier:list operator:== node:5 node:43 identifier:filterinplace node:43 identifier:staticcast type:mutableiterable type:t operator:& identifier:list identifier:predicate identifier:predicateresulttoremove identifier:std identifier:writeindex type:signed32 operator:= literal:51:0 identifier:lastindex operator:= node:43 identifier:bitcast identifier:std identifier:std type:signed32 node:43 identifier:staticcast identifier:std type:unsigned32 node:43 identifier:getsize identifier:list operator:- literal:51:1 node:2 identifier:readindex identifier:std type:signed64 operator:= literal:51:0 identifier:readindex operator:<= identifier:lastindex operator:++ identifier:readindex identifier:element operator:= node:43 identifier:get identifier:list node:43 identifier:readindex identifier:staticcast identifier:std type:signed32 node:1 node:43 identifier:std identifier:invoke identifier:predicate identifier:element operator:== identifier:predicateresulttoremove node:7 node:1 identifier:writeindex operator:!= identifier:readindex node:43 identifier:list identifier:set identifier:writeindex identifier:element identifier:writeindex operator:= node:43 identifier:std identifier:bitcast identifier:std type:signed32 node:43 identifier:staticcast identifier:std type:unsigned32 identifier:writeindex operator:+ literal:51:1 node:1 identifier:writeindex operator:< node:43 identifier:list identifier:getsize identifier:lastremoveindex operator:= node:43 identifier:bitcast identifier:std identifier:std type:signed32 node:43 identifier:staticcast identifier:std type:unsigned32 node:43 identifier:getsize identifier:list operator:- literal:51:1 node:2 identifier:removeindex identifier:std type:signed64 operator:= identifier:lastremoveindex identifier:removeindex operator:>= identifier:writeindex operator:-- identifier:removeindex node:43 identifier:list identifier:removeat node:43 identifier:staticcast identifier:std type:signed32 identifier:removeindex node:5 literal:53:true node:5 literal:53:false
 Missing source function: MutableCollection<out T>::remove:19
 Missing source function: MutableCollection<out T>::removeAll:31
 Missing source function: MutableCollection<out T>::retainAll:43
@@ -8028,11 +8020,15 @@ Missing source function: MutableCollection<in T>::retainAll:183
 Missing source function: MutableCollection<in T>::retainAll:191
 Missing source function: MutableCollection<in T>::retainAll:202
 Missing source function: MutableCollection<*>::retainNothing:211
+Missing source function: MutableIterable<T>::filterInPlace:235
 Missing source function: MutableList<T>::remove:252
 Missing source function: MutableList<T>::removeFirst:260
 Missing source function: MutableList<T>::removeFirstOrNull:267
 Missing source function: MutableList<T>::removeLast:274
 Missing source function: MutableList<T>::removeLastOrNull:281
+Missing source function: MutableList<T>::filterInPlace:300
+Extra target function: kotlin::collections::detail::filter_in_place:23
+Extra target function: kotlin::collections::detail::filter_in_place:38
 === Emitted target buffer ===
 /*
  * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
