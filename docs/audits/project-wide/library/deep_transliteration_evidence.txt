@@ -3984,7 +3984,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.490038
+translated_ast_cosine: 0.490496
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.005859
@@ -4032,7 +4032,7 @@ Function ReceiveChannel<T>::consumeAsFlow:87 -> kotlinx::coroutines::flow::consu
   Target logic: node:66 identifier:channel identifier:channels identifier:std type:receivechannel type:sharedptr type:t node:5 node:43 identifier:std identifier:makeshared type:channelasflow type:t node:43 identifier:std identifier:move identifier:channel literal:53:true
 Function ChannelAsFlow::markConsumed:104 -> kotlinx::coroutines::flow::ChannelAsFlow::mark_consumed:333 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:1 identifier:consume node:1 node:43 identifier:consumed identifier:exchange literal:53:true node:10 node:43 identifier:std identifier:logicerror literal:52:"ReceiveChannel.consumeAsFlow can be collected just once"
+  Target logic: node:1 identifier:consume node:1 node:43 identifier:consumed identifier:exchange literal:53:true node:10 node:43 identifier:illegalstateexception literal:52:"ReceiveChannel.consumeAsFlow can be collected just once"
 Function ChannelAsFlow::create:110 -> kotlinx::coroutines::flow::ChannelAsFlow::create:344 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr node:66 identifier:capacity type:signed32 node:66 identifier:channels identifier:onbufferoverflow type:bufferoverflow node:5 type:channelasflow identifier:channel identifier:consume identifier:context identifier:capacity identifier:onbufferoverflow
@@ -7209,14 +7209,14 @@ Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Channels.common.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.common.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
-translated_ast_cosine: 0.524873
+translated_text_cosine: 0.008086
+translated_ast_cosine: 0.541541
 function_name_parity: 0.666667
 normalized_logic: 0.000000
-documentation_correspondence: 0.007720
+documentation_correspondence: 0.007748
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.008086
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -7256,27 +7256,37 @@ Diagnostic: 159: unsupported function_declaration
 Diagnostic: 164: documentation example retains unsupported Kotlin syntax
 Diagnostic: 191: unsupported function_declaration
 Diagnostic: 197: unsupported function_declaration
-Function ReceiveChannel<E>::consume:90 -> kotlinx::coroutines::channels::consume:332 | normalized logic: 0.000000
+Function ReceiveChannel<E>::consume:90 -> kotlinx::coroutines::channels::consume:234 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:channel type:e type:receivechannel node:66 identifier:std type:function type:r node:66 type:e type:receivechannel operator:* identifier:block identifier:cause identifier:std type:exceptionptr operator:= node:9 identifier:result type:r operator:= node:43 identifier:block identifier:channel node:43 identifier:cancelconsumed identifier:channel identifier:cause node:5 identifier:result identifier:cause operator:= node:43 identifier:std identifier:currentexception node:43 identifier:cancelconsumed identifier:channel identifier:cause node:10
-Function ReceiveChannel<E>::consumeEach:159 -> kotlinx::coroutines::channels::consume_each:382 | normalized logic: 0.000000
+  Target logic: node:66 identifier:channel type:e type:receivechannel node:66 identifier:std type:function type:r node:66 type:e type:receivechannel operator:* identifier:block identifier:result type:r operator:= node:43 node:45 operator:& type:r node:9 node:5 node:43 identifier:block identifier:channel node:43 identifier:cancelconsumed identifier:channel node:43 identifier:currentexception identifier:std node:10 node:43 identifier:cancelconsumed identifier:channel node:5 identifier:result
+Function ReceiveChannel<E>::consumeEach:159 -> kotlinx::coroutines::channels::consume_each:285 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:channel type:e type:receivechannel node:66 identifier:std type:function type:void node:66 identifier:action type:e node:43 identifier:consume type:e identifier:channel node:45 operator:& identifier:action node:66 identifier:c type:e type:receivechannel identifier:iter operator:= node:43 identifier:c identifier:iterator node:3 literal:53:true identifier:result operator:= node:43 identifier:c identifier:tryreceive node:1 node:43 identifier:result identifier:issuccess node:43 identifier:action node:43 identifier:result identifier:getorthrow node:1 node:43 identifier:result identifier:isclosed identifier:cause operator:= node:43 identifier:exceptionornull identifier:result node:1 identifier:cause node:43 identifier:std identifier:rethrowexception identifier:cause node:8 node:8
-Function ReceiveChannel<E>::toList:191 -> kotlinx::coroutines::channels::to_list:424 | normalized logic: 0.000000
+  Target logic: node:66 identifier:channel type:e type:receivechannel node:66 identifier:std type:function type:void operator:* node:66 type:e node:66 type:continuation type:void operator:* operator:* identifier:action node:66 type:continuation type:void operator:* identifier:completion type:consumeeachframe type:continuationimpl identifier:consumeeachframe node:66 identifier:channel type:e type:receivechannel node:66 identifier:std type:function type:void operator:* node:66 type:e node:66 type:continuation type:void operator:* operator:* identifier:action node:66 type:continuation type:void operator:* identifier:completion identifier:continuationimpl node:43 identifier:kotlinx identifier:coroutines identifier:internal identifier:retaincontinuation identifier:completion identifier:channel identifier:channel identifier:action node:43 identifier:std identifier:move identifier:action type:void identifier:retain identifier:selfref operator:= node:43 identifier:sharedfromthis type:void identifier:releaseintercepted node:43 identifier:continuationimpl identifier:releaseintercepted node:43 identifier:iterator identifier:reset node:43 identifier:element identifier:reset identifier:action operator:= node:43 identifier:selfref identifier:reset type:void identifier:invokesuspend node:66 type:result type:void operator:* identifier:result node:9 node:43 identifier:coroutinebegin identifier:iterator operator:= node:43 identifier:channel identifier:iterator node:3 literal:53:true node:43 identifier:coroutineyieldvalue identifier:result node:43 identifier:iterator identifier:hasnext identifier:hasnextbox identifier:hasnext operator:= operator:* node:43 identifier:staticcast type:bool operator:* identifier:hasnextbox node:43 identifier:staticcast type:bool operator:* identifier:hasnextbox identifier:hasnextbox operator:= node:1 operator:! identifier:hasnext node:8 node:43 identifier:element identifier:emplace node:43 identifier:iterator identifier:next node:43 identifier:coroutineyield node:43 identifier:action node:43 identifier:std identifier:move operator:* identifier:element node:43 identifier:element identifier:reset node:43 identifier:cancelconsumed identifier:channel node:43 identifier:std identifier:currentexception node:10 node:43 identifier:cancelconsumed identifier:channel node:43 identifier:coroutineend identifier:label type:void operator:= identifier:channel type:e type:receivechannel identifier:std type:function type:void operator:* node:66 type:e node:66 type:continuation type:void operator:* operator:* identifier:action identifier:element identifier:std type:e type:optional identifier:iterator identifier:std type:channeliterator type:e type:uniqueptr identifier:hasnextbox type:void operator:= identifier:hasnext type:bool operator:= literal:53:false identifier:selfref identifier:std type:basecontinuationimpl type:sharedptr identifier:frame operator:= node:43 identifier:channel identifier:makeshared identifier:std type:consumeeachframe node:43 identifier:action identifier:completion identifier:move identifier:std node:43 identifier:frame identifier:retain node:5 node:43 identifier:frame identifier:start node:43 type:result type:void operator:* identifier:success
+Function ReceiveChannel<E>::toList:191 -> kotlinx::coroutines::channels::to_list:379 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:channel type:e type:receivechannel identifier:list identifier:std type:e type:vector node:43 identifier:consumeeach type:e identifier:channel node:45 operator:& identifier:list node:66 identifier:e type:e node:43 identifier:list identifier:pushback node:43 identifier:std identifier:move identifier:e node:5 identifier:list
-Function ReceiveChannel<*>::cancelConsumed:197 -> kotlinx::coroutines::channels::cancel_consumed:301 | normalized logic: 0.000000
+  Target logic: node:66 identifier:channel type:e type:receivechannel node:66 type:continuation type:void operator:* identifier:completion type:tolistframe type:continuationimpl identifier:tolistframe node:66 identifier:channel type:e type:receivechannel node:66 type:continuation type:void operator:* identifier:completion identifier:continuationimpl node:43 identifier:kotlinx identifier:coroutines identifier:internal identifier:retaincontinuation identifier:completion identifier:channel identifier:channel type:void identifier:retain identifier:selfref operator:= node:43 identifier:sharedfromthis type:void identifier:releaseintercepted node:43 identifier:continuationimpl identifier:releaseintercepted node:43 identifier:values identifier:clear node:43 identifier:selfref identifier:reset type:void identifier:invokesuspend node:66 type:result type:void operator:* identifier:result node:43 identifier:coroutinebegin node:43 identifier:coroutineyield node:43 identifier:consumeeach type:e identifier:channel node:45 node:66 identifier:value type:e node:43 identifier:values identifier:pushback node:43 identifier:std identifier:move identifier:value node:5 identifier:std type:vector type:e node:43 identifier:std identifier:move identifier:values identifier:label type:void operator:= identifier:channel type:e type:receivechannel identifier:std identifier:values type:e type:vector identifier:selfref identifier:std type:basecontinuationimpl type:sharedptr identifier:frame operator:= node:43 identifier:channel identifier:completion identifier:makeshared identifier:std type:tolistframe node:43 identifier:frame identifier:retain node:5 node:43 identifier:frame identifier:start node:43 type:result type:void operator:* identifier:success
+Function ReceiveChannel<*>::cancelConsumed:197 -> kotlinx::coroutines::channels::cancel_consumed:206 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:channel type:e type:receivechannel node:66 identifier:cause identifier:std type:exceptionptr node:43 identifier:channel identifier:cancel identifier:cause
+  Target logic: node:66 identifier:channel type:e type:receivechannel node:66 identifier:cause identifier:std type:exceptionptr node:43 identifier:channel identifier:cancel node:43 identifier:internal identifier:consumedcancellationcause identifier:cause
 Missing source function: ReceiveChannel<E>::receiveOrNull:28
 Missing source function: ReceiveChannel<E>::onReceiveOrNull:47
-Extra target function: kotlinx::coroutines::channels::create_channel:164
-Extra target function: kotlinx::coroutines::channels::try_send_blocking:215
-Extra target function: kotlinx::coroutines::channels::BlockingContinuation::BlockingContinuation:237
-Extra target function: kotlinx::coroutines::channels::BlockingContinuation::get_context:240
-Extra target function: kotlinx::coroutines::channels::BlockingContinuation::resume_with:242
-Extra target function: kotlinx::coroutines::channels::send_blocking:279
-Extra target function: kotlinx::coroutines::channels::consume:347
+Extra target function: internal::consumed_cancellation_cause:11
+Extra target function: kotlinx::coroutines::channels::create_channel:63
+Extra target function: kotlinx::coroutines::channels::try_send_blocking:114
+Extra target function: kotlinx::coroutines::channels::BlockingContinuation::BlockingContinuation:136
+Extra target function: kotlinx::coroutines::channels::BlockingContinuation::get_context:139
+Extra target function: kotlinx::coroutines::channels::BlockingContinuation::resume_with:141
+Extra target function: kotlinx::coroutines::channels::send_blocking:178
+Extra target function: kotlinx::coroutines::channels::consume:251
+Extra target function: kotlinx::coroutines::channels::ConsumeEachFrame::ConsumeEachFrame:294
+Extra target function: kotlinx::coroutines::channels::ConsumeEachFrame::retain:299
+Extra target function: kotlinx::coroutines::channels::ConsumeEachFrame::release_intercepted:301
+Extra target function: kotlinx::coroutines::channels::ConsumeEachFrame::invoke_suspend:310
+Extra target function: kotlinx::coroutines::channels::consume_each:352
+Extra target function: kotlinx::coroutines::channels::ToListFrame::ToListFrame:384
+Extra target function: kotlinx::coroutines::channels::ToListFrame::retain:388
+Extra target function: kotlinx::coroutines::channels::ToListFrame::release_intercepted:390
+Extra target function: kotlinx::coroutines::channels::ToListFrame::invoke_suspend:397
 === Emitted target buffer ===
 __ast_distance_unmapped__("file_annotation", "@file:JvmMultifileClass")
 __ast_distance_unmapped__("file_annotation", "@file:JvmName(\"ChannelsKt\")")
@@ -7433,10 +7443,12 @@ Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
 MISSING_TARGET_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Channels.common.kt:28	-	ReceiveChannel<E>::receiveOrNull
-NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Channels.common.kt:159	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.hpp:259	ReceiveChannel<E>::consumeEach -> kotlinx::coroutines::channels::consume_each
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
-NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Channels.common.kt:191	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.hpp:301	ReceiveChannel<E>::toList -> kotlinx::coroutines::channels::to_list
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
+LOWERING_SYNTAX_PRESENT	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Channels.common.kt:159	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.hpp:266	ReceiveChannel<E>::consumeEach -> kotlinx::coroutines::channels::consume_each
+  Evidence: await-macro-lines=296,304 begin-macro-lines=293 marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
+NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Channels.common.kt:159	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.hpp:333	ReceiveChannel<E>::consumeEach -> kotlinx::coroutines::channels::consume_each
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
+LOWERING_SYNTAX_PRESENT	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Channels.common.kt:191	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.hpp:360	ReceiveChannel<E>::toList -> kotlinx::coroutines::channels::to_list
+  Evidence: await-macro-lines=380 begin-macro-lines=379 marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 3
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/selects/OnTimeout.kt -> kotlinx/coroutines/selects/OnTimeout.hpp ===

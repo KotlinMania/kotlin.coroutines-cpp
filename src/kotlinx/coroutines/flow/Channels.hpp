@@ -333,7 +333,7 @@ private:
     void mark_consumed() {
         if (consume_) {
             if (consumed_.exchange(true)) {
-                throw std::logic_error(
+                throw IllegalStateException(
                     "ReceiveChannel.consumeAsFlow can be collected just once");
             }
         }

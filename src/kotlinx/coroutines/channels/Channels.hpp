@@ -1,7 +1,8 @@
 #pragma once
-// port-lint: source channels/Channels.common.kt
+// port-lint: source kotlinx-coroutines-core/common/src/channels/Channels.common.kt
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt
 // Transliterated from:
-// - kotlinx-coroutines-core/concurrent/src/channels/Channels.kt
+// - kotlinx-coroutines-core/common/src/channels/Channels.common.kt
 // - Channel factory from kotlinx-coroutines-core/common/src/channels/Channel.kt (lines 1373-1456)
 //
 // Kotlin imports:
@@ -22,6 +23,8 @@
 #include <exception>
 #include <mutex>
 #include <condition_variable>
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 
 namespace kotlinx {
 namespace coroutines {
@@ -174,9 +177,15 @@ void send_blocking(SendChannel<E>* channel, E element) {
 /**
  * Internal function to cancel a channel after consumption.
  */
+namespace internal {
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:198-202
+std::exception_ptr consumed_cancellation_cause(std::exception_ptr cause);
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:198-202
 template <typename E>
 void cancel_consumed(ReceiveChannel<E>* channel, std::exception_ptr cause) {
-    channel->cancel(cause);
+    channel->cancel(internal::consumed_cancellation_cause(cause));
 }
 
 /**
@@ -191,13 +200,9 @@ void cancel_consumed(ReceiveChannel<E>* channel, std::exception_ptr cause) {
  * that producers stop sending new elements to the channel.
  *
  * Example:
- * ```cpp
- * template <typename E>
- * E consume_first(ReceiveChannel<E>* channel) {
- *     return consume<E, E>(channel, [](ReceiveChannel<E>* c) {
- *         return c->receive(nullptr);  // Get first element
- *     });
- * }
+ * ```kotlin
+ * suspend fun <E> ReceiveChannel<E>.consumeFirst(): E =
+ *     consume { return receive() }
  * ```
  *
  * consume() does not guarantee that new elements will not enter the channel after
@@ -205,32 +210,33 @@ void cancel_consumed(ReceiveChannel<E>* channel, std::exception_ptr cause) {
  * on_undelivered_element parameter of a manually created Channel to define what
  * should happen with these elements during cancel().
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:90-103
 template <typename E, typename R>
 R consume(ReceiveChannel<E>* channel, std::function<R(ReceiveChannel<E>*)> block) {
-    std::exception_ptr cause = nullptr;
-    try {
-        R result = block(channel);
-        cancel_consumed(channel, cause);
-        return result;
-    } catch (...) {
-        cause = std::current_exception();
-        cancel_consumed(channel, cause);
-        throw;
-    }
+    // NOTE(port): Keep finally outside the block's catch so a cancellation
+    // failure supersedes the block result without invoking cancellation twice.
+    R result = [&]() -> R {
+        try {
+            return block(channel);
+        } catch (...) {
+            cancel_consumed(channel, std::current_exception());
+            throw;
+        }
+    }();
+    cancel_consumed(channel, nullptr);
+    return result;
 }
 
-// Overload for void return type
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:90-103
 template <typename E>
 void consume(ReceiveChannel<E>* channel, std::function<void(ReceiveChannel<E>*)> block) {
-    std::exception_ptr cause = nullptr;
     try {
         block(channel);
-        cancel_consumed(channel, cause);
     } catch (...) {
-        cause = std::current_exception();
-        cancel_consumed(channel, cause);
+        cancel_consumed(channel, std::current_exception());
         throw;
     }
+    cancel_consumed(channel, nullptr);
 }
 
 /**
@@ -255,31 +261,83 @@ void consume(ReceiveChannel<E>* channel, std::function<void(ReceiveChannel<E>*)>
  * if they are added after this function decided to close the channel. Use the
  * on_undelivered_element parameter of the Channel constructor to handle these.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:159-162
 template <typename E>
-void consume_each(ReceiveChannel<E>* channel, std::function<void(E)> action) {
-    consume<E>(channel, [&action](ReceiveChannel<E>* c) {
-        auto iter = c->iterator();
-        // Note: has_next() is a suspend function, but for blocking iteration
-        // we use a simple loop with try_receive for non-blocking semantics
-        while (true) {
-            auto result = c->try_receive();
-            if (result.is_success()) {
-                action(result.get_or_throw());
-            } else if (result.is_closed()) {
-                auto cause = result.exception_or_null();
-                if (cause) {
-                    std::rethrow_exception(cause);
-                }
-                break;
-            } else {
-                // is_failure() means channel is empty but not closed
-                // In a true suspend context we would suspend here
-                // For blocking, we could busy-wait or use condition variables
-                // For now, break to avoid infinite loop in non-suspend context
-                break;
-            }
+void* consume_each(ReceiveChannel<E>* channel, std::function<void*(E, Continuation<void*>*)> action,
+                   Continuation<void*>* completion) {
+    // NOTE(port): The public element type requires a header-instantiated frame.
+    // Use the existing Continuation ABI and LLVM-injected suspension markers.
+    // The raw channel stays borrowed; callers retain it throughout suspension.
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:90-103,159-162
+    class ConsumeEachFrame final : public ContinuationImpl {
+    public:
+        // Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:159-162
+        ConsumeEachFrame(ReceiveChannel<E>* channel, std::function<void*(E, Continuation<void*>*)> action,
+                         Continuation<void*>* completion)
+            : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+              channel_(channel), action_(std::move(action)) {}
+
+        void retain() { self_ref_ = shared_from_this(); }
+
+        void release_intercepted() override {
+            ContinuationImpl::release_intercepted();
+            iterator_.reset();
+            element_.reset();
+            action_ = nullptr;
+            self_ref_.reset();
         }
-    });
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:90-103,159-162
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                coroutine_begin(this)
+                iterator_ = channel_->iterator();
+                while (true) {
+                    coroutine_yield_value(this, result, iterator_->has_next(this), has_next_box_);
+                    // NOTE(port): has_next's bool box belongs to this receiving call.
+                    has_next_ = *static_cast<bool*>(has_next_box_);
+                    delete static_cast<bool*>(has_next_box_);
+                    has_next_box_ = nullptr;
+                    if (!has_next_) break;
+                    element_.emplace(iterator_->next());
+                    // NOTE(port): Kotlin's inline action can contain suspension.
+                    coroutine_yield(this, action_(std::move(*element_), this));
+                    element_.reset();
+                }
+            } catch (...) {
+                cancel_consumed(channel_, std::current_exception());
+                throw;
+            }
+            cancel_consumed(channel_, nullptr);
+            coroutine_end(this)
+        }
+
+    private:
+        void* _label = nullptr;
+        ReceiveChannel<E>* channel_;
+        std::function<void*(E, Continuation<void*>*)> action_;
+        std::optional<E> element_;
+        std::unique_ptr<ChannelIterator<E>> iterator_;
+        void* has_next_box_ = nullptr;
+        bool has_next_ = false;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+    auto frame = std::make_shared<ConsumeEachFrame>(channel, std::move(action), completion);
+    frame->retain();
+    return frame->start(Result<void*>::success(nullptr));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:159-162
+// NOTE(port): Ordinary nonsuspending C++ actions retain their callable interface.
+template <typename E>
+void* consume_each(ReceiveChannel<E>* channel, std::function<void(E)> action,
+                   Continuation<void*>* completion) {
+    std::function<void*(E, Continuation<void*>*)> lowered_action =
+        [action = std::move(action)](E value, Continuation<void*>*) -> void* {
+            action(std::move(value));
+            return nullptr;
+        };
+    return consume_each<E>(channel, std::move(lowered_action), completion);
 }
 
 /**
@@ -297,13 +355,44 @@ void consume_each(ReceiveChannel<E>* channel, std::function<void(E)> action) {
  * The operation is _terminal_.
  * This function consumes all elements of the original ReceiveChannel.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:191-195
 template <typename E>
-std::vector<E> to_list(ReceiveChannel<E>* channel) {
-    std::vector<E> list;
-    consume_each<E>(channel, [&list](E e) {
-        list.push_back(std::move(e));
-    });
-    return list;
+void* to_list(ReceiveChannel<E>* channel, Continuation<void*>* completion) {
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:191-195
+    class ToListFrame final : public ContinuationImpl {
+    public:
+        // Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:191-195
+        ToListFrame(ReceiveChannel<E>* channel, Continuation<void*>* completion)
+            : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+              channel_(channel) {}
+
+        void retain() { self_ref_ = shared_from_this(); }
+
+        void release_intercepted() override {
+            ContinuationImpl::release_intercepted();
+            values_.clear();
+            self_ref_.reset();
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/channels/Channels.common.kt:191-195
+        void* invoke_suspend(Result<void*> result) override {
+            coroutine_begin(this)
+            coroutine_yield(this, consume_each<E>(channel_,
+                [this](E value) { values_.push_back(std::move(value)); }, this));
+            // NOTE(port): The caller owns the returned vector box and must delete it
+            // after unboxing, on both immediate and resumed result paths.
+            return new std::vector<E>(std::move(values_));
+        }
+
+    private:
+        void* _label = nullptr;
+        ReceiveChannel<E>* channel_;
+        std::vector<E> values_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+    auto frame = std::make_shared<ToListFrame>(channel, completion);
+    frame->retain();
+    return frame->start(Result<void*>::success(nullptr));
 }
 
 } // namespace channels

@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 243/354 (68.6%)
-- **Function parity:** 781/2918 matched (target 2852) — 26.8%
-- **Class/type parity:** 341/560 matched (target 490) — 60.9%
-- **Combined symbol parity:** 1122/3478 matched (target 3342) — 32.3%
+- **Function parity:** 781/2918 matched (target 2862) — 26.8%
+- **Class/type parity:** 341/560 matched (target 492) — 60.9%
+- **Combined symbol parity:** 1122/3478 matched (target 3354) — 32.3%
 - **Average inline-code cosine:** 0.26 (function body across 134 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 134 matched files)
 - **Cheat-zeroed Files:** 122
@@ -2096,14 +2096,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 157. channels.Channels.common
 
 - **Target:** `channels.Channels.common`
-- **Similarity:** 0.05
+- **Similarity:** 0.04
 - **Dependents:** 0
-- **Priority Score:** 20609.5
-- **Functions:** 4/6 matched (target 11)
+- **Priority Score:** 20609.6
+- **Functions:** 4/6 matched (target 21)
 - **Missing functions:** `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull`
-- **Types:** 0/0 matched (target 1)
+- **Types:** 0/0 matched (target 3)
 - **Missing types:** _none_
-- **Lint issues:** 1
+- **Lint issues:** 2
 
 ### 158. operators.Errors
 

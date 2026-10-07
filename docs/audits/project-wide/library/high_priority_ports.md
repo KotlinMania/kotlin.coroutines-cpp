@@ -166,7 +166,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 154 | `operators.Emitters` | `flow.Emitters` | 0.06 | 0 | 6/8 matched (target 16) | `Flow<T>::unsafeTransform`, `FlowCollector<T>::invokeSafely` | 1/1 matched (target 2) | _none_ | 2 | 9 | 20909.4 |
 | 155 | `operators.Context` | `flow.Context` | 0.09 | 0 | 6/7 matched | `Flow<T>::buffer` | 1/2 matched (target 1) | `CancellableFlow` | 2 | 9 | 20909.1 |
 | 156 | `common.CompletableDeferred` | `coroutines.CompletableDeferred` | 0.16 | 0 | 5/7 matched (target 16) | `CompletableDeferred`, `CompletableDeferred` | 2/2 matched (target 3) | _none_ | 2 | 9 | 20908.4 |
-| 157 | `channels.Channels.common` | `channels.Channels.common` | 0.05 | 0 | 4/6 matched (target 11) | `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull` | 0/0 matched (target 1) | _none_ | 2 | 6 | 20609.5 |
+| 157 | `channels.Channels.common` | `channels.Channels.common` | 0.04 | 0 | 4/6 matched (target 21) | `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull` | 0/0 matched (target 3) | _none_ | 2 | 6 | 20609.6 |
 | 158 | `operators.Errors` | `flow.Errors` | 0.07 | 0 | 4/6 matched (target 13) | `Throwable::isCancellationCause`, `Throwable::isSameExceptionAs` | 0/0 matched (target 1) | _none_ | 2 | 6 | 20609.3 |
 | 159 | `channels.ChannelCoroutine` | `channels.ChannelCoroutine` | 0.29 | 0 | 2/4 matched (target 18) | `ChannelCoroutine::cancel`, `ChannelCoroutine::cancel` | 1/1 matched | _none_ | 2 | 5 | 20507.1 |
 | 160 | `internal.NamedDispatcher` | `internal.NamedDispatcher` | 0.39 | 0 | 2/4 matched | `NamedDispatcher::isDispatchNeeded`, `NamedDispatcher::dispatchYield` | 1/1 matched | _none_ | 2 | 5 | 20506.1 |

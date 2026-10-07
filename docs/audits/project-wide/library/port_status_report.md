@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 781/2918 matched (target 2852) | 26.8% |
-| Class/type parity | 341/560 matched (target 490) | 60.9% |
-| Combined symbol parity | 1122/3478 matched (target 3342) | 32.3% |
+| Function parity | 781/2918 matched (target 2862) | 26.8% |
+| Class/type parity | 341/560 matched (target 492) | 60.9% |
+| Combined symbol parity | 1122/3478 matched (target 3354) | 32.3% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 735 | 0% parity until ported |
@@ -20,8 +20,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Missing source symbol files | 107 | 901 symbols |
 | Cheat/scoring failures | 122 | forced to 0% |
 | Total source files | 354 | 100% |
-| Target units (paired) | 590 | - |
-| Target files (total) | 768 | - |
+| Target units (paired) | 591 | - |
+| Target files (total) | 769 | - |
 | Porting progress | 243 | 68.6% (matched) |
 | Missing files | 111 | 31.4% |
 
@@ -182,11 +182,11 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 138 | `channels.Channels` | `channels.Channels` | 0.03 | 1/2 matched (target 1) | `SendChannel<E>::sendBlocking` | 0/0 matched | _none_ | - | 1 | 10209.7 |
 | 139 | `selects.OnTimeout` | `selects.OnTimeout` | 0.03 | 2/3 matched (target 6) | `OnTimeout::register` | 1/1 matched | _none_ | - | 1 | 10409.7 |
 | 140 | `operators.Distinct` | `flow.Distinct` | 0.04 | 4/5 matched (target 12) | `Flow<T>::distinctUntilChangedBy` | 1/1 matched (target 5) | _none_ | - | 1 | 10609.6 |
-| 141 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.6 |
-| 142 | `flow.Flow` | `flow.Flow` | 0.04 | 1/1 matched (target 4) | _none_ | 2/2 matched (target 5) | _none_ | - | 0 | 28000310.0 |
-| 143 | `operators.Limit` | `flow.Limit` | 0.05 | 8/8 matched (target 44) | _none_ | 0/0 matched (target 4) | _none_ | - | 0 | 809.5 |
-| 144 | `common.TestDispatcher` | `test.TestDispatcher` | 0.05 | 2/6 matched (target 8) | `TestDispatcher::processEvent`, `TestDispatcher::timeoutMessage`, `CancellableContinuationRunnable::run`, `cancellableRunnableIsCancelled` | 1/2 matched | `CancellableContinuationRunnable` | - | 5 | 50809.5 |
-| 145 | `channels.Channels.common` | `channels.Channels.common` | 0.05 | 4/6 matched (target 11) | `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull` | 0/0 matched (target 1) | _none_ | - | 2 | 20609.5 |
+| 141 | `channels.Channels.common` | `channels.Channels.common` | 0.04 | 4/6 matched (target 21) | `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull` | 0/0 matched (target 3) | _none_ | - | 2 | 20609.6 |
+| 142 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.6 |
+| 143 | `flow.Flow` | `flow.Flow` | 0.04 | 1/1 matched (target 4) | _none_ | 2/2 matched (target 5) | _none_ | - | 0 | 28000310.0 |
+| 144 | `operators.Limit` | `flow.Limit` | 0.05 | 8/8 matched (target 44) | _none_ | 0/0 matched (target 4) | _none_ | - | 0 | 809.5 |
+| 145 | `common.TestDispatcher` | `test.TestDispatcher` | 0.05 | 2/6 matched (target 8) | `TestDispatcher::processEvent`, `TestDispatcher::timeoutMessage`, `CancellableContinuationRunnable::run`, `cancellableRunnableIsCancelled` | 1/2 matched | `CancellableContinuationRunnable` | - | 5 | 50809.5 |
 | 146 | `operators.Zip` | `flow.Zip` | 0.06 | 9/18 matched (target 11) | `combine`, `combineTransform`, `combine`, `combineTransform`, `combineUnsafe`, `combineTransformUnsafe`, `nullArrayFactory`, `combine`, `combineTransform` | 0/0 matched | _none_ | - | 9 | 91809.4 |
 | 147 | `test.CancellableResumeTest` | `tests.CancellableResumeTest` | 0.06 | 0/11 matched (target 1) | `CancellableResumeTest::testResumeImmediateNormally`, `CancellableResumeTest::testResumeImmediateAfterCancel`, `CancellableResumeTest::testResumeImmediateAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancel`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancelWithHandlerFailure`, `CancellableResumeTest::testResumeLaterNormally`, `CancellableResumeTest::testResumeLaterAfterCancel`, `CancellableResumeTest::testResumeLaterAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeCancelWhileDispatched`, `CancellableResumeTest::testResumeCancelWhileDispatchedWithHandlerFailure`, `CancellableResumeTest::testResumeUnconfined` | 1/1 matched | _none_ | 0/11 | 11 | 111209.4 |
 | 148 | `operators.Emitters` | `flow.Emitters` | 0.06 | 6/8 matched (target 16) | `Flow<T>::unsafeTransform`, `FlowCollector<T>::invokeSafely` | 1/1 matched (target 2) | _none_ | - | 2 | 20909.4 |
@@ -225,9 +225,9 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 181 | `common.Builders.common` | `coroutines.Builders.common` | 0.19 | 14/14 matched (target 55) | _none_ | 5/6 matched (target 9) | `UndispatchedCoroutine` | - | 1 | 12008.1 |
 | 182 | `internal.Merge` | `internal.Merge` | 0.20 | 9/9 matched (target 37) | _none_ | 3/3 matched (target 8) | _none_ | - | 0 | 1001207.9 |
 | 183 | `selects.Select` | `selects.Select` | 0.21 | 24/30 matched (target 71) | `SelectBuilder::invoke`, `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | - | 6 | 1064608.0 |
-| 184 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 24) | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 65001308.0 |
-| 185 | `test.CoroutineDispatcherOperatorFunInvokeTest` | `tests.CoroutineDispatcherOperatorFunInvokeTest` | 0.22 | 3/8 matched (target 12) | `CoroutineDispatcherOperatorFunInvokeTest::testThrowException`, `CoroutineDispatcherOperatorFunInvokeTest::testWithContextChildWaitSameContext`, `CoroutineDispatcherOperatorFunInvokeTest::dispatch`, `CoroutineDispatcherOperatorFunInvokeTest::isDispatchNeeded`, `CoroutineDispatcherOperatorFunInvokeTest::dispatchYield` | 2/2 matched (target 3) | _none_ | 0/2 | 5 | 51007.8 |
-| 186 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
+| 184 | `test.CoroutineDispatcherOperatorFunInvokeTest` | `tests.CoroutineDispatcherOperatorFunInvokeTest` | 0.22 | 3/8 matched (target 12) | `CoroutineDispatcherOperatorFunInvokeTest::testThrowException`, `CoroutineDispatcherOperatorFunInvokeTest::testWithContextChildWaitSameContext`, `CoroutineDispatcherOperatorFunInvokeTest::dispatch`, `CoroutineDispatcherOperatorFunInvokeTest::isDispatchNeeded`, `CoroutineDispatcherOperatorFunInvokeTest::dispatchYield` | 2/2 matched (target 3) | _none_ | 0/2 | 5 | 51007.8 |
+| 185 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
+| 186 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 24) | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 65001308.0 |
 | 187 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | - | 0 | 1007.8 |
 | 188 | `sync.Mutex` | `sync.Mutex` | 0.23 | 11/16 matched (target 20) | `Mutex`, `MutexImpl::CancellableContinuationWithOwner::tryResume`, `MutexImpl::CancellableContinuationWithOwner::resume`, `MutexImpl::SelectInstanceWithOwner::trySelect`, `MutexImpl::SelectInstanceWithOwner::selectInRegistrationPhase` | 2/4 matched (target 2) | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` | - | 7 | 72007.7 |
 | 189 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.24 | 7/7 matched (target 8) | _none_ | 1/1 matched | _none_ | - | 0 | 807.6 |
@@ -555,11 +555,11 @@ These files need significant work:
 - `channels.Channels` -> `channels.Channels` (0.03)
 - `selects.OnTimeout` -> `selects.OnTimeout` (0.03)
 - `operators.Distinct` -> `flow.Distinct` (0.04)
+- `channels.Channels.common` -> `channels.Channels.common` (0.04)
 - `selects.WhileSelect` -> `selects.WhileSelect` (0.04)
 - `flow.Flow` -> `flow.Flow` (0.04, 28 deps)
 - `operators.Limit` -> `flow.Limit` (0.05)
 - `common.TestDispatcher` -> `test.TestDispatcher` (0.05)
-- `channels.Channels.common` -> `channels.Channels.common` (0.05)
 - `operators.Zip` -> `flow.Zip` (0.06)
 - `test.CancellableResumeTest` -> `tests.CancellableResumeTest` (0.06)
 - `operators.Emitters` -> `flow.Emitters` (0.06)
@@ -598,9 +598,9 @@ These files need significant work:
 - `common.Builders.common` -> `coroutines.Builders.common` (0.19)
 - `internal.Merge` -> `internal.Merge` (0.20, 1 deps)
 - `selects.Select` -> `selects.Select` (0.21, 1 deps)
-- `flow.Channels` -> `flow.Channels` (0.22, 65 deps)
 - `test.CoroutineDispatcherOperatorFunInvokeTest` -> `tests.CoroutineDispatcherOperatorFunInvokeTest` (0.22)
 - `native.CoroutineContext` -> `coroutines.UndispatchedCoroutine` (0.22, 6 deps)
+- `flow.Channels` -> `flow.Channels` (0.22, 65 deps)
 - `selects.SelectOld` -> `selects.SelectOld` (0.22)
 - `sync.Mutex` -> `sync.Mutex` (0.23)
 - `internal.OnDemandAllocatingPool` -> `internal.OnDemandAllocatingPool` (0.24)
@@ -791,7 +791,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7183 / 7063 lines (102%)
+**Documentation line amount:** 7083 / 7063 lines (100%)
 
 Documentation gaps (>20%), complete list:
 
@@ -811,6 +811,7 @@ Documentation gaps (>20%), complete list:
 - `internal.DispatchedTask` - 88% gap (66 → 8 lines)
 - `operators.Emitters` - 54% gap (105 → 48 lines)
 - `channels.Deprecated` - 100% gap (48 → 0 lines)
+- `channels.Channels.common` - 33% gap (134 → 90 lines)
 - `operators.Zip` - 33% gap (133 → 89 lines)
 - `operators.Lint` - 71% gap (55 → 16 lines)
 - `native.Builders` - 84% gap (43 → 7 lines)
