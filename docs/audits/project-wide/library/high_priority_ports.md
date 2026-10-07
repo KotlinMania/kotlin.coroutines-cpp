@@ -242,8 +242,8 @@ This list is complete and includes function/type detail for every matched file. 
 | 230 | `terminal.Count` | `flow.Count` | 0.03 | 0 | 2/2 matched (target 26) | _none_ | 0/0 matched (target 2) | _none_ | 0 | 2 | 209.7 |
 | 231 | `internal.MainDispatcherFactory` | `internal.MainDispatcherFactory` | 0.07 | 0 | 1/1 matched | _none_ | 1/1 matched (target 2) | _none_ | 0 | 2 | 209.3 |
 | 232 | `internal.NopCollector` | `internal.NopCollector` | 0.08 | 0 | 1/1 matched | _none_ | 1/1 matched | _none_ | 0 | 2 | 209.2 |
-| 233 | `internal.SendingCollector` | `internal.SendingCollector` | 0.16 | 0 | 1/1 matched (target 2) | _none_ | 1/1 matched | _none_ | 0 | 2 | 208.4 |
-| 234 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 0 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | 0 | 2 | 207.6 |
+| 233 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 0 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | 0 | 2 | 207.6 |
+| 234 | `internal.SendingCollector` | `internal.SendingCollector` | 0.29 | 0 | 1/1 matched (target 2) | _none_ | 1/1 matched | _none_ | 0 | 2 | 207.1 |
 | 235 | `test.ConcurrentTestUtilities` | `test.ConcurrentTestUtilities` | 0.50 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 205.0 |
 | 236 | `kotlin.SharedFlowBaseline` | `benchmarks.SharedFlowBaseline` | 0.66 | 0 | 1/1 matched | _none_ | 1/1 matched | _none_ | 0 | 2 | 203.4 |
 | 237 | `common.Runnable.common` | `coroutines.Runnable [ZERO]` | 0.00 | 0 | 0/0 matched (target 3) | _none_ | 1/1 matched (target 2) | _none_ | 0 | 1 | 110.0 |

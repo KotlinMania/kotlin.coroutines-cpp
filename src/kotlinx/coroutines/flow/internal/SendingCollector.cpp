@@ -1,20 +1,7 @@
-// port-lint: source flow/internal/SendingCollector.kt
 /**
- * @file SendingCollector.cpp
- * @brief Implementation of SendingCollector.
- *
- * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/internal/SendingCollector.hpp`.
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SendingCollector.kt
  */
-
+// port-lint: source flow/internal/SendingCollector.kt
 #include "kotlinx/coroutines/flow/internal/SendingCollector.hpp"
 
-namespace kotlinx {
-    namespace coroutines {
-        namespace flow {
-            namespace internal {
-                // Template implementations are in the header.
-            } // namespace internal
-        } // namespace flow
-    } // namespace coroutines
-} // namespace kotlinx
+// NOTE(port): The generic class is instantiated from its co-located header.

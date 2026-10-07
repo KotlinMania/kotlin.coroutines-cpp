@@ -256,6 +256,57 @@ void channel_scope_contract() {
     }
 }
 
+// SendingCollector.kt:12-15 delegates directly to the actual channel send.
+void sending_collector_contract() {
+    for (bool cancelled : {false, true}) {
+        auto channel = create_channel<int>(0);
+        auto failure = cancelled
+            ? std::make_exception_ptr(CancellationException("original send cancellation"))
+            : std::make_exception_ptr(std::runtime_error("original send failure"));
+        if (cancelled) channel->cancel(failure);
+        else channel->close(failure);
+        flow::internal::SendingCollector<int> collector(channel.get());
+        Completion completion;
+        std::exception_ptr observed;
+        try { collector.emit(17, &completion); }
+        catch (...) { observed = std::current_exception(); }
+        CHECK((observed == failure && completion.resumes == 0) ||
+              (!observed && completion.resumes == 1 && completion.failure == failure));
+    }
+
+    auto channel = create_channel<int>(0);
+    flow::internal::SendingCollector<int> collector(channel.get());
+    for (int value : {19, 23}) {
+        Completion completion;
+        CHECK(intrinsics::is_coroutine_suspended(collector.emit(value, &completion)));
+        CHECK(completion.resumes == 0);
+        auto received = channel->try_receive();
+        CHECK(received.is_success() && received.get_or_throw() == value);
+        CHECK(completion.resumes == 1 && !completion.failure && !completion.value);
+    }
+    Completion cancelled;
+    CHECK(intrinsics::is_coroutine_suspended(collector.emit(29, &cancelled)));
+    auto failure = std::make_exception_ptr(CancellationException("waiting send cancelled"));
+    channel->cancel(failure);
+    CHECK(cancelled.resumes == 1 && cancelled.failure == failure);
+    CHECK(channel->try_receive().is_closed());
+
+    // The collector borrows the channel and forwards the actual value object.
+    BufferedChannel<std::shared_ptr<int>> borrowed(1);
+    flow::internal::SendingCollector<std::shared_ptr<int>> forwarding(&borrowed);
+    auto resource = std::make_shared<int>(31);
+    auto identity = resource.get();
+    std::weak_ptr<int> lifetime = resource;
+    Completion done;
+    CHECK(forwarding.emit(std::move(resource), &done) == nullptr);
+    CHECK(!resource && !lifetime.expired() && done.resumes == 0);
+    {
+        auto received = borrowed.try_receive();
+        CHECK(received.is_success() && received.get_or_throw().get() == identity);
+    }
+    CHECK(lifetime.expired());
+}
+
 void cancellation_contract() {
     for (int kind : {0, 1, 2}) {
         RecordingChannel channel;
@@ -443,6 +494,7 @@ int main() {
     try {
         job_cancellation_equality_contract();
         channel_scope_contract();
+        sending_collector_contract();
         cancellation_contract();
         iteration_contract();
         list_contract();

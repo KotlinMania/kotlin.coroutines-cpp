@@ -45,6 +45,38 @@ results, immediate/resumed vector results, capture cleanup, and collection's
 single-consumer guard. Shared C++ values retain their resource identity across
 suspension; deleting the completed vector or failing collection releases them.
 
+SendingCollector.kt:7-16 was read completely for the subsequent source repair.
+`flow/internal/SendingCollector.hpp:24` now directly returns channel.send, as
+source line 15 specifies. The extra is_closed_for_send branch previously threw
+a new ClosedSendChannelException and lost the channel's actual failure.
+The regression at `src/tests/src/suspend/test_channel_consumption.cpp:259`
+reproduced that mismatch before the repair (exit 1 at line 273). It checks
+original close/cancellation exception identity, repeated real rendezvous send
+suspension, cancellation while sending, and shared value identity/release through
+a borrowed stack channel. File/class/function provenance now resolves to the
+actual Kotlin source; the companion no longer cites a nonexistent include path.
+The current channel reports closed-send failure through the supplied continuation
+and returns COROUTINE_SUSPENDED. The collector regression accepts that existing
+delivery path or a thrown failure, while requiring exact exception identity.
+This does not establish BufferedChannel.on_closed_send parity with Kotlin.
+
+The repaired collector and its regression build in the existing standalone C++
+target. Nine focused coroutine executables and nine AST tool tests finish with
+zero failures. The channel-consumption executable also finishes with exit zero
+and no AddressSanitizer/UndefinedBehaviorSanitizer diagnostics. These checks use
+real channels for the cases above. Receipts under `build/ir-recovery` are
+`sending-collector-build.log`, `sending-collector-test-build.log`,
+`sending-collector-focused-tests.log`, `sending-collector-ast-tests.log`, and
+`sending-collector-sanitizer-{build,tests}.log`. Three ranged provenance references
+resolve to valid Kotlin line bounds; the two collector files contain no prohibited
+source markers. These bounded checks do not establish whole-library parity.
+Final library and compiler full-root deep scans finish with exit zero after the
+final test edit. Receipts are `sending-collector-{library,compiler}-deep.log`.
+Current library totals remain 796/2918 matched body names, 354/560 types,
+average body similarity 0.26 and 122 scoring failures. SendingCollector is
+1/1 matched body names and 1/1 types, with body similarity 0.29. Generated
+reports remain the authority for status and dependency priority.
+
 Build receipts are `build/ir-recovery/channel-consumption-final-build.log` and
 `channel-consumption-resource-build.log`; execution is recorded in
 `channel-consumption-final-tests.log`. The same test and concrete cause helper

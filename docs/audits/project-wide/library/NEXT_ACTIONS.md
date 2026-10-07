@@ -3028,19 +3028,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 2
 
-### 233. internal.SendingCollector
-
-- **Target:** `internal.SendingCollector`
-- **Similarity:** 0.16
-- **Dependents:** 0
-- **Priority Score:** 208.4
-- **Functions:** 1/1 matched (target 2)
-- **Missing functions:** _none_
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Lint issues:** 1
-
-### 234. internal.Synchronized.common
+### 233. internal.Synchronized.common
 
 - **Target:** `internal.SynchronizedObject`
 - **Similarity:** 0.24
@@ -3050,6 +3038,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 1/1 matched
 - **Missing types:** _none_
+
+### 234. internal.SendingCollector
+
+- **Target:** `internal.SendingCollector`
+- **Similarity:** 0.29
+- **Dependents:** 0
+- **Priority Score:** 207.1
+- **Functions:** 1/1 matched (target 2)
+- **Missing functions:** _none_
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Lint issues:** 1
 
 ### 235. test.ConcurrentTestUtilities
 
