@@ -256,6 +256,24 @@ struct CommentStats {
     }
 };
 
+// Read enum identity from the declaration's keyword/modifier CST, never from a comment,
+// body string or an enclosing enum containing an unrelated nested class.
+inline bool kotlin_enum_declaration(TSNode declaration) {
+    if (std::string(ts_node_type(declaration)) != "class_declaration") return false;
+    auto contains_enum = [&](auto&& self, TSNode node) -> bool {
+        if (std::string(ts_node_type(node)) == "enum") return true;
+        for (uint32_t i = 0; i < ts_node_child_count(node); ++i)
+            if (self(self, ts_node_child(node, i))) return true;
+        return false;
+    };
+    for (uint32_t i = 0; i < ts_node_child_count(declaration); ++i) {
+        auto child = ts_node_child(declaration, i);
+        std::string kind = ts_node_type(child);
+        if (kind == "enum" || (kind == "modifiers" && contains_enum(contains_enum, child))) return true;
+    }
+    return false;
+}
+
 /**
  * Function metadata extracted from source code.
  * The AST and identifiers are kept as parameters + body so transliteration
@@ -276,6 +294,7 @@ struct FunctionInfo {
     std::vector<std::string> enclosing_functions;
     bool is_namespace_function = false;
     bool has_class_owner = false;
+    bool is_enum_member = false;
     TreePtr body_tree;
     IdentifierStats identifiers;
     bool has_stub_markers = false;
@@ -2042,6 +2061,15 @@ public:
                     }
                 }
                 info.qualified_name = prefix + func_name;
+            }
+            if (lang == Language::KOTLIN) {
+                for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
+                    std::string kind = ts_node_type(parent);
+                    if (kind == "class_declaration" || kind == "object_declaration" || kind == "companion_object" || kind == "object_literal") {
+                        info.is_enum_member = kotlin_enum_declaration(parent);
+                        break;
+                    }
+                }
             }
             info.body_tree = make_function_comparison_tree(node, body_node, source, lang);
             info.identifiers = extract_function_comparison_identifiers(node, body_node, source, lang);

@@ -67,7 +67,9 @@ bool compatible(const DeepSymbol& source, const DeepSymbol& target) {
     return source.kind == "property" && target.kind == "function";
 }
 bool symbol_matches(const DeepSymbol& source, const DeepSymbol& target) {
-    if (!compatible(source, target) || !owners_match(source.owner, target.owner)) return false;
+    bool enum_projection = source.is_enum_member && target.kind == "function" && target.owner.empty() &&
+        callable_type_names_compatible(source.owner, target.first_parameter_type);
+    if (!compatible(source, target) || (!owners_match(source.owner, target.owner) && !enum_projection)) return false;
     auto left = IdentifierStats::canonicalize(source.name);
     auto right = IdentifierStats::canonicalize(target.name);
     if (left == right) return true;
@@ -127,8 +129,26 @@ DeepInventory extract_deep_inventory(const std::vector<std::string>& paths, Lang
                 std::string actual_owner = owner;
                 auto separator = name.rfind("::");
                 if (separator != std::string::npos) { actual_owner = name.substr(0, separator); name.erase(0, separator + 2); }
-                inventory.symbols.push_back({name, actual_owner, category, path,
-                    static_cast<int>(ts_node_start_point(node).row) + 1, definition});
+                DeepSymbol symbol{name, actual_owner, category, path,
+                    static_cast<int>(ts_node_start_point(node).row) + 1, definition, false, {}};
+                if (language == Language::KOTLIN && (category == "function" || category == "property")) {
+                    for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
+                        std::string parent_kind = ts_node_type(parent);
+                        if (parent_kind == "class_declaration" || parent_kind == "object_declaration" || parent_kind == "companion_object" || parent_kind == "object_literal") {
+                            symbol.is_enum_member = kotlin_enum_declaration(parent);
+                            break;
+                        }
+                    }
+                }
+                if (language == Language::CPP && category == "function" && actual_owner.empty()) {
+                    auto declarator = field(node, "declarator");
+                    while (!ts_node_is_null(declarator) && std::string(ts_node_type(declarator)) != "function_declarator")
+                        declarator = field(declarator, "declarator");
+                    auto parameters = field(declarator, "parameters");
+                    if (!ts_node_is_null(parameters) && ts_node_named_child_count(parameters))
+                        symbol.first_parameter_type = text(field(ts_node_named_child(parameters, 0), "type"), source);
+                }
+                inventory.symbols.push_back(std::move(symbol));
             };
             bool container = kind == "class_declaration" || kind == "object_declaration" || kind == "companion_object" || kind == "class_specifier" ||
                 kind == "struct_specifier" || kind == "enum_specifier" || kind == "struct_item" || kind == "enum_item" ||

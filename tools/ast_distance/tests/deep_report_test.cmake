@@ -132,3 +132,49 @@ if(NOT review MATCHES "NO_LOCAL_LOWERING_REVIEW[^\n]*plain_value" OR
     message(FATAL_ERROR "Wrong callable-scoped review classification: ${review}")
 endif()
 message(STATUS "Deep ordered literal score and callable-scoped suspension review passed")
+
+# Kotlin enum instance APIs lower to C++ free functions carrying the actual enum.
+file(MAKE_DIRECTORY "${TEST_DIR}/enum-source" "${TEST_DIR}/enum-target")
+file(WRITE "${TEST_DIR}/enum-source/Mode.kt" [=[package demo
+enum class Mode { DEFAULT, LAZY;
+ fun invoke(value: Int): Int = value
+ val isLazy: Boolean get() = this == LAZY
+}
+]=])
+file(WRITE "${TEST_DIR}/enum-target/Mode.hpp" [=[// port-lint: source Mode.kt
+namespace demo {
+enum class Mode { DEFAULT, LAZY };
+int invoke(Mode mode, int value) { return value; }
+bool is_lazy(Mode mode) { return mode == Mode::LAZY; }
+}
+]=])
+file(WRITE "${TEST_DIR}/enum-source/Wrong.kt" [=[package demo
+enum class Wrong { DEFAULT; fun invoke(value: Int): Int = value; val isLazy: Boolean get() = true }
+]=])
+file(WRITE "${TEST_DIR}/enum-target/Wrong.hpp" [=[// port-lint: source Wrong.kt
+namespace demo {
+enum class Wrong { DEFAULT };
+enum class Other { DEFAULT };
+int invoke(Other mode, int value) { return value; }
+bool is_lazy(Other mode) { return true; }
+}
+]=])
+file(WRITE "${TEST_DIR}/enum-source/Plain.kt" "package demo
+class Plain { fun invoke(value: Int): Int = value }
+")
+file(WRITE "${TEST_DIR}/enum-target/Plain.hpp" "// port-lint: source Plain.kt
+namespace demo { class Plain {}; int invoke(Plain value, int input) { return input; } }
+")
+execute_process(COMMAND "${AST_DISTANCE}" --deep "${TEST_DIR}/enum-source" kotlin "${TEST_DIR}/enum-target" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_VARIABLE enum_report ERROR_VARIABLE errors RESULT_VARIABLE status)
+if(NOT status EQUAL 0 OR NOT enum_report MATCHES "PRESENT function Mode::invoke" OR
+   NOT enum_report MATCHES "PRESENT property Mode::isLazy" OR
+   NOT enum_report MATCHES "MISSING_SYMBOL function Wrong::invoke" OR
+   NOT enum_report MATCHES "MISSING_SYMBOL property Wrong::isLazy" OR
+   NOT enum_report MATCHES "MISSING_SYMBOL function Plain::invoke")
+    message(FATAL_ERROR "Enum receiver projection lost presence or accepted an unrelated owner: ${enum_report}: ${errors}")
+endif()
+file(READ "${TEST_DIR}/port_status_report.md" enum_status)
+if(NOT enum_status MATCHES "Function parity [|] 1/3 matched")
+    message(FATAL_ERROR "Enum function name coverage is false: ${enum_status}")
+endif()

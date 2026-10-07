@@ -35,6 +35,31 @@ void ns::Qualified::command(double x) { (void)x; }
     assert(names.count("command") == 2 && names.count("inline_method") == 1);
     assert(functions.back().qualified_name == "ns::Qualified::command");
     assert(functions[6].signature != functions[7].signature);
+    auto enum_members = parser.extract_function_infos(
+        "enum class Mode { DEFAULT; fun invoke(value: Int): Int = value }", Language::KOTLIN);
+    auto enum_lowered = parser.extract_function_infos(
+        "namespace demo { enum class Mode { DEFAULT }; int invoke(Mode mode, int value) { return value; } }", Language::CPP);
+    assert(enum_members.size() == 1 && enum_members[0].is_enum_member);
+    assert(enum_lowered.size() == 1 && enum_lowered[0].is_namespace_function);
+    assert(callable_owners_compatible(enum_members[0], enum_lowered[0]));
+    assert(CodebaseComparator::function_name_coverage(enum_members, enum_lowered).matched == 1);
+    auto wrong_enum = parser.extract_function_infos(
+        "namespace demo { int invoke(Other mode, int value) { return value; } }", Language::CPP);
+    auto wrong_arity = parser.extract_function_infos(
+        "namespace demo { int invoke(Mode mode) { return 1; } }", Language::CPP);
+    assert(!callable_owners_compatible(enum_members[0], wrong_enum[0]));
+    assert(!callable_owners_compatible(enum_members[0], wrong_arity[0]));
+    auto class_member = parser.extract_function_infos(
+        "class Mode { fun invoke(value: Int): Int = value }", Language::KOTLIN);
+    assert(!class_member[0].is_enum_member && !callable_owners_compatible(class_member[0], enum_lowered[0]));
+    auto nested_member = parser.extract_function_infos(
+        "enum class Outer { DEFAULT; class Mode { fun invoke(value: Int): Int = value } }", Language::KOTLIN);
+    assert(nested_member.size() == 1 && !nested_member[0].is_enum_member);
+    auto anonymous_member = parser.extract_function_infos(
+        "enum class Outer { DEFAULT; val worker = object { fun invoke(value: Int): Int = value } }", Language::KOTLIN);
+    assert(anonymous_member.size() == 1 && !anonymous_member[0].is_enum_member);
+
+
     auto reference_returns = parser.extract_function_infos(R"(
 namespace compiler {
 const Visibility& Visibility::normalize() const { return *this; }

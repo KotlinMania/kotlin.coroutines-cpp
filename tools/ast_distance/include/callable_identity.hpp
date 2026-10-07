@@ -55,6 +55,18 @@ inline bool callable_owners_compatible(const FunctionInfo& source, const Functio
     if (!target.extension_receiver.empty() && source.is_namespace_function)
         return callable_type_names_compatible(target.extension_receiver, source.first_parameter_type) &&
             extension_argument_counts_compatible(target, source);
+    // A C++ enum cannot contain member functions. Its Kotlin instance methods
+    // lower to namespace functions with the enum as the explicit first argument.
+    // Require CST enum identity, the actual receiver type and argument inventory;
+    // an ordinary class or a same-spelled function on another enum is not enough.
+    auto enum_projection = [](const FunctionInfo& member, const FunctionInfo& lowered) {
+        return member.is_enum_member && member.enclosing_functions.empty() &&
+            lowered.is_namespace_function && !lowered.has_class_owner &&
+            callable_type_names_compatible(callable_owner_key(member), lowered.first_parameter_type) &&
+            extension_argument_counts_compatible(member, lowered);
+    };
+    if (source.is_enum_member && target.is_namespace_function) return enum_projection(source, target);
+    if (target.is_enum_member && source.is_namespace_function) return enum_projection(target, source);
     // A receiver extension cannot be hidden inside an unrelated class method.
     // Companion extensions are the explicit static-member lowering exception.
     if (!source.extension_receiver.empty() && target.has_class_owner && !source.extension_receiver.ends_with(".Companion")) return false;

@@ -16,6 +16,8 @@ struct DeepSymbol {
     std::string file;
     int line = 0;
     bool definition = true;
+    bool is_enum_member = false;
+    std::string first_parameter_type;
 };
 
 struct DeepInventory {
