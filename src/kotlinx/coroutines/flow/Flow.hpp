@@ -1,3 +1,6 @@
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt
+ */
 #pragma once
 // port-lint: source kotlinx-coroutines-core/common/src/flow/Flow.kt
 
@@ -5,12 +8,20 @@
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
+#include <memory>
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
 
+// NOTE(port): Both include orders remain valid while the public template
+// implementation and its SafeCollector dependency include each other.
+namespace internal { template <typename T> class SafeCollector; }
 
+
+// NOTE(port): KDoc examples retain their upstream Kotlin notation.
 /**
  * An asynchronous data stream that sequentially emits values and completes normally or with an exception.
  *
@@ -27,13 +38,13 @@ namespace flow {
  * without actual blocking. Terminal operators complete normally or exceptionally depending on successful or failed
  * execution of all the flow operations in the upstream. The most basic terminal operator is [collect], for example:
  *
- * ```cpp
+ * ```kotlin
  * try {
- *     flow->collect(value, [](auto value) {
- *         std::cout << "Received " << value << std::endl;
- *     });
- * } catch (const std::exception& e) {
- *     std::cout << "The flow has thrown an exception: " << e.what() << std::endl;
+ *     flow.collect { value ->
+ *         println("Received $value")
+ *     }
+ * } catch (e: Exception) {
+ *     println("The flow has thrown an exception: $e")
  * }
  * ```
  *
@@ -84,21 +95,21 @@ namespace flow {
  *
  * This reasoning can be demonstrated in practice:
  *
- * ```cpp
- * auto flowA = flowOf(1, 2, 3)
- *     ->map([](int it) { return it + 1; }) // Will be executed in ctxA
- *     ->flowOn(ctxA); // Changes the upstream context: flowOf and map
+ * ```kotlin
+ * val flowA = flowOf(1, 2, 3)
+ *     .map { it + 1 } // Will be executed in ctxA
+ *     .flowOn(ctxA) // Changes the upstream context: flowOf and map
  *
  * // Now we have a context-preserving flow: it is executed somewhere but this information is encapsulated in the flow itself
  *
- * auto filtered = flowA // ctxA is encapsulated in flowA
- *    ->filter([](int it) { return it == 3; }); // Pure operator without a context yet
+ * val filtered = flowA // ctxA is encapsulated in flowA
+ *    .filter { it == 3 } // Pure operator without a context yet
  *
- * withContext(Dispatchers::Main(), [&] {
+ * withContext(Dispatchers.Main) {
  *     // All non-encapsulated operators will be executed in Main: filter and single
- *     auto result = filtered->single();
- *     myUi->text = result;
- * });
+ *     val result = filtered.single()
+ *     myUi.text = result
+ * }
  * ```
  *
  * From the implementation point of view, it means that all flow implementations should
@@ -107,16 +118,16 @@ namespace flow {
  * The [flow] builder should be used if the flow implementation does not start any coroutines.
  * Its implementation prevents most of the development mistakes:
  *
- * ```cpp
- * auto myFlow = flow([](auto& collector) {
+ * ```kotlin
+ * val myFlow = flow {
  *     // GlobalScope.launch { // is prohibited
  *     // launch(Dispatchers.IO) { // is prohibited
  *     // withContext(CoroutineName("myFlow")) { // is prohibited
- *     collector.emit(1); // OK
- *     coroutineScope([&] {
- *         collector.emit(2); // OK -- still the same coroutine
- *     });
- * });
+ *     emit(1) // OK
+ *     coroutineScope {
+ *         emit(2) // OK -- still the same coroutine
+ *     }
+ * }
  * ```
  *
  * Use [channelFlow] if the collection and emission of a flow are to be separated into multiple coroutines.
@@ -143,12 +154,12 @@ namespace flow {
  * all downstream exceptions. Similarly, terminal operators like [collect][Flow.collect]
  * throw any unhandled exceptions that occur in their code or in upstream flows, for example:
  *
- * ```cpp
- * flow([](auto& c) { emitData(); })
- *     ->map([](auto it) { return computeOne(it); })
- *     ->catch_exception([](auto _e) { ... }) // catches exceptions in emitData and computeOne
- *     ->map([](auto it) { return computeTwo(it); })
- *     ->collect([](auto it) { process(it); }); // throws exceptions from process and computeTwo
+ * ```kotlin
+ * flow { emitData() }
+ *     .map { computeOne(it) }
+ *     .catch { ... } // catches exceptions in emitData and computeOne
+ *     .map { computeTwo(it) }
+ *     .collect { process(it) } // throws exceptions from process and computeTwo
  * ```
  * The same reasoning can be applied to the [onCompletion] operator that is a declarative replacement for the `finally` block.
  *
@@ -180,16 +191,19 @@ namespace flow {
  * These implementations ensure that the context preservation property is not violated, and prevent most
  * of the developer mistakes related to concurrency, inconsistent flow dispatchers, and cancellation.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:176-195
 template <typename T>
-struct Flow {
+// NOTE(port): Recover an existing shared owner when a lowered suspend call
+// retains its Kotlin receiver. Raw and stack flows remain borrowed.
+struct Flow : public std::enable_shared_from_this<Flow<T>> {
     virtual ~Flow() = default;
 
     /**
      * Accepts the given [collector] and [emits][FlowCollector.emit] values into it.
      *
      * This method can be used along with SAM-conversion of [FlowCollector]:
-     * ```cpp
-     * myFlow->collect([](auto value) { std::cout << "Collected " << value << std::endl; });
+     * ```kotlin
+     * myFlow.collect { value -> println("Collected $value") }
      * ```
      *
      * ### Method inheritance
@@ -200,7 +214,14 @@ struct Flow {
      * All default flow implementations ensure context preservation and exception transparency properties on a best-effort basis
      * and throw [IllegalStateException] if a violation was detected.
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:194-194
     virtual void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) = 0;
+};
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Context.kt:269-269
+template<typename T>
+struct CancellableFlow : public virtual Flow<T> {
+    virtual ~CancellableFlow() = default;
 };
 
 /**
@@ -210,33 +231,23 @@ struct Flow {
  * 
  * Example of the implementation:
  *
- * ```cpp
+ * ```kotlin
  * // list.asFlow() + collect counter
- * class CountingListFlow : public AbstractFlow<int> {
- *     std::vector<int> values;
- *     std::atomic<int> collectedCounter;
- * public:
- *     CountingListFlow(std::vector<int> v) : values(v), collectedCounter(0) {}
+ * class CountingListFlow(private val values: List<Int>) : AbstractFlow<Int>() {
+ *     private val collectedCounter = AtomicInteger(0)
  *
- *     void collectSafely(FlowCollector<int>* collector, Continuation<void*>* continuation) override {
- *         collectedCounter++; // Increment collected counter
- *         for (auto& it : values) { // Emit all the values
- *             collector->emit(it, continuation);
+ *     override suspend fun collectSafely(collector: FlowCollector<Int>) {
+ *         collectedCounter.incrementAndGet() // Increment collected counter
+ *         values.forEach { // Emit all the values
+ *             collector.emit(it)
  *         }
  *     }
  *
- *     std::string toDiagnosticString() { 
- *         return "Flow with values " + std::to_string(values.size()) + 
- *                " was collected " + std::to_string(collectedCounter.load()) + " times";
- *     }
- * };
+ *     fun toDiagnosticString(): String = "Flow with values $values was collected ${collectedCounter.value} times"
+ * }
  * ```
  */
-template<typename T>
-struct CancellableFlow : public virtual Flow<T> {
-    virtual ~CancellableFlow() = default;
-};
-
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:221-246
 template<typename T>
 class AbstractFlow : public CancellableFlow<T> {
 public:
@@ -256,6 +267,7 @@ public:
      *
      * @throws IllegalStateException if any of the invariants are violated.
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:245-245
     virtual void* collect_safely(FlowCollector<T>* collector, Continuation<void*>* continuation) = 0;
 };
 
@@ -264,3 +276,50 @@ public:
 } // namespace kotlinx
 
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
+
+namespace kotlinx::coroutines::flow {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
+template<typename T>
+inline void* AbstractFlow<T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {
+    // NOTE(port): The frame owns SafeCollector through collectSafely and its finally block.
+    class CollectFrame final : public ContinuationImpl {
+    public:
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
+        CollectFrame(AbstractFlow<T>* flow, FlowCollector<T>* collector, Continuation<void*>* completion)
+            : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
+              flow_(flow), flow_owner_(flow->weak_from_this().lock()),
+              safe_collector_(std::make_shared<internal::SafeCollector<T>>(
+                  collector, completion->get_context())) {}
+
+        void retain() { self_ref_ = shared_from_this(); }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                coroutine_begin(this)
+                coroutine_yield(this, flow_->collect_safely(safe_collector_.get(), this));
+                safe_collector_->release_intercepted();
+                self_ref_.reset();
+                coroutine_end(this)
+            } catch (...) {
+                safe_collector_->release_intercepted();
+                self_ref_.reset();
+                throw;
+            }
+        }
+
+    private:
+        void* _label = nullptr;
+        AbstractFlow<T>* flow_;
+        std::shared_ptr<Flow<T>> flow_owner_;
+        std::shared_ptr<internal::SafeCollector<T>> safe_collector_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+    auto frame = std::make_shared<CollectFrame>(this, collector, continuation);
+    frame->retain();
+    return frame->start(Result<void*>::success(nullptr));
+}
+
+
+} // namespace kotlinx::coroutines::flow

@@ -1,14 +1,11 @@
 #pragma once
-// port-lint: source flow/internal/ChannelFlow.kt
+// port-lint: source kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt
  *
  * Kotlin file header (translated):
  *   package kotlinx.coroutines.flow.internal
  *
- * Channel-backed Flow operator skeletons and fusion utilities. The suspension points
- * ride on the project-wide Continuation ABI: every `collect` / `flowCollect` site returns
- * `void*` so the Clang plugin's state machines can slot in unchanged when they land.
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -26,20 +23,29 @@
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 #include "kotlinx/coroutines/flow/internal/SendingCollector.hpp"
+#include "kotlinx/coroutines/flow/internal/NopCollector.hpp"
+#include "kotlinx/coroutines/internal/ThreadContext.hpp"
 #include <cassert>
 #include <limits>
 #include <sstream>
 #include <string>
 #include <memory>
+#include <optional>
 #include <typeinfo>
 #include <vector>
+
+namespace kotlinx::coroutines {
+// Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:38-40
+std::shared_ptr<CoroutineContext> new_coroutine_context(
+    std::shared_ptr<CoroutineContext> base_context, std::shared_ptr<CoroutineContext> added_context);
+}
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
 namespace internal {
 
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:118-121
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120
 // and kotlinx-coroutines-core/common/src/CoroutineScope.kt:280-288
 void* collect_in_scope(
     std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block,
@@ -77,6 +83,7 @@ inline const char* buffer_overflow_to_string(BufferOverflow value) {
  * @suppress **This an internal API and should not be used from general code.**
  */
 template <typename T>
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:20-31
 struct FusibleFlow : public Flow<T> {
     virtual ~FusibleFlow() = default;
 
@@ -85,51 +92,68 @@ struct FusibleFlow : public Flow<T> {
      * that are applied to this flow. Should not be used with [capacity] of [Channel.CONFLATED]
      * (it shall be desugared to `capacity = 0, onBufferOverflow = DROP_OLDEST`).
      */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:26-30
     virtual Flow<T>* fuse(
         std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance(),
         int capacity = channels::Channel<T>::OPTIONAL_CHANNEL,
         BufferOverflow on_overflow = BufferOverflow::SUSPEND
-    ) {
-        return this;
-    }
+    ) = 0;
 };
 
+/**
+ * Operators that use channels as their "output" extend this `ChannelFlow` and are always fused with each other.
+ * This class servers as a skeleton implementation of [FusibleFlow] and provides other cross-cutting
+ * methods like ability to [produceIn] the corresponding flow, thus making it
+ * possible to directly use the backing channel if it exists (hence the `ChannelFlow` name).
+ *
+ * @suppress **This an internal API and should not be used from general code.**
+ */
 template <typename T>
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:42-133
 class ChannelFlow : public FusibleFlow<T> {
 public:
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:42-52
     ChannelFlow(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_overflow)
-        : context_(context), capacity_(capacity), on_overflow_(on_overflow) {}
+        : context_(std::move(context)), capacity_(capacity), on_overflow_(on_overflow) {
+        // CONFLATED must be desugared to 0, DROP_OLDEST by callers.
+        assert(capacity != Channel<T>::CONFLATED);
+    }
 
     virtual ~ChannelFlow() = default;
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:67-67
     virtual Flow<T>* drop_channel_operators() { return nullptr; }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:69-100
     Flow<T>* fuse(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_overflow) override;
 
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override;
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:58-59
     int produce_capacity() const;
 
-    virtual std::string additional_to_string_props();
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:122-122
+    virtual std::optional<std::string> additional_to_string_props();
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:125-132
     virtual std::string to_string();
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:114-115
     virtual std::shared_ptr<ReceiveChannel<T>> produce_impl(CoroutineScope* scope);
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:44-44
     std::shared_ptr<CoroutineContext> context() const { return context_; }
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:46-46
     int capacity() const { return capacity_; }
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:48-48
     BufferOverflow on_buffer_overflow() const { return on_overflow_; }
 
 protected:
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:102-102
     virtual ChannelFlow<T>* create(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_overflow) = 0;
     
-    virtual void collect_to(ProducerScope<T>* scope) = 0;
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:97
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:104-104
     virtual void* collect_to(ProducerScope<T>* scope,
-                             std::shared_ptr<Continuation<void*>> completion) {
-        collect_to(scope);
-        return nullptr;
-    }
+                             std::shared_ptr<Continuation<void*>> completion) = 0;
 
 private:
     std::shared_ptr<CoroutineContext> context_;
@@ -153,10 +177,9 @@ namespace flow {
 namespace internal {
 
 template <typename T>
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:69-100
 inline Flow<T>* ChannelFlow<T>::fuse(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_overflow) {
     assert(capacity != Channel<T>::CONFLATED);
-
-    if (!context) context = EmptyCoroutineContext::instance();
 
     // Kotlin: val newContext = context + this.context  (this.context takes precedence)
     auto new_context = context->operator+(context_);
@@ -192,7 +215,7 @@ inline Flow<T>* ChannelFlow<T>::fuse(std::shared_ptr<CoroutineContext> context, 
         new_overflow = on_overflow_;
     }
 
-    if (new_context == context_ && new_capacity == capacity_ && new_overflow == on_overflow_) {
+    if (new_context->equals(context_.get()) && new_capacity == capacity_ && new_overflow == on_overflow_) {
         return this;
     }
 
@@ -203,6 +226,7 @@ inline Flow<T>* ChannelFlow<T>::fuse(std::shared_ptr<CoroutineContext> context, 
 }
 
 template <typename T>
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:58-59
 inline int ChannelFlow<T>::produce_capacity() const {
     // Kotlin: if (capacity == OPTIONAL_CHANNEL) BUFFERED else capacity
     if (capacity_ == Channel<T>::OPTIONAL_CHANNEL) return Channel<T>::BUFFERED;
@@ -210,32 +234,73 @@ inline int ChannelFlow<T>::produce_capacity() const {
 }
 
 template <typename T>
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:114-115
 inline std::shared_ptr<ReceiveChannel<T>> ChannelFlow<T>::produce_impl(CoroutineScope* scope) {
     // Kotlin: scope.produce(context, produceCapacity, onBufferOverflow, start = ATOMIC, block = collectToFun)
+    // NOTE(port): Retain the existing C++ owner of Kotlin's captured receiver.
+    // A stack/raw receiver remains borrowed and must outlive its producer.
+    auto owner = this->weak_from_this().lock();
     return channels::produce<T>(
         scope,
         context_,
         produce_capacity(),
         on_overflow_,
         CoroutineStart::ATOMIC,
-        [this](ProducerScope<T>* scope, std::shared_ptr<Continuation<void*>> completion) -> void* {
-            return collect_to(scope, std::move(completion));
+        [this, owner = std::move(owner)](ProducerScope<T>* scope,
+                                       std::shared_ptr<Continuation<void*>> completion) -> void* {
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56
+            class CollectToFrame final : public ContinuationImpl {
+            public:
+                // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56
+                CollectToFrame(ChannelFlow<T>* flow, std::shared_ptr<Flow<T>> owner,
+                               ProducerScope<T>* scope, std::shared_ptr<Continuation<void*>> completion)
+                    : ContinuationImpl(std::move(completion)), flow_(flow),
+                      owner_(std::move(owner)), scope_(scope) {}
+
+                // NOTE(port): Keep the lowered lambda frame alive until its suspend call completes.
+                void retain() { self_ref_ = this->shared_from_this(); }
+
+                // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56
+                void* invoke_suspend(Result<void*> result) override {
+                    try {
+                        coroutine_begin(this)
+                        coroutine_yield(this, flow_->collect_to(scope_, this->shared_from_this()));
+                        self_ref_.reset();
+                        coroutine_end(this)
+                    } catch (...) {
+                        self_ref_.reset();
+                        throw;
+                    }
+                }
+
+            private:
+                void* _label = nullptr;
+                ChannelFlow<T>* flow_;
+                std::shared_ptr<Flow<T>> owner_;
+                ProducerScope<T>* scope_;
+                std::shared_ptr<BaseContinuationImpl> self_ref_;
+            };
+            auto frame = std::make_shared<CollectToFrame>(this, owner, scope, std::move(completion));
+            frame->retain();
+            return frame->start(Result<void*>::success(nullptr));
         }
     );
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:118-121
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120
 template <typename T>
 inline void* ChannelFlow<T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {
     class CollectFrame final : public ContinuationImpl {
     public:
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120
         CollectFrame(ChannelFlow<T>* flow, FlowCollector<T>* collector, CoroutineScope* scope,
                      std::shared_ptr<Continuation<void*>> completion)
-            : ContinuationImpl(std::move(completion)), flow_(flow), collector_(collector), scope_(scope) {}
+            : ContinuationImpl(std::move(completion)), flow_(flow),
+              flow_owner_(flow->weak_from_this().lock()), collector_(collector), scope_(scope) {}
 
         void retain() { self_ref_ = shared_from_this(); }
 
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:118-121,151-152
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120,151-152
         void* invoke_suspend(Result<void*> result) override {
             try {
                 coroutine_begin(this)
@@ -252,6 +317,7 @@ inline void* ChannelFlow<T>::collect(FlowCollector<T>* collector, Continuation<v
     private:
         void* _label = nullptr;
         ChannelFlow<T>* flow_;
+        std::shared_ptr<Flow<T>> flow_owner_;
         FlowCollector<T>* collector_;
         CoroutineScope* scope_;
         std::shared_ptr<ReceiveChannel<T>> channel_;
@@ -266,20 +332,20 @@ inline void* ChannelFlow<T>::collect(FlowCollector<T>* collector, Continuation<v
 }
 
 template <typename T>
-inline std::string ChannelFlow<T>::additional_to_string_props() {
-    return "";
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:122-122
+inline std::optional<std::string> ChannelFlow<T>::additional_to_string_props() {
+    return std::nullopt;
 }
 
 template <typename T>
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:125-132
 inline std::string ChannelFlow<T>::to_string() {
     std::vector<std::string> props;
     auto additional = additional_to_string_props();
-    if (!additional.empty()) props.push_back(additional);
+    if (additional) props.push_back(*additional);
 
-    if (context_ && context_ != EmptyCoroutineContext::instance()) {
-        std::ostringstream oss;
-        oss << "context=" << context_.get();
-        props.push_back(oss.str());
+    if (context_ != EmptyCoroutineContext::instance()) {
+        props.push_back("context=" + context_->to_string());
     }
 
     if (capacity_ != Channel<T>::OPTIONAL_CHANNEL) {
@@ -301,8 +367,10 @@ inline std::string ChannelFlow<T>::to_string() {
 }
 
 template <typename S, typename T>
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:136-174
 class ChannelFlowOperator : public ChannelFlow<T> {
 public:
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:136-141
     ChannelFlowOperator(std::shared_ptr<Flow<S>> flow,
                         std::shared_ptr<CoroutineContext> context,
                         int capacity,
@@ -312,28 +380,23 @@ public:
     ~ChannelFlowOperator() override = default;
 
 protected:
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:142-142
     virtual void* flow_collect(FlowCollector<T>* collector, Continuation<void*>* continuation) = 0;
-
-    void collect_to(ProducerScope<T>* scope) override {
-        // Kotlin: flowCollect(SendingCollector(scope))
-        // NOTE(port): Legacy synchronous callers use the blocking collection entry point.
-        // Producers use the suspend overload below, which owns SendingCollector in its frame.
-        SendingCollector<T> collector(scope);
-        (void)flow_collect(&collector, nullptr);
-    }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:151-152
     void* collect_to(ProducerScope<T>* scope,
                      std::shared_ptr<Continuation<void*>> completion) override {
         class CollectToFrame final : public ContinuationImpl {
         public:
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:151-152
             CollectToFrame(ChannelFlowOperator<S, T>* flow, ProducerScope<T>* scope,
                            std::shared_ptr<Continuation<void*>> completion)
-                : ContinuationImpl(std::move(completion)), flow_(flow), collector_(scope) {}
+                : ContinuationImpl(std::move(completion)), flow_(flow),
+                  flow_owner_(flow->weak_from_this().lock()), collector_(scope) {}
 
             void retain() { self_ref_ = shared_from_this(); }
 
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:118-121,151-152
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120,151-152
             void* invoke_suspend(Result<void*> result) override {
                 try {
                     coroutine_begin(this)
@@ -349,6 +412,7 @@ protected:
         private:
             void* _label = nullptr;
             ChannelFlowOperator<S, T>* flow_;
+            std::shared_ptr<Flow<T>> flow_owner_;
             SendingCollector<T> collector_;
             std::shared_ptr<BaseContinuationImpl> self_ref_;
         };
@@ -357,47 +421,54 @@ protected:
         return frame->start(Result<void*>::success(nullptr));
     }
 
+public:
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:155-170
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override;
 
+protected:
     std::shared_ptr<Flow<S>> upstream() const { return flow_; }
 
 private:
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:144-148
+    void* collect_with_context_undispatched(FlowCollector<T>* collector,
+        std::shared_ptr<CoroutineContext> new_context, Continuation<void*>* completion);
+
     std::shared_ptr<Flow<S>> flow_;
 };
 
 template <typename T>
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:179-192
 class ChannelFlowOperatorImpl : public ChannelFlowOperator<T, T> {
 public:
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:179-184
     ChannelFlowOperatorImpl(std::shared_ptr<Flow<T>> flow,
-                            std::shared_ptr<CoroutineContext> context = nullptr,
+                            std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance(),
                             int capacity = Channel<T>::OPTIONAL_CHANNEL,
                             BufferOverflow on_overflow = BufferOverflow::SUSPEND)
         : ChannelFlowOperator<T, T>(std::move(flow),
-                                    context ? std::move(context) : EmptyCoroutineContext::instance(),
+                                    std::move(context),
                                     capacity,
-                                    on_overflow),
-          flow_(this->upstream()) {}
+                                    on_overflow) {}
 
 protected:
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:185-186
     ChannelFlow<T>* create(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_overflow) override {
-        return new ChannelFlowOperatorImpl<T>(flow_, std::move(context), capacity, on_overflow);
+        return new ChannelFlowOperatorImpl<T>(this->upstream(), std::move(context), capacity, on_overflow);
     }
 
-    Flow<T>* drop_channel_operators() override { return flow_.get(); }
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:188-188
+    Flow<T>* drop_channel_operators() override { return this->upstream().get(); }
 
-    void* flow_collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override { return flow_->collect(collector, continuation); }
-
-private:
-    std::shared_ptr<Flow<T>> flow_;
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:190-191
+    void* flow_collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override { return this->upstream()->collect(collector, continuation); }
 };
 
 /**
  * Kotlin: internal fun <T> Flow<T>.asChannelFlow(): ChannelFlow<T>
  */
 template <typename T>
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:11-12
 inline std::shared_ptr<ChannelFlow<T>> as_channel_flow(std::shared_ptr<Flow<T>> flow) {
-    if (!flow) return nullptr;
-
     if (auto channel_flow = std::dynamic_pointer_cast<ChannelFlow<T>>(flow)) {
         return channel_flow;
     }
@@ -410,104 +481,135 @@ inline std::shared_ptr<ChannelFlow<T>> as_channel_flow(std::shared_ptr<Flow<T>> 
 
 namespace internal {
 
-template <typename T>
-class UndispatchedContextCollector : public FlowCollector<T> {
-private:
-    FlowCollector<T>* downstream_;
-    std::shared_ptr<CoroutineContext> emit_context_;
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:215-225
+void* call_with_context_undispatched(
+    std::shared_ptr<CoroutineContext> new_context, void* count_or_element,
+    std::function<void*(Continuation<void*>*)> block, Continuation<void*>* completion);
 
-public:
-    UndispatchedContextCollector(FlowCollector<T>* downstream, std::shared_ptr<CoroutineContext> emit_context)
-        : downstream_(downstream), emit_context_(std::move(emit_context)) {}
-
-    void* emit(T value, Continuation<void*>* continuation) override {
-        return downstream_->emit(std::move(value), continuation);
-    }
-};
-
+// Efficiently computes block(value) in the new_context.
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:215-225
 template <typename R, typename V, typename Block>
 inline R with_context_undispatched(
-    std::shared_ptr<CoroutineContext> /*new_context*/,
-    V value,
-    Block&& block,
-    Continuation<void*>* continuation) {
-    return block(value, continuation);
+    std::shared_ptr<CoroutineContext> new_context, V value, void* count_or_element,
+    Block&& block, Continuation<void*>* completion) {
+    return call_with_context_undispatched(std::move(new_context), count_or_element,
+        [value = std::move(value), block = std::forward<Block>(block)](Continuation<void*>* frame) mutable {
+            return block(std::move(value), frame);
+        }, completion);
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:215-225
+template <typename R, typename V, typename Block>
+inline R with_context_undispatched(
+    std::shared_ptr<CoroutineContext> new_context, V value, Block&& block,
+    Continuation<void*>* completion) {
+    auto count_or_element = kotlinx::coroutines::internal::thread_context_elements(*new_context);
+    return with_context_undispatched<R>(std::move(new_context), std::move(value), count_or_element,
+                                       std::forward<Block>(block), completion);
+}
+
+// Now if the underlying collector was accepting concurrent emits, then this one is too.
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:203-212
 template <typename T>
-class ChannelFlowBuilder : public ChannelFlow<T> {
-private:
-    std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block_;
-
+class UndispatchedContextCollector : public FlowCollector<T> {
 public:
-    explicit ChannelFlowBuilder(
-        std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block,
-        std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance(),
-        int capacity = channels::Channel<T>::BUFFERED,
-        channels::BufferOverflow on_buffer_overflow = channels::BufferOverflow::SUSPEND
-    ) : ChannelFlow<T>(context, capacity, on_buffer_overflow), block_(std::move(block)) {}
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:203-208
+    UndispatchedContextCollector(FlowCollector<T>* downstream, std::shared_ptr<CoroutineContext> emit_context)
+        : emit_context_(std::move(emit_context)),
+          count_or_element_(kotlinx::coroutines::internal::thread_context_elements(*emit_context_)),
+          emit_ref_([downstream](T value, Continuation<void*>* completion) {
+              return downstream->emit(std::move(value), completion);
+          }) {}
 
-    ChannelFlow<T>* create(
-        std::shared_ptr<CoroutineContext> context,
-        int capacity,
-        channels::BufferOverflow on_buffer_overflow) override {
-        return new ChannelFlowBuilder<T>(block_, context, capacity, on_buffer_overflow);
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:210-211
+    void* emit(T value, Continuation<void*>* completion) override {
+        return with_context_undispatched<void*>(emit_context_, std::move(value), count_or_element_, emit_ref_, completion);
     }
 
-    void collect_to(channels::ProducerScope<T>* scope) override {
-        if (block_) {
-            block_(scope, nullptr);
-        }
-    }
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:329-330
-    void* collect_to(channels::ProducerScope<T>* scope,
-                     std::shared_ptr<Continuation<void*>> completion) override {
-        return block_ ? block_(scope, std::move(completion)) : nullptr;
-    }
-
+private:
+    std::shared_ptr<CoroutineContext> emit_context_;
+    void* count_or_element_;
+    std::function<void*(T, Continuation<void*>*)> emit_ref_;
 };
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:196-201
+template <typename T>
+std::shared_ptr<FlowCollector<T>> with_undispatched_context_collector(
+    FlowCollector<T>* collector, std::shared_ptr<CoroutineContext> emit_context) {
+    // SendingCollector & NopCollector do not care about the context at all and can be used as is.
+    if (dynamic_cast<SendingCollector<T>*>(collector) || dynamic_cast<NopCollector<T>*>(collector)) {
+        // NOTE(port): An identity-preserving borrowed handle does not own the original collector.
+        return std::shared_ptr<FlowCollector<T>>(collector, [](FlowCollector<T>*) {});
+    }
+    // Otherwise just wrap into UndispatchedContextCollector interface implementation.
+    return std::make_shared<UndispatchedContextCollector<T>>(collector, std::move(emit_context));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:155-170
 template <typename S, typename T>
-inline void* ChannelFlowOperator<S, T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {
-    // Kotlin fast-path optimization is more complex (newCoroutineContext + undispatched collection).
-    // Here we preserve the structure and fall back when we can't be precise.
-    if (this->capacity() == Channel<T>::OPTIONAL_CHANNEL && continuation) {
-        auto collect_context = continuation->get_context();
-        auto new_context = collect_context ? collect_context->operator+(this->context()) : this->context();
-
-        // #1: If the resulting context is the same, collect directly.
-        if (new_context == collect_context) {
-            return flow_collect(collector, continuation);
-        }
-
-        // #2: If we don't need to change the dispatcher, we can go without channels.
-        //
-        // Upstream:
-        //   if (newContext[ContinuationInterceptor] == collectContext[ContinuationInterceptor])
-        //       return collectWithContextUndispatched(collector, newContext)
-        //
-        // collectWithContextUndispatched wraps the downstream collector via
-        // withUndispatchedContextCollector(collectContext) so each emit hops back into the
-        // original collect context, then runs flowCollect inside withContextUndispatched
-        // on the new context. The dispatcher hasn't changed, so withContextUndispatched
-        // resolves to a direct call on the current thread with the new context's
-        // thread-locals installed.
-        auto old_interceptor = collect_context ? collect_context->get(ContinuationInterceptor::type_key) : nullptr;
-        auto new_interceptor = new_context ? new_context->get(ContinuationInterceptor::type_key) : nullptr;
-        if (old_interceptor == new_interceptor) {
-            UndispatchedContextCollector<T> wrapped(collector, collect_context);
-            return with_context_undispatched<void*>(
-                new_context,
-                /*value=*/static_cast<FlowCollector<T>*>(&wrapped),
-                /*block=*/[this](FlowCollector<T>* sink, Continuation<void*>* cont) {
-                    return flow_collect(sink, cont);
-                },
-                continuation);
+inline void* ChannelFlowOperator<S, T>::collect(FlowCollector<T>* collector, Continuation<void*>* completion) {
+    // Fast-path: When channel creation is optional (flowOn/flowWith operators without buffer).
+    if (this->capacity() == Channel<T>::OPTIONAL_CHANNEL) {
+        auto collect_context = completion->get_context();
+        auto new_context = kotlinx::coroutines::new_coroutine_context(collect_context, this->context());
+        // If the resulting context happens to be the same as it was, collect directly.
+        if (new_context->equals(collect_context.get())) return flow_collect(collector, completion);
+        // If we don't need to change the dispatcher we can go without channels.
+        if (new_context->get(ContinuationInterceptor::type_key) ==
+            collect_context->get(ContinuationInterceptor::type_key)) {
+            return collect_with_context_undispatched(collector, std::move(new_context), completion);
         }
     }
-
     // Slow-path: create the actual channel.
-    return ChannelFlow<T>::collect(collector, continuation);
+    return ChannelFlow<T>::collect(collector, completion);
+}
+
+// Changes collecting context upstream, while collecting in the original context.
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:144-148
+template <typename S, typename T>
+inline void* ChannelFlowOperator<S, T>::collect_with_context_undispatched(
+    FlowCollector<T>* collector, std::shared_ptr<CoroutineContext> new_context,
+    Continuation<void*>* completion) {
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:144-148
+    class CollectFrame final : public ContinuationImpl {
+    public:
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:144-148
+        CollectFrame(ChannelFlowOperator<S, T>* flow, FlowCollector<T>* collector,
+                     std::shared_ptr<CoroutineContext> new_context, Continuation<void*>* completion)
+            : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)), flow_(flow),
+              flow_owner_(flow->weak_from_this().lock()),
+              collector_(with_undispatched_context_collector(collector, completion->get_context())),
+              new_context_(std::move(new_context)) {}
+
+        void retain() { self_ref_ = shared_from_this(); }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:145-147
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                coroutine_begin(this)
+                coroutine_yield(this, with_context_undispatched<void*>(new_context_, collector_.get(),
+                    [this](FlowCollector<T>* sink, Continuation<void*>* continuation) {
+                        return flow_->flow_collect(sink, continuation);
+                    }, this));
+                self_ref_.reset();
+                coroutine_end(this)
+            } catch (...) {
+                self_ref_.reset();
+                throw;
+            }
+        }
+
+    private:
+        void* _label = nullptr;
+        ChannelFlowOperator<S, T>* flow_;
+        std::shared_ptr<Flow<T>> flow_owner_;
+        std::shared_ptr<FlowCollector<T>> collector_;
+        std::shared_ptr<CoroutineContext> new_context_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+    auto frame = std::make_shared<CollectFrame>(this, collector, std::move(new_context), completion);
+    frame->retain();
+    return frame->start(Result<void*>::success(nullptr));
 }
 
 } // namespace internal

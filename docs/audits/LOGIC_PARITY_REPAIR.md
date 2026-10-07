@@ -140,7 +140,7 @@ the receiving frame consumes and deletes the Boolean box on both immediate and
 resumed paths. Collection retention is released at termination, including
 exceptional completion, rather than waiting for the enclosing Job to finish.
 The existing AbstractFlow::collect retained SafeCollector boundary in
-internal/SafeCollector.hpp was verified and needed no edits.
+internal/SafeCollector.hpp was verified and needed no edits. The October 5 project-wide repair subsequently moved this implementation to `flow/Flow.hpp:279` to restore Kotlin file correspondence; see [project-wide evidence](project-wide/README.md).
 
 `test_limit_suspension` registers 18 checks. It covers immediate counts and
 predicates, final emission suspension, resumed failure, nested abort ownership,
@@ -1408,3 +1408,120 @@ ChannelLimitedFlowMerge still use threads/NoopContinuation and discard genuine
 collect suspension; their coroutine/permit/sibling cancellation gates, all combine/
 zip algorithms and full library parity remain unaccepted. Evidence under workspace
 automation-artifacts/flatten-concat-lifetime-20261005/receipt.json and logs.
+
+
+## Project-wide repair: emit_all failure collector (2026-10-05)
+
+The earlier recorded `ensureActive` mismatch is now corrected in both source pairs:
+`Channels.kt:28-41` maps to `Channels.hpp:176,202`, and
+`terminal/Collect.kt:103-106` maps to `Collect.hpp:216`. The helper and failure
+collector are transliterated from `operators/Emitters.kt:193-205` into
+`flow/internal/ThrowingCollector.hpp:18,41`, with recognized port-lint provenance
+and per-function source ranges. The C++ template is required to represent Kotlin's
+contravariant `FlowCollector<Any?>` for each public element type.
+
+The check occurs before collection and outside the channel consumption/finally
+region, matching upstream. It rethrows the stored exception rather than checking
+the continuation Job. Channel iterator and collector suspension paths are retained.
+The existing `on_completion` operator still needs its own proper suspended action,
+failure collector, and cleanup lowering; the helper is not a claim of completion.
+
+Rebuilt `test_channel_as_flow_smoke`, `test_collect_reduce_smoke`, and
+`test_sharing_suspension`; all three completed successfully. The channel test now
+checks exact exception identity for raw and retained collectors, an empty open
+channel remaining usable, rejection before source-flow collection, and direct
+failure-collector emission. Receipts: `build/ir-recovery/channel-collector-guard-build.log`
+and `build/ir-recovery/channel-collector-guard-tests.log`.
+
+Both [project-wide deep inventories](project-wide/README.md) were refreshed after
+these source changes. Their generated criteria and priorities remain authoritative;
+this focused runtime evidence does not establish project-wide equivalence.
+
+
+## Project-wide repair: on_start retained action (2026-10-05)
+
+`Emitters.kt:70-81` uses unsafeFlow with a SafeCollector specifically around the
+start action, releases that collector in finally, then directly collects upstream.
+The former C++ body delegated to the synchronous flow builder and invoked the
+action on the raw downstream collector. It had no suspend-action overload.
+
+`Emitters.hpp:51` now exposes the Continuation ABI action overload and retains the
+source, action, and SafeCollector in a frame. `invoke_suspend` at line 75 follows
+upstream action/finally/collect order using mandatory LLVM-injected resume markers.
+Immediate and resumed action errors release the collector and propagate; upstream
+is not started after action failure. The synchronous overload uses that same path.
+This explicit frame remains a transliteration requiring compiler migration, not
+proof of automatic compiler spilling or identical Kotlin frame layout.
+
+`test_channel_as_flow_smoke` verifies action suspension, upstream suspension,
+source ownership after dropping public wrappers, SafeCollector at the action
+boundary, and exact resumed action failure without upstream collection.
+The affected channel and transform/error smoke tests completed successfully.
+Receipts: `build/ir-recovery/on-start-build.log`, `on-start-regression-build.log`,
+and `on-start-tests.log`. Both project-wide deep reports were regenerated.
+
+`on_completion` remains unresolved: its action/resume/finally state must be ported,
+and `invokeSafely` requires Kotlin suppressed-exception behavior absent from the
+current exception representation. Its existing body is not accepted as complete.
+
+
+## Dependency-priority source repair: channel/flow receiver lifetime (2026-10-07)
+
+The refreshed dependency order retains Flow Channels first (65 dependents),
+Flow second (28), and internal Concurrent third (14). This repair follows the
+first two entries and their shared ChannelFlow implementation.
+
+Kotlin `flow/internal/ChannelFlow.kt:54-56` captures the actual receiver in
+collectToFun; `:114-120` starts an ATOMIC producer and collects within a coroutine
+scope. The former C++ producer lambda held only raw `this`, allowing produce_in's
+temporary as_channel_flow wrapper to disappear before queued execution or while
+collect_to was suspended. `ChannelFlow.hpp:238` now retains the receiver's existing
+shared owner before dispatch and through the source lambda's suspended call.
+Buffered collection (`:292`), operator collect_to (`:392`) and undispatched
+collection (`:570`) also retain their actual flow receivers. `Flow.hpp:198` exposes
+existing shared ownership at the common Flow base so fusion's existing Flow*
+return and subsequent shared_ptr<Flow> wrapping preserve owner recovery.
+No raw or stack receiver is adopted into an owning shared_ptr.
+
+Kotlin `flow/Flow.kt:223-230` keeps the receiver and SafeCollector reachable across
+collectSafely and releases interception in finally. `Flow.hpp:284` now retains the
+actual shared receiver as well as that collector. The generic lowered bodies stay
+in headers because arbitrary public element types cannot be explicitly instantiated
+in a .cpp. They continue using ContinuationImpl and mandatory LLVM resume-address
+injection; no separate C++ coroutine runtime is introduced.
+
+The real channel-cancellation regression exposed a C++ ownership cycle:
+EmitAllContinuation -> iterator -> cancelled continuation -> EmitAllContinuation.
+The finished frame could therefore keep its producer receiver and channel alive
+indefinitely. Kotlin GC can reclaim this cycle. `Channels.hpp:126` releases the
+completed iterator, element and supplied channel owner after the source
+`Channels.kt:28-41` consumption/finally work, in addition to its collector and
+self ownership. Iterator/channel algorithms were not replaced.
+
+The existing test_channel_as_flow_smoke executable now checks channel-backed and
+ordinary-flow produce_in paths, including queued start after dropping the public
+source, retained capture identity during suspension, exact resumed failure,
+repeated buffered downstream suspension, real cancellation of a producer waiting
+on a BufferedChannel iterator, and receiver/resource expiry after termination.
+The actual waiting-channel cancellation case failed before completed-frame local
+cleanup and now completes with both flow and source-channel owners released.
+AbstractFlow suspension also verifies capture retention and expiry on normal and
+exceptional completion.
+
+The final focused build completed with exit code zero. Seven executables ran with
+zero failures: BuildersTest, test_sync, test_suspension_core,
+test_continuation_dispatch, test_channel_as_flow_smoke, test_sharing_suspension,
+and test_collect_reduce_smoke. Receipts are
+`build/ir-recovery/channel-flow-owner-build.log` and
+`build/ir-recovery/channel-flow-owner-tests.log`. A range check verified 89
+provenance ranges across the three edited library headers and found no prohibited
+source markers in those headers.
+
+The full library --deep reports were regenerated after the final source edits.
+They still measure 780/2918 matched functions, 341/560 matched types, average body
+similarity 0.26, and 122 scoring failures. Channels remains at 0.22 function
+similarity; Flow is 0.04. The deep emission evidence for Channels still marks its
+function/class rules unsupported and reports a source grammar error at constructor
+line 98; those provisional values are preserved. Runtime regression results do
+not certify full file correspondence, complete library translation, or either GPU
+acceptance path in docking_ring.md.
