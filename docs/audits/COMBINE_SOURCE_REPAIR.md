@@ -45,7 +45,7 @@ termination. No detached worker or polling loop remains in this pair.
 The source nullable Any transport is represented by std::any inside the tagged
 ChannelResult. It retains nullable payloads without using a Kotlin GC surrogate;
 this is an explicit C++ value representation adaptation. Generic suspend zip
-bindings at `Combine.hpp:152` and `flow/Zip.hpp:49` use the existing erased ABI.
+bindings at `Combine.hpp:194` and `flow/Zip.hpp:49` use the existing erased ABI.
 The transform supplies an owning R box; the emit adapter unboxes/deletes it, or
 frame cleanup deletes an unconsumed box. Ordinary C++ transforms bind to this same
 algorithm. The two-input combine and combineUnsafe builders also now use the
@@ -109,10 +109,66 @@ measurement, not a fabricated Kotlin function or changed source provenance. The 
 comparison remains provisional. The concrete correspondence is inspectable in
 source and the executed cases above; name coverage is not a completion verdict.
 
-Remaining public Zip.kt gaps include suspended-transform overloads for several
-combine arities, array-typed overload/factory correspondence in combine_all,
-Iterable combineTransform and broader typed/nullability coverage. The erased
-std::any bindings require copy-constructible input values; full public generic
-coverage is not established. Full Kotlin test transliteration also remains
-incomplete. This checkpoint does not declare either public Zip.kt or the library
-complete.
+## Public transform and array repair checkpoint
+
+The public Zip.kt source was read in full again for this repair. Suspended value
+transforms are now exposed for two through five typed inputs at
+`flow/Zip.hpp:66,156,230,313`. They bind to combineUnsafe's source null-array-factory
+path at `flow/internal/Combine.hpp:149`. The previously synchronous-only two-input
+body is replaced by this binding; ordinary C++ transforms enter the same ABI
+algorithm. The concrete lowered frame at `flow/Zip.cpp:15`, entered at :56,
+corresponds to the source `emit(transform(it))`. It awaits transform before
+awaiting emit, transfers its owning result box to the typed consumer and clears
+captures at termination. The frame references the source input array, which the
+actual combine frame retains until this entire operation completes. This is an
+existing ContinuationImpl/Clang-plugin frame, not a separate polling algorithm.
+
+The vector input surface at `flow/Zip.hpp:401` projects the source vararg/Iterable
+flowArray and supplies the source copied-array factory. The earlier combine_all
+null-factory route and inaccurate comment claiming that source route are replaced.
+combine_all is a compatibility spelling that forwards to combine. Array
+combineTransform at :444 invokes source safeFlow and the copied-array factory;
+FunctionN combineTransform still uses source nullArrayFactory. The existing
+vector adaptation carries typed values by value; std::any requires copyable
+inputs, and this does not establish all Kotlin generic/covariant array behavior.
+
+The shared typed result binding at `Combine.hpp:140` now recognizes Unit's
+existing erased-null representation, used by ResultBoxCompletion. Both combine
+and zip emit Unit without dereferencing a null box. Other results continue to
+transfer an owning R box, unboxed and deleted at the receiving adapter. The
+ordinary C++ Unit adapters also return the canonical null representation.
+
+The public regressions at `test_combine_zip_smoke.cpp:92` execute all four typed
+arities and a six-source array transform, separately suspending transform and
+downstream emit. They check exact resumed transform/emission failures, actual
+resource identity and release after completion while both frames remain held.
+Unit cases exercise immediate and suspended transforms in both combine and zip.
+Array cases execute ordinary combine_all, safe combineTransform and empty inputs
+that must not invoke the transform. A fixture initially attempted to recollect
+already consumed hot channels; its failure correctly identified an empty input
+stream. The second collection now constructs fresh channels.
+
+The full core library and the same ten focused executables build; ten CTests
+finish with zero failures (2.54 seconds). Receipts are
+build/ir-recovery/combine-transform-focused-{build,tests}.log. The smoke fixture,
+Zip.cpp and Combine.cpp are directly compiled with AddressSanitizer and
+UndefinedBehaviorSanitizer plus the existing mandatory LLVM/Clang plugins;
+execution finishes with exit zero and no diagnostics. Receipts are
+combine-transform-sanitizer-{build,tests}.log. Sixty-eight ranged provenance
+references across the three changed library files resolve within source bounds;
+no prohibited markers occur in those files. These checks do not establish the
+full Native/MLX product acceptance paths or whole-library completion.
+
+Both complete-root deep scans are refreshed after the final source/test edits.
+The library report now records 803/2918 matched body names, 358/560 types,
+average body similarity 0.26 and 123 scoring failures. Public Zip measures
+13/18 matched names and body similarity 0.08. Its unresolved names include
+common extension/top-level duplicate combineTransform and helpers physically
+under flow/internal/Combine.hpp. These findings remain visible; matching names
+or exercised behavior does not establish full source parity. The existing
+Native primary-constructor scoring limitation remains documented above and
+has not been hidden with altered provenance or synthetic source functions.
+Scan receipts are combine-transform-{library,compiler}-deep.log.
+
+Broader typed/nullability coverage and full Kotlin test transliteration remain
+incomplete. This checkpoint does not declare public Zip.kt or the library complete.

@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 250/354 (70.6%)
-- **Function parity:** 799/2918 matched (target 2997) — 27.4%
-- **Class/type parity:** 358/560 matched (target 520) — 63.9%
-- **Combined symbol parity:** 1157/3478 matched (target 3517) — 33.3%
+- **Function parity:** 803/2918 matched (target 3014) — 27.5%
+- **Class/type parity:** 358/560 matched (target 521) — 63.9%
+- **Combined symbol parity:** 1161/3478 matched (target 3535) — 33.4%
 - **Average inline-code cosine:** 0.26 (function body across 141 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 141 matched files)
 - **Cheat-zeroed Files:** 123
@@ -167,10 +167,10 @@ Every matched file is listed below with function and type symbol parity.
 ### 10. internal.Combine
 
 - **Target:** `internal.Combine`
-- **Similarity:** 0.03
+- **Similarity:** 0.02
 - **Dependents:** 1
-- **Priority Score:** 1000309.7
-- **Functions:** 2/2 matched (target 46)
+- **Priority Score:** 1000309.8
+- **Functions:** 2/2 matched (target 48)
 - **Missing functions:** _none_
 - **Types:** 1/1 matched (target 12)
 - **Missing types:** _none_
@@ -369,20 +369,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 7
 - **Lint issues:** 3
 
-### 26. operators.DebounceTest
-
-- **Target:** `operators.DebounceTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 202110.0
-- **Functions:** 0/20 matched (target 4)
-- **Missing functions:** `DebounceTest::testBasic`, `DebounceTest::testSingleNull`, `DebounceTest::testBasicWithNulls`, `DebounceTest::testEmpty`, `DebounceTest::testScalar`, `DebounceTest::testPace`, `DebounceTest::testUpstreamError`, `DebounceTest::testUpstreamErrorCancellation`, `DebounceTest::testUpstreamError`, `DebounceTest::testUpstreamErrorIsolatedContext`, `DebounceTest::testUpstreamErrorDebounceNotTriggered`, `DebounceTest::testUpstreamErrorDebounceNotTriggeredInIsolatedContext`, `DebounceTest::testDownstreamError`, `DebounceTest::testDownstreamErrorIsolatedContext`, `DebounceTest::testDurationBasic`, `DebounceTest::testDebounceSelectorBasic`, `DebounceTest::testZeroDebounceTime`, `DebounceTest::testZeroDebounceTimeSelector`, `DebounceTest::testDebounceDurationSelectorBasic`, `DebounceTest::testFailsWithIllegalArgument`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/19 matched
-- **TODOs:** 16
-
-### 27. operators.SampleTest
+### 26. operators.SampleTest
 
 - **Target:** `operators.SampleTest [STUB]`
 - **Similarity:** 0.00
@@ -394,6 +381,19 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 0/19 matched
 - **TODOs:** 6
+
+### 27. operators.DebounceTest
+
+- **Target:** `operators.DebounceTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 202110.0
+- **Functions:** 0/20 matched (target 4)
+- **Missing functions:** `DebounceTest::testBasic`, `DebounceTest::testSingleNull`, `DebounceTest::testBasicWithNulls`, `DebounceTest::testEmpty`, `DebounceTest::testScalar`, `DebounceTest::testPace`, `DebounceTest::testUpstreamError`, `DebounceTest::testUpstreamErrorCancellation`, `DebounceTest::testUpstreamError`, `DebounceTest::testUpstreamErrorIsolatedContext`, `DebounceTest::testUpstreamErrorDebounceNotTriggered`, `DebounceTest::testUpstreamErrorDebounceNotTriggeredInIsolatedContext`, `DebounceTest::testDownstreamError`, `DebounceTest::testDownstreamErrorIsolatedContext`, `DebounceTest::testDurationBasic`, `DebounceTest::testDebounceSelectorBasic`, `DebounceTest::testZeroDebounceTime`, `DebounceTest::testZeroDebounceTimeSelector`, `DebounceTest::testDebounceDurationSelectorBasic`, `DebounceTest::testFailsWithIllegalArgument`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/19 matched
+- **TODOs:** 16
 
 ### 28. sharing.ShareInConflationTest
 
@@ -479,21 +479,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 8
 - **Lint issues:** 2
 
-### 34. channels.ProduceTest
-
-- **Target:** `channels.ProduceTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 171910.0
-- **Functions:** 1/18 matched
-- **Missing functions:** `ProduceTest::testBasic`, `ProduceTest::testCancelWithoutCause`, `ProduceTest::testCancelWithCause`, `ProduceTest::testCancelOnCompletionUnconfined`, `ProduceTest::testCancelOnCompletion`, `ProduceTest::testCancelWhenTheChannelIsClosed`, `ProduceTest::testAwaitCloseOnlyAllowedOnce`, `ProduceTest::testInvokeOnCloseWithAwaitClose`, `ProduceTest::testAwaitConsumerCancellation`, `ProduceTest::testAwaitProducerCancellation`, `ProduceTest::testAwaitParentCancellation`, `ProduceTest::testAwaitIllegalState`, `ProduceTest::testUncaughtExceptionsInProduce`, `ProduceTest::testCancellingProduceCoroutineButNotChannel`, `ProduceTest::testReceivingValuesAfterFailingTheCoroutine`, `ProduceTest::testSilentKillerInProduce`, `ProduceTest::testProduceWithInvalidCapacity`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/17 matched
-- **TODOs:** 43
-- **Lint issues:** 1
-
-### 35. operators.BufferConflationTest
+### 34. operators.BufferConflationTest
 
 - **Target:** `operators.BufferConflationTest [STUB]`
 - **Similarity:** 0.00
@@ -506,6 +492,20 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/17 matched
 - **TODOs:** 27
 - **Lint issues:** 17
+
+### 35. channels.ProduceTest
+
+- **Target:** `channels.ProduceTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 171910.0
+- **Functions:** 1/18 matched
+- **Missing functions:** `ProduceTest::testBasic`, `ProduceTest::testCancelWithoutCause`, `ProduceTest::testCancelWithCause`, `ProduceTest::testCancelOnCompletionUnconfined`, `ProduceTest::testCancelOnCompletion`, `ProduceTest::testCancelWhenTheChannelIsClosed`, `ProduceTest::testAwaitCloseOnlyAllowedOnce`, `ProduceTest::testInvokeOnCloseWithAwaitClose`, `ProduceTest::testAwaitConsumerCancellation`, `ProduceTest::testAwaitProducerCancellation`, `ProduceTest::testAwaitParentCancellation`, `ProduceTest::testAwaitIllegalState`, `ProduceTest::testUncaughtExceptionsInProduce`, `ProduceTest::testCancellingProduceCoroutineButNotChannel`, `ProduceTest::testReceivingValuesAfterFailingTheCoroutine`, `ProduceTest::testSilentKillerInProduce`, `ProduceTest::testProduceWithInvalidCapacity`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/17 matched
+- **TODOs:** 43
+- **Lint issues:** 1
 
 ### 36. test.TestCoroutineSchedulerTest
 
@@ -561,19 +561,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 5
 
-### 40. common.TestScope
-
-- **Target:** `test.TestScope`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 151710.0
-- **Functions:** 1/13 matched (target 2)
-- **Missing functions:** `TestScope::advanceUntilIdle`, `TestScope::runCurrent`, `TestScope::advanceTimeBy`, `TestScope::advanceTimeBy`, `CoroutineContext::withDelaySkipping`, `TestScopeImpl::enter`, `TestScopeImpl::leave`, `TestScopeImpl::legacyLeave`, `TestScopeImpl::reportException`, `TestScopeImpl::tryGetCompletionCause`, `TestScopeImpl::toString`, `TestScope::asSpecificImplementation`
-- **Types:** 1/4 matched (target 1)
-- **Missing types:** `TestScopeImpl`, `UncaughtExceptionsBeforeTest`, `UncompletedCoroutinesError`
-- **Lint issues:** 1
-
-### 41. test.WithTimeoutDurationTest
+### 40. test.WithTimeoutDurationTest
 
 - **Target:** `tests.WithTimeoutDurationTest`
 - **Similarity:** 0.00
@@ -586,6 +574,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/12 matched
 - **TODOs:** 19
 - **Lint issues:** 11
+
+### 41. common.TestScope
+
+- **Target:** `test.TestScope`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 151710.0
+- **Functions:** 1/13 matched (target 2)
+- **Missing functions:** `TestScope::advanceUntilIdle`, `TestScope::runCurrent`, `TestScope::advanceTimeBy`, `TestScope::advanceTimeBy`, `CoroutineContext::withDelaySkipping`, `TestScopeImpl::enter`, `TestScopeImpl::leave`, `TestScopeImpl::legacyLeave`, `TestScopeImpl::reportException`, `TestScopeImpl::tryGetCompletionCause`, `TestScopeImpl::toString`, `TestScope::asSpecificImplementation`
+- **Types:** 1/4 matched (target 1)
+- **Missing types:** `TestScopeImpl`, `UncaughtExceptionsBeforeTest`, `UncompletedCoroutinesError`
+- **Lint issues:** 1
 
 ### 42. test.WithTimeoutOrNullTest
 
@@ -715,33 +715,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 33
 
-### 52. channels.ConsumeTest
-
-- **Target:** `channels.ConsumeTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 121310.0
-- **Functions:** 0/12 matched (target 10)
-- **Missing functions:** `ConsumeTest::testConsumeJsMiscompilation`, `ConsumeTest::testConsumeClosesOnSuccess`, `ConsumeTest::testConsumeClosesOnFailure`, `ConsumeTest::testConsumeClosesOnEarlyReturn`, `ConsumeTest::f`, `ConsumeTest::testConsumeEachClosesOnSuccess`, `ConsumeTest::testConsumeEachClosesOnFailure`, `ConsumeTest::testConsumeEachClosesOnEarlyReturn`, `ConsumeTest::f`, `ConsumeTest::testConsumeEachExitsOnCancellation`, `ConsumeTest::testConsumeEachThrowingOnChannelClosing`, `ConsumeTest::testBroadcastChannelConsumeJsMiscompilation`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/10 matched
-- **TODOs:** 29
-
-### 53. operators.BooleanTerminationTest
-
-- **Target:** `operators.BooleanTerminationTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 121310.0
-- **Functions:** 0/12 matched
-- **Missing functions:** `BooleanTerminationTest::testAnyNominal`, `BooleanTerminationTest::testAnyEmpty`, `BooleanTerminationTest::testAnyInfinite`, `BooleanTerminationTest::testAnyShortCircuit`, `BooleanTerminationTest::testAllNominal`, `BooleanTerminationTest::testAllEmpty`, `BooleanTerminationTest::testAllInfinite`, `BooleanTerminationTest::testAllShortCircuit`, `BooleanTerminationTest::testNoneNominal`, `BooleanTerminationTest::testNoneEmpty`, `BooleanTerminationTest::testNoneInfinite`, `BooleanTerminationTest::testNoneShortCircuit`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/12 matched
-- **TODOs:** 39
-
-### 54. test.RunBlockingTest
+### 52. test.RunBlockingTest
 
 - **Target:** `concurrent.RunBlockingTest [STUB]`
 - **Similarity:** 0.00
@@ -755,7 +729,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 52
 - **Lint issues:** 7
 
-### 55. operators.TransformLatestTest
+### 53. operators.TransformLatestTest
 
 - **Target:** `operators.TransformLatestTest [STUB]`
 - **Similarity:** 0.00
@@ -768,7 +742,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/12 matched
 - **TODOs:** 5
 
-### 56. test.WithTimeoutTest
+### 54. test.WithTimeoutTest
 
 - **Target:** `tests.WithTimeoutTest`
 - **Similarity:** 0.00
@@ -782,7 +756,20 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 16
 - **Lint issues:** 14
 
-### 57. test.SupervisorTest
+### 55. channels.ConsumeTest
+
+- **Target:** `channels.ConsumeTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 121310.0
+- **Functions:** 0/12 matched (target 10)
+- **Missing functions:** `ConsumeTest::testConsumeJsMiscompilation`, `ConsumeTest::testConsumeClosesOnSuccess`, `ConsumeTest::testConsumeClosesOnFailure`, `ConsumeTest::testConsumeClosesOnEarlyReturn`, `ConsumeTest::f`, `ConsumeTest::testConsumeEachClosesOnSuccess`, `ConsumeTest::testConsumeEachClosesOnFailure`, `ConsumeTest::testConsumeEachClosesOnEarlyReturn`, `ConsumeTest::f`, `ConsumeTest::testConsumeEachExitsOnCancellation`, `ConsumeTest::testConsumeEachThrowingOnChannelClosing`, `ConsumeTest::testBroadcastChannelConsumeJsMiscompilation`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/10 matched
+- **TODOs:** 29
+
+### 56. test.SupervisorTest
 
 - **Target:** `tests.SupervisorTest [STUB]`
 - **Similarity:** 0.00
@@ -794,6 +781,19 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 0/12 matched
 - **TODOs:** 46
+
+### 57. operators.BooleanTerminationTest
+
+- **Target:** `operators.BooleanTerminationTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 121310.0
+- **Functions:** 0/12 matched
+- **Missing functions:** `BooleanTerminationTest::testAnyNominal`, `BooleanTerminationTest::testAnyEmpty`, `BooleanTerminationTest::testAnyInfinite`, `BooleanTerminationTest::testAnyShortCircuit`, `BooleanTerminationTest::testAllNominal`, `BooleanTerminationTest::testAllEmpty`, `BooleanTerminationTest::testAllInfinite`, `BooleanTerminationTest::testAllShortCircuit`, `BooleanTerminationTest::testNoneNominal`, `BooleanTerminationTest::testNoneEmpty`, `BooleanTerminationTest::testNoneInfinite`, `BooleanTerminationTest::testNoneShortCircuit`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/12 matched
+- **TODOs:** 39
 
 ### 58. common.CancellableContinuationImpl
 
@@ -860,21 +860,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 0/11 matched
 
-### 63. test.CancellableContinuationHandlersTest
-
-- **Target:** `tests.CancellableContinuationHandlersTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 101310.0
-- **Functions:** 1/11 matched (target 13)
-- **Missing functions:** `CancellableContinuationHandlersTest::testDoubleSubscription`, `CancellableContinuationHandlersTest::testDoubleSubscriptionAfterCompletion`, `CancellableContinuationHandlersTest::testDoubleSubscriptionAfterCompletionWithException`, `CancellableContinuationHandlersTest::testDoubleSubscriptionAfterCancellation`, `CancellableContinuationHandlersTest::testSecondSubscriptionAfterCancellation`, `CancellableContinuationHandlersTest::testSecondSubscriptionAfterResumeCancelAndDispatch`, `CancellableContinuationHandlersTest::testDoubleSubscriptionAfterCancellationWithCause`, `CancellableContinuationHandlersTest::testDoubleSubscriptionMixed`, `CancellableContinuationHandlersTest::testExceptionInHandler`, `CancellableContinuationHandlersTest::testSegmentAsHandler`
-- **Types:** 2/2 matched
-- **Missing types:** _none_
-- **Tests:** 0/10 matched
-- **TODOs:** 9
-- **Lint issues:** 4
-
-### 64. operators.DistinctUntilChangedTest
+### 63. operators.DistinctUntilChangedTest
 
 - **Target:** `operators.DistinctUntilChangedTest [STUB]`
 - **Similarity:** 0.00
@@ -887,6 +873,20 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/10 matched
 - **TODOs:** 30
 - **Lint issues:** 3
+
+### 64. test.CancellableContinuationHandlersTest
+
+- **Target:** `tests.CancellableContinuationHandlersTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 101310.0
+- **Functions:** 1/11 matched (target 13)
+- **Missing functions:** `CancellableContinuationHandlersTest::testDoubleSubscription`, `CancellableContinuationHandlersTest::testDoubleSubscriptionAfterCompletion`, `CancellableContinuationHandlersTest::testDoubleSubscriptionAfterCompletionWithException`, `CancellableContinuationHandlersTest::testDoubleSubscriptionAfterCancellation`, `CancellableContinuationHandlersTest::testSecondSubscriptionAfterCancellation`, `CancellableContinuationHandlersTest::testSecondSubscriptionAfterResumeCancelAndDispatch`, `CancellableContinuationHandlersTest::testDoubleSubscriptionAfterCancellationWithCause`, `CancellableContinuationHandlersTest::testDoubleSubscriptionMixed`, `CancellableContinuationHandlersTest::testExceptionInHandler`, `CancellableContinuationHandlersTest::testSegmentAsHandler`
+- **Types:** 2/2 matched
+- **Missing types:** _none_
+- **Tests:** 0/10 matched
+- **TODOs:** 9
+- **Lint issues:** 4
 
 ### 65. operators.FlatMapLatestTest
 
@@ -902,21 +902,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 34
 - **Lint issues:** 2
 
-### 66. operators.CatchTest
-
-- **Target:** `operators.CatchTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 101110.0
-- **Functions:** 0/10 matched
-- **Missing functions:** `CatchTest::testCatchEmit`, `CatchTest::testCatchEmitExceptionFromDownstream`, `CatchTest::testCatchEmitAll`, `CatchTest::testCatchEmitAllExceptionFromDownstream`, `CatchTest::testWithTimeoutCatch`, `CatchTest::testCancellationFromUpstreamCatch`, `CatchTest::testCatchContext`, `CatchTest::testUpstreamExceptionConcurrentWithDownstream`, `CatchTest::testUpstreamExceptionConcurrentWithDownstreamCancellation`, `CatchTest::testUpstreamCancellationIsIgnoredWhenDownstreamFails`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/10 matched
-- **TODOs:** 36
-- **Lint issues:** 19
-
-### 67. channels.BufferedBroadcastChannelTest
+### 66. channels.BufferedBroadcastChannelTest
 
 - **Target:** `channels.BufferedBroadcastChannelTest [STUB]`
 - **Similarity:** 0.00
@@ -930,7 +916,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 89
 - **Lint issues:** 8
 
-### 68. operators.TakeTest
+### 67. operators.TakeTest
 
 - **Target:** `operators.TakeTest [STUB]`
 - **Similarity:** 0.00
@@ -943,6 +929,20 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/10 matched
 - **TODOs:** 5
 - **Lint issues:** 3
+
+### 68. operators.CatchTest
+
+- **Target:** `operators.CatchTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 101110.0
+- **Functions:** 0/10 matched
+- **Missing functions:** `CatchTest::testCatchEmit`, `CatchTest::testCatchEmitExceptionFromDownstream`, `CatchTest::testCatchEmitAll`, `CatchTest::testCatchEmitAllExceptionFromDownstream`, `CatchTest::testWithTimeoutCatch`, `CatchTest::testCancellationFromUpstreamCatch`, `CatchTest::testCatchContext`, `CatchTest::testUpstreamExceptionConcurrentWithDownstream`, `CatchTest::testUpstreamExceptionConcurrentWithDownstreamCancellation`, `CatchTest::testUpstreamCancellationIsIgnoredWhenDownstreamFails`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/10 matched
+- **TODOs:** 36
+- **Lint issues:** 19
 
 ### 69. channels.ChannelBuildersFlowTest
 
@@ -957,19 +957,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/10 matched
 - **TODOs:** 16
 
-### 70. operators.Zip
-
-- **Target:** `flow.Zip`
-- **Similarity:** 0.06
-- **Dependents:** 0
-- **Priority Score:** 91809.4
-- **Functions:** 9/18 matched (target 12)
-- **Missing functions:** `combine`, `combineTransform`, `combine`, `combineTransform`, `combineUnsafe`, `combineTransformUnsafe`, `nullArrayFactory`, `combine`, `combineTransform`
-- **Types:** 0/0 matched
-- **Missing types:** _none_
-- **Lint issues:** 5
-
-### 71. operators.FilterTrivialTest
+### 70. operators.FilterTrivialTest
 
 - **Target:** `operators.FilterTrivialTest [STUB]`
 - **Similarity:** 0.00
@@ -982,7 +970,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/9 matched
 - **TODOs:** 32
 
-### 72. channels.TestChannelKind
+### 71. channels.TestChannelKind
 
 - **Target:** `channels.TestChannelKind [ZERO]`
 - **Similarity:** 0.00
@@ -995,7 +983,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 8
 - **Lint issues:** 3
 
-### 73. test.AsyncLazyTest
+### 72. test.AsyncLazyTest
 
 - **Target:** `tests.AsyncLazyTest [STUB]`
 - **Similarity:** 0.00
@@ -1009,7 +997,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 15
 - **Lint issues:** 6
 
-### 74. operators.RetryTest
+### 73. operators.RetryTest
 
 - **Target:** `operators.RetryTest [STUB]`
 - **Similarity:** 0.00
@@ -1023,7 +1011,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 5
 - **Lint issues:** 6
 
-### 75. sharing.ShareInBufferTest
+### 74. sharing.ShareInBufferTest
 
 - **Target:** `sharing.ShareInBufferTest [STUB]`
 - **Similarity:** 0.00
@@ -1037,7 +1025,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 6
 - **Lint issues:** 4
 
-### 76. test.UndispatchedResultTest
+### 75. test.UndispatchedResultTest
 
 - **Target:** `tests.UndispatchedResultTest [STUB]`
 - **Similarity:** 0.00
@@ -1050,7 +1038,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/5 matched
 - **TODOs:** 14
 
-### 77. test.AtomicCancellationCommonTest
+### 76. test.AtomicCancellationCommonTest
 
 - **Target:** `tests.AtomicCancellationCommonTest`
 - **Similarity:** 0.66
@@ -1064,7 +1052,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 16
 - **Lint issues:** 7
 
-### 78. sharing.SharedFlowScenarioTest
+### 77. sharing.SharedFlowScenarioTest
 
 - **Target:** `sharing.SharedFlowScenarioTest [STUB]`
 - **Similarity:** 0.00
@@ -1078,7 +1066,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 22
 - **Lint issues:** 7
 
-### 79. sync.Mutex
+### 78. sync.Mutex
 
 - **Target:** `sync.Mutex`
 - **Similarity:** 0.23
@@ -1089,7 +1077,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 2/4 matched (target 2)
 - **Missing types:** `CancellableContinuationWithOwner`, `SelectInstanceWithOwner`
 
-### 80. operators.MergeTest
+### 79. operators.MergeTest
 
 - **Target:** `operators.MergeTest [STUB]`
 - **Similarity:** 0.00
@@ -1102,7 +1090,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/7 matched
 - **TODOs:** 9
 
-### 81. test.UnconfinedTestDispatcherTest
+### 80. test.UnconfinedTestDispatcherTest
 
 - **Target:** `tests.UnconfinedTestDispatcherTest [STUB]`
 - **Similarity:** 0.00
@@ -1116,7 +1104,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 17
 - **Lint issues:** 6
 
-### 82. channels.Broadcast
+### 81. channels.Broadcast
 
 - **Target:** `channels.Broadcast`
 - **Similarity:** 0.14
@@ -1128,7 +1116,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 5
 
-### 83. sync.MutexStressTest
+### 82. sync.MutexStressTest
 
 - **Target:** `sync.MutexStressTest [STUB]`
 - **Similarity:** 0.00
@@ -1142,7 +1130,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 32
 - **Lint issues:** 6
 
-### 84. operators.ChunkedTest
+### 83. operators.ChunkedTest
 
 - **Target:** `operators.ChunkedTest [STUB]`
 - **Similarity:** 0.00
@@ -1155,18 +1143,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/7 matched
 - **TODOs:** 25
 
-### 85. native.Builders
-
-- **Target:** `native.Builders [ZERO]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 70710.0
-- **Functions:** 0/5 matched (target 0)
-- **Missing functions:** `runBlocking`, `ThreadLocalKeepAlive::addCheck`, `ThreadLocalKeepAlive::keepAlive`, `BlockingCoroutine::afterCompletion`, `BlockingCoroutine::joinBlocking`
-- **Types:** 0/2 matched (target 0)
-- **Missing types:** `ThreadLocalKeepAlive`, `BlockingCoroutine`
-
-### 86. native.Dispatchers
+### 84. native.Dispatchers
 
 - **Target:** `native.Dispatchers [STUB]`
 - **Similarity:** 0.00
@@ -1178,7 +1155,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Dispatchers`, `DefaultIoScheduler`
 - **Lint issues:** 1
 
-### 87. operators.ScanTest
+### 85. native.Builders
+
+- **Target:** `native.Builders [ZERO]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 70710.0
+- **Functions:** 0/5 matched (target 0)
+- **Missing functions:** `runBlocking`, `ThreadLocalKeepAlive::addCheck`, `ThreadLocalKeepAlive::keepAlive`, `BlockingCoroutine::afterCompletion`, `BlockingCoroutine::joinBlocking`
+- **Types:** 0/2 matched (target 0)
+- **Missing types:** `ThreadLocalKeepAlive`, `BlockingCoroutine`
+
+### 86. operators.ScanTest
 
 - **Target:** `operators.ScanTest [STUB]`
 - **Similarity:** 0.00
@@ -1191,7 +1179,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/6 matched
 - **TODOs:** 6
 
-### 88. channels.ConflatedChannelTest
+### 87. channels.ConflatedChannelTest
 
 - **Target:** `channels.ConflatedChannelTest [STUB]`
 - **Similarity:** 0.00
@@ -1204,33 +1192,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/6 matched
 - **TODOs:** 30
 
-### 89. sync.SemaphoreStressTest
-
-- **Target:** `sync.SemaphoreStressTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 60710.0
-- **Functions:** 0/6 matched
-- **Missing functions:** `SemaphoreStressTest::testStressTestAsMutex`, `SemaphoreStressTest::testStress`, `SemaphoreStressTest::testStressAsMutex`, `SemaphoreStressTest::testStressCancellation`, `SemaphoreStressTest::testStressReleaseCancelRace`, `SemaphoreStressTest::testShouldBeUnlockedOnCancellation`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/6 matched
-- **TODOs:** 29
-- **Lint issues:** 8
-
-### 90. channels.TestBroadcastChannelKind
-
-- **Target:** `channels.TestBroadcastChannelKind [ZERO]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 60710.0
-- **Functions:** 0/6 matched (target 0)
-- **Missing functions:** `TestBroadcastChannelKind::create`, `TestBroadcastChannelKind::toString`, `TestBroadcastChannelKind::create`, `TestBroadcastChannelKind::toString`, `TestBroadcastChannelKind::create`, `TestBroadcastChannelKind::toString`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **TODOs:** 5
-
-### 91. test.AtomicCancellationTest
+### 88. test.AtomicCancellationTest
 
 - **Target:** `concurrent.AtomicCancellationTest [STUB]`
 - **Similarity:** 0.00
@@ -1244,7 +1206,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 38
 - **Lint issues:** 11
 
-### 92. operators.OnEmptyTest
+### 89. operators.OnEmptyTest
 
 - **Target:** `operators.OnEmptyTest [STUB]`
 - **Similarity:** 0.00
@@ -1257,21 +1219,19 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/6 matched
 - **TODOs:** 5
 
-### 93. operators.FilterTest
+### 90. channels.TestBroadcastChannelKind
 
-- **Target:** `operators.FilterTest [STUB]`
+- **Target:** `channels.TestBroadcastChannelKind [ZERO]`
 - **Similarity:** 0.00
 - **Dependents:** 0
 - **Priority Score:** 60710.0
-- **Functions:** 0/6 matched
-- **Missing functions:** `FilterTest::testFilter`, `FilterTest::testEmptyFlow`, `FilterTest::testErrorCancelsUpstream`, `FilterTest::testFilterNot`, `FilterTest::testEmptyFlowFilterNot`, `FilterTest::testErrorCancelsUpstreamwFilterNot`
+- **Functions:** 0/6 matched (target 0)
+- **Missing functions:** `TestBroadcastChannelKind::create`, `TestBroadcastChannelKind::toString`, `TestBroadcastChannelKind::create`, `TestBroadcastChannelKind::toString`, `TestBroadcastChannelKind::create`, `TestBroadcastChannelKind::toString`
 - **Types:** 1/1 matched
 - **Missing types:** _none_
-- **Tests:** 0/6 matched
-- **TODOs:** 23
-- **Lint issues:** 8
+- **TODOs:** 5
 
-### 94. channels.BroadcastTest
+### 91. channels.BroadcastTest
 
 - **Target:** `channels.BroadcastTest [STUB]`
 - **Similarity:** 0.00
@@ -1285,7 +1245,35 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 55
 - **Lint issues:** 3
 
-### 95. channels.ChannelReceiveCatchingTest
+### 92. operators.FilterTest
+
+- **Target:** `operators.FilterTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 60710.0
+- **Functions:** 0/6 matched
+- **Missing functions:** `FilterTest::testFilter`, `FilterTest::testEmptyFlow`, `FilterTest::testErrorCancelsUpstream`, `FilterTest::testFilterNot`, `FilterTest::testEmptyFlowFilterNot`, `FilterTest::testErrorCancelsUpstreamwFilterNot`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/6 matched
+- **TODOs:** 23
+- **Lint issues:** 8
+
+### 93. sync.SemaphoreStressTest
+
+- **Target:** `sync.SemaphoreStressTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 60710.0
+- **Functions:** 0/6 matched
+- **Missing functions:** `SemaphoreStressTest::testStressTestAsMutex`, `SemaphoreStressTest::testStress`, `SemaphoreStressTest::testStressAsMutex`, `SemaphoreStressTest::testStressCancellation`, `SemaphoreStressTest::testStressReleaseCancelRace`, `SemaphoreStressTest::testShouldBeUnlockedOnCancellation`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/6 matched
+- **TODOs:** 29
+- **Lint issues:** 8
+
+### 94. channels.ChannelReceiveCatchingTest
 
 - **Target:** `channels.ChannelReceiveCatchingTest [STUB]`
 - **Similarity:** 0.00
@@ -1298,7 +1286,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/6 matched
 - **TODOs:** 22
 
-### 96. flow.SharedFlow
+### 95. flow.SharedFlow
 
 - **Target:** `flow.SharedFlow`
 - **Similarity:** 0.35
@@ -1309,6 +1297,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 5/5 matched (target 8)
 - **Missing types:** _none_
 - **Lint issues:** 5
+
+### 96. operators.Zip
+
+- **Target:** `flow.Zip`
+- **Similarity:** 0.08
+- **Dependents:** 0
+- **Priority Score:** 51809.2
+- **Functions:** 13/18 matched (target 27)
+- **Missing functions:** `combineTransform`, `combineUnsafe`, `combineTransformUnsafe`, `nullArrayFactory`, `combineTransform`
+- **Types:** 0/0 matched (target 1)
+- **Missing types:** _none_
+- **Lint issues:** 4
 
 ### 97. test.CoroutineDispatcherOperatorFunInvokeTest
 

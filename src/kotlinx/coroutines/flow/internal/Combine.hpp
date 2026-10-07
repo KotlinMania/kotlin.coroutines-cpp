@@ -126,17 +126,59 @@ inline std::shared_ptr<Flow<R>> combine_transform_unsafe(
     });
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:28-30,254-260
+// NOTE(port): Concrete lowering of emit(transform(values)); emit takes ownership of the result box.
+void* emit_combine_result(
+    std::function<void*(Continuation<void*>*)> transform,
+    std::function<void*(void*, Continuation<void*>*)> emit,
+    std::function<void(void*)> delete_result, Continuation<void*>* completion);
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:28-30,254-260
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Combine.kt:131-131
+// NOTE(port): Unit's erased ABI result is null; other results transfer an owning R box.
+template <typename R>
+inline void* emit_transformed_result(FlowCollector<R>* collector, void* box,
+                                    Continuation<void*>* completion) {
+    std::unique_ptr<R> value(static_cast<R*>(box));
+    if constexpr (std::is_same_v<R, Unit>) return collector->emit(Unit{}, completion);
+    else return collector->emit(std::move(*value), completion);
+}
+
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:254-260
 template <typename R>
 inline std::shared_ptr<Flow<R>> combine_unsafe(
     std::vector<std::shared_ptr<Flow<std::any>>> flows,
-    std::function<R(const std::vector<std::any>&)> transform) {
+    std::function<void*(const std::vector<std::any>&, Continuation<void*>*)> transform) {
     return unsafe_flow<R>([flows = std::move(flows), transform = std::move(transform)](
         FlowCollector<R>* collector, Continuation<void*>* completion) {
         return combine_internal<R>(collector, flows, null_array_factory<std::any>(),
             [transform](FlowCollector<R>* sink, const std::vector<std::any>& values,
-                        Continuation<void*>* frame) { return sink->emit(transform(values), frame); }, completion);
+                        Continuation<void*>* frame) {
+                return emit_combine_result(
+                    [transform, &values](Continuation<void*>* continuation) {
+                        return transform(values, continuation);
+                    },
+                    [sink](void* box, Continuation<void*>* continuation) {
+                        return emit_transformed_result(sink, box, continuation);
+                    },
+                    [](void* box) { delete static_cast<R*>(box); }, frame);
+            }, completion);
     });
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Zip.kt:254-260
+// NOTE(port): Ordinary C++ transforms enter the same lowered suspend implementation.
+template <typename R>
+inline std::shared_ptr<Flow<R>> combine_unsafe(
+    std::vector<std::shared_ptr<Flow<std::any>>> flows,
+    std::function<R(const std::vector<std::any>&)> transform) {
+    return combine_unsafe<R>(std::move(flows),
+        std::function<void*(const std::vector<std::any>&, Continuation<void*>*)>(
+            [transform = std::move(transform)](const std::vector<std::any>& values,
+                                             Continuation<void*>*) -> void* {
+                if constexpr (std::is_same_v<R, Unit>) { transform(values); return nullptr; }
+                else return new R(transform(values));
+            }));
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Combine.kt:82-139
@@ -160,8 +202,7 @@ inline std::shared_ptr<Flow<R>> zip_impl(
                 return transform(std::any_cast<T1>(std::move(left)), std::any_cast<T2>(std::move(right)), frame);
             },
             [collector](void* box, Continuation<void*>* frame) {
-                std::unique_ptr<R> value(static_cast<R*>(box));
-                return collector->emit(std::move(*value), frame);
+                return emit_transformed_result(collector, box, frame);
             },
             [](void* box) { delete static_cast<R*>(box); }, completion);
     });
@@ -176,7 +217,10 @@ inline std::shared_ptr<Flow<R>> zip_impl(
     return zip_impl<T1, T2, R>(std::move(first), std::move(second),
         std::function<void*(T1, T2, Continuation<void*>*)>(
             [transform = std::move(transform)](T1 left, T2 right, Continuation<void*>*) -> void* {
-                return new R(transform(std::move(left), std::move(right)));
+                if constexpr (std::is_same_v<R, Unit>) {
+                    transform(std::move(left), std::move(right));
+                    return nullptr;
+                } else return new R(transform(std::move(left), std::move(right)));
             }));
 }
 
