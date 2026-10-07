@@ -52,7 +52,9 @@ algorithms. Generated evidence remains under `project-wide/library` and
 
 Incomplete source behavior remains: the cause-only constructor needs Native
 Throwable.toString(), including the actual qualified class-name contract.
-JobCancellationException.toString(), equals(), and hashCode() are absent. Their
+JobCancellationException.toString() and hashCode() remain absent. Equality and
+the matching Native class layout were subsequently repaired; see
+[NATIVE_JOB_CANCELLATION_EQUALITY.md](NATIVE_JOB_CANCELLATION_EQUALITY.md). Their
 dependencies include source Throwable text, structural equality for message/job/
 cause, UTF-16 String hashing, and the Job/Any hash contract. These have not been
 replaced with C++ what(), std::hash, or an invented pointer registry. The Native

@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source kotlinx-coroutines-core/common/src/Exceptions.common.kt
 /**
  * @file Exceptions.hpp
  * @brief Exception types for kotlinx.coroutines
@@ -87,25 +88,16 @@ public:
     // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:27-27
     virtual std::exception_ptr get_cause() const;
 
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:31-31
+    // NOTE(port): The C++ Throwable carrier is std::exception. Other objects
+    // cannot be a JobCancellationException and are outside this typed projection.
+    virtual bool equals(const std::exception* other) const;
+
     ~CancellationException() override = default;
 };
 
-/**
- * Thrown by cancellable suspending functions if the Job of the coroutine is cancelled
- * or completed without cause, or with a cause or exception that is not CancellationException.
- * See Job.getCancellationException().
- */
-class JobCancellationException : public CancellationException {
-private:
-    struct Job* job_;
-
-public:
-    JobCancellationException(const std::string& message, std::exception_ptr cause, struct Job* job)
-        : CancellationException(message, cause), job_(job) {}
-
-    struct Job* get_job() const { return job_; }
-    // get_cause() inherited from CancellationException
-};
+// Transliterated from: kotlinx-coroutines-core/common/src/Exceptions.common.kt:16-22
+class JobCancellationException;
 
 /**
  * Thrown when an internal error occurs in the coroutines library.
@@ -194,3 +186,6 @@ extern const bool RECOVER_STACK_TRACES;
 
 } // namespace coroutines
 } // namespace kotlinx
+
+// The common expect surface exposes the selected Native actual implementation.
+#include "native/Exceptions.hpp"

@@ -2,6 +2,8 @@
 // kotlinx-coroutines-core/common/src/flow/Channels.kt:104-108,119-134.
 #include "kotlinx/coroutines/channels/Channels.hpp"
 #include "kotlinx/coroutines/flow/Channels.hpp"
+#include "kotlinx/coroutines/native/Exceptions.hpp"
+#include "kotlinx/coroutines/JobSupport.hpp"
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -53,6 +55,92 @@ void check_wrapped(std::exception_ptr actual, std::exception_ptr original) {
         CHECK(exception.get_cause() == original);
         CHECK(exception.get_message() == "Channel was consumed, consumer had failed");
     }
+}
+
+// Native Exceptions.kt:27-29: identity, type, message, Job and cause equality
+// execute in source order, including virtual equality on the other operands.
+void job_cancellation_equality_contract() {
+    auto job = std::make_shared<JobSupport>(true);
+    auto other_job = std::make_shared<JobSupport>(true);
+    auto cause = std::make_exception_ptr(std::runtime_error("cause"));
+    JobCancellationException first("cancelled", cause, job.get());
+    JobCancellationException same("cancelled", cause, job.get());
+    JobCancellationException message("different", cause, job.get());
+    JobCancellationException owner("cancelled", cause, other_job.get());
+    JobCancellationException distinct_cause("cancelled", std::make_exception_ptr(std::runtime_error("cause")), job.get());
+    JobCancellationException no_cause("cancelled", nullptr, job.get());
+    CancellationException base("cancelled", cause);
+    std::runtime_error unrelated("cancelled");
+    CHECK(first.equals(&first) && first.equals(&same) && same.equals(&first));
+    CHECK(!first.equals(nullptr) && !first.equals(&base) && !first.equals(&unrelated));
+    CHECK(!first.equals(&message) && !first.equals(&owner) && !first.equals(&distinct_cause) && !first.equals(&no_cause));
+    CHECK(base.equals(&base) && !base.equals(&first) && !base.equals(nullptr));
+    JobCancellationException second_no_cause("cancelled", nullptr, job.get());
+    CHECK(no_cause.equals(&second_no_cause));
+    CHECK(first.get_job() == job.get() && first.get_cause() == cause);
+
+    class EqualCause final : public CancellationException {
+    public:
+        explicit EqualCause(int key, std::shared_ptr<int> calls, std::exception_ptr failure = nullptr)
+            : CancellationException("cause"), key_(key), calls_(std::move(calls)), failure_(failure) {}
+        bool equals(const std::exception* other) const override {
+            ++*calls_;
+            if (failure_) std::rethrow_exception(failure_);
+            auto* value = dynamic_cast<const EqualCause*>(other);
+            return value && value->key_ == key_;
+        }
+    private:
+        int key_;
+        std::shared_ptr<int> calls_;
+        std::exception_ptr failure_;
+    };
+    auto left_calls = std::make_shared<int>(0);
+    auto right_calls = std::make_shared<int>(0);
+    auto left_cause = std::make_exception_ptr(EqualCause(8, left_calls));
+    auto right_cause = std::make_exception_ptr(EqualCause(8, right_calls));
+    JobCancellationException left("equal", left_cause, job.get());
+    JobCancellationException right("equal", right_cause, job.get());
+    CHECK(left.equals(&right) && *right_calls == 1 && *left_calls == 0);
+    JobCancellationException same_cause("equal", right_cause, job.get());
+    CHECK(right.equals(&same_cause) && *right_calls == 2);
+    CHECK(right.equals(&right) && *right_calls == 2);
+    auto equality_failure = std::make_exception_ptr(std::runtime_error("equality failure"));
+    auto throwing_cause = std::make_exception_ptr(EqualCause(8, right_calls, equality_failure));
+    JobCancellationException throwing("equal", throwing_cause, job.get());
+    try {
+        left.equals(&throwing);
+        CHECK(false);
+    } catch (...) { CHECK(std::current_exception() == equality_failure); }
+
+    class EqualJob final : public JobSupport {
+    public:
+        explicit EqualJob(int key) : JobSupport(true), key_(key) {}
+        mutable int calls = 0;
+        bool equals(const CoroutineContext* other) const override {
+            ++calls;
+            auto* job = dynamic_cast<const EqualJob*>(other);
+            return job && job->key_ == key_;
+        }
+    private:
+        int key_;
+    };
+    auto left_job = std::make_shared<EqualJob>(5);
+    auto right_job = std::make_shared<EqualJob>(5);
+    JobCancellationException left_owner("equal", nullptr, left_job.get());
+    JobCancellationException right_owner("equal", nullptr, right_job.get());
+    CHECK(left_owner.equals(&right_owner) && right_job->calls == 1 && left_job->calls == 0);
+    JobCancellationException same_owner("equal", nullptr, right_job.get());
+    CHECK(right_owner.equals(&same_owner) && right_job->calls == 2);
+    JobCancellationException wrong_message("unequal", nullptr, right_job.get());
+    CHECK(!left_owner.equals(&wrong_message) && right_job->calls == 2);
+    CHECK(left_job.use_count() == 1 && right_job.use_count() == 1);
+
+    // Distinct JobCancellationException causes recursively use source equality.
+    auto nested_left = std::make_exception_ptr(JobCancellationException("nested", nullptr, job.get()));
+    auto nested_right = std::make_exception_ptr(JobCancellationException("nested", nullptr, job.get()));
+    JobCancellationException outer_left("outer", nested_left, job.get());
+    JobCancellationException outer_right("outer", nested_right, job.get());
+    CHECK(outer_left.equals(&outer_right));
 }
 
 void cancellation_contract() {
@@ -240,6 +328,7 @@ void list_resource_contract() {
 
 int main() {
     try {
+        job_cancellation_equality_contract();
         cancellation_contract();
         iteration_contract();
         list_contract();

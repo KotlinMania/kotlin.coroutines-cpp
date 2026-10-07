@@ -10,18 +10,18 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 772/2918 matched (target 2905) | 26.5% |
-| Class/type parity | 343/560 matched (target 499) | 61.2% |
-| Combined symbol parity | 1115/3478 matched (target 3404) | 32.1% |
+| Function parity | 773/2918 matched (target 2908) | 26.5% |
+| Class/type parity | 344/560 matched (target 500) | 61.4% |
+| Combined symbol parity | 1117/3478 matched (target 3408) | 32.1% |
 | Average function body similarity | 0.26 | inline-code cosine |
-| Average documentation similarity | 0.37 | doc text cosine |
+| Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 721 | 0% parity until ported |
 | Missing source classes/types | 166 | 0% parity until ported |
 | Missing source symbol files | 105 | 887 symbols |
 | Cheat/scoring failures | 122 | forced to 0% |
 | Total source files | 354 | 100% |
 | Target units (paired) | 593 | - |
-| Target files (total) | 772 | - |
+| Target files (total) | 773 | - |
 | Porting progress | 245 | 69.2% (matched) |
 | Missing files | 109 | 30.8% |
 
@@ -157,7 +157,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 113 | `operators.TransformTest` | `operators.TransformTest [STUB]` | 0.00 | 0/1 matched | `TransformTest::testDoubleEmit` | 1/1 matched | _none_ | 0/1 | 1 | 10210.0 |
 | 114 | `selects.SelectMutexStressTest` | `selects.SelectMutexStressTest [STUB]` | 0.00 | 0/1 matched | `SelectMutexStressTest::testSelectCancelledResourceRelease` | 1/1 matched | _none_ | 0/1 | 1 | 10210.0 |
 | 115 | `test.ConcurrentExceptionsStressTest` | `concurrent.ConcurrentExceptionsStressTest [STUB]` | 0.00 | 3/4 matched (target 5) | `ConcurrentExceptionsStressTest::testStress` | 2/2 matched | _none_ | 0/1 | 1 | 10610.0 |
-| 116 | `common.Exceptions.common` | `coroutines.Exceptions [ZERO]` | 0.00 | 0/0 matched (target 11) | _none_ | 4/4 matched (target 7) | _none_ | - | 0 | 410.0 |
+| 116 | `common.Exceptions.common` | `coroutines.Exceptions [ZERO]` | 0.00 | 0/0 matched (target 9) | _none_ | 4/4 matched (target 6) | _none_ | - | 0 | 410.0 |
 | 117 | `common.Runnable.common` | `coroutines.Runnable [ZERO]` | 0.00 | 0/0 matched (target 3) | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 110.0 |
 | 118 | `common.TestDispatchers` | `tests.TestDispatchers [STUB]` | 0.00 | 2/2 matched | _none_ | 0/0 matched | _none_ | - | 0 | 210.0 |
 | 119 | `internal.NullSurrogate` | `internal.NullSurrogate [ZERO]` | 0.00 | 0/0 matched (target 3) | _none_ | 0/0 matched | _none_ | - | 0 | 10.0 |
@@ -205,12 +205,12 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 161 | `common.Job` | `coroutines.Job` | 0.10 | 5/24 matched (target 19) | `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelAndJoin`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::ensureActive`, `Job::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke` | 5/7 matched (target 9) | `DisposableHandle`, `DisposeOnCompletion` | - | 21 | 213109.0 |
 | 162 | `internal.InlineList` | `internal.InlineList` | 0.10 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | - | 1 | 10309.0 |
 | 163 | `internal.Symbol` | `internal.Symbol` | 0.11 | 2/2 matched (target 3) | _none_ | 1/1 matched | _none_ | - | 0 | 1000308.9 |
-| 164 | `native.Exceptions` | `native.Exceptions` | 0.11 | 1/4 matched (target 12) | `JobCancellationException::toString`, `JobCancellationException::equals`, `JobCancellationException::hashCode` | 0/2 matched (target 0) | `CancellationException`, `JobCancellationException` | - | 5 | 6050609.0 |
-| 165 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
-| 166 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 5) | _none_ | - | 4 | 41608.8 |
-| 167 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 12) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
-| 168 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | - | 0 | 808.7 |
-| 169 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.13 | 1/1 matched (target 8) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 2000208.6 |
+| 164 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
+| 165 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 5) | _none_ | - | 4 | 41608.8 |
+| 166 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 12) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
+| 167 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | - | 0 | 808.7 |
+| 168 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.13 | 1/1 matched (target 8) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 2000208.6 |
+| 169 | `native.Exceptions` | `native.Exceptions` | 0.14 | 2/4 matched (target 17) | `JobCancellationException::toString`, `JobCancellationException::hashCode` | 1/2 matched | `CancellationException` | - | 3 | 6030608.5 |
 | 170 | `common.EventLoop.common` | `coroutines.EventLoop.common` | 0.14 | 11/38 matched (target 24) | `EventLoop::limitedParallelism`, `delayToNanos`, `delayNanosToMillis`, `EventLoopImplBase::shutdown`, `EventLoopImplBase::scheduleResumeAfterDelay`, `EventLoopImplBase::scheduleInvokeOnTimeout`, `EventLoopImplBase::processNextEvent`, `EventLoopImplBase::dispatch`, `EventLoopImplBase::enqueue`, `EventLoopImplBase::enqueueImpl`, `EventLoopImplBase::dequeue`, `EventLoopImplBase::enqueueDelayedTasks`, `EventLoopImplBase::closeQueue`, `EventLoopImplBase::schedule`, `EventLoopImplBase::shouldUnpark`, `EventLoopImplBase::scheduleImpl`, `EventLoopImplBase::resetAll`, `EventLoopImplBase::rescheduleAllDelayed`, `EventLoopImplBase::DelayedTask::compareTo`, `EventLoopImplBase::DelayedTask::timeToExecute`, `EventLoopImplBase::DelayedTask::scheduleTask`, `EventLoopImplBase::DelayedTask::dispose`, `EventLoopImplBase::DelayedTask::toString`, `EventLoopImplBase::DelayedResumeTask::run`, `EventLoopImplBase::DelayedResumeTask::toString`, `EventLoopImplBase::DelayedRunnableTask::run`, `EventLoopImplBase::DelayedRunnableTask::toString` | 2/10 matched (target 3) | `Queue`, `EventLoopImplPlatform`, `EventLoopImplBase`, `DelayedTask`, `DelayedResumeTask`, `DelayedRunnableTask`, `DelayedTaskQueue`, `DefaultExecutor` | - | 35 | 354808.6 |
 | 171 | `channels.Broadcast` | `channels.Broadcast` | 0.14 | 3/10 matched (target 11) | `ReceiveChannel<E>::broadcast`, `CoroutineScope::broadcast`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancelInternal`, `LazyBroadcastCoroutine::openSubscription`, `LazyBroadcastCoroutine::onStart` | 2/2 matched | _none_ | - | 7 | 71208.6 |
 | 172 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | - | 1 | 11608.5 |
@@ -580,12 +580,12 @@ These files need significant work:
 - `common.Job` -> `coroutines.Job` (0.10)
 - `internal.InlineList` -> `internal.InlineList` (0.10)
 - `internal.Symbol` -> `internal.Symbol` (0.11, 1 deps)
-- `native.Exceptions` -> `native.Exceptions` (0.11, 6 deps)
 - `terminal.Collection` -> `flow.Collection` (0.11)
 - `internal.ConcurrentLinkedList` -> `internal.ConcurrentLinkedList` (0.12)
 - `internal.SafeCollector.common` -> `internal.SafeCollector.common` (0.12)
 - `terminal.Collect` -> `flow.Collect` (0.13)
 - `common.CoroutineStart` -> `coroutines.CoroutineStart` (0.13, 2 deps)
+- `native.Exceptions` -> `native.Exceptions` (0.14, 6 deps)
 - `common.EventLoop.common` -> `coroutines.EventLoop.common` (0.14)
 - `channels.Broadcast` -> `channels.Broadcast` (0.14)
 - `channels.BroadcastChannel` -> `channels.BroadcastChannel` (0.15)
@@ -653,7 +653,7 @@ present in the Rust source file.
 | Source | Target | Missing types | Examples |
 |--------|--------|---------------|----------|
 | `internal.Concurrent` | `internal.Concurrent` | 1/3 | `BenignDataRace` |
-| `native.Exceptions` | `native.Exceptions` | 2/2 | `CancellationException`, `JobCancellationException` |
+| `native.Exceptions` | `native.Exceptions` | 1/2 | `CancellationException` |
 | `common.TestBase.common` | `testing.TestBase` | 9/19 | `Impl`, `OrderedExecutionTestBase`, `NoJs`, `NoNative`, `NoWasmJs`, `NoWasmWasi`, `TestResult`, `RecoverableTestException`, `RecoverableTestCancellationException` |
 | `common.EventLoop.common` | `coroutines.EventLoop.common` | 8/10 | `Queue`, `EventLoopImplPlatform`, `EventLoopImplBase`, `DelayedTask`, `DelayedResumeTask`, `DelayedRunnableTask`, `DelayedTaskQueue`, `DefaultExecutor` |
 | `native.MultithreadedDispatchers` | `native.MultithreadedDispatchers [ZERO]` | 3/3 | `WorkerDispatcher`, `DisposableBlock`, `MultiWorkerDispatcher` |
@@ -792,7 +792,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7139 / 7153 lines (100%)
+**Documentation line amount:** 7142 / 7153 lines (100%)
 
 Documentation gaps (>20%), complete list:
 
@@ -823,12 +823,11 @@ Documentation gaps (>20%), complete list:
 - `common.Deferred` - 25% gap (84 → 63 lines)
 - `common.MainDispatcherTestBase` - 100% gap (19 → 0 lines)
 - `common.TestDispatcher` - 100% gap (17 → 0 lines)
-- `test.WithTimeoutTest` - 100% gap (15 → 0 lines)
 - `test.WithTimeoutDurationTest` - 100% gap (15 → 0 lines)
+- `test.WithTimeoutTest` - 100% gap (15 → 0 lines)
 - `concurrent.Builders.concurrent` - 63% gap (19 → 7 lines)
 - `test.WithTimeoutOrNullTest` - 100% gap (12 → 0 lines)
 - `test.WithTimeoutOrNullDurationTest` - 100% gap (12 → 0 lines)
-- `native.Exceptions` - 73% gap (11 → 3 lines)
 - `intrinsics.Cancellable` - 40% gap (20 → 12 lines)
 - `operators.OnCompletionTest` - 100% gap (7 → 0 lines)
 - `channels.Broadcast` - 100% gap (6 → 0 lines)
