@@ -20,8 +20,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Missing source symbol files | 107 | 901 symbols |
 | Cheat/scoring failures | 122 | forced to 0% |
 | Total source files | 354 | 100% |
-| Target units (paired) | 589 | - |
-| Target files (total) | 767 | - |
+| Target units (paired) | 590 | - |
+| Target files (total) | 768 | - |
 | Porting progress | 243 | 68.6% (matched) |
 | Missing files | 111 | 31.4% |
 
@@ -243,13 +243,13 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 199 | `channels.ChannelCoroutine` | `channels.ChannelCoroutine` | 0.29 | 2/4 matched (target 18) | `ChannelCoroutine::cancel`, `ChannelCoroutine::cancel` | 1/1 matched | _none_ | - | 2 | 20507.1 |
 | 200 | `flow.IdFlowTest` | `flow.IdFlowTest` | 0.30 | 1/3 matched | `IdFlowTest::testCancelInCollect`, `IdFlowTest::testCancelInFlow` | 1/1 matched | _none_ | 0/2 | 2 | 20407.0 |
 | 201 | `test.MultithreadedDispatchersTest` | `test.MultithreadedDispatchersTest` | 0.31 | 1/4 matched | `MultithreadedDispatchersTest::testNotAllocatingExtraDispatchers`, `MultithreadedDispatchersTest::spin`, `MultithreadedDispatchersTest::timeoutsNotPreventingClosing` | 2/2 matched | _none_ | 0/2 | 3 | 30606.9 |
-| 202 | `internal.Concurrent` | `internal.Concurrent` | 0.31 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | - | 1 | 14010907.0 |
-| 203 | `internal.OnUndeliveredElement` | `internal.OnUndeliveredElement` | 0.32 | 2/2 matched (target 3) | _none_ | 2/2 matched | _none_ | - | 0 | 406.8 |
-| 204 | `flow.SharingStarted` | `flow.SharingStarted` | 0.32 | 7/10 matched (target 20) | `SharingStarted.Companion::WhileSubscribed`, `StartedWhileSubscribed::equals`, `StartedWhileSubscribed::hashCode` | 5/5 matched (target 7) | _none_ | - | 3 | 31506.8 |
-| 205 | `test.CoroutinesTest` | `tests.CoroutinesTest` | 0.32 | 1/20 matched (target 8) | `CoroutinesTest::testSimple`, `CoroutinesTest::testYield`, `CoroutinesTest::testLaunchAndYieldJoin`, `CoroutinesTest::testLaunchUndispatched`, `CoroutinesTest::testNested`, `CoroutinesTest::testWaitChild`, `CoroutinesTest::testCancelChildExplicit`, `CoroutinesTest::testCancelChildWithFinally`, `CoroutinesTest::testWaitNestedChild`, `CoroutinesTest::testExceptionPropagation`, `CoroutinesTest::testCancelParentOnChildException`, `CoroutinesTest::testCancelParentOnNestedException`, `CoroutinesTest::testJoinWithFinally`, `CoroutinesTest::testCancelAndJoin`, `CoroutinesTest::testCancelAndJoinChildCrash`, `CoroutinesTest::testYieldInFinally`, `CoroutinesTest::testCancelAndJoinChildren`, `CoroutinesTest::testParentCrashCancelsChildren`, `CoroutinesTest::testNotCancellableChildWithExceptionCancelled` | 1/1 matched | _none_ | 0/19 | 19 | 192106.8 |
-| 206 | `internal.LockFreeTaskQueue` | `internal.LockFreeTaskQueue` | 0.33 | 19/21 matched (target 27) | `LockFreeTaskQueueCore::wo`, `LockFreeTaskQueueCore::withState` | 4/4 matched | _none_ | - | 2 | 22506.7 |
-| 207 | `test.MultithreadedDispatcherStressTest` | `concurrent.MultithreadedDispatcherStressTest` | 0.33 | 0/1 matched | `MultithreadedDispatcherStressTest::testClosingNotDroppingTasks` | 1/1 matched | _none_ | 0/1 | 1 | 10206.7 |
-| 208 | `flow.SharedFlow` | `flow.SharedFlow` | 0.35 | 26/31 matched (target 48) | `MutableSharedFlow`, `SharedFlowImpl::fuse`, `Array<Any?>::getBufferAt`, `Array<Any?>::setBufferAt`, `SharedFlow<T>::fuseSharedFlow` | 5/5 matched (target 8) | _none_ | - | 5 | 53606.5 |
+| 202 | `internal.OnUndeliveredElement` | `internal.OnUndeliveredElement` | 0.32 | 2/2 matched (target 3) | _none_ | 2/2 matched | _none_ | - | 0 | 406.8 |
+| 203 | `flow.SharingStarted` | `flow.SharingStarted` | 0.32 | 7/10 matched (target 20) | `SharingStarted.Companion::WhileSubscribed`, `StartedWhileSubscribed::equals`, `StartedWhileSubscribed::hashCode` | 5/5 matched (target 7) | _none_ | - | 3 | 31506.8 |
+| 204 | `test.CoroutinesTest` | `tests.CoroutinesTest` | 0.32 | 1/20 matched (target 8) | `CoroutinesTest::testSimple`, `CoroutinesTest::testYield`, `CoroutinesTest::testLaunchAndYieldJoin`, `CoroutinesTest::testLaunchUndispatched`, `CoroutinesTest::testNested`, `CoroutinesTest::testWaitChild`, `CoroutinesTest::testCancelChildExplicit`, `CoroutinesTest::testCancelChildWithFinally`, `CoroutinesTest::testWaitNestedChild`, `CoroutinesTest::testExceptionPropagation`, `CoroutinesTest::testCancelParentOnChildException`, `CoroutinesTest::testCancelParentOnNestedException`, `CoroutinesTest::testJoinWithFinally`, `CoroutinesTest::testCancelAndJoin`, `CoroutinesTest::testCancelAndJoinChildCrash`, `CoroutinesTest::testYieldInFinally`, `CoroutinesTest::testCancelAndJoinChildren`, `CoroutinesTest::testParentCrashCancelsChildren`, `CoroutinesTest::testNotCancellableChildWithExceptionCancelled` | 1/1 matched | _none_ | 0/19 | 19 | 192106.8 |
+| 205 | `internal.LockFreeTaskQueue` | `internal.LockFreeTaskQueue` | 0.33 | 19/21 matched (target 27) | `LockFreeTaskQueueCore::wo`, `LockFreeTaskQueueCore::withState` | 4/4 matched | _none_ | - | 2 | 22506.7 |
+| 206 | `test.MultithreadedDispatcherStressTest` | `concurrent.MultithreadedDispatcherStressTest` | 0.33 | 0/1 matched | `MultithreadedDispatcherStressTest::testClosingNotDroppingTasks` | 1/1 matched | _none_ | 0/1 | 1 | 10206.7 |
+| 207 | `flow.SharedFlow` | `flow.SharedFlow` | 0.35 | 26/31 matched (target 48) | `MutableSharedFlow`, `SharedFlowImpl::fuse`, `Array<Any?>::getBufferAt`, `Array<Any?>::setBufferAt`, `SharedFlow<T>::fuseSharedFlow` | 5/5 matched (target 8) | _none_ | - | 5 | 53606.5 |
+| 208 | `internal.Concurrent` | `internal.Concurrent` | 0.36 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | - | 1 | 14010906.0 |
 | 209 | `channels.ConflatedBufferedChannel` | `channels.ConflatedBufferedChannel` | 0.37 | 6/7 matched (target 9) | `ConflatedBufferedChannel::registerSelectForSend` | 1/1 matched | _none_ | - | 1 | 10806.3 |
 | 210 | `internal.ThreadSafeHeap` | `internal.ThreadSafeHeap` | 0.38 | 14/14 matched (target 20) | _none_ | 2/2 matched | _none_ | - | 0 | 1606.2 |
 | 211 | `test.CompletableDeferredTest` | `tests.CompletableDeferredTest` | 0.38 | 5/18 matched (target 9) | `CompletableDeferredTest::testFresh`, `CompletableDeferredTest::testComplete`, `CompletableDeferredTest::testCompleteWithIncompleteResult`, `CompletableDeferredTest::testCancelWithException`, `CompletableDeferredTest::testCompleteWithResultOK`, `CompletableDeferredTest::testCompleteWithResultException`, `CompletableDeferredTest::testParentCancelsChild`, `CompletableDeferredTest::testParentActiveOnChildCompletion`, `CompletableDeferredTest::testParentCancelledOnChildException`, `CompletableDeferredTest::testParentActiveOnChildCancellation`, `CompletableDeferredTest::testAwait`, `CompletableDeferredTest::testCancelAndAwaitParentWaitChildren`, `CompletableDeferredTest::testCompleteAndAwaitParentWaitChildren` | 1/1 matched | _none_ | 0/13 | 13 | 131906.2 |
@@ -616,13 +616,13 @@ These files need significant work:
 - `channels.ChannelCoroutine` -> `channels.ChannelCoroutine` (0.29)
 - `flow.IdFlowTest` -> `flow.IdFlowTest` (0.30)
 - `test.MultithreadedDispatchersTest` -> `test.MultithreadedDispatchersTest` (0.31)
-- `internal.Concurrent` -> `internal.Concurrent` (0.31, 14 deps)
 - `internal.OnUndeliveredElement` -> `internal.OnUndeliveredElement` (0.32)
 - `flow.SharingStarted` -> `flow.SharingStarted` (0.32)
 - `test.CoroutinesTest` -> `tests.CoroutinesTest` (0.32)
 - `internal.LockFreeTaskQueue` -> `internal.LockFreeTaskQueue` (0.33)
 - `test.MultithreadedDispatcherStressTest` -> `concurrent.MultithreadedDispatcherStressTest` (0.33)
 - `flow.SharedFlow` -> `flow.SharedFlow` (0.35)
+- `internal.Concurrent` -> `internal.Concurrent` (0.36, 14 deps)
 - `channels.ConflatedBufferedChannel` -> `channels.ConflatedBufferedChannel` (0.37)
 - `internal.ThreadSafeHeap` -> `internal.ThreadSafeHeap` (0.38)
 - `test.CompletableDeferredTest` -> `tests.CompletableDeferredTest` (0.38)
@@ -791,7 +791,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7218 / 7063 lines (102%)
+**Documentation line amount:** 7184 / 7063 lines (102%)
 
 Documentation gaps (>20%), complete list:
 

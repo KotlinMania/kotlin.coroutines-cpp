@@ -38,9 +38,9 @@ Based on AST analysis, here are the concrete next steps.
 - **Action:** Deep review - likely missing major functionality
 
 ### 3. internal.Concurrent
-- **Similarity:** 0.31 (needs 54% improvement)
+- **Similarity:** 0.36 (needs 49% improvement)
 - **Dependencies:** 14
-- **Priority Score:** 14010907.0
+- **Priority Score:** 14010906.0
 - **Functions:** 6/6 matched (target 11)
 - **Missing functions:** _none_
 - **Types:** 2/3 matched (target 2)
@@ -85,14 +85,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 3. internal.Concurrent
 
 - **Target:** `internal.Concurrent`
-- **Similarity:** 0.31
+- **Similarity:** 0.36
 - **Dependents:** 14
-- **Priority Score:** 14010907.0
+- **Priority Score:** 14010906.0
 - **Functions:** 6/6 matched (target 11)
 - **Missing functions:** _none_
 - **Types:** 2/3 matched (target 2)
 - **Missing types:** `BenignDataRace`
-- **Lint issues:** 1
+- **Lint issues:** 2
 
 ### 4. native.Exceptions
 

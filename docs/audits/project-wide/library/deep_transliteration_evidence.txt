@@ -7598,14 +7598,14 @@ Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/internal/Concurrent.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Concurrent.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Concurrent.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
-translated_ast_cosine: 0.321412
+translated_text_cosine: 0.018066
+translated_ast_cosine: 0.347016
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.018066
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -7623,29 +7623,29 @@ Diagnostic: 9: unsupported function_declaration
 Diagnostic: 11: unsupported function_declaration
 Diagnostic: 13: unsupported type_alias
 Diagnostic: 15: unsupported class_declaration
-Function ReentrantLock::withLock:9 -> kotlinx::coroutines::internal::with_lock:56 | normalized logic: 0.000000
+Function ReentrantLock::withLock:9 -> kotlinx::coroutines::internal::with_lock:10 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:lock type:reentrantlock node:66 identifier:action identifier:std type:function type:t identifier:guard identifier:std type:lockguard type:reentrantlock node:66 type:lock node:5 node:43 identifier:action
-Function identitySet:11 -> kotlinx::coroutines::internal::identity_set:72 | normalized logic: 0.000000
+  Target logic: node:66 identifier:lock type:reentrantlock node:66 identifier:action identifier:std type:function type:void identifier:guard identifier:std type:lockguard type:reentrantlock node:66 type:lock node:43 identifier:action
+Function identitySet:11 -> kotlinx::coroutines::internal::identity_set:48 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: type:signed32 identifier:expectedsize operator:= literal:51:16 identifier:set identifier:std type:e type:unorderedset node:43 identifier:set identifier:reserve identifier:expectedsize node:5 identifier:set
-Function WorkaroundAtomicReference::get:19 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::get:98 | normalized logic: 0.000000
+  Target logic: node:66 identifier:expectedsize type:signed32 node:5 node:43 identifier:std identifier:unorderedset type:e
+Function WorkaroundAtomicReference::get:19 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::get:65 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:5 node:43 identifier:nativeatomic identifier:load identifier:std identifier:memoryorderacquire
-Function WorkaroundAtomicReference::set:21 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::set:102 | normalized logic: 0.000000
+  Target logic: node:5 node:43 identifier:nativeatomic identifier:load identifier:std identifier:memoryorderseqcst
+Function WorkaroundAtomicReference::set:21 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::set:70 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:value type:v node:43 identifier:nativeatomic identifier:store identifier:value identifier:std identifier:memoryorderrelease
-Function WorkaroundAtomicReference::getAndSet:25 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::get_and_set:106 | normalized logic: 0.000000
+  Target logic: node:66 identifier:value type:v node:43 identifier:nativeatomic identifier:store identifier:value identifier:std identifier:memoryorderseqcst
+Function WorkaroundAtomicReference::getAndSet:25 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::get_and_set:75 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:value type:v node:5 node:43 identifier:nativeatomic identifier:exchange identifier:value identifier:std identifier:memoryorderacqrel
-Function WorkaroundAtomicReference::compareAndSet:27 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::compare_and_set:110 | normalized logic: 0.000000
+  Target logic: node:66 identifier:value type:v node:5 node:43 identifier:nativeatomic identifier:exchange identifier:value identifier:std identifier:memoryorderseqcst
+Function WorkaroundAtomicReference::compareAndSet:27 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::compare_and_set:80 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:expected type:v node:66 identifier:value type:v node:5 node:43 identifier:nativeatomic identifier:compareexchangestrong identifier:expected identifier:value identifier:std identifier:memoryorderacqrel identifier:std identifier:memoryorderacquire
-Extra target function: kotlinx::coroutines::internal::with_lock:62
-Extra target function: kotlinx::coroutines::internal::WorkaroundAtomicReference::WorkaroundAtomicReference:96
-Extra target function: kotlinx::coroutines::internal::get_value:117
-Extra target function: kotlinx::coroutines::internal::set_value:122
-Extra target function: kotlinx::coroutines::internal::loop:127
+  Target logic: node:66 identifier:expected type:v node:66 identifier:value type:v node:5 node:43 identifier:nativeatomic identifier:compareexchangestrong identifier:expected identifier:value identifier:std identifier:memoryorderseqcst identifier:std identifier:memoryorderseqcst
+Extra target function: kotlinx::coroutines::internal::with_lock:38
+Extra target function: kotlinx::coroutines::internal::WorkaroundAtomicReference::WorkaroundAtomicReference:62
+Extra target function: kotlinx::coroutines::internal::get_value:93
+Extra target function: kotlinx::coroutines::internal::set_value:99
+Extra target function: kotlinx::coroutines::internal::loop:105
 === Emitted target buffer ===
 namespace kotlinx::coroutines::internal {
 
