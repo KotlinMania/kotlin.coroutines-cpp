@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 831/2918 matched (target 3003) | 28.5% |
-| Class/type parity | 359/560 matched (target 509) | 64.1% |
-| Combined symbol parity | 1190/3478 matched (target 3512) | 34.2% |
+| Function parity | 831/2918 matched (target 2997) | 28.5% |
+| Class/type parity | 359/560 matched (target 508) | 64.1% |
+| Combined symbol parity | 1190/3478 matched (target 3505) | 34.2% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -20,8 +20,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Missing source symbol files | 99 | 833 symbols |
 | Cheat/scoring failures | 123 | forced to 0% |
 | Total source files | 354 | 100% |
-| Target units (paired) | 602 | - |
-| Target files (total) | 784 | - |
+| Target units (paired) | 603 | - |
+| Target files (total) | 785 | - |
 | Porting progress | 251 | 70.9% (matched) |
 | Missing files | 103 | 29.1% |
 
@@ -197,7 +197,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 153 | `internal.MainDispatcherFactory` | `internal.MainDispatcherFactory` | 0.07 | 1/1 matched | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 209.3 |
 | 154 | `common.CompletionState` | `coroutines.CompletionState` | 0.07 | 3/6 matched (target 3) | `CompletedExceptionally::makeHandled`, `CompletedExceptionally::toString`, `CancelledContinuation::makeResumed` | 0/2 matched (target 0) | `CompletedExceptionally`, `CancelledContinuation` | - | 5 | 50809.3 |
 | 155 | `kotlinx-coroutines-core.nativeDarwin.test.Launcher` | `test.Launcher` | 0.07 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.3 |
-| 156 | `operators.Transform` | `flow.Transform` | 0.07 | 12/13 matched (target 82) | `Flow<*>::filterIsInstance` | 0/0 matched (target 9) | _none_ | - | 1 | 11309.3 |
+| 156 | `operators.Transform` | `flow.Transform` | 0.07 | 12/13 matched (target 76) | `Flow<*>::filterIsInstance` | 0/0 matched (target 8) | _none_ | - | 1 | 11309.3 |
 | 157 | `selects.OnTimeout` | `selects.OnTimeout` | 0.07 | 3/3 matched (target 8) | _none_ | 1/1 matched | _none_ | - | 0 | 409.3 |
 | 158 | `operators.Zip` | `flow.Zip` | 0.08 | 13/18 matched (target 27) | `combineTransform`, `combineUnsafe`, `combineTransformUnsafe`, `nullArrayFactory`, `combineTransform` | 0/0 matched (target 1) | _none_ | - | 5 | 51809.2 |
 | 159 | `common.MainCoroutineDispatcher` | `coroutines.MainCoroutineDispatcher` | 0.08 | 3/3 matched | _none_ | 1/1 matched | _none_ | - | 0 | 409.2 |
@@ -800,7 +800,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7240 / 7437 lines (97%)
+**Documentation line amount:** 7214 / 7437 lines (97%)
 
 Documentation gaps (>20%), complete list:
 
