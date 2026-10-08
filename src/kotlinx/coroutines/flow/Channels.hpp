@@ -188,8 +188,6 @@ inline void* emit_all(
     return emit_all_impl(receiver, channel, /*consume=*/true, completion);
 }
 
-namespace internal {
-
 /**
  * Represents an existing [channel] as [ChannelFlow] implementation.
  * It fuses with subsequent [flowOn] operators, but for the most part ignores the specified context.
@@ -198,7 +196,7 @@ namespace internal {
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:95-137
 // NOTE(port): The source-private generic class requires a header definition for
-// arbitrary C++ element types. It belongs to the implementation namespace.
+// arbitrary C++ element types. Its namespace preserves the source declaration.
 template <typename T>
 class ChannelAsFlow : public internal::ChannelFlow<T> {
 public:
@@ -217,7 +215,7 @@ public:
 private:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:104-108
     void mark_consumed() {
-        mark_channel_consumed(consume_, consumed_);
+        internal::mark_channel_consumed(consume_, consumed_);
     }
 
 protected:
@@ -277,8 +275,6 @@ private:
     std::atomic<bool> consumed_;
 };
 
-} // namespace internal
-
 /**
  * Represents the given receive channel as a hot flow and [receives][ReceiveChannel.receive] from the channel
  * in fan-out fashion every time this flow is collected. One element will be emitted to one collector only.
@@ -305,7 +301,7 @@ private:
 template <typename T>
 inline std::shared_ptr<Flow<T>> receive_as_flow(
     std::shared_ptr<channels::ReceiveChannel<T>> channel) {
-    return std::make_shared<internal::ChannelAsFlow<T>>(std::move(channel), /*consume=*/false);
+    return std::make_shared<ChannelAsFlow<T>>(std::move(channel), /*consume=*/false);
 }
 
 /**
@@ -332,7 +328,7 @@ inline std::shared_ptr<Flow<T>> receive_as_flow(
 template <typename T>
 inline std::shared_ptr<Flow<T>> consume_as_flow(
     std::shared_ptr<channels::ReceiveChannel<T>> channel) {
-    return std::make_shared<internal::ChannelAsFlow<T>>(std::move(channel), /*consume=*/true);
+    return std::make_shared<ChannelAsFlow<T>>(std::move(channel), /*consume=*/true);
 }
 
 /**
