@@ -19,13 +19,14 @@ public:
         auto self = shared_from_this();
         return std::make_unique<SelectClause0Impl>(this,
             [self](void*, void* select, void* param) {
-                self->register_clause(*static_cast<SelectInstanceBase*>(select), param);
+                self->register_(*static_cast<SelectInstanceBase*>(select), param);
             });
     }
 
 private:
     // Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:45-63
-    void register_clause(SelectInstanceBase& select, void*) {
+    // NOTE(port): register is a C++ keyword; the suffix preserves the source name.
+    void register_(SelectInstanceBase& select, void*) {
         if (time_millis_ <= 0) {
             select.select_in_registration_phase(nullptr);
             return;
