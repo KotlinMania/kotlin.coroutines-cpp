@@ -27,7 +27,7 @@ using kotlinx::suspend::SuspendFunctionAnalyzer;
 namespace {
 struct Replacement { unsigned begin; unsigned end; std::string text; };
 struct Slot { std::string name; std::string access; std::string type; bool reference; bool array = false; bool object = false; bool handler_exception = false; bool dynamic = false; };
-struct Loop { std::string next; size_t scope; bool iteration = true; bool retain_condition = false; };
+struct Loop { std::string next; size_t scope; bool iteration = true; bool retain_condition = false; bool continued = false; };
 
 // NOTE(port): Concrete fields retain C++ construction/destruction state;
 // arrays use aligned delayed storage and references borrow typed pointers.
@@ -1245,7 +1245,8 @@ private:
             emit_statement(loop->getBody());
             clear_scope(scopes_.size() - 1);
             scopes_.pop_back();
-            body_ << next << ":;\n" << generated_expression(loop->getInc()) << ";\n}\n";
+            if (loops_.back().continued) body_ << next << ":;\n";
+            body_ << generated_expression(loop->getInc()) << ";\n}\n";
             loops_.pop_back();
             clear_scope(scopes_.size() - 1);
             scopes_.pop_back();
@@ -1269,7 +1270,9 @@ private:
             emit_statement(loop->getBody());
             clear_scope(scopes_.size() - 1);
             scopes_.pop_back();
-            body_ << next << ":;\n";
+            // NOTE(port): This C++ increment target is needed only by an
+            // authored continue. Ordinary iteration falls through to the increment.
+            if (loops_.back().continued) body_ << next << ":;\n";
             emit_statement(loop->getInc());
             clear_scope(scopes_.size() - 1);
             scopes_.pop_back();
@@ -1297,7 +1300,7 @@ private:
             loops_.push_back({next, scopes_.size()});
             body_ << "while (true) {\n";
             emit_statement(loop->getBody());
-            body_ << next << ":;\n";
+            if (loops_.back().continued) body_ << next << ":;\n";
             auto condition = emit_condition(loop->getCond());
             body_ << "if (!(" << condition << ")) break;\n}\n";
             loops_.pop_back();
@@ -1331,6 +1334,7 @@ private:
             auto loop = std::find_if(loops_.rbegin(), loops_.rend(),
                                      [](const Loop& target) { return target.iteration; });
             if (loop == loops_.rend()) throw std::runtime_error("continue has no lowered loop");
+            loop->continued = true;
             clear_scope(loop->scope + (loop->retain_condition ? 1 : 0));
             if (exception_region_) emit_context_transition();
             if (loop->next.empty()) body_ << "continue;\n";
