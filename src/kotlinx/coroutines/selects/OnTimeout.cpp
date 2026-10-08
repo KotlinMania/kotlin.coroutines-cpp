@@ -49,7 +49,7 @@ private:
     std::int64_t time_millis_;
 };
 
-namespace internal {
+namespace detail {
 // Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:16,33-42
 std::unique_ptr<SelectClause0> make_on_timeout_clause(std::int64_t time_millis) {
     return std::make_shared<OnTimeout>(time_millis)->select_clause();

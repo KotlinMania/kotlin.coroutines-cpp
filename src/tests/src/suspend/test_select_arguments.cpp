@@ -165,6 +165,100 @@ void timeout_context_contract() {
     dispatcher->drain();
     CHECK(calls == 1 && completion.resumes == 1 && !completion.failure);
 }
+// Source contracts: selects/OnTimeout.kt:25-26,45-63; Delay.kt:155-158.
+template <typename Duration>
+void timeout_duration_contract(Duration duration, long long expected) {
+    auto dispatcher = std::make_shared<TimeoutDispatcher>();
+    Completion completion;
+    completion.context = dispatcher;
+    auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+    int calls = 0;
+    on_timeout<void*>(*selection, duration,
+        [&](Continuation<void*>*) -> void* { ++calls; return nullptr; });
+    auto result = selection->do_select(&completion);
+    if (expected == 0) {
+        CHECK(!dispatcher->timer && result == nullptr && !completion.resumes);
+    } else {
+        CHECK(dispatcher->timer && dispatcher->delay_millis == expected);
+        CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(result));
+        dispatcher->fire();
+        dispatcher->drain();
+        CHECK(completion.resumes == 1 && !completion.failure);
+    }
+    CHECK(calls == 1);
+}
+// Source contracts: selects/Select.kt:111-113,824-848; selects/OnTimeout.kt:45-61.
+void timeout_value_contract(bool wait) {
+    class IntCompletion final : public Continuation<void*> {
+    public:
+        std::shared_ptr<CoroutineContext> context;
+        std::unique_ptr<int> value;
+        int resumes = 0;
+        std::shared_ptr<CoroutineContext> get_context() const override { return context; }
+        void resume_with(Result<void*> result) override {
+            ++resumes;
+            value.reset(static_cast<int*>(result.get_or_throw()));
+        }
+    } completion;
+    auto dispatcher = std::make_shared<TimeoutDispatcher>();
+    completion.context = dispatcher;
+    auto selection = std::make_shared<SelectImplementation<int>>(completion.context);
+    SelectBuilder<int>& builder = *selection;
+    int calls = 0;
+    builder.on_timeout(wait ? 1 : 0, [&] { ++calls; return 73; });
+    auto result = selection->do_select(&completion);
+    if (wait) {
+        CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(result));
+        dispatcher->fire();
+        dispatcher->drain();
+        CHECK(completion.resumes == 1 && completion.value && *completion.value == 73);
+    } else {
+        std::unique_ptr<int> value(static_cast<int*>(result));
+        CHECK(value && *value == 73 && !completion.resumes);
+    }
+    CHECK(calls == 1);
+}
+// Source contracts: selects/OnTimeout.kt:51-63; selects/Select.kt:742-778,850-858.
+void timeout_cleanup_contract(bool cancel) {
+    auto dispatcher = std::make_shared<TimeoutDispatcher>();
+    auto job = JobImpl::create(nullptr);
+    Completion completion;
+    completion.context = dispatcher->operator+(job);
+    auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+    SelectBuilder<void*>& builder = *selection;
+    int timed_calls = 0, immediate_calls = 0;
+    builder.on_timeout(10, [&] { ++timed_calls; });
+    auto timer = dispatcher->timer;
+    if (!cancel) builder.on_timeout(0, [&] { ++immediate_calls; });
+    auto result = selection->do_select(&completion);
+    if (cancel) {
+        CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(result));
+        job->cancel(nullptr);
+        dispatcher->drain();
+        CHECK(completion.resumes == 1 && completion.failure);
+    } else CHECK(result == nullptr && immediate_calls == 1 && !completion.resumes);
+    CHECK(timer->disposals == 1 && !timer->action && timed_calls == 0);
+    dispatcher->fire();
+    dispatcher->drain();
+    CHECK(timed_calls == 0);
+}
+// Source contracts: selects/OnTimeout.kt:51-61. The Runnable retains the actual select owner.
+void timeout_owner_contract() {
+    auto dispatcher = std::make_shared<TimeoutDispatcher>();
+    Completion completion;
+    completion.context = dispatcher;
+    auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+    std::weak_ptr<SelectImplementation<void*>> lifetime = selection;
+    int calls = 0;
+    selection->on_timeout(1, [&] { ++calls; });
+    CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(selection->do_select(&completion)));
+    selection.reset();
+    CHECK(!lifetime.expired());
+    dispatcher->fire();
+    dispatcher->drain();
+    CHECK(calls == 1 && completion.resumes == 1 && !completion.failure);
+    CHECK(lifetime.expired());
+}
 void cancellation_parameter_contract() {
     int object = 12, cancellations = 0, blocks = 0;
     auto dispatcher = std::make_shared<Dispatcher>();
@@ -670,6 +764,20 @@ int main() {
         }
         value_result_contract(false);
         timeout_context_contract();
+        timeout_duration_contract(kotlin::time::nanoseconds(1), 1);
+        timeout_duration_contract(kotlin::time::nanoseconds(999999), 1);
+        timeout_duration_contract(kotlin::time::nanoseconds(1000001), 2);
+        timeout_duration_contract(kotlin::time::Duration::ZERO, 0);
+        timeout_duration_contract(kotlin::time::nanoseconds(-1), 0);
+        timeout_duration_contract(kotlin::time::Duration::INFINITE, std::numeric_limits<long long>::max());
+        timeout_duration_contract(-kotlin::time::Duration::INFINITE, 0);
+        timeout_duration_contract(std::chrono::nanoseconds(1), 1);
+        timeout_duration_contract(std::chrono::nanoseconds(1000001), 2);
+        timeout_value_contract(false);
+        timeout_value_contract(true);
+        timeout_cleanup_contract(false);
+        timeout_cleanup_contract(true);
+        timeout_owner_contract();
         value_result_contract(true);
         cancellation_parameter_contract();
         channel_send_contract(false, false, false);

@@ -17,7 +17,7 @@
 #include <utility>
 
 namespace kotlinx::coroutines::selects {
-namespace internal {
+namespace detail {
 // NOTE(port): The private concrete OnTimeout lives in the implementation file.
 // Registration at this boundary takes the correctly adjusted SelectInstanceBase pointer.
 // Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:33-42
@@ -32,7 +32,7 @@ std::unique_ptr<SelectClause0> make_on_timeout_clause(std::int64_t time_millis);
 template <typename R>
 inline void on_timeout(SelectBuilder<R>& builder, std::int64_t time_millis,
                        std::function<void*(Continuation<void*>*)> block) {
-    auto clause = internal::make_on_timeout_clause(time_millis);
+    auto clause = detail::make_on_timeout_clause(time_millis);
     auto registration = clause->get_reg_func();
     // NOTE(port): ClauseData erases SelectInstance<R> before registration. Adjust
     // its actual base pointer before erasing it for the source star-projected API.
