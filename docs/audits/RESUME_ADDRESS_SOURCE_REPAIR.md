@@ -1,6 +1,47 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## Typed IR code contexts and suspension-point lookup — 2026-10-08
+
+The continuation after 79e1c3c9 translates the code-generation scope dependency
+from IrToBitcode.kt:120-212,300-326,2281-2340. Resolved initialization needs a
+normalized expression emitter with actual declaration-bound contexts; the
+existing LLVM operand callbacks alone do not provide that source contract.
+
+CodeContext.hpp:24 now declares the complete source interface: returns and
+return slots, loop jumps, exception handler, variable declaration/lookup,
+function/file/class/returnable-block scopes, resume-point registration, source
+locations, debug scope, lifecycle hooks and exception wrapping. Actual IR
+objects and contexts are borrowed. ExceptionHandler, VariableDebugLocation and
+LocationInfo are source-type forward declarations, not replacement implementations.
+The source's empty lifecycle defaults are implemented at
+IrToBitcode_coroutines.cpp:11,13.
+
+The private InnerScope at IrToBitcode_coroutines.cpp:19 spells Kotlin delegation
+as forwarding methods. SuspendableExpressionCodeScope at :66 combines that
+lexical context with the existing resume-point list adapter. SuspensionPointScope
+at :78 retains the actual IrVariable identity, resume block and source metadata
+index. gen_get_value returns the compiler-owned block address only for that
+variable; other reads delegate to the outer context with their actual result slot.
+The index remains code-generation metadata and is not a runtime dispatch state.
+
+using_context at :106 ports the enter, exception-wrap and finally-exit order.
+A NOTE(port) explains the explicit context parameter in place of Kotlin's mutable
+currentCodeContext. Concrete typed overloads at :194,216 consume the actual
+IrSuspendableExpression/IrSuspensionPoint getters, emit start/address dispatch,
+evaluate normal/resume results in their scopes and join through the existing phi
+helper. Block creation and scope entry preserve the source order.
+
+No build, AST emission, runtime check or deep scan was run. Production marker
+injection still uses the existing LLVM operand entries; there is no new normalized
+Clang-to-IR expression driver invoking these typed overloads yet. General function,
+variable, source-location and exception contexts, IrType lowering and typed
+initializer/partial-construction emission remain incomplete dependencies.
+CMake source review confirms the edited IrToBitcode_coroutines.cpp is already
+registered in kxs-inject, KotlinxCoroutinePass and kxs_codegen_test; its new header
+requires no new target or runtime dependency. Both complete executable acceptance
+paths remain unproven, and the full translation goal remains active.
+
 ## Resolved initializer operands in the coroutine walks — 2026-10-08
 
 The continuation after 365a046b translates the evaluated initializer contract

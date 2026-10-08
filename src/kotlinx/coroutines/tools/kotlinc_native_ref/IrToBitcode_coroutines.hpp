@@ -1,9 +1,15 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:895-939,2281-2340
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:120-212,895-939,2281-2340
 #pragma once
+#include "CodeContext.hpp"
 #include <llvm-c/Core.h>
 #include <functional>
 #include <vector>
+namespace org::jetbrains::kotlin::ir::expressions {
+class IrExpression;
+class IrSuspendableExpression;
+class IrSuspensionPoint;
+}
 namespace org::jetbrains::kotlin::backend::konan::llvm {
 class FunctionGenerationContext;
 // Represents a basic block that may expect a value. A jump to this block must
@@ -42,4 +48,21 @@ LLVMValueRef evaluate_suspension_point(FunctionGenerationContext& generation, LL
     bool is_unit, LLVMValueRef unit_instance, SuspendableExpressionScope& scope,
     const std::function<LLVMValueRef(LLVMValueRef)>& evaluate_normal,
     const std::function<LLVMValueRef()>& evaluate_resume);
+// NOTE(port): A normalized IR emitter supplies general expression/type lowering.
+// This callback emits LLVM in the actual lexical CodeContext; it runs no coroutine.
+using IrExpressionEvaluator = std::function<LLVMValueRef(
+    ir::expressions::IrExpression&, CodeContext&, LLVMValueRef)>;
+
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2289-2306
+LLVMValueRef evaluate_suspendable_expression(FunctionGenerationContext& generation,
+    ir::expressions::IrSuspendableExpression& expression, LLVMValueRef result_slot,
+    CodeContext& outer_context, const IrExpressionEvaluator& evaluate_expression);
+// NOTE(port): result_type and Unit are lowered LLVM values supplied by the same
+// frontend emitter. Declaration lookup uses the actual IR suspension-point variable.
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2320-2340
+LLVMValueRef evaluate_suspension_point(FunctionGenerationContext& generation,
+    ir::expressions::IrSuspensionPoint& expression, LLVMTypeRef result_type,
+    bool is_unit, LLVMValueRef unit_instance, CodeContext& outer_context,
+    const IrExpressionEvaluator& evaluate_expression);
+
 }

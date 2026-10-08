@@ -6,7 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current resolved-initializer continuation — 2026-10-08:** The analyzer's
+**Current typed-IR context continuation — 2026-10-08:** CodeContext.hpp now
+mirrors IrToBitcode's full abstract code-generation context. Private inner scopes
+forward actual operations to their outer context; suspension-point lookup binds
+the actual IrVariable to its LLVM resume block address. Typed suspendable/
+suspension-point evaluator entries use actual IR getters and source scope lifecycle,
+normal/resume evaluation and phi-join order. The existing LLVM operand adapter
+remains the production marker-injection entry. No normalized Clang-to-IR driver
+calls the new typed overloads yet. General function/variable/debug/exception
+contexts, IrType and partial aggregate initialization still need translation.
+Read RESUME_ADDRESS_SOURCE_REPAIR.md's first section for source references and
+CMake registration. No build, AST emission, runtime check or deep scan was run.
+Continue the connected source translation; the full goal remains active.
+
+**Source checkpoint 79e1c3c9:** The analyzer's
 local, overload and suspension walks now use Clang's semantic initializer list
 once, including selected member defaults and the array-filler expression.
 Backward liveness, Native suspension/materialization discovery and extended-owner
