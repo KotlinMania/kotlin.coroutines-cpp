@@ -6,6 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest builder continuation:** 776cc877 replaces all remaining FlowBuilders
+manual frames/macros with source collection bodies. Concrete ranges now live in
+Builders.cpp; function/container/iterator generic bodies remain in the header.
+1edafccb and e3a4796d add owning flow/as_flow authoring projections and actual
+ownership regressions. 265e4e5c uses the source public callback factory in its
+suspension fixture. 2b91dc2f requires frontend lowering for core/tests even with
+the in-tree plugin disabled; supplied external frontend configures successfully,
+and missing frontend fails. Actual source, consumer and public probe checks exit
+1; fresh core build exits 2 in dependency headers. No fresh runtime validation
+exists. Final full-root scans exit 0 and keep c53d9f3a reports: Builders 15/23,
+4/4 types, similarity 0.11. Read FLOW_BUILDERS_SOURCE_REPAIR.md's new top section.
+The full translation/state-machine goal remains active.
+
+
 **Latest compiler continuation:** d7feb4fb repairs retained bindings in actual
 static initializers and extends qualified_locals. a4e0c319 adapts generated and
 macro suspension regions to ordinary C++ marker branches; mandatory LLVM

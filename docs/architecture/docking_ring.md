@@ -104,9 +104,18 @@ nor the complete shared-state-machine boundary.
 When frontend authoring is enabled, the root registers both compiler targets before
 applying kxs_enable_suspend_dsl to the core and coroutine executables. Requested
 Clang/LLVM packages and shared compiler registries are required. Configuration
-cannot silently skip requested authoring. Existing Continuation-ABI callers may
-explicitly disable frontend authoring; requesting the authoring function still
-requires the actual frontend and mandatory LLVM stage.
+cannot silently skip requested authoring. The core and coroutine test targets
+require frontend frame construction even when the in-tree plugin build is disabled;
+that option selects an external frontend instead. Ordinary callers that define
+no annotated bodies or generic builder instantiations can omit frontend authoring
+on their own targets. Explicit ABI marker regions still require LLVM injection.
+
+CMake commit 2b91dc2f closes the earlier core/test LLVM-only configuration path.
+Native-disabled in-tree and supplied-external-frontend configurations succeed;
+missing external frontend fails at configuration. Both successful compile command
+inventories include frontend and LLVM plugins on actual builder source/consumers.
+A fresh core build fails in LLVM/Clang dependency headers; these configurations
+do not establish execution. See [the builder source checkpoint](../audits/FLOW_BUILDERS_SOURCE_REPAIR.md).
 
 A separate Native-OFF Release CMake application builds the port and both plugins
 and executes ordinary C++ captured-object/immediate/resumed/error behavior with only
