@@ -124,42 +124,39 @@ template <typename T, typename R, typename TransformBlock>
 inline std::shared_ptr<Flow<R>> unsafe_transform(std::shared_ptr<Flow<T>> upstream, TransformBlock transform) {
     return internal::unsafe_flow<R>([upstream = std::move(upstream), transform = std::move(transform)](
         FlowCollector<R>* collector, Continuation<void*>* completion) mutable -> void* {
-        class CollectFrame final : public ContinuationImpl, public FlowCollector<T> {
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:44-51
+        // NOTE(port): This typed binding represents the source collector lambda;
+        // its collection lifetime is lowered by the compiler, not a manual frame.
+        class TransformCollector final : public FlowCollector<T>,
+            public std::enable_shared_from_this<TransformCollector> {
         public:
-            CollectFrame(std::shared_ptr<Flow<T>> upstream, FlowCollector<R>* downstream, TransformBlock transform,
-                         Continuation<void*>* completion)
-                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                  upstream_(std::move(upstream)), downstream_(downstream), transform_(std::move(transform)) {}
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:44-51
+            TransformCollector(std::shared_ptr<Flow<T>> upstream, FlowCollector<R>* downstream,
+                TransformBlock transform)
+                : upstream_(std::move(upstream)), downstream_(downstream), transform_(std::move(transform)) {}
 
-            void retain() { self_ref_ = shared_from_this(); }
-
-            void* invoke_suspend(Result<void*> result) override {
-                coroutine_begin(this)
-                coroutine_yield(this, upstream_->collect(this, this));
-                coroutine_end(this)
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:47-51
+            [[clang::annotate("suspend")]]
+            void* collect(std::shared_ptr<Continuation<void*>> completion) {
+                auto owner = this->shared_from_this();
+                dsl::suspend(upstream_->collect(this, completion.get()));
+                return nullptr;
             }
 
-            void* emit(T value, Continuation<void*>* cont) override {
-                return transform_(downstream_, std::move(value), cont);
-            }
-
-        protected:
-            void release_intercepted() override {
-                ContinuationImpl::release_intercepted();
-                self_ref_.reset();
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Emitters.kt:48-50
+            void* emit(T value, Continuation<void*>* completion) override {
+                // Return the transform result directly so the source tail call is preserved (KT-28938).
+                return transform_(downstream_, std::move(value), completion);
             }
 
         private:
-            void* _label = nullptr;
-            std::shared_ptr<Flow<T>> upstream_;
-            FlowCollector<R>* downstream_;
+            const std::shared_ptr<Flow<T>> upstream_;
+            FlowCollector<R>* const downstream_;
             TransformBlock transform_;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
         };
 
-        auto frame = std::make_shared<CollectFrame>(upstream, collector, transform, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+        auto receiver = std::make_shared<TransformCollector>(upstream, collector, transform);
+        return receiver->collect(kotlinx::coroutines::internal::retain_continuation(completion));
     });
 }
 
@@ -468,78 +465,37 @@ inline std::shared_ptr<Flow<T>> filter_not_null(
 }
 
 /**
- * Returns a flow containing the results of applying the given transform function to each value of the original flow.
- *
- * @tparam T The element type of the source flow.
- * @tparam R The element type produced by the transform function.
- * @tparam Transform Callable mapping `T` to `R`, either synchronously or suspending via Continuation ABI.
- * @param upstream The source flow.
- * @param transform_fn The transform function applied to each emitted value.
- * @return A flow emitting transformed values.
- *
- * Continuation ABI & Protocol:
- * - Suspending transform: When `transform_fn` is a suspending callable, it accepts `(value, Continuation<void*>*)`
- *   and returns either `intrinsics::get_COROUTINE_SUSPENDED()` or a heap-allocated `R*` box.
- * - Box unboxing & lifetime: `MapFrame` unboxes the result into frame member storage (`std::optional<R> transformed_`)
- *   and deletes the heap-allocated box BEFORE downstream emission.
- * - Tail emission: Downstream emission is awaited via `coroutine_yield(this, collector_->emit(std::move(*transformed_), this))`
- *   before resetting member storage and returning Unit (`nullptr`).
- * - Self-retention: The frame retains itself and releases retention in `release_intercepted()` upon completion or cancellation.
+ * Returns a flow containing the results of applying transform to each upstream value.
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:49-51
 template <typename T, typename R, typename Transform>
 inline std::shared_ptr<Flow<R>> map(std::shared_ptr<Flow<T>> upstream, Transform transform_fn) {
-    return internal::unsafe_transform<T, R>(
-        std::move(upstream),
-        [transform_fn = std::move(transform_fn)](
-            FlowCollector<R>* collector, T value, Continuation<void*>* cont) mutable -> void* {
-            class MapFrame final : public ContinuationImpl {
-            public:
-                MapFrame(FlowCollector<R>* collector, Transform& transform_fn, T value, Continuation<void*>* completion)
-                    : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                      collector_(collector), transform_fn_(transform_fn), value_(std::move(value)) {}
-
-                void retain() { self_ref_ = shared_from_this(); }
-
-                void* invoke_suspend(Result<void*> result) override {
-                    coroutine_begin(this)
-                    coroutine_yield_value(this, result,
-                        detail::invoke_transform_fn(transform_fn_, this, std::move(value_)), transform_result_);
-                    {
-                        std::unique_ptr<R> box(static_cast<R*>(transform_result_));
-                        transform_result_ = nullptr;
-                        transformed_.emplace(std::move(*box));
-                    }
-                    coroutine_yield(this, collector_->emit(std::move(*transformed_), this));
-                    transformed_.reset();
-                    coroutine_end(this)
-                }
-
-            protected:
-                void release_intercepted() override {
-                    ContinuationImpl::release_intercepted();
-                    self_ref_.reset();
-                }
-
-            private:
-                void* _label = nullptr;
-                FlowCollector<R>* collector_;
-                Transform& transform_fn_;
-                T value_;
-                void* transform_result_ = nullptr;
-                std::optional<R> transformed_;
-                std::shared_ptr<BaseContinuationImpl> self_ref_;
-            };
-
-            auto frame = std::make_shared<MapFrame>(collector, transform_fn, std::move(value), cont);
-            frame->retain();
-            return frame->start(Result<void*>::success(nullptr));
+    // NOTE(port): The supplied callable is moved into actual owned storage. The
+    // source closure keeps the same transform across collection and emission.
+    auto transform = std::make_shared<Transform>(std::move(transform_fn));
+    auto block = [transform = std::move(transform)](FlowCollector<R>* collector, T value,
+        std::shared_ptr<Continuation<void*>> completion)
+        __attribute__((annotate("suspend"))) -> void* {
+        void* raw = dsl::suspend(detail::invoke_transform_fn(*transform, completion.get(), std::move(value)));
+        // NOTE(port): The receiving side owns the R box for both ordinary and
+        // suspending callables. Delete it before the source downstream emit.
+        std::unique_ptr<R> box(static_cast<R*>(raw));
+        R transformed = std::move(*box);
+        box.reset();
+        dsl::suspend(collector->emit(std::move(transformed), completion.get()));
+        return nullptr;
+    };
+    return internal::unsafe_transform<T, R>(std::move(upstream),
+        [block = std::move(block)](FlowCollector<R>* collector, T value,
+            Continuation<void*>* completion) -> void* {
+            return block(collector, std::move(value), kotlinx::coroutines::internal::retain_continuation(completion));
         });
 }
 
 /**
  * Synchronous functional overload of map.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:49-51
 template <typename T, typename R>
 inline std::shared_ptr<Flow<R>> map(
     std::shared_ptr<Flow<T>> upstream,
@@ -550,6 +506,7 @@ inline std::shared_ptr<Flow<R>> map(
 /**
  * Suspending functional overload of map.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:49-51
 template <typename T, typename R>
 inline std::shared_ptr<Flow<R>> map(
     std::shared_ptr<Flow<T>> upstream,
