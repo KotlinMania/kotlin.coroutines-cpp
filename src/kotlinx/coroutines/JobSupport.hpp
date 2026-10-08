@@ -370,7 +370,8 @@ protected:
      * Called to handle a job exception (for CoroutineExceptionHandler).
      * @return true if the exception was handled
      */
-    virtual bool handle_job_exception(std::exception_ptr exception) { return false; }
+    // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1139
+    virtual bool handle_job_exception(std::exception_ptr exception);
 
     // ===========================================
     // Protected methods for subclasses
@@ -467,6 +468,9 @@ private:
     std::unique_ptr<Impl> impl_;
 
     // Allow internal node classes to access impl_ for dispose operations
+    // NOTE(port): JobImpl's source parent-handle walk is implemented beside
+    // the private ChildHandleNode and Impl definitions in JobSupport.cpp.
+    friend class JobImpl;
     friend class JobNode;
     friend class ChildCompletion;
     friend class ResumeOnCompletion;

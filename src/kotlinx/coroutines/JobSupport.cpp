@@ -9,6 +9,7 @@
  */
 
 #include "kotlinx/coroutines/JobSupport.hpp"
+#include "kotlinx/coroutines/JobImpl.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
 #include "kotlinx/coroutines/Timeout.hpp"  // For TimeoutCancellationException
@@ -508,12 +509,32 @@ namespace kotlinx {
             if (!dynamic_cast<Incomplete*>(state)) delete state;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1139
+        bool JobSupport::handle_job_exception(std::exception_ptr) { return false; }
+
         std::shared_ptr<Job> JobSupport::get_parent() const {
             auto *handle = impl_->parent_handle.load(std::memory_order_acquire);
             if (auto *child_handle = dynamic_cast<ChildHandle *>(handle)) {
                 return child_handle->get_parent();
             }
             return nullptr;
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1443-1450
+        // NOTE(port): Keep the private source walk beside ChildHandleNode.
+        // Its get_parent returns the same node job with an owning C++ handle;
+        // unrelated ChildHandle implementations are not source parent links.
+        bool JobImpl::handles_exception() const {
+            auto* handle = dynamic_cast<ChildHandleNode*>(
+                impl_->parent_handle.load(std::memory_order_acquire));
+            auto parent_job = handle ? std::dynamic_pointer_cast<JobSupport>(handle->get_parent()) : nullptr;
+            while (parent_job) {
+                if (parent_job->get_handles_exception()) return true;
+                handle = dynamic_cast<ChildHandleNode*>(
+                    parent_job->impl_->parent_handle.load(std::memory_order_acquire));
+                parent_job = handle ? std::dynamic_pointer_cast<JobSupport>(handle->get_parent()) : nullptr;
+            }
+            return false;
         }
 
         bool JobSupport::is_active() const {

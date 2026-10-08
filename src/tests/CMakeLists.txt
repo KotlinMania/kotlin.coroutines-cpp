@@ -31,6 +31,9 @@ endfunction()
 # Core coroutine tests
 add_coroutine_test(test_timeout)
 add_coroutine_test(test_native_exception_namespace)
+add_coroutine_test(test_job_impl_initialization)
+target_sources(test_job_impl_initialization PRIVATE src/test_job_impl_initialization_main.cpp)
+target_compile_options(test_job_impl_initialization PRIVATE -UNDEBUG)
 
 # Transliterated Kotlin tests
 add_coroutine_test(AsyncTest)

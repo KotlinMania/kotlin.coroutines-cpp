@@ -665,16 +665,26 @@ private:
             auto found = reference_types_.find(record->getCanonicalDecl());
             if (found != reference_types_.end()) reference_type = found->second;
         }
+        // NOTE(port): All field storage categories retain the source's resolved
+        // type and cv-qualification. Unqualified template spellings can lose
+        // their original namespace after moving into a generated frame.
+        if (reference) type = type.getCanonicalType();
+        // NOTE(port): The spill keeps the declared C++ cv-qualification. Removing
+        // it changes overload resolution and decltype when the body is reparsed.
+        std::string value_type = reference_type.empty() ? TypeName::getFullyQualifiedName(type, context_, policy_) : reference_type;
+        if (!reference_type.empty() && type.isConstQualified())
+            value_type = "std::add_const_t<" + value_type + ">";
+        if (!reference_type.empty() && type.isVolatileQualified())
+            value_type = "std::add_volatile_t<" + value_type + ">";
         std::string name = "_kxs_slot_" + std::to_string(slots_.size());
         if (reference) {
-            type = type.getCanonicalType();
             std::string storage = name + "_reference";
-            fields_.push_back("struct " + storage + " { using type = " + (reference_type.empty() ? type.getAsString(policy_) : reference_type) +
+            fields_.push_back("struct " + storage + " { using type = " + value_type +
                 "; type* value = nullptr; type& get() { return *value; } "
                 "void bind(type& source) { value = std::addressof(source); } "
                 "void bind(type&& source) { value = std::addressof(source); } "
                 "void reset() { value = nullptr; } }; " + storage + " " + name + ";");
-            Slot slot{name, name + ".get()", reference_type.empty() ? type.getAsString(policy_) : reference_type, true};
+            Slot slot{name, name + ".get()", value_type, true};
             slots_.push_back(slot);
             return slot;
         }
@@ -697,7 +707,7 @@ private:
             // NOTE(port): Native C++ arrays destroy in reverse element order.
             // std::destroy_at on an array instead visits elements forward.
             destruction += "std::destroy_at(std::addressof(" + element + ")); " + std::string(dimensions, '}');
-            fields_.push_back("struct " + storage + " { using type = " + (reference_type.empty() ? type.getAsString(policy_) : reference_type) +
+            fields_.push_back("struct " + storage + " { using type = " + value_type +
                 "; alignas(type) unsigned char data[sizeof(type)]; bool engaged = false; "
                 "type& get() { return *std::launder(reinterpret_cast<type*>(data)); } "
                 "void reset() { if (engaged) { engaged = false; " + destruction + " } } "
@@ -708,13 +718,6 @@ private:
         }
         // NOTE(port): A synthesized frame has a different declaration context;
         // preserve namespaces on concrete value types and their template arguments.
-        // NOTE(port): The spill keeps the declared C++ cv-qualification. Removing
-        // it changes overload resolution and decltype when the body is reparsed.
-        std::string value_type = reference_type.empty() ? TypeName::getFullyQualifiedName(type, context_, policy_) : reference_type;
-        if (!reference_type.empty() && type.isConstQualified())
-            value_type = "std::add_const_t<" + value_type + ">";
-        if (!reference_type.empty() && type.isVolatileQualified())
-            value_type = "std::add_volatile_t<" + value_type + ">";
         std::string stored_type = value_type;
         Slot slot{name, "(*" + name + ")", stored_type, false};
         fields_.push_back("std::optional<" + stored_type + "> " + name + ";");

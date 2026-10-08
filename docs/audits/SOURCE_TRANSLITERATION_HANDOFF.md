@@ -6,6 +6,102 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Job initialization and retained field type identity — 2026-10-08
+
+Continuation from `4fc388b6` reads the actual JobImpl source contract at
+JobSupport.kt:1425-1450. The former C++ getter lazily computed handlesException
+with two mutable flags and followed arbitrary ChildHandle parents. Kotlin assigns
+its val once after initParentJob and walks only ChildHandleNode.job links.
+JobImpl.cpp:20 now computes handles_exception_ immediately after parent attachment;
+:29 only reads that initialized property. JobSupport.cpp:527 implements the private
+handles_exception source loop beside the actual private ChildHandleNode and Impl
+classes. The walk checks the exact node type at each parent handle and retains
+the same node job through its existing owning C++ parent accessor. A private friend
+declaration allows that source method to access the opaque implementation without
+exposing the internal node type or creating another parent/runtime abstraction.
+
+JobImpl.hpp now contains the slim class interface and source provenance; property
+and completion bodies are in JobImpl.cpp. The existing shared_from_this factory
+adaptation remains explicit: create establishes shared ownership, then runs the
+source parent/property initialization. Direct construction still requires the
+existing deferred init_parent_job step. JobSupport's actual default
+handleJobException = false body moved from the header into JobSupport.cpp:513;
+its unused argument is unnamed, without warning suppression or changed behavior.
+
+The new registered test_job_impl_initialization target translates the first three
+CompletableJobTest.kt:8-45 completion cases and adds a regression that reads the
+initialized property for the first time after child and intermediate parent links
+are detached. Actual JobSupport/JobImpl objects supply the handling and unhandled
+chains. A small C++ test subclass exposes the existing protected completion
+operation; it does not replace any job state or exception algorithm. The main is
+a separate ordinary C++ entry, following the repository's existing test pattern.
+The target keeps assertions enabled in Release with -UNDEBUG. Fresh root CMake
+configuration registers it with both frontend and mandatory LLVM module plugins,
+using LLVM23.1.2 and Native runtime OFF.
+
+JobImpl.cpp and the test executable compile with -Wall/-Wextra/-Wpedantic/-Werror.
+All four test functions execute under ASan/UBSan successfully, including the cached
+property after detachment, normal/exceptional completion and child waiting.
+The dependency archive now contains nineteen actual source units: the earlier
+context/interceptor/continuation/cancellation/Symbol units, plus JobImpl, JobSupport,
+CancellableContinuationImpl, ContinuationBindings, Job, Native Exceptions,
+EventLoop.common, DispatchedTask, Native StackTraceRecovery and ThreadContext,
+LockFreeLinkedList.common, CoroutineDispatcher, IntrinsicsNative and LimitedDispatcher.
+No stale earlier-namespace archive or substitute runtime was linked. The binary
+links libc++, libSystem and Clang's ASan runtime, without Kotlin/JVM libraries.
+This is bounded actual-source execution, not a strict full-core build. JobSupport
+and the added dependencies report twenty-two unsuppressed warnings, in addition
+to the earlier eight context/continuation warnings. The fresh production core
+build still exits with strict unused-parameter diagnostics in CancellableContinuationImpl,
+Select, Builders and their consumers. Those diagnostics remain actionable.
+
+With these actual dependencies, the authoring driver passes the previously blocked
+restricted-receiver compile/runtime gate and reaches the CMake callable cases.
+They exposed an actual field-type mismatch in NativeSuspendLowering.cpp:653:
+reference and retained-object/array storage used unqualified type.getAsString,
+while optional value slots already used Clang's fully qualified resolved type.
+Compared with CoroutinesVarSpillingLowering.kt:53-66's field.type = variable.type,
+all three storage categories now share that resolved type and cv-qualification.
+Generated callable type bindings keep their existing actual declaration mapping.
+The captured unique_ptr<Tracked> field no longer loses its std namespace; no
+ownership category or caller-written type was replaced.
+
+The final full driver passes its prior controls, direct and default-callable cases,
+Unit/default arguments, expression slicing, all46 qualified local/condition cases,
+restricted receiver, and CMake ordinary and nested lambda compile/runtime assertions.
+The nested fixture checks capture identity, immediate/resumed failures, copied
+receivers, captured arrays and cleanup. The driver then stops during extraction
+of retained_locals/input.cpp:240,262,283,304,323,352 with overlapping/macro-expanded
+source-region diagnostics in exception-handler functions. No later retained-local
+CMake or runtime gate is claimed. Continue the source exception-handler/declaration
+rewrite against Kotlin's actual exception lowering and inspect the conflicting
+source ranges; do not change the fixture or weaken overlap checking to hide it.
+
+All three production/compiler deep scans completed against the final sources.
+Compiler reference:286/7163 bodies,132/1617 types,0.28 similarity,10 scoring
+failures. Coroutine root:665/2918 bodies,179/560 types,0.24 similarity,12 failures.
+Clang frontend:14/7163 bodies,6/1617 types,0.04 similarity,zero scoring failures.
+The JobImpl split is compared against the whole JobSupport.kt source unit, yielding
+2/91 bodies and1/18 types for that pairing; it does not certify all JobSupport or
+JobImpl algorithms. Source pairing and the sparse compiler/tool limitations remain
+material, and none of these counts establishes complete translation.
+
+An additional full common-test-to-C++-test-root deep scan completes at114/1353
+bodies,142/192 types,0.31 similarity and83 scoring failures. Investigation of the
+new executable first exposed a mixed namespace from global main. Separating that
+entry follows the existing harness layout and makes the test-body namespace pair
+eligible. The tool then scores the new harness0/6 bodies and0/1 types against the
+whole CompletableJobTest class: these standalone adapted assertion functions do
+not provide the Kotlin TestBase/class API. It also changes that source unit's
+selected target pairing, so the test-root aggregate is not an improvement claim.
+The three asserted completion cases execute, but the complete source test class
+and remaining coroutine test-framework cases are still untranslated; the new
+executable is explicit regression evidence only. Do not force the counts with a
+fake or duplicate source class. Existing incomplete test files and scoring failures
+remain genuine work. The full goal stays active, with the retained exception-handler
+source-range failures as the next concrete compiler repair.
+
+
 ## Resolved callable references and unevaluated queries — 2026-10-08
 
 Continuation from `9c28cca4` closes the moved default-expression callable's lost
