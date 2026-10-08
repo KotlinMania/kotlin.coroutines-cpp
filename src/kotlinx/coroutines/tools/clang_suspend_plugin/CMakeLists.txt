@@ -16,7 +16,7 @@ if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     # Bootstrap the translated compiler object ABI without linking those object
     # bodies into the metadata plugin that compiles them.
     add_library(KotlinxClassMetadataPlugin MODULE CompilerClassMetadataPlugin.cpp)
-    target_include_directories(KotlinxClassMetadataPlugin SYSTEM PRIVATE
+    target_include_directories(KotlinxClassMetadataPlugin PRIVATE
         ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
     target_compile_options(KotlinxClassMetadataPlugin PRIVATE -Wall -Wextra -Werror)
     target_link_libraries(KotlinxClassMetadataPlugin PRIVATE clang-cpp LLVM)
@@ -72,7 +72,7 @@ if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
             CompilerFrameLowering.cpp
     )
 
-    target_include_directories(KotlinxSuspendPlugin SYSTEM PRIVATE
+    target_include_directories(KotlinxSuspendPlugin PRIVATE
         ${LLVM_INCLUDE_DIRS}
         ${CLANG_INCLUDE_DIRS}
     )
@@ -117,12 +117,12 @@ if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     endif()
     if(BUILD_TESTING AND TARGET clang-cpp AND TARGET LLVM)
         add_executable(kxs_analyzer_test TailSuspendCallsCollector.cpp SuspendFunctionAnalyzerTest.cpp SuspendFunctionAnalyzer.cpp RestrictSuspensionUtils.cpp IrTypeUtils.cpp UpgradeCallableReferences.cpp NativeFunctionReferenceLowering.cpp AbstractFunctionReferenceLowering.cpp)
-        target_include_directories(kxs_analyzer_test SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+        target_include_directories(kxs_analyzer_test PRIVATE ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
         target_compile_options(kxs_analyzer_test PRIVATE -UNDEBUG -Wall -Wextra -Werror)
         target_link_libraries(kxs_analyzer_test PRIVATE clang-cpp LLVM)
         add_test(NAME kxs_analyzer_liveness COMMAND kxs_analyzer_test)
         add_executable(kxs_tail_collector_test TailSuspendCallsCollectorTest.cpp TailSuspendCallsCollector.cpp SuspendFunctionAnalyzer.cpp)
-        target_include_directories(kxs_tail_collector_test SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+        target_include_directories(kxs_tail_collector_test PRIVATE ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
         target_compile_options(kxs_tail_collector_test PRIVATE -UNDEBUG -Wall -Wextra -Werror)
         target_link_libraries(kxs_tail_collector_test PRIVATE clang-cpp LLVM)
         add_test(NAME kxs_tail_collector COMMAND kxs_tail_collector_test)

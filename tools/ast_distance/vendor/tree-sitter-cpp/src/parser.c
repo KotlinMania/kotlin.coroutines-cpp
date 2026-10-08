@@ -1,8 +1,5 @@
 #include "tree_sitter/parser.h"
 
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#endif
 
 #ifdef _MSC_VER
 #pragma optimize("", off)

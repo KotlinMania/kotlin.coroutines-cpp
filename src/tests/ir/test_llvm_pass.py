@@ -22,8 +22,7 @@ class CompilerPassTests(unittest.TestCase):
         return output
 
     def flags(self):
-        return [OPTIONS.compiler, '-std=c++20', '-UNDEBUG', '-Wno-gnu-label-as-value',
-                '-I' + str(Path(OPTIONS.root) / 'src'),
+        return [OPTIONS.compiler, '-std=c++20', '-UNDEBUG', '-I' + str(Path(OPTIONS.root) / 'src'),
                 '-fpass-plugin=' + OPTIONS.plugin]
 
     def execute_core(self, optimization, sanitizer=False):

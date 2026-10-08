@@ -146,7 +146,7 @@ target_include_directories(settings INTERFACE "{OPTIONS.headers}" "{OPTIONS.root
     "{OPTIONS.root}/src/kotlinx/coroutines" "{includes}")
 target_compile_definitions(settings INTERFACE KXS_INHERITED=41)
 target_compile_features(settings INTERFACE cxx_std_20)
-target_compile_options(settings INTERFACE -Werror -Wno-gnu-label-as-value -UNDEBUG)
+target_compile_options(settings INTERFACE -Werror -UNDEBUG)
 {sanitizer}
 target_link_options(settings INTERFACE {library_link_options})
 set_source_files_properties(left/shared.cpp PROPERTIES COMPILE_DEFINITIONS KXS_SOURCE_OPTION=5)

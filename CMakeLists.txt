@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Imported dependencies retain ordinary warning diagnostics.
+set(CMAKE_NO_SYSTEM_FROM_IMPORTED ON)
+
 # =============================================================================
 # Build Output Directory Structure
 # =============================================================================
@@ -37,7 +40,7 @@ endforeach()
 enable_testing()
 
 # Add compile options - treat warnings as errors to maintain code quality
-add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wno-unknown-attributes)
+add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
 # Enable actual Native runtime ABI tests when that toolchain is supplied.
 # Production Native symbols remain mandatory independently of this test option.

@@ -45,16 +45,6 @@ list(FILTER CORE_SOURCES EXCLUDE REGEX "/integration/")
 # Create the core library
 add_library(kotlinx-coroutines-core ${CORE_SOURCES})
 
-# Disable unused warnings for library code.
-# This is a transliterated library - parameters, constants, and fields exist for API
-# parity with Kotlin even when not all code paths use them yet. Tests should exercise these.
-target_compile_options(kotlinx-coroutines-core PRIVATE
-    -Wno-unused-parameter
-    -Wno-unused-variable
-    -Wno-unused-const-variable
-    -Wno-unused-private-field
-    -Wno-gnu-label-as-value
-)
 
 # Set include directories for this target
 # Headers are now co-located with sources in src/kotlinx/coroutines/

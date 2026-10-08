@@ -346,7 +346,7 @@ join:
         cleaned_file = self.directory / 'core.cleaned.ll'
         includes = ['-I', OPTIONS.headers, '-I', str(Path(OPTIONS.root) / 'src'),
                     '-I', str(Path(OPTIONS.root) / 'src/kotlinx/coroutines')]
-        flags = ['-std=c++20', '-Wno-gnu-label-as-value', '-UNDEBUG']
+        flags = ['-std=c++20', '-UNDEBUG']
         self.run_command([OPTIONS.compiler, *flags, *includes, '-S', '-emit-llvm',
                           str(source_file), '-o', str(input_file)])
         self.run_command([OPTIONS.tool, str(input_file), '-o', str(cleaned_file)])

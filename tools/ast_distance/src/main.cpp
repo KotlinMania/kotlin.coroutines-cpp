@@ -42,7 +42,7 @@ static ReexportConfig g_reexport_config;
 static AstConfig g_ast_config;
 static void print_transliteration_distance(const TransliterationDistance& report, std::ostream& stream);
 
-[[maybe_unused]] static std::optional<std::chrono::seconds> file_age_seconds(const std::string& path) {
+static std::optional<std::chrono::seconds> file_age_seconds(const std::string& path) {
     try {
         if (!std::filesystem::exists(path)) return std::nullopt;
         auto ftime = std::filesystem::last_write_time(path);
@@ -123,7 +123,7 @@ static std::vector<std::string> rust_significant_lines(const std::string& conten
     return out;
 }
 
-[[maybe_unused]] static bool rust_is_module_wiring_only(const std::filesystem::path& source_path) {
+static bool rust_is_module_wiring_only(const std::filesystem::path& source_path) {
     std::string contents;
     try {
         contents = CodebaseComparator::read_file_to_string(source_path.string());
@@ -185,7 +185,7 @@ const char* language_config_name(Language lang) {
     return "unknown";
 }
 
-[[maybe_unused]] static std::string current_project_name() {
+static std::string current_project_name() {
     try {
         return std::filesystem::current_path().filename().string();
     } catch (...) {
@@ -2224,7 +2224,7 @@ void generate_reports(const Codebase& source, const Codebase& target,
 	            report << "No significant documentation line-count gaps found; text/reference correspondence is separate.\n\n";
 	        } else {
 	            // Preserve the complete documentation-gap tally for report consumers.
-	            [[maybe_unused]] int shown_docs = 0;
+	            int shown_docs = 0;
 	            for (const auto& [gap, m] : doc_gaps) {
 	                shown_docs++;
 	                report << "- `" << m->source_qualified << "` - " 

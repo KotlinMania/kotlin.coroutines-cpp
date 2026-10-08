@@ -44,13 +44,10 @@ int main() {
   } catch (const std::logic_error& error) { emit("transform-error", error.what()); }
   assert(value.load() == 61);
   emit("after-transform-error", value.load());
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   emit("legacy-set-old", value.get_and_set(4)); emit("legacy-add-old", value.get_and_add(2)); emit("legacy-add-new", value.add_and_get(3));
   emit("legacy-inc-old", value.get_and_increment()); emit("legacy-inc-new", value.increment_and_get());
   emit("legacy-dec-new", value.decrement_and_get()); emit("legacy-dec-old", value.get_and_decrement());
   value.set_value(-27); emit("property", value.get_value()); emit("text", value.to_string());
-#pragma clang diagnostic pop
   value.store(0);
   update(value, [delta = std::make_unique<std::int32_t>(3)](std::int32_t old) { return old + *delta; });
   assert(value.load() == 3);

@@ -45,8 +45,7 @@ def main():
     native_libraries = list(work.glob('libactual.dylib')) + list(work.glob('libactual.so'))
     assert len(native_libraries) == 1, native_libraries
     run([args.compiler, '-std=c++20', '-O2', '-g', '-UNDEBUG',
-         '-fsanitize=address', '-Wno-gnu-label-as-value',
-         '-I' + str(args.root / 'src'), '-include', str(work / 'api.hpp'),
+         '-fsanitize=address', '-I' + str(args.root / 'src'), '-include', str(work / 'api.hpp'),
          '-fpass-plugin=' + str(args.ir_plugin),
          '-Xclang', '-load', '-Xclang', str(args.plugin),
          '-Xclang', '-add-plugin', '-Xclang', 'kotlinx-suspend', str(work / 'input.cpp'),

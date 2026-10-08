@@ -232,7 +232,6 @@ int main() {
 ''')
     executable = work / 'handoff'
     compile_command = [args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Wpedantic', '-Werror',
-                       '-Wno-unused-parameter', # Existing coroutine header build policy.
                        '-I' + str(args.root / 'src'), '-include', str(work / 'api.hpp'),
                        str(generated), str(work / 'main.cpp'), str(args.library), '-pthread',
                        *shlex.split(args.library_link_options), '-o', str(executable)]
@@ -335,8 +334,8 @@ if(KXS_TEST_FORCED_INCLUDE)
   target_compile_options(handoff PRIVATE -include "${{CMAKE_CURRENT_SOURCE_DIR}}/api.hpp")
 endif()
 target_link_libraries(handoff PRIVATE retained_frames "{args.library}" pthread)
-target_compile_options(retained_frames PRIVATE -O2 -UNDEBUG -Wno-gnu-label-as-value -fsanitize=address,undefined -fno-sanitize-recover=all)
-target_compile_options(handoff PRIVATE -O2 -UNDEBUG -Wno-gnu-label-as-value -fsanitize=address,undefined -fno-sanitize-recover=all)
+target_compile_options(retained_frames PRIVATE -O2 -UNDEBUG -fsanitize=address,undefined -fno-sanitize-recover=all)
+target_compile_options(handoff PRIVATE -O2 -UNDEBUG -fsanitize=address,undefined -fno-sanitize-recover=all)
 target_link_options(handoff PRIVATE -fsanitize=address,undefined)
 ''')
     cmake_build = retained / 'ordinary compile'

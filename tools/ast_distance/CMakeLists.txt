@@ -36,7 +36,6 @@ foreach(required_tree_sitter_source
 endforeach()
 
 # Build tree-sitter core as a library
-# Disable warnings for third-party C code (they use old-style prototypes)
 add_library(tree-sitter-core STATIC
     ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
 )
@@ -44,7 +43,6 @@ target_include_directories(tree-sitter-core PUBLIC
     ${tree-sitter_SOURCE_DIR}/lib/include
     ${tree-sitter_SOURCE_DIR}/lib/src
 )
-target_compile_options(tree-sitter-core PRIVATE -w)
 
 # Build tree-sitter-rust parser
 add_library(tree-sitter-rust-parser STATIC
@@ -55,7 +53,6 @@ target_include_directories(tree-sitter-rust-parser PUBLIC
     ${tree-sitter_SOURCE_DIR}/lib/include
     ${tree-sitter-rust_SOURCE_DIR}/src
 )
-target_compile_options(tree-sitter-rust-parser PRIVATE -w)
 
 # Build tree-sitter-kotlin parser
 add_library(tree-sitter-kotlin-parser STATIC
@@ -66,7 +63,6 @@ target_include_directories(tree-sitter-kotlin-parser PUBLIC
     ${tree-sitter_SOURCE_DIR}/lib/include
     ${tree-sitter-kotlin_SOURCE_DIR}/src
 )
-target_compile_options(tree-sitter-kotlin-parser PRIVATE -w)
 
 # Build tree-sitter-cpp parser
 add_library(tree-sitter-cpp-parser STATIC
@@ -77,7 +73,6 @@ target_include_directories(tree-sitter-cpp-parser PUBLIC
     ${tree-sitter_SOURCE_DIR}/lib/include
     ${tree-sitter-cpp_SOURCE_DIR}/src
 )
-target_compile_options(tree-sitter-cpp-parser PRIVATE -w)
 
 # Build tree-sitter-python parser
 add_library(tree-sitter-python-parser STATIC
@@ -88,7 +83,6 @@ target_include_directories(tree-sitter-python-parser PUBLIC
     ${tree-sitter_SOURCE_DIR}/lib/include
     ${tree-sitter-python_SOURCE_DIR}/src
 )
-target_compile_options(tree-sitter-python-parser PRIVATE -w)
 
 # Build tree-sitter-typescript parser
 add_library(tree-sitter-typescript-parser STATIC
@@ -99,7 +93,6 @@ target_include_directories(tree-sitter-typescript-parser PUBLIC
     ${tree-sitter_SOURCE_DIR}/lib/include
     ${tree-sitter-typescript_SOURCE_DIR}/typescript/src
 )
-target_compile_options(tree-sitter-typescript-parser PRIVATE -w)
 
 # Main executable
 add_executable(ast_distance

@@ -52,10 +52,7 @@ namespace kotlinx {
                 COMPLETING_WAITING_CHILDREN_SYMBOL);
             const auto COMPLETING_RETRY = reinterpret_cast<JobState *>(&COMPLETING_RETRY_SYMBOL);
             const auto TOO_LATE_TO_CANCEL = reinterpret_cast<JobState *>(&TOO_LATE_TO_CANCEL_SYMBOL);
-            // SEALED is referenced by the upstream tryMakeCompleting / sealLocked paths
-            // — kept for source-of-truth parity. [[maybe_unused]] silences the warning
-            // on call sites that have not been split out into separate symbols yet.
-            [[maybe_unused]] const auto SEALED =
+            const auto SEALED =
                 reinterpret_cast<JobState *>(&SEALED_SYMBOL);
 
             constexpr int RETRY = -1;
