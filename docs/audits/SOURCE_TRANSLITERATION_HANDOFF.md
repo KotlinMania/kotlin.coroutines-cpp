@@ -6,6 +6,21 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** 05a52132 preserves concrete decltype types and
+original operand categories for C++ type queries. Suspend discovery, tail edits,
+overload deferral and source checking respect unevaluated operands; local static
+assertions retain their actual typed source. qualified_locals adds type/array/
+reference/noexcept assertions and an ordinary unannotated query function.
+Strict fixture syntax exits 0. Two Clang visitor API mismatches were repaired;
+the repeated compiler translation-unit check exits 1 in dependency headers with
+no source-local diagnostics. Fresh plugin build exits 2; the older frontend
+rejects the alias declaration. No fresh runtime validates this repair. Dependent
+types, constexpr-value assertions, evaluated polymorphic typeid, local classes
+and nested invoke lexical integration remain incomplete. Read
+RESUME_ADDRESS_SOURCE_REPAIR.md's new top section. Both full-root scans exit 0;
+compiler detail evidence refreshes while aggregate reports remain unchanged.
+The full goal remains active.
+
 **Latest compiler continuation:** e522dd8c lowers copied-array decomposition in
 NativeSuspendLowering.cpp:594,1156. The actual array source is evaluated once;
 Clang's element AST emits native array construction, including nested copies

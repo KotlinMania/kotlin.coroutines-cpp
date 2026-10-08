@@ -1,5 +1,61 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Unevaluated type query continuation
+
+Source checkpoint 05a52132 continues the runtime-call traversal contract after
+reading NativeSuspendFunctionLowering.kt:368-410 and the complete matching
+TailSuspendCallsCollector.kt. C++ sizeof/noexcept and non-evaluated typeid
+operands introduce no runtime calls. This C++ evaluation-context adaptation is
+additional to Kotlin's IR visitor rather than a new suspension mechanism.
+
+SuspendFunctionAnalyzer.cpp:203 identifies the unevaluated query expressions,
+retaining potentially evaluated polymorphic typeid and variably modified
+operands. NativeSuspendLowering.cpp:457 and TailSuspendCallsCollector.cpp:26
+exclude unevaluated operands from suspension discovery; direct tail continuation
+editing at KotlinxSuspendPlugin.cpp:302 does likewise. Overload-resolution
+deferral ignores calls inside these queries and decltype. The source checker at
+KotlinxSuspendPlugin.cpp:158-172 retains AST traversal with an evaluation context;
+nested function declarations reset to their independent body context.
+
+NativeSuspendLowering.cpp:350 replaces resolved decltype type locations with
+Clang's canonical underlying type through std::type_identity_t. This preserves
+array/reference type syntax, cv-qualification and the special declared type of
+an unparenthesized structured binding. It does not infer the type from a rewritten
+frame getter. At :278, unevaluated operand references use their original type
+and value category, keeping a getter's exception specification out of noexcept.
+At :1086, local StaticAssertDecl emits the original typed assertion without
+construction or cleanup storage.
+
+qualified_locals now asserts ordinary/parenthesized decltype for cv-qualified
+locals, array components and owned tuple components, array extents, unevaluated
+suspend result sizes and noexcept. Its ordinary_type_queries function uses
+sizeof/noexcept/decltype/non-polymorphic typeid without coroutine annotation;
+runtime calls must remain zero before the actual authoring entry starts.
+
+Strict ordinary fixture syntax exits 0. Direct strict checking of the four
+changed compiler translation units initially found two Clang type-location API
+arity mismatches; both were corrected. The repeated check exits 1 in dependency
+headers with no diagnostics located in the changed compiler files. The final
+Native-only check covers the subsequent query-reference adjustment. Fresh CMake
+plugin build exits 2 in dependency headers. The older plugin rejects the fixture's
+earlier alias declaration, so its exit 1 does not validate these changes.
+Receipts under build/ir-recovery: type-query-source-final.log,
+type-query-lowering-final.log, type-query-native-final.log,
+type-query-plugin-build.log and type-query-fixture.log. No warnings were suppressed.
+
+No fresh executable validates the changed compiler pipeline. Dependent decltype,
+constexpr-value assertions referencing spilled locals, evaluated polymorphic
+typeid with suspended operands, local classes and nested invoke lexical binding
+still need implementation/verification. Both complete executable acceptance paths
+remain unproven; the full transliteration/state-machine goal remains active.
+
+Both exact full-root deep scans exit 0 without concurrent source edits. Receipts:
+type-query-library-deep.log and type-query-compiler-deep.log. Compiler detailed
+inventory/evidence refreshes the changed tail traversal; aggregate reports remain
+unchanged: library 832/2918 bodies, 359/560 types, similarity 0.26 with 123 scoring
+failures; compiler 592/7657 bodies, 174/1727 types, similarity 0.36 with 24 failures.
+These measurements do not establish fresh lowering execution or query behavior.
+
 ## Copied array construction and cleanup continuation
 
 Source checkpoint e522dd8c continues the original-variable-to-field contract
