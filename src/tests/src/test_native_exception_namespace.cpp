@@ -57,6 +57,18 @@ void* authored_cancel_and_join(kotlinx::coroutines::Job& target, int* after,
 
 int main() {
     using namespace kotlinx::coroutines;
+    auto completed = CompletedContinuation::instance();
+    require(completed == CompletedContinuation::instance());
+    require(completed->to_string() == "This continuation is already complete");
+    for (bool resume : {false, true}) {
+        try {
+            if (resume) completed->resume_with(Result<void*>::success(nullptr));
+            else completed->get_context();
+            require(false);
+        } catch (const IllegalStateException& exception) {
+            require(std::string(exception.what()) == "This continuation is already complete");
+        }
+    }
     for (int outcome : {0, 1, 2, 3}) {
         auto target = std::make_shared<FinishingJob>();
         auto caller = make_job();
