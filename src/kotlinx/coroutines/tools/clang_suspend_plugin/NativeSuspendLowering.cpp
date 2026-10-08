@@ -988,8 +988,10 @@ private:
             const auto* variable = dyn_cast<VarDecl>(declaration);
             if (!variable) throw std::runtime_error("suspend local declaration is not a variable");
             if (variable->isStaticLocal()) {
+                // NOTE(port): Storage duration belongs to the whole C++
+                // declaration statement. Emit a grouped static declaration once.
                 body_ << source(statement) << ";\n";
-                continue;
+                return;
             }
             const Expr* initializer = variable->getInit();
             const Expr* unwrapped = initializer;

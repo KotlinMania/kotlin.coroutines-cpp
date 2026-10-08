@@ -27,6 +27,8 @@ private:
 const QualifiedValue* fixed_identity = nullptr;
 const volatile QualifiedValue* observed_identity = nullptr;
 const volatile QualifiedValue* both_identity = nullptr;
+int* started_identity = nullptr;
+int* finished_identity = nullptr;
 
 [[clang::annotate("suspend")]]
 void* await_value(std::shared_ptr<Continuation<void*>> completion) {
@@ -40,6 +42,14 @@ void* await_value(std::shared_ptr<Continuation<void*>> completion) {
 
 [[clang::annotate("suspend")]]
 void* qualified_locals(std::shared_ptr<Continuation<void*>> completion) {
+    static int started = 0, finished = 0;
+    if (started_identity) {
+        assert(started_identity == std::addressof(started));
+        assert(finished_identity == std::addressof(finished));
+    }
+    started_identity = std::addressof(started);
+    finished_identity = std::addressof(finished);
+    ++started;
     const auto fixed = QualifiedValue(42);
     volatile QualifiedValue observed(43);
     const volatile QualifiedValue both(44);
@@ -56,6 +66,7 @@ void* qualified_locals(std::shared_ptr<Continuation<void*>> completion) {
         assert(std::addressof(both) == both_identity);
         total += fixed.read() + observed.read() + both.read() + *box;
     }
+    ++finished;
     return new int(total);
 }
 struct Done final : Continuation<void*> {
@@ -96,5 +107,7 @@ int main() {
         assert(done->failed || done->value == 542);
         assert(calls == (mode == 4 ? 1 : 2));
         assert(alive == 0 && !pending && frame.expired());
+        assert(*started_identity == mode + 1);
+        assert(*finished_identity == (mode == 0 ? 1 : 2));
     }
 }
