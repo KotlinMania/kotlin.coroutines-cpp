@@ -341,6 +341,35 @@ public:
     using ContinuationImpl::ContinuationImpl;
     void* invoke_suspend(Result<void*> result) override { return result.get_or_throw(); }
 };
+// Source contract: BufferedChannel.kt:1493-1501.
+void closed_select_send_handler_context() {
+    using namespace kotlinx::coroutines::channels;
+    auto closing = std::make_exception_ptr(std::runtime_error("original closed send"));
+    auto failure = std::make_exception_ptr(std::runtime_error("closed handler failure"));
+    int deliveries = 0;
+    BufferedChannel<std::string> channel(1, [&](auto element) {
+        CHECK(element == "original element");
+        ++deliveries;
+        std::rethrow_exception(failure);
+    });
+    CHECK(channel.close(closing));
+    auto exception_handler = std::make_shared<ExceptionHandler>();
+    Completion completion;
+    completion.context = exception_handler;
+    auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+    SelectBuilder<void*>& builder = *selection;
+    builder.invoke<std::string, SendChannel<std::string>*>(channel.on_send(), "original element",
+        std::function<void*(SendChannel<std::string>*, Continuation<void*>*)>(
+            [](auto, auto) -> void* { CHECK(false); return nullptr; }));
+    try { selection->do_select(&completion); CHECK(false); }
+    catch (...) { CHECK(std::current_exception() == closing); }
+    CHECK(deliveries == 1 && exception_handler->calls == 1 && !completion.resumes);
+    CHECK(exception_handler->context == completion.context.get());
+    try { std::rethrow_exception(exception_handler->failure); }
+    catch (const kotlinx::coroutines::internal::UndeliveredElementException& exception) {
+        CHECK(exception.cause() == failure);
+    }
+}
 // Source contracts: BufferedChannel.kt:652-671,708-733,762-776,1649-1672,1707-1720,2767-2793.
 void direct_receive_prompt_cancellation(int kind, bool throwing) {
     using namespace kotlinx::coroutines::channels;
@@ -588,6 +617,7 @@ int main() {
         }
         channel_receive_borrowed_pointer(false);
         channel_receive_borrowed_pointer(true);
+        closed_select_send_handler_context();
         for (int kind = 0; kind < 3; ++kind)
             for (bool throwing : {false, true}) direct_receive_prompt_cancellation(kind, throwing);
         undelivered_exception_contract();
