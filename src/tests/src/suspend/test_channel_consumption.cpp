@@ -981,33 +981,35 @@ void channel_flow_collect_lambda_contract() {
         auto channel = create_channel<int>(0);
         auto producer = std::make_shared<ProducerCoroutine<int>>(EmptyCoroutineContext::instance(), channel);
         auto completion = std::make_shared<Completion>();
-        CHECK(intrinsics::is_coroutine_suspended(collect(producer.get(), completion)));
-        CHECK(calls == 1 && !completion->resumes && !channel->is_empty());
+        auto failure = outcome == 1
+            ? std::make_exception_ptr(std::runtime_error("collect lambda send failed"))
+            : std::make_exception_ptr(CancellationException("collect lambda cancelled"));
+        if (outcome == 1) {
+            // Channel.kt:243-247: close does not abort sends that already suspended.
+            // Close first to exercise the source's immediate send failure instead.
+            channel->close(failure);
+            std::exception_ptr observed;
+            try { collect(producer.get(), completion); }
+            catch (...) { observed = std::current_exception(); }
+            CHECK(observed == failure && !completion->resumes && calls == 1);
+        } else {
+            CHECK(intrinsics::is_coroutine_suspended(collect(producer.get(), completion)));
+            CHECK(calls == 1 && !completion->resumes && !channel->is_empty());
+        }
         operation.reset();
         upstream.reset();
         resource.reset();
         collect = {};
+        if (outcome == 1) {
+            CHECK(lifetime.expired() && resource_lifetime.expired());
+            continue;
+        }
         CHECK(!lifetime.expired() && !resource_lifetime.expired());
-        std::exception_ptr failure;
         if (outcome == 0) {
             auto value = channel->try_receive();
             CHECK(value.is_success() && value.get_or_throw() == 117);
-        } else {
-            failure = outcome == 1
-                ? std::make_exception_ptr(std::runtime_error("collect lambda send failed"))
-                : std::make_exception_ptr(CancellationException("collect lambda cancelled"));
-            if (outcome == 1) channel->close(failure);
-            else channel->cancel(failure);
-        }
-        if (completion->resumes != 1 || completion->failure != failure || calls != 1) {
-            std::cerr << "collect lambda outcome=" << outcome << " resumes=" << completion->resumes
-                      << " calls=" << calls << " failure=" << static_cast<bool>(completion->failure) << '\n';
-            if (completion->failure) {
-                try { std::rethrow_exception(completion->failure); }
-                catch (const std::exception& exception) { std::cerr << exception.what() << '\n'; }
-            }
-        }
-        CHECK(completion->resumes == 1 && completion->failure == failure && calls == 1);
+        } else channel->cancel(failure);
+        CHECK(completion->resumes == 1 && completion->failure == (outcome == 0 ? nullptr : failure) && calls == 1);
         CHECK(lifetime.expired() && resource_lifetime.expired());
     }
 }
