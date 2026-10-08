@@ -39,6 +39,7 @@ target_link_libraries(kxs_codegen_test PRIVATE LLVM)
 foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
     target_link_libraries(${KXS_IR_TARGET} PRIVATE Threads::Threads)
     target_sources(${KXS_IR_TARGET} PRIVATE
+        ../kotlinc_native_ref/BinaryType.cpp
         ../kotlinc_native_ref/DebugInfoC.cpp
         ../kotlinc_native_ref/Runtime.cpp
         ../kotlinc_native_ref/ContextUtils.cpp
@@ -69,6 +70,12 @@ foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
         ../kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/descriptors/annotations/AnnotatedImpl.cpp)
 endforeach()
+
+add_executable(kxs_binary_type_test ../kotlinc_native_ref/BinaryTypeContractTest.cpp
+    ../kotlinc_native_ref/BinaryType.cpp)
+target_compile_features(kxs_binary_type_test PRIVATE cxx_std_20)
+target_compile_options(kxs_binary_type_test PRIVATE -UNDEBUG)
+add_test(NAME kxs_binary_type_contract COMMAND kxs_binary_type_test)
 
 add_executable(kxs_debug_info_test ../kotlinc_native_ref/DebugInfoContractTest.cpp
     ../kotlinc_native_ref/DebugInfoC.cpp)

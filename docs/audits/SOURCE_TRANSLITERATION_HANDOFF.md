@@ -6,7 +6,43 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current debug-bridge continuation — 2026-10-08:** From c233adf7, four
+**Current binary-result continuation — 2026-10-08:** From 6cf05519,
+BinaryType.hpp/.cpp translate native/base/.../BinaryType.kt:8-20: all nine
+primitive kinds, the sealed Primitive/Reference family, typed lazy reference
+sequences, nullability and primitive extraction. The internal common family
+erases its out-type; Reference<T> retains the actual typed Sequence and Primitive
+needs no fabricated Nothing object. This deliberate C++ adaptation is documented
+in source. kotlin/sequences/Sequence.hpp translates the real stdlib interface,
+using the existing Iterator covariance/ownership boundary. It never materializes
+the sequence. Production LLVM targets include BinaryType.cpp.
+
+Strict compile with/without NDEBUG, Native-OFF plugin/helper builds, the existing
+code-generation fixture, new CTest and ASan/UBSan pass. The bounded fixture checks
+nine primitive results, lazy provider identity and delayed mutation, covariance,
+retention/release, borrowed elements and constrained-once propagation. It does
+not create or classify fake IR classes. Actual IR classification, type caching
+and frame consumers remain unwired.
+
+Both root deep scans completed. BinaryType:1/1 explicit body,4/4 types,similarity
+0.07; its normalized logic is provisional because emission falls back for the
+source sealed class, enum and star-projected when function. Sequence:0/0 explicit
+bodies,1/1 type; the tool forces a zero score because the source interface is
+abstract and the C++ covariance bridge has a body. Both target units parse
+without errors. Restoring libraries/stdlib/src/kotlin/collections at the same
+pinned revision expands the sparse compiler corpus to652 Kotlin source files:
+211/6715 bodies,101/1542 types,similarity0.34,4 scoring failures. These counts
+cannot be compared as completion percentages with the earlier604-file corpus.
+Full kotlinx.coroutines remains663/2918 bodies,178/560 types,0.24,12 failures.
+Evidence is in build/source-continuation/{compiler,library}-source-distance.
+
+Next translate KonanPrimitiveType and its real ClassId/FqName catalog dependencies,
+then InlineClassesSupport and IrTypeInlineClassesSupport. DataLayout must use
+that classifier and Runtime's structurally keyed IR cache, not an inferred LLVM
+pointer test. VariableManager and complete frame/root/call/exception consumers,
+generation-state entry and both complete MLX/Native acceptance paths remain open.
+Goal active.
+
+**Debug-bridge checkpoint 6cf05519 — 2026-10-08:** From c233adf7, four
 actual debug operations from llvmDebugInfoC/DebugInfoC.cpp:253-286 are translated
 in DebugInfoC.hpp/.cpp and registered on all three LLVM consumers. They preserve
 the real DIBuilder, borrowed LLVM metadata/storage, source default debug options

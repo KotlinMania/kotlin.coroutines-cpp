@@ -1,6 +1,56 @@
 # Compiler resume-address source repair — 2026-10-08
 
-## Actual debug bridge source dependencies — 2026-10-08
+## Binary classification result and lazy sequence contracts — 2026-10-08
+
+Continuation from 6cf05519 translates native/base/src/main/kotlin/org/jetbrains/
+kotlin/backend/konan/BinaryType.kt:8-20. BinaryType.hpp:11,19,31,41 and
+BinaryType.cpp:11,15 provide the nine primitive kinds, sealed result family,
+Primitive's value, Reference's actual typed sequence/nullability and primitive
+extraction. The internal common family uses a type-erased C++ base with typed
+Reference<T> variants, allowing Primitive to participate without a fabricated
+Nothing type/object. Source ownership is retained with supplied shared sequence
+handles. Element pointers remain borrowed. These adaptations are marked in source.
+
+kotlin/sequences/Sequence.hpp:29,35 translates stdlib Sequence.kt:21-28.
+The abstract factory and typed iterator bridge follow this port's existing
+Iterable/Iterator covariance boundary and transfer each created iterator to the
+caller. The sequence remains potentially infinite and lazy; no vector replacement,
+snapshot or unconditional reusable-iteration policy is introduced. Public generic
+code stays in its header; non-generic BinaryType operations live in the .cpp.
+
+tools/kxs_inject/CMakeLists.txt:42 registers BinaryType.cpp on all three LLVM
+consumers. The new contract test at :74 verifies all nine primitive results,
+shared provider identity without iteration, mutation observed at iteration time,
+typed/covariant iterator element identity, provider retention/release, borrowed
+elements surviving provider destruction and propagation of constrained-once
+provider errors. Its fixture uses ordinary borrowed C++ objects, not fabricated
+IR classes or a replacement classifier. Strict -Wall -Wextra -Werror compile with
+and without NDEBUG passes. Native-OFF plugin/helper builds, the existing LLVM
+code-generation fixture, CTest and ASan/UBSan pass. These prove result/sequence
+contracts only; actual classification and frame integration remain unfinished.
+
+Both root deep scans completed. BinaryType:1/1 explicit body,4/4 types,similarity
+0.07. Its emitted normalized logic is0 because the sealed class, enum and
+star-projected when function are unsupported emission nodes; exact fallback
+spans are preserved in deep_transliteration_evidence.txt. Target parsing has no
+errors. Sequence:0/0 source bodies,1/1 type,forced0 score: the body-only criterion
+penalizes the C++ covariance bridge against the abstract Kotlin iterator method.
+This is not evidence of a missing source iterator implementation. Current sparse
+compiler root:211/6715 bodies,101/1542 types,similarity0.34,4 scoring failures,
+652 source files after restoring the48-file stdlib collection directory at pinned
+fee29910d8dddd2b1f7b44036c00533cee493351. Earlier604-file measurements have a
+different source scope. Full kotlinx.coroutines root remains663/2918 bodies,
+178/560 types,0.24,12 scoring failures. Reports and inventories are under
+build/source-continuation/{compiler,library}-source-distance.
+
+KonanPrimitiveType's real ClassId/FqName catalog, InlineClassesSupport and
+IrTypeInlineClassesSupport still need translation before DataLayout's IR-derived
+type mapping is implemented. Runtime's IR caches must preserve source structural
+equality. VariableManager and full frame/root/call/exception consumers,
+generation-state entry and both complete standalone MLX/Native handoff acceptance
+paths remain open. No alternate classification/state machine is supplied.
+
+## Actual debug bridge source dependencies — 2026-10-08 (historical 6cf05519 receipt)
 
 Continuation from c233adf7 translates upstream
 kotlin-native/llvmDebugInfoC/src/main/cpp/DebugInfoC.cpp:253-286.
