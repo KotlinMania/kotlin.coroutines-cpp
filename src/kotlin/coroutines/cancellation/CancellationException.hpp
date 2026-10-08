@@ -3,7 +3,7 @@
 /**
  * Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt
  */
-#include "kotlinx/coroutines/ExceptionTransport.hpp"
+#include "../../../kotlinx/coroutines/ExceptionTransport.hpp"
 #include <cstdint>
 #include <exception>
 #include <optional>

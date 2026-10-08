@@ -7,8 +7,8 @@
  * Transliterated from: kotlinx-coroutines-core/common/src/Exceptions.common.kt
  */
 
-#include "kotlinx/coroutines/ExceptionTransport.hpp"
-#include "kotlin/coroutines/cancellation/CancellationException.hpp"
+#include "ExceptionTransport.hpp"
+#include "../../kotlin/coroutines/cancellation/CancellationException.hpp"
 #include <stdexcept>
 #include <string>
 #include <exception>
