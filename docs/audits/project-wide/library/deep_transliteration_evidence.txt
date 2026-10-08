@@ -11550,10 +11550,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/internal/OnDemandAllocatingPool.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/internal/OnDemandAllocatingPool.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.490278
-function_name_parity: 0.857143
+translated_ast_cosine: 0.487662
+function_name_parity: 1.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.205131
+documentation_correspondence: 0.192394
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -11589,11 +11589,13 @@ Function OnDemandAllocatingPool::stateRepresentation:85 -> kotlinx::coroutines::
 Function OnDemandAllocatingPool::toString:92 -> kotlinx::coroutines::internal::OnDemandAllocatingPool::to_string:101 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:5 literal:52:"OnDemandAllocatingPool(" operator:+ node:43 identifier:staterepresentation operator:+ literal:52:")"
-Missing source function: loop:96
+Function loop:96 -> kotlinx::coroutines::internal::loop:138 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:block identifier:std type:function type:void node:3 literal:53:true node:43 identifier:block
 Extra target function: kotlinx::coroutines::internal::OnDemandAllocatingPool::OnDemandAllocatingPool:39
-Extra target function: kotlinx::coroutines::internal::pool_is_closed:136
-Extra target function: kotlinx::coroutines::internal::forbid_new_pool_elements:141
-Extra target function: kotlinx::coroutines::internal::pool_state_string:150
+Extra target function: kotlinx::coroutines::internal::pool_is_closed:146
+Extra target function: kotlinx::coroutines::internal::forbid_new_pool_elements:151
+Extra target function: kotlinx::coroutines::internal::pool_state_string:160
 === Emitted target buffer ===
 namespace kotlinx::coroutines::internal {
 

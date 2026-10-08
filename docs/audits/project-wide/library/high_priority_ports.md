@@ -194,39 +194,39 @@ This list is complete and includes function/type detail for every matched file. 
 | 182 | `operators.Merge` | `flow.Merge` | 0.08 | 0 | 8/9 matched (target 23) | `Iterable<Flow<T>>::merge` | 0/0 matched (target 3) | _none_ | 1 | 9 | 10909.2 |
 | 183 | `common.CoroutineDispatcher` | `coroutines.CoroutineDispatcher` | 0.39 | 0 | 7/8 matched (target 10) | `CoroutineDispatcher::limitedParallelism` | 1/1 matched (target 2) | _none_ | 1 | 9 | 10906.1 |
 | 184 | `operators.Limit` | `flow.Limit` | 0.04 | 0 | 7/8 matched (target 44) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | 1 | 8 | 10809.6 |
-| 185 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.08 | 0 | 6/7 matched (target 10) | `loop` | 1/1 matched | _none_ | 1 | 8 | 10809.2 |
-| 186 | `channels.ConflatedBufferedChannel` | `channels.ConflatedBufferedChannel` | 0.37 | 0 | 6/7 matched (target 9) | `ConflatedBufferedChannel::registerSelectForSend` | 1/1 matched | _none_ | 1 | 8 | 10806.3 |
-| 187 | `common.Supervisor` | `coroutines.Supervisor` | 0.19 | 0 | 4/5 matched (target 8) | `SupervisorCoroutine::childCancelled` | 2/2 matched (target 3) | _none_ | 1 | 7 | 10708.1 |
-| 188 | `test.ConcurrentExceptionsStressTest` | `concurrent.ConcurrentExceptionsStressTest [STUB]` | 0.00 | 0 | 3/4 matched (target 5) | `ConcurrentExceptionsStressTest::testStress` | 2/2 matched | _none_ | 1 | 6 | 10610.0 |
-| 189 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 0 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | 1 | 5 | 10508.8 |
-| 190 | `channels.ChannelCancelUndeliveredElementStressTest` | `channels.ChannelCancelUndeliveredElementStressTest [STUB]` | 0.00 | 0 | 2/3 matched | `ChannelCancelUndeliveredElementStressTest::testStress` | 1/1 matched | _none_ | 1 | 4 | 10410.0 |
-| 191 | `selects.OnTimeout` | `selects.OnTimeout` | 0.03 | 0 | 2/3 matched (target 6) | `OnTimeout::register` | 1/1 matched | _none_ | 1 | 4 | 10409.7 |
-| 192 | `flow.SafeFlowTest` | `flow.SafeFlowTest` | 0.28 | 0 | 2/3 matched | `SafeFlowTest::testEmissionsFromDifferentStateMachine` | 1/1 matched | _none_ | 1 | 4 | 10407.2 |
-| 193 | `test.MainDispatcherTest` | `test.MainDispatcherTest` | 0.66 | 0 | 2/3 matched (target 2) | `MainDispatcherTest::scheduleOnMainQueue` | 1/1 matched | _none_ | 1 | 4 | 10403.4 |
+| 185 | `channels.ConflatedBufferedChannel` | `channels.ConflatedBufferedChannel` | 0.37 | 0 | 6/7 matched (target 9) | `ConflatedBufferedChannel::registerSelectForSend` | 1/1 matched | _none_ | 1 | 8 | 10806.3 |
+| 186 | `common.Supervisor` | `coroutines.Supervisor` | 0.19 | 0 | 4/5 matched (target 8) | `SupervisorCoroutine::childCancelled` | 2/2 matched (target 3) | _none_ | 1 | 7 | 10708.1 |
+| 187 | `test.ConcurrentExceptionsStressTest` | `concurrent.ConcurrentExceptionsStressTest [STUB]` | 0.00 | 0 | 3/4 matched (target 5) | `ConcurrentExceptionsStressTest::testStress` | 2/2 matched | _none_ | 1 | 6 | 10610.0 |
+| 188 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 0 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | 1 | 5 | 10508.8 |
+| 189 | `channels.ChannelCancelUndeliveredElementStressTest` | `channels.ChannelCancelUndeliveredElementStressTest [STUB]` | 0.00 | 0 | 2/3 matched | `ChannelCancelUndeliveredElementStressTest::testStress` | 1/1 matched | _none_ | 1 | 4 | 10410.0 |
+| 190 | `selects.OnTimeout` | `selects.OnTimeout` | 0.03 | 0 | 2/3 matched (target 6) | `OnTimeout::register` | 1/1 matched | _none_ | 1 | 4 | 10409.7 |
+| 191 | `flow.SafeFlowTest` | `flow.SafeFlowTest` | 0.28 | 0 | 2/3 matched | `SafeFlowTest::testEmissionsFromDifferentStateMachine` | 1/1 matched | _none_ | 1 | 4 | 10407.2 |
+| 192 | `test.MainDispatcherTest` | `test.MainDispatcherTest` | 0.66 | 0 | 2/3 matched (target 2) | `MainDispatcherTest::scheduleOnMainQueue` | 1/1 matched | _none_ | 1 | 4 | 10403.4 |
+| 193 | `operators.FlatMapConcatTest` | `operators.FlatMapConcatTest [STUB]` | 0.00 | 0 | 1/2 matched | `FlatMapConcatTest::testFlatMapConcurrency` | 1/1 matched | _none_ | 1 | 3 | 10310.0 |
 | 194 | `channels.ConflatedBroadcastChannelNotifyStressTest` | `channels.ConflatedBroadcastChannelNotifyStressTest [STUB]` | 0.00 | 0 | 1/2 matched | `ConflatedBroadcastChannelNotifyStressTest::testStressNotify` | 1/1 matched | _none_ | 1 | 3 | 10310.0 |
-| 195 | `operators.FlatMapConcatTest` | `operators.FlatMapConcatTest [STUB]` | 0.00 | 0 | 1/2 matched | `FlatMapConcatTest::testFlatMapConcurrency` | 1/1 matched | _none_ | 1 | 3 | 10310.0 |
-| 196 | `internal.InlineList` | `internal.InlineList` | 0.10 | 0 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | 1 | 3 | 10309.0 |
-| 197 | `test.BuilderContractsTest` | `tests.BuilderContractsTest` | 0.61 | 0 | 1/2 matched | `BuilderContractsTest::testContracts` | 1/1 matched | _none_ | 1 | 3 | 10303.9 |
-| 198 | `operators.TransformTest` | `operators.TransformTest [STUB]` | 0.00 | 0 | 0/1 matched | `TransformTest::testDoubleEmit` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
-| 199 | `operators.LintTest` | `operators.LintTest [STUB]` | 0.00 | 0 | 0/1 matched | `LintTest::testSharedFlowToCollection` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
+| 195 | `internal.InlineList` | `internal.InlineList` | 0.10 | 0 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | 1 | 3 | 10309.0 |
+| 196 | `test.BuilderContractsTest` | `tests.BuilderContractsTest` | 0.61 | 0 | 1/2 matched | `BuilderContractsTest::testContracts` | 1/1 matched | _none_ | 1 | 3 | 10303.9 |
+| 197 | `operators.ConflateTest` | `operators.ConflateTest [STUB]` | 0.00 | 0 | 0/1 matched | `ConflateTest::testExample` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
+| 198 | `operators.LintTest` | `operators.LintTest [STUB]` | 0.00 | 0 | 0/1 matched | `LintTest::testSharedFlowToCollection` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
+| 199 | `operators.TransformTest` | `operators.TransformTest [STUB]` | 0.00 | 0 | 0/1 matched | `TransformTest::testDoubleEmit` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
 | 200 | `channels.BroadcastChannelSubStressTest` | `channels.BroadcastChannelSubStressTest [STUB]` | 0.00 | 0 | 0/1 matched | `BroadcastChannelSubStressTest::testStress` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
 | 201 | `flow.StateFlowCommonStressTest` | `flow.StateFlowCommonStressTest [STUB]` | 0.00 | 0 | 0/1 matched | `StateFlowCommonStressTest::testSingleEmitterAndCollector` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
 | 202 | `selects.SelectMutexStressTest` | `selects.SelectMutexStressTest [STUB]` | 0.00 | 0 | 0/1 matched | `SelectMutexStressTest::testSelectCancelledResourceRelease` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
-| 203 | `operators.ConflateTest` | `operators.ConflateTest [STUB]` | 0.00 | 0 | 0/1 matched | `ConflateTest::testExample` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
-| 204 | `channels.Channels` | `channels.Channels` | 0.03 | 0 | 1/2 matched (target 1) | `SendChannel<E>::sendBlocking` | 0/0 matched | _none_ | 1 | 2 | 10209.7 |
-| 205 | `test.MultithreadedDispatcherStressTest` | `concurrent.MultithreadedDispatcherStressTest` | 0.33 | 0 | 0/1 matched | `MultithreadedDispatcherStressTest::testClosingNotDroppingTasks` | 1/1 matched | _none_ | 1 | 2 | 10206.7 |
-| 206 | `test.AwaitCancellationTest` | `tests.AwaitCancellationTest` | 0.53 | 0 | 0/1 matched | `AwaitCancellationTest::testCancellation` | 1/1 matched | _none_ | 1 | 2 | 10204.7 |
-| 207 | `test.DelayExceptionTest` | `test.DelayExceptionTest` | 0.70 | 0 | 0/1 matched | `DelayExceptionTest::testMaxDelay` | 1/1 matched | _none_ | 1 | 2 | 10203.0 |
-| 208 | `native.Debug` | `native.Debug` | 0.00 | 0 | 0/1 matched (target 3) | `assert` | 0/0 matched | _none_ | 1 | 1 | 10110.0 |
-| 209 | `native.SchedulerTask` | `native.SchedulerTask` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `SchedulerTask` | 1 | 1 | 10100.0 |
+| 203 | `channels.Channels` | `channels.Channels` | 0.03 | 0 | 1/2 matched (target 1) | `SendChannel<E>::sendBlocking` | 0/0 matched | _none_ | 1 | 2 | 10209.7 |
+| 204 | `test.MultithreadedDispatcherStressTest` | `concurrent.MultithreadedDispatcherStressTest` | 0.33 | 0 | 0/1 matched | `MultithreadedDispatcherStressTest::testClosingNotDroppingTasks` | 1/1 matched | _none_ | 1 | 2 | 10206.7 |
+| 205 | `test.AwaitCancellationTest` | `tests.AwaitCancellationTest` | 0.53 | 0 | 0/1 matched | `AwaitCancellationTest::testCancellation` | 1/1 matched | _none_ | 1 | 2 | 10204.7 |
+| 206 | `test.DelayExceptionTest` | `test.DelayExceptionTest` | 0.70 | 0 | 0/1 matched | `DelayExceptionTest::testMaxDelay` | 1/1 matched | _none_ | 1 | 2 | 10203.0 |
+| 207 | `native.Debug` | `native.Debug` | 0.00 | 0 | 0/1 matched (target 3) | `assert` | 0/0 matched | _none_ | 1 | 1 | 10110.0 |
+| 208 | `native.SchedulerTask` | `native.SchedulerTask` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `SchedulerTask` | 1 | 1 | 10100.0 |
+| 209 | `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `LocalAtomicInt` | 1 | 1 | 10100.0 |
 | 210 | `native.CloseableCoroutineDispatcher` | `native.CloseableCoroutineDispatcher` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `CloseableCoroutineDispatcher` | 1 | 1 | 10100.0 |
-| 211 | `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `LocalAtomicInt` | 1 | 1 | 10100.0 |
-| 212 | `internal.ThreadSafeHeap` | `internal.ThreadSafeHeap` | 0.38 | 0 | 14/14 matched (target 20) | _none_ | 2/2 matched | _none_ | 0 | 16 | 1606.2 |
-| 213 | `terminal.Reduce` | `flow.Reduce` | 0.03 | 0 | 10/10 matched (target 64) | _none_ | 0/0 matched (target 6) | _none_ | 0 | 10 | 1009.7 |
-| 214 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 0 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | 0 | 10 | 1007.8 |
-| 215 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.39 | 0 | 9/9 matched (target 16) | _none_ | 1/1 matched | _none_ | 0 | 10 | 1006.1 |
-| 216 | `flow.VirtualTime` | `flow.VirtualTime` | 0.51 | 0 | 7/7 matched (target 11) | _none_ | 2/2 matched | _none_ | 0 | 9 | 904.9 |
-| 217 | `terminal.Collect` | `flow.Collect` | 0.13 | 0 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | 0 | 8 | 808.7 |
+| 211 | `internal.ThreadSafeHeap` | `internal.ThreadSafeHeap` | 0.38 | 0 | 14/14 matched (target 20) | _none_ | 2/2 matched | _none_ | 0 | 16 | 1606.2 |
+| 212 | `terminal.Reduce` | `flow.Reduce` | 0.03 | 0 | 10/10 matched (target 64) | _none_ | 0/0 matched (target 6) | _none_ | 0 | 10 | 1009.7 |
+| 213 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 0 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | 0 | 10 | 1007.8 |
+| 214 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.39 | 0 | 9/9 matched (target 16) | _none_ | 1/1 matched | _none_ | 0 | 10 | 1006.1 |
+| 215 | `flow.VirtualTime` | `flow.VirtualTime` | 0.51 | 0 | 7/7 matched (target 11) | _none_ | 2/2 matched | _none_ | 0 | 9 | 904.9 |
+| 216 | `terminal.Collect` | `flow.Collect` | 0.13 | 0 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | 0 | 8 | 808.7 |
+| 217 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.17 | 0 | 7/7 matched (target 11) | _none_ | 1/1 matched | _none_ | 0 | 8 | 808.3 |
 | 218 | `common.Delay` | `coroutines.Delay` | 0.28 | 0 | 6/6 matched (target 11) | _none_ | 2/2 matched | _none_ | 0 | 8 | 807.2 |
 | 219 | `selects.SelectUnbiased` | `selects.SelectUnbiased` | 0.16 | 0 | 6/6 matched (target 8) | _none_ | 1/1 matched (target 2) | _none_ | 0 | 7 | 708.4 |
 | 220 | `common.Unconfined` | `coroutines.Unconfined` | 0.47 | 0 | 4/4 matched (target 7) | _none_ | 2/2 matched (target 3) | _none_ | 0 | 6 | 605.3 |
@@ -238,10 +238,10 @@ This list is complete and includes function/type detail for every matched file. 
 | 226 | `internal.FlowExceptions.common` | `internal.FlowExceptions` | 0.50 | 0 | 2/2 matched (target 3) | _none_ | 2/2 matched | _none_ | 0 | 4 | 405.0 |
 | 227 | `terminal.Logic` | `flow.Logic` | 0.02 | 0 | 3/3 matched (target 23) | _none_ | 0/0 matched (target 4) | _none_ | 0 | 3 | 309.8 |
 | 228 | `terminal.Collection` | `flow.Collection` | 0.11 | 0 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | 0 | 3 | 308.9 |
-| 229 | `common.TestDispatchers` | `tests.TestDispatchers [STUB]` | 0.00 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 210.0 |
-| 230 | `test.EmptyContext` | `tests.EmptyContext [STUB]` | 0.00 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 210.0 |
-| 231 | `test.DefaultDispatchersConcurrencyTest` | `concurrent.DefaultDispatchersConcurrencyTest [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 2/2 matched | _none_ | 0 | 2 | 210.0 |
-| 232 | `internal.FlowExceptions` | `kotlinx.coroutines.native.flow.internal.FlowExceptions [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 2/2 matched | _none_ | 0 | 2 | 210.0 |
+| 229 | `test.EmptyContext` | `tests.EmptyContext [STUB]` | 0.00 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 210.0 |
+| 230 | `common.TestDispatchers` | `tests.TestDispatchers [STUB]` | 0.00 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 210.0 |
+| 231 | `internal.FlowExceptions` | `kotlinx.coroutines.native.flow.internal.FlowExceptions [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 2/2 matched | _none_ | 0 | 2 | 210.0 |
+| 232 | `test.DefaultDispatchersConcurrencyTest` | `concurrent.DefaultDispatchersConcurrencyTest [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 2/2 matched | _none_ | 0 | 2 | 210.0 |
 | 233 | `terminal.Count` | `flow.Count` | 0.03 | 0 | 2/2 matched (target 26) | _none_ | 0/0 matched (target 2) | _none_ | 0 | 2 | 209.7 |
 | 234 | `internal.MainDispatcherFactory` | `internal.MainDispatcherFactory` | 0.07 | 0 | 1/1 matched | _none_ | 1/1 matched (target 2) | _none_ | 0 | 2 | 209.3 |
 | 235 | `internal.NopCollector` | `internal.NopCollector` | 0.08 | 0 | 1/1 matched | _none_ | 1/1 matched | _none_ | 0 | 2 | 209.2 |
@@ -254,9 +254,9 @@ This list is complete and includes function/type detail for every matched file. 
 | 242 | `kotlinx-coroutines-core.nativeDarwin.test.Launcher` | `test.Launcher` | 0.07 | 0 | 1/1 matched | _none_ | 0/0 matched | _none_ | 0 | 1 | 109.3 |
 | 243 | `common.Yield` | `coroutines.Yield` | 0.17 | 0 | 1/1 matched | _none_ | 0/0 matched | _none_ | 0 | 1 | 108.3 |
 | 244 | `concurrent.MultithreadedDispatchers.common` | `coroutines.MultithreadedDispatchers` | 0.83 | 0 | 1/1 matched (target 8) | _none_ | 0/0 matched (target 1) | _none_ | 0 | 1 | 101.7 |
-| 245 | `common.CompletionHandler.common` | `coroutines.CompletionHandler` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |
-| 246 | `flow.FlowCollector` | `flow.FlowCollector` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |
-| 247 | `common.Deferred` | `coroutines.Deferred` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |
+| 245 | `flow.FlowCollector` | `flow.FlowCollector` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |
+| 246 | `common.Deferred` | `coroutines.Deferred` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |
+| 247 | `common.CompletionHandler.common` | `coroutines.CompletionHandler` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |
 | 248 | `internal.NullSurrogate` | `internal.NullSurrogate [ZERO]` | 0.00 | 0 | 0/0 matched (target 3) | _none_ | 0/0 matched | _none_ | 0 | 0 | 10.0 |
 | 249 | `internal.ProbesSupport.common` | `internal.ProbesSupport.common [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 0/0 matched | _none_ | 0 | 0 | 10.0 |
 | 250 | `concurrent.Dispatchers` | `concurrent.Dispatchers` | 1.00 | 0 | 0/0 matched | _none_ | 0/0 matched | _none_ | 0 | 0 | 0.0 |
@@ -371,19 +371,19 @@ This list is complete and includes function/type detail for every matched file. 
 - `common.LaunchFlow` -> `tests.LaunchFlow [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `test.ConcurrentExceptionsStressTest` -> `concurrent.ConcurrentExceptionsStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `channels.ChannelCancelUndeliveredElementStressTest` -> `channels.ChannelCancelUndeliveredElementStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `channels.ConflatedBroadcastChannelNotifyStressTest` -> `channels.ConflatedBroadcastChannelNotifyStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `operators.FlatMapConcatTest` -> `operators.FlatMapConcatTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `operators.TransformTest` -> `operators.TransformTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `channels.ConflatedBroadcastChannelNotifyStressTest` -> `channels.ConflatedBroadcastChannelNotifyStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `operators.ConflateTest` -> `operators.ConflateTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `operators.LintTest` -> `operators.LintTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `operators.TransformTest` -> `operators.TransformTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `channels.BroadcastChannelSubStressTest` -> `channels.BroadcastChannelSubStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `flow.StateFlowCommonStressTest` -> `flow.StateFlowCommonStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `selects.SelectMutexStressTest` -> `selects.SelectMutexStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `operators.ConflateTest` -> `operators.ConflateTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `common.Exceptions.common` -> `coroutines.Exceptions [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
-- `common.TestDispatchers` -> `tests.TestDispatchers [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `test.EmptyContext` -> `tests.EmptyContext [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `test.DefaultDispatchersConcurrencyTest` -> `concurrent.DefaultDispatchersConcurrencyTest [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
+- `common.TestDispatchers` -> `tests.TestDispatchers [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `internal.FlowExceptions` -> `kotlinx.coroutines.native.flow.internal.FlowExceptions [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
+- `test.DefaultDispatchersConcurrencyTest` -> `concurrent.DefaultDispatchersConcurrencyTest [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
 - `common.Runnable.common` -> `coroutines.Runnable [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
 - `internal.NullSurrogate` -> `internal.NullSurrogate [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
 - `internal.ProbesSupport.common` -> `internal.ProbesSupport.common [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
