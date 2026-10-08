@@ -277,10 +277,7 @@ ChannelFlow<T>::get_collect_to_fun() {
     auto owner = this->weak_from_this().lock();
     return [this, owner = std::move(owner)](ProducerScope<T>* scope,
                                           std::shared_ptr<Continuation<void*>> completion) -> void* {
-        return collect_channel_flow(
-            [this, owner, scope](Continuation<void*>* frame) {
-                return collect_to(scope, kotlinx::coroutines::internal::retain_continuation(frame));
-            }, std::move(completion));
+        return collect_to(scope, std::move(completion));
     };
 }
 
@@ -358,13 +355,15 @@ protected:
     virtual void* flow_collect(FlowCollector<T>* collector, Continuation<void*>* continuation) = 0;
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:151-152
+    [[clang::annotate("suspend")]]
     void* collect_to(ProducerScope<T>* scope,
                      std::shared_ptr<Continuation<void*>> completion) override {
+        // NOTE(port): Keep the existing receiver owner and temporary collector
+        // through suspension. The compiler lowers their C++ lifetimes.
+        auto owner = this->weak_from_this().lock();
         auto collector = std::make_shared<SendingCollector<T>>(scope);
-        return collect_channel_flow(
-            [this, owner = this->weak_from_this().lock(), collector](Continuation<void*>* frame) {
-                return flow_collect(collector.get(), frame);
-            }, std::move(completion));
+        dsl::suspend(flow_collect(collector.get(), completion.get()));
+        return nullptr;
     }
 
 public:
@@ -377,7 +376,8 @@ protected:
 private:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:144-148
     void* collect_with_context_undispatched(FlowCollector<T>* collector,
-        std::shared_ptr<CoroutineContext> new_context, Continuation<void*>* completion);
+        std::shared_ptr<CoroutineContext> new_context,
+        std::shared_ptr<Continuation<void*>> completion);
 
     const std::shared_ptr<Flow<S>> flow_;
 };
@@ -508,7 +508,8 @@ inline void* ChannelFlowOperator<S, T>::collect(FlowCollector<T>* collector, Con
         auto collect_interceptor = collect_context->get(ContinuationInterceptor::type_key);
         if (new_interceptor ? new_interceptor->equals(collect_interceptor.get()) :
                               collect_interceptor == nullptr) {
-            return collect_with_context_undispatched(collector, std::move(new_context), completion);
+            return collect_with_context_undispatched(collector, std::move(new_context),
+                kotlinx::coroutines::internal::retain_continuation(completion));
         }
     }
     // Slow-path: create the actual channel.
@@ -518,18 +519,19 @@ inline void* ChannelFlowOperator<S, T>::collect(FlowCollector<T>* collector, Con
 // Changes collecting context upstream, while collecting in the original context.
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:144-148
 template <typename S, typename T>
+[[clang::annotate("suspend")]]
 inline void* ChannelFlowOperator<S, T>::collect_with_context_undispatched(
     FlowCollector<T>* collector, std::shared_ptr<CoroutineContext> new_context,
-    Continuation<void*>* completion) {
+    std::shared_ptr<Continuation<void*>> completion) {
+    // NOTE(port): Retain an existing receiver owner without adopting raw storage.
+    auto owner = this->weak_from_this().lock();
     auto original_context_collector = with_undispatched_context_collector(collector, completion->get_context());
-    return collect_channel_flow(
-        [this, owner = this->weak_from_this().lock(), original_context_collector,
-         new_context = std::move(new_context)](Continuation<void*>* frame) {
-            return with_context_undispatched<void*>(new_context, original_context_collector.get(),
-                [this](FlowCollector<T>* sink, Continuation<void*>* continuation) {
-                    return flow_collect(sink, continuation);
-                }, frame);
-        }, kotlinx::coroutines::internal::retain_continuation(completion));
+    // invoke flow_collect(original_context_collector) in the new_context
+    dsl::suspend(with_context_undispatched<void*>(new_context, original_context_collector.get(),
+        [this](FlowCollector<T>* sink, Continuation<void*>* continuation) {
+            return flow_collect(sink, continuation);
+        }, completion.get()));
+    return nullptr;
 }
 
 } // namespace internal
