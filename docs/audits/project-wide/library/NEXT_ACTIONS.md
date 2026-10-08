@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 812/2918 matched (target 3034) — 27.8%
+- **Function parity:** 812/2918 matched (target 3033) — 27.8%
 - **Class/type parity:** 359/560 matched (target 521) — 64.1%
-- **Combined symbol parity:** 1171/3478 matched (target 3555) — 33.7%
+- **Combined symbol parity:** 1171/3478 matched (target 3554) — 33.7%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -709,7 +709,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.26
 - **Dependents:** 0
 - **Priority Score:** 121707.4
-- **Functions:** 100/111 matched (target 180)
+- **Functions:** 100/111 matched (target 179)
 - **Missing functions:** `BufferedChannel::sendImpl`, `BufferedChannel::receiveImpl`, `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `BufferedChannel::onCancellationChannelResultImplDoNotCall`, `BufferedChannel::onCancellationImplDoNotCall`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0`
 - **Types:** 6/6 matched (target 7)
 - **Missing types:** _none_
