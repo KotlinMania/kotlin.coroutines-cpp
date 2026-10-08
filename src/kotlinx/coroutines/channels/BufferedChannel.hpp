@@ -1831,6 +1831,7 @@ public:
      *           processResFunc = BufferedChannel<*>::processResultSelectReceive as ProcessResultFunction,
      *           onCancellationConstructor = onUndeliveredElementReceiveCancellationConstructor)
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1504-1510
     selects::SelectClause1<E>& on_receive() override {
         if (!on_receive_clause_) {
             on_receive_clause_ = std::make_unique<selects::SelectClause1Impl<E>>(
@@ -1840,8 +1841,16 @@ public:
                         static_cast<selects::SelectInstance<void*>*>(select), ignored);
                 },
                 /*processResFunc=*/[this](void* /*clause*/, void* ignored, void* result) {
-                    return this->process_result_select_receive(ignored, result);
-                });
+                    auto* box = static_cast<E*>(this->process_result_select_receive(ignored, result));
+                    if constexpr (std::is_pointer_v<E>) {
+                        // NOTE(port): Unbox the pointer value without adopting its borrowed pointee.
+                        std::unique_ptr<E> owner(box);
+                        return static_cast<void*>(*owner);
+                    } else {
+                        return static_cast<void*>(box);
+                    }
+                },
+                select_receive_cancellation_constructor());
         }
         return *on_receive_clause_;
     }
@@ -1854,6 +1863,7 @@ public:
      *           processResFunc = processResultSelectReceiveCatching,
      *           onCancellationConstructor = onUndeliveredElementReceiveCancellationConstructor)
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1513-1519
     selects::SelectClause1<ChannelResult<E>>& on_receive_catching() override {
         if (!on_receive_catching_clause_) {
             on_receive_catching_clause_ =
@@ -1865,7 +1875,8 @@ public:
                     },
                     /*processResFunc=*/[this](void* /*clause*/, void* ignored, void* result) {
                         return this->process_result_select_receive_catching(ignored, result);
-                    });
+                    },
+                    select_receive_cancellation_constructor());
         }
         return *on_receive_catching_clause_;
     }
@@ -2100,6 +2111,7 @@ private:
     // -------------------------------------------------------------------------
     // Lines 735-738: private fun Waiter.prepareReceiverForSuspension(...)
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:735-738
     void prepare_receiver_for_suspension(Waiter* waiter, ChannelSegment<E>* segment, int index) {
         // C++ lifetime management: store the shared_ptr to keep the waiter alive
         if (auto sp = waiter->shared_from_this_waiter()) {
@@ -2224,6 +2236,7 @@ private:
     // -------------------------------------------------------------------------
     // Lines 1539-1541: private fun onClosedSelectOnReceive(select: SelectInstance<*>)
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1539-1541
     void on_closed_select_on_receive(selects::SelectInstance<void*>* select) {
         select->select_in_registration_phase(static_cast<void*>(&CHANNEL_CLOSED()));
     }
@@ -2231,6 +2244,7 @@ private:
     // -------------------------------------------------------------------------
     // Lines 1544-1546: private fun processResultSelectReceive(ignoredParam: Any?, selectResult: Any?): Any?
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1544-1546
     void* process_result_select_receive(void* /*ignored_param*/, void* select_result) {
         if (select_result == static_cast<void*>(&CHANNEL_CLOSED())) {
             std::rethrow_exception(receive_exception());
@@ -2255,36 +2269,36 @@ private:
     // -------------------------------------------------------------------------
     // Lines 1556-1558: private fun processResultSelectReceiveCatching(ignoredParam: Any?, selectResult: Any?): Any?
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1556-1558
     void* process_result_select_receive_catching(void* /*ignored_param*/, void* select_result) {
         if (select_result == static_cast<void*>(&CHANNEL_CLOSED())) {
             // Return a boxed ChannelResult::closed
             auto* result = new ChannelResult<E>(ChannelResult<E>::closed(close_cause()));
             return static_cast<void*>(result);
         }
-        E element = *static_cast<E*>(select_result);
-        auto* result = new ChannelResult<E>(ChannelResult<E>::success(element));
+        // NOTE(port): The result adapter owns and releases the erased element box.
+        std::unique_ptr<E> element(static_cast<E*>(select_result));
+        auto* result = new ChannelResult<E>(ChannelResult<E>::success(std::move(*element)));
         return static_cast<void*>(result);
     }
 
     // -------------------------------------------------------------------------
     // Lines 1531-1537: private fun registerSelectForReceive(select: SelectInstance<*>, ignoredParam: Any?)
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1531-1537
     void register_select_for_receive(selects::SelectInstance<void*>* select, void* /*ignored_param*/) {
-        // Upstream calls into the inline `receiveImpl(...)` machinery. In the C++ port the
-        // inline call site is `receive_impl_with_select`, which routes through the same
-        // four continuations the Kotlin source uses, applied to a select-aware waiter.
-        // For now, provide a simplified implementation.
-        receive_impl_with_select(
+        receive_impl(
             select,
-            [select](E elem) { select->select_in_registration_phase(new E(elem)); }, // onElementRetrieved
-            [](ChannelSegment<E>*, int, void*) {}, // onSuspend
-            [this, select]() { on_closed_select_on_receive(select); } // onClosed
+            [select](E elem) { select->select_in_registration_phase(new E(std::move(elem))); },
+            [](ChannelSegment<E>*, int, int64_t) {},
+            [this, select]() { on_closed_select_on_receive(select); }
         );
     }
 
     // -------------------------------------------------------------------------
     // Lines 1561-1567: private val onUndeliveredElementReceiveCancellationConstructor
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1561-1567
     selects::OnCancellationConstructor get_on_undelivered_element_receive_cancellation_constructor() {
         if (!on_undelivered_element_) {
             return nullptr;
@@ -2294,6 +2308,20 @@ private:
                 if (element != static_cast<void*>(&CHANNEL_CLOSED())) {
                     on_undelivered_element_(*static_cast<E*>(element));
                 }
+            };
+        };
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1561-1567
+    selects::OnCancellationConstructor select_receive_cancellation_constructor() {
+        // NOTE(port): A cancelled receiving adapter must also release its owning ABI box,
+        // including when Kotlin has no user-supplied undelivered-element callback.
+        auto constructor = get_on_undelivered_element_receive_cancellation_constructor();
+        return [constructor](void* select, void* param, void* element) -> selects::OnCancellationAction {
+            auto action = constructor ? constructor(select, param, element) : nullptr;
+            return [element, action](std::exception_ptr cause, void* value, std::shared_ptr<CoroutineContext> context) {
+                std::unique_ptr<E> owner(element == &CHANNEL_CLOSED() ? nullptr : static_cast<E*>(element));
+                if (action) action(cause, value, std::move(context));
             };
         };
     }
@@ -2421,84 +2449,47 @@ private:
         }
     }
 
-    /**
-     * Select-aware receive entry. Upstream is Kotlin's inline `receiveImpl(...)` with a
-     * select waiter; the C++ port mirrors the same trySend-style fast path before falling
-     * back to segment-based suspension.
-     */
-    void receive_impl_with_select(
-        selects::SelectInstance<void*>* waiter,
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:875-961,1531-1537
+    void receive_impl(
+        selects::SelectInstance<void*>* select,
         std::function<void(E)> on_element_retrieved,
-        std::function<void(ChannelSegment<E>*, int, void*)> on_suspend,
+        std::function<void(ChannelSegment<E>*, int, int64_t)> on_suspend,
         std::function<void()> on_closed
     ) {
-        auto result = receive_impl_try_receive();
-        if (result.is_success()) {
-            on_element_retrieved(result.get_or_throw());
+        // NOTE(port): Preserve the actual Waiter subobject in erased cell storage.
+        auto* waiter = dynamic_cast<Waiter*>(select);
+        if (!waiter) throw std::bad_cast();
+        ChannelSegment<E>* segment = receive_segment_.load(std::memory_order_acquire);
+        while (true) {
+            if (is_closed_for_receive()) { on_closed(); return; }
+            int64_t r = receivers_.fetch_add(1, std::memory_order_acq_rel);
+            int64_t id = r / SEGMENT_SIZE;
+            int i = static_cast<int>(r % SEGMENT_SIZE);
+            if (segment->id != id) {
+                auto* found = find_segment_receive(id, segment);
+                if (!found) continue;
+                segment = found;
+            }
+            void* result = update_cell_receive(segment, i, r, waiter);
+            if (result == &SUSPEND()) {
+                prepare_receiver_for_suspension(waiter, segment, i);
+                on_suspend(segment, i, r);
+                return;
+            }
+            if (result == &FAILED()) {
+                if (r < senders_counter()) segment->clean_prev();
+                continue;
+            }
+            if (result == &SUSPEND_NO_WAITER()) throw std::logic_error("unexpected");
+            segment->clean_prev();
+            // NOTE(port): Transfer the owning ABI result into the source E callback.
+            std::unique_ptr<E> element(static_cast<E*>(result));
+            on_element_retrieved(std::move(*element));
             return;
         }
-        if (result.is_closed()) {
-            on_closed();
-            return;
-        }
-        int64_t r = receivers_.fetch_add(1, std::memory_order_acq_rel);
-        int64_t id = r / SEGMENT_SIZE;
-        int index = static_cast<int>(r % SEGMENT_SIZE);
-        ChannelSegment<E>* segment = find_segment_receive(
-            id, receive_segment_.load(std::memory_order_acquire));
-        if (segment == nullptr) {
-            on_closed();
-            return;
-        }
-        segment->set_state(index, waiter);
-        on_suspend(segment, index, nullptr);
     }
 
 public:
-    // -------------------------------------------------------------------------
-    // Lines 1504-1510: override val onReceive: SelectClause1<E>
-    // -------------------------------------------------------------------------
-    selects::SelectClause1Impl<E> get_on_receive() {
-        return selects::SelectClause1Impl<E>(
-            static_cast<void*>(this),
-            // regFunc
-            [this](void* /*clause_object*/, void* select, void* param) {
-                register_select_for_receive(
-                    static_cast<selects::SelectInstance<void*>*>(select),
-                    param
-                );
-            },
-            // processResFunc
-            [this](void* /*clause_object*/, void* param, void* clause_result) {
-                return process_result_select_receive(param, clause_result);
-            },
-            // onCancellationConstructor
-            get_on_undelivered_element_receive_cancellation_constructor()
-        );
-    }
-
-    // -------------------------------------------------------------------------
-    // Lines 1513-1519: override val onReceiveCatching: SelectClause1<ChannelResult<E>>
-    // -------------------------------------------------------------------------
-    selects::SelectClause1Impl<ChannelResult<E>> get_on_receive_catching() {
-        return selects::SelectClause1Impl<ChannelResult<E>>(
-            static_cast<void*>(this),
-            // regFunc
-            [this](void* /*clause_object*/, void* select, void* param) {
-                register_select_for_receive(
-                    static_cast<selects::SelectInstance<void*>*>(select),
-                    param
-                );
-            },
-            // processResFunc
-            [this](void* /*clause_object*/, void* param, void* clause_result) {
-                return process_result_select_receive_catching(param, clause_result);
-            },
-            // onCancellationConstructor
-            get_on_undelivered_element_receive_cancellation_constructor()
-        );
-    }
-
     // -------------------------------------------------------------------------
     // Lines 1522-1528: override val onReceiveOrNull: SelectClause1<E?>
     // -------------------------------------------------------------------------
@@ -2863,9 +2854,14 @@ public:
         }
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:652-671
     bool try_resume_receiver(void* receiver, E element) {
         if (auto* select = dynamic_cast<selects::SelectInstance<void*>*>(static_cast<Waiter*>(receiver))) {
-            return select->try_select(static_cast<void*>(this), new E(element));
+            // NOTE(port): A rejected select rendezvous retains no result box.
+            auto result = std::make_unique<E>(std::move(element));
+            if (!select->try_select(static_cast<void*>(this), result.get())) return false;
+            result.release();
+            return true;
         }
         if (auto* rc = dynamic_cast<ReceiveCatching<E>*>(static_cast<Waiter*>(receiver))) {
             auto on_cancellation = bind_cancellation_fun_result();
