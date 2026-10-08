@@ -287,8 +287,8 @@ use the existing LLVM/Clang plugins with -std=c++20 -Wall -Wextra -Wpedantic
 Receipts under build/ir-recovery are merge-direct-source.log,
 merge-direct-consumer.log and merge-direct-instantiation.log. The concrete probe
 is tmp/merge-direct-instantiation.cpp. Include roots are include,
-src/kotlinx/coroutines and src; plugin flags are the exact flags recorded in
-SOURCE_TRANSLITERATION_HANDOFF.md.
+src/kotlinx/coroutines and src; plugin wiring follows the
+[LLVM code-generation build contract](../architecture/llvm_codegen_contracts.md#build-contract).
 
 The frontend discovers the annotated entries. Actual consumer and instantiation
 diagnostics include "suspend local declaration is not a variable" for the local

@@ -1,3 +1,12 @@
+### Current source-first direction
+
+- Continue faithful library transliteration in current Kanban/ast_distance priority order. Preserve upstream logic; make only necessary C++ language adaptations.
+- Do not turn unfinished timing, worker or compiler features into a runtime debugging or optimization loop. Required deep scans account for missing code and do not replace source implementation.
+- Read only the architecture document relevant to the selected source pair, using `docs/architecture/README.md`. Do not recursively load the architecture index or audit collection.
+- Keep architecture documents about current contracts and missing pieces. Do not append chronological checkpoints, self-handoff instructions or dependency-chain resume queues.
+- When reporting progress, identify the actual upstream functions/branches translated and the selected pair's remaining gaps. Notes, checks and generated counts are not source progress.
+- Dispatch remains disabled. Do not assign Blocked status as a dispatch reservation.
+
 ### AGENTS playbook (transliteration-first)
 
 #### Scope and goal

@@ -3,10 +3,9 @@
 ## Current priority supersedes this compiler resume point
 
 Sydney now requires source translation first: finish the faithful kotlinx.coroutines
-C++ source before resuming docking-ring/compiler/MLX integration. Use
-[SOURCE_TRANSLITERATION_HANDOFF.md](SOURCE_TRANSLITERATION_HANDOFF.md) as the
-current resume record. The compiler stopping point and completed results below
-remain preserved for the later integration phase.
+C++ source before resuming docking-ring/compiler/MLX integration. Use the current
+Kanban/ast_distance source priorities and consult only the relevant
+[architecture contract](../architecture/README.md).
 
 This is the current resume record for the Ren-profile `kotlinmania` board.
 Implementation resumed after the board review. The compiler-object class binding

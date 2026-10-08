@@ -5,8 +5,10 @@
 Sydney's 2026-10-07 priority is to finish the kotlinx.coroutines C++ source before
 returning to docking-ring/compiler/MLX integration. Start from the library
 priority documents and actual Kotlin/C++ source pairs. Keep the compiler findings
-and completed verification records for later reuse. The source phase resume
-record is [SOURCE_TRANSLITERATION_HANDOFF.md](../SOURCE_TRANSLITERATION_HANDOFF.md).
+and completed verification records for later reuse. Relevant design contracts
+are indexed in
+[architecture documents](../../architecture/README.md); read only the selected
+source pair's contract.
 
 ## Current consumed collection conversion checkpoint: 2026-10-07
 
