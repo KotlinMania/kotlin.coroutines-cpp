@@ -1,10 +1,49 @@
 # Compiler resume-address source repair — 2026-10-07
 
 
+## Indirect source jumps and statement metadata continuation
+
+The continuation after 8e57823f carries the existing declaration-bound target
+and lexical lifetime operations through computed source jumps and attributed
+statements. Kotlin provenance is LivenessAnalysis.kt:123-136,248-265,
+CoroutinesLivenessAnalysis.kt:64-106 and NativeSuspendFunctionLowering.kt:119-170.
+GNU computed jumps and Clang statement attributes are explicit C++ adaptations.
+
+NativeSuspendLowering.cpp:1373 records actual AddrLabelExpr declarations during
+the evaluated lexical walk. emit_indirect_goto at :1493 evaluates the target
+once into existing retained storage and finishes its full-expression temporaries
+before target cleanup. Deterministically ordered comparisons use only labels
+whose addresses occur in the source; the selected path runs emit_goto's scope
+and catch cleanup. Other addresses retain the original computed-goto undefined
+behavior. GNU label-address syntax is emitted only for an authored indirect jump;
+coroutine resume addresses still come from the mandatory LLVM pass.
+SuspendFunctionAnalyzer.cpp:527-537 tracks those same address-taken declarations
+for indirect successor liveness rather than unioning unrelated labels.
+
+emit_statement at NativeSuspendLowering.cpp:1631 lowers attribute wrappers.
+Branch/fallthrough hints and loop pragmas precede their actual control operation,
+including after a loop's initializer. Resolved loop-hint values use Clang's actual
+integer constant in concrete helper contexts. Ordinary attributed expressions
+keep their native source/full-expression form. Common statement call policies
+(noinline, always_inline, nomerge) surround the full lowered operation; this also
+applies them to generated storage calls, a deliberate C++ adaptation recorded
+in NOTE(port). TailSuspendCallsCollector.cpp:27-30 preserves tail state through
+attribute wrappers. Other native attribute contracts, including musttail when a
+frame is required, are not translated by this checkpoint and produce an explicit
+lowering diagnostic rather than silently losing the attribute.
+
+The liveness provenance ranges were corrected against the pinned Kotlin source.
+No compilation, runtime check or deep scan was run. Call-policy isolation from
+generated helper calls, remaining attribute contracts, shared default-expression
+identity, optimized spilling and prior aggregate/local integration gaps remain
+unfinished. Both complete MLX execution paths remain unproven. Existing CMake
+registration consumes these edited sources; no target or runtime dependency was
+added.
+
 ## Declaration-bound source jumps and retained scope cleanup
 
 The continuation after efde2c6c extends the translated target bookkeeping in
-LivenessAnalysis.kt:141-159,263-277 and lexical visibility walk in
+LivenessAnalysis.kt:123-136,248-265 and lexical visibility walk in
 CoroutinesLivenessAnalysis.kt:64-106. C++ labels are an explicit Clang adaptation;
 they do not introduce another coroutine frame or resume dispatch representation.
 
@@ -51,7 +90,7 @@ discarded constexpr arms do not participate. Lambda capture initializers and
 selected default expressions execute in their enclosing call context.
 
 SuspendFunctionAnalyzer.cpp:342 translates the connected LivenessAnalysisVisitor
-from compiler/ir/backend.common/.../optimizations/LivenessAnalysis.kt:47-277.
+from compiler/ir/backend.common/.../optimizations/LivenessAnalysis.kt:44-267.
 Reverse child propagation, variable reads/declarations/assignments, function
 returns, conditional branches, throws, catch-live propagation, loop fixed points,
 and break/continue targets now replace the prior block GEN/KILL approximation.

@@ -6,7 +6,21 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current jump continuation:** The liveness visitor now saturates actual Clang
+**Current metadata/jump continuation:** Indirect source jumps now evaluate their
+address once, select only source address-taken labels and execute the existing
+label-specific object/catch cleanup. The liveness visitor uses the same addressed
+label set. Attributed control statements now carry branch/fallthrough/loop hints
+onto their lowered operations; ordinary attributed calls retain their source form,
+and common call policies surround the complete lowered operation. Generated
+storage calls inherit that policy region, an explicit NOTE(port) deviation.
+Tail collection preserves state through attribute wrappers. Other attribute
+contracts, call-policy isolation, default-expression identity, optimized spilling
+and earlier aggregate/local integration remain unfinished. Read the new first
+section of RESUME_ADDRESS_SOURCE_REPAIR.md. No compilation, runtime check or deep
+scan was run; source translation continues before acceptance work.
+
+
+**Source checkpoint 8e57823f:** The liveness visitor now saturates actual Clang
 label targets and propagates direct/indirect jump successors. NativeSuspendLowering
 records each label's lexical declarations and catch handlers before emission;
 direct goto releases objects absent from that target and preserves active
@@ -18,7 +32,7 @@ and deep scans remain deferred; this is source progress, not acceptance evidence
 
 
 
-**Current source direction:** Compilation, runtime checks and deep scans are
+**Source checkpoint efde2c6c:** Compilation, runtime checks and deep scans are
 now deferred at the user's direction until the connected translation is ready.
 SuspendFunctionAnalyzer.cpp:284 replaces CFG suspension discovery with the
 Native evaluated-call walk. Its private LivenessAnalysisVisitor at :342 ports

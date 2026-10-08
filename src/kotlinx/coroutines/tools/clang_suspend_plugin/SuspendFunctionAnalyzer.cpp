@@ -1,4 +1,4 @@
-// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:24-277
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:24-267
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:31-44
 #include "SuspendFunctionAnalyzer.hpp"
 #include <algorithm>
@@ -335,7 +335,7 @@ void SuspendFunctionAnalyzer::find_suspend_points() {
 namespace {
 using LiveVariables = std::set<const VarDecl*>;
 
-// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:47-277
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:44-267
 // NOTE(port): Clang node dispatch adapts Kotlin's IR visitor. Concrete declaration
 // identities replace variable bit indices; C++ parameters are also tracked because
 // their source bodies have not yet been rewritten to argument-field reads.
@@ -343,7 +343,7 @@ class LivenessAnalysisVisitor {
 public:
     explicit LivenessAnalysisVisitor(const ASTContext& context) : context_(context) {}
 
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:58-64,263-277
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:54-59,248-265
     std::map<const Stmt*, LiveVariables> run(const Stmt* body) {
         // NOTE(port): Kotlin returnable-block and loop symbols have structured
         // targets. C++ labels can form cycles outside loops; saturate their
@@ -357,7 +357,7 @@ public:
     }
 
 private:
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:86-98
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:79-89
     void save(const Stmt* element, const LiveVariables& data) {
         if (!SuspendFunctionAnalyzer::is_suspend_call(element)) return;
         auto& live = filtered_element_ends_[element];
@@ -367,7 +367,7 @@ private:
         // so Kotlin's suspensionPointIdParameters cannot enter this set.
     }
 
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:104-113
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:95-102
     LiveVariables visit_element(const Stmt* element, LiveVariables data) {
         std::vector<const Stmt*> children;
         for (const auto* child : element->children()) if (child) children.push_back(child);
@@ -376,13 +376,15 @@ private:
         return data;
     }
 
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:115-139
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:109-121
     LiveVariables visit_variable(const VarDecl* variable, LiveVariables data) {
+        // NOTE(port): Clang owns diagnostics for uninitialized C++ reads;
+        // liveness does not introduce another runtime initialization check.
         data.erase(variable);
         return accept(variable->getInit(), std::move(data));
     }
 
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:169-183
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:154-165
     LiveVariables visit_when(const Stmt* condition, const Stmt* selected,
                              const Stmt* otherwise, const LiveVariables& data) {
         auto live = accept(otherwise, data);
@@ -391,7 +393,7 @@ private:
         return accept(condition, std::move(live));
     }
 
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:189-215
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:177-192
     LiveVariables visit_try(const CXXTryStmt* region, const LiveVariables& data) {
         LiveVariables current_catches;
         for (unsigned index = 0; index < region->getNumHandlers(); ++index) {
@@ -410,7 +412,7 @@ private:
         return current_catches;
     }
 
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:225-277
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:222-265
     // NOTE(port): For/range-for increments execute before the next condition;
     // continue targets that increment, while break targets the loop's end.
     LiveVariables handle_loop(const Stmt* condition,
@@ -446,7 +448,7 @@ private:
         return condition_start(std::move(body_start));
     }
 
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:169-183,225-230
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:154-165,202-204
     // NOTE(port): C++ switch permits fallthrough. Traverse the body backwards
     // and union each label's incoming values at its dispatch instead of treating
     // every labelled result as an independent Kotlin when branch.
@@ -467,7 +469,7 @@ private:
         return accept(branch->getInit(), std::move(live));
     }
 
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:104-277
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:104-265
     LiveVariables accept(const Stmt* element, LiveVariables data) {
         if (!element || SuspendFunctionAnalyzer::is_unevaluated_expression(element)) return data;
         save(element, data);
@@ -511,7 +513,7 @@ private:
             return accept(omitted->getExpr(), std::move(data));
         if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(element))
             return accept(initialized->getExpr(), std::move(data));
-        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:141-159,263-277
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:123-136,248-265
         // NOTE(port): Retain Clang's declaration-bound jump targets. Values on
         // the unreachable lexical suffix do not flow through an unconditional jump.
         if (const auto* jump = dyn_cast<GotoStmt>(element)) return label_starts_[jump->getLabel()];
@@ -521,10 +523,16 @@ private:
             target.insert(before.begin(), before.end());
             return before;
         }
+        if (const auto* address = dyn_cast<AddrLabelExpr>(element)) {
+            addressed_labels_.insert(address->getLabel());
+            return data;
+        }
         if (const auto* jump = dyn_cast<IndirectGotoStmt>(element)) {
             LiveVariables targets;
-            for (const auto& target : label_starts_)
-                targets.insert(target.second.begin(), target.second.end());
+            for (const auto* label : addressed_labels_) {
+                const auto& live = label_starts_[label];
+                targets.insert(live.begin(), live.end());
+            }
             return accept(jump->getTarget(), std::move(targets));
         }
         if (const auto* returned = dyn_cast<ReturnStmt>(element))
@@ -589,6 +597,7 @@ private:
     const ASTContext& context_;
     std::map<const Stmt*, LiveVariables> filtered_element_ends_;
     std::map<const LabelDecl*, LiveVariables> label_starts_;
+    std::set<const LabelDecl*> addressed_labels_;
     std::vector<LiveVariables> break_targets_;
     std::vector<LiveVariables> continue_targets_;
     std::vector<LiveVariables> switch_entries_;

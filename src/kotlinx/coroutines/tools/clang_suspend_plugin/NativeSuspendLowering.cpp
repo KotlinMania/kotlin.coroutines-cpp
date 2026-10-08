@@ -1368,7 +1368,11 @@ private:
     // identities. A label records only objects declared before its target;
     // a backwards jump must destroy later objects before constructing them again.
     LabelScope collect_label_scopes(const Stmt* statement, LabelScope scope) {
-        if (!statement) return scope;
+        if (!statement || SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return scope;
+        if (const auto* address = dyn_cast<AddrLabelExpr>(statement)) {
+            addressed_labels_.insert(address->getLabel());
+            return scope;
+        }
         if (const auto* declaration = dyn_cast<DeclStmt>(statement)) {
             for (const auto* child : declaration->decls()) {
                 if (const auto* variable = dyn_cast<VarDecl>(child)) {
@@ -1458,13 +1462,13 @@ private:
         return scope;
     }
 
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:141-159
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:123-136
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:64-106
     // NOTE(port): Kotlin structured targets do not have native C++ destructors.
     // Retain declarations active at the actual target; destroy exited objects
     // in reverse construction order, including lifetime-extended referents.
-    void emit_goto(const GotoStmt* statement) {
-        auto target = label_scopes_.find(statement->getLabel());
+    void emit_goto(const LabelDecl* label, const std::string& attributes = {}) {
+        auto target = label_scopes_.find(label);
         if (target == label_scopes_.end()) throw std::runtime_error("goto has no lowered source label");
         for (auto scope = scopes_.rbegin(); scope != scopes_.rend(); ++scope) {
             bool handler = false;
@@ -1478,7 +1482,33 @@ private:
             }
             if (handler) emit_context_transition();
         }
-        body_ << "goto " << statement->getLabel()->getNameAsString() << ";\n";
+        body_ << attributes << "goto " << label->getNameAsString() << ";\n";
+    }
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:123-136,248-265
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:64-106
+    // NOTE(port): GNU source jumps carry an actual Clang label address. Evaluate
+    // it once, then execute the addressed label's native lifetime cleanup. These
+    // addresses are authored source operations, not coroutine resume markers.
+    void emit_indirect_goto(const IndirectGotoStmt* statement, const std::string& attributes) {
+        llvm::SaveAndRestore<bool> expression_scope(full_expression_, true);
+        size_t first_comma = comma_temporaries_.size();
+        auto target = new_slot(statement->getTarget()->getType());
+        construct(target, emit_expression(statement->getTarget()));
+        clear_comma_temporaries(first_comma);
+        std::vector<const LabelDecl*> labels(addressed_labels_.begin(), addressed_labels_.end());
+        std::sort(labels.begin(), labels.end(), [](const auto* left, const auto* right) {
+            return left->getNameAsString() < right->getNameAsString();
+        });
+        for (const auto* label : labels) {
+            body_ << "if (" << target.access << " == &&" << label->getNameAsString() << ") {\n"
+                  << target.name << ".reset();\n";
+            emit_goto(label, attributes);
+            body_ << "}\n";
+        }
+        // NOTE(port): Jumping to an address other than a label of the current
+        // function is undefined in the original C++ computed-goto operation.
+        body_ << "__builtin_unreachable();\n";
     }
 
     // NOTE(port): Restore C++ handler context between nested scope exits.
@@ -1519,11 +1549,11 @@ private:
     }
     // NOTE(port): Leave native C++ catches before executing retained handlers.
     // An exception_ptr owns reference-caught exceptions across suspension.
-    void emit_try(const CXXTryStmt* statement) {
+    void emit_try(const CXXTryStmt* statement, const std::string& attributes = {}) {
         unsigned id = exception_region_++;
         std::string done = "_kxs_try_done_" + std::to_string(id);
         size_t first_protected = slots_.size();
-        body_ << "try ";
+        body_ << attributes << "try ";
         emit_statement(statement->getTryBlock());
         size_t protected_end = slots_.size();
         struct Handler { const CXXCatchStmt* source; std::string label; Slot exception; Slot variable; Slot context; Slot source_value; };
@@ -1595,21 +1625,74 @@ private:
         body_ << done << ":;\n";
     }
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt:119-170,197-335
-    void emit_statement(const Stmt* statement) {
+    // NOTE(port): Clang statement attributes have no Kotlin IR counterpart.
+    // Preserve control hints on the actual lowered control statement, after
+    // its initialization and before its branches, rather than on a spill store.
+    void emit_statement(const Stmt* statement, const std::string& attributes = {}) {
         if (!statement) return;
-        if (const auto* compound = dyn_cast<CompoundStmt>(statement)) {
-            body_ << "{\n";
+        if (const auto* attributed = dyn_cast<AttributedStmt>(statement)) {
+            const auto* child = attributed->getSubStmt();
+            if (isa<Expr>(child) && !has_suspend_calls(child)) {
+                // NOTE(port): An ordinary attributed expression keeps its
+                // original call policies and native full-expression boundary.
+                body_ << attributes << rewrite(statement) << ";\n";
+                return;
+            }
+            std::string prefix = attributes;
+            std::string call_attributes;
+            for (const auto* attribute : attributed->getAttrs()) {
+                const bool call_policy = isa<NoInlineAttr, AlwaysInlineAttr, NoMergeAttr>(attribute);
+                if (!call_policy && !isa<LikelyAttr, UnlikelyAttr, FallThroughAttr, LoopHintAttr>(attribute)) {
+                    const auto* name = attribute->getSpelling();
+                    throw std::runtime_error(std::string("statement attribute requires its native contract during lowering: ") +
+                                             (name ? name : "implicit attribute"));
+                }
+                std::string spelling;
+                llvm::raw_string_ostream output(spelling);
+                attribute->printPretty(output, policy_);
+                if (const auto* hint = dyn_cast<LoopHintAttr>(attribute); hint && hint->getValue()) {
+                    // NOTE(port): A concrete instantiation has no template
+                    // parameter name in its helper context. Print the actual
+                    // constant selected by Clang, preserving the pragma's form.
+                    Expr::EvalResult evaluated;
+                    if (hint->getValue()->EvaluateAsInt(evaluated, context_) && evaluated.Val.isInt()) {
+                        std::string value;
+                        llvm::raw_string_ostream value_output(value);
+                        hint->getValue()->printPretty(value_output, nullptr, policy_);
+                        auto position = spelling.rfind(value);
+                        if (position == std::string::npos)
+                            throw std::runtime_error("cannot retain resolved loop-hint argument spelling");
+                        llvm::SmallString<32> digits;
+                        evaluated.Val.getInt().toString(digits, 10);
+                        spelling.replace(position, value.size(), digits.str().str());
+                    }
+                }
+                if (call_policy) call_attributes += spelling + " ";
+                else prefix += spelling + " ";
+            }
+            // NOTE(port): Statement call policies cover the complete lowered
+            // operation, including its generated storage calls. A transparent
+            // block keeps sliced source calls inside the original policy region.
+            if (!call_attributes.empty()) body_ << call_attributes << "{\n";
+            emit_statement(child, prefix);
+            if (!call_attributes.empty()) body_ << "}\n";
+        } else if (const auto* compound = dyn_cast<CompoundStmt>(statement)) {
+            body_ << attributes << "{\n";
             scopes_.emplace_back();
             for (const Stmt* child : compound->body()) emit_statement(child);
             clear_scope(scopes_.size() - 1);
             scopes_.pop_back();
             body_ << "}\n";
         } else if (const auto* label = dyn_cast<LabelStmt>(statement)) {
-            body_ << label->getDecl()->getNameAsString() << ":;\n";
+            body_ << attributes << label->getDecl()->getNameAsString() << ":;\n";
             emit_statement(label->getSubStmt());
-        } else if (const auto* jump = dyn_cast<GotoStmt>(statement)) emit_goto(jump);
-        else if (const auto* protected_region = dyn_cast<CXXTryStmt>(statement)) emit_try(protected_region);
-        else if (const auto* declaration = dyn_cast<DeclStmt>(statement)) emit_declaration(declaration);
+        } else if (const auto* jump = dyn_cast<GotoStmt>(statement)) emit_goto(jump->getLabel(), attributes);
+        else if (const auto* jump = dyn_cast<IndirectGotoStmt>(statement)) emit_indirect_goto(jump, attributes);
+        else if (const auto* protected_region = dyn_cast<CXXTryStmt>(statement)) emit_try(protected_region, attributes);
+        else if (const auto* declaration = dyn_cast<DeclStmt>(statement)) {
+            body_ << attributes;
+            emit_declaration(declaration);
+        }
         else if (const auto* returned = dyn_cast<ReturnStmt>(statement)) {
             llvm::SaveAndRestore<bool> expression_scope(full_expression_, true);
             size_t first_comma = comma_temporaries_.size();
@@ -1619,9 +1702,9 @@ private:
                 construct(outcome, value.empty() ? "nullptr" : value);
                 clear_comma_temporaries(first_comma);
                 clear_scope(0);
-                body_ << "{ void* outcome = " << outcome.access << "; clear_locals(); return outcome; }\n";
+                body_ << attributes << "{ void* outcome = " << outcome.access << "; clear_locals(); return outcome; }\n";
             } else {
-                body_ << "{ void* outcome = " << (value.empty() ? "nullptr" : value) << ";\n";
+                body_ << attributes << "{ void* outcome = " << (value.empty() ? "nullptr" : value) << ";\n";
                 clear_comma_temporaries(first_comma);
                 body_ << "clear_locals(); return outcome; }\n";
             }
@@ -1636,10 +1719,10 @@ private:
                 // the statement's ordinary construction and cleanup scope.
                 auto selected = branch->getNondiscardedCase(context_);
                 if (!selected) throw std::runtime_error("constexpr branch requires resolved template instantiation");
-                emit_statement(*selected);
+                emit_statement(*selected, attributes);
             } else {
                 auto condition = emit_condition(branch->getCond());
-                body_ << "if (" << condition << ") {\n";
+                body_ << attributes << "if (" << condition << ") {\n";
                 emit_statement(branch->getThen());
                 body_ << "}\n";
                 if (branch->getElse()) {
@@ -1660,7 +1743,7 @@ private:
             emit_declaration(loop->getEndStmt(), true);
             std::string next = "_kxs_next_" + std::to_string(loop_++);
             loops_.push_back({next, scopes_.size()});
-            body_ << "while (" << generated_expression(loop->getCond()) << ") {\n";
+            body_ << attributes << "while (" << generated_expression(loop->getCond()) << ") {\n";
             scopes_.emplace_back();
             emit_declaration(loop->getLoopVarStmt(), true);
             emit_statement(loop->getBody());
@@ -1678,7 +1761,7 @@ private:
             emit_statement(loop->getInit());
             std::string next = "_kxs_next_" + std::to_string(loop_++);
             loops_.push_back({next, scopes_.size(), true, true});
-            body_ << "while (true) {\n";
+            body_ << attributes << "while (true) {\n";
             scopes_.emplace_back();
             emit_statement(loop->getConditionVariableDeclStmt());
             if (loop->getCond()) {
@@ -1704,7 +1787,7 @@ private:
             body_ << "}\n";
         } else if (const auto* loop = dyn_cast<WhileStmt>(statement)) {
             loops_.push_back({"", scopes_.size()});
-            body_ << "while (true) {\n";
+            body_ << attributes << "while (true) {\n";
             scopes_.emplace_back();
             emit_statement(loop->getConditionVariableDeclStmt());
             auto condition = emit_condition(loop->getCond());
@@ -1719,7 +1802,7 @@ private:
         } else if (const auto* loop = dyn_cast<DoStmt>(statement)) {
             std::string next = "_kxs_next_" + std::to_string(loop_++);
             loops_.push_back({next, scopes_.size()});
-            body_ << "while (true) {\n";
+            body_ << attributes << "while (true) {\n";
             emit_statement(loop->getBody());
             if (loops_.back().continued) body_ << next << ":;\n";
             auto condition = emit_condition(loop->getCond());
@@ -1732,25 +1815,25 @@ private:
             emit_statement(branch->getConditionVariableDeclStmt());
             auto condition = emit_condition(branch->getCond(), false);
             loops_.push_back({"", scopes_.size(), false});
-            body_ << "switch (" << condition << ")\n";
+            body_ << attributes << "switch (" << condition << ")\n";
             emit_statement(branch->getBody());
             loops_.pop_back();
             clear_scope(scopes_.size() - 1);
             scopes_.pop_back();
             body_ << "}\n";
         } else if (const auto* branch = dyn_cast<CaseStmt>(statement)) {
-            body_ << "case " << rewrite(branch->getLHS());
+            body_ << attributes << "case " << rewrite(branch->getLHS());
             if (branch->getRHS()) body_ << " ... " << rewrite(branch->getRHS());
             body_ << ":;\n";
             emit_statement(branch->getSubStmt());
         } else if (const auto* branch = dyn_cast<DefaultStmt>(statement)) {
-            body_ << "default:;\n";
+            body_ << attributes << "default:;\n";
             emit_statement(branch->getSubStmt());
         } else if (isa<BreakStmt>(statement)) {
             if (loops_.empty()) throw std::runtime_error("break has no lowered loop or switch");
             clear_scope(loops_.back().scope);
             if (exception_region_) emit_context_transition();
-            body_ << "break;\n";
+            body_ << attributes << "break;\n";
         } else if (isa<ContinueStmt>(statement)) {
             auto loop = std::find_if(loops_.rbegin(), loops_.rend(),
                                      [](const Loop& target) { return target.iteration; });
@@ -1758,17 +1841,17 @@ private:
             loop->continued = true;
             clear_scope(loop->scope + (loop->retain_condition ? 1 : 0));
             if (exception_region_) emit_context_transition();
-            if (loop->next.empty()) body_ << "continue;\n";
-            else body_ << "goto " << loop->next << ";\n";
+            if (loop->next.empty()) body_ << attributes << "continue;\n";
+            else body_ << attributes << "goto " << loop->next << ";\n";
         } else if (const auto* expression = dyn_cast<Expr>(statement)) {
             llvm::SaveAndRestore<bool> expression_scope(full_expression_, true);
             size_t first_comma = comma_temporaries_.size();
             auto value = emit_expression(expression);
-            body_ << "static_cast<void>(" << value << ");\n";
+            body_ << attributes << "static_cast<void>(" << value << ");\n";
             clear_comma_temporaries(first_comma);
         }
-        else if (isa<NullStmt>(statement)) body_ << ";\n";
-        else if (!has_suspend_calls(statement)) body_ << rewrite(statement) << "\n";
+        else if (isa<NullStmt>(statement)) body_ << attributes << ";\n";
+        else if (!has_suspend_calls(statement)) body_ << attributes << rewrite(statement) << "\n";
         else throw std::runtime_error(std::string("missing suspend lowering for ") + statement->getStmtClassName());
     }
     ASTContext& context_;
@@ -1780,6 +1863,7 @@ private:
     SourceManager& manager_;
     std::map<const ValueDecl*, Slot> variables_;
     std::map<const LabelDecl*, LabelScope> label_scopes_;
+    std::set<const LabelDecl*> addressed_labels_;
     std::map<std::string, const VarDecl*> slot_variables_;
     std::map<std::string, const CXXCatchStmt*> slot_handlers_;
     std::map<const TypedefNameDecl*, std::string> local_aliases_;
