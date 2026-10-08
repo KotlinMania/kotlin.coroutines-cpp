@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 817/2918 matched (target 3032) | 28.0% |
+| Function parity | 818/2918 matched (target 3032) | 28.0% |
 | Class/type parity | 358/560 matched (target 520) | 63.9% |
-| Combined symbol parity | 1175/3478 matched (target 3552) | 33.8% |
+| Combined symbol parity | 1176/3478 matched (target 3552) | 33.8% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -178,26 +178,26 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 134 | `intrinsics.Undispatched` | `intrinsics.Undispatched` | 0.02 | 1/6 matched (target 1) | `ScopeCoroutine<T>::startUndispatchedOrReturn`, `ScopeCoroutine<T>::startUndispatchedOrReturnIgnoreTimeout`, `ScopeCoroutine<T>::startUndspatched`, `ScopeCoroutine<*>::notOwnTimeout`, `ScopeCoroutine<*>::dispatchExceptionAndMakeCompleting` | 0/0 matched | _none_ | - | 5 | 50609.8 |
 | 135 | `internal.Combine` | `internal.Combine` | 0.02 | 2/2 matched (target 48) | _none_ | 1/1 matched (target 12) | _none_ | - | 0 | 1000309.8 |
 | 136 | `internal.SystemProps.common` | `internal.SystemProps.common` | 0.02 | 1/4 matched (target 5) | `systemProp`, `systemProp`, `systemProp` | 0/0 matched | _none_ | - | 3 | 30409.8 |
-| 137 | `selects.OnTimeout` | `selects.OnTimeout` | 0.02 | 2/3 matched (target 8) | `OnTimeout::register` | 1/1 matched | _none_ | - | 1 | 10409.8 |
-| 138 | `terminal.Count` | `flow.Count` | 0.03 | 2/2 matched (target 26) | _none_ | 0/0 matched (target 2) | _none_ | - | 0 | 209.7 |
-| 139 | `operators.Distinct` | `flow.Distinct` | 0.03 | 3/5 matched (target 12) | `Flow<T>::distinctUntilChangedBy`, `DistinctFlowImpl::collect` | 1/1 matched (target 5) | _none_ | - | 2 | 20609.7 |
-| 140 | `terminal.Reduce` | `flow.Reduce` | 0.03 | 10/10 matched (target 64) | _none_ | 0/0 matched (target 6) | _none_ | - | 0 | 1009.7 |
-| 141 | `channels.Channels` | `channels.Channels` | 0.03 | 1/2 matched (target 1) | `SendChannel<E>::sendBlocking` | 0/0 matched | _none_ | - | 1 | 10209.7 |
-| 142 | `channels.Channels.common` | `channels.Channels.common` | 0.04 | 4/6 matched (target 21) | `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull` | 0/0 matched (target 3) | _none_ | - | 2 | 20609.6 |
-| 143 | `operators.Limit` | `flow.Limit` | 0.04 | 7/8 matched (target 44) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | - | 1 | 10809.6 |
-| 144 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.6 |
-| 145 | `flow.Builders` | `flow.FlowBuilders` | 0.05 | 11/23 matched (target 42) | `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::create`, `ChannelFlowBuilder::collectTo`, `ChannelFlowBuilder::toString`, `CallbackFlowBuilder::collectTo`, `CallbackFlowBuilder::create` | 4/4 matched (target 8) | _none_ | - | 12 | 122709.5 |
-| 146 | `common.TestDispatcher` | `test.TestDispatcher` | 0.05 | 2/6 matched (target 8) | `TestDispatcher::processEvent`, `TestDispatcher::timeoutMessage`, `CancellableContinuationRunnable::run`, `cancellableRunnableIsCancelled` | 1/2 matched | `CancellableContinuationRunnable` | - | 5 | 50809.5 |
-| 147 | `operators.Errors` | `flow.Errors` | 0.05 | 3/6 matched (target 13) | `Flow<T>::catchImpl`, `Throwable::isCancellationCause`, `Throwable::isSameExceptionAs` | 0/0 matched (target 1) | _none_ | - | 3 | 30609.5 |
-| 148 | `test.CancellableResumeTest` | `tests.CancellableResumeTest` | 0.06 | 0/11 matched (target 1) | `CancellableResumeTest::testResumeImmediateNormally`, `CancellableResumeTest::testResumeImmediateAfterCancel`, `CancellableResumeTest::testResumeImmediateAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancel`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancelWithHandlerFailure`, `CancellableResumeTest::testResumeLaterNormally`, `CancellableResumeTest::testResumeLaterAfterCancel`, `CancellableResumeTest::testResumeLaterAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeCancelWhileDispatched`, `CancellableResumeTest::testResumeCancelWhileDispatchedWithHandlerFailure`, `CancellableResumeTest::testResumeUnconfined` | 1/1 matched | _none_ | 0/11 | 11 | 111209.4 |
-| 149 | `operators.Emitters` | `flow.Emitters` | 0.06 | 6/8 matched (target 16) | `Flow<T>::unsafeTransform`, `FlowCollector<T>::invokeSafely` | 1/1 matched (target 2) | _none_ | - | 2 | 20909.4 |
-| 150 | `operators.Context` | `flow.Context` | 0.06 | 5/7 matched | `Flow<T>::buffer`, `checkFlowContext` | 1/2 matched (target 1) | `CancellableFlow` | - | 3 | 30909.4 |
-| 151 | `flow.NamedDispatchers` | `testing.NamedDispatchers` | 0.07 | 5/9 matched (target 15) | `NamedDispatchers::invoke`, `NamedDispatchers::named`, `NamedDispatchers::dispatch`, `ArrayStack::ensureCapacity` | 2/2 matched (target 3) | _none_ | - | 4 | 41109.3 |
-| 152 | `internal.AbstractSharedFlow` | `internal.AbstractSharedFlow` | 0.07 | 1/4 matched (target 6) | `AbstractSharedFlow::allocateSlot`, `AbstractSharedFlow::freeSlot`, `SubscriptionCountStateFlow::increment` | 3/3 matched (target 4) | _none_ | - | 3 | 30709.3 |
-| 153 | `internal.MainDispatcherFactory` | `internal.MainDispatcherFactory` | 0.07 | 1/1 matched | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 209.3 |
-| 154 | `common.CompletionState` | `coroutines.CompletionState` | 0.07 | 3/6 matched (target 3) | `CompletedExceptionally::makeHandled`, `CompletedExceptionally::toString`, `CancelledContinuation::makeResumed` | 0/2 matched (target 0) | `CompletedExceptionally`, `CancelledContinuation` | - | 5 | 50809.3 |
-| 155 | `kotlinx-coroutines-core.nativeDarwin.test.Launcher` | `test.Launcher` | 0.07 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.3 |
-| 156 | `operators.Transform` | `flow.Transform` | 0.07 | 12/13 matched (target 100) | `Flow<*>::filterIsInstance` | 0/0 matched (target 13) | _none_ | - | 1 | 11309.3 |
+| 137 | `terminal.Count` | `flow.Count` | 0.03 | 2/2 matched (target 26) | _none_ | 0/0 matched (target 2) | _none_ | - | 0 | 209.7 |
+| 138 | `operators.Distinct` | `flow.Distinct` | 0.03 | 3/5 matched (target 12) | `Flow<T>::distinctUntilChangedBy`, `DistinctFlowImpl::collect` | 1/1 matched (target 5) | _none_ | - | 2 | 20609.7 |
+| 139 | `terminal.Reduce` | `flow.Reduce` | 0.03 | 10/10 matched (target 64) | _none_ | 0/0 matched (target 6) | _none_ | - | 0 | 1009.7 |
+| 140 | `channels.Channels` | `channels.Channels` | 0.03 | 1/2 matched (target 1) | `SendChannel<E>::sendBlocking` | 0/0 matched | _none_ | - | 1 | 10209.7 |
+| 141 | `channels.Channels.common` | `channels.Channels.common` | 0.04 | 4/6 matched (target 21) | `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull` | 0/0 matched (target 3) | _none_ | - | 2 | 20609.6 |
+| 142 | `operators.Limit` | `flow.Limit` | 0.04 | 7/8 matched (target 44) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | - | 1 | 10809.6 |
+| 143 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.6 |
+| 144 | `flow.Builders` | `flow.FlowBuilders` | 0.05 | 11/23 matched (target 42) | `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::create`, `ChannelFlowBuilder::collectTo`, `ChannelFlowBuilder::toString`, `CallbackFlowBuilder::collectTo`, `CallbackFlowBuilder::create` | 4/4 matched (target 8) | _none_ | - | 12 | 122709.5 |
+| 145 | `common.TestDispatcher` | `test.TestDispatcher` | 0.05 | 2/6 matched (target 8) | `TestDispatcher::processEvent`, `TestDispatcher::timeoutMessage`, `CancellableContinuationRunnable::run`, `cancellableRunnableIsCancelled` | 1/2 matched | `CancellableContinuationRunnable` | - | 5 | 50809.5 |
+| 146 | `operators.Errors` | `flow.Errors` | 0.05 | 3/6 matched (target 13) | `Flow<T>::catchImpl`, `Throwable::isCancellationCause`, `Throwable::isSameExceptionAs` | 0/0 matched (target 1) | _none_ | - | 3 | 30609.5 |
+| 147 | `test.CancellableResumeTest` | `tests.CancellableResumeTest` | 0.06 | 0/11 matched (target 1) | `CancellableResumeTest::testResumeImmediateNormally`, `CancellableResumeTest::testResumeImmediateAfterCancel`, `CancellableResumeTest::testResumeImmediateAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancel`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancelWithHandlerFailure`, `CancellableResumeTest::testResumeLaterNormally`, `CancellableResumeTest::testResumeLaterAfterCancel`, `CancellableResumeTest::testResumeLaterAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeCancelWhileDispatched`, `CancellableResumeTest::testResumeCancelWhileDispatchedWithHandlerFailure`, `CancellableResumeTest::testResumeUnconfined` | 1/1 matched | _none_ | 0/11 | 11 | 111209.4 |
+| 148 | `operators.Emitters` | `flow.Emitters` | 0.06 | 6/8 matched (target 16) | `Flow<T>::unsafeTransform`, `FlowCollector<T>::invokeSafely` | 1/1 matched (target 2) | _none_ | - | 2 | 20909.4 |
+| 149 | `operators.Context` | `flow.Context` | 0.06 | 5/7 matched | `Flow<T>::buffer`, `checkFlowContext` | 1/2 matched (target 1) | `CancellableFlow` | - | 3 | 30909.4 |
+| 150 | `flow.NamedDispatchers` | `testing.NamedDispatchers` | 0.07 | 5/9 matched (target 15) | `NamedDispatchers::invoke`, `NamedDispatchers::named`, `NamedDispatchers::dispatch`, `ArrayStack::ensureCapacity` | 2/2 matched (target 3) | _none_ | - | 4 | 41109.3 |
+| 151 | `internal.AbstractSharedFlow` | `internal.AbstractSharedFlow` | 0.07 | 1/4 matched (target 6) | `AbstractSharedFlow::allocateSlot`, `AbstractSharedFlow::freeSlot`, `SubscriptionCountStateFlow::increment` | 3/3 matched (target 4) | _none_ | - | 3 | 30709.3 |
+| 152 | `internal.MainDispatcherFactory` | `internal.MainDispatcherFactory` | 0.07 | 1/1 matched | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 209.3 |
+| 153 | `common.CompletionState` | `coroutines.CompletionState` | 0.07 | 3/6 matched (target 3) | `CompletedExceptionally::makeHandled`, `CompletedExceptionally::toString`, `CancelledContinuation::makeResumed` | 0/2 matched (target 0) | `CompletedExceptionally`, `CancelledContinuation` | - | 5 | 50809.3 |
+| 154 | `kotlinx-coroutines-core.nativeDarwin.test.Launcher` | `test.Launcher` | 0.07 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.3 |
+| 155 | `operators.Transform` | `flow.Transform` | 0.07 | 12/13 matched (target 100) | `Flow<*>::filterIsInstance` | 0/0 matched (target 13) | _none_ | - | 1 | 11309.3 |
+| 156 | `selects.OnTimeout` | `selects.OnTimeout` | 0.07 | 3/3 matched (target 8) | _none_ | 1/1 matched | _none_ | - | 0 | 409.3 |
 | 157 | `operators.Zip` | `flow.Zip` | 0.08 | 13/18 matched (target 27) | `combineTransform`, `combineUnsafe`, `combineTransformUnsafe`, `nullArrayFactory`, `combineTransform` | 0/0 matched (target 1) | _none_ | - | 5 | 51809.2 |
 | 158 | `common.MainCoroutineDispatcher` | `coroutines.MainCoroutineDispatcher` | 0.08 | 3/3 matched | _none_ | 1/1 matched | _none_ | - | 0 | 409.2 |
 | 159 | `internal.NopCollector` | `internal.NopCollector` | 0.08 | 1/1 matched | _none_ | 1/1 matched | _none_ | - | 0 | 209.2 |
@@ -560,7 +560,6 @@ These files need significant work:
 - `intrinsics.Undispatched` -> `intrinsics.Undispatched` (0.02)
 - `internal.Combine` -> `internal.Combine` (0.02, 1 deps)
 - `internal.SystemProps.common` -> `internal.SystemProps.common` (0.02)
-- `selects.OnTimeout` -> `selects.OnTimeout` (0.02)
 - `terminal.Count` -> `flow.Count` (0.03)
 - `operators.Distinct` -> `flow.Distinct` (0.03)
 - `terminal.Reduce` -> `flow.Reduce` (0.03)
@@ -580,6 +579,7 @@ These files need significant work:
 - `common.CompletionState` -> `coroutines.CompletionState` (0.07)
 - `kotlinx-coroutines-core.nativeDarwin.test.Launcher` -> `test.Launcher` (0.07)
 - `operators.Transform` -> `flow.Transform` (0.07)
+- `selects.OnTimeout` -> `selects.OnTimeout` (0.07)
 - `operators.Zip` -> `flow.Zip` (0.08)
 - `common.MainCoroutineDispatcher` -> `coroutines.MainCoroutineDispatcher` (0.08)
 - `internal.NopCollector` -> `internal.NopCollector` (0.08)
@@ -687,9 +687,9 @@ present in the Rust source file.
 | `internal.Scopes` | `internal.ScopeCoroutine` | 1/2 | `ContextScope` |
 | `common.Builders.common` | `coroutines.Builders.common` | 1/6 | `UndispatchedCoroutine` |
 | `common.Exceptions.common` | `coroutines.Exceptions [ZERO]` | 1/4 | `CancellationException` |
-| `native.CloseableCoroutineDispatcher` | `native.CloseableCoroutineDispatcher` | 1/1 | `CloseableCoroutineDispatcher` |
-| `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1/1 | `LocalAtomicInt` |
 | `native.SchedulerTask` | `native.SchedulerTask` | 1/1 | `SchedulerTask` |
+| `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1/1 | `LocalAtomicInt` |
+| `native.CloseableCoroutineDispatcher` | `native.CloseableCoroutineDispatcher` | 1/1 | `CloseableCoroutineDispatcher` |
 
 ## High Priority Missing Files
 

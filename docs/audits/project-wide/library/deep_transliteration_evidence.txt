@@ -7355,9 +7355,9 @@ Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/co
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.648385
-function_name_parity: 0.666667
+function_name_parity: 1.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.015162
+documentation_correspondence: 0.007221
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -7379,19 +7379,20 @@ Diagnostic: 15: unsupported annotation
 Diagnostic: 16: unsupported function_declaration
 Diagnostic: 25: unsupported function_declaration
 Diagnostic: 34: unsupported class_declaration
-Function SelectBuilder<R>::onTimeout:16 -> kotlinx::coroutines::selects::on_timeout:92 | normalized logic: 0.000000
+Function SelectBuilder<R>::onTimeout:16 -> kotlinx::coroutines::selects::on_timeout:93 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:builder type:r type:selectbuilder node:66 identifier:std identifier:timemillis type:signed64 node:66 identifier:std type:function type:void operator:* node:66 type:continuation type:void operator:* operator:* identifier:block identifier:clause operator:= node:43 identifier:detail identifier:makeontimeoutclause identifier:timemillis identifier:registration operator:= node:43 identifier:clause identifier:getregfunc identifier:typedclause type:selectclause0impl node:43 identifier:clause identifier:getclauseobject node:45 identifier:registration operator:= node:43 identifier:move identifier:registration identifier:std node:66 identifier:object type:void node:66 identifier:select type:void node:66 identifier:param type:void node:43 identifier:object identifier:registration node:43 identifier:staticcast type:selectinstancebase operator:* node:43 identifier:staticcast type:r type:selectinstance operator:* identifier:param identifier:select node:43 identifier:builder identifier:invoke identifier:typedclause node:43 identifier:std identifier:move identifier:block
-Function SelectBuilder<R>::onTimeout:25 -> kotlinx::coroutines::selects::on_timeout:108 | normalized logic: 0.000000
+Function SelectBuilder<R>::onTimeout:25 -> kotlinx::coroutines::selects::on_timeout:109 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:builder type:r type:selectbuilder node:66 identifier:kotlin identifier:time identifier:timeout type:duration node:66 identifier:std type:function type:void operator:* node:66 type:continuation type:void operator:* operator:* identifier:block node:43 identifier:ontimeout type:r identifier:builder node:43 identifier:todelaymillis identifier:timeout node:43 identifier:std identifier:move identifier:block
-Missing source function: OnTimeout::register:44
+Function OnTimeout::register:44 -> kotlinx::coroutines::selects::OnTimeout::register_:29 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:select type:selectinstancebase node:66 type:void operator:* node:1 identifier:timemillis operator:<= literal:51:0 node:43 identifier:select identifier:selectinregistrationphase node:5 identifier:self operator:= node:43 identifier:sharedfromthis identifier:owner identifier:std type:sharedptr type:waiter node:1 identifier:waiter operator:= node:43 identifier:dynamiccast type:waiter operator:* operator:& identifier:select identifier:owner operator:= node:43 identifier:waiter identifier:sharedfromthiswaiter identifier:action operator:= node:43 identifier:sharedptr identifier:std type:runnable node:43 identifier:makerunnable node:45 identifier:select operator:= operator:& identifier:owner identifier:select identifier:self operator:= node:43 identifier:move identifier:owner identifier:std node:43 identifier:select identifier:tryselect node:43 identifier:get identifier:self identifier:context operator:= node:43 identifier:getcontext identifier:select identifier:handle operator:= node:43 node:43 identifier:getdelay operator:* identifier:action identifier:context identifier:invokeontimeout identifier:timemillis operator:* identifier:context node:43 identifier:select identifier:disposeoncompletion node:43 identifier:std identifier:move identifier:handle
 Extra target function: kotlinx::coroutines::selects::OnTimeout::OnTimeout:15
 Extra target function: kotlinx::coroutines::selects::OnTimeout::select_clause:18
-Extra target function: kotlinx::coroutines::selects::OnTimeout::register_clause:28
-Extra target function: kotlinx::coroutines::selects::detail::make_on_timeout_clause:54
-Extra target function: kotlinx::coroutines::selects::on_timeout:117
-Extra target function: SelectBuilder<R>::on_timeout:130
+Extra target function: kotlinx::coroutines::selects::detail::make_on_timeout_clause:55
+Extra target function: kotlinx::coroutines::selects::on_timeout:118
+Extra target function: SelectBuilder<R>::on_timeout:131
 === Emitted target buffer ===
 namespace kotlinx::coroutines::selects {
 

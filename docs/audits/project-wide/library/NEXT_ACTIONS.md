@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 817/2918 matched (target 3032) — 28.0%
+- **Function parity:** 818/2918 matched (target 3032) — 28.0%
 - **Class/type parity:** 358/560 matched (target 520) — 63.9%
-- **Combined symbol parity:** 1175/3478 matched (target 3552) — 33.8%
+- **Combined symbol parity:** 1176/3478 matched (target 3552) — 33.8%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -2478,7 +2478,19 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 1
 
-### 188. channels.ChannelCancelUndeliveredElementStressTest
+### 188. common.Exceptions.common
+
+- **Target:** `coroutines.Exceptions [ZERO]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 10410.0
+- **Functions:** 0/0 matched (target 7)
+- **Missing functions:** _none_
+- **Types:** 3/4 matched
+- **Missing types:** `CancellationException`
+- **Lint issues:** 3
+
+### 189. channels.ChannelCancelUndeliveredElementStressTest
 
 - **Target:** `channels.ChannelCancelUndeliveredElementStressTest [STUB]`
 - **Similarity:** 0.00
@@ -2492,31 +2504,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 20
 - **Lint issues:** 3
 
-### 189. common.Exceptions.common
-
-- **Target:** `coroutines.Exceptions [ZERO]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 10410.0
-- **Functions:** 0/0 matched (target 7)
-- **Missing functions:** _none_
-- **Types:** 3/4 matched
-- **Missing types:** `CancellationException`
-- **Lint issues:** 3
-
-### 190. selects.OnTimeout
-
-- **Target:** `selects.OnTimeout`
-- **Similarity:** 0.02
-- **Dependents:** 0
-- **Priority Score:** 10409.8
-- **Functions:** 2/3 matched (target 8)
-- **Missing functions:** `OnTimeout::register`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Lint issues:** 1
-
-### 191. flow.SafeFlowTest
+### 190. flow.SafeFlowTest
 
 - **Target:** `flow.SafeFlowTest`
 - **Similarity:** 0.28
@@ -2529,7 +2517,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/1 matched
 - **TODOs:** 8
 
-### 192. test.MainDispatcherTest
+### 191. test.MainDispatcherTest
 
 - **Target:** `test.MainDispatcherTest`
 - **Similarity:** 0.66
@@ -2540,7 +2528,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 193. channels.ConflatedBroadcastChannelNotifyStressTest
+### 192. channels.ConflatedBroadcastChannelNotifyStressTest
 
 - **Target:** `channels.ConflatedBroadcastChannelNotifyStressTest [STUB]`
 - **Similarity:** 0.00
@@ -2554,7 +2542,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 18
 - **Lint issues:** 1
 
-### 194. operators.FlatMapConcatTest
+### 193. operators.FlatMapConcatTest
 
 - **Target:** `operators.FlatMapConcatTest [STUB]`
 - **Similarity:** 0.00
@@ -2567,7 +2555,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/1 matched
 - **TODOs:** 6
 
-### 195. internal.InlineList
+### 194. internal.InlineList
 
 - **Target:** `internal.InlineList`
 - **Similarity:** 0.10
@@ -2579,7 +2567,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 3
 
-### 196. test.BuilderContractsTest
+### 195. test.BuilderContractsTest
 
 - **Target:** `tests.BuilderContractsTest`
 - **Similarity:** 0.61
@@ -2593,75 +2581,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 9
 - **Lint issues:** 2
 
-### 197. operators.TransformTest
-
-- **Target:** `operators.TransformTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 10210.0
-- **Functions:** 0/1 matched
-- **Missing functions:** `TransformTest::testDoubleEmit`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/1 matched
-- **TODOs:** 5
-
-### 198. channels.BroadcastChannelSubStressTest
-
-- **Target:** `channels.BroadcastChannelSubStressTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 10210.0
-- **Functions:** 0/1 matched
-- **Missing functions:** `BroadcastChannelSubStressTest::testStress`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/1 matched
-- **TODOs:** 17
-- **Lint issues:** 1
-
-### 199. flow.StateFlowCommonStressTest
-
-- **Target:** `flow.StateFlowCommonStressTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 10210.0
-- **Functions:** 0/1 matched
-- **Missing functions:** `StateFlowCommonStressTest::testSingleEmitterAndCollector`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/1 matched
-- **TODOs:** 14
-- **Lint issues:** 2
-
-### 200. operators.LintTest
-
-- **Target:** `operators.LintTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 10210.0
-- **Functions:** 0/1 matched
-- **Missing functions:** `LintTest::testSharedFlowToCollection`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/1 matched
-- **TODOs:** 5
-
-### 201. selects.SelectMutexStressTest
-
-- **Target:** `selects.SelectMutexStressTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 10210.0
-- **Functions:** 0/1 matched
-- **Missing functions:** `SelectMutexStressTest::testSelectCancelledResourceRelease`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/1 matched
-- **TODOs:** 12
-- **Lint issues:** 1
-
-### 202. operators.ConflateTest
+### 196. operators.ConflateTest
 
 - **Target:** `operators.ConflateTest [STUB]`
 - **Similarity:** 0.00
@@ -2675,7 +2595,75 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 7
 - **Lint issues:** 1
 
-### 203. channels.Channels
+### 197. selects.SelectMutexStressTest
+
+- **Target:** `selects.SelectMutexStressTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 10210.0
+- **Functions:** 0/1 matched
+- **Missing functions:** `SelectMutexStressTest::testSelectCancelledResourceRelease`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/1 matched
+- **TODOs:** 12
+- **Lint issues:** 1
+
+### 198. flow.StateFlowCommonStressTest
+
+- **Target:** `flow.StateFlowCommonStressTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 10210.0
+- **Functions:** 0/1 matched
+- **Missing functions:** `StateFlowCommonStressTest::testSingleEmitterAndCollector`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/1 matched
+- **TODOs:** 14
+- **Lint issues:** 2
+
+### 199. channels.BroadcastChannelSubStressTest
+
+- **Target:** `channels.BroadcastChannelSubStressTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 10210.0
+- **Functions:** 0/1 matched
+- **Missing functions:** `BroadcastChannelSubStressTest::testStress`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/1 matched
+- **TODOs:** 17
+- **Lint issues:** 1
+
+### 200. operators.TransformTest
+
+- **Target:** `operators.TransformTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 10210.0
+- **Functions:** 0/1 matched
+- **Missing functions:** `TransformTest::testDoubleEmit`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/1 matched
+- **TODOs:** 5
+
+### 201. operators.LintTest
+
+- **Target:** `operators.LintTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 10210.0
+- **Functions:** 0/1 matched
+- **Missing functions:** `LintTest::testSharedFlowToCollection`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/1 matched
+- **TODOs:** 5
+
+### 202. channels.Channels
 
 - **Target:** `channels.Channels`
 - **Similarity:** 0.03
@@ -2686,7 +2674,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 0/0 matched
 - **Missing types:** _none_
 
-### 204. test.MultithreadedDispatcherStressTest
+### 203. test.MultithreadedDispatcherStressTest
 
 - **Target:** `concurrent.MultithreadedDispatcherStressTest`
 - **Similarity:** 0.33
@@ -2700,7 +2688,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 9
 - **Lint issues:** 2
 
-### 205. test.AwaitCancellationTest
+### 204. test.AwaitCancellationTest
 
 - **Target:** `tests.AwaitCancellationTest`
 - **Similarity:** 0.53
@@ -2713,7 +2701,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/1 matched
 - **TODOs:** 7
 
-### 206. test.DelayExceptionTest
+### 205. test.DelayExceptionTest
 
 - **Target:** `test.DelayExceptionTest`
 - **Similarity:** 0.70
@@ -2725,7 +2713,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 0/1 matched
 
-### 207. native.Debug
+### 206. native.Debug
 
 - **Target:** `native.Debug`
 - **Similarity:** 0.00
@@ -2736,29 +2724,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 0/0 matched
 - **Missing types:** _none_
 
-### 208. native.CloseableCoroutineDispatcher
-
-- **Target:** `native.CloseableCoroutineDispatcher`
-- **Similarity:** 1.00
-- **Dependents:** 0
-- **Priority Score:** 10100.0
-- **Functions:** 0/0 matched
-- **Missing functions:** _none_
-- **Types:** 0/1 matched (target 0)
-- **Missing types:** `CloseableCoroutineDispatcher`
-
-### 209. internal.LocalAtomics.common
-
-- **Target:** `internal.LocalAtomics.common`
-- **Similarity:** 1.00
-- **Dependents:** 0
-- **Priority Score:** 10100.0
-- **Functions:** 0/0 matched
-- **Missing functions:** _none_
-- **Types:** 0/1 matched (target 0)
-- **Missing types:** `LocalAtomicInt`
-
-### 210. native.SchedulerTask
+### 207. native.SchedulerTask
 
 - **Target:** `native.SchedulerTask`
 - **Similarity:** 1.00
@@ -2769,7 +2735,29 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 0/1 matched (target 0)
 - **Missing types:** `SchedulerTask`
 
-### 211. internal.ThreadSafeHeap
+### 208. internal.LocalAtomics.common
+
+- **Target:** `internal.LocalAtomics.common`
+- **Similarity:** 1.00
+- **Dependents:** 0
+- **Priority Score:** 10100.0
+- **Functions:** 0/0 matched
+- **Missing functions:** _none_
+- **Types:** 0/1 matched (target 0)
+- **Missing types:** `LocalAtomicInt`
+
+### 209. native.CloseableCoroutineDispatcher
+
+- **Target:** `native.CloseableCoroutineDispatcher`
+- **Similarity:** 1.00
+- **Dependents:** 0
+- **Priority Score:** 10100.0
+- **Functions:** 0/0 matched
+- **Missing functions:** _none_
+- **Types:** 0/1 matched (target 0)
+- **Missing types:** `CloseableCoroutineDispatcher`
+
+### 210. internal.ThreadSafeHeap
 
 - **Target:** `internal.ThreadSafeHeap`
 - **Similarity:** 0.38
@@ -2781,7 +2769,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 2
 
-### 212. terminal.Reduce
+### 211. terminal.Reduce
 
 - **Target:** `flow.Reduce`
 - **Similarity:** 0.03
@@ -2793,7 +2781,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 9
 
-### 213. selects.SelectOld
+### 212. selects.SelectOld
 
 - **Target:** `selects.SelectOld`
 - **Similarity:** 0.22
@@ -2805,7 +2793,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 5
 
-### 214. common.AbstractCoroutine
+### 213. common.AbstractCoroutine
 
 - **Target:** `coroutines.AbstractCoroutine`
 - **Similarity:** 0.39
@@ -2817,7 +2805,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 4
 
-### 215. flow.VirtualTime
+### 214. flow.VirtualTime
 
 - **Target:** `flow.VirtualTime`
 - **Similarity:** 0.51
@@ -2830,7 +2818,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 10
 - **Lint issues:** 2
 
-### 216. terminal.Collect
+### 215. terminal.Collect
 
 - **Target:** `flow.Collect`
 - **Similarity:** 0.13
@@ -2842,7 +2830,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 3
 
-### 217. internal.OnDemandAllocatingPool
+### 216. internal.OnDemandAllocatingPool
 
 - **Target:** `internal.OnDemandAllocatingPool`
 - **Similarity:** 0.17
@@ -2854,7 +2842,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 1
 
-### 218. common.Delay
+### 217. common.Delay
 
 - **Target:** `coroutines.Delay`
 - **Similarity:** 0.28
@@ -2865,7 +2853,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 2/2 matched
 - **Missing types:** _none_
 
-### 219. channels.ConflatedBufferedChannel
+### 218. channels.ConflatedBufferedChannel
 
 - **Target:** `channels.ConflatedBufferedChannel`
 - **Similarity:** 0.40
@@ -2876,7 +2864,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 220. selects.SelectUnbiased
+### 219. selects.SelectUnbiased
 
 - **Target:** `selects.SelectUnbiased`
 - **Similarity:** 0.16
@@ -2887,7 +2875,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 
-### 221. common.Unconfined
+### 220. common.Unconfined
 
 - **Target:** `coroutines.Unconfined`
 - **Similarity:** 0.47
@@ -2899,7 +2887,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 7
 
-### 222. intrinsics.Cancellable
+### 221. intrinsics.Cancellable
 
 - **Target:** `intrinsics.Cancellable`
 - **Similarity:** 0.15
@@ -2909,6 +2897,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 0/0 matched
 - **Missing types:** _none_
+
+### 222. selects.OnTimeout
+
+- **Target:** `selects.OnTimeout`
+- **Similarity:** 0.07
+- **Dependents:** 0
+- **Priority Score:** 409.3
+- **Functions:** 3/3 matched (target 8)
+- **Missing functions:** _none_
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Lint issues:** 1
 
 ### 223. common.MainCoroutineDispatcher
 

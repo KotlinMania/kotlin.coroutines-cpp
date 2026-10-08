@@ -3327,12 +3327,11 @@ MISSING_SYMBOL function dispatchExceptionAndMakeCompleting at /Volumes/stuff/Pro
 PRESENT function onTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:16 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.hpp:58
 PRESENT function onTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:25 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.hpp:58
 PRESENT type OnTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:34 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp:12
-PRESENT property OnTimeout::timeMillis at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:35 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp:49
+PRESENT property OnTimeout::timeMillis at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:35 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp:50
 PRESENT property OnTimeout::selectClause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:37 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp:18
-MISSING_SYMBOL function OnTimeout::register at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:44
+PRESENT function OnTimeout::register at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:44 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp:29
 EXTRA_TARGET_SYMBOL function OnTimeout::OnTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp:15
-EXTRA_TARGET_SYMBOL function OnTimeout::register_clause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp:28
-EXTRA_TARGET_SYMBOL function make_on_timeout_clause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp:54
+EXTRA_TARGET_SYMBOL function make_on_timeout_clause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp:55
 EXTRA_TARGET_SYMBOL function make_on_timeout_clause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.hpp:24
 EXTRA_TARGET_SYMBOL function SelectBuilder<R>::on_timeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.hpp:71
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:752: offset-preserving coroutine statement-macro grammar adaptation
@@ -6416,4 +6415,4 @@ MISSING_SYMBOL property isNative at /Volumes/stuff/Projects/kotlinmania/kotlin.c
 MISSING_SYMBOL property isBoundByJsTestTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:61
 MISSING_SYMBOL property isJavaAndWindows at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:63
 MISSING_SYMBOL property usesSharedEventLoop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:65
-Inventory totals: present=2476, declaration_only=115, missing=2006
+Inventory totals: present=2477, declaration_only=115, missing=2005
