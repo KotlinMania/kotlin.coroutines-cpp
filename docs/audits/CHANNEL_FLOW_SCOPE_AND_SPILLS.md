@@ -103,9 +103,9 @@ The docking-ring, IR lowering and declaration/scope designs were reread together
 ## Structural interceptor equality — 2026-10-07
 
 The complete pinned ChannelFlow.kt and existing C++ header/source pair were read
-before editing. Kotlin's second fast-path comparison at :164 uses structural
+before editing. Kotlin's second fast-path comparison at :165 uses structural
 `==`. The previous C++ body compared two shared_ptr values, substituting pointer
-identity for virtual equality. The translated expression at ChannelFlow.hpp:482
+identity for virtual equality. The translated expression at ChannelFlow.hpp:487
 now obtains the new and collecting interceptors in source order, invokes
 new_interceptor.equals(collect_interceptor) for a non-null left operand, and
 compares the right operand to null when the left operand is null. It adds no
