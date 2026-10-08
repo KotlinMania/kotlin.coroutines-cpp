@@ -1,3 +1,32 @@
+# Current typed source entry and KDoc correspondence
+
+Complete common CoroutineStart.kt and the C++ pair were reread. The source
+receiver-bearing invoke now has a direct typed overload at CoroutineStart.hpp:384.
+DEFAULT, ATOMIC and UNDISPATCHED call the corresponding typed start intrinsics
+with the actual block, receiver and completion; LAZY does nothing. The existing
+erased entry and ordinary C++ callable ownership adapter remain explicit ABI
+bindings. No new dispatch helper or alternate state machine is introduced.
+
+The complete source invoke KDoc is attached to the typed entry (:371), including
+all four strategy mappings and the internal-API documentation tag. is_lazy retains
+its complete source property KDoc at :363. These @suppress tags are documentation
+text, not compiler-warning controls. No warning suppression is restored. Enum
+KDoc examples remain in upstream Kotlin notation. An exact normalized KDoc-block
+comparison is recorded in build/ir-recovery/coroutine-start-kdoc-check.json;
+block presence is separate from the analyzer's documentation metric and from
+correct executable behavior.
+
+The actual test_cancellable_start.cpp was checked using the previous frontend
+module with -Wall -Wextra -Wpedantic -Werror and no warning-disable flags. It
+returns one on exposed unused-parameter diagnostics in consumed dependencies.
+No fresh runtime execution or whole-file completion is claimed. Receipt:
+build/ir-recovery/coroutine-start-typed-strict.log. Previous runtime receipts below
+predate this overload and warning suppression removal. Remaining ordinary C++
+callable authoring/current-continuation adaptation, broader lazy builder behavior,
+compiler lowering and both MLX acceptance paths remain incomplete.
+
+Historical checkpoints follow.
+
 # CoroutineStart source selection repair
 
 Date: 2026-10-07. Read complete common CoroutineStart.kt and the existing C++
