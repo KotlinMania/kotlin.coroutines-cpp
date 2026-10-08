@@ -1069,6 +1069,7 @@ void producer_builder_contract() {
         [&](ProducerScope<int>* receiver, std::shared_ptr<Continuation<void*>> continuation) -> void* {
             CHECK(!body_started && completions == 0);
             body_started = true;
+            CHECK(receiver->get_channel() == static_cast<SendChannel<int>*>(receiver));
             CHECK(receiver->get_coroutine_context()->get(ContinuationInterceptor::type_key).get() ==
                   static_cast<CoroutineContext::Element*>(dispatcher.get()));
             body_finished = true;
