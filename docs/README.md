@@ -28,7 +28,7 @@ Architectural blueprints, north star design principles, and technical roadmaps f
 | [porting_north_star.md](architecture/porting_north_star.md) | Authoritative technical playbook for porting Kotlin `kotlinx.coroutines` and Kotlin/Native coroutine lowering to C++. Defines core invariants, ground truth mapping, and transliteration rules. |
 | [docking_ring.md](architecture/docking_ring.md) | Architectural blueprint forming a "docking ring" between the Kotlin/Native runtime (GC + coroutine state machine lowering + continuation API) and C++. |
 | [coroutines_primitives_north_star.md](architecture/coroutines_primitives_north_star.md) | Fundamental primitives required to implement Kotlin Coroutines in C++, distinguishing Compiler Intrinsics from Library Code. |
-| [IMPLEMENTATION_ROADMAP.md](architecture/IMPLEMENTATION_ROADMAP.md) | Module-by-module implementation analysis, critical gap analysis, and phased development milestones. |
+| [IMPLEMENTATION_ROADMAP.md](architecture/IMPLEMENTATION_ROADMAP.md) | Required `ast_distance --deep` workflow, generated status and gap inventories, and repair priorities. |
 | [research_notes.md](architecture/research_notes.md) | Technical investigation into Kotlin compiler IR lowering (`NativeSuspendFunctionLowering.kt`) and `Cancellable` start machinery. |
 
 ---

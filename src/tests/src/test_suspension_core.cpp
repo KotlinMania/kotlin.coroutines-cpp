@@ -3,7 +3,7 @@
  * @brief Core tests for the __LINE__-based coroutine state machine macros.
  *
  * Tests coroutine_begin/coroutine_yield/coroutine_end macros that provide
- * stackless coroutines via Duff's device pattern.
+ * resume regions for mandatory Kotlin/Native LLVM dispatch injection.
  */
 
 #include "kotlinx/coroutines/dsl/Suspend.hpp"

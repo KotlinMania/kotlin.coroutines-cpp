@@ -16,6 +16,8 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <optional>
+#include <cassert>
 
 namespace kotlinx {
 namespace coroutines {
@@ -173,19 +175,29 @@ inline ::kotlinx::coroutines::internal::Symbol* get_null_symbol() {
 }
 
 class StateFlowSlot : public AbstractSharedFlowSlot<StateFlowImplBase> {
-public:
-    // Kotlin: private val _state = atomic<Any?>(null)
-    std::atomic<void*> state_{nullptr};
+private:
+    // Free, NONE, PENDING, or an owning reference to the suspended continuation.
+    std::shared_ptr<void> state_;
 
+    static const std::shared_ptr<void>& none_state() {
+        static const std::shared_ptr<void> state(get_none_symbol(), [](void*) {});
+        return state;
+    }
+    static const std::shared_ptr<void>& pending_state() {
+        static const std::shared_ptr<void> state(get_pending_symbol(), [](void*) {});
+        return state;
+    }
+
+public:
     bool allocate_locked(StateFlowImplBase* flow) override {
         // No need for atomic check & update here, since allocated happens under StateFlow lock
-        if (state_.load(std::memory_order_relaxed) != nullptr) return false;
-        state_.store(get_none_symbol(), std::memory_order_relaxed); // NONE symbol
+        if (std::atomic_load(&state_) != nullptr) return false;
+        std::atomic_store(&state_, none_state());
         return true;
     }
 
-    std::vector<Continuation<Unit>*> free_locked(StateFlowImplBase* flow) override {
-        state_.store(nullptr, std::memory_order_relaxed); // free now
+    std::vector<std::shared_ptr<Continuation<Unit>>> free_locked(StateFlowImplBase* flow) override {
+        std::atomic_store(&state_, std::shared_ptr<void>{});
         return internal::EMPTY_RESUMES;
     }
 
@@ -278,6 +290,8 @@ public:
     }
 
     T value() const override {
+        // NOTE(port): Retain the boxed value while copying; Kotlin's GC owns this read.
+        std::lock_guard<std::recursive_mutex> lock(this->get_mutex());
         return unbox(state_.load(std::memory_order_acquire));
     }
 
@@ -366,42 +380,68 @@ public:
     }
 
     // SharedFlow collect
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/StateFlow.kt:386-412
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
-        auto* slot = this->allocate_slot();
-        try {
-            if (auto* sub = dynamic_cast<internal::SubscribedFlowCollector<T>*>(collector)) {
-                sub->on_subscription(continuation);
-            }
-            std::shared_ptr<Job> collector_job = nullptr;
-            if (continuation && continuation->get_context()) {
-                auto job_el = continuation->get_context()->get(Job::type_key);
-                collector_job = std::dynamic_pointer_cast<Job>(job_el);
-            }
-            bool first = true;
-            T old_value{};
-            while (true) {
-                if (collector_job) {
-                    ensure_active(*collector_job);
-                }
-                T new_value = this->value();
-                if (first || !(old_value == new_value)) {
-                    old_value = new_value;
-                    first = false;
-                    collector->emit(new_value, continuation);
-                }
-                if (!slot->take_pending()) {
-                    void* res = slot->await_pending(continuation);
-                    if (res == intrinsics::get_COROUTINE_SUSPENDED()) {
-                        return intrinsics::get_COROUTINE_SUSPENDED();
+        class CollectFrame final : public ContinuationImpl {
+        public:
+            CollectFrame(StateFlowImpl<T>* flow, FlowCollector<T>* collector,
+                         Continuation<void*>* completion)
+                : ContinuationImpl(std::shared_ptr<Continuation<void*>>(
+                      completion, [](Continuation<void*>*) {})),
+                  flow_(flow), collector_(collector), synchronous_(completion == nullptr) {}
+
+            void retain() { self_ref_ = shared_from_this(); }
+
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/StateFlow.kt:386-412
+            void* invoke_suspend(Result<void*> result) override {
+                try {
+                    coroutine_begin(this)
+                    slot_ = flow_->allocate_slot();
+                    subscribed_ = dynamic_cast<internal::SubscribedFlowCollector<T>*>(collector_);
+                    if (subscribed_) {
+                        coroutine_yield(this, subscribed_->on_subscription(synchronous_ ? nullptr : this));
                     }
+                    collector_job_ = std::dynamic_pointer_cast<Job>(get_context()->get(Job::type_key));
+                    while (true) {
+                        new_value_ = flow_->value();
+                        if (collector_job_) ensure_active(*collector_job_);
+                        if (!old_value_.has_value() || !(*old_value_ == *new_value_)) {
+                            coroutine_yield(this, collector_->emit(*new_value_, synchronous_ ? nullptr : this));
+                            old_value_ = std::move(new_value_);
+                        }
+                        if (!slot_->take_pending()) {
+                            coroutine_yield_value(this, result,
+                                slot_->await_pending(synchronous_ ? nullptr : this), wait_result_);
+                            delete static_cast<Unit*>(wait_result_);
+                            wait_result_ = nullptr;
+                        }
+                    }
+                } catch (...) {
+                    if (slot_) {
+                        flow_->free_slot(slot_);
+                        slot_ = nullptr;
+                    }
+                    self_ref_.reset();
+                    throw;
                 }
             }
-        } catch (...) {
-            this->free_slot(slot);
-            throw;
-        }
-        this->free_slot(slot);
-        return nullptr;
+
+        private:
+            void* _label = nullptr;
+            StateFlowImpl<T>* flow_;
+            FlowCollector<T>* collector_;
+            bool synchronous_;
+            StateFlowSlot* slot_ = nullptr;
+            internal::SubscribedFlowCollector<T>* subscribed_ = nullptr;
+            std::shared_ptr<Job> collector_job_;
+            std::optional<T> new_value_;
+            void* wait_result_ = nullptr;
+            std::optional<T> old_value_;
+            std::shared_ptr<BaseContinuationImpl> self_ref_;
+        };
+        auto frame = std::make_shared<CollectFrame>(this, collector, continuation);
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
     }
 
     // AbstractSharedFlow requirements
@@ -431,19 +471,19 @@ public:
 
 // StateFlowSlot methods implementation
 inline void StateFlowSlot::make_pending() {
-    auto* pending = get_pending_symbol();
-    auto* none = get_none_symbol();
+    const auto& pending = pending_state();
+    const auto& none = none_state();
     
     while (true) {
-        void* s = state_.load();
+        auto s = std::atomic_load(&state_);
         if (s == nullptr) return;
         if (s == pending) return;
         if (s == none) {
-             if (state_.compare_exchange_weak(s, pending)) return;
+             if (std::atomic_compare_exchange_strong(&state_, &s, pending)) return;
         } else {
              // Suspend state
-             if (state_.compare_exchange_weak(s, none)) {
-                 auto* cont = static_cast<CancellableContinuation<Unit>*>(s);
+             if (std::atomic_compare_exchange_strong(&state_, &s, none)) {
+                 auto* cont = static_cast<CancellableContinuation<Unit>*>(s.get());
                  cont->resume(Unit{});
                  return;
              }
@@ -452,10 +492,9 @@ inline void StateFlowSlot::make_pending() {
 }
 
 inline bool StateFlowSlot::take_pending() {
-    auto* pending = get_pending_symbol();
-    auto* none = get_none_symbol();
-    void* expected = pending;
-    return state_.compare_exchange_strong(expected, none);
+    auto state = std::atomic_exchange(&state_, none_state());
+    assert(state && (state == none_state() || state == pending_state()));
+    return state == pending_state();
 }
 
 inline void* StateFlowSlot::await_pending(Continuation<void*>* cont) {
@@ -467,9 +506,11 @@ inline void* StateFlowSlot::await_pending(Continuation<void*>* cont) {
     }
     return suspend_cancellable_coroutine<Unit>(
         [this](CancellableContinuation<Unit>& c) {
-            auto* none = get_none_symbol();
-            void* expected = none;
-            if (state_.compare_exchange_strong(expected, &c)) return; 
+            auto expected = none_state();
+            std::shared_ptr<void> suspended = std::static_pointer_cast<CancellableContinuation<Unit>>(
+                dynamic_cast<CancellableContinuationImpl<Unit>&>(c).shared_from_this());
+            if (std::atomic_compare_exchange_strong(&state_, &expected, suspended)) return;
+            assert(expected == pending_state());
             c.resume(Unit{});
         }, cont);
 }
@@ -526,7 +567,7 @@ S* AbstractSharedFlow<S, F>::allocate_slot() {
 template<typename S, typename F>
 void AbstractSharedFlow<S, F>::free_slot(S* slot) {
     std::shared_ptr<SubscriptionCountStateFlow> sub_count;
-    std::vector<Continuation<Unit>*> resumes;
+    std::vector<std::shared_ptr<Continuation<Unit>>> resumes;
     {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         n_collectors_--;
@@ -534,7 +575,7 @@ void AbstractSharedFlow<S, F>::free_slot(S* slot) {
         if (n_collectors_ == 0) next_index_ = 0;
         resumes = slot->free_locked(as_flow());
     }
-    for (auto* cont : resumes) {
+    for (const auto& cont : resumes) {
         if (cont) cont->resume_with(Result<Unit>::success(Unit{}));
     }
     if (sub_count) {

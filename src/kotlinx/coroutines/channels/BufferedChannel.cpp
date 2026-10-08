@@ -3,10 +3,9 @@
  * @file BufferedChannel.cpp
  * @brief Implementation of BufferedChannel.
  *
- * Kotlin source: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt
+ * Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt
  *
- * The BufferedChannel implementation is now entirely in the header file.
- * This file provides explicit template instantiations for common types.
+ * Generic algorithms remain in the header. This file instantiates common element types.
  */
 
 #include "kotlinx/coroutines/channels/BufferedChannel.hpp"

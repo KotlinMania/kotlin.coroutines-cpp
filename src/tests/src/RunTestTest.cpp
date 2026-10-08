@@ -215,7 +215,7 @@ namespace kotlinx {
                                         return run_test(std::chrono::milliseconds(10), [&]() {
                                             launch(CoroutineStart::UNDISPATCHED, [&]() {
                                                 with_context(NonCancellable + Dispatchers::default_dispatcher(), [&]() {
-                                                    delay(std::chrono::milliseconds(100));
+                                                    delay(kotlin::time::milliseconds(100));
                                                 });
                                             });
                                             throw TestException("A");

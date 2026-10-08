@@ -1,25 +1,116 @@
+// port-lint: source kotlinx-coroutines-core/native/src/Exceptions.kt
 /**
- * @file Exceptions.cpp
- * @brief Implementation of Exceptions.
- *
- * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/Exceptions.hpp`.
+ * Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt
  */
+#include "kotlinx/coroutines/native/Exceptions.hpp"
+#include "kotlinx/coroutines/Job.hpp"
+#include <utility>
+#include <bit>
+#include <iterator>
+#include "../../../../third_party/utfcpp/utf8/with_replacement.h"
 
-#include "kotlinx/coroutines/Exceptions.hpp"
 
-namespace kotlinx {
-    namespace coroutines {
-        CancellationException *make_cancellation_exception(const std::string &message,
-                                                            std::exception_ptr cause) {
-            // Upstream uses Throwable.initCause to attach the cause; K/N already keeps
-            // initCause as a no-op (see native/internal/StackTraceRecovery.kt), so the
-            // cause parameter is intentionally ignored here. The factory returns a fresh
-            // CancellationException carrying just the message.
-            (void)cause;
-            return new CancellationException(message);
+
+namespace kotlinx::coroutines {
+
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:13-14
+// NOTE(port): This owning factory result must be deleted by its C++ caller.
+CancellationException* cancellation_exception(const std::string& message, std::exception_ptr cause) {
+    return new CancellationException(message, cause);
+}
+
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:13-14
+CancellationException* cancellation_exception(std::optional<std::string> message, std::exception_ptr cause) {
+    return new CancellationException(std::move(message), cause);
+}
+
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:13-14
+CancellationException* cancellation_exception(const char* message, std::exception_ptr cause) {
+    return new CancellationException(message, cause);
+}
+
+
+
+namespace {
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/String.kt:19-21
+// Transliterated from: kotlin-native/runtime/src/main/cpp/KString.cpp:125-145,543-564
+// Transliterated from: kotlin-native/runtime/src/main/cpp/polyhash/naive.h:11-17
+// NOTE(port): Existing C++ messages use UTF-8. Use Native's actual UTF-8 conversion dependency,
+// then hash UTF-16 code units. Native object-header caching is unnecessary for C++ value storage.
+std::uint32_t string_hash_code(const std::string& message) {
+    std::u16string units;
+    utf8::with_replacement::utf8to16(message.begin(), message.end(), std::back_inserter(units));
+    std::uint32_t result = 0;
+    auto current = units.begin();
+    while (current != units.end()) result = result * 31 + static_cast<std::uint16_t>(*current++);
+    return result;
+}
+
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:31-31
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:41-41
+// Transliterated from: kotlin-native/runtime/src/main/cpp/Natives.cpp:40-49
+// NOTE(port): The actual std::exception carrier stays borrowed. CancellationException dispatches
+// its virtual source hash; other exception carriers inherit Throwable's identity hash.
+std::uint32_t exception_hash_code(std::exception_ptr cause) {
+    if (!cause) return 0;
+    try { std::rethrow_exception(cause); }
+    catch (const CancellationException& exception) { return static_cast<std::uint32_t>(exception.hash_code()); }
+    catch (const std::exception& exception) {
+        return static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(&exception));
+    }
+}
+
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:29-29
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:31-31
+// NOTE(port): exception_ptr preserves the actual thrown object identity. Open
+// CancellationException equality dispatches on that object after rethrow; other
+// C++ exception carriers keep the source Throwable's default identity equality.
+bool exception_equals(std::exception_ptr left, std::exception_ptr right) {
+    if (!left || !right) return left == right;
+    try {
+        std::rethrow_exception(right);
+    } catch (const std::exception& other) {
+        try {
+            std::rethrow_exception(left);
+        } catch (const CancellationException& receiver) {
+            return receiver.equals(&other);
+        } catch (...) {
+            return left == right;
         }
+    } catch (...) {
+        return left == right;
+    }
+}
+} // namespace
 
-        // JobCancellationException and other classes are defined in the header.
-    } // namespace coroutines
-} // namespace kotlinx
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:21-25
+JobCancellationException::JobCancellationException(
+    const std::string& message, std::exception_ptr cause, Job* job)
+    : CancellationException(message, cause), job_(job) {}
+
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:24-24
+Job* JobCancellationException::get_job() const { return job_; }
+
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:27-29
+bool JobCancellationException::equals(const std::exception* other) const {
+    if (other == this) return true;
+    auto* cancellation = dynamic_cast<const JobCancellationException*>(other);
+    return cancellation && cancellation->get_message() == get_message() &&
+        (cancellation->job_ ? cancellation->job_->equals(job_) : job_ == nullptr) &&
+        exception_equals(cancellation->get_cause(), get_cause());
+}
+
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:30-31
+std::int32_t JobCancellationException::hash_code() const {
+    // NOTE(port): Kotlin Int arithmetic wraps; unsigned intermediates retain its low 32 bits.
+    const auto message_hash = string_hash_code(get_message().value());
+    const auto job_hash = static_cast<std::uint32_t>(job_->hash_code());
+    const auto cause_hash = exception_hash_code(get_cause());
+    return std::bit_cast<std::int32_t>((message_hash * 31 + job_hash) * 31 + cause_hash);
+}
+
+// For use in tests.
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:34-35
+const bool RECOVER_STACK_TRACES = false;
+
+} // namespace kotlinx::coroutines

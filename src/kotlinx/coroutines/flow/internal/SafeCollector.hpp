@@ -1,8 +1,21 @@
 #pragma once
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt
+ *                 and kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt
+ */
+
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
+#include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Job.hpp"
+#include "kotlinx/coroutines/context_impl.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include <memory>
+#include <functional>
+#include <string>
+#include <utility>
 
 namespace kotlinx {
 namespace coroutines {
@@ -10,96 +23,127 @@ namespace flow {
 namespace internal {
 
 /**
+ * Traverses parent coroutines while the job is a scoped coroutine.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:92-97
+ */
+std::shared_ptr<Job> transitive_coroutine_parent(
+    std::shared_ptr<Job> current_job,
+    const std::shared_ptr<Job>& collect_job
+);
+
+/**
  * Base class for SafeCollector containing non-generic context validation logic.
  * Moved to .cpp file to reduce template bloat.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:11-20
+ *                 and kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:7-14
  */
 class SafeCollectorBase {
 public:
-    SafeCollectorBase(std::shared_ptr<CoroutineContext> collectContext);
+    explicit SafeCollectorBase(std::shared_ptr<CoroutineContext> collect_context);
     virtual ~SafeCollectorBase() = default;
 
+    // Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:9-9
+    const std::shared_ptr<CoroutineContext>& get_collect_context() const { return collect_context_; }
+    // Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:13-13
+    int get_collect_context_size() const { return collect_context_size_; }
+
 protected:
-    void check_context(const CoroutineContext& currentContext);
+    void check_context(const CoroutineContext& current_context);
     
     std::shared_ptr<CoroutineContext> collect_context_;
     int collect_context_size_;
+    std::shared_ptr<CoroutineContext> last_emission_context_;
 };
 
 /**
  * SafeCollector that ensures flow invariants and context preservation.
  *
- * This wrapper collector ensures that emissions happen in the correct context
- * and provides exception transparency guarantees. It wraps a downstream collector
- * and validates context before forwarding emissions.
+ * This Native wrapper validates the emission context and checks cancellation
+ * before forwarding each value to the downstream collector.
  *
- * @note **CURRENT LIMITATION**: Context validation is not fully implemented yet.
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:11-20
+ *                 and kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:7-28
  */
 template <typename T>
-class SafeCollector : public FlowCollector<T>, public SafeCollectorBase {
+class SafeCollector final : public FlowCollector<T>, public SafeCollectorBase {
 public:
     /**
      * Creates a SafeCollector wrapping the given downstream collector.
      *
-     * @param downstream The collector to wrap and protect
-     * @param collectContext The context in which collection started
+     * @param collector The collector to wrap and protect
+     * @param collect_context The context in which collection started
+     *
+     * Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:7-10
      */
-    SafeCollector(FlowCollector<T>* downstream, std::shared_ptr<CoroutineContext> collectContext)
-        : SafeCollectorBase(collectContext), downstream_(downstream) {}
+    SafeCollector(FlowCollector<T>* collector, std::shared_ptr<CoroutineContext> collect_context)
+        : SafeCollectorBase(std::move(collect_context)), collector_(collector) {}
+
+    // Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:8-8
+    FlowCollector<T>* get_collector() const { return collector_; }
 
     /**
      * Emits a value after validating the execution context.
      *
-     * This method ensures that the emission happens in the same context
-     * as the original collect() call, preserving flow invariants.
-     *
-     * @param value The value to emit
-     *
-     * @note **BROKEN SEMANTICS**: This method should be suspending and return
-     *       void* with a Continuation parameter. The current void return breaks
-     *       backpressure guarantees.
-     *
-     * @note **MISSING VALIDATION**: Context validation is not implemented due
-     *       to lack of currentCoroutineContext() access. The check_context()
-     *       call is stubbed out.
-     *
-     * @throws IllegalStateException if context validation fails (not implemented)
+     * Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:16-24
      */
     void* emit(T value, Continuation<void*>* continuation) override {
-        // Upstream:
-        //   override suspend fun emit(value: T) {
-        //       checkContext(currentCoroutineContext())
-        //       return uCont.let { ... downstream.emit(value) ... }
-        //   }
-        //
-        // checkContext walks the collect-time context against the current one and throws
-        // IllegalStateException on mismatch. The C++ port relies on the calling
-        // continuation owning its context — if the dispatcher hops, the continuation
-        // already carries the new context, and the upstream-collector boundary's emit
-        // call honors the same constraint by virtue of being on the same continuation.
-        return downstream_->emit(std::move(value), continuation);
+        auto current_context = continuation->get_context();
+        context_ensure_active(*current_context);
+        if (last_emission_context_.get() != current_context.get()) {
+            check_context(*current_context);
+            last_emission_context_ = current_context;
+        }
+        return collector_->emit(std::move(value), continuation);
     }
 
     /**
      * Releases any intercepted continuation resources.
      *
-     * Called in the finally block of AbstractFlow::collect() to clean up
-     * any dispatcher-related resources that were captured during collection.
-     *
-     * Transliterated from: SafeCollector.releaseIntercepted() in SafeCollector.common.kt
+     * Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:26-27
      */
     void release_intercepted() {
-        // Upstream: when context interception captured a DispatchedContinuation, this
-        // releases the slot back to its dispatcher. The C++ port's
-        // DispatchedContinuation owns release via its own destructor, so the explicit
-        // finally-block release-intercepted call here is a no-op for parity with the
-        // upstream API surface.
     }
 
 private:
-    FlowCollector<T>* downstream_;
+    FlowCollector<T>* collector_;
 };
 
+/**
+ * An analogue of the [flow] builder that does not check the context of execution of the resulting flow.
+ * Used in our own operators where we trust the context of invocations.
+ *
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:104-110
+ */
+template <typename T>
+std::shared_ptr<Flow<T>> unsafe_flow(std::function<void*(FlowCollector<T>*, Continuation<void*>*)> block) {
+    class UnsafeFlowImpl : public Flow<T> {
+        std::function<void*(FlowCollector<T>*, Continuation<void*>*)> block_;
+    public:
+        explicit UnsafeFlowImpl(std::function<void*(FlowCollector<T>*, Continuation<void*>*)> b)
+            : block_(std::move(b)) {}
+
+        void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
+            return block_(collector, continuation);
+        }
+    };
+    return std::make_shared<UnsafeFlowImpl>(std::move(block));
+}
+
+template <typename T>
+inline std::shared_ptr<Flow<T>> unsafe_flow(std::function<void(FlowCollector<T>*)> block) {
+    return unsafe_flow<T>([block = std::move(block)](FlowCollector<T>* collector, Continuation<void*>*) -> void* {
+        block(collector);
+        return nullptr;
+    });
+}
+
 } // namespace internal
+
+using internal::unsafe_flow;
+
+
 } // namespace flow
 } // namespace coroutines
 } // namespace kotlinx

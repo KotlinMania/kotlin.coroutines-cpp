@@ -94,18 +94,16 @@ public:
 
     void notify_completion(std::exception_ptr cause);
     std::string get_string(const std::string& state) const;
-    std::string to_string() const;
+    std::string to_string() const override;
 };
 
 /**
  * Node in the linked list of completion handlers.
  * Transliterated from: internal abstract class JobNode (JobSupport.kt:1460)
  *
- * NOTE: The `job` pointer is a raw pointer to the parent JobSupport. This is safe
- * because nodes are stored in a linked list owned by the JobSupport, and are cleaned
- * up when the JobSupport is destroyed. The lifetime invariant is enforced by the
- * destruction order: a JobSupport's destructor drains its list before the JobSupport's
- * own memory is freed, so a JobNode never sees its parent dangling under normal usage.
+ * NOTE(port): The intrusive node stores a raw parent pointer, as in upstream.
+ * The C++ port retains published nodes; it does not implement Kotlin GC reclamation.
+ * Callers must keep the parent alive while handlers or traversal access this pointer.
  */
 class JobNode : public Incomplete,
                 public internal::LockFreeLinkedListNode,
@@ -130,7 +128,7 @@ public:
     NodeList* get_list() const override { return nullptr; }
 
     void dispose() override;
-    virtual std::string to_string() const;
+    std::string to_string() const override;
 };
 
 /**
@@ -308,6 +306,13 @@ public:
      */
     virtual std::exception_ptr get_completion_exception_or_null() const;
 
+    /**
+     * Returns true if this is a scoped coroutine (affects exception handling and context preservation).
+     * Transliterated from: internal open val isScopedCoroutine: Boolean get() = false
+     */
+    virtual bool is_scoped_coroutine() const { return false; }
+    bool get_is_scoped_coroutine() const { return is_scoped_coroutine(); }
+
 protected:
     /**
      * Called when the job is started (transitions from New to Active).
@@ -362,15 +367,11 @@ protected:
     virtual bool get_on_cancel_complete() const { return false; }
 
     /**
-     * Returns true if this is a scoped coroutine (affects exception handling).
-     */
-    virtual bool get_is_scoped_coroutine() const { return false; }
-
-    /**
      * Called to handle a job exception (for CoroutineExceptionHandler).
      * @return true if the exception was handled
      */
-    virtual bool handle_job_exception(std::exception_ptr exception) { return false; }
+    // Transliterated from: kotlinx-coroutines-core/common/src/JobSupport.kt:1139
+    virtual bool handle_job_exception(std::exception_ptr exception);
 
     // ===========================================
     // Protected methods for subclasses
@@ -467,10 +468,12 @@ private:
     std::unique_ptr<Impl> impl_;
 
     // Allow internal node classes to access impl_ for dispose operations
+    // NOTE(port): JobImpl's source parent-handle walk is implemented beside
+    // the private ChildHandleNode and Impl definitions in JobSupport.cpp.
+    friend class JobImpl;
     friend class JobNode;
     friend class ChildCompletion;
     friend class ResumeOnCompletion;
-    friend class ResumeAwaitOnCompletion;
     friend class SelectOnJoinCompletionHandler;
     friend class SelectOnAwaitCompletionHandler;
     template <typename T> friend class AwaitContinuation;

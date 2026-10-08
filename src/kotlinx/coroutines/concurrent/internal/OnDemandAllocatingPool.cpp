@@ -1,174 +1,40 @@
-#include <string>
-#include <functional>
 /**
  * Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt
- *
- * Kotlin file header (translated):
- *   package kotlinx.coroutines.internal
- *
- * On-demand allocating pool: a CAS-loop-driven array of pooled element slots. The Kotlin
- * source uses atomicfu's `atomicArrayOfNulls<E>()` and `atomic(0)`; the C++ port resolves
- * these to `std::vector<std::atomic<E*>>` and `std::atomic<int>` with explicit memory
- * orderings. Kotlin bitwise operators (`shl`, `and`, `or`, `inv`) map to C++ `<<`, `&`,
- * `|`, `~`; the `loop { ... }` extension is a plain `while (true)`.
  */
+// port-lint: source kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt
+#include "kotlinx/coroutines/concurrent/internal/OnDemandAllocatingPool.hpp"
 
-namespace kotlinx {
-    namespace coroutines {
-        namespace internal {
-            // KT-25023 — Kotlin's `inline fun loop(action: () -> Nothing): Nothing`
-            // becomes a plain inline function taking a callable. `Nothing` is modelled by
-            // never-returning out of the loop; callers break by capturing-and-returning
-            // through the caller's own control flow.
-            inline void loop(std::function<void()> block) {
-                while (true) {
-                    block();
-                }
-            }
+namespace kotlinx::coroutines::internal {
+namespace {
+// Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt:102-102
+// NOTE(port): Unsigned storage preserves Kotlin Int bit patterns without signed-shift overflow.
+constexpr std::uint32_t IS_CLOSED_MASK = std::uint32_t{1} << 31;
 
-            constexpr int IS_CLOSED_MASK = 1 << 31;
 
-            /**
- * A thread-safe resource pool.
- *
- * [maxCapacity] is the maximum amount of elements.
- * [create] is the function that creates a new element.
- *
- * This is only used in the Native implementation,
- * but is part of the `concurrent` source set in order to test it on the JVM.
- */
-            template<typename T>
-            class OnDemandAllocatingPool {
-            private:
-                int max_capacity_;
-                std::function<T(int)> create_;
+}
 
-                /**
-     * Number of existing elements + isClosed flag in the highest bit.
-     * Once the flag is set, the value is guaranteed not to change anymore.
-     */
-                std::atomic<int> control_state_;
-                std::vector<std::atomic<T *> > elements_;
+// Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt:37-37
+bool pool_is_closed(std::uint32_t value) {
+    return (value & IS_CLOSED_MASK) != 0;
+}
 
-                /**
-     * Returns the number of elements that need to be cleaned up due to the pool being closed.
-     */
-                // @Suppress("NOTHING_TO_INLINE")
-                inline int try_forbid_new_elements() {
-                    // Upstream: loop { ... } — Kotlin's `loop` extension is a plain
-                    // CAS-retry while-loop in C++.
-                    while (true) {
-                        int current = control_state_.load(std::memory_order_acquire);
-                        if (is_closed(current)) return 0; // already closed
-                        int new_val = current | IS_CLOSED_MASK;
-                        if (control_state_.compare_exchange_strong(current, new_val,
-                                                                   std::memory_order_release,
-                                                                   std::memory_order_acquire)) {
-                            return current;
-                        }
-                    }
-                }
+// Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt:29-34
+std::uint32_t forbid_new_pool_elements(std::atomic<std::uint32_t>& control_state) {
+    while (true) {
+        auto current = control_state.load();
+        if (pool_is_closed(current)) return 0;
+        if (control_state.compare_exchange_strong(current, current | IS_CLOSED_MASK)) return current;
+    }
+}
 
-                // @Suppress("NOTHING_TO_INLINE")
-                inline bool is_closed(int value) const {
-                    return (value & IS_CLOSED_MASK) != 0;
-                }
-
-            public:
-                OnDemandAllocatingPool(int max_capacity, std::function<T(int)> create)
-                    : max_capacity_(max_capacity)
-                      , create_(create)
-                      , control_state_(0)
-                      , elements_(max_capacity) {
-                    // Initialize atomic array with nullptrs
-                    for (int i = 0; i < max_capacity; ++i) {
-                        elements_[i].store(nullptr, std::memory_order_relaxed);
-                    }
-                }
-
-                /**
-     * Request that a new element is created.
-     *
-     * Returns `false` if the pool is closed.
-     *
-     * Note that it will still return `true` even if an element was not created due to reaching [maxCapacity].
-     *
-     * Rethrows the exceptions thrown from [create]. In this case, this operation has no effect.
-     */
-                bool allocate() {
-                    // Upstream: loop { ... } — Kotlin's `loop` extension is a plain
-                    // CAS-retry while-loop in C++.
-                    while (true) {
-                        int ctl = control_state_.load(std::memory_order_acquire);
-                        if (is_closed(ctl)) return false;
-                        if (ctl >= max_capacity_) return true;
-                        if (control_state_.compare_exchange_strong(ctl, ctl + 1,
-                                                                   std::memory_order_release,
-                                                                   std::memory_order_acquire)) {
-                            T *element = new T(create_(ctl));
-                            elements_[ctl].store(element, std::memory_order_release);
-                            return true;
-                        }
-                    }
-                }
-
-                /**
-     * Close the pool.
-     *
-     * This will prevent any new elements from being created.
-     * All the elements present in the pool will be returned.
-     *
-     * The function is thread-safe.
-     *
-     * [close] can be called multiple times, but only a single call will return a non-empty list.
-     * This is due to the elements being cleaned out from the pool on the first invocation to avoid memory leaks,
-     * and no new elements being created after.
-     */
-                std::vector<T> close() {
-                    int elements_existing = try_forbid_new_elements();
-                    std::vector<T> result;
-                    for (int i = 0; i < elements_existing; ++i) {
-                        // we wait for the element to be created, because we know that eventually it is going to be there
-                        while (true) {
-                            T *element = elements_[i].exchange(nullptr, std::memory_order_acquire);
-                            if (element != nullptr) {
-                                result.push_back(*element);
-                                delete element;
-                                break;
-                            }
-                        }
-                    }
-                    return result;
-                }
-
-                // for tests
-                std::string state_representation() const {
-                    int ctl = control_state_.load(std::memory_order_acquire);
-                    std::string elements_str = "[";
-                    int num_elements = ctl & (~IS_CLOSED_MASK);
-                    for (int i = 0; i < num_elements; ++i) {
-                        if (i > 0) elements_str += ", ";
-                        T *elem = elements_[i].load(std::memory_order_acquire);
-                        if (elem != nullptr) {
-                            // Upstream toString() formats elements via Kotlin's
-                            // Any.toString(). The C++ port routes through std::to_string,
-                            // which is well-defined for the numeric T this pool is
-                            // instantiated for; richer T require a per-type adapter at
-                            // the call site.
-                            elements_str += std::to_string(*elem);
-                        } else {
-                            elements_str += "nullptr";
-                        }
-                    }
-                    elements_str += "]";
-                    std::string closed_str = is_closed(ctl) ? "[closed]" : "";
-                    return elements_str + closed_str;
-                }
-
-                std::string to_string() const {
-                    return "OnDemandAllocatingPool(" + state_representation() + ")";
-                }
-            };
-        } // namespace internal
-    } // namespace coroutines
-} // namespace kotlinx
+// Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt:85-90
+std::string pool_state_string(const std::vector<std::string>& elements, bool closed) {
+    std::string elements_str = "[";
+    for (std::size_t i = 0; i < elements.size(); ++i) {
+        if (i) elements_str += ", ";
+        elements_str += elements[i];
+    }
+    elements_str += "]";
+    return elements_str + (closed ? "[closed]" : "");
+}
+} // namespace kotlinx::coroutines::internal

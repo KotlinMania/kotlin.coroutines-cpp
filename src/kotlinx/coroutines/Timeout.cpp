@@ -27,18 +27,17 @@ namespace coroutines {
         return std::make_exception_ptr(copy);
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/Timeout.kt:182-190
     TimeoutCancellationException make_timeout_cancellation_exception(
         long time,
         Delay* delay,
         std::shared_ptr<Job> coroutine
     ) {
-        (void)delay;
         // Wrapper for dynamic_cast check if Delay supports diagnostics
         std::string message = "Timed out waiting for " + std::to_string(time) + " ms";
         
         if (auto* diagnostics = dynamic_cast<DelayWithTimeoutDiagnostics*>(delay)) {
-             // Convert long milliseconds to nanoseconds for the message
-             message = diagnostics->timeout_message(std::chrono::milliseconds(time));
+             message = diagnostics->timeout_message(kotlin::time::milliseconds(time));
         }
         
         return TimeoutCancellationException(message, coroutine);

@@ -39,7 +39,8 @@ public:
     /**
      * Returns a string representation of the object.
      */
-    std::string to_string() const {
+    // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineName.kt:24-24
+    std::string to_string() const override {
         return "CoroutineName(" + name + ")";
     }
 
@@ -50,6 +51,13 @@ public:
 
     bool operator!=(const CoroutineName& other) const {
         return !(*this == other);
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineName.kt:10-15
+    // NOTE(port): Kotlin generates structural equality for this data class.
+    bool equals(const CoroutineContext* other) const override {
+        auto* name = dynamic_cast<const CoroutineName*>(other);
+        return name && this->name == name->name;
     }
 
     /**

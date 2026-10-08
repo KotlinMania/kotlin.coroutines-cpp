@@ -1,14 +1,9 @@
 #pragma once
 /**
  * @file CancellableReusable.hpp
- * @brief DSL for suspendCancellableCoroutineReusable pattern.
+ * @brief Owning reusable cancellable continuation helpers for the lowered ABI.
  *
- * Kotlin source: kotlinx-coroutines-core/common/src/CancellableContinuation.kt
- * Lines 442-455: suspendCancellableCoroutineReusable
- *
- * This is an optimized version of suspendCancellableCoroutine that reuses
- * CancellableContinuationImpl instances when possible. Used extensively in
- * BufferedChannel, Mutex, and Semaphore.
+ * Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:442-479
  */
 
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
@@ -22,89 +17,73 @@ namespace coroutines {
 namespace dsl {
 
 /**
- * Get or create a CancellableContinuationImpl, reusing if possible.
- *
- * Kotlin: getOrCreateCancellableContinuation(delegate)
- * From CancellableContinuation.kt lines 442-455
- *
- * If the delegate is a DispatchedContinuation, attempts to claim a reusable
- * continuation. Otherwise creates a new one.
- *
- * @param delegate The intercepted continuation
- * @return A shared_ptr to CancellableContinuationImpl (possibly reused)
+ * Claims and resets a reusable continuation when the intercepted delegate supports it.
+ * Returns actual shared ownership; otherwise creates a continuation in the appropriate mode.
  */
 template<typename T>
 std::shared_ptr<CancellableContinuationImpl<T>> get_or_create_cancellable_continuation(
     std::shared_ptr<Continuation<T>> delegate
 ) {
-    // If delegate is a DispatchedContinuation, try to reuse
-    // Kotlin: (uCont.intercepted() as? DispatchedContinuation<T>)
     if (auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<T>>(delegate)) {
-        // Kotlin: ?.claimReusableCancellableContinuation()
-        CancellableContinuationImpl<T>* reusable = dispatched->claim_reusable_cancellable_continuation();
-        if (reusable) {
-            // Kotlin: ?.takeIf { it.resetStateReusable() }
-            if (reusable->reset_state_reusable()) {
-                // Return the reused continuation wrapped in shared_ptr
-                // Note: The continuation is already alive via dispatched's state - we just wrap it
-                // This is a simplification; in Kotlin the CC lifetime is tied to dispatched
-                return std::shared_ptr<CancellableContinuationImpl<T>>(
-                    reusable, [](CancellableContinuationImpl<T>*) {} // No-op deleter since dispatched owns it
-                );
-            }
-        }
-        // Fall through to create new with reusable mode
-        // Kotlin: ?: CancellableContinuationImpl(uCont.intercepted(), MODE_CANCELLABLE_REUSABLE)
+        auto reusable = dispatched->claim_reusable_cancellable_continuation();
+        if (reusable && reusable->reset_state_reusable()) return reusable;
         return std::make_shared<CancellableContinuationImpl<T>>(delegate, MODE_CANCELLABLE_REUSABLE);
     }
-    // Not a dispatched continuation - create new with regular cancellable mode
-    // Kotlin: CancellableContinuationImpl(uCont.intercepted(), MODE_CANCELLABLE)
     return std::make_shared<CancellableContinuationImpl<T>>(delegate, MODE_CANCELLABLE);
 }
 
+namespace detail {
+template<typename T>
+class ReusableResultAdapter final : public Continuation<T> {
+    std::shared_ptr<Continuation<void*>> outer_;
+public:
+    explicit ReusableResultAdapter(std::shared_ptr<Continuation<void*>> outer)
+        : outer_(std::move(outer)) {}
+
+    std::shared_ptr<CoroutineContext> get_context() const override {
+        return outer_ ? outer_->get_context() : nullptr;
+    }
+
+    void resume_with(Result<T> result) override {
+        if (!outer_) return;
+        if (result.is_failure()) {
+            outer_->resume_with(Result<void*>::failure(result.exception_or_null()));
+        } else if constexpr (std::is_void_v<T>) {
+            outer_->resume_with(Result<void*>::success(nullptr));
+        } else {
+            outer_->resume_with(Result<void*>::success(new T(result.get_or_throw())));
+        }
+    }
+};
+} // namespace detail
+
 /**
- * Suspend with a reusable CancellableContinuation.
- *
- * Kotlin: suspendCancellableCoroutineReusable { cont -> ... }
- * From CancellableContinuation.kt lines 456-479
- *
- * Usage:
- * ```cpp
- * void* my_suspend_function(Continuation<void*>* completion) {
- *     return suspend_cancellable_coroutine_reusable<void>(completion,
- *         [](CancellableContinuationImpl<void>* cont) {
- *             // Use cont...
- *             // cont->resume({}) when ready
- *         });
- * }
- * ```
- *
- * @param completion The completion continuation
- * @param block The block that receives the cancellable continuation
- * @return COROUTINE_SUSPENDED or the result
+ * Retains and intercepts the lowered completion, claims a typed reusable continuation,
+ * invokes the block and returns its result or the suspension marker. A successful typed
+ * result is an owned heap box on both direct and resumed paths; void returns nullptr.
+ * Unexpected block failure releases the claim before propagating the exception.
  */
 template<typename T, typename Block>
 void* suspend_cancellable_coroutine_reusable(
     Continuation<void*>* completion,
     Block&& block
 ) {
-    // Kotlin: val cancellable = getOrCreateCancellableContinuation(uCont.intercepted())
-    auto cont = get_or_create_cancellable_continuation<T>(
-        std::shared_ptr<Continuation<T>>(completion, [](Continuation<T>*){})
-    );
-
+    auto intercepted = intrinsics::intercepted(internal::retain_continuation(completion));
+    std::shared_ptr<Continuation<T>> delegate;
+    if (auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<void*>>(intercepted)) {
+        delegate = dispatched->template typed_reusable_delegate<T>([outer = dispatched->continuation] {
+            return std::make_shared<detail::ReusableResultAdapter<T>>(outer);
+        });
+    } else {
+        delegate = std::make_shared<detail::ReusableResultAdapter<T>>(std::move(intercepted));
+    }
+    auto cont = get_or_create_cancellable_continuation<T>(std::move(delegate));
     try {
-        // Kotlin: block(cancellable)
         block(cont.get());
     } catch (...) {
-        // Kotlin: Issue #3613 - release claimed continuation on exception
-        // This is important to prevent leaking the reusable state
         cont->release_claimed_reusable_continuation();
         throw;
     }
-
-    // Kotlin: return cancellable.getResult()
-    // This returns COROUTINE_SUSPENDED or the actual result
     return cont->get_result();
 }
 
@@ -126,20 +105,7 @@ void* suspend_cancellable_coroutine_reusable_void(
 } // namespace kotlinx
 
 /**
- * Macro for inline suspend with reusable continuation.
- *
- * This is the macro equivalent of Kotlin's:
- *   suspendCancellableCoroutineReusable { cont -> ... }
- *
- * Usage:
- * ```cpp
- * KXS_SUSPEND_CANCELLABLE_REUSABLE(completion, cont, {
- *     // Use cont (CancellableContinuationImpl<void>*)
- *     some_async_op([cont]() {
- *         cont->resume({});
- *     });
- * });
- * ```
+ * Runs an inline block with a reusable void continuation and returns through the lowered ABI.
  */
 #define KXS_SUSPEND_CANCELLABLE_REUSABLE(completion, cont_name, block) \
     ::kotlinx::coroutines::dsl::suspend_cancellable_coroutine_reusable_void( \

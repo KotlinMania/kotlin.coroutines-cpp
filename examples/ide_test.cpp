@@ -24,7 +24,7 @@ void test_basic_suspend() {
 void test_delay() {
     std::cout << "Starting..." << std::endl;
     delay(1000);  // 1 second
-    delay(std::chrono::milliseconds(500));
+    delay(kotlin::time::milliseconds(500));
     std::cout << "Done!" << std::endl;
 }
 

@@ -6,7 +6,8 @@
  *
  * All platform-specific concurrency primitives (ReentrantLock, with_lock, identity_set,
  * WorkaroundAtomicReference, get_value, set_value, loop) are declared and defined
- * in kotlinx/coroutines/internal/Concurrent.hpp.
+ * in kotlinx/coroutines/internal/Concurrent.hpp, with the concrete void lock
+ * overload implemented in kotlinx/coroutines/internal/Concurrent.cpp.
  */
 
 #include "kotlinx/coroutines/internal/Concurrent.hpp"

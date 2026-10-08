@@ -19,6 +19,7 @@
 #include <functional>
 #include <memory>
 #include <utility>
+#include "kotlinx/coroutines/Job.hpp"
 
 namespace kotlinx::coroutines::flow {
 
@@ -78,14 +79,18 @@ public:
     void* collect(
         FlowCollector<T>* collector,
         Continuation<void*>* completion) override {
-        bool has_key = false;
-        std::any previous_key;
         // Upstream: upstream.collect { value ->
         //               val key = keySelector(value)
         //               if (previousKey === NULL || !areEquivalent(previousKey, key)) { ... }
         //           }
         auto inner = std::make_shared<DistinctInnerCollector>(
-            collector, key_selector_, are_equivalent_, &has_key, &previous_key);
+            collector, key_selector_, are_equivalent_);
+        if (completion && completion->get_context()) {
+            auto job = std::dynamic_pointer_cast<Job>(completion->get_context()->get(Job::type_key));
+            if (job) {
+                job->invoke_on_completion([inner](std::exception_ptr) {});
+            }
+        }
         return upstream_->collect(inner.get(), completion);
     }
 
@@ -95,20 +100,18 @@ private:
         DistinctInnerCollector(
             FlowCollector<T>* downstream,
             KeySelector key_selector,
-            AreEquivalent are_equivalent,
-            bool* has_key,
-            std::any* previous_key)
+            AreEquivalent are_equivalent)
             : downstream_(downstream),
               key_selector_(std::move(key_selector)),
               are_equivalent_(std::move(are_equivalent)),
-              has_key_(has_key),
-              previous_key_(previous_key) {}
+              has_key_(false),
+              previous_key_() {}
 
         void* emit(T value, Continuation<void*>* cont) override {
             auto key = key_selector_(value);
-            if (!*has_key_ || !are_equivalent_(*previous_key_, key)) {
-                *has_key_ = true;
-                *previous_key_ = key;
+            if (!has_key_ || !are_equivalent_(previous_key_, key)) {
+                has_key_ = true;
+                previous_key_ = key;
                 return downstream_->emit(std::move(value), cont);
             }
             return nullptr;
@@ -118,8 +121,8 @@ private:
         FlowCollector<T>* downstream_;
         KeySelector key_selector_;
         AreEquivalent are_equivalent_;
-        bool* has_key_;
-        std::any* previous_key_;
+        bool has_key_{false};
+        std::any previous_key_;
     };
 
     std::shared_ptr<Flow<T>> upstream_;

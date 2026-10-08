@@ -1,113 +1,96 @@
-#pragma once
 /**
- * @file Concurrent.hpp
- * @brief Concurrent utilities for kotlinx.coroutines
- *
  * Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt
- *
- * Platform-specific concurrency primitives including:
- * - ReentrantLock (mutex wrapper)
- * - WorkaroundAtomicReference (atomic reference wrapper)
- * - identitySet factory
+ * Common extensions: kotlinx-coroutines-core/common/src/internal/Concurrent.common.kt
  */
+#pragma once
+// port-lint: source kotlinx-coroutines-core/native/src/internal/Concurrent.kt
 
-#include <mutex>
 #include <atomic>
-#include <unordered_set>
 #include <functional>
+#include <mutex>
+#include <unordered_set>
+#include <utility>
 
-namespace kotlinx {
-namespace coroutines {
-namespace internal {
+namespace kotlinx::coroutines::internal {
 
-/**
- * ReentrantLock - wraps std::recursive_mutex for reentrant locking
- * Kotlin: internal actual typealias ReentrantLock = kotlinx.atomicfu.locks.SynchronizedObject
- */
+// Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:7-7
+// NOTE(port): The Native synchronized object maps to the existing C++ recursive lock.
 using ReentrantLock = std::recursive_mutex;
 
-/**
- * withLock - executes action while holding the lock
- * Kotlin: internal actual inline fun <T> ReentrantLock.withLock(action: () -> T): T
- */
-template<typename T>
-T with_lock(ReentrantLock& lock, std::function<T()> action) {
+// Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:9-9
+template <typename Action>
+decltype(auto) with_lock(ReentrantLock& lock, Action&& action) {
     std::lock_guard<ReentrantLock> guard(lock);
-    return action();
+    return std::forward<Action>(action)();
 }
 
-// Overload for void return
-inline void with_lock(ReentrantLock& lock, std::function<void()> action) {
-    std::lock_guard<ReentrantLock> guard(lock);
-    action();
+// Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:9-9
+void with_lock(ReentrantLock& lock, std::function<void()> action);
+
+// Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:11-11
+template <typename E>
+std::unordered_set<E> identity_set(int /* expected_size */) {
+    // NOTE(port): Native HashSet() does not read expectedSize. Preserve the
+    // parameter type without introducing an unused C++ local binding.
+    return std::unordered_set<E>();
 }
 
-/**
- * Creates an identity-based mutable set
- * Kotlin: internal actual fun <E> identitySet(expectedSize: Int): MutableSet<E>
- */
-template<typename E>
-std::unordered_set<E> identity_set(int expected_size = 16) {
-    std::unordered_set<E> set;
-    set.reserve(expected_size);
-    return set;
-}
-
-/**
- * BenignDataRace - marker for intentional data races (no-op in C++)
- * Kotlin: internal actual typealias BenignDataRace = kotlin.concurrent.Volatile
- */
-// In C++, use std::atomic for volatile-like semantics
-
-/**
- * WorkaroundAtomicReference - atomic reference wrapper
- * Kotlin: internal actual class WorkaroundAtomicReference<V>
- *
- * Provides atomic operations on reference types using std::atomic<T*>
- */
-template<typename V>
+// Used only as a workaround for #3820 in StateFlow. Do not use elsewhere.
+// Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:15-28
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/Concurrent.common.kt:23-29
+// NOTE(port): Reference values use the existing borrowed V* representation.
+// Atomic access does not transfer ownership of their C++ objects.
+template <typename V>
 class WorkaroundAtomicReference {
-private:
-    std::atomic<V*> native_atomic;
-
 public:
-    explicit WorkaroundAtomicReference(V* value) : native_atomic(value) {}
+    // Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:15-17
+    explicit WorkaroundAtomicReference(V* value) : native_atomic_(value) {}
 
+    // Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:19-19
     V* get() const {
-        return native_atomic.load(std::memory_order_acquire);
+        return native_atomic_.load(std::memory_order_seq_cst);
     }
 
+    // Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:21-23
     void set(V* value) {
-        native_atomic.store(value, std::memory_order_release);
+        native_atomic_.store(value, std::memory_order_seq_cst);
     }
 
+    // Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:25-25
     V* get_and_set(V* value) {
-        return native_atomic.exchange(value, std::memory_order_acq_rel);
+        return native_atomic_.exchange(value, std::memory_order_seq_cst);
     }
 
+    // Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:27-27
     bool compare_and_set(V* expected, V* value) {
-        return native_atomic.compare_exchange_strong(expected, value,
-            std::memory_order_acq_rel, std::memory_order_acquire);
+        return native_atomic_.compare_exchange_strong(expected, value,
+            std::memory_order_seq_cst, std::memory_order_seq_cst);
     }
+
+private:
+    // Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:17-17
+    // Native AtomicReference/Volatile accesses require sequential consistency.
+    std::atomic<V*> native_atomic_;
 };
 
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/Concurrent.common.kt:31-33
 template <typename T>
-inline T* get_value(const WorkaroundAtomicReference<T>& ref) {
+T* get_value(const WorkaroundAtomicReference<T>& ref) {
     return ref.get();
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/Concurrent.common.kt:31-34
 template <typename T>
-inline void set_value(WorkaroundAtomicReference<T>& ref, T* value) {
+void set_value(WorkaroundAtomicReference<T>& ref, T* value) {
     ref.set(value);
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/Concurrent.common.kt:36-40
 template <typename T, typename Action>
-inline void loop(WorkaroundAtomicReference<T>& ref, Action action) {
+void loop(WorkaroundAtomicReference<T>& ref, Action action) {
     while (true) {
-        action(ref, ref.get());
+        action(ref, get_value(ref));
     }
 }
 
-} // namespace internal
-} // namespace coroutines
-} // namespace kotlinx
+}  // namespace kotlinx::coroutines::internal

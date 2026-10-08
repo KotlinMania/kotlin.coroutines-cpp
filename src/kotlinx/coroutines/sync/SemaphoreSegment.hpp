@@ -8,7 +8,7 @@
  */
 
 #include <atomic>
-#include <array>
+#include "kotlinx/coroutines/Waiter.hpp"
 #include <memory>
 #include <cassert>
 #include "kotlinx/coroutines/internal/ConcurrentLinkedList.hpp"
@@ -57,57 +57,33 @@ inline int MAX_SPIN_CYCLES() {
  */
 class SemaphoreSegment : public internal::Segment<SemaphoreSegment> {
 public:
-    // We use a fixed-size array of atomic pointers
-    static constexpr int MAX_SEGMENT_SIZE = 64; // Upper bound
-    std::array<std::atomic<void*>, MAX_SEGMENT_SIZE> acquirers;
-    int actual_segment_size;
+    // NOTE(port): The atomic Kotlin reference retains the actual waiter, including
+    // after dequeue and through tryResume/completeResume. Cell preserves that ownership.
+    struct Cell {
+        void* state;
+        std::shared_ptr<Waiter> waiter;
+    };
 
-    SemaphoreSegment(long id, SemaphoreSegment* prev, int pointers)
-        : Segment<SemaphoreSegment>(id, prev, pointers)
-        , actual_segment_size(SEGMENT_SIZE())
-    {
-        for (int i = 0; i < actual_segment_size; ++i) {
-            acquirers[i].store(nullptr, std::memory_order_relaxed);
-        }
-    }
-
-    int number_of_slots() const override {
-        return actual_segment_size;
-    }
-
-    void* get(int index) const {
-        return acquirers[index].load(std::memory_order_acquire);
-    }
-
-    void set(int index, void* value) {
-        acquirers[index].store(value, std::memory_order_release);
-    }
-
-    bool cas(int index, void* expected, void* value) {
-        return acquirers[index].compare_exchange_strong(expected, value,
-            std::memory_order_release, std::memory_order_relaxed);
-    }
-
-    void* get_and_set(int index, void* value) {
-        return acquirers[index].exchange(value, std::memory_order_acq_rel);
-    }
-
-    /**
-     * Line 381-386: onCancellation
-     *
-     * Cleans the acquirer slot located by the specified index
-     * and removes this segment physically if all slots are cleaned.
-     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:361-363
+    SemaphoreSegment(long id, SemaphoreSegment* prev, int pointers);
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:363-363
+    int number_of_slots() const override;
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:366-366
+    void* get(int index) const;
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:369-371
+    void set(int index, void* value);
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:374-374
+    bool cas(int index, void* expected, void* value, std::shared_ptr<Waiter> waiter = {});
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:377-377
+    std::shared_ptr<Cell> get_and_set(int index, void* value);
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:381-386
     void on_cancellation(int index, std::exception_ptr cause,
-        std::shared_ptr<CoroutineContext> context) override
-    {
-        set(index, static_cast<void*>(&CANCELLED()));
-        on_slot_cleaned();
-    }
+                         std::shared_ptr<CoroutineContext> context) override;
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:388-388
+    std::string to_string() const override;
 
-    std::string to_string() const override {
-        return "SemaphoreSegment[id=" + std::to_string(id) + "]";
-    }
+private:
+    std::unique_ptr<std::shared_ptr<Cell>[]> acquirers_;
 };
 
 inline SemaphoreSegment* create_segment(long id, SemaphoreSegment* prev) {

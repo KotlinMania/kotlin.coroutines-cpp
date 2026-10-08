@@ -1,17 +1,4 @@
-/**
- * @file Limit.cpp
- * @brief Implementation of Limit operators (take, drop, etc.).
- *
- * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/operators/Limit.hpp`.
- */
-
+// port-lint: source kotlinx-coroutines-core/common/src/flow/operators/Limit.kt
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt
+// NOTE(port): Public element/callable templates are defined in the matching header.
 #include "kotlinx/coroutines/flow/Limit.hpp"
-
-namespace kotlinx {
-    namespace coroutines {
-        namespace flow {
-            // Template implementations are in the header.
-        } // namespace flow
-    } // namespace coroutines
-} // namespace kotlinx

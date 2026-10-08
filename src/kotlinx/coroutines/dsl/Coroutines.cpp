@@ -16,30 +16,6 @@ namespace coroutines {
 namespace dsl {
 
 // =============================================================================
-// Delay functions - delegate to kotlinx::coroutines::delay()
-// =============================================================================
-
-void* delay(long long time_millis, std::shared_ptr<Continuation<void*>> cont) {
-    return kotlinx::coroutines::delay(time_millis, std::move(cont));
-}
-
-void* delay(std::chrono::milliseconds duration, std::shared_ptr<Continuation<void*>> cont) {
-    return kotlinx::coroutines::delay(duration, std::move(cont));
-}
-
-void* delay(std::chrono::nanoseconds duration, std::shared_ptr<Continuation<void*>> cont) {
-    return kotlinx::coroutines::delay(duration, std::move(cont));
-}
-
-// =============================================================================
-// Yield - delegate to kotlinx::coroutines::yield()
-// =============================================================================
-
-void* yield(std::shared_ptr<Continuation<void*>> cont) {
-    return kotlinx::coroutines::yield(std::move(cont));
-}
-
-// =============================================================================
 // Job operations
 // =============================================================================
 

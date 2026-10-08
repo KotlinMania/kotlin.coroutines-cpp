@@ -2,13 +2,13 @@
 #
 # Creates the kotlinx::coroutines INTERFACE library that provides:
 #   - Header files for coroutine primitives
-#   - Optional marker cleanup for already lowered suspend functions
+#   - Mandatory LLVM injection for suspend definitions
 #   - Runtime library linking
 #
 # Usage:
 #   include(KotlinxCoroutines)
 #   target_link_libraries(my_app PRIVATE kotlinx::coroutines)
-#   kxs_enable_suspend(my_app)  # Enable suspend transformation
+#   kxs_enable_suspend_dsl(my_app)  # Construct frames and inject resume dispatch
 #
 # The INTERFACE library propagates:
 #   - INTERFACE_INCLUDE_DIRECTORIES: Header paths
@@ -35,13 +35,11 @@ elseif(EXISTS "${_KXS_MODULE_DIR}/../../../include/kotlinx")
     get_filename_component(_KXS_ROOT_DIR "${_KXS_MODULE_DIR}/../../.." ABSOLUTE)
     set(_KXS_INCLUDE_DIR "${_KXS_ROOT_DIR}/include")
 else()
-    # Fallback - assume we're in source tree
-    get_filename_component(_KXS_ROOT_DIR "${_KXS_MODULE_DIR}/../.." ABSOLUTE)
-    set(_KXS_INCLUDE_DIR "${_KXS_ROOT_DIR}/include")
+    message(FATAL_ERROR "KotlinxCoroutines.cmake requires source-tree src/kotlinx headers or installed include/kotlinx headers")
 endif()
 
 # Include the transform module
-include(KotlinxCoroutineTransform)
+include("${_KXS_MODULE_DIR}/KotlinxCoroutineTransform.cmake")
 
 #[============================================================================[
   Create the kotlinx::coroutines INTERFACE library
@@ -49,6 +47,7 @@ include(KotlinxCoroutineTransform)
 if(NOT TARGET kotlinx::coroutines)
     add_library(kotlinx_coroutines INTERFACE)
     add_library(kotlinx::coroutines ALIAS kotlinx_coroutines)
+    set_target_properties(kotlinx_coroutines PROPERTIES EXPORT_NAME coroutines)
 
     # Header files
     target_include_directories(kotlinx_coroutines INTERFACE
@@ -61,15 +60,23 @@ if(NOT TARGET kotlinx::coroutines)
         KXS_COROUTINES_ENABLED=1
     )
 
-    # C++20 for coroutine support
+    # C++20 language features used by the port and suspend authoring DSL.
     target_compile_features(kotlinx_coroutines INTERFACE
         cxx_std_20
     )
 
+    # Ordinary applications consume the translated C++ runtime through the
+    # public package target, including its transitive thread dependency.
+    if(TARGET kotlinx-coroutines-core)
+        target_link_libraries(kotlinx_coroutines INTERFACE kotlinx-coroutines-core)
+    elseif(TARGET kotlinx::kotlinx-coroutines-core)
+        target_link_libraries(kotlinx_coroutines INTERFACE kotlinx::kotlinx-coroutines-core)
+    endif()
+
     # Custom property to mark targets for transformation
     define_property(TARGET PROPERTY KXS_COROUTINE_TRANSFORM
         BRIEF_DOCS "Enable KXS coroutine IR transformation"
-        FULL_DOCS "When set to ON, the target's source files will be compiled to LLVM IR, cleaned of no-op markers without changing coroutine dispatch, and then compiled to object files."
+        FULL_DOCS "The KotlinxCoroutinePass LLVM plugin lowers persistent frame-label stores and resume dispatch inside Clang before optimization."
     )
 
     message(STATUS "[KXS] Created kotlinx::coroutines INTERFACE library")
@@ -80,8 +87,9 @@ endif()
 
   kxs_enable_suspend(<target>)
 
-  This enables the IR transformation pipeline for targets that use
-  suspend functions. Call this AFTER adding all sources to the target.
+  This injects LLVM addresses into explicit Continuation-ABI marker regions.
+  Annotated C++ bodies and generic library builders require
+  kxs_enable_suspend_dsl instead. Call AFTER adding all target sources.
 #]============================================================================]
 function(kxs_enable_suspend TARGET)
     if(NOT TARGET ${TARGET})
@@ -97,6 +105,13 @@ function(kxs_enable_suspend TARGET)
     kxs_enable_coroutine_transform(${TARGET})
 endfunction()
 
+# Kotlin-like annotated definitions: construct retained frames inside Clang,
+# then inject their saved-address dispatch before optimization.
+function(kxs_enable_suspend_dsl TARGET)
+    kxs_enable_suspend("${TARGET}")
+    kxs_enable_suspend_frontend("${TARGET}")
+endfunction()
+
 #[============================================================================[
   INTERFACE library for runtime-only (no transformation)
 
@@ -106,6 +121,7 @@ endfunction()
 if(NOT TARGET kotlinx::coroutines_headers)
     add_library(kotlinx_coroutines_headers INTERFACE)
     add_library(kotlinx::coroutines_headers ALIAS kotlinx_coroutines_headers)
+    set_target_properties(kotlinx_coroutines_headers PROPERTIES EXPORT_NAME coroutines_headers)
 
     target_include_directories(kotlinx_coroutines_headers INTERFACE
         $<BUILD_INTERFACE:${_KXS_INCLUDE_DIR}>
@@ -125,14 +141,14 @@ endif()
   Equivalent to:
     add_executable(name src1.cpp src2.cpp)
     target_link_libraries(name PRIVATE kotlinx::coroutines)
-    kxs_enable_suspend(name)
+    kxs_enable_suspend_dsl(name)
 #]============================================================================]
 macro(kxs_add_executable TARGET_NAME)
     cmake_parse_arguments(KXS "" "" "SOURCES" ${ARGN})
 
     add_executable(${TARGET_NAME} ${KXS_SOURCES})
     target_link_libraries(${TARGET_NAME} PRIVATE kotlinx::coroutines)
-    kxs_enable_suspend(${TARGET_NAME})
+    kxs_enable_suspend_dsl(${TARGET_NAME})
 endmacro()
 
 #[============================================================================[
@@ -149,7 +165,7 @@ macro(kxs_add_library TARGET_NAME)
 
     add_library(${TARGET_NAME} ${KXS_TYPE} ${KXS_SOURCES})
     target_link_libraries(${TARGET_NAME} PUBLIC kotlinx::coroutines)
-    kxs_enable_suspend(${TARGET_NAME})
+    kxs_enable_suspend_dsl(${TARGET_NAME})
 endmacro()
 
 # Note: Installation is handled in the main CMakeLists.txt when building

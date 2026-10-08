@@ -103,6 +103,10 @@ hpp_files.txt
 # Reference files (not part of C++ build)
 *.kt
 !tmp/**/*.kt
+# Real Kotlin/Native ABI contract fixture required by the CMake test.
+!src/tests/src/gc_bridge/NativeReferenceContract.kt
+!src/tests/src/gc_bridge/NativeArrayUtilContract.kt
+!src/tests/src/gc_bridge/NativeIntArrayContract.kt
 
 # CMake generated
 CMakeCache.txt
@@ -169,3 +173,4 @@ tools/ast_distance/ast_distance
 *.bak
 /backups/
 
+*.log

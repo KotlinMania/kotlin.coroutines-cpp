@@ -1,3 +1,4 @@
+// port-lint: source kotlinx-coroutines-core/common/src/CoroutineStart.kt
 #pragma once
 
 /**
@@ -5,14 +6,13 @@
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
-#include "kotlinx/coroutines/CoroutineDispatcher.hpp"
-#include "kotlinx/coroutines/ContinuationInterceptor.hpp"
-#include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
-#include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/intrinsics/Cancellable.hpp"
 #include "kotlinx/coroutines/internal/CurrentRunningCoroutine.hpp"
+#include <functional>
+#include <type_traits>
+#include <utility>
 
 namespace kotlinx::coroutines {
 
@@ -33,6 +33,7 @@ namespace kotlinx::coroutines {
  *   executing in any case.
  * - [UNDISPATCHED] immediately executes the coroutine until its first suspension point _in the current thread_.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:24-371
 enum class CoroutineStart {
     /**
      * Immediately schedules the coroutine for execution according to its context. This is usually the default option.
@@ -355,196 +356,131 @@ enum class CoroutineStart {
     UNDISPATCHED
 };
 
+// NOTE(port): Existing erased C++ ABI binding for the source strategy.
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
+void invoke(CoroutineStart start, intrinsics::ErasedSuspendFunction block,
+            std::shared_ptr<Continuation<void*>> completion);
 /**
- * Invokes the coroutine block with the given start strategy.
- * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-363
+ * Returns `true` when [LAZY].
+ *
+ * @suppress **This an internal API and should not be used from general code.**
  */
-template <typename Block, typename R, typename T>
-void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<Continuation<T>> completion) {
-    if (start == CoroutineStart::LAZY) {
-        // Upstream: a LAZY-started coroutine returns immediately from this overload; the
-        // enclosing AbstractCoroutine's on_start() drives the block when the parent
-        // requests it.
-        return;
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:370-370
+bool is_lazy(CoroutineStart start);
+
+/**
+ * Starts the corresponding block with receiver as a coroutine with this coroutine start strategy.
+ *
+ * - [DEFAULT] uses [startCoroutineCancellable].
+ * - [ATOMIC] uses [startCoroutine].
+ * - [UNDISPATCHED] uses [startCoroutineUndispatched].
+ * - [LAZY] does nothing.
+ *
+ * @suppress **This an internal API and should not be used from general code.**
+ */
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
+// NOTE(port): The source suspend receiver function uses the existing typed ABI.
+template <typename R, typename T>
+void invoke(CoroutineStart start, std::function<void*(R, Continuation<T>*)> block,
+            R receiver, std::shared_ptr<Continuation<T>> completion) {
+    switch (start) {
+        case CoroutineStart::DEFAULT:
+            intrinsics::start_coroutine_cancellable<R, T>(
+                std::move(block), std::move(receiver), std::move(completion));
+            break;
+        case CoroutineStart::ATOMIC:
+            intrinsics::start_coroutine<R, T>(
+                std::move(block), std::move(receiver), std::move(completion));
+            break;
+        case CoroutineStart::UNDISPATCHED:
+            intrinsics::start_coroutine_undispatched<R, T>(
+                std::move(block), std::move(receiver), std::move(completion));
+            break;
+        case CoroutineStart::LAZY:
+            break; // will start lazily
     }
-
-    auto void_cont = to_void_continuation(completion);
-
-    auto execute_block = [](auto& b, auto& rec, std::shared_ptr<Continuation<T>> comp, std::shared_ptr<Continuation<void*>> vc) {
-        internal::CurrentRunningCoroutineGuard guard(vc);
-        try {
-            if constexpr (std::is_invocable_v<Block, R, std::shared_ptr<Continuation<void*>>>) {
-                using Ret = std::invoke_result_t<Block, R, std::shared_ptr<Continuation<void*>>>;
-                if constexpr (std::is_void_v<Ret>) {
-                    std::invoke(b, rec, vc);
-                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        if constexpr (std::is_same_v<T, Unit>) {
-                            comp->resume_with(Result<T>(Unit{}));
-                        } else {
-                            comp->resume_with(Result<T>::success());
-                        }
-                    }
-                } else {
-                    auto result = std::invoke(b, rec, vc);
-                    if constexpr (std::is_pointer_v<Ret>) {
-                        if (intrinsics::is_coroutine_suspended(result)) {
-                            return;
-                        }
-                    }
-                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        comp->resume_with(Result<T>(result));
-                    }
-                }
-            } else if constexpr (std::is_invocable_v<Block, R, Continuation<void*>*>) {
-                using Ret = std::invoke_result_t<Block, R, Continuation<void*>*>;
-                if constexpr (std::is_void_v<Ret>) {
-                    std::invoke(b, rec, vc ? vc.get() : nullptr);
-                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        if constexpr (std::is_same_v<T, Unit>) {
-                            comp->resume_with(Result<T>(Unit{}));
-                        } else {
-                            comp->resume_with(Result<T>::success());
-                        }
-                    }
-                } else {
-                    auto result = std::invoke(b, rec, vc ? vc.get() : nullptr);
-                    if constexpr (std::is_pointer_v<Ret>) {
-                        if (intrinsics::is_coroutine_suspended(result)) {
-                            return;
-                        }
-                    }
-                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        comp->resume_with(Result<T>(result));
-                    }
-                }
-            } else if constexpr (std::is_invocable_v<Block, R>) {
-                using Ret = std::invoke_result_t<Block, R>;
-                if constexpr (std::is_void_v<Ret>) {
-                    std::invoke(b, rec);
-                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        if constexpr (std::is_same_v<T, Unit>) {
-                            comp->resume_with(Result<T>(Unit{}));
-                        } else {
-                            comp->resume_with(Result<T>::success());
-                        }
-                    }
-                } else {
-                    auto result = std::invoke(b, rec);
-                    if constexpr (std::is_pointer_v<Ret>) {
-                        if (intrinsics::is_coroutine_suspended(result)) {
-                            return;
-                        }
-                    }
-                    if (comp && !internal::CurrentRunningCoroutine::suspended) {
-                        comp->resume_with(Result<T>(result));
-                    }
-                }
-            }
-        } catch (...) {
-            if (comp) {
-                comp->resume_with(Result<T>(std::current_exception()));
-            }
-        }
-    };
-
-    if ((start == CoroutineStart::DEFAULT || start == CoroutineStart::ATOMIC) && completion && completion->get_context()) {
-        auto interceptor = completion->get_context()->get(ContinuationInterceptor::type_key);
-        if (auto dispatcher = std::dynamic_pointer_cast<CoroutineDispatcher>(interceptor)) {
-            if (dispatcher->is_dispatch_needed(*completion->get_context())) {
-                std::function<void()> runner = [start, b = std::forward<Block>(block), rec = std::forward<R>(receiver), completion, void_cont, execute_block]() mutable {
-                    if (start == CoroutineStart::DEFAULT && completion && completion->get_context()) {
-                        auto job_elem = completion->get_context()->get(Job::type_key);
-                        if (auto job = std::dynamic_pointer_cast<Job>(job_elem)) {
-                            if (!job->is_active()) {
-                                completion->resume_with(Result<T>::failure(job->get_cancellation_exception()));
-                                return;
-                            }
-                        }
-                    }
-                    execute_block(b, rec, completion, void_cont);
-                };
-                dispatcher->dispatch(*completion->get_context(), std::make_shared<LambdaRunnable<std::function<void()>>>(std::move(runner)));
-                return;
-            }
-        }
-    }
-
-    if (start == CoroutineStart::DEFAULT && completion && completion->get_context()) {
-        auto job_elem = completion->get_context()->get(Job::type_key);
-        if (auto job = std::dynamic_pointer_cast<Job>(job_elem)) {
-            if (!job->is_active()) {
-                completion->resume_with(Result<T>::failure(job->get_cancellation_exception()));
-                return;
-            }
-        }
-    }
-
-    execute_block(block, receiver, completion, void_cont);
 }
 
-// Extension methods for CoroutineStart
-// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:346-371
+namespace internal {
+// NOTE(port): C++ callable/receiver storage is ABI adaptation. Owning arguments
+// move rvalues into owned storage; every lvalue remains borrowed, regardless of copyability.
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
+template <typename Argument>
+auto retain_start_argument(Argument&& argument) {
+    using Value = std::remove_reference_t<Argument>;
+    if constexpr (std::is_lvalue_reference_v<Argument>)
+        return std::shared_ptr<Value>(std::addressof(argument), [](Value*) {});
+    else
+        return std::make_shared<std::decay_t<Argument>>(std::forward<Argument>(argument));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
+// NOTE(port): Bind an ordinary C++ callable to the erased suspend entry. The
+// actual Native wrapper handles suspension, failure and completion. The receiving
+// typed adapter owns unboxing/deletion; Unit is nullptr. No dispatch logic lives here.
+template <typename T, typename Block, typename R>
+intrinsics::ErasedSuspendFunction erase_start_block(Block&& block, R&& receiver) {
+    auto callable = retain_start_argument(std::forward<Block>(block));
+    auto argument = retain_start_argument(std::forward<R>(receiver));
+    return [callable = std::move(callable), argument = std::move(argument)](
+                std::shared_ptr<Continuation<void*>> frame) -> void* {
+        CurrentRunningCoroutineGuard guard(frame);
+        auto call = [&]() -> decltype(auto) {
+            if constexpr (std::is_invocable_v<decltype(*callable), decltype(*argument), std::shared_ptr<Continuation<void*>>>) {
+                return std::invoke(*callable, *argument, frame);
+            } else if constexpr (std::is_invocable_v<decltype(*callable), decltype(*argument), Continuation<void*>*>) {
+                return std::invoke(*callable, *argument, frame.get());
+            } else if constexpr (std::is_invocable_v<decltype(*callable), decltype(*argument), Continuation<T>*>) {
+                auto projection = result_box_completion<T>(frame);
+                intrinsics::retain_suspend_argument(frame, projection);
+                return std::invoke(*callable, *argument, projection.get());
+            } else {
+                return std::invoke(*callable, *argument);
+            }
+        };
+        using Value = decltype(call());
+        if constexpr (std::is_void_v<Value>) {
+            static_assert(std::is_void_v<T> || std::is_same_v<T, Unit> || std::is_same_v<T, void*>,
+                          "A void C++ body requires a Unit/void/erased continuation");
+            call();
+            return CurrentRunningCoroutine::suspended ? COROUTINE_SUSPENDED : nullptr;
+        } else {
+            auto value = call();
+            if (CurrentRunningCoroutine::suspended) return COROUTINE_SUSPENDED;
+            if constexpr (std::is_same_v<std::remove_cvref_t<Value>, void*>) return value;
+            else if constexpr (std::is_same_v<T, Unit> || std::is_void_v<T>) return nullptr;
+            else return new T(std::move(value));
+        }
+    };
+}
+} // namespace internal
+
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
+// NOTE(port): Lvalue block/receiver references must outlive completion.
+// Rvalues transfer their owned storage into the actual continuation wrapper.
+template <typename Block, typename R, typename T>
+void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<Continuation<T>> completion) {
+    if (is_lazy(start)) return; // Will start lazily; do not invoke or capture the body here.
+    invoke(start, internal::erase_start_block<T>(std::forward<Block>(block), std::forward<R>(receiver)),
+           to_void_continuation(std::move(completion)));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-370
+// NOTE(port): Compatibility projection of members of the Kotlin enum.
 class CoroutineStartExtensions {
 public:
-    /**
-     * Starts the corresponding block with receiver as a coroutine with this coroutine start strategy.
-     *
-     * - [DEFAULT] uses [startCoroutineCancellable].
-     * - [ATOMIC] uses [startCoroutine].
-     * - [UNDISPATCHED] uses [startCoroutineUndispatched].
-     * - [LAZY] does nothing.
-     *
-     * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-363
-     * @suppress **This an internal API and should not be used from general code.**
-     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
     template <typename T>
     static void invoke(CoroutineStart start, std::function<void*(Continuation<T>*)> block, Continuation<T>* completion) {
-        switch (start) {
-            case CoroutineStart::DEFAULT:
-                intrinsics::start_coroutine_cancellable(block, completion);
-                break;
-            case CoroutineStart::ATOMIC:
-                intrinsics::start_coroutine(block, completion);
-                break;
-            case CoroutineStart::UNDISPATCHED:
-                intrinsics::start_coroutine_undispatched(block, completion);
-                break;
-            case CoroutineStart::LAZY:
-                break;
-        }
+        auto bound = [block = std::move(block)](Unit, Continuation<T>* frame) { return block(frame); };
+        kotlinx::coroutines::invoke(start, std::move(bound), Unit{}, intrinsics::retain_start_completion(completion));
     }
-
-    /**
-     * Starts the corresponding block with receiver as a coroutine with this coroutine start strategy.
-     *
-     * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-363
-     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
     template <typename R, typename T>
     static void invoke(CoroutineStart start, std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
-        switch (start) {
-            case CoroutineStart::DEFAULT:
-                intrinsics::start_coroutine_cancellable(block, receiver, completion);
-                break;
-            case CoroutineStart::ATOMIC:
-                intrinsics::start_coroutine(block, receiver, completion);
-                break;
-            case CoroutineStart::UNDISPATCHED:
-                intrinsics::start_coroutine_undispatched(block, receiver, completion);
-                break;
-            case CoroutineStart::LAZY:
-                break;
-        }
+        kotlinx::coroutines::invoke(start, std::move(block), std::move(receiver), intrinsics::retain_start_completion(completion));
     }
-
-    /**
-     * Returns `true` when [LAZY].
-     *
-     * Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:370
-     * @suppress **This an internal API and should not be used from general code.**
-     */
-    static bool is_lazy(CoroutineStart start) {
-        return start == CoroutineStart::LAZY;
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:370-370
+    static bool is_lazy(CoroutineStart start) { return kotlinx::coroutines::is_lazy(start); }
 };
-
 } // namespace kotlinx::coroutines

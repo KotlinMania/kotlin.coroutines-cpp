@@ -8,14 +8,18 @@
  */
 
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
+#include "kotlinx/coroutines/CompletedValue.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/Deferred.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/Result.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
 
 #include <exception>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 
 namespace kotlinx::coroutines {
@@ -82,39 +86,38 @@ inline bool complete_with(CompletableDeferred<T>* deferred, Result<T> result) {
 }
 
 /**
- * Concrete implementation of [CompletableDeferred].
- *
- * Upstream:
- *   @OptIn(InternalForInheritanceCoroutinesApi::class)
- *   @Suppress("UNCHECKED_CAST")
- *   private class CompletableDeferredImpl<T>(parent: Job?) : JobSupport(true), CompletableDeferred<T> {
- *       init { initParentJob(parent) }
- *       override val onCancelComplete get() = true
- *       override fun getCompleted(): T = getCompletedInternal() as T
- *       override suspend fun await(): T = awaitInternal() as T
- *       override val onAwait: SelectClause1<T> get() = onAwaitInternal as SelectClause1<T>
- *       override fun complete(value: T): Boolean = makeCompleting(value)
- *       override fun completeExceptionally(exception: Throwable): Boolean =
- *           makeCompleting(CompletedExceptionally(exception))
- *   }
+ * Active deferred backed by the job state machine. Factories register the parent
+ * after shared ownership is established, before returning the deferred.
+ * Successful completion stores a typed value in a polymorphic job-state box.
  */
 template <typename T>
 class CompletableDeferredImpl : public JobSupport, public CompletableDeferred<T> {
 public:
-    explicit CompletableDeferredImpl(std::shared_ptr<Job> parent) : JobSupport(true) {
-        this->init_parent_job(std::move(parent));
+    CompletableDeferredImpl() : JobSupport(true) {}
+    using JobSupport::init_parent_job;
+
+    bool get_on_cancel_complete() const override { return true; }
+
+    std::exception_ptr get_completion_exception_or_null() const override {
+        return JobSupport::get_completion_exception_or_null();
     }
 
-    bool on_cancel_complete() const override { return true; }
-
-    /** Upstream: override fun getCompleted(): T = getCompletedInternal() as T */
+    /** Returns a copy of the completed value, or throws for failure or incomplete state. */
     T get_completed() const override {
-        return *static_cast<T*>(this->get_completed_internal());
+        auto* state = this->get_completed_internal();
+        if (auto* value = dynamic_cast<CompletedValue<T>*>(state)) {
+            return value->value;
+        }
+        throw std::logic_error("Unexpected completion state");
     }
 
-    /** Upstream: override suspend fun await(): T = awaitInternal() as T */
+    /** Returns an owned value box, or suspends until the value or failure is available. */
     void* await(Continuation<void*>* continuation) override {
-        return this->await_internal(continuation);
+        auto frame = std::make_shared<AwaitValueFrame>(
+            std::dynamic_pointer_cast<CompletableDeferredImpl<T>>(this->shared_from_this()),
+            internal::retain_continuation(continuation));
+        frame->retain();
+        return frame->start(Result<void*>::success(nullptr));
     }
 
     T await_blocking() override {
@@ -125,7 +128,7 @@ public:
         return this->get_completed();
     }
 
-    /** Upstream: override val onAwait: SelectClause1<T> get() = onAwaitInternal as SelectClause1<T> */
+    /** Selects the completed value, transferring an owning T box to the typed block adapter. */
     selects::SelectClause1<T>& on_await() override {
         if (!on_await_clause_) {
             on_await_clause_ = std::make_unique<selects::SelectClause1Impl<T>>(
@@ -134,16 +137,19 @@ public:
                     static_cast<JobSupport*>(static_cast<CompletableDeferredImpl<T>*>(clause_object))->on_await_internal_reg_func(select, param);
                 },
                 [](void* clause_object, void* param, void* result) -> void* {
-                    return JobSupport::on_await_internal_process_res_func(clause_object, param, result);
+                    auto* state = static_cast<JobState*>(JobSupport::on_await_internal_process_res_func(clause_object, param, result));
+                    auto* completed = dynamic_cast<CompletedValue<T>*>(state);
+                    if (!completed) throw std::logic_error("Unexpected selected await state");
+                    return new T(completed->value);
                 }
             );
         }
         return *on_await_clause_;
     }
 
-    /** Upstream: override fun complete(value: T): Boolean = makeCompleting(value) */
+    /** Completes the job with a typed value; an already completed job is unchanged. */
     bool complete(T value) override {
-        return this->make_completing(new T(std::move(value)));
+        return this->make_completing(new CompletedValue<T>(std::move(value)));
     }
 
     /**
@@ -156,34 +162,52 @@ public:
     }
 
 private:
+    class AwaitValueFrame final : public ContinuationImpl {
+    public:
+        AwaitValueFrame(std::shared_ptr<CompletableDeferredImpl<T>> deferred,
+                        std::shared_ptr<Continuation<void*>> completion)
+            : ContinuationImpl(std::move(completion)), deferred_(std::move(deferred)) {}
+        void retain() { self_ref_ = shared_from_this(); }
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                coroutine_begin(this)
+                coroutine_yield_value(this, result, deferred_->await_internal(this), state_);
+                self_ref_.reset();
+                return box_value();
+            } catch (...) {
+                self_ref_.reset();
+                throw;
+            }
+        }
+    private:
+        void* box_value() {
+            auto* value = dynamic_cast<CompletedValue<T>*>(static_cast<JobState*>(state_));
+            if (!value) throw std::logic_error("Unexpected await state");
+            return new T(value->value);
+        }
+        void* _label = nullptr;
+        void* state_ = nullptr; // Borrowed from the retained deferred's completion state.
+        std::shared_ptr<CompletableDeferredImpl<T>> deferred_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+
     std::unique_ptr<selects::SelectClause1Impl<T>> on_await_clause_;
 };
 
-/**
- * Creates a [CompletableDeferred] in an _active_ state.
- *
- * Upstream:
- *   @Suppress("FunctionName")
- *   public fun <T> CompletableDeferred(parent: Job? = null): CompletableDeferred<T> =
- *       CompletableDeferredImpl(parent)
- */
+/** Creates an active deferred, optionally attached to a parent job. */
 template <typename T>
 inline std::shared_ptr<CompletableDeferred<T>> make_completable_deferred(
     std::shared_ptr<Job> parent = nullptr) {
-    return std::make_shared<CompletableDeferredImpl<T>>(std::move(parent));
+    auto deferred = std::make_shared<CompletableDeferredImpl<T>>();
+    deferred->init_parent_job(std::move(parent));
+    return deferred;
 }
 
-/**
- * Creates an already _completed_ [CompletableDeferred] with a given [value].
- *
- * Upstream:
- *   @Suppress("FunctionName")
- *   public fun <T> CompletableDeferred(value: T): CompletableDeferred<T> =
- *       CompletableDeferredImpl<T>(null).apply { complete(value) }
- */
+/** Creates a parentless deferred already completed with the given value. */
 template <typename T>
 inline std::shared_ptr<CompletableDeferred<T>> make_completable_deferred(T value) {
-    auto deferred = std::make_shared<CompletableDeferredImpl<T>>(nullptr);
+    auto deferred = std::make_shared<CompletableDeferredImpl<T>>();
+    deferred->init_parent_job(nullptr);
     deferred->complete(std::move(value));
     return deferred;
 }

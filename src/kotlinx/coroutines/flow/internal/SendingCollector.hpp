@@ -1,25 +1,27 @@
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SendingCollector.kt
+ */
 #pragma once
 // port-lint: source flow/internal/SendingCollector.kt
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
-#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 
 namespace kotlinx {
 namespace coroutines {
 namespace flow {
 namespace internal {
 
-// Collection that sends values to a channel
-// Corresponds to kotlinx.coroutines.flow.internal.SendingCollector
+// Collection that sends to channel.
+// This is an internal API and should not be used from general code.
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SendingCollector.kt:7-16
 template <typename T>
 class SendingCollector : public FlowCollector<T> {
 public:
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SendingCollector.kt:12-14
     explicit SendingCollector(channels::SendChannel<T>* channel) : channel_(channel) {}
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/SendingCollector.kt:15-15
     void* emit(T value, Continuation<void*>* continuation) override {
-        if (channel_->is_closed_for_send()) {
-             throw channels::ClosedSendChannelException("Channel was closed");
-        }
         return channel_->send(std::move(value), continuation);
     }
 

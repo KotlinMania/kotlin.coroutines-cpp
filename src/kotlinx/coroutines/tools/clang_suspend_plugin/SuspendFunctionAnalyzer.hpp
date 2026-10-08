@@ -1,11 +1,10 @@
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:28-44
 #ifndef KOTLINX_SUSPEND_FUNCTION_ANALYZER_HPP
 #define KOTLINX_SUSPEND_FUNCTION_ANALYZER_HPP
 
 #include "clang/AST/AST.h"
 #include "clang/AST/RecursiveASTVisitor.h"
-#include "clang/Analysis/CFG.h"
 
-#include <memory>
 #include <set>
 #include <vector>
 #include <map>
@@ -13,17 +12,20 @@
 namespace kotlinx {
 namespace suspend {
 
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:29-40
 /// Information about a single suspension point in a suspend function.
 struct SuspendPointInfo {
     const clang::Stmt* suspend_stmt;
     unsigned state_id;
     std::set<const clang::VarDecl*> live_variables;
+    // NOTE(port): Clang shares the declaration expression of C++ defaults.
+    // Retain its enclosing use nodes to identify this evaluated occurrence.
+    std::vector<const clang::Stmt*> default_expression_path;
 };
 
 /// Dispatch mode for generated state machines.
 enum class DispatchMode {
-    Switch,       // Phase 1: switch(_label) { case 0: ... }
-    ComputedGoto  // Phase 3: goto *_label; (indirectbr parity)
+    ComputedGoto  // LLVM injector constructs blockaddress/indirectbr dispatch
 };
 
 /// Spill mode for variable saving across suspension points.
@@ -36,8 +38,8 @@ enum class SpillMode {
 /// 1. Suspension points (calls to suspend())
 /// 2. Live variables at each suspension point (for spilling)
 ///
-/// Uses Clang's CFG infrastructure and implements backward dataflow
-/// liveness analysis matching Kotlin/Native's approach.
+/// Uses the translated Kotlin IR call walk and liveness visitor, adapting
+/// Clang declarations and evaluated expressions in the original source body.
 class SuspendFunctionAnalyzer {
 public:
     SuspendFunctionAnalyzer(clang::ASTContext& ctx, clang::FunctionDecl* fd);
@@ -63,43 +65,40 @@ public:
 
     /// Check if a statement is a suspend call (suspend(expr) or annotated).
     static bool is_suspend_call(const clang::Stmt* stmt);
+    static bool is_suspend_wrapper(const clang::CallExpr* call);
+    // NOTE(port): C++ type queries have no runtime suspension operation.
+    static bool is_unevaluated_expression(const clang::Stmt* statement);
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+    // NOTE(port): Select Clang's resolved initialization, including implicit fields.
+    static const clang::InitListExpr* evaluated_initializer_list(const clang::InitListExpr* initializer);
+    static bool requires_overload_resolution(const clang::FunctionDecl* function);
+    // NOTE(port): Clang adapter for the trailing lowered continuation parameter.
+    static const clang::ParmVarDecl* continuation_parameter(const clang::FunctionDecl* function);
+    // NOTE(port): Materialize omitted C++ arguments before the continuation.
+    static std::string continuation_arguments(const clang::CallExpr* call, const std::string& continuation,
+                                             const clang::PrintingPolicy& policy,
+                                             const std::vector<std::string>& defaults = {});
+    // NOTE(port): Shared Clang printing adapter for retained non-local symbols.
+    static bool print_declaration_reference(const clang::DeclRefExpr* reference, clang::ASTContext& context,
+                                            const clang::PrintingPolicy& policy, llvm::raw_ostream& output);
+    static std::string default_argument(const clang::CXXDefaultArgExpr* argument, const clang::PrintingPolicy& policy);
 
 private:
-    /// Build the CFG for the function.
-    bool build_cfg();
-
     /// Traverse the function to collect all local variable declarations.
     void collect_local_variables();
 
-    /// Find all suspension points in the CFG.
+    /// Find suspension points in evaluated source expressions.
     void find_suspend_points();
 
     /// Perform backward dataflow liveness analysis.
     /// Populates live_variables in each SuspendPointInfo.
     void compute_liveness();
 
-    /// Helper: collect all variables used (read) in a statement.
-    void collect_uses(const clang::Stmt* stmt, std::set<const clang::VarDecl*>& uses);
-
-    /// Helper: collect all variables defined (written) in a statement.
-    void collect_defs(const clang::Stmt* stmt, std::set<const clang::VarDecl*>& defs);
-
-    /// Helper: find the CFG block containing a statement.
-    const clang::CFGBlock* find_block_containing(const clang::Stmt* stmt) const;
-
     clang::ASTContext& ctx_;
     clang::FunctionDecl* fd_;
-    std::unique_ptr<clang::CFG> cfg_;
     std::vector<SuspendPointInfo> suspend_points_;
     std::set<const clang::VarDecl*> spilled_variables_;
     std::vector<const clang::VarDecl*> local_variables_;
-
-    // Maps CFG block ID to the set of variables live at block exit.
-    std::map<unsigned, std::set<const clang::VarDecl*>> live_out_;
-    // Maps CFG block ID to the set of variables live at block entry.
-    std::map<unsigned, std::set<const clang::VarDecl*>> live_in_;
-    // Maps statement to its containing CFG block.
-    std::map<const clang::Stmt*, const clang::CFGBlock*> stmt_to_block_;
 };
 
 } // namespace suspend

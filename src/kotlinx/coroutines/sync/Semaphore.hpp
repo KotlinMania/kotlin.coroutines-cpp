@@ -12,7 +12,9 @@
 #include <functional>
 #include <memory>
 #include <exception>
-#include <thread>
+#include <type_traits>
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include <algorithm>
 #include <stdexcept>
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -33,6 +35,7 @@ namespace sync {
  * access to particular resource. Semaphore with `permits = 1` is essentially
  * a Mutex.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:21-59
 class Semaphore {
 public:
     virtual ~Semaphore() = default;
@@ -40,6 +43,7 @@ public:
     /**
      * Line 24-25: Returns the current number of permits available in this semaphore.
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:25-25
     virtual int available_permits() const = 0;
 
     /**
@@ -58,6 +62,7 @@ public:
      * @param cont The continuation for suspend/resume
      * @return COROUTINE_SUSPENDED or nullptr (Unit)
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:44-44
     virtual void* acquire(Continuation<void*>* cont) = 0;
 
     /**
@@ -65,6 +70,7 @@ public:
      *
      * @return true if a permit was acquired, false otherwise.
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:51-51
     virtual bool try_acquire() = 0;
 
     /**
@@ -74,14 +80,11 @@ public:
      * invocation. Throws std::logic_error if the number of release invocations
      * is greater than the number of preceding acquire.
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:58-58
     virtual void release() = 0;
 
-    // Blocking acquire for non-coroutine contexts
-    void acquire() {
-        while (!try_acquire()) {
-            // Spin-wait fallback
-        }
-    }
+    // NOTE(port): Ordinary C++ callers block on the same FIFO suspend operation.
+    void acquire();
 };
 
 /**
@@ -92,6 +95,7 @@ public:
  * @param acquired_permits the number of already acquired permits,
  *        should be between 0 and permits (inclusively).
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:68-68
 std::shared_ptr<Semaphore> create_semaphore(int permits, int acquired_permits = 0);
 
 /**
@@ -102,30 +106,81 @@ std::shared_ptr<Semaphore> create_semaphore(int permits, int acquired_permits = 
  *
  * @return the return value of the action.
  */
+// NOTE(port): Blocking adapter; the suspend API below preserves the upstream contract.
 template<typename T, typename ActionFunc>
 T with_permit(Semaphore& semaphore, ActionFunc&& action) {
     semaphore.acquire();
-    try {
-        T result = action();
-        semaphore.release();
-        return result;
-    } catch (...) {
-        semaphore.release();
-        throw;
-    }
+    T result = [&]() -> T {
+        try { return action(); }
+        catch (...) { semaphore.release(); throw; }
+    }();
+    semaphore.release();
+    return result;
 }
 
-// Void specialization
+// NOTE(port): Blocking Unit adapter for ordinary C++ callers.
 template<typename ActionFunc>
 void with_permit_void(Semaphore& semaphore, ActionFunc&& action) {
     semaphore.acquire();
-    try {
-        action();
-        semaphore.release();
-    } catch (...) {
-        semaphore.release();
-        throw;
-    }
+    try { action(); }
+    catch (...) { semaphore.release(); throw; }
+    semaphore.release();
+}
+
+/**
+ * Executes the given action, acquiring a permit at the beginning and releasing it
+ * after the action completes. The receiving continuation owns the returned T box;
+ * Unit is nullptr. The caller retains the semaphore through completion.
+ */
+// Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:77-87
+template<typename ActionFunc>
+void* with_permit(Semaphore& semaphore, ActionFunc&& action, Continuation<void*>* completion) {
+    using Action = std::decay_t<ActionFunc>;
+    using T = std::invoke_result_t<Action&>;
+    // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:77-87
+    class Frame final : public ContinuationImpl {
+    public:
+        Frame(Semaphore& semaphore, Action action, Continuation<void*>* completion)
+            : ContinuationImpl(internal::retain_continuation(completion)),
+              semaphore_(semaphore), action_(std::move(action)) {}
+        void retain() { self_ref_ = shared_from_this(); }
+        // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:81-87
+        void* invoke_suspend(Result<void*> result) override {
+            try {
+                coroutine_begin(this)
+                coroutine_yield(this, semaphore_.acquire(this));
+                void* value = execute_action();
+                self_ref_.reset();
+                return value;
+            } catch (...) {
+                self_ref_.reset();
+                throw;
+            }
+        }
+    private:
+        // Transliterated from: kotlinx-coroutines-core/common/src/sync/Semaphore.kt:82-87
+        void* execute_action() {
+            if constexpr (std::is_void_v<T>) {
+                try { action_(); }
+                catch (...) { semaphore_.release(); throw; }
+                semaphore_.release();
+                return nullptr;
+            } else {
+                std::unique_ptr<T> value;
+                try { value = std::make_unique<T>(action_()); }
+                catch (...) { semaphore_.release(); throw; }
+                semaphore_.release();
+                return value.release();
+            }
+        }
+        void* _label = nullptr;
+        Semaphore& semaphore_;
+        Action action_;
+        std::shared_ptr<BaseContinuationImpl> self_ref_;
+    };
+    auto frame = std::make_shared<Frame>(semaphore, std::forward<ActionFunc>(action), completion);
+    frame->retain();
+    return frame->start(Result<void*>::success(nullptr));
 }
 
 } // namespace sync

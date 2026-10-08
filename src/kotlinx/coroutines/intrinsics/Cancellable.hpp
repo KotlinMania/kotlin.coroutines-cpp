@@ -1,3 +1,4 @@
+// port-lint: source kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt
 #pragma once
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt
@@ -5,9 +6,8 @@
  * Kotlin file header (translated):
  *   package kotlinx.coroutines.intrinsics
  *
- * The two free helpers `runSafely` and `dispatcherFailure` are kept as inline functions in
- * this header; the three `startCoroutineCancellable` overloads (no-receiver, with-receiver,
- * and pre-built continuation) follow exactly the Kotlin file's structure.
+ * Concrete failure helpers and the already-created continuation entry live in
+ * Cancellable.cpp. Public generic callable entries are instantiated in this header.
  */
 
 #include "kotlinx/coroutines/Continuation.hpp"
@@ -16,268 +16,107 @@
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <functional>
 #include <memory>
-#include <concepts>
+#include "kotlinx/coroutines/intrinsics/IntrinsicsNative.hpp"
 
 namespace kotlinx::coroutines::intrinsics {
 
-// Helper: safe cast to ContinuationImpl
-template<typename T>
-std::shared_ptr<ContinuationImpl> as_continuation_impl(Continuation<T>* cont) {
-    return std::dynamic_pointer_cast<ContinuationImpl>(cont->shared_from_this());
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:52-64
+void dispatcher_failure(Continuation<void*>* completion, std::exception_ptr exception);
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:44-50
+void run_safely(Continuation<void*>* completion, std::function<void()> block);
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:33-36
+void start_coroutine_cancellable(Continuation<void*>* continuation, Continuation<void*>* fatal_completion);
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:15-17
+void start_coroutine_cancellable(ErasedSuspendFunction block, std::shared_ptr<Continuation<void*>> completion);
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:112-116
+void start_coroutine(ErasedSuspendFunction block, std::shared_ptr<Continuation<void*>> completion);
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13-31
+void start_coroutine_undispatched(ErasedSuspendFunction block, std::shared_ptr<Continuation<void*>> completion);
 
-template<typename T>
-class LambdaContinuation : public ContinuationImpl {
-    std::function<void*(Continuation<T>*)> block_;
-    std::shared_ptr<Continuation<T>> completion_;
-
-public:
-    LambdaContinuation(
-        std::function<void*(Continuation<T>*)> block,
-        std::shared_ptr<Continuation<T>> completion
-    ) : ContinuationImpl(std::make_shared<Continuation<void>>(), completion->get_context()),
-        block_(block), completion_(completion) {}
-
-    void* invoke_suspend(Result<void*> result) override {
-        if (result.is_failure()) {
-            completion_->resume_with(Result<T>::failure(result.exception_or_null()));
-            return nullptr;
-        }
-        return block_(completion_.get());
-    }
-    
-    // Stub definition for context necessary for ContinuationImpl base
-    std::shared_ptr<CoroutineContext> get_context() const override {
-        return completion_->get_context();
-    }
-};
-
-template<typename R, typename T>
-class ReceiverLambdaContinuation : public ContinuationImpl {
-    std::function<void*(R, Continuation<T>*)> block_;
-    R receiver_;
-    std::shared_ptr<Continuation<T>> completion_;
-
-public:
-    ReceiverLambdaContinuation(
-        std::function<void*(R, Continuation<T>*)> block,
-        R receiver,
-        std::shared_ptr<Continuation<T>> completion
-    ) : ContinuationImpl(std::make_shared<Continuation<void>>(), completion->get_context()),
-        block_(block), receiver_(receiver), completion_(completion) {}
-
-    void* invoke_suspend(Result<void*> result) override {
-        if (result.is_failure()) {
-            completion_->resume_with(Result<T>::failure(result.exception_or_null()));
-            return nullptr;
-        }
-        return block_(receiver_, completion_.get());
-    }
-
-    std::shared_ptr<CoroutineContext> get_context() const override {
-        return completion_->get_context();
-    }
-};
-
-// Simplified create_coroutine_unintercepted
+// NOTE(port): The raw completion ABI borrows. Only a real frame's existing owner
+// can be recovered; shared_ptr overloads explicitly retain other owned completions.
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:16-27
 template <typename T>
-std::shared_ptr<Continuation<void*>> create_coroutine_unintercepted(
-    std::function<void*(Continuation<T>*)> block,
-    std::shared_ptr<Continuation<T>> completion
-) {
-    return std::make_shared<LambdaContinuation<T>>(block, completion);
+std::shared_ptr<Continuation<T>> retain_start_completion(Continuation<T>* completion) {
+    if constexpr (std::is_same_v<T, void*>) return internal::retain_continuation(completion);
+    else return std::shared_ptr<Continuation<T>>(completion, [](Continuation<T>*) {});
 }
-
-template <typename R, typename T>
-std::shared_ptr<Continuation<void*>> create_coroutine_unintercepted(
-    std::function<void*(R, Continuation<T>*)> block,
-    R receiver,
-    std::shared_ptr<Continuation<T>> completion
-) {
-    return std::make_shared<ReceiverLambdaContinuation<R, T>>(block, receiver, completion);
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:15-17
+template <typename T>
+void start_coroutine_cancellable(std::function<void*(Continuation<T>*)> block,
+            std::shared_ptr<Continuation<T>> completion) {
+    start_coroutine_cancellable(erase_suspend_function<T>(std::move(block)), to_void_continuation(std::move(completion)));
 }
-
-// Internal helper for dispatcherFailure
-inline void dispatcher_failure(Continuation<void*>* completion, std::exception_ptr e) {
-    auto report_exception = e;
-    // if (e is DispatchException) e.cause else e -- simplified for now
-    
-    // We can't easily access resumeWith on raw pointer without knowing type T. 
-    // This signature uses void*, implying Unit.
-    completion->resume_with(Result<void*>::failure(report_exception));
-    std::rethrow_exception(report_exception);
-}
-
-/**
- * Runs given block and completes completion with its exception if it occurs.
- * Rationale: [startCoroutineCancellable] is invoked when we are about to run coroutine asynchronously in its own dispatcher.
- * Thus if dispatcher throws an exception during coroutine start, coroutine never completes, so we should treat dispatcher exception
- * as its cause and resume completion.
- */
-inline void run_safely(Continuation<void*>* completion, std::function<void()> block) {
-    try {
-        block();
-    } catch (...) {
-        dispatcher_failure(completion, std::current_exception());
-    }
-}
-
-// Specialization for typed continuation (not void*) is tricky without template. 
-// We implement the template logic inside start_coroutine_cancellable.
-
-/**
- * Use this function to start coroutine in a cancellable way, so that it can be cancelled
- * while waiting to be dispatched.
- *
- * @suppress **This is internal API and is subject to change.**
- */
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:15-17
 template <typename T>
 void start_coroutine_cancellable(std::function<void*(Continuation<T>*)> block, Continuation<T>* completion) {
-    // We need shared_ptr for completion to pass to create_coroutine
-    // Assuming completion is managed or we can share_from_this? 
-    // If raw pointer, we might be in trouble unless it's enable_shared_from_this.
-    // Most Continuations should be.
-    
-    auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
-    if (!shared_completion) {
-         // Fallback if not shared (shouldn't happen in our model)
-         return; 
-    }
-
-    try {
-        auto coroutine = create_coroutine_unintercepted(block, shared_completion);
-        auto intercepted = std::dynamic_pointer_cast<ContinuationImpl>(coroutine)->intercepted();
-        resume_cancellable_with(intercepted, Result<void*>::success(nullptr));
-    } catch (...) {
-         // logic from runSafely/dispatcherFailure adapted for T
-         auto ex = std::current_exception();
-         shared_completion->resume_with(Result<T>::failure(ex));
-         throw;
-    }
+    start_coroutine_cancellable<T>(std::move(block), retain_start_completion(completion));
 }
-
-/**
- * Use this function to start coroutine in a cancellable way, so that it can be cancelled
- * while waiting to be dispatched.
- */
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:23-27
+template <typename R, typename T>
+void start_coroutine_cancellable(std::function<void*(R, Continuation<T>*)> block, R receiver,
+            std::shared_ptr<Continuation<T>> completion) {
+    std::function<void*(Continuation<T>*)> bound =
+        [block = std::move(block), receiver = std::move(receiver)](Continuation<T>* frame) {
+            return block(receiver, frame);
+        };
+    start_coroutine_cancellable<T>(std::move(bound), std::move(completion));
+}
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Cancellable.kt:23-27
 template <typename R, typename T>
 void start_coroutine_cancellable(std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
-    auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
-    if (!shared_completion) return;
-
-    try {
-        auto coroutine = create_coroutine_unintercepted(block, receiver, shared_completion);
-        auto intercepted = std::dynamic_pointer_cast<ContinuationImpl>(coroutine)->intercepted();
-        resume_cancellable_with(intercepted, Result<void*>::success(nullptr));
-    } catch (...) {
-         auto ex = std::current_exception();
-         shared_completion->resume_with(Result<T>::failure(ex));
-         throw;
-    }
+    start_coroutine_cancellable<R, T>(std::move(block), std::move(receiver), retain_start_completion(completion));
 }
-
-/**
- * Similar to [startCoroutineCancellable], but for already created coroutine.
- * [fatalCompletion] is used only when interception machinery throws an exception
- */
-inline void start_coroutine_cancellable(Continuation<void*>* continuation, Continuation<void*>* fatal_completion) {
-    // Note: We use raw pointers here since the caller manages lifetime.
-    // The Kotlin version uses implicit shared ownership through the coroutine machinery.
-    
-    run_safely(fatal_completion, [continuation]() {
-        // Try to cast to ContinuationImpl to get intercepted continuation
-        auto impl = dynamic_cast<ContinuationImpl*>(continuation);
-        if (impl) {
-            auto intercepted = impl->intercepted();
-            resume_cancellable_with(intercepted, Result<void*>::success(nullptr));
-        }
-    });
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:112-116
+template <typename T>
+void start_coroutine(std::function<void*(Continuation<T>*)> block,
+            std::shared_ptr<Continuation<T>> completion) {
+    start_coroutine(erase_suspend_function<T>(std::move(block)), to_void_continuation(std::move(completion)));
 }
-
-/**
- * Starts a coroutine in non-cancellable (ATOMIC) mode.
- * Transliterated from: kotlin-stdlib/common/src/kotlin/coroutines/intrinsics/Intrinsics.kt:114-124
- */
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:112-116
 template <typename T>
 void start_coroutine(std::function<void*(Continuation<T>*)> block, Continuation<T>* completion) {
-    auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
-    if (!shared_completion) return;
-
-    try {
-        auto coroutine = create_coroutine_unintercepted(block, shared_completion);
-        auto intercepted = std::dynamic_pointer_cast<ContinuationImpl>(coroutine)->intercepted();
-        intercepted->resume_with(Result<void*>::success(nullptr));
-    } catch (...) {
-        auto ex = std::current_exception();
-        shared_completion->resume_with(Result<T>::failure(ex));
-        throw;
-    }
+    start_coroutine<T>(std::move(block), retain_start_completion(completion));
 }
-
-/**
- * Starts a coroutine with receiver in non-cancellable (ATOMIC) mode.
- * Transliterated from: kotlin-stdlib/common/src/kotlin/coroutines/intrinsics/Intrinsics.kt:126-137
- */
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:125-130
+template <typename R, typename T>
+void start_coroutine(std::function<void*(R, Continuation<T>*)> block, R receiver,
+            std::shared_ptr<Continuation<T>> completion) {
+    std::function<void*(Continuation<T>*)> bound =
+        [block = std::move(block), receiver = std::move(receiver)](Continuation<T>* frame) {
+            return block(receiver, frame);
+        };
+    start_coroutine<T>(std::move(bound), std::move(completion));
+}
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:125-130
 template <typename R, typename T>
 void start_coroutine(std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
-    auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
-    if (!shared_completion) return;
-
-    try {
-        auto coroutine = create_coroutine_unintercepted(block, receiver, shared_completion);
-        auto intercepted = std::dynamic_pointer_cast<ContinuationImpl>(coroutine)->intercepted();
-        intercepted->resume_with(Result<void*>::success(nullptr));
-    } catch (...) {
-        auto ex = std::current_exception();
-        shared_completion->resume_with(Result<T>::failure(ex));
-        throw;
-    }
+    start_coroutine<R, T>(std::move(block), std::move(receiver), retain_start_completion(completion));
 }
-
-/**
- * Starts a coroutine in UNDISPATCHED mode immediately in the current thread.
- * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13-31
- */
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13-31
+template <typename T>
+void start_coroutine_undispatched(std::function<void*(Continuation<T>*)> block,
+            std::shared_ptr<Continuation<T>> completion) {
+    start_coroutine_undispatched(erase_suspend_function<T>(std::move(block)), to_void_continuation(std::move(completion)));
+}
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13-31
 template <typename T>
 void start_coroutine_undispatched(std::function<void*(Continuation<T>*)> block, Continuation<T>* completion) {
-    auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
-    if (!shared_completion) return;
-
-    try {
-        void* result = block(completion);
-        if (!is_coroutine_suspended(result)) {
-            if constexpr (std::is_same_v<T, void*> || std::is_same_v<T, void>) {
-                shared_completion->resume_with(Result<T>::success());
-            } else {
-                shared_completion->resume_with(Result<T>(result));
-            }
-        }
-    } catch (...) {
-        shared_completion->resume_with(Result<T>::failure(std::current_exception()));
-    }
+    start_coroutine_undispatched<T>(std::move(block), retain_start_completion(completion));
 }
-
-/**
- * Starts a coroutine with receiver in UNDISPATCHED mode immediately in the current thread.
- * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13-31
- */
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13-31
+template <typename R, typename T>
+void start_coroutine_undispatched(std::function<void*(R, Continuation<T>*)> block, R receiver,
+            std::shared_ptr<Continuation<T>> completion) {
+    std::function<void*(Continuation<T>*)> bound =
+        [block = std::move(block), receiver = std::move(receiver)](Continuation<T>* frame) {
+            return block(receiver, frame);
+        };
+    start_coroutine_undispatched<T>(std::move(bound), std::move(completion));
+}
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13-31
 template <typename R, typename T>
 void start_coroutine_undispatched(std::function<void*(R, Continuation<T>*)> block, R receiver, Continuation<T>* completion) {
-    auto shared_completion = std::dynamic_pointer_cast<Continuation<T>>(completion->shared_from_this());
-    if (!shared_completion) return;
-
-    try {
-        void* result = block(receiver, completion);
-        if (!is_coroutine_suspended(result)) {
-            if constexpr (std::is_same_v<T, void*> || std::is_same_v<T, void>) {
-                shared_completion->resume_with(Result<T>::success());
-            } else {
-                shared_completion->resume_with(Result<T>(result));
-            }
-        }
-    } catch (...) {
-        shared_completion->resume_with(Result<T>::failure(std::current_exception()));
-    }
+    start_coroutine_undispatched<R, T>(std::move(block), std::move(receiver), retain_start_completion(completion));
 }
-
 } // namespace kotlinx::coroutines::intrinsics

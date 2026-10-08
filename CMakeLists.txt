@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Imported dependencies retain ordinary warning diagnostics.
+set(CMAKE_NO_SYSTEM_FROM_IMPORTED ON)
+
 # =============================================================================
 # Build Output Directory Structure
 # =============================================================================
@@ -37,13 +40,11 @@ endforeach()
 enable_testing()
 
 # Add compile options - treat warnings as errors to maintain code quality
-add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wno-unknown-attributes)
+add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
-# Kotlin Native runtime detection (for GC bridge weak-linking)
-option(KOTLIN_NATIVE_RUNTIME_AVAILABLE "Link with Kotlin Native runtime for GC coordination" OFF)
-if(KOTLIN_NATIVE_RUNTIME_AVAILABLE)
-    add_compile_definitions(KOTLIN_NATIVE_RUNTIME_AVAILABLE=1)
-endif()
+# Enable actual Native runtime ABI tests when that toolchain is supplied.
+# Production Native symbols remain mandatory independently of this test option.
+option(KOTLIN_NATIVE_RUNTIME_AVAILABLE "Build the Kotlin/Native runtime ABI host contract" OFF)
 
 # -----------------------------------------------------------------------------
 # Source layout root
@@ -59,29 +60,26 @@ set(KOTLINX_COROUTINES_SRC_DIR "kotlinx/coroutines" CACHE STRING
 add_subdirectory(src)
 add_subdirectory(debugging)
 
-# Add test directory
-# Add test directory
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
-    add_subdirectory(tests)
-elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/tests")
-    add_subdirectory(src/tests)
+# Build compiler lowering before registering tests so an external plugin can
+# also be selected explicitly when the in-tree tool build is disabled.
+option(KOTLINX_BUILD_KXS_INJECT "Build KotlinxCoroutinePass and the standalone kxs-inject diagnostic tool" ON)
+if(KOTLINX_BUILD_KXS_INJECT)
+    add_subdirectory(src/kotlinx/coroutines/tools/kxs_inject)
 endif()
 
 # -----------------------------------------------------------------------------
 # Optional compiler tooling (Clang suspend DSL plugin)
 # -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build Clang suspend DSL plugin (Apple-focused)" ON)
+option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build the in-tree Clang suspend plugin (otherwise use an external plugin)" ON)
 if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     add_subdirectory(src/kotlinx/coroutines/tools/clang_suspend_plugin)
 endif()
 
-# -----------------------------------------------------------------------------
-# kxs-inject: LLVM-aware marker cleanup for existing state machines
-# See: docs/suspension/IR_SUSPEND_LOWERING_SPEC.md
-# -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_KXS_INJECT "Build kxs-inject IR transformation tool" ON)
-if(KOTLINX_BUILD_KXS_INJECT)
-    add_subdirectory(src/kotlinx/coroutines/tools/kxs_inject)
+# Register coroutine tests after the compiler targets they use exist.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+    add_subdirectory(tests)
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/tests")
+    add_subdirectory(src/tests)
 endif()
 
 # =============================================================================
@@ -95,7 +93,7 @@ endif()
 # Usage after installation:
 #   find_package(KotlinxCoroutines REQUIRED)
 #   target_link_libraries(my_app PRIVATE kotlinx::coroutines)
-#   kxs_enable_suspend(my_app)
+#   kxs_enable_suspend_dsl(my_app)
 # =============================================================================
 
 # Add our modules to the path
@@ -104,6 +102,18 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 # Include the package definition
 include(KotlinxCoroutines)
 
+# Production bodies and test template instantiations require frontend frame
+# construction followed by mandatory LLVM address injection. Disabling the
+# in-tree tool build selects an external frontend; it cannot skip this stage.
+kxs_enable_suspend_dsl(kotlinx-coroutines-core)
+get_property(KXS_COROUTINE_TEST_TARGETS DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/tests" PROPERTY BUILDSYSTEM_TARGETS)
+foreach(KXS_COROUTINE_TEST_TARGET IN LISTS KXS_COROUTINE_TEST_TARGETS)
+    get_target_property(KXS_COROUTINE_TEST_TYPE "${KXS_COROUTINE_TEST_TARGET}" TYPE)
+    if(KXS_COROUTINE_TEST_TYPE STREQUAL "EXECUTABLE")
+        kxs_enable_suspend_dsl("${KXS_COROUTINE_TEST_TARGET}")
+    endif()
+endforeach()
+
 # Install headers
 install(DIRECTORY src/kotlinx/
     DESTINATION include/kotlinx
@@ -111,6 +121,11 @@ install(DIRECTORY src/kotlinx/
 )
 
 # Install CMake modules for find_package support
+install(DIRECTORY src/kotlin/
+    DESTINATION include/kotlin
+    FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
+)
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
@@ -119,7 +134,6 @@ install(FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/KotlinxCoroutineTransform.cmake"
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/kxs_transform_ir.cmake"
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/kxs_transform_ir.py"
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/kxs_compile.py"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/KotlinxCoroutines"
 )
 
@@ -131,6 +145,9 @@ write_basic_package_version_file(
 )
 
 # Generate package config file
+if(TARGET KotlinxCoroutinePass)
+    get_target_property(KXS_PLUGIN_LLVM_VERSION KotlinxCoroutinePass KXS_LLVM_VERSION)
+endif()
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/KotlinxCoroutinesConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/KotlinxCoroutinesConfig.cmake"

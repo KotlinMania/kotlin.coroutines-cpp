@@ -1,0 +1,11 @@
+These three headers are copied byte-for-byte from the Kotlin Native runtime dependency:
+  tmp/kotlin/kotlin-native/runtime/src/utfcpp/cpp/utf8/{core,unchecked,with_replacement}.h
+
+The Native runtime's createStringFromUTF8 uses this dependency. The C++ exception
+message binding uses the same UTF-8-to-UTF-16 conversion before computing the
+Native polynomial string hash. No Kotlin compiler or runtime is needed.
+
+Copyright and license notices are preserved in each copied header. core.h and
+unchecked.h carry Nemanja Trifunovic's permissive license; with_replacement.h
+carries JetBrains' Apache-2.0 license. These are upstream dependency files,
+not newly transliterated library source.

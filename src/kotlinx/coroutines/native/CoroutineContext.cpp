@@ -1,125 +1,83 @@
 /**
  * Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt
- *
- * Kotlin file header (translated):
- *   package kotlinx.coroutines
- *
- * Native target: `internal actual object DefaultExecutor : CoroutineDispatcher(), Delay`.
- * The K/N implementation hands off scheduling to a worker thread; the C++ port routes
- * dispatch through `Dispatchers::get_default()` and uses a detached-thread timer for
- * delays. The detached-thread strategy carries the documented K/N constraint that the
- * timer thread holds the continuation alive for the duration of the sleep — callers
- * should not assume the dispatcher returns before the timer fires.
  */
 
 #include "kotlinx/coroutines/CoroutineContext.hpp"
+#include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/Delay.hpp"
 #include "kotlinx/coroutines/Dispatchers.hpp"
-#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
+#include "kotlinx/coroutines/native/MultithreadedDispatchers.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
-#include <thread>
-#include <chrono>
-#include <atomic>
 
 namespace kotlinx {
     namespace coroutines {
+        // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:32-36
+        std::shared_ptr<CoroutineContext> new_coroutine_context(
+            CoroutineScope* scope, std::shared_ptr<CoroutineContext> context) {
+            auto combined = scope->get_coroutine_context()->operator+(std::move(context));
+            auto default_dispatcher = std::shared_ptr<CoroutineContext>(
+                &Dispatchers::get_default(), [](CoroutineContext*) {});
+            return combined != default_dispatcher && !combined->get(ContinuationInterceptor::type_key)
+                ? combined->operator+(std::move(default_dispatcher)) : combined;
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:38-40
+        std::shared_ptr<CoroutineContext> new_coroutine_context(
+            std::shared_ptr<CoroutineContext> base_context,
+            std::shared_ptr<CoroutineContext> added_context) {
+            return base_context->operator+(std::move(added_context));
+        }
+
+        // No debugging facilities on Native.
+        // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:46-46
+        std::optional<std::string> coroutine_name(const std::shared_ptr<CoroutineContext>&) {
+            return std::nullopt;
+        }
+
         namespace {
-            /**
-             * Internal DefaultExecutor singleton.
-             *
-             * Kotlin source: kotlinx-coroutines-core/native/src/CoroutineContext.kt
-             * `internal actual object DefaultExecutor : CoroutineDispatcher(), Delay`
-             */
+            // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:6-24
             class DefaultExecutor : public CoroutineDispatcher, public Delay {
             public:
-                DefaultExecutor() = default;
+                // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:8
+                DefaultExecutor() : delegate_("DefaultExecutor") {}
 
+                // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:10-12
                 void dispatch(const CoroutineContext& context, std::shared_ptr<Runnable> block) const override {
-                    // Kotlin: delegate.dispatch(context, block)
-                    Dispatchers::get_default().dispatch(context, std::move(block));
+                    delegate_.dispatch(context, std::move(block));
                 }
 
+                // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:14-16
                 void schedule_resume_after_delay(
-                    long long time_millis,
-                    CancellableContinuation<void>& continuation) override {
-                    if (time_millis <= 0) {
-                        continuation.resume(nullptr);
-                        return;
-                    }
-
-                    // The continuation must own a shared_from_this slot so the timer thread
-                    // can keep it alive across the sleep. Continuations that don't extend
-                    // CancellableContinuationImpl<void> resume immediately — same shape K/N
-                    // uses when its `internal class Continuation` cannot be retained for
-                    // deferred work.
-                    auto* impl_ptr = dynamic_cast<CancellableContinuationImpl<void>*>(&continuation);
-                    if (!impl_ptr) {
-                        continuation.resume(nullptr);
-                        return;
-                    }
-
-                    auto shared_impl = impl_ptr->shared_from_this();
-                    auto cancelled = std::make_shared<std::atomic<bool>>(false);
-                    auto on_cancel = [cancelled](std::exception_ptr) {
-                        cancelled->store(true, std::memory_order_relaxed);
-                    };
-                    continuation.invoke_on_cancellation(on_cancel);
-
-                    auto runner = [time_millis, shared_impl, cancelled]() {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(time_millis));
-                        if (!cancelled->load(std::memory_order_relaxed) && shared_impl->is_active()) {
-                            shared_impl->resume(nullptr);
-                        }
-                    };
-                    std::thread(std::move(runner)).detach();
+                    long long time_millis, CancellableContinuation<void>& continuation) override {
+                    delegate_.schedule_resume_after_delay(time_millis, continuation);
                 }
 
+                // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:18-20
                 std::shared_ptr<DisposableHandle> invoke_on_timeout(
-                    long long time_millis,
-                    std::shared_ptr<Runnable> block,
+                    long long time_millis, std::shared_ptr<Runnable> block,
                     const CoroutineContext& context) override {
-                    if (!block) {
-                        return std::shared_ptr<DisposableHandle>(NoOpDisposableHandle::instance(), [](DisposableHandle*){});
-                    }
-
-                    if (time_millis <= 0) {
-                        block->run();
-                        return std::shared_ptr<DisposableHandle>(NoOpDisposableHandle::instance(), [](DisposableHandle*){});
-                    }
-
-                    struct TimeoutHandle : public DisposableHandle {
-                        std::shared_ptr<std::atomic<bool>> cancelled;
-                        explicit TimeoutHandle(std::shared_ptr<std::atomic<bool>> c) : cancelled(std::move(c)) {}
-                        void dispose() override { cancelled->store(true, std::memory_order_relaxed); }
-                    };
-
-                    auto cancelled = std::make_shared<std::atomic<bool>>(false);
-                    std::thread([time_millis, block, cancelled]() {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(time_millis));
-                        if (!cancelled->load(std::memory_order_relaxed)) {
-                            block->run();
-                        }
-                    }).detach();
-
-                    // Detached-thread timer matches the K/N WorkerDispatcher fallback path.
-                    return std::make_shared<TimeoutHandle>(cancelled);
+                    return delegate_.invoke_on_timeout(time_millis, std::move(block), context);
                 }
 
+                // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:22-24
                 void enqueue(std::shared_ptr<Runnable> task) {
-                    // Kotlin: delegate.dispatch(EmptyCoroutineContext, task)
-                    dispatch(*EmptyCoroutineContext::instance(), std::move(task));
+                    delegate_.dispatch(*EmptyCoroutineContext::instance(), std::move(task));
                 }
+            private:
+                WorkerDispatcher delegate_;
             };
 
+            // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:6-8
+            // NOTE(port): C++ function-local storage implements the source object.
             DefaultExecutor& default_executor() {
                 static DefaultExecutor instance;
                 return instance;
             }
         } // namespace
 
+        // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:30
         Delay& get_default_delay() {
-            // Kotlin: internal actual val DefaultDelay: Delay = DefaultExecutor
             return default_executor();
         }
     } // namespace coroutines

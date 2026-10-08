@@ -1,25 +1,14 @@
 /**
  * Transliterated from: kotlinx-coroutines-core/native/src/internal/ThreadContext.kt
- *
- * Kotlin file header (translated):
- *   package kotlinx.coroutines.internal
  */
-
-#include "kotlinx/coroutines/CoroutineContext.hpp"
-
-#include <cstdint>
+#include "kotlinx/coroutines/internal/ThreadContext.hpp"
 
 namespace kotlinx::coroutines::internal {
 
-/**
- * Upstream:
- *   internal actual fun threadContextElements(context: CoroutineContext): Any = 0
- *
- * Native always returns a constant 0 sentinel — Kotlin/Native does not maintain a counted
- * thread-context element list the way the JVM target does.
- */
-std::intptr_t thread_context_elements(const CoroutineContext& /*context*/) {
-    return 0;
+// Transliterated from: kotlinx-coroutines-core/native/src/internal/ThreadContext.kt:5-5
+void* thread_context_elements(const CoroutineContext&) {
+    // NOTE(port): Native's constant zero is represented by the zero value of the erased ABI.
+    return nullptr;
 }
 
 } // namespace kotlinx::coroutines::internal

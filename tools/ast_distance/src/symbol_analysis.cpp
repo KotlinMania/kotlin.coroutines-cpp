@@ -1,4 +1,6 @@
 #include "symbol_analysis.hpp"
+#include "cpp_review.hpp"
+#include "reexport_config.hpp"
 #include "porting_utils.hpp"
 #include <regex>
 #include <fstream>
@@ -50,95 +52,14 @@ std::string read_file(const fs::path& path) {
     return buffer.str();
 }
 
-std::string remove_cpp_comments(const std::string& content) {
-    std::string clean = std::regex_replace(content, std::regex(R"(//[^\n]*)"), "");
-    clean = std::regex_replace(clean, std::regex(R"(/\*[\s\S]*?\*/)"), "");
-    return clean;
-}
-
-std::string extract_class_body(const std::string& content, size_t start_pos) {
-    if (start_pos >= content.size() || content[start_pos] != '{') return {};
-    int depth = 1;
-    size_t idx = start_pos + 1;
-    while (idx < content.size() && depth > 0) {
-        if (content[idx] == '{') depth++;
-        else if (content[idx] == '}') depth--;
-        idx++;
-    }
-    if (depth != 0) return {};
-    if (idx <= start_pos + 1) return {};
-    return content.substr(start_pos + 1, idx - start_pos - 2);
-}
-
 std::vector<CppClassDef> extract_cpp_class_definitions(const fs::path& path) {
     std::vector<CppClassDef> classes;
-    std::string content = read_file(path);
-    if (content.empty()) return classes;
-
-    std::string clean = remove_cpp_comments(content);
-
-    std::regex class_def_re(
-        R"((?:template\s*<[^>]*>\s*)?(class|struct)\s+([A-Za-z_][\w:]*)\s*(?:\s*:\s*[^{]+)?\s*\{)",
-        std::regex::multiline);
-
-    std::sregex_iterator begin(clean.begin(), clean.end(), class_def_re);
-    std::sregex_iterator end;
-
-    std::set<std::pair<std::string, int>> seen;
-    for (auto it = begin; it != end; ++it) {
-        const auto& match = *it;
-        std::string kind = match[1].str();
-        std::string name = match[2].str();
-        int line = static_cast<int>(std::count(clean.begin(), clean.begin() + match.position(), '\n') + 1);
-        auto key = std::make_pair(name, line);
-        if (seen.count(key)) continue;
-        seen.insert(key);
-
-        bool is_stub = false;
-        std::string stub_reason;
-        size_t brace_pos = match.position() + match.length() - 1;
-        std::string body = extract_class_body(clean, brace_pos);
-        if (!body.empty()) {
-            std::string trimmed = body;
-            trimmed.erase(trimmed.begin(),
-                          std::find_if(trimmed.begin(), trimmed.end(),
-                                       [](unsigned char c) { return !std::isspace(c); }));
-            trimmed.erase(std::find_if(trimmed.rbegin(), trimmed.rend(),
-                                       [](unsigned char c) { return !std::isspace(c); }).base(),
-                          trimmed.end());
-            if (trimmed.size() < 30) {
-                is_stub = true;
-                stub_reason = "empty_body";
-            } else {
-                std::string condensed = std::regex_replace(trimmed, std::regex(R"(\s+)"), " ");
-                std::regex dtor_only_re(
-                    R"(^\s*(?:public:|private:|protected:)?\s*(?:virtual\s+)?~\w+\([^)]*\)\s*(?:=\s*default\s*)?;?\s*$)",
-                    std::regex::ECMAScript);
-                if (std::regex_match(condensed, dtor_only_re)) {
-                    is_stub = true;
-                    stub_reason = "only_destructor";
-                }
-            }
-        }
-
-        classes.push_back({name, kind, path.string(), line, is_stub, stub_reason});
+    for (const auto& type : review_cpp(read_file(path)).types) {
+        bool candidate = type.category != "implemented_type" && type.category != "interface";
+        classes.push_back({type.name, type.kind, path.string(), type.line, candidate,
+                           type.category + ": " + type.reason});
     }
-
     return classes;
-}
-
-bool is_stub_file(const fs::path& path) {
-    std::string content = read_file(path);
-    if (content.empty()) return false;
-
-    std::string clean = remove_cpp_comments(content);
-    clean = std::regex_replace(clean, std::regex(R"(#\w+[^\n]*)"), "");
-    clean = std::regex_replace(clean, std::regex(R"(namespace\s+[\w:]+\s*\{)"), "");
-    clean = std::regex_replace(clean, std::regex(R"(#pragma[^\n]*)"), "");
-    clean.erase(std::remove_if(clean.begin(), clean.end(),
-                               [](unsigned char c) { return std::isspace(c); }),
-                clean.end());
-    return clean.size() < 100;
 }
 
 void build_kotlin_index(const std::string& kotlin_root,
@@ -210,7 +131,7 @@ void cmd_symbols(const std::string& kotlin_root,
     for (const auto& entry : fs::recursive_directory_iterator(cpp_root)) {
         if (!entry.is_regular_file()) continue;
         std::string path = entry.path().string();
-        if (should_skip_path(path)) continue;
+        if (should_skip_path("/" + fs::relative(entry.path(), cpp_root).generic_string())) continue;
         if (!path.ends_with(".hpp") && !path.ends_with(".cpp") &&
             !path.ends_with(".h") && !path.ends_with(".cc")) {
             continue;
@@ -223,6 +144,9 @@ void cmd_symbols(const std::string& kotlin_root,
 
     std::vector<std::pair<std::string, std::vector<CppClassDef>>> dup_list;
     for (auto& [name, locs] : duplicates) {
+        std::sort(locs.begin(), locs.end(), [](const auto& a, const auto& b) {
+            return std::tie(a.file, a.line) < std::tie(b.file, b.line);
+        });
         std::set<std::string> files;
         for (const auto& loc : locs) {
             files.insert(loc.file);
@@ -241,14 +165,30 @@ void cmd_symbols(const std::string& kotlin_root,
               });
 
     std::vector<StubItem> stubs;
+    std::vector<std::pair<std::string, std::string>> implementation_locations;
     for (const auto& entry : fs::recursive_directory_iterator(cpp_root)) {
         if (!entry.is_regular_file()) continue;
         std::string path = entry.path().string();
-        if (should_skip_path(path)) continue;
+        if (should_skip_path("/" + fs::relative(entry.path(), cpp_root).generic_string())) continue;
         if (path.ends_with(".cpp") || path.ends_with(".cc")) {
-            if (is_stub_file(entry.path())) {
-                stubs.push_back({fs::relative(entry.path(), cpp_root).string(),
-                                 "file_stub", entry.path().stem().string(), 0, ""});
+            auto review = review_cpp(read_file(entry.path()));
+            if (!review.file_category.empty()) {
+                bool found_companion = false;
+                if (!review.has_parse_errors) {
+                    for (const auto& extension : {".hpp", ".h", ".hh", ".hxx"}) {
+                        auto companion = entry.path(); companion.replace_extension(extension);
+                        if (!fs::is_regular_file(companion)) continue;
+                        auto header = review_cpp(read_file(companion));
+                        if (!header.has_parse_errors && header.has_implementation) {
+                            implementation_locations.emplace_back(fs::relative(entry.path(), cpp_root).string(),
+                                fs::relative(companion, cpp_root).string());
+                            found_companion = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found_companion) stubs.push_back({fs::relative(entry.path(), cpp_root).string(),
+                    review.file_category, entry.path().stem().string(), 1, review.file_reason});
             }
         }
         if (path.ends_with(".hpp") || path.ends_with(".h")) {
@@ -256,7 +196,7 @@ void cmd_symbols(const std::string& kotlin_root,
             for (const auto& cls : defs) {
                 if (cls.is_stub) {
                     stubs.push_back({fs::relative(entry.path(), cpp_root).string(),
-                                     "class_stub", cls.name, cls.line, cls.stub_reason});
+                                     "type_review", cls.name, cls.line, cls.stub_reason});
                 }
             }
         }
@@ -269,8 +209,47 @@ void cmd_symbols(const std::string& kotlin_root,
                   if (pa == 0) pa = priority_for_file(a.file, usage_count_by_stem);
                   if (pb == 0) pb = priority_for_file(b.file, usage_count_by_stem);
                   if (pa != pb) return pa < pb;
-                  return a.file < b.file;
+                  return std::tie(a.file, a.line, a.name, a.type) < std::tie(b.file, b.line, b.name, b.type);
               });
+
+    std::sort(implementation_locations.begin(), implementation_locations.end());
+
+    if (options.json) {
+        auto quote = [](const std::string& value) { return "\"" + json_escape(value) + "\""; };
+        std::cout << "{\n  \"schema_version\": 1,\n  \"classification\": \"review_candidates_not_verified_stubs\",\n  \"findings\": [";
+        if (options.stubs || !options.duplicates) {
+            for (size_t i = 0; i < stubs.size(); ++i) {
+                const auto& finding = stubs[i];
+                if (i) std::cout << ',';
+                std::cout << "\n    {\"file\":" << quote(finding.file) << ",\"line\":" << finding.line
+                    << ",\"name\":" << quote(finding.name) << ",\"category\":" << quote(finding.type)
+                    << ",\"reason\":" << quote(finding.reason) << '}';
+            }
+        }
+        std::cout << "\n  ],\n  \"duplicates\": [";
+        if (options.duplicates || !options.stubs) {
+            for (size_t i = 0; i < dup_list.size(); ++i) {
+                if (i) std::cout << ',';
+                std::cout << "\n    {\"name\":" << quote(dup_list[i].first) << ",\"locations\": [";
+                for (size_t j = 0; j < dup_list[i].second.size(); ++j) {
+                    if (j) std::cout << ',';
+                    const auto& loc = dup_list[i].second[j];
+                    std::cout << "{\"file\":" << quote(fs::relative(loc.file, cpp_root).string())
+                        << ",\"line\":" << loc.line << '}';
+                }
+                std::cout << "]}";
+            }
+        }
+        std::cout << "\n  ],\n  \"implementation_locations\": [";
+        for (size_t i = 0; i < implementation_locations.size(); ++i) {
+            if (i) std::cout << ',';
+            std::cout << "\n    {\"translation_unit\":" << quote(implementation_locations[i].first)
+                << ",\"companion\":" << quote(implementation_locations[i].second)
+                << ",\"reason\":\"Definitions found in companion; logical-unit parity still requires comparison\"}";
+        }
+        std::cout << "\n  ]\n}\n";
+        return;
+    }
 
     std::cout << "======================================================================\n";
     std::cout << "SYMBOL DEFINITION ANALYSIS (ordered by dependency count)\n";
@@ -280,7 +259,7 @@ void cmd_symbols(const std::string& kotlin_root,
         std::cout << "\n--- DUPLICATE DEFINITIONS (real definitions in multiple files) ---\n";
         std::cout << "Found " << dup_list.size() << " symbols with multiple definitions:\n\n";
 
-        size_t shown = std::min<size_t>(30, dup_list.size());
+        size_t shown = dup_list.size();
         for (size_t i = 0; i < shown; ++i) {
             const auto& entry = dup_list[i];
             std::cout << "  class: " << entry.first << "\n";
@@ -303,7 +282,7 @@ void cmd_symbols(const std::string& kotlin_root,
                 }
                 std::cout << "    - " << fs::relative(file, cpp_root).string()
                           << ":" << line_list.str()
-                          << (stub ? " [STUB]" : "") << "\n";
+                          << (stub ? " [REVIEW]" : "") << "\n";
             }
         }
         if (dup_list.size() > shown) {
@@ -315,25 +294,25 @@ void cmd_symbols(const std::string& kotlin_root,
         std::vector<StubItem> file_stubs;
         std::vector<StubItem> class_stubs;
         for (const auto& stub : stubs) {
-            if (stub.type == "file_stub") file_stubs.push_back(stub);
+            if (stub.type != "type_review") file_stubs.push_back(stub);
             else class_stubs.push_back(stub);
         }
 
-        std::cout << "\n--- STUB IMPLEMENTATIONS (ordered by dependency) ---\n";
-        std::cout << "\nStub files (" << file_stubs.size() << "):\n";
-        size_t shown_files = std::min<size_t>(20, file_stubs.size());
+        std::cout << "\n--- IMPLEMENTATION REVIEW CANDIDATES (ordered by dependency) ---\n";
+        std::cout << "\nTranslation units to review (" << file_stubs.size() << "):\n";
+        size_t shown_files = file_stubs.size();
         for (size_t i = 0; i < shown_files; ++i) {
-            std::cout << "    - " << file_stubs[i].file << "\n";
+            std::cout << "    - " << file_stubs[i].file << ":" << file_stubs[i].line << " (" << file_stubs[i].type << ") " << file_stubs[i].reason << "\n";
         }
         if (file_stubs.size() > shown_files) {
             std::cout << "    ... and " << (file_stubs.size() - shown_files) << " more\n";
         }
 
-        std::cout << "\nStub classes (" << class_stubs.size() << "):\n";
-        size_t shown_classes = std::min<size_t>(20, class_stubs.size());
+        std::cout << "\nTypes to review (" << class_stubs.size() << "):\n";
+        size_t shown_classes = class_stubs.size();
         for (size_t i = 0; i < shown_classes; ++i) {
             const auto& stub = class_stubs[i];
-            std::cout << "    - " << stub.name << " in " << stub.file;
+            std::cout << "    - " << stub.name << " in " << stub.file << ":" << stub.line;
             if (!stub.reason.empty()) std::cout << " (" << stub.reason << ")";
             std::cout << "\n";
         }
@@ -342,6 +321,9 @@ void cmd_symbols(const std::string& kotlin_root,
         }
     }
 
+    std::cout << "\nDefinitions found in companion files (" << implementation_locations.size() << "):\n";
+    for (const auto& [translation_unit, companion] : implementation_locations)
+        std::cout << "    - " << translation_unit << " -> " << companion << " (compare logical-unit parity)\n";
     std::cout << "\n======================================================================\n";
 }
 
@@ -386,7 +368,7 @@ void cmd_symbol_lookup(const std::string& kotlin_root,
     for (const auto& entry : fs::recursive_directory_iterator(cpp_root)) {
         if (!entry.is_regular_file()) continue;
         std::string path = entry.path().string();
-        if (should_skip_path(path)) continue;
+        if (should_skip_path("/" + fs::relative(entry.path(), cpp_root).generic_string())) continue;
         if (!path.ends_with(".hpp") && !path.ends_with(".cpp") &&
             !path.ends_with(".h") && !path.ends_with(".cc")) {
             continue;

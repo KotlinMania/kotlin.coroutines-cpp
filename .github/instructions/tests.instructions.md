@@ -37,7 +37,7 @@ When working with test files:
 4. **IDE false positives are expected**:
    - Suspend constructs (legacy macros or upcoming plugin annotations) can confuse IntelliJ's parser
    - See `docs/architecture/docking_ring.md` notes on IDE support
-   - Add `// NOLINT` comments to suppress spurious errors
+   - Investigate diagnostics and correct their cause; do not suppress warnings or lint findings
    - Trust the compiler, not the IDE
 
 5. **Test structure**:
@@ -49,4 +49,3 @@ When working with test files:
    ```bash
    ./test_suspend && echo "✅ All tests pass"
    ```
-

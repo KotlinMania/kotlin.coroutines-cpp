@@ -1,38 +1,20 @@
 #pragma once
-/**
- * @file CoroutineStackFrame.hpp
- *
- * Transliterated from: kotlin.coroutines.jvm.internal.CoroutineStackFrame
- *
- * This internal interface is used by stacktrace recovery to walk coroutine frames.
- * Native implementations are no-ops.
- */
+/** Transliterated from: kotlinx-coroutines-core/native/src/internal/StackTraceRecovery.kt:13-18 */
 
-namespace kotlinx {
-namespace coroutines {
-namespace internal {
+namespace kotlinx::coroutines::internal {
 
-/**
- * Platform-specific representation of a stack trace element.
- * On native targets this is currently a stub.
- */
-class StackTraceElement {
-public:
-    virtual ~StackTraceElement() = default;
-};
+// NOTE(port): Native StackTraceElement is Any, erased at this internal ABI boundary.
+// Transliterated from: kotlinx-coroutines-core/native/src/internal/StackTraceRecovery.kt:18-18
+using StackTraceElement = void;
 
-/**
- * Coroutine stack frame interface.
- */
+// Transliterated from: kotlinx-coroutines-core/native/src/internal/StackTraceRecovery.kt:13-16
 class CoroutineStackFrame {
 public:
     virtual ~CoroutineStackFrame() = default;
-
+    // Transliterated from: kotlinx-coroutines-core/native/src/internal/StackTraceRecovery.kt:14-14
     virtual CoroutineStackFrame* get_caller_frame() const = 0;
+    // Transliterated from: kotlinx-coroutines-core/native/src/internal/StackTraceRecovery.kt:15-15
     virtual StackTraceElement* get_stack_trace_element() const = 0;
 };
 
-} // namespace internal
-} // namespace coroutines
-} // namespace kotlinx
-
+} // namespace kotlinx::coroutines::internal

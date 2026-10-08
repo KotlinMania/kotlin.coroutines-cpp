@@ -1,144 +1,55 @@
-// port-lint: source Yield.kt
+// port-lint: source kotlinx-coroutines-core/common/src/Yield.kt
 /**
  * @file Yield.cpp
  * @brief Implementation of yield function
  *
  * Transliterated from: kotlinx-coroutines-core/common/src/Yield.kt
  *
- * yield() suspends the current coroutine and immediately schedules it for
- * further execution on its dispatcher. This allows other coroutines to run.
+ * yield() checks cancellation and offers execution to other coroutines through
+ * its intercepted dispatcher. The Unconfined empty-queue path returns Unit.
  */
 
 #include "kotlinx/coroutines/Yield.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
+#include "kotlinx/coroutines/Unconfined.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 #include "kotlinx/coroutines/EventLoop.hpp"
 #include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/Job.hpp"
-#include "kotlinx/coroutines/internal/CurrentRunningCoroutine.hpp"
-#include <thread>
 
 namespace kotlinx {
 namespace coroutines {
 
-// Legacy function - just does OS thread yield or event loop step
-void yield_coroutine() {
-    auto loop = ThreadLocalEventLoop::current_or_null();
-    if (loop && !loop->is_empty()) {
-        loop->process_next_event();
-        return;
-    }
-    if (auto cont = internal::CurrentRunningCoroutine::current) {
-        yield(cont);
-        internal::CurrentRunningCoroutine::suspended = true;
-        return;
-    }
-    std::this_thread::yield();
-}
-
-/**
- * A Runnable that resumes a continuation when run.
- * This bridges the dispatcher's Runnable interface with the continuation mechanism.
- */
-class ResumeContinuationRunnable : public Runnable {
-private:
-    std::shared_ptr<Continuation<void*>> continuation_;
-
-public:
-    explicit ResumeContinuationRunnable(std::shared_ptr<Continuation<void*>> cont)
-        : continuation_(std::move(cont)) {}
-
-    void run() override {
-        if (continuation_) {
-            auto context = continuation_->get_context();
-            std::shared_ptr<Job> job = nullptr;
-            if (context) {
-                auto job_element = context->get(Job::type_key);
-                job = std::dynamic_pointer_cast<Job>(job_element);
-            }
-            if (job && !job->is_active()) {
-                continuation_->resume_with(Result<void*>::failure(job->get_cancellation_exception()));
-            } else {
-                // Resume with Unit result (nullptr = success with Unit)
-                continuation_->resume_with(Result<void*>::success(nullptr));
-            }
-        }
-    }
-};
-
-/**
- * Proper suspend function implementation of yield().
- *
- * Transliterated from Yield.kt:
- *   public suspend fun yield(): Unit = suspendCoroutineUninterceptedOrReturn sc@ { uCont ->
- *       val context = uCont.context
- *       context.ensureActive()
- *       val cont = uCont.intercepted() as? DispatchedContinuation<Unit> ?: return@sc Unit
- *       if (cont.dispatcher.safeIsDispatchNeeded(context)) {
- *           cont.dispatchYield(context, Unit)
- *       } else {
- *           // ... unconfined handling ...
- *       }
- *       COROUTINE_SUSPENDED
- *   }
- */
+// Transliterated from: kotlinx-coroutines-core/common/src/Yield.kt:145-166
 void* yield(std::shared_ptr<Continuation<void*>> completion) {
-    using namespace intrinsics;
-
-    if (!completion) {
-        // No continuation - can't suspend, just do OS yield
-        std::this_thread::yield();
-        return nullptr;
-    }
-
-    // 1. Get the context
+    if (!completion) return nullptr;
     auto context = completion->get_context();
-    if (!context) {
-        std::this_thread::yield();
-        return nullptr;
+    if (context) {
+        auto job = std::dynamic_pointer_cast<Job>(context->get(Job::type_key));
+        if (job && !job->is_active()) std::rethrow_exception(job->get_cancellation_exception());
     }
-
-    // 2. Check for cancellation - context.ensureActive()
-    // Get Job from context and check if cancelled
-    auto job_element = context->get(Job::type_key);
-    if (job_element) {
-        auto job = std::dynamic_pointer_cast<Job>(job_element);
-        if (job && !job->is_active()) {
-            // Job is cancelled - throw CancellationException
-            std::rethrow_exception(job->get_cancellation_exception());
+    auto cont = std::dynamic_pointer_cast<internal::DispatchedContinuation<void*>>(
+        intrinsics::intercepted(std::move(completion)));
+    if (!cont) return nullptr;
+    if (internal::safe_is_dispatch_needed(*cont->dispatcher, *context)) {
+        // This is a regular dispatcher -- do simple dispatch_yield.
+        cont->dispatch_yield(*context, static_cast<void*>(nullptr));
+    } else {
+        // This is either an immediate dispatcher or the Unconfined dispatcher.
+        // Detect Unconfined even when it is wrapped in another dispatcher.
+        auto yield_context = std::make_shared<YieldContext>();
+        cont->dispatch_yield(*context->operator+(yield_context), static_cast<void*>(nullptr));
+        // Unconfined can yield only in an existing unconfined loop.
+        if (yield_context->dispatcher_was_unconfined) {
+            // Unconfined received the dispatch call but did nothing.
+            // See Unconfined::dispatch.
+            return yield_undispatched(*cont) ? COROUTINE_SUSPENDED : nullptr;
         }
+        // Another dispatcher successfully dispatched the coroutine.
     }
-
-    // 3. Get the dispatcher from context
-    auto interceptor_element = context->get(ContinuationInterceptor::type_key);
-    CoroutineDispatcher* dispatcher = nullptr;
-    if (interceptor_element) {
-        dispatcher = dynamic_cast<CoroutineDispatcher*>(interceptor_element.get());
-    }
-
-    // 4. If no dispatcher, check for thread-local event loop
-    if (!dispatcher) {
-        auto event_loop = ThreadLocalEventLoop::current_or_null();
-        if (event_loop) {
-            dispatcher = event_loop.get();
-        }
-    }
-
-    // 5. If still no dispatcher, yield is a no-op (return immediately)
-    if (!dispatcher) {
-        std::this_thread::yield();
-        return nullptr;
-    }
-
-    // 6. Schedule resumption and return COROUTINE_SUSPENDED
-    // Create a runnable that will resume the continuation
-    auto resumeTask = std::make_shared<ResumeContinuationRunnable>(completion);
-
-    // Dispatch the task to resume later
-    dispatcher->dispatch(*context, resumeTask);
-
-    // Return suspended marker - caller will propagate this
     return COROUTINE_SUSPENDED;
 }
 

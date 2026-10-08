@@ -7,13 +7,45 @@ If anything here conflicts with a newer repo‑local rule (e.g., `AGENTS.md`, `d
 
 ---
 
+## Standalone C++ use and Kotlin/Native compatibility
+
+Sydney's requirement on 2026-10-06: this is a standalone C++ coroutine port that
+must also be compatible with Kotlin/Native. Normal C++ functions, types and MLX C++
+code must remain usable with the port. Standalone C++ applications must build and
+run without an installed Kotlin compiler, linked Kotlin/Native runtime, or JVM.
+They use the translated C++ coroutine implementation and the CMake/Clang plugins.
+Upstream Kotlin is the source of the translation and compatibility contract; it is
+not a required application runtime for ordinary C++ use.
+
+Kotlin/Native interoperability is an explicitly linked boundary when requested.
+That boundary requires the real matching Native runtime, continuation/frame/result
+contracts, and roots for actual Kotlin GC objects. Ordinary C++ values, RAII objects
+and MLX handles retain their actual C++ lifetimes; using the coroutine port does
+not require converting them to Kotlin objects. This distinction does not authorize
+an alternate coroutine state machine, substitute runtime or fallback.
+
+Acceptance requires both:
+
+1. A standalone CMake/Clang C++ executable that uses ordinary C++ functions and
+   types with the coroutine authoring surface, retains C++ locals/resources across
+   suspension, performs real MLX C++ GPU work, and resumes correctly. Verify its
+   build and linked dependencies do not require Kotlin tools or runtime libraries.
+2. The Kotlin/Native/C++ docking-ring demonstration through the actual Native
+   coroutine state machine and direct unsafe MLX bindings, with both handoff
+   directions, results, failure/cancellation, resource identity and cleanup.
+
+The C++ implementation must satisfy its own executable contract even when no
+Kotlin program participates. Native interoperability tests are separate evidence.
+Existing array fixtures prove neither complete standalone authoring/MLX integration
+nor the complete shared-state-machine boundary.
+
 ## 1. Mission and invariants
 
 ### 1.1 Why this port exists
 - Build a “docking ring” between Kotlin/Native and C++:
-  - Kotlin/Native provides GC + coroutine runtime + suspend lowering.
-  - C++ provides a high‑performance ABI target for MLX/GPU and other native ABIs.
-  - Future goal: enable true Kotlin‑semantics coroutines in C++ itself and safe embedding into Python 3.14 freethreading environments.
+  - C++ independently implements the translated coroutine behavior and compiler lowering, with ordinary C++ functions, types and MLX/GPU code.
+  - Kotlin/Native supplies the interoperability contract and its real runtime when a Kotlin program participates.
+  - Later Python embedding remains separate from the current standalone C++ and Kotlin/Native docking-ring requirements.
 - Apple platform is the first‑class target for this iteration (clang toolchain, MLX ABI). The bridge should remain structurally useful for later CUDA/NVIDIA ports.
 
 ### 1.2 Non‑negotiable invariants
@@ -30,7 +62,7 @@ If anything here conflicts with a newer repo‑local rule (e.g., `AGENTS.md`, `d
    - We then converge semantics where tests or audits flag divergence.
 3. **State machines must mirror Kotlin/Native lowering**
    - Labels, spill slots, resume dispatch, prompt cancellation guarantees.
-   - We accept temporary switch‑based state machines; long‑term target is computed‑goto / `indirectbr` equivalence.
+   - Mandatory LLVM injection constructs saved-address stores and `indirectbr` dispatch. Switch-based substitutes and runtime fallbacks do not meet this contract.
 4. **Scope is intentionally repo‑local**
    - The DSL + compiler plugin are scoped to this project. We accept maintaining them as project infrastructure.
 
@@ -51,8 +83,8 @@ If anything here conflicts with a newer repo‑local rule (e.g., `AGENTS.md`, `d
   ```
 - C++ twins:
   ```
-  include/kotlinx/coroutines/<mirrored tree>/X.hpp   (public surface)
-  kotlinx-coroutines-core/<mirrored tree>/X.cpp      (implementation)
+  src/kotlinx/coroutines/<mirrored tree>/X.hpp   (public surface)
+  src/kotlinx/coroutines/<mirrored tree>/X.cpp   (implementation)
   ```
 - If a C++ file has no obvious `.kt` twin:
   1. Search by class/function name in `tmp/kotlinx.coroutines`.
@@ -64,7 +96,7 @@ Per file:
 2. Recreate public types, methods, overloads, constants, and visibility exactly.
 3. Preserve ordering and nesting of declarations where possible (helps diffing to Kotlin).
 4. Move non‑public helper logic into `.cpp`.
-5. Add explicit, tagged TODOs for any unresolved mismatch.
+5. Implement missing behavior without stubs or placeholder bodies. Record genuine blockers in audit evidence; source TODO comments are prohibited.
 
 ---
 
@@ -104,12 +136,12 @@ Per file:
 ### 4.1 Sentinel definition
 - Kotlin/Native uses `COROUTINE_SUSPENDED` (a singleton object).
 - C++ port uses pointer‑identity sentinel in:
-  - `include/kotlinx/coroutines/intrinsics/Intrinsics.hpp`
+  - `src/kotlinx/coroutines/intrinsics/Intrinsics.hpp`
   - `intrinsics::get_COROUTINE_SUSPENDED()`
   - `intrinsics::is_coroutine_suspended(void*)`
 
 ### 4.2 `suspend_cancellable_coroutine<T>` contract
-Implementation: `include/kotlinx/coroutines/CancellableContinuationImpl.hpp`.
+Implementation: `src/kotlinx/coroutines/CancellableContinuationImpl.hpp`.
 - Creates a `CancellableContinuationImpl<T>` and runs a user block.
 - `get_result()` decides:
   - suspend ⇒ returns sentinel,
@@ -119,10 +151,9 @@ Implementation: `include/kotlinx/coroutines/CancellableContinuationImpl.hpp`.
 ### 4.3 Ownership rule (current)
 - Non‑void results are boxed as `T*` and returned via `void*`.
 - **Caller is responsible for deleting the box.**
-- If a call site cannot make ownership obvious, add:
-  ```cpp
-  // TODO(abi-ownership): define deleter/boxing policy here.
-  ```
+- Define ownership at each call site. If the policy depends on another upstream
+  component, port that dependency. An unresolved ownership contract is an audit
+  blocker, not permission to add a comment or placeholder implementation.
 
 ---
 
@@ -149,104 +180,93 @@ This section is grounded in the Kotlin/Native compiler sources you vendored in `
      - creates a resume basic block,
      - stores its block address into the coroutine label field.
 
-### 5.2 Representation: Now Matching Kotlin/Native
-- **Kotlin/Native:** `void*` label storing `blockaddress`, dispatched via `indirectbr`
-- **C++ (current):** `void* _label` storing `&&label`, dispatched via `goto *label`
+### 5.2 Required representation and verified boundary
 
-Both express the same block-address dispatch pattern:
-```llvm
-store ptr blockaddress(@func, %resume), ptr %label
-indirectbr ptr %label, [label %resume0, label %resume1, ...]
-```
-
-The `__kxs_suspend_point(__LINE__)` marker provides IR visibility for tooling (kxs-inject).
+Kotlin/Native retains a block address in its frame label and resumes through
+LLVM indirectbr. The C++ frontend supplies the exact persistent label-field
+address and actual function-local resume block addresses. KotlinxCoroutinePass
+constructs their stores and entry/resume dispatch in Clang's in-memory LLVM module.
+The ID used for tooling does not replace the saved address or declaration identity.
+Dispatch shape alone does not prove shared Native frame/result/GC compatibility.
 
 ---
 
-## 6. Suspend Implementation: Macros + Computed Goto + IR Markers
+## 6. Suspend authoring and mandatory compiler lowering
 
-### 6.1 Current Approach (Production)
-The suspend implementation uses **Clang macros with computed goto** to express Kotlin/Native's address-dispatch pattern; this alone does not establish full ABI parity:
+### 6.1 C++ authoring requirement
+
+Ordinary C++ functions and values are usable inside the coroutine authoring surface.
+Existing nonsuspending functions need no Kotlin annotation or translation. Ordinary
+C++ classes, standard-library types and MLX handles remain C++ values with their
+actual ownership and destruction rules. Retaining a borrowed pointer or reference
+across suspension does not transfer ownership. Standalone application build and
+transitive link dependencies must exclude Kotlin tools and runtime libraries.
+The CMake-enabled Clang frontend must construct the retained coroutine frame and
+save live locals without requiring the author to hand-code those operations.
+The underlying authoring markers are compiler contracts; their existence is not
+completion of the automatic frontend or the Native interoperability requirement.
+
+### 6.2 Actual marker and LLVM contracts
+
+The current source markers in src/kotlinx/coroutines/dsl/Suspend.hpp are:
 
 ```cpp
-class MyCoroutine : public ContinuationImpl {
-    void* _label = nullptr;  // blockaddress storage
-
-    void* invoke_suspend(Result<void*> result) override {
-        coroutine_begin(this)
-
-        coroutine_yield(this, delay(100, this));
-
-        coroutine_end(this)
-    }
-};
+__kxs_coroutine_begin(void** label_field);
+__kxs_suspend_point(int id, void** label_field, void* resume_address);
 ```
 
-### 6.2 The Two Pieces
+The macros supply these operands and the immediate/suspended/resumed result
+regions. They do not implement a second entry dispatch or save the label themselves.
+Marker declarations have no runtime implementation: missing mandatory injection
+must fail to link. Source live-state/result accesses remain subject to compiler
+lowering and execution verification.
 
-**1. `__LINE__` → Computed Goto (Runtime Dispatch)**
-```cpp
-(c)->_label = &&_kxs_resume_42;  // stores blockaddress
-goto *(c)->_label;  // indirectbr dispatch
-```
+### 6.3 Production CMake pipeline
 
-Compiles to:
-```llvm
-store ptr blockaddress(@func, %resume42), ptr %label
-indirectbr ptr %label, [label %resume42, ...]
-```
+kxs_enable_suspend_dsl(target) enables the Clang AST frontend and the mandatory
+LLVM module plugin. CMake adds -fpass-plugin and loads the frontend using the
+selected compiler's matching LLVM/Clang development package. The LLVM plugin
+constructs saved-address stores, start/resume branching and indirectbr, consumes
+the contracts and verifies the resulting module. Ordinary production compilation
+does not serialize/reparse LLVM IR or use a Python compile launcher.
 
-**2. `__kxs_suspend_point(__LINE__)` → IR Marker (Tooling)**
-```cpp
-::__kxs_suspend_point(42);  // survives to IR
-```
+The standalone kxs-inject tool uses the same engine for diagnostics; it is not the
+production compiler invocation. See the docking-ring and IR specification for
+current verified behavior and unfinished source dependencies.
 
-Compiles to:
-```llvm
-call void @__kxs_suspend_point(i32 42)
-```
+### 6.4 Independent C++ use and Native interoperability
 
-The kxs-inject tool removes these no-op markers while preserving the generated frame and result paths.
-
-### 6.3 Macro Definitions
-From `src/kotlinx/coroutines/dsl/Suspend.hpp`:
-- `coroutine_begin(c)` - Entry dispatch (null check + indirectbr)
-- `coroutine_yield(c, expr)` - Suspension point (stores label, calls, checks COROUTINE_SUSPENDED)
-- `coroutine_yield_value(c, result, expr, out)` - Value-producing suspension
-- `coroutine_end(c)` - Returns nullptr (Unit)
-
-### 6.4 kxs-inject (IR Transform)
-The `kxs-inject` tool (`src/kotlinx/coroutines/tools/kxs_inject/`) processes LLVM IR to:
-1. Parse and verify already lowered LLVM IR
-2. Remove direct no-op `__kxs_suspend_point()` calls
-3. Preserve frame accesses, resume dispatch and result/failure branches
-4. Verify output; keep any still-referenced declaration
-
-It does not generate spills or dispatch. See `docs/suspension/IR_SUSPEND_LOWERING_SPEC.md`
-for the compiler/runtime handoff contracts and validated CMake pipeline.
-
-### 6.5 Portability
-- **Clang**: Computed goto (`void* _label`); GCC/MSVC fallbacks are not provided by current `Suspend.hpp`.
+The C++ library and plugins must work without Kotlin installed or linked. Calling
+ordinary C++ code does not require the Kotlin/Native runtime. Actual Kotlin/Native
+object and coroutine handoffs require the matching Native runtime at that explicit
+boundary. There is no automatic choice of a substitute coroutine implementation.
+The toolchain is Clang-only; GCC/MSVC coroutine fallbacks are prohibited.
 
 ---
 
-## 7. TODO taxonomy (mandatory)
+## 7. No TODOs or stubs; required gap evidence
 
-Use explicit tags so audits and AI can classify gaps:
-- `TODO(port):` missing transliteration or API surface mismatch.
-- `TODO(semantics):` correctness gap vs Kotlin (races, cancellation, algorithms).
-- `TODO(suspend-plugin):` this suspend logic should migrate to plugin‑generated state machine.
-- `TODO(abi-ownership):` boxed result ownership unclear.
-- `TODO(perf):` known performance gap.
+`TODO`, `FIXME`, `XXX`, and `HACK` comments are prohibited in source. Stubs and
+placeholder implementations are prohibited. There is no temporary exception
+for transliteration, semantic work, ownership, or compiler migration.
 
-Remove TODOs you resolve in the region you edit.
+Port missing behavior from the matching Kotlin source. Remove existing
+prohibited comments as the missing behavior is implemented; deleting comments
+or renaming a stub does not close a gap. Record genuine blockers in
+`docs/audits/` with source/target locations, upstream behavior, missing
+dependencies, and `ast_distance` evidence. Such records do not make incomplete
+code acceptable or establish that it meets the required criteria.
+
+Classify audit gaps by API/transliteration, semantics, compiler lowering,
+ownership, or performance. Keep generated `ast_distance` inventories and
+priority reports current rather than embedding work lists in source comments.
 
 ---
 
 ## 8. Build and test workflow
 
 ### 8.1 Toolchain expectations
-- CMake ≥ 3.16, C++20 compiler, Threads/pthreads.
+- CMake ≥ 3.16, Clang C++20 and its matching LLVM/Clang development package, Threads/pthreads.
 - Out‑of‑source builds; artifacts land under `build/` (or another build dir).
 
 ### 8.2 Standard build
@@ -258,12 +278,12 @@ cmake --build . -- -j4
 
 ### 8.3 Key CMake options
 - `KOTLIN_NATIVE_RUNTIME_AVAILABLE=ON`
-  - only enable when Kotlin/Native runtime is present and GC bridge is required.
+  - enables the actual Native ABI host fixtures when the explicit Native toolchain is supplied; standalone C++ use must not require this option.
 - `KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=ON`
   - builds the suspend DSL plugin in `tools/clang_suspend_plugin/`.
 
 ### 8.4 Tests
-- Tests are plain C++ executables registered via `tests/CMakeLists.txt` using:
+- Tests are plain C++ executables registered via `src/tests/CMakeLists.txt` using:
   ```cmake
   add_coroutine_test(test_name)
   ```
@@ -274,7 +294,7 @@ cmake --build . -- -j4
   ctest -R <regex> --output-on-failure
   ```
 - Use `-R` subsets to keep suspend progress moving when unrelated targets fail.
-- `tests/gc_bridge` suite is optional and requires Kotlin/Native tooling; do not enable K/N options unless that toolchain is installed.
+- `src/tests/src/gc_bridge` suite is optional and requires Kotlin/Native tooling; do not enable K/N options unless that toolchain is installed.
 
 ---
 
@@ -290,12 +310,31 @@ cmake --build . -- -j4
 
 ## 10. Current priority queue (triage)
 
+### Required ASTDistance evidence and priorities
+
+`ast_distance` is the oracle for current porting status and repair priorities,
+and a required acceptance check for transliteration fidelity. Ports
+must meet the applicable criteria and record their measured results and
+unresolved gaps. The tool is still being refined: investigate findings against
+the source and target, and explicitly record demonstrated parser, matching, or
+rule limitations. These limitations do not make the check optional. Runtime
+parity still requires the continuation contracts and behavioral tests.
+
+Use `ast_distance`'s generated gap inventories and priority documents to select
+and sequence work; refresh them after relevant source or tool changes. The
+static queue below supplies architectural context and must be reconciled with
+those reports. See [the tooling contract](../../tools/ast_distance/README.md#required-porting-criteria).
+Numeric thresholds and the authoritative scoring model must be specified in
+the applicable acceptance criteria rather than inferred from historical scores.
+
+### Architectural triage context
+
 1. Clean residual Kotlin syntax in C++ `.cpp` files (`package`, `import`, `fun`, `when`, etc.).
 2. Public suspend signature parity:
    - `Job::join`, `Deferred::await`, `Delay::delay` free functions, dispatcher interception.
 3. Delay fallback correctness:
    - avoid capturing continuations by reference in detached threads.
-4. Ownership / boxing policy formalization (`abi-ownership` TODOs).
+4. Ownership / boxing policy formalization, with explicit call-site contracts.
 5. Plugin phase‑2/3:
    - computed‑goto labels for exact `indirectbr`,
    - spill inference parity with `CoroutinesVarSpillingLowering.kt`,
@@ -305,7 +344,9 @@ cmake --build . -- -j4
 
 ### End state definition
 We consider this port “docked” when:
-- Public API surface matches `kotlinx.coroutines` (audits green).
+- Relevant public API and algorithms match the Kotlin sources and meet the required measured ast_distance criteria.
 - All suspend functions lower through the plugin to K/N‑parity state machines.
 - LLVM IR from clang matches Kotlin/Native patterns (blockaddress + indirectbr + spill fields).
-- Prompt cancellation, dispatcher fairness, and select semantics pass parity tests.
+- Prompt cancellation, dispatcher fairness and select behavior have source-faithful execution evidence.
+- Standalone CMake/Clang C++ code uses normal C++ functions/types and real MLX GPU work without Kotlin tools or runtime linked.
+- Actual Kotlin/Native and C++ coroutine state machines hand execution across the direct unsafe MLX boundary with verified results, cancellation/failure and cleanup.

@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source kotlinx-coroutines-core/common/src/Exceptions.common.kt
 /**
  * @file Exceptions.hpp
  * @brief Exception types for kotlinx.coroutines
@@ -6,9 +7,13 @@
  * Transliterated from: kotlinx-coroutines-core/common/src/Exceptions.common.kt
  */
 
+#include "ExceptionTransport.hpp"
+#include "../../kotlin/coroutines/cancellation/CancellationException.hpp"
 #include <stdexcept>
 #include <string>
 #include <exception>
+#include <optional>
+#include <cstdint>
 
 namespace kotlinx {
 namespace coroutines {
@@ -25,6 +30,8 @@ public:
         : std::out_of_range(message) {}
 };
 
+
+
 /**
  * This exception gets thrown if an exception is caught while processing CompletionHandler invocation for Job.
  */
@@ -39,45 +46,18 @@ public:
     std::exception_ptr get_cause() const { return cause_; }
 };
 
-/**
- * Thrown by cancellable suspending functions if the Job of the coroutine is cancelled
- * while it is suspending.
- *
- * Unlike most other exceptions, this exception is caught by the parent coroutine's machinery
- * and does not cause its parent to fail.
- */
-class CancellationException : public std::runtime_error {
-private:
-    std::exception_ptr cause_;
+} // namespace coroutines
+} // namespace kotlinx
 
-public:
-    explicit CancellationException(const std::string& message)
-        : std::runtime_error(message), cause_(nullptr) {}
 
-    CancellationException(const std::string& message, std::exception_ptr cause)
-        : std::runtime_error(message), cause_(cause) {}
 
-    std::exception_ptr get_cause() const { return cause_; }
+namespace kotlinx::coroutines {
+// Native Exceptions.kt imports the actual stdlib class, preserving its identity.
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:9-9
+using kotlin::coroutines::cancellation::CancellationException;
 
-    virtual ~CancellationException() = default;
-};
-
-/**
- * Thrown by cancellable suspending functions if the Job of the coroutine is cancelled
- * or completed without cause, or with a cause or exception that is not CancellationException.
- * See Job.getCancellationException().
- */
-class JobCancellationException : public CancellationException {
-private:
-    struct Job* job_;
-
-public:
-    JobCancellationException(const std::string& message, std::exception_ptr cause, struct Job* job)
-        : CancellationException(message, cause), job_(job) {}
-
-    struct Job* get_job() const { return job_; }
-    // get_cause() inherited from CancellationException
-};
+// Transliterated from: kotlinx-coroutines-core/common/src/Exceptions.common.kt:16-22
+class JobCancellationException;
 
 /**
  * Thrown when an internal error occurs in the coroutines library.
@@ -94,9 +74,16 @@ public:
 };
 
 /**
- * Factory function to create a CancellationException.
+ * Factory function to create a CancellationException with its original cause.
+ * The caller owns and deletes the returned exception.
+ *
+ * Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:13-14
  */
-CancellationException* make_cancellation_exception(const std::string& message, std::exception_ptr cause);
+CancellationException* cancellation_exception(const std::string& message, std::exception_ptr cause);
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:13-14
+CancellationException* cancellation_exception(std::optional<std::string> message, std::exception_ptr cause);
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:13-14
+CancellationException* cancellation_exception(const char* message, std::exception_ptr cause);
 
 /**
  * Converts an exception_ptr to a CancellationException.
@@ -157,5 +144,7 @@ inline bool is_cancellation_exception(std::exception_ptr exception) {
  */
 extern const bool RECOVER_STACK_TRACES;
 
-} // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines
+
+// The common expect surface exposes the selected Native actual implementation.
+#include "native/Exceptions.hpp"

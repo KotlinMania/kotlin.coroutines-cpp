@@ -1,4 +1,4 @@
-"""LLVM parser/verifier and runtime regressions for kxs-inject cleanup."""
+"""LLVM injection, persistent-frame and runtime regressions for kxs-inject."""
 
 import argparse
 from pathlib import Path
@@ -10,36 +10,36 @@ import unittest
 
 OPTIONS = None
 MODULE = '''
-declare void @__kxs_suspend_point(i32)
-declare ptr @get_or_throw(ptr)
-define void @initialization() {
-  call void @__kxs_suspend_point(i32 9)
-  ret void
-}
-define ptr @"frame with spaces"(ptr %frame, ptr %result, i1 %suspends) {
+declare void @__kxs_coroutine_begin(ptr)
+declare void @__kxs_suspend_point(i32, ptr, ptr)
+define ptr @"frame with spaces"(ptr %frame, ptr %result) {
 entry:
   %label_field = getelementptr { ptr, ptr, i32 }, ptr %frame, i32 0, i32 1
-  %saved = load ptr, ptr %label_field
-  %fresh = icmp eq ptr %saved, null
-  br i1 %fresh, label %start, label %dispatch
-dispatch:
-  indirectbr ptr %saved, [label %resume]
-start:
-  store ptr blockaddress(@"frame with spaces", %resume), ptr %label_field
-  call void @__kxs_suspend_point(i32 9)
-  br i1 %suspends, label %suspended, label %immediate
-suspended:
+  call void @__kxs_coroutine_begin(ptr %label_field)
+  %counter = getelementptr { ptr, ptr, i32 }, ptr %frame, i32 0, i32 2
+  %old = load i32, ptr %counter
+  %next = add i32 %old, 1
+  store i32 %next, ptr %counter
+  call void @__kxs_suspend_point(i32 9, ptr %label_field, ptr blockaddress(@"frame with spaces", %resume))
   ret ptr inttoptr (i64 1 to ptr)
-immediate:
-  ret ptr %result
 resume:
-  %value = call ptr @get_or_throw(ptr %result)
-  ret ptr %value
+  ret ptr %result
 }
 '''
 
 
-class NativeCleanupTests(unittest.TestCase):
+# Standard C++ marker branches identify real blocks before LLVM optimization.
+# IDs only pair declarations during compilation; stored state is a block address.
+MARKED_MODULE = MODULE.replace(
+    'declare void @__kxs_suspend_point(i32, ptr, ptr)',
+    'declare void @__kxs_suspend_site(i32, ptr)\ndeclare i1 @__kxs_resume_point(i32)').replace(
+    '  call void @__kxs_suspend_point(i32 9, ptr %label_field, ptr blockaddress(@"frame with spaces", %resume))',
+    '  call void @__kxs_suspend_site(i32 9, ptr %label_field)\n'
+    '  %go = call i1 @__kxs_resume_point(i32 9)\n'
+    '  br i1 %go, label %resume, label %normal\nnormal:')
+
+
+class NativeInjectionTests(unittest.TestCase):
     def setUp(self):
         self.directory = Path(tempfile.mkdtemp(dir=OPTIONS.work_dir, prefix=self._testMethodName + ' '))
 
@@ -62,38 +62,319 @@ class NativeCleanupTests(unittest.TestCase):
         self.assertFalse(output_file.exists())
         return output
 
-    def test_multiple_functions_keep_frame_and_result_paths(self):
-        cleaned = self.transform(MODULE)
-        self.assertNotIn('call void @__kxs_suspend_point', cleaned)
-        self.assertNotIn('declare void @__kxs_suspend_point', cleaned)
-        self.assertIn('getelementptr { ptr, ptr, i32 }, ptr %frame, i32 0, i32 1', cleaned)
-        self.assertIn('store ptr blockaddress(@"frame with spaces", %resume), ptr %label_field', cleaned)
-        self.assertIn('indirectbr ptr %saved, [label %resume]', cleaned)
-        self.assertIn('%value = call ptr @get_or_throw(ptr %result)', cleaned)
-        self.assertNotIn('kxs_dispatch', cleaned)
+    def test_injects_dispatch_and_persistent_frame_store(self):
+        injected = self.transform(MODULE)
+        self.assertNotIn('call void @__kxs_', injected)
+        self.assertNotIn('declare void @__kxs_', injected)
+        self.assertIn('getelementptr { ptr, ptr, i32 }, ptr %frame, i32 0, i32 1', injected)
+        self.assertIn('store ptr blockaddress(@"frame with spaces", %resume), ptr %label_field', injected)
+        self.assertIn('indirectbr ptr %kxs_saved_label, [label %resume]', injected)
+        self.assertNotIn('alloca', injected)
+        self.assertNotIn('store ptr null', injected)
 
-    def test_referenced_marker_declaration_survives(self):
-        cleaned = self.transform('@callback = global ptr @__kxs_suspend_point\n' + MODULE)
-        self.assertIn('declare void @__kxs_suspend_point(i32)', cleaned)
-        self.assertIn('@callback = global ptr @__kxs_suspend_point', cleaned)
+    def test_marker_branches_form_actual_addresses_across_repeated_calls(self):
+        source = MARKED_MODULE.replace('@"frame with spaces"', '@run_frame').replace(
+            'resume:\n  ret ptr %result',
+            'resume:\n  call void @__kxs_suspend_site(i32 3, ptr %label_field)\n'
+            '  %next_resume = call i1 @__kxs_resume_point(i32 3)\n'
+            '  br i1 %next_resume, label %second_resume, label %second_normal\n'
+            'second_normal:\n  ret ptr inttoptr (i64 2 to ptr)\n'
+            'second_resume:\n  ret ptr %result')
+        injected = self.transform(source)
+        self.assertIn('indirectbr ptr %kxs_saved_label, [label %resume, label %second_resume]', injected)
+        self.assertIn('store ptr blockaddress(@run_frame, %resume)', injected)
+        self.assertIn('store ptr blockaddress(@run_frame, %second_resume)', injected)
+        self.assertNotIn('__kxs_', injected)
+        harness = self.directory / 'marker-branches.cpp'
+        harness.write_text('''#include <cassert>
+#include <initializer_list>
+struct Frame { void* guard; void* label; int before; };
+extern "C" void* run_frame(Frame*, void*);
+int main() {
+    int first = 17, second = 29;
+    Frame a{&first, nullptr, 0}, b{&second, nullptr, 0};
+    for (Frame* frame : {&a, &b}) {
+        assert(run_frame(frame, nullptr) == reinterpret_cast<void*>(1));
+        void* first_label = frame->label;
+        assert(first_label && frame->before == 1);
+        assert(run_frame(frame, nullptr) == reinterpret_cast<void*>(2));
+        assert(frame->label && frame->label != first_label);
+        assert(run_frame(frame, frame->guard) == frame->guard);
+        assert(frame->before == 1);
+    }
+}
+''')
+        executable = self.directory / 'marker-branches'
+        self.run_command([OPTIONS.compiler, '-std=c++20', '-UNDEBUG', '-Wall', '-Wextra',
+                          '-Wpedantic', '-Werror', '-fsanitize=address,undefined',
+                          str(harness), str(self.directory / 'output.ll'), '-o', str(executable)])
+        self.run_command([str(executable)])
 
-    def test_invoke_keeps_its_unwind_edge(self):
+    def test_marker_branch_contracts_are_rejected_when_unpaired_or_dynamic(self):
+        malformed = [
+            (MARKED_MODULE.replace('call i1 @__kxs_resume_point(i32 9)',
+                                   'call i1 @__kxs_resume_point(i32 8)'), 'unique matching resume'),
+            (MARKED_MODULE.replace('  call void @__kxs_suspend_site(i32 9, ptr %label_field)\n', ''),
+             'no suspension site'),
+            (MARKED_MODULE.replace('  %go = call i1 @__kxs_resume_point(i32 9)',
+                                   '  %ignored = call i1 @__kxs_resume_point(i32 9)\n'
+                                   '  %go = call i1 @__kxs_resume_point(i32 9)'), 'direct conditional branch'),
+            (MARKED_MODULE.replace('  %go = call i1 @__kxs_resume_point(i32 9)',
+                                   '  %dynamic = load i32, ptr %counter\n'
+                                   '  %go = call i1 @__kxs_resume_point(i32 %dynamic)'), 'constant ID'),
+            (MARKED_MODULE.replace('call void @__kxs_suspend_site(i32 9, ptr %label_field)',
+                                   'call void @__kxs_suspend_site(i32 9, ptr %frame)'), 'different frame label'),
+        ]
+        for source, diagnostic in malformed:
+            with self.subTest(diagnostic=diagnostic):
+                self.assertIn(diagnostic, self.transform(source, False))
+
+    def test_translated_codegen_merges_normal_and_resumed_results(self):
+        generated = self.directory / 'generated.ll'
+        self.run_command([OPTIONS.codegen_tool, str(generated)])
+        ir = generated.read_text()
+        self.assertIn('phi i32', ir)
+        self.assertEqual(ir.count('phi i32'), 5)  # Unit does not receive a value phi.
+        self.assertEqual(ir.count('indirectbr ptr'), 4)
+        harness = self.directory / 'generated.cpp'
+        harness.write_text('''
+#include <cassert>
+#include <climits>
+extern "C" int comparison_eq(int, int);
+extern "C" int comparison_gt(int, int);
+extern "C" int comparison_ge(int, int);
+extern "C" int comparison_lt(int, int);
+extern "C" int comparison_le(int, int);
+extern "C" int comparison_ne(int, int);
+extern "C" int comparison_u_lt(int, int);
+extern "C" int comparison_u_le(int, int);
+extern "C" int comparison_u_gt(int, int);
+extern "C" int comparison_u_ge(int, int);
+extern "C" int value_frame(void**, int, int);
+extern "C" int two_point_frame(void**, int, int, int);
+extern "C" int unit_frame(void**, int, int);
+extern "C" int position_state();
+extern "C" int initializer_switch_dispatch(int);
+extern "C" int branching_value(int, int, int, int*);
+extern "C" int branching_effect(int, int*);
+extern "C" int branching_terminated_effect(int, int*);
+extern "C" int branching_returned_effect(int, int*);
+extern "C" int terminated_normal_frame(void**, int, int);
+int main() {
+    const int values[] = {INT_MIN, -1, 0, 1, INT_MAX};
+    for (int left : values) {
+        for (int right : values) {
+            assert(comparison_eq(left, right) == (left == right));
+            assert(comparison_gt(left, right) == (left > right));
+            assert(comparison_ge(left, right) == (left >= right));
+            assert(comparison_lt(left, right) == (left < right));
+            assert(comparison_le(left, right) == (left <= right));
+            assert(comparison_ne(left, right) == (left != right));
+            assert(comparison_u_lt(left, right) == (static_cast<unsigned>(left) < static_cast<unsigned>(right)));
+            assert(comparison_u_le(left, right) == (static_cast<unsigned>(left) <= static_cast<unsigned>(right)));
+            assert(comparison_u_gt(left, right) == (static_cast<unsigned>(left) > static_cast<unsigned>(right)));
+            assert(comparison_u_ge(left, right) == (static_cast<unsigned>(left) >= static_cast<unsigned>(right)));
+        }
+    }
+    assert(position_state() == 22);
+    assert(initializer_switch_dispatch(0) == 13);
+    assert(initializer_switch_dispatch(1) == 17);
+    assert(initializer_switch_dispatch(2) == 19);
+    int effects = 0;
+    assert(branching_value(1, 31, 79, &effects) == 31 && effects == 0);
+    assert(branching_value(0, 31, 79, &effects) == 79 && effects == 1);
+    assert(branching_effect(0, &effects) == 9 && effects == 1);
+    assert(branching_effect(1, &effects) == 9 && effects == 17);
+    effects = 0;
+    assert(branching_terminated_effect(0, &effects) == 9 && effects == 0);
+    assert(branching_terminated_effect(1, &effects) == 29 && effects == 17);
+    effects = 0;
+    assert(branching_returned_effect(0, &effects) == 9 && effects == 0);
+    assert(branching_returned_effect(1, &effects) == 29 && effects == 17);
+    void* terminated_label = nullptr;
+    assert(terminated_normal_frame(&terminated_label, 31, 79) == 13 && terminated_label);
+    assert(terminated_normal_frame(&terminated_label, 31, 79) == 79);
+    void* two_point_label = nullptr;
+    assert(two_point_frame(&two_point_label, 11, 22, 33) == 11);
+    assert(two_point_label);
+    void* first_resume = two_point_label;
+    assert(two_point_frame(&two_point_label, 11, 22, 33) == 22);
+    assert(two_point_label && two_point_label != first_resume);
+    void* second_resume = two_point_label;
+    assert(two_point_frame(&two_point_label, 11, 22, 33) == 33);
+    assert(two_point_label == second_resume);
+    void* value_label = nullptr;
+    assert(value_frame(&value_label, 31, 79) == 31 && value_label);
+    assert(value_frame(&value_label, 31, 79) == 79);
+    void* unit_label = nullptr;
+    assert(unit_frame(&unit_label, 31, 79) == 0 && unit_label);
+    assert(unit_frame(&unit_label, 31, 79) == 0);
+}
+''')
+        executable = self.directory / 'generated'
+        self.run_command([OPTIONS.compiler, '-std=c++20', '-UNDEBUG', '-fsanitize=address',
+                          str(harness), str(generated), '-o', str(executable)])
+        self.run_command([str(executable)])
+
+    def test_multiple_functions_use_function_local_addresses(self):
+        second = MODULE[MODULE.index('define ptr'):].replace('frame with spaces', 'second frame')
+        injected = self.transform(MODULE + second)
+        self.assertEqual(injected.count('indirectbr ptr'), 2)
+        self.assertIn('blockaddress(@"frame with spaces", %resume)', injected)
+        self.assertIn('blockaddress(@"second frame", %resume)', injected)
+
+    def test_empty_resume_list_retains_kotlin_indirect_branch(self):
+        source = MODULE.replace('  call void @__kxs_suspend_point(i32 9, ptr %label_field, ptr blockaddress(@"frame with spaces", %resume))\n', '')
+        injected = self.transform(source)
+        self.assertIn('indirectbr ptr %kxs_saved_label, []', injected)
+        self.assertNotIn('unreachable', injected)
+
+    def test_resume_points_follow_block_addresses_not_integer_marker_order(self):
+        source = MODULE.replace('@"frame with spaces"', '@run_frame').replace(
+            'resume:\n  ret ptr %result',
+            'resume:\n  call void @__kxs_suspend_point(i32 3, ptr %label_field, ptr blockaddress(@run_frame, %second_resume))\n'
+            '  ret ptr inttoptr (i64 2 to ptr)\nsecond_resume:\n  ret ptr %result')
+        injected = self.transform(source)
+        self.assertIn('indirectbr ptr %kxs_saved_label, [label %resume, label %second_resume]', injected)
+        harness = self.directory / 'two-points.cpp'
+        harness.write_text('''
+#include <cassert>
+struct Frame { void* guard; void* label; int before; };
+extern "C" void* run_frame(Frame*, void*);
+int main() {
+    int result = 42;
+    Frame frame{&result, nullptr, 0};
+    assert(run_frame(&frame, nullptr) == reinterpret_cast<void*>(1));
+    void* first_label = frame.label;
+    assert(first_label && frame.before == 1);
+    assert(run_frame(&frame, nullptr) == reinterpret_cast<void*>(2));
+    assert(frame.label && frame.label != first_label && frame.before == 1);
+    assert(run_frame(&frame, &result) == &result);
+    assert(frame.before == 1 && frame.guard == &result);
+}
+''')
+        executable = self.directory / 'two-points'
+        self.run_command([OPTIONS.compiler, '-std=c++20', '-UNDEBUG', '-fsanitize=address',
+                          str(harness), str(self.directory / 'output.ll'), '-o', str(executable)])
+        self.run_command([str(executable)])
+
+    def test_stack_label_is_rejected(self):
+        source = MODULE.replace('%label_field = getelementptr { ptr, ptr, i32 }, ptr %frame, i32 0, i32 1',
+                                '%label_field = alloca ptr')
+        self.assertIn('persistent frame storage', self.transform(source, False))
+
+    def test_missing_frame_marker_is_rejected(self):
+        self.assertIn('Missing __kxs_coroutine_begin', self.transform(
+            MODULE.replace('  call void @__kxs_coroutine_begin(ptr %label_field)\n', ''), False))
+
+    def test_different_frame_field_is_rejected(self):
+        source = MODULE.replace('i32 9, ptr %label_field,', 'i32 9, ptr %frame,')
+        self.assertIn('different frame label field', self.transform(source, False))
+
+    def test_foreign_resume_address_is_rejected(self):
+        source = MODULE.replace('ptr blockaddress(@"frame with spaces", %resume)', 'ptr null')
+        self.assertIn('function-local blockaddress', self.transform(source, False))
+
+    def test_indirect_marker_use_is_rejected(self):
+        source = '@callback = global ptr @__kxs_suspend_point\n' + MODULE
+        self.assertIn('Unsupported use', self.transform(source, False))
+
+    def test_persistent_resume_across_calls_and_independent_frames(self):
+        injected = self.transform(MODULE.replace('@"frame with spaces"', '@run_frame'))
+        harness = self.directory / 'handoff.cpp'
+        harness.write_text('''
+#include <cassert>
+#include <cstdint>
+struct Frame { void* guard; void* label; int before; };
+extern "C" void* run_frame(Frame*, void*);
+int main() {
+    int first = 17, second = 29;
+    Frame a{&first, nullptr, 0}, b{&second, nullptr, 0};
+    assert(run_frame(&a, nullptr) == reinterpret_cast<void*>(1));
+    assert(a.label != nullptr && a.before == 1 && a.guard == &first);
+    assert(run_frame(&b, nullptr) == reinterpret_cast<void*>(1));
+    assert(b.label != nullptr && b.before == 1 && b.guard == &second);
+    volatile int stack_noise[4096] = {};
+    stack_noise[1024] = 41;
+    assert(run_frame(&a, &first) == &first);
+    assert(a.before == 1 && a.guard == &first);
+    assert(run_frame(&b, &second) == &second);
+    assert(b.before == 1 && b.guard == &second);
+    return stack_noise[1024] == 41 ? 0 : 1;
+}
+''')
+        executable = self.directory / 'handoff'
+        self.run_command([OPTIONS.compiler, '-std=c++20', '-UNDEBUG', '-fsanitize=address',
+                          str(harness), str(self.directory / 'output.ll'), '-o', str(executable)])
+        self.run_command([str(executable)])
+
+    def test_native_compiler_reads_lifetime_intrinsics(self):
         source = '''
-declare void @__kxs_suspend_point(i32)
-declare i32 @__gxx_personality_v0(...)
-define void @f() personality ptr @__gxx_personality_v0 {
-  invoke void @__kxs_suspend_point(i32 1) to label %ok unwind label %error
-ok:
-  ret void
-error:
-  %exception = landingpad { ptr, i32 } cleanup
-  resume { ptr, i32 } %exception
+declare void @llvm.lifetime.start.p0(i64 immarg, ptr nocapture)
+declare void @llvm.lifetime.end.p0(i64 immarg, ptr nocapture)
+define i32 @lifetime_value() {
+  %slot = alloca i32
+  call void @llvm.lifetime.start.p0(i64 4, ptr %slot)
+  store i32 37, ptr %slot
+  %value = load i32, ptr %slot
+  call void @llvm.lifetime.end.p0(i64 4, ptr %slot)
+  ret i32 %value
 }
 '''
-        cleaned = self.transform(source)
-        self.assertIn('invoke void @__kxs_suspend_point', cleaned)
-        self.assertIn('unwind label %error', cleaned)
-        self.assertIn('declare void @__kxs_suspend_point', cleaned)
+        injected = self.transform(source)
+        harness = self.directory / 'lifetime.cpp'
+        harness.write_text('extern "C" int lifetime_value();\n'
+                           'int main() { return lifetime_value() == 37 ? 0 : 1; }\n')
+        executable = self.directory / 'lifetime'
+        self.run_command([OPTIONS.compiler, '-O2', '-fsanitize=address', str(harness),
+                          str(self.directory / 'output.ll'), '-o', str(executable)])
+        self.run_command([str(executable)])
+
+    def test_native_compiler_reads_exact_floating_point_constants(self):
+        source = '''
+@boundary_value = constant double 0x42012E0BE8200000
+@negative_zero = constant double 0x8000000000000000
+@infinity_value = constant double 0x7FF0000000000000
+@nan_value = constant double 0x7FF8000000000042
+@signaling_value = constant double 0x7FF0000000000042
+@single_value = constant float 0x3FF0000020000000
+@single_signaling = constant float 0x7FF0000020000000
+@half_value = constant half 0xH0001
+@bfloat_value = constant bfloat 0xR8000
+@aggregate = constant { double, float } { double 0x42012E0BE8200000, float 0x3FF0000020000000 }
+@vector_value = constant <2 x double> <double 0x42012E0BE8200000, double 0x7FF0000000000000>
+@literal_text = constant [21 x i8] c"f0x42012E0BE8200000\\00x"
+'''
+        injected = self.transform(source)
+        self.assertIn('c"f0x42012E0BE8200000', injected)
+        harness = self.directory / 'float-bits.cpp'
+        harness.write_text('''
+#include <cassert>
+#include <cstdint>
+#include <cstring>
+extern "C" {
+extern const double boundary_value, negative_zero, infinity_value, nan_value, signaling_value;
+extern const float single_value, single_signaling;
+}
+template<class T> std::uint64_t bits(const T& value) {
+    std::uint64_t result = 0;
+    std::memcpy(&result, &value, sizeof(value));
+    return result;
+}
+int main() {
+    assert(bits(boundary_value) == 0x42012E0BE8200000ULL);
+    assert(bits(negative_zero) == 0x8000000000000000ULL);
+    assert(bits(infinity_value) == 0x7FF0000000000000ULL);
+    assert(bits(nan_value) == 0x7FF8000000000042ULL);
+    assert(bits(signaling_value) == 0x7FF0000000000042ULL);
+    assert(bits(single_value) == 0x3F800001);
+    assert(bits(single_signaling) == 0x7F800001);
+}
+''')
+        executable = self.directory / 'float-bits'
+        self.run_command([OPTIONS.compiler, '-std=c++20', '-UNDEBUG', str(harness),
+                          str(self.directory / 'output.ll'), '-o', str(executable)])
+        self.run_command([str(executable)])
 
     def test_invalid_ssa_is_rejected_before_writing(self):
         source = '''
@@ -127,31 +408,33 @@ join:
     def test_actual_coroutine_runtime_roundtrip(self):
         core_test = Path(OPTIONS.core_test) if OPTIONS.core_test else Path(OPTIONS.root) / 'src/tests/src/test_suspension_core.cpp'
         source = core_test.read_text()
-        source = source.replace('int main() {',
-                                'extern "C" void __kxs_suspend_point(int) noexcept {}\nint main() {')
         source_file = self.directory / 'core.cpp'
         source_file.write_text(source)
         input_file = self.directory / 'core.ll'
         cleaned_file = self.directory / 'core.cleaned.ll'
         includes = ['-I', OPTIONS.headers, '-I', str(Path(OPTIONS.root) / 'src'),
                     '-I', str(Path(OPTIONS.root) / 'src/kotlinx/coroutines')]
-        flags = ['-std=c++20', '-Wno-gnu-label-as-value', '-UNDEBUG']
+        flags = ['-std=c++20', '-UNDEBUG']
         self.run_command([OPTIONS.compiler, *flags, *includes, '-S', '-emit-llvm',
                           str(source_file), '-o', str(input_file)])
         self.run_command([OPTIONS.tool, str(input_file), '-o', str(cleaned_file)])
         libraries = [OPTIONS.library] if OPTIONS.library else []
-        before = self.directory / 'before'
         after = self.directory / 'after'
+        # Missing injection must not be rescued by a runtime no-op marker.
         self.run_command([OPTIONS.compiler, *flags, *includes, str(source_file), *libraries,
-                          '-o', str(before)])
+                          '-o', str(self.directory / 'untransformed')], success=False)
         self.run_command([OPTIONS.compiler, str(cleaned_file), *libraries, '-o', str(after)])
-        self.assertEqual(self.run_command([str(after)]), self.run_command([str(before)]))
+        output = self.run_command([str(after)])
+        self.assertIn('test_independent_frames...', output)
+        self.assertIn('test_resumed_exception_stops_continuation...', output)
+
 
 
 def main():
     global OPTIONS
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--tool', required=True)
+    parser.add_argument('--codegen-tool', required=True)
     parser.add_argument('--root', required=True)
     parser.add_argument('--headers', required=True)
     parser.add_argument('--compiler', required=True)

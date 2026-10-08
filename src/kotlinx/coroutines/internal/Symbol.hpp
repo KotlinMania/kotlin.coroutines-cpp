@@ -1,50 +1,37 @@
 #pragma once
-/**
- * Transliterated from: kotlinx-coroutines-core/common/src/internal/Symbol.kt
- *
- * Kotlin file header (translated):
- *   package kotlinx.coroutines.internal
- */
-
+// port-lint: source internal/Symbol.kt
+/** Transliterated from: kotlinx-coroutines-core/common/src/internal/Symbol.kt */
+#include <any>
 #include <string>
-#include <utility>
+#include <type_traits>
 
 namespace kotlinx::coroutines::internal {
-
 /**
- * A symbol class that is used to define unique constants that are self-explanatory in debugger.
- *
- * @suppress **This is unstable API and it is subject to change.**
- *
- * Upstream:
- *   internal class Symbol(@JvmField val symbol: String) {
- *       override fun toString(): String = "<$symbol>"
- *       @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
- *       inline fun <T> unbox(value: Any?): T = if (value === this) null as T else value as T
- *   }
+ * A symbol class used to define unique constants that are self-explanatory in a debugger.
+ * This is an unstable API and is subject to change.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/Symbol.kt:10-15
 class Symbol {
 public:
     const std::string symbol;
 
-    explicit Symbol(std::string symbol_value) : symbol(std::move(symbol_value)) {}
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/Symbol.kt:10-10
+    explicit Symbol(std::string symbol_value);
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/Symbol.kt:11-11
+    std::string to_string() const;
 
-    /** Upstream: override fun toString(): String = "<$symbol>" */
-    std::string to_string() const { return "<" + symbol + ">"; }
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/Symbol.kt:14-14
+    // NOTE(port): This specialization uses the library's existing erased value
+    // carrier. Empty std::any represents nullable Any's null value.
+    std::any unbox(std::any value) const;
 
-    /**
-     * Upstream: inline fun <T> unbox(value: Any?): T =
-     *              if (value === this) null as T else value as T
-     *
-     * In the C++ port `Any?` is modelled as `void*`. Identity equality (`===`) maps to
-     * pointer equality against `this`. The `null as T` branch returns a default-constructed
-     * `T`; the value branch casts the pointer payload to the requested concrete type.
-     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/Symbol.kt:14-14
+    // NOTE(port): The raw erased ABI restores a nullable pointer type at the call site.
     template <typename T>
     T unbox(const void* value) const {
-        if (value == this) return T{};
+        static_assert(std::is_pointer_v<T>, "Raw Symbol unbox requires a nullable pointer type");
+        if (value == this) return nullptr;
         return static_cast<T>(const_cast<void*>(value));
     }
 };
-
 } // namespace kotlinx::coroutines::internal

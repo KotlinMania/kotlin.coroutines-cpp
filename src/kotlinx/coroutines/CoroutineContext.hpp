@@ -1,9 +1,14 @@
+// port-lint: source libraries/stdlib/src/kotlin/coroutines/CoroutineContext.kt
 #pragma once
+/** Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContext.kt */
+#include "kotlinx/coroutines/CoroutineImports.hpp"
 #include <memory>
 #include <functional>
 #include <string>
+#include <optional>
+#include <cstdint>
 
-namespace kotlinx {
+namespace kotlin {
 namespace coroutines {
 
 /**
@@ -75,7 +80,8 @@ public:
      * @param key The key to look up
      * @return The element with the given key, or nullptr if not found
      */
-    virtual std::shared_ptr<Element> get(Key* key) const { return nullptr; }
+    // Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContext.kt:18-18
+    virtual std::shared_ptr<Element> get(Key* key) const = 0;
 
     /**
      * Iterates over all elements in this context.
@@ -96,7 +102,18 @@ public:
      * @param other The context to combine with this one
      * @return A new context containing elements from both contexts
      */
-    std::shared_ptr<CoroutineContext> operator+(std::shared_ptr<CoroutineContext> other) const;
+    // Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContext.kt:30-43
+    virtual std::shared_ptr<CoroutineContext> operator+(std::shared_ptr<CoroutineContext> other) const;
+
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:31-31
+    // NOTE(port): Kotlin contexts inherit Any.equals. This virtual projection
+    // preserves identity by default and permits source data-class equality.
+    virtual bool equals(const CoroutineContext* other) const { return this == other; }
+
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:41-41
+    // NOTE(port): Inherited Any hashing remains virtual for actual Job/context overrides.
+    virtual std::int32_t hash_code() const;
+
     
     /**
      * Accumulates values starting with initial value and applying operation from left to right.
@@ -181,10 +198,8 @@ struct CoroutineContext::Element : public CoroutineContext {
      * @param k The key of the element to remove
      * @return Empty context if key matches, otherwise this element
      */
-    std::shared_ptr<CoroutineContext> minus_key(Key* k) const override {
-        if (this->key() == k) return nullptr; // nullptr represents EmptyCoroutineContext here
-        return std::const_pointer_cast<CoroutineContext>(shared_from_this());
-    }
+    // Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContext.kt:72-73
+    std::shared_ptr<CoroutineContext> minus_key(Key* k) const override;
 
     /**
      * Transliterated from: override fun toString(): String in CoroutineContext.kt
@@ -206,49 +221,8 @@ inline std::string CoroutineContext::to_string() const {
     return result;
 }
 
-/**
- * AbstractCoroutineContextElement - convenience base class for context elements.
- * 
- * This class provides a simple implementation for elements that store their key.
- * Most concrete context elements will inherit from this class.
- * 
- * Usage example:
- * ```cpp
- * class MyElement : public AbstractCoroutineContextElement {
- * public:
- *     static KeyTyped<MyElement> KEY;
- *     MyElement() : AbstractCoroutineContextElement(&KEY) {}
- * };
- * ```
- */
-class AbstractCoroutineContextElement : public virtual CoroutineContext::Element {
-public:
-    Key* key_;
-    
-    /**
-     * Constructor with key.
-     * 
-     * @param key The key that identifies this element type
-     */
-    explicit AbstractCoroutineContextElement(Key* key) : key_(key) {}
-
-    /**
-     * Returns the key of this element.
-     * 
-     * @return The key provided during construction
-     */
-    Key* key() const override { return key_; }
-};
-
-/**
- * Extension function to extract the coroutine name from a context.
- *
- * Transliterated from: internal val CoroutineContext.coroutineName: String?
- *
- * @param context The coroutine context to query
- * @return The coroutine name if present, empty string otherwise
- */
-std::string coroutine_name(const std::shared_ptr<CoroutineContext>& context);
 
 } // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlin
+
+#include "kotlinx/coroutines/context_impl.hpp"

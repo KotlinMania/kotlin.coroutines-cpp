@@ -1,27 +1,21 @@
-namespace kotlinx {
- namespace coroutines {
-  namespace flow {
-   namespace internal {
-    // import kotlinx.coroutines.internal.*// import kotlin.jvm.*
-    /**
-     * This value is used a a surrogate `nullptr` value when needed.
-     * It should never leak to the outside world.
-     * Its usage typically are paired with [Symbol.unbox] usages.
-     */
-    // @JvmFieldauto NULL = Symbol("NULL")
+// port-lint: source flow/internal/NullSurrogate.kt
+/** Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt */
+#include "kotlinx/coroutines/flow/internal/NullSurrogate.hpp"
 
-    /**
-     * Symbol to indicate that the value is not yet initialized.
-     * It should never leak to the outside world.
-     */
-    // @JvmFieldauto UNINITIALIZED = Symbol("UNINITIALIZED")
-
-    /*
-     * Symbol used to indicate that the flow is complete.
-     * It should never leak to the outside world.
-     */
-    // @JvmFieldauto DONE = Symbol("DONE")
-   }
-  }
- }
+namespace kotlinx::coroutines::flow::internal {
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt:12-12
+kotlinx::coroutines::internal::Symbol& NULL_VALUE() {
+    static kotlinx::coroutines::internal::Symbol value("NULL");
+    return value;
+}
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt:19-19
+kotlinx::coroutines::internal::Symbol& UNINITIALIZED() {
+    static kotlinx::coroutines::internal::Symbol value("UNINITIALIZED");
+    return value;
+}
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt:26-26
+kotlinx::coroutines::internal::Symbol& DONE() {
+    static kotlinx::coroutines::internal::Symbol value("DONE");
+    return value;
+}
 } // namespace kotlinx::coroutines::flow::internal

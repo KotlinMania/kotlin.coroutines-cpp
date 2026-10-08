@@ -1,18 +1,16 @@
-// LLVM-aware cleanup of no-op markers in already lowered coroutine functions.
-// The frame layout, spill stores/loads, dispatch and Result paths are preserved.
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/
+// org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2289-2348
+// Inject Kotlin/Native address dispatch into compiler-marked coroutine bodies.
 //
 // Kotlin contracts: tmp/kotlin/kotlin-native/backend.native/compiler/ir/
 // backend.native/src/org/jetbrains/kotlin/backend/konan/lower/
 // NativeSuspendFunctionLowering.kt:253-335; CoroutinesVarSpillingLowering.kt:68-105
 // and llvm/IrToBitcode.kt:2289-2348.
-// NOTE(port): Cleanup is build infrastructure, not a coroutine lowering pass.
+// Frame-field addresses and resume destinations are supplied by the frontend.
+// Never infer a frame layout from an argument index or a marker's integer ID.
 
-#include "llvm/ADT/SmallVector.h"
+#include "CoroutineInjection.hpp"
 #include "llvm/Bitcode/BitcodeWriter.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
@@ -23,7 +21,6 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Support/raw_ostream.h"
-
 #include <memory>
 #include <string>
 
@@ -37,42 +34,10 @@ static cl::opt<bool> output_bitcode("bc",
     cl::desc("Output as bitcode instead of text IR"), cl::init(false));
 static cl::opt<bool> verbose("v", cl::desc("Verbose output"), cl::init(false));
 
-// Remove direct calls only. Invokes keep their unwind edges and the declaration
-// remains whenever any use (including an alias or function pointer) survives.
-static bool strip_markers(Module& module) {
-    Function* marker = module.getFunction("__kxs_suspend_point");
-    if (!marker) return true;
-    FunctionType* type = marker->getFunctionType();
-    if (!type->getReturnType()->isVoidTy() || type->isVarArg() ||
-        type->getNumParams() != 1 || !type->getParamType(0)->isIntegerTy(32)) {
-        errs() << "Invalid __kxs_suspend_point signature: expected void(i32)\n";
-        return false;
-    }
-    unsigned removed = 0;
-    for (Function& function : module) {
-        SmallVector<CallInst*, 8> calls;
-        for (BasicBlock& block : function) {
-            for (Instruction& instruction : block) {
-                auto* call = dyn_cast<CallInst>(&instruction);
-                if (call && call->getCalledOperand()->stripPointerCasts() == marker)
-                    calls.push_back(call);
-            }
-        }
-        for (CallInst* call : calls) call->eraseFromParent();
-        removed += calls.size();
-        if (verbose && !calls.empty())
-            errs() << "Removed " << calls.size() << " marker(s) in @"
-                   << function.getName() << "; preserved coroutine IR\n";
-    }
-    if (marker->isDeclaration() && marker->use_empty()) marker->eraseFromParent();
-    if (verbose) errs() << "Removed " << removed << " marker call(s)\n";
-    return true;
-}
-
 int main(int argc, char** argv) {
     InitLLVM init(argc, argv);
     cl::ParseCommandLineOptions(argc, argv,
-        "kxs-inject - verify IR and remove no-op suspend markers\n");
+        "kxs-inject - inject Kotlin/Native suspension dispatch into LLVM IR\n");
     LLVMContext context;
     SMDiagnostic error;
     std::unique_ptr<Module> module = parseIRFile(input_filename, error, context);
@@ -81,7 +46,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     if (verifyModule(*module, &errs())) return 1;
-    if (!strip_markers(*module)) return 1;
+    if (!kotlinx::coroutines::compiler::inject_coroutines(*module, errs(), verbose)) return 1;
     if (verifyModule(*module, &errs())) return 1;
 
     std::error_code ec;

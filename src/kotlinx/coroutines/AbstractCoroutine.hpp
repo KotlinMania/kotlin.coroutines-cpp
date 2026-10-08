@@ -1,7 +1,9 @@
 #pragma once
-// port-lint: source AbstractCoroutine.kt
+// port-lint: source kotlinx-coroutines-core/common/src/AbstractCoroutine.kt
+/** Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt */
 #include <string>
 #include <memory>
+#include <mutex>
 #include <functional>
 #include <any>
 #include <typeinfo>
@@ -10,6 +12,7 @@
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/CompletedExceptionally.hpp"
 #include "kotlinx/coroutines/CompletedValue.hpp"
+#include "kotlinx/coroutines/CompletionState.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
@@ -20,49 +23,31 @@
 
 namespace kotlinx::coroutines {
 
-    /**
- * @brief Abstract base class for coroutine implementations in coroutine builders.
+/**
+ * Abstract base class for implementation of coroutines in coroutine builders.
  *
- * AbstractCoroutine bridges the Job system with coroutine execution. It combines
- * JobSupport (for lifecycle management) with Continuation<T> (for result handling)
- * and CoroutineScope (for context access).
+ * This class implements completion [Continuation], [Job], and [CoroutineScope] interfaces.
+ * It stores the result of continuation in the state of the job.
+ * This coroutine waits for children coroutines to finish before completing and
+ * fails through an intermediate _failing_ state.
  *
- * === Core Responsibilities ===
- * - Manages coroutine lifecycle through Job inheritance
- * - Handles coroutine result completion (success or failure)
- * - Provides coroutine context with proper Job integration
- * - Supports coroutine builders like launch() and async()
- * - Manages parent-child relationships in coroutine hierarchies
+ * The following methods are available for override:
  *
- * === Template Parameter ===
- * @tparam T The result type of the coroutine. Use Unit for coroutines that
- *           don't return a value. void is not supported.
+ * - [onStart] is invoked when the coroutine was created in non-active state and is being [started][Job.start].
+ * - [onCancelling] is invoked as soon as the coroutine starts being cancelled for any reason (or completes).
+ * - [onCompleted] is invoked when the coroutine completes with a value.
+ * - [onCancelled] in invoked when the coroutine completes with an exception (cancelled).
  *
- * === Context Integration ===
- * The coroutine context is constructed as parent_context + this_job, ensuring
- * that the coroutine itself is part of its own context. This enables proper
- * structured concurrency and cancellation semantics.
+ * @param parentContext the context of the parent coroutine.
+ * @param initParentJob specifies whether the parent-child relationship should be instantiated directly
+ *               in `AbstractCoroutine` constructor. If set to `false`, it's the responsibility of the child class
+ *               to invoke [initParentJob] manually.
+ * @param active when `true` (by default), the coroutine is created in the _active_ state, otherwise it is created in the _new_ state.
+ *               See [Job] for details.
  *
- * === Lifecycle Management ===
- * - Inherits full job state machine from JobSupport
- * - Transitions to completing state when resume_with() is called
- * - Handles both successful completion and exceptional completion
- * - Invokes appropriate hooks (on_completed, on_cancelled)
- *
- * === Exception Handling ===
- * - Distinguishes between normal cancellation and other exceptions
- * - Propagates child failures to parent according to structured concurrency rules
- * - Supports CoroutineExceptionHandler for custom exception processing
- *
- * === Memory Management ===
- * - Uses shared_ptr for reference counting
- * - Properly handles circular references in parent-child relationships
- * - Automatic cleanup on completion
- *
- * @note This class is the foundation for all coroutine builder implementations.
- *       Specific coroutine types (launch, async, etc.) extend this class
- *       to provide specialized behavior.
+ * @suppress **This an internal API and should not be used from general code.**
  */
+    // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:34-39
     template <typename T>
     class AbstractCoroutine : public JobSupport, public Continuation<T>, public virtual CoroutineScope {
     public:
@@ -102,8 +87,14 @@ namespace kotlinx::coroutines {
             }
         }
 
+        /**
+     * The context of this scope which is the same as the [context] of this coroutine.
+     */
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:63-63
         std::shared_ptr<CoroutineContext> get_coroutine_context() const override {
             const_cast<AbstractCoroutine<T>*>(this)->init_parent_job_if_needed();
+            std::lock_guard<std::mutex> lock(context_mutex_);
+            if (auto cached = context_cache_.lock()) return cached;
             // Return fully constructed context (parent + this)
             // This is safe to call after construction
             // Note: shared_from_this() returns shared_ptr<JobSupport>, we need to cast
@@ -112,10 +103,15 @@ namespace kotlinx::coroutines {
             // Cast self to Element
             auto self_element = std::static_pointer_cast<CoroutineContext::Element>(self_job);
 
-            return std::make_shared<CombinedContext>(parent_context, self_element);
+            auto combined = parent_context->operator+(std::move(self_element));
+            context_cache_ = combined;
+            return combined;
         }
 
-        // Continuation impl
+        /**
+     * The context of this coroutine that includes this coroutine as a [Job].
+     */
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:56-56
         std::shared_ptr<CoroutineContext> get_context() const override {
             return get_coroutine_context();
         }
@@ -125,25 +121,27 @@ namespace kotlinx::coroutines {
         }
 
         /**
-     * @brief Called when the coroutine completes successfully with a value.
-     *
-     * Override this method to handle successful completion.
-     * Default implementation does nothing.
-     *
-     * @param value The result value of the coroutine
+     * This function is invoked once when the job was completed normally with the specified [value],
+     * right before all the waiters for the coroutine's completion are notified.
      */
-        virtual void on_completed(T value) {}
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:70-70
+        // NOTE(port): The source hook is empty; retain its unused parameter name as a comment.
+        virtual void on_completed(T /* value */) {}
 
         /**
-     * @brief Called when the coroutine is cancelled or fails with an exception.
+     * This function is invoked once when the job was cancelled with the specified [cause],
+     * right before all the waiters for coroutine's completion are notified.
      *
-     * Override this method to handle cancellation or failure.
-     * Default implementation does nothing.
+     * **Note:** the state of the coroutine might not be final yet in this function and should not be queried.
+     * You can use [completionCause] and [completionCauseHandled] to recover parameters that we passed
+     * to this `onCancelled` invocation only when [isCompleted] returns `true`.
      *
-     * @param cause The exception that caused cancellation
-     * @param handled Whether the exception was handled by exception handlers
+     * @param cause The cancellation (failure) cause
+     * @param handled `true` if the exception was handled by parent (always `true` when it is a [CancellationException])
      */
-        virtual void on_cancelled(std::exception_ptr cause, bool handled) {}
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:83-83
+        // NOTE(port): The source hook is empty.
+        virtual void on_cancelled(std::exception_ptr /* cause */, bool /* handled */) {}
 
         /**
      * @brief Returns the message for cancellation exceptions.
@@ -160,68 +158,44 @@ namespace kotlinx::coroutines {
         }
 
         /**
-     * @brief Resumes the coroutine with the given result.
-     *
-     * This is the core method that completes a coroutine. It transitions
-     * the job through the state machine and handles both successful and
-     * exceptional completion.
-     *
-     * @param result The result containing either a value or an exception
-     *
-     * @note T should be Unit for coroutines that don't return a value, NOT void.
-     *       Using void as T is not supported and will cause compilation errors.
+     * Completes execution of this with coroutine with the specified result.
      */
-        void resume_with(Result<T> result) override {
-            JobState* state;
-            if (result.is_success()) {
-                // Kotlin JobSupport stores successful completion as a value (`Any?`), which can be `Unit` or `null`.
-                // In C++ we must wrap it into a `JobState`-derived object to safely use `dynamic_cast`.
-                state = new CompletedValue<T>(result.get_or_throw());
-            } else {
-                state = new CompletedExceptionally(result.exception_or_null());
-            }
-
-            auto completing_result = JobSupport::make_completing_once(state);
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:98-102
+        void resume_with(Result<T> result) override final {
+            // NOTE(port): Retain the executing receiver while finalization removes its parent handle.
+            auto owner = JobSupport::shared_from_this();
+            auto completing_result = JobSupport::make_completing_once(to_state<T>(std::move(result)));
 
             if (completing_result == CompletingResult::COMPLETING) return;
+            after_resume(get_state_for_await());
         }
 
+        /**
+     * Invoked when the corresponding `AbstractCoroutine` was **conceptually** resumed, but not mechanically.
+     * Currently, this function only invokes `resume` on the underlying continuation for [ScopeCoroutine]
+     * or does nothing otherwise.
+     *
+     * Examples of resumes:
+     * - `afterCompletion` calls when the corresponding `Job` changed its state (i.e. got cancelled)
+     * - [AbstractCoroutine.resumeWith] was invoked
+     */
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:113
         virtual void after_resume(JobState* state) {
-            // In Kotlin: protected open fun afterResume(state: Any?): Unit = afterCompletion(state)
-            // afterCompletion is from JobSupport and is a no-op by default
-            // We just call on_completion_internal directly
-            on_completion_internal(state);
+            this->after_completion(state);
         }
 
         // NOTE: T should be Unit for coroutines that don't return a value, NOT void.
-        void on_completion_internal(JobState* state) override {
-            if (state == nullptr) {
-                // Kotlin can complete with `null`. For Unit-returning coroutines, a null completion can be treated as Unit.
-                if constexpr (std::is_same_v<T, Unit>) {
-                    on_completed(Unit());
-                }
-                return;
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:88-93
+        void on_completion_internal(JobState* state) override final {
+            if (auto* failed = dynamic_cast<CompletedExceptionally*>(state)) {
+                on_cancelled(failed->cause, failed->handled.load());
+            } else {
+                on_completed(dynamic_cast<CompletedValue<T>&>(*state).value);
             }
-
-            // Try to cast to CompletedExceptionally first
-            auto* ex = dynamic_cast<CompletedExceptionally*>(state);
-            if (ex && ex->cause) {
-                on_cancelled(ex->cause, ex->handled);
-                return;
-            }
-
-            if (auto* completed = dynamic_cast<CompletedValue<T>*>(state)) {
-                on_completed(completed->value);
-                return;
-            }
-
-            // Unknown completion state shape — upstream's JobSupport can hand back boxed
-            // values and idempotent-result wrappers in addition to the bare Result; the
-            // C++ port treats those as opaque pass-throughs because the consumer of
-            // afterCompletion already dispatches on the well-known sentinel types.
         }
 
-        void handle_on_completion_exception(std::exception_ptr exception) override {
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:115-117
+        void handle_on_completion_exception(std::exception_ptr exception) override final {
             handle_coroutine_exception(*get_context(), exception);
         }
 
@@ -237,17 +211,46 @@ namespace kotlinx::coroutines {
      * Transliterated from: internal override fun nameString(): String
      */
         std::string name_string() const override {
-            std::string name = coroutine_name(get_coroutine_context());
-            if (name.empty()) {
+            auto name = coroutine_name(get_coroutine_context());
+            if (!name) {
                 return JobSupport::name_string();
             }
-            return "\"" + name + "\":" + JobSupport::name_string();
+            return "\"" + *name + "\":" + JobSupport::name_string();
         }
 
+        /**
+     * Starts this coroutine with the given code [block] and [start] strategy.
+     * This function shall be invoked at most once on this coroutine.
+     * 
+     * - [DEFAULT] uses [startCoroutineCancellable].
+     * - [ATOMIC] uses [startCoroutine].
+     * - [UNDISPATCHED] uses [startCoroutineUndispatched].
+     * - [LAZY] does nothing.
+     */
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133-135
+        // NOTE(port): Retain the typed completion at the explicit Continuation ABI boundary.
+        template <typename R>
+        void start(CoroutineStart start_strategy, R receiver,
+                   std::function<void*(R, Continuation<T>*)> block) {
+            init_parent_job_if_needed();
+            invoke(start_strategy, std::move(block), std::forward<R>(receiver),
+                   std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133-135
         template <typename R>
         void start(CoroutineStart start_strategy, R receiver, std::function<T(R)> block) {
             init_parent_job_if_needed();
-            invoke(start_strategy, block, receiver, std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
+            invoke(start_strategy, std::move(block), std::forward<R>(receiver), std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133-135
+        template <typename R>
+        void start(CoroutineStart start_strategy, R receiver,
+                   std::function<void*(R, std::shared_ptr<Continuation<void*>>)> block) {
+            init_parent_job_if_needed();
+            invoke(start_strategy, std::move(block), std::forward<R>(receiver),
+                   std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
         }
 
         // Helper for parent init
@@ -264,6 +267,12 @@ namespace kotlinx::coroutines {
                 }
             }
         }
+
+    private:
+        // NOTE(port): Kotlin's context property is constructed once. A weak
+        // cache preserves observable context identity without a C++ self cycle.
+        mutable std::mutex context_mutex_;
+        mutable std::weak_ptr<CoroutineContext> context_cache_;
     };
 
 }

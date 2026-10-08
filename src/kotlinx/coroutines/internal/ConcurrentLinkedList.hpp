@@ -10,7 +10,9 @@
  * Semaphore, Mutex, and Channel implementations.
  */
 
+#include "kotlinx/coroutines/CoroutineImports.hpp"
 #include <atomic>
+#include <exception>
 #include <functional>
 #include <cassert>
 #include "kotlinx/coroutines/internal/Symbol.hpp"
@@ -19,8 +21,7 @@
 namespace kotlinx {
 namespace coroutines {
 
-// Forward declaration for CoroutineContext
-class CoroutineContext;
+// CoroutineContext is imported from kotlin.coroutines.
 
 namespace internal {
 

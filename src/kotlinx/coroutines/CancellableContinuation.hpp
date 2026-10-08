@@ -175,6 +175,11 @@ public:
      * [completeResume] must be invoked with it.
      */
     virtual void* try_resume(T value, void* idempotent = nullptr) = 0;
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:167-170
+    virtual void* try_resume(T value, void* idempotent,
+        std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation) = 0;
+
     
     /**
      * Tries to resume this continuation with the specified [exception] and returns a non-nullptr class token if successful,
@@ -221,7 +226,61 @@ public:
     /**
      * Resumes this continuation with the specified [value] and cancellation handler.
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:255-263
     virtual void resume(T value, std::function<void(std::exception_ptr)> on_cancellation) = 0;
+
+    /**
+     * Resumes this continuation with the specified [value], calling the specified [on_cancellation] if and only if
+     * the [value] was not successfully used to resume the continuation.
+     *
+     * The [value] can be rejected in two cases (in both of which [on_cancellation] will be called):
+     * - Cancellation happened before the handler was resumed;
+     * - The continuation was resumed successfully (before cancellation), but the coroutine's job was cancelled before
+     *   it had a chance to run in its dispatcher, and so the suspended function threw an exception instead of returning
+     *   this value.
+     *
+     * The installed [on_cancellation] handler should not throw any exceptions.
+     * If it does, they will get caught, wrapped into a `CompletionHandlerException`, and
+     * processed as an uncaught exception in the context of the current coroutine
+     * (see [CoroutineExceptionHandler]).
+     *
+     * With this version of [resume], it's possible to pass resources that can not simply be left for the garbage
+     * collector (like file handles, sockets, etc.) and need to be closed explicitly:
+     *
+     * ```
+     * continuation.resume(resourceToResumeWith) { _, resourceToClose, _ ->
+     *     resourceToClose.close()
+     * }
+     * ```
+     *
+     * [on_cancellation] accepts three arguments:
+     *
+     * - `cause: Throwable` is the exception with which the continuation was cancelled.
+     * - `value` is exactly the same as the [value] passed to [resume] itself.
+     *   In the example above, `resourceToResumeWith` is exactly the same as `resourceToClose`; in particular,
+     *   one could call `resourceToResumeWith.close()` in the lambda for the same effect.
+     *   The reason to reference `resourceToClose` anyway is to avoid a memory allocation due to the lambda
+     *   capturing the `resourceToResumeWith` reference.
+     * - `context` is the [context] of this continuation.
+     *   Like with `value`, the reason this is available as a lambda parameter, even though it is always possible to
+     *   call [context] from the lambda instead, is to allow lambdas to capture less of their environment.
+     *
+     * A more complete example and further details are given in
+     * the documentation for the [suspendCancellableCoroutine] function.
+     *
+     * **Note**: The [on_cancellation] handler must be fast, non-blocking, and thread-safe.
+     * It can be invoked concurrently with the surrounding code.
+     * There is no guarantee on the execution context of its invocation.
+     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:265-320
+    virtual void resume(T value,
+        std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)> on_cancellation) = 0;
+
+    // NOTE(port): Resolve C++ nullptr ambiguity between Kotlin's two callback overloads.
+    void resume(T value, std::nullptr_t) {
+        resume(value, std::function<void(std::exception_ptr, T, std::shared_ptr<CoroutineContext>)>{});
+    }
+
     
     // Convenience helpers
     void resume(T value) {
@@ -232,14 +291,10 @@ public:
         resume_with(Result<T>::failure(exception));
     }
     
-    // Virtual from Continuation
-    virtual void resume_with(Result<T> result) override {
-        if (result.is_success()) {
-            resume(result.get_or_throw(), nullptr);
-        } else {
-             // Exception case handled by impl or ignored here
-        }
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:112-113
+    // Kotlin inherits the abstract Continuation.resumeWith contract.
+    void resume_with(Result<T> result) override = 0;
+
 };
 
 /**
@@ -267,15 +322,18 @@ public:
     virtual void resume_undispatched_with_exception(CoroutineDispatcher* dispatcher, std::exception_ptr exception) = 0;
     virtual void resume(std::function<void(std::exception_ptr)> on_cancellation) = 0;
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:318-320
+    // NOTE(port): Explicit Unit preserves Kotlin's value parameter in this C++ specialization.
+    virtual void resume(Unit value,
+        std::function<void(std::exception_ptr, Unit, std::shared_ptr<CoroutineContext>)> on_cancellation) = 0;
+
+
     // Convenience
     void resume() {
         resume(nullptr);
     }
     
     void resume_with_exception(std::exception_ptr exception) {
-         // How to route this to Impl?
-         // Impl will implement resume_with(Result<void>).
-         // So we can call that?
          this->resume_with(Result<void>::failure(exception));
     }
     

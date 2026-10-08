@@ -1,9 +1,11 @@
 /**
+ * Transliterated from: kotlinx-coroutines-core/native/src/Dispatchers.kt
  * @file Dispatchers.cpp
  * @brief Implementation of Dispatchers (Default, IO, Main, Unconfined).
  */
 
 #include "kotlinx/coroutines/Dispatchers.hpp"
+#include "kotlinx/coroutines/Unconfined.hpp"
 #include "kotlinx/coroutines/MainCoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/MultithreadedDispatchers.hpp"
 #include <thread>
@@ -82,19 +84,6 @@ namespace kotlinx {
             return instance;
         }
 
-        static CoroutineDispatcher &create_unconfined_dispatcher_impl() {
-            static class UnconfinedDispatcher : public CoroutineDispatcher {
-            public:
-                void dispatch(const CoroutineContext &context, std::shared_ptr<Runnable> block) const override {
-                    block->run();
-                }
-
-                bool is_dispatch_needed(const CoroutineContext &) const override { return false; }
-                std::string to_string() const override { return "Dispatchers.Unconfined"; }
-            } instance;
-            return instance;
-        }
-
         // Implementations for Dispatchers class
         CoroutineDispatcher &Dispatchers::get_default() {
             return create_default_dispatcher_impl();
@@ -108,8 +97,9 @@ namespace kotlinx {
             return create_main_dispatcher_impl();
         }
 
+        // Transliterated from: kotlinx-coroutines-core/native/src/Dispatchers.kt:10
         CoroutineDispatcher &Dispatchers::get_unconfined() {
-            return create_unconfined_dispatcher_impl();
+            return Unconfined::instance();
         }
 
         void Dispatchers::shutdown() {

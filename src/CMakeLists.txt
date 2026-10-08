@@ -32,6 +32,13 @@ endif()
 file(GLOB_RECURSE CORE_SOURCES CONFIGURE_DEPENDS
     "${KOTLINX_COROUTINES_SRC_ROOT}/*.cpp"
 )
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/Duration.cpp")
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/LongSaturatedMath.cpp")
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/TimeMark.cpp")
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/ComparableTimeMark.cpp")
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/system/Timing.cpp")
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/MonotonicTimeSource.cpp")
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/coroutines/cancellation/CancellationException.cpp")
 
 # Exclude non-library sources.
 list(FILTER CORE_SOURCES EXCLUDE REGEX "/tools/")
@@ -43,23 +50,6 @@ list(FILTER CORE_SOURCES EXCLUDE REGEX "/integration/")
 # Create the core library
 add_library(kotlinx-coroutines-core ${CORE_SOURCES})
 
-# Disable unused warnings for library code.
-# This is a transliterated library - parameters, constants, and fields exist for API
-# parity with Kotlin even when not all code paths use them yet. Tests should exercise these.
-target_compile_options(kotlinx-coroutines-core PRIVATE
-    -Wno-unused-parameter
-    -Wno-unused-variable
-    -Wno-unused-const-variable
-    -Wno-unused-private-field
-    -Wno-gnu-label-as-value
-)
-
-if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN AND TARGET KotlinxSuspendPlugin)
-    target_compile_options(kotlinx-coroutines-core PRIVATE -fplugin=$<TARGET_FILE:KotlinxSuspendPlugin>)
-    add_dependencies(kotlinx-coroutines-core KotlinxSuspendPlugin)
-elseif(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
-    message(WARNING "KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN=ON but KotlinxSuspendPlugin target is unavailable; building without plugin.")
-endif()
 
 # Set include directories for this target
 # Headers are now co-located with sources in src/kotlinx/coroutines/

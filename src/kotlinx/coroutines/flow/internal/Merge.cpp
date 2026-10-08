@@ -1,29 +1,49 @@
+// port-lint: source kotlinx-coroutines-core/common/src/flow/internal/Merge.kt
+/** Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt */
 #include "kotlinx/coroutines/flow/internal/Merge.hpp"
-#include "kotlinx/coroutines/Job.hpp"
-#include <string>
+#include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 
-namespace kotlinx {
-namespace coroutines {
-namespace flow {
-namespace internal {
-
-// Helper functions that do not depend on template parameters
-// moved to .cpp to reduce header bloat and follow project structure.
-
-std::string format_concurrency_props(int concurrency) {
-    return "concurrency=" + std::to_string(concurrency);
+namespace kotlinx::coroutines::flow::internal {
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
+[[clang::annotate("suspend")]]
+void* transform_latest_emit(std::shared_ptr<Job> previous_flow,
+    std::function<void()> launch_next, std::shared_ptr<Continuation<void*>> completion) {
+    if (previous_flow) {
+        previous_flow->cancel(std::make_exception_ptr(ChildCancelledException()));
+        previous_flow->join();
+    }
+    launch_next();
+    return nullptr;
 }
 
-void acquire_semaphore_permit(Job* job, kotlinx::coroutines::sync::Semaphore& semaphore) {
-    if (job) kotlinx::coroutines::ensure_active(*job);
-    semaphore.acquire();
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:55-70
+[[clang::annotate("suspend")]]
+void* acquire_and_launch_merge_inner(std::shared_ptr<Job> job,
+    std::shared_ptr<Semaphore> semaphore, std::function<void()> launch_inner,
+    std::shared_ptr<Continuation<void*>> completion) {
+    /*
+     * We launch a coroutine on each emitted element and the only potential
+     * suspension point in this collector is semaphore.acquire that rarely suspends,
+     * so we manually check for cancellation to propagate it to the upstream in time.
+     */
+    if (job) ensure_active(*job);
+    dsl::suspend(semaphore->acquire(completion.get()));
+    launch_inner();
+    return nullptr;
 }
 
-void release_semaphore_permit(kotlinx::coroutines::sync::Semaphore& semaphore) {
-    semaphore.release();
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:64-68
+[[clang::annotate("suspend")]]
+void* collect_merge_child(std::function<void*(Continuation<void*>*)> collect,
+    std::shared_ptr<Semaphore> semaphore, std::shared_ptr<Continuation<void*>> completion) {
+    try {
+        dsl::suspend(collect(completion.get()));
+    } catch (...) {
+        semaphore->release(); // Release concurrency permit
+        throw;
+    }
+    semaphore->release(); // Release concurrency permit
+    return nullptr;
 }
-
-} // namespace internal
-} // namespace flow
-} // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines::flow::internal

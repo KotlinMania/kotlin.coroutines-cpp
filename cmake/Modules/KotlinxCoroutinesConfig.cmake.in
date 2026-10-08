@@ -11,7 +11,11 @@
 #   target_link_libraries(my_app PRIVATE kotlinx::coroutines)
 #   kxs_enable_suspend(my_app)
 
+include(CMakeFindDependencyMacro)
+find_dependency(Threads)
+include("${CMAKE_CURRENT_LIST_DIR}/../kotlinx-coroutines-core/kotlinx-coroutines-core-targets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/KotlinxCoroutinesTargets.cmake")
+set(KXS_LLVM_PASS_PLUGIN_VERSION "@KXS_PLUGIN_LLVM_VERSION@")
 include("${CMAKE_CURRENT_LIST_DIR}/KotlinxCoroutineTransform.cmake")
 
 # Re-export the convenience functions

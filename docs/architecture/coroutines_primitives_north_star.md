@@ -2,6 +2,10 @@
 
 This document defines the fundamental primitives required to implement Kotlin Coroutines in C++, distinguishing between Compiler Intrinsics (Plugin support) and Library Code.
 
+Source TODO comments and stub implementations are prohibited. Missing behavior
+must be implemented from upstream; genuine blockers belong in audit evidence.
+Historical status observations below do not authorize incomplete implementations.
+
 ## 1. The Compiler Intrinsics (Kernel)
 These are the absolute minimum requirements provided by the language implementation (Compiler/Plugin). They cannot be implemented in pure C++ library code.
 
@@ -71,13 +75,13 @@ These are implemented *in the library* using the intrinsics headers. They do **n
 ## 4. Status Check & Recommendations
 
 ### Primitives We Have
-*   `[[suspend]]` (Plugin-aware stubs).
+*   `[[suspend]]` authoring support is experimental; an attribute alone does not establish working lowering. Verify status against the suspension specification and current source.
 *   `Continuation<T>`, `CoroutineContext`.
 *   `Job`, `Deferred`.
 
 ### Primitives We Need (The North Star)
 1.  **Fully Working `suspendCancellableCoroutine`**:
-    *   Currently, we use a hybrid of stubs and `CancellableContinuationImpl`.
+    *   **Required**: Implement the complete upstream behavior through `CancellableContinuationImpl`; any missing behavior is a defect, not an allowed stub.
     *   **Goal**: Emulate `Kotlin`'s implementation exactly, calling `suspendCoroutineUninterceptedOrReturn`.
 
 2.  **`Deferred.await()` Implementation**:
@@ -85,7 +89,7 @@ These are implemented *in the library* using the intrinsics headers. They do **n
     *   **Goal**: Keep this as the *backend*, but expose a `[[suspend]] T await()` method (or extension) that delegates to it. The `dsl/Await.hpp` is the correct step here.
 
 3.  **Threading Modes**:
-    *   We have `Dispatchers::Default` (Thread Pool) and `Dispatchers::Main` (Stubs).
+    *   **Required**: Both `Dispatchers::Default` and `Dispatchers::Main` must implement their upstream dispatch behavior; any missing platform behavior is a defect.
     *   We have `ContinuationInterceptor`.
     *   **Goal**: Ensure `suspendCancellableCoroutine` correctly uses the interceptor to dispatch resumption.
 

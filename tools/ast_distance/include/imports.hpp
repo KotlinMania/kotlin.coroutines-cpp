@@ -7,12 +7,18 @@
 #include <fstream>
 #include <sstream>
 #include <regex>
+#include <filesystem>
+#include <cctype>
+#include <algorithm>
+#include <functional>
+#include "kotlin_grammar_compat.hpp"
 
 // External declarations for tree-sitter language functions
 extern "C" {
     const TSLanguage* tree_sitter_rust();
     const TSLanguage* tree_sitter_kotlin();
     const TSLanguage* tree_sitter_cpp();
+    const TSLanguage* tree_sitter_python();
 }
 
 namespace ast_distance {
@@ -21,6 +27,8 @@ namespace ast_distance {
  * Represents a package/namespace declaration.
  */
 struct PackageDecl {
+    bool ambiguous = false;  // Declarations span unrelated namespaces.
+    bool declared = false;    // Found in source AST, rather than derived from a path.
     std::string raw;           // Original text
     std::string path;          // Normalized path (e.g., "ratatui.widgets.block")
     std::vector<std::string> parts;  // Split parts ["ratatui", "widgets", "block"]
@@ -182,6 +190,26 @@ public:
     }
 
     /**
+     * Extract all imports from a Python file.
+     */
+    std::vector<Import> extract_python_imports(const std::string& source) {
+        std::vector<Import> imports;
+
+        if (!ts_parser_set_language(parser_, tree_sitter_python())) {
+            return imports;
+        }
+
+        TSTree* tree = ts_parser_parse_string(parser_, nullptr, source.c_str(), source.length());
+        if (!tree) return imports;
+
+        TSNode root = ts_tree_root_node(tree);
+        extract_python_imports_recursive(root, source, imports);
+
+        ts_tree_delete(tree);
+        return imports;
+    }
+
+    /**
      * Extract imports from a file (auto-detect language by extension).
      */
     std::vector<Import> extract_from_file(const std::string& filepath) {
@@ -201,6 +229,8 @@ public:
         } else if (filepath.ends_with(".cpp") || filepath.ends_with(".hpp") ||
                    filepath.ends_with(".cc") || filepath.ends_with(".h")) {
             return extract_cpp_imports(source);
+        } else if (filepath.ends_with(".py")) {
+            return extract_python_imports(source);
         }
 
         return {};
@@ -216,7 +246,8 @@ public:
             return pkg;
         }
 
-        TSTree* tree = ts_parser_parse_string(parser_, nullptr, source.c_str(), source.length());
+        auto adapted = kotlin_grammar_input(source);
+        TSTree* tree = ts_parser_parse_string(parser_, nullptr, adapted.text.c_str(), adapted.text.length());
         if (!tree) return pkg;
 
         TSNode root = ts_tree_root_node(tree);
@@ -279,7 +310,7 @@ public:
         }
 
         // If no namespace found, derive from file path
-        if (pkg.parts.empty()) {
+        if (!pkg.declared) {
             std::filesystem::path p(file_path);
             std::vector<std::string> parts;
 
@@ -306,6 +337,36 @@ public:
     }
 
     /**
+     * Extract module path from a Python file (derive from file path).
+     */
+    PackageDecl extract_python_module(const std::string& source, const std::string& file_path) {
+        (void)source;
+        PackageDecl pkg;
+
+        std::filesystem::path p(file_path);
+        std::vector<std::string> parts;
+
+        for (const auto& part : p.parent_path()) {
+            std::string s = part.string();
+            if (!s.empty() && s != "." && s != "src" && s != "lib") {
+                parts.push_back(s);
+            }
+        }
+
+        std::string stem = p.stem().string();
+        if (!stem.empty() && stem != "__init__") {
+            parts.push_back(stem);
+        }
+
+        pkg.parts = parts;
+        for (size_t i = 0; i < parts.size(); ++i) {
+            if (i > 0) pkg.path += ".";
+            pkg.path += parts[i];
+        }
+        return pkg;
+    }
+
+    /**
      * Extract package from file (auto-detect language).
      */
     PackageDecl extract_package_from_file(const std::string& filepath) {
@@ -325,6 +386,8 @@ public:
         } else if (filepath.ends_with(".cpp") || filepath.ends_with(".hpp") ||
                    filepath.ends_with(".cc") || filepath.ends_with(".h")) {
             return extract_cpp_namespace(source, filepath);
+        } else if (filepath.ends_with(".py")) {
+            return extract_python_module(source, filepath);
         }
 
         return {};
@@ -401,6 +464,7 @@ private:
 
         // Handle package_header (Kotlin)
         if (std::string(type) == "package_header") {
+            pkg.declared = true;
             pkg.raw = get_node_text(node, source);
 
             // Extract the identifier
@@ -578,45 +642,241 @@ private:
 
     void extract_cpp_namespace_recursive(TSNode node, const std::string& source,
                                           PackageDecl& pkg) {
+        // Determine the namespace of declarations, rather than letting an empty
+        // namespace placed first claim unrelated implementations later in a file.
+        std::vector<std::vector<std::string>> declaration_scopes, forward_scopes, declared_scopes;
+        std::function<bool(TSNode)> forward_declaration = [&](TSNode declaration) {
+            std::string kind = ts_node_type(declaration);
+            if (kind == "template_declaration") {
+                for (uint32_t i = 0; i < ts_node_named_child_count(declaration); ++i) {
+                    TSNode child = ts_node_named_child(declaration, i);
+                    std::string child_kind = ts_node_type(child);
+                    if (child_kind == "declaration" || child_kind == "class_specifier" ||
+                        child_kind == "struct_specifier" || child_kind == "enum_specifier")
+                        return forward_declaration(child);
+                }
+                return false;
+            }
+            if (kind == "declaration") {
+                // A prototype is dependency evidence, not an implementation in
+                // this namespace. Function-pointer variables remain definitions.
+                auto function_prototype = [](TSNode declarator) {
+                    std::string binding;
+                    while (!ts_node_is_null(declarator)) {
+                        std::string declarator_kind = ts_node_type(declarator);
+                        if (declarator_kind == "init_declarator") break;
+                        if (declarator_kind == "function_declarator" || declarator_kind == "pointer_declarator" ||
+                            declarator_kind == "reference_declarator" || declarator_kind == "array_declarator")
+                            binding = declarator_kind;
+                        if (declarator_kind == "identifier" || declarator_kind == "qualified_identifier" ||
+                            declarator_kind == "operator_name" || declarator_kind == "destructor_name") {
+                            if (binding == "function_declarator") return true;
+                            break;
+                        }
+                        TSNode nested = ts_node_child_by_field_name(declarator, "declarator", 10);
+                        if (ts_node_is_null(nested) && declarator_kind == "parenthesized_declarator" &&
+                            ts_node_named_child_count(declarator) == 1) nested = ts_node_named_child(declarator, 0);
+                        declarator = nested;
+                    }
+                    return false;
+                };
+                bool has_declarator = false;
+                for (uint32_t i = 0; i < ts_node_child_count(declaration); ++i) {
+                    const char* field = ts_node_field_name_for_child(declaration, i);
+                    if (field && std::string(field) == "declarator") {
+                        has_declarator = true;
+                        if (!function_prototype(ts_node_child(declaration, i))) return false;
+                    }
+                }
+                if (has_declarator) return true;
+                if (ts_node_named_child_count(declaration) == 1)
+                    declaration = ts_node_named_child(declaration, 0);
+            }
+            kind = ts_node_type(declaration);
+            return (kind == "class_specifier" || kind == "struct_specifier" || kind == "enum_specifier") &&
+                ts_node_is_null(ts_node_child_by_field_name(declaration, "body", 4));
+        };
+        std::function<void(TSNode, std::vector<std::string>)> visit = [&](TSNode current, std::vector<std::string> scope) {
+            std::string kind = ts_node_type(current);
+            if (kind == "namespace_definition") {
+                TSNode name_node = ts_node_child_by_field_name(current, "name", 4);
+                if (!ts_node_is_null(name_node)) {
+                    std::string name = get_node_text(name_node, source);
+                    for (size_t i = 0; (i = name.find("::", i)) != std::string::npos; ++i) name.replace(i, 2, ".");
+                    std::istringstream components(name);
+                    for (std::string component; std::getline(components, component, '.');)
+                        if (!component.empty()) scope.push_back(component);
+                    declared_scopes.push_back(scope);
+                }
+                TSNode body = ts_node_child_by_field_name(current, "body", 4);
+                if (!ts_node_is_null(body)) visit(body, scope);
+            } else if (kind == "translation_unit" || kind == "declaration_list" ||
+                       kind == "preproc_if" || kind == "preproc_ifdef" || kind == "preproc_else" || kind == "preproc_elif") {
+                for (uint32_t i = 0; i < ts_node_named_child_count(current); ++i)
+                    visit(ts_node_named_child(current, i), scope);
+            } else if (kind == "function_definition" || kind == "declaration" || kind == "template_declaration" ||
+                       kind == "class_specifier" || kind == "struct_specifier" || kind == "enum_specifier" ||
+                       kind == "alias_declaration" || kind == "type_definition") {
+                if (forward_declaration(current)) forward_scopes.push_back(std::move(scope));
+                else declaration_scopes.push_back(std::move(scope));
+            }
+        };
+        visit(node, {});
+        if (declared_scopes.empty()) return;
+        pkg.declared = true;
+        // Foreign type/function forwards describe dependencies, not this unit's ported
+        // namespace. Preserve their identity when the file contains only forwards.
+        if (declaration_scopes.empty() && !forward_scopes.empty()) declaration_scopes = std::move(forward_scopes);
+        // Empty classic namespace chains contribute their terminal scope, not
+        // each intermediate opening. Populated declaration scopes still win.
+        std::vector<std::vector<std::string>> terminal_scopes;
+        if (declaration_scopes.empty()) {
+            for (const auto& scope : declared_scopes) {
+                bool parent_only = std::any_of(declared_scopes.begin(), declared_scopes.end(), [&](const auto& other) {
+                    return other.size() > scope.size() && std::equal(scope.begin(), scope.end(), other.begin());
+                });
+                if (!parent_only) terminal_scopes.push_back(scope);
+            }
+        }
+        const auto& scopes = declaration_scopes.empty() ? terminal_scopes : declaration_scopes;
+        auto common = scopes.front();
+        for (const auto& scope : scopes) {
+            size_t equal = 0;
+            while (equal < common.size() && equal < scope.size() && common[equal] == scope[equal]) ++equal;
+            common.resize(equal);
+        }
+        pkg.ambiguous = common.empty();
+        pkg.parts = common;
+        for (const auto& part : common) {
+            if (!pkg.path.empty()) { pkg.path += '.'; pkg.raw += "::"; }
+            pkg.path += part; pkg.raw += part;
+        }
+        if (pkg.ambiguous) {
+            pkg.path = "<mixed namespace declarations>";
+            for (const auto& scope : scopes) {
+                if (!pkg.raw.empty()) pkg.raw += " | ";
+                if (scope.empty()) pkg.raw += "<global>";
+                for (size_t i = 0; i < scope.size(); ++i) pkg.raw += (i ? "::" : "") + scope[i];
+            }
+        }
+    }
+
+    static std::string strip_python_import_prefix(const std::string& raw) {
+        std::string s = raw;
+        // Collapse whitespace/newlines to spaces for simpler parsing.
+        for (auto& c : s) {
+            if (c == '\n' || c == '\r' || c == '\t') c = ' ';
+        }
+        return s;
+    }
+
+    static void trim_in_place(std::string& s) {
+        while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front()))) s.erase(s.begin());
+        while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back()))) s.pop_back();
+    }
+
+    static std::vector<std::string> split_csv(const std::string& s) {
+        std::vector<std::string> out;
+        std::string cur;
+        int paren = 0;
+        for (char c : s) {
+            if (c == '(') paren++;
+            if (c == ')') paren = std::max(0, paren - 1);
+            if (c == ',' && paren == 0) {
+                trim_in_place(cur);
+                if (!cur.empty()) out.push_back(cur);
+                cur.clear();
+            } else {
+                cur.push_back(c);
+            }
+        }
+        trim_in_place(cur);
+        if (!cur.empty()) out.push_back(cur);
+        return out;
+    }
+
+    static Import make_python_import(const std::string& module, const std::string& item, bool wildcard, const std::string& raw) {
+        Import imp;
+        imp.raw = raw;
+        imp.is_wildcard = wildcard;
+        imp.item = item;
+        imp.module_path = module;
+        return imp;
+    }
+
+    void parse_python_import_raw(const std::string& raw, std::vector<Import>& imports) {
+        std::string s = strip_python_import_prefix(raw);
+        trim_in_place(s);
+        if (s.rfind("import ", 0) == 0) {
+            // import a, b as c
+            std::string rest = s.substr(7);
+            auto parts = split_csv(rest);
+            for (auto part : parts) {
+                // Remove "as alias"
+                size_t as_pos = part.find(" as ");
+                if (as_pos != std::string::npos) {
+                    part = part.substr(0, as_pos);
+                    trim_in_place(part);
+                }
+                if (part.empty()) continue;
+                std::string module = part;
+                // Item = last dotted component
+                size_t last_dot = module.rfind('.');
+                std::string item = (last_dot == std::string::npos) ? module : module.substr(last_dot + 1);
+                imports.push_back(make_python_import(module, item, false, raw));
+            }
+            return;
+        }
+
+        if (s.rfind("from ", 0) == 0) {
+            // from a.b import x, y as z
+            size_t import_pos = s.find(" import ");
+            if (import_pos == std::string::npos) return;
+            std::string module = s.substr(5, import_pos - 5);
+            std::string items = s.substr(import_pos + 8);
+            trim_in_place(module);
+            trim_in_place(items);
+
+            // Handle parentheses: from x import (a, b)
+            if (!items.empty() && items.front() == '(' && items.back() == ')') {
+                items = items.substr(1, items.size() - 2);
+                trim_in_place(items);
+            }
+
+            if (items == "*") {
+                imports.push_back(make_python_import(module, "*", true, raw));
+                return;
+            }
+
+            auto parts = split_csv(items);
+            for (auto part : parts) {
+                // Remove "as alias"
+                size_t as_pos = part.find(" as ");
+                if (as_pos != std::string::npos) {
+                    part = part.substr(0, as_pos);
+                    trim_in_place(part);
+                }
+                if (part.empty()) continue;
+                std::string full = module + "." + part;
+                imports.push_back(make_python_import(full, part, false, raw));
+            }
+            return;
+        }
+    }
+
+    void extract_python_imports_recursive(TSNode node, const std::string& source,
+                                         std::vector<Import>& imports) {
         const char* type = ts_node_type(node);
         std::string type_s(type);
 
-        // Handle namespace_definition
-        if (type_s == "namespace_definition") {
-            // Get the namespace name
-            uint32_t child_count = ts_node_child_count(node);
-            for (uint32_t i = 0; i < child_count; ++i) {
-                TSNode child = ts_node_child(node, i);
-                const char* child_type = ts_node_type(child);
-                std::string ct(child_type);
-
-                if (ct == "namespace_identifier" || ct == "identifier") {
-                    std::string name = get_node_text(child, source);
-                    if (!name.empty()) {
-                        pkg.parts.push_back(name);
-                        if (!pkg.path.empty()) pkg.path += ".";
-                        pkg.path += name;
-                    }
-                    break;
-                }
-            }
-
-            // Check for nested namespace in the body
-            for (uint32_t i = 0; i < child_count; ++i) {
-                TSNode child = ts_node_child(node, i);
-                const char* child_type = ts_node_type(child);
-                if (std::string(child_type) == "declaration_list") {
-                    extract_cpp_namespace_recursive(child, source, pkg);
-                    return;  // Found nested, stop
-                }
-            }
-            return;  // Found namespace, stop further searching
+        if (type_s == "import_statement" || type_s == "import_from_statement") {
+            std::string raw = get_node_text(node, source);
+            parse_python_import_raw(raw, imports);
         }
 
-        // Recurse (only into top-level)
         uint32_t child_count = ts_node_child_count(node);
-        for (uint32_t i = 0; i < child_count && pkg.path.empty(); ++i) {
-            extract_cpp_namespace_recursive(ts_node_child(node, i), source, pkg);
+        for (uint32_t i = 0; i < child_count; ++i) {
+            extract_python_imports_recursive(ts_node_child(node, i), source, imports);
         }
     }
 };

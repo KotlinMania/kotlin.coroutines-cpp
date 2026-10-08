@@ -1,30 +1,14 @@
 #pragma once
-#include "kotlinx/coroutines/internal/Symbol.hpp" // For NO_THREAD_ELEMENTS
+/**
+ * Transliterated from: kotlinx-coroutines-core/common/src/internal/ThreadContext.common.kt
+ * and kotlinx-coroutines-core/native/src/internal/ThreadContext.kt
+ */
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 
-namespace kotlinx {
-namespace coroutines {
-namespace internal {
+namespace kotlinx::coroutines::internal {
 
-// Symbol for no thread elements
-extern Symbol NO_THREAD_ELEMENTS;
-
-/**
- * Updates the current thread context with elements from the given [context].
- * Returns the old state that should be passed to [restore_thread_context].
- */
-void* update_thread_context(const CoroutineContext& context, void* count_or_element);
-
-/**
- * Restores the thread context to the [old_state].
- */
-void restore_thread_context(const CoroutineContext& context, void* old_state);
-
-/**
- * Counts the number of ThreadContextElements in the context.
- */
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/ThreadContext.common.kt:5-5
+// and kotlinx-coroutines-core/native/src/internal/ThreadContext.kt:5-5
 void* thread_context_elements(const CoroutineContext& context);
 
-} // namespace internal
-} // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines::internal

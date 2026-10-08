@@ -1,3 +1,12 @@
+### Current source-first direction
+
+- Continue faithful library transliteration in current Kanban/ast_distance priority order. Preserve upstream logic; make only necessary C++ language adaptations.
+- Do not turn unfinished timing, worker or compiler features into a runtime debugging or optimization loop. Required deep scans account for missing code and do not replace source implementation.
+- Read only the architecture document relevant to the selected source pair, using `docs/architecture/README.md`. Do not recursively load the architecture index or audit collection.
+- Keep architecture documents about current contracts and missing pieces. Do not append chronological checkpoints, self-handoff instructions or dependency-chain resume queues.
+- When reporting progress, identify the actual upstream functions/branches translated and the selected pair's remaining gaps. Notes, checks and generated counts are not source progress.
+- Dispatch remains disabled. Do not assign Blocked status as a dispatch reservation.
+
 ### AGENTS playbook (transliteration-first)
 
 #### Scope and goal
@@ -5,6 +14,10 @@
 - Priority is syntactic and API-surface equivalence; correctness/semantics come later.
 - It is OK if code does not compile yet, as long as the translation is faithful and consistent with repo conventions.
 - Use Kotlin sources under `tmp/kotlinx.coroutines/**/*.kt` as the ground truth for each C++ header/source pair under `src/kotlinx/coroutines/**` (headers are co-located with sources in this repo).
+- The port must support standalone ordinary C++ applications. Building and running those applications must not require an installed Kotlin compiler, a linked Kotlin/Native runtime, or a JVM. Upstream Kotlin supplies the translation and compatibility contract.
+- The C++ library and its CMake/Clang plugins must also build without invoking kotlinc/konanc or linking Kotlin/Native runtime libraries. Kotlin/Native compatibility remains required; the actual Native runtime is a dependency only when the Native interop boundary is explicitly enabled.
+- Existing nonsuspending C++ functions, classes, standard-library types and MLX C++ code must remain usable without Kotlin annotations or translation. Coroutine lowering must preserve C++ object ownership and destruction across suspension, completion, failure and cancellation; retaining a borrowed pointer or reference does not transfer ownership.
+- Kotlin/Native interoperability is an explicitly linked boundary using the actual matching Native continuation, state-machine and runtime contracts. Only actual Kotlin GC objects require Kotlin roots. Standalone use must not introduce an alternate coroutine state machine, substitute runtime or fallback.
 
 ---
 
@@ -12,6 +25,7 @@
 - For every existing or newly created C++ file, find and open the matching Kotlin `.kt` source and mirror its public API and structure.
 - Move private/internal logic into `.cpp` files; keep public interfaces, public types, and constants in `.hpp`.
 - Close every algorithmic/parameter/signature gap you find by porting the missing piece. `TODO` / `FIXME` / `XXX` / `HACK` comments are banned in source.
+- No stubs or placeholder implementations are allowed. Remove existing prohibited comments by implementing the missing behavior, not by deleting evidence of an unresolved gap. Record genuine blockers in audit documents; documentation does not make an incomplete implementation acceptable.
 - Prefer concrete types for non-public code; avoid templates/generics unless absolutely necessary or required by public API parity.
 - Maintain naming, file layout, and ABI rules listed below.
 
@@ -36,7 +50,7 @@
     - Public generic Kotlin APIs may map to C++ templates, but minimize template usage internally.
     - For internal-only generics, prefer concrete specializations or type-erasure.
 - Header preface block:
-    - At top of each file, include a short comment with original Kotlin path and brief TODO bullets.
+    - At top of each file, include a short provenance comment with the original Kotlin path.
 - Prefer explicit `override` on overridden virtuals; some legacy headers may lack it and trigger warnings.
 
 ---
@@ -47,8 +61,9 @@
     - Return either `intrinsics::COROUTINE_SUSPENDED` or a type-erased `void*` pointing to the result box.
     - Helpers exist: `suspend_cancellable_coroutine<T>(block, cont)` and `is_coroutine_suspended(...)`.
 - New direction (documented in `docs/architecture/docking_ring.md`):
+    - Mandatory address injection runs inside Clang via the `KotlinxCoroutinePass` LLVM module plugin (`-fpass-plugin`), built against the selected compiler's LLVM package. Production compilation does not serialize/reparse IR or use a Python compile launcher.
     - We are introducing a small C++ DSL for suspend and a Clang plugin (`tools/clang_suspend_plugin/`) to rewrite it into a Kotlin/Native-like state machine (labels, spilled locals, resume dispatch) at build time.
-    - Continue transliteration using the current Continuation ABI; annotate code paths that will migrate to the plugin with `TODO(suspend-plugin): migrate`.
+    - Continue transliteration using the current Continuation ABI; track plugin migration in architecture and audit documents.
 - GC/interoperability notes:
     - Keep boundaries explicit. Do not assume automatic GC; prefer `std::shared_ptr`/`std::unique_ptr` for lifetimes.
     - When returning heap-allocated results via `void*`, define the delete policy at the call site (which side owns the unbox/free). If ownership is unclear, port the dependency that makes it clear.
@@ -125,18 +140,14 @@
 ### Concrete examples to emulate
 - CoroutineDispatcher (header present):
     - Ensure methods exist and are snake_case: `is_dispatch_needed`, `dispatch`, `dispatch_yield`, `limited_parallelism`, `plus`, `to_string`, `intercept_continuation`, `release_intercepted_continuation`.
-    - If any are stubbed or missing behavior, add:
-        - `// TODO(semantics): dispatch_yield fairness`
-        - `// TODO(suspend-plugin): continuation interception for plugin frames`
+    - Implement dispatch fairness and continuation interception against the matching Kotlin source; stubs are prohibited.
 - Delay:
     - Interface has `schedule_resume_after_delay` and `invoke_on_timeout`.
     - Free `delay(...)` exists in `.cpp` and uses `suspend_cancellable_coroutine`.
-    - Add near fallback thread path:
-        - `// TODO(semantics): capture shared continuation handle, avoid &ref in detached thread`
-        - `// TODO(perf): timer wheel/heap instead of detached thread`
+    - Retain the continuation across asynchronous timer execution and port scheduling behavior from Kotlin; record any blocked dependency in an audit document.
 - Deferred/Job suspend APIs:
     - Headers should expose `void* await(Continuation<void*>*)` and `void* join(Continuation<void*>*)`.
-    - Add `// TODO(semantics): prompt cancellation race parity` next to their implementations until state machine is complete.
+    - Implement prompt cancellation race handling against the upstream state machine; do not substitute comments or stubs.
 
 ---
 
@@ -162,7 +173,7 @@
 - Don’t refactor semantics or introduce new abstractions during transliteration.
 - Don’t dump large implementations into headers; keep headers slim.
 - Don’t introduce templates unless the Kotlin API requires it at the public surface.
-- Don’t paper over semantic gaps without a `TODO` — call them out explicitly.
+- Don’t paper over semantic gaps with comments or stubs. Implement the missing behavior and record genuine blockers explicitly in audit documents.
 - Don’t change ownership semantics (raw vs `shared_ptr`/`unique_ptr`) unless the API already uses that pattern or you are explicitly instructed to.
 
 ---
@@ -178,13 +189,13 @@
 1. Identify the Kotlin source file(s) in `tmp/kotlinx.coroutines/**.kt` that correspond to your C++ target.
 2. Ensure header type and method names match, using snake_case for methods and CamelCase for types.
 3. Move non-public helpers into the `.cpp` and prefer concrete typing.
-4. Reconcile parameters and defaults; add overloads or `TODO(port): defaults parity`.
-5. For suspend points, use the Continuation ABI form and tag `TODO(suspend-plugin)` for migration.
+4. Reconcile parameters and defaults; implement missing overloads.
+5. For suspend points, use the Continuation ABI form and track plugin migration in architecture and audit documents.
 6. Close every algorithmic gap you find by porting the missing piece. No `TODO` / `FIXME` / `XXX` / `HACK` in source.
 7. Leave a short file header linking the original Kotlin path.
 8. Update the audit tables with the new status and file:line references.
 9. **Function provenance:** Add a `// Transliterated from: <Kotlin path>:<line-range>` comment above each translated function or class. If a function is synthesized from multiple Kotlin functions, list all sources.
-10. **Documentation parity:** Ensure comments and examples reflect the actual translated behavior. If behavior is stubbed or simplified, update the comment and add a tagged `TODO` noting the gap.
+10. **Documentation parity:** Ensure comments and examples reflect the actual translated behavior. Implement missing behavior; changing its description does not make a stub acceptable. Record genuinely blocked work in audit documents.
 
 ---
 
@@ -201,15 +212,18 @@
 - Root out residual Kotlin code in `.cpp` files that still contain `package`/`import`.
 - Verify and correct public suspend signatures:
     - `Job.join`, `Deferred.await`, `Delay.delay` (free functions), `CoroutineDispatcher` interception methods.
-- Delay fallback correctness and ownership TODOs.
+- Delay fallback correctness and explicit result ownership.
 - Dispatcher surface parity (`is_dispatch_needed`, `dispatch`, `dispatch_yield`, `limited_parallelism`).
 
 ---
 
 ### Acceptance checks per PR
+- For changes to coroutine authoring, lowering or interoperability, verify both required executable paths described in `docs/architecture/docking_ring.md`: standalone ordinary C++/MLX GPU use without Kotlin build or transitive link dependencies, and actual Kotlin/Native-to-C++ shared-state-machine handoffs with real MLX GPU operations. Verify retained object/resource identity and cleanup across repeated suspension, completion, failure and cancellation. Source drafts and isolated helper tests do not establish either complete path.
+- Run `tools/ast_distance/ast_distance --deep` against the matching Kotlin sources under `tmp/` and C++ target roots. The generated inventories, measured criteria, and priority documents are the oracle for current porting status and repair order. Refresh them after relevant source/tool changes; do not substitute static completion claims. Investigate documented tool limitations explicitly without treating the requirement as optional.
 - Headers contain only the public surface and minimal ABI-critical code.
 - Methods and enums follow naming rules; no camelCase methods remain in C++.
 - **No `TODO` / `FIXME` / `XXX` / `HACK` in source.** If there's a gap, port the missing piece. If a gap is genuinely blocked on upstream work (e.g. the Clang suspend plugin), surface the blocker in the commit message or an audit doc, not in the source.
+- **No stubs or placeholder implementations.** A declaration or simplified body is not a completed port of upstream behavior.
 - `docs/audits/*` updated to reflect new API presence with file:line.
 - Include `Transliterated from:` header in new files for proper matching.
 
@@ -310,4 +324,4 @@ grep -R "\?:\|\?\." --include='*.cpp' kotlinx-coroutines-core/
 ---
 
 ### Final note
-Transliteration first, helpers second. Keep it mechanical and reversible. Call out every mismatch explicitly with a `TODO` so we can schedule semantic work once the Clang suspend plugin lands.
+Transliteration first, helpers second. Keep it mechanical and reversible. Implement missing behavior without stubs or prohibited comments. Record every unresolved mismatch in audit evidence; compiler migration is tracked in architecture documents.

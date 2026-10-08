@@ -1,22 +1,27 @@
-// port-lint: source intrinsics/Undispatched.kt
-/**
- * Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt
- *
- * Kotlin file header (translated):
- *   package kotlinx.coroutines.intrinsics
- *
- * Upstream provides three suspend-intrinsic entries — `startCoroutineUndispatched`,
- * `startCoroutineUndispatchedOrReturnIgnoreTimeout`, and `startUndispatchedOrReturn` —
- * that run the coroutine immediately in the current thread until the first suspension,
- * bypassing the ContinuationInterceptor while still installing the new context's
- * thread-locals. The C++ port routes these through `intrinsics/Intrinsics.hpp`; this
- * translation unit is the inventory companion for the file pair.
- */
+// port-lint: source kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt
+/** Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt */
+#include "kotlinx/coroutines/intrinsics/Cancellable.hpp"
+#include "kotlinx/coroutines/common/CoroutineContextUtils.hpp"
 
-#include "kotlinx/coroutines/CompletedExceptionally.hpp"
-#include "kotlinx/coroutines/Continuation.hpp"
-#include "kotlinx/coroutines/Exceptions.hpp"
-#include "kotlinx/coroutines/Result.hpp"
-#include "kotlinx/coroutines/internal/ScopeCoroutine.hpp"
-#include "kotlinx/coroutines/internal/ThreadContext.hpp"
-#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+namespace kotlinx::coroutines::intrinsics {
+// Transliterated from: kotlinx-coroutines-core/common/src/intrinsics/Undispatched.kt:13-31
+void start_coroutine_undispatched(ErasedSuspendFunction block, std::shared_ptr<Continuation<void*>> completion) {
+    auto actual_completion = kotlin::coroutines::native::internal::probe_coroutine_created(std::move(completion));
+    void* value;
+    try {
+        // Start immediately in the current stack frame, until the first suspension.
+        value = with_coroutine_context<void*>(actual_completion->get_context(), nullptr, [&] {
+            kotlin::coroutines::native::internal::probe_coroutine_resumed(actual_completion.get());
+            return start_coroutine_unintercepted_or_return(std::move(block), actual_completion);
+        });
+    } catch (...) {
+        auto report_exception = std::current_exception();
+        try { std::rethrow_exception(report_exception); }
+        catch (const internal::DispatchException& failure) { report_exception = failure.cause; }
+        catch (...) {}
+        actual_completion->resume_with(Result<void*>::failure(report_exception));
+        return;
+    }
+    if (!is_coroutine_suspended(value)) actual_completion->resume_with(Result<void*>::success(value));
+}
+} // namespace kotlinx::coroutines::intrinsics
