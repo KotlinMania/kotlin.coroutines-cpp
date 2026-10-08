@@ -159,7 +159,7 @@ constexpr int CHANNEL_BUFFERED = -2;
  */
 constexpr int CHANNEL_OPTIONAL = -3;
 
-// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channel.kt:12-12
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channel.kt:9-9
 using kotlinx::coroutines::internal::OnUndeliveredElement;
 
 // =============================================================================

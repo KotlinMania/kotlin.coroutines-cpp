@@ -380,40 +380,40 @@ void channel_receive_prompt_cancellation(bool catching, bool handler, bool throw
     if (throwing) {
         CHECK(exception_handler->context == completion.context.get());
         try { std::rethrow_exception(exception_handler->failure); }
-        catch (const internal::UndeliveredElementException& exception) { CHECK(exception.cause() == failure); }
+        catch (const kotlinx::coroutines::internal::UndeliveredElementException& exception) { CHECK(exception.cause() == failure); }
     }
 }
 // Source contract: internal/OnUndeliveredElement.kt:8-23.
 void undelivered_exception_contract() {
     auto first_cause = std::make_exception_ptr(std::runtime_error("first cause"));
     auto next_cause = std::make_exception_ptr(std::runtime_error("next cause"));
-    internal::OnUndeliveredElement<std::string> first_handler = [&](auto) { std::rethrow_exception(first_cause); };
-    internal::OnUndeliveredElement<std::string> next_handler = [&](auto) { std::rethrow_exception(next_cause); };
-    std::unique_ptr<internal::UndeliveredElementException> first(
-        internal::call_undelivered_element_catching_exception(first_handler, std::string("first element")));
+    kotlinx::coroutines::internal::OnUndeliveredElement<std::string> first_handler = [&](auto) { std::rethrow_exception(first_cause); };
+    kotlinx::coroutines::internal::OnUndeliveredElement<std::string> next_handler = [&](auto) { std::rethrow_exception(next_cause); };
+    std::unique_ptr<kotlinx::coroutines::internal::UndeliveredElementException> first(
+        kotlinx::coroutines::internal::call_undelivered_element_catching_exception(first_handler, std::string("first element")));
     CHECK(first && first->cause() == first_cause);
     CHECK(std::string(first->what()) == "Exception in undelivered element handler for first element");
-    CHECK(internal::call_undelivered_element_catching_exception(next_handler, std::string("next element"), first.get()) == first.get());
+    CHECK(kotlinx::coroutines::internal::call_undelivered_element_catching_exception(next_handler, std::string("next element"), first.get()) == first.get());
     CHECK(first->suppressed_exceptions().size() == 1 && first->suppressed_exceptions()[0] == next_cause);
-    std::unique_ptr<internal::UndeliveredElementException> repeated(
-        internal::call_undelivered_element_catching_exception(first_handler, std::string("repeated element"), first.get()));
+    std::unique_ptr<kotlinx::coroutines::internal::UndeliveredElementException> repeated(
+        kotlinx::coroutines::internal::call_undelivered_element_catching_exception(first_handler, std::string("repeated element"), first.get()));
     CHECK(repeated.get() != first.get() && repeated->cause() == first_cause);
     CHECK(repeated->suppressed_exceptions().empty());
-    internal::OnUndeliveredElement<int> non_standard = [](int) { throw 17; };
-    std::unique_ptr<internal::UndeliveredElementException> other(
-        internal::call_undelivered_element_catching_exception(non_standard, 96));
+    kotlinx::coroutines::internal::OnUndeliveredElement<int> non_standard = [](int) { throw 17; };
+    std::unique_ptr<kotlinx::coroutines::internal::UndeliveredElementException> other(
+        kotlinx::coroutines::internal::call_undelivered_element_catching_exception(non_standard, 96));
     CHECK(other != nullptr);
     try { std::rethrow_exception(other->cause()); }
     catch (int value) { CHECK(value == 17); }
-    internal::OnUndeliveredElement<Unit> unit_handler = [&](Unit) { std::rethrow_exception(first_cause); };
-    std::unique_ptr<internal::UndeliveredElementException> unit(
-        internal::call_undelivered_element_catching_exception(unit_handler, Unit{}));
+    kotlinx::coroutines::internal::OnUndeliveredElement<Unit> unit_handler = [&](Unit) { std::rethrow_exception(first_cause); };
+    std::unique_ptr<kotlinx::coroutines::internal::UndeliveredElementException> unit(
+        kotlinx::coroutines::internal::call_undelivered_element_catching_exception(unit_handler, Unit{}));
     CHECK(std::string(unit->what()) == "Exception in undelivered element handler for kotlin.Unit");
     using flow::SharingCommand;
-    internal::OnUndeliveredElement<SharingCommand> enum_handler = [&](auto) { std::rethrow_exception(first_cause); };
+    kotlinx::coroutines::internal::OnUndeliveredElement<SharingCommand> enum_handler = [&](auto) { std::rethrow_exception(first_cause); };
     for (auto command : {SharingCommand::START, SharingCommand::STOP, SharingCommand::STOP_AND_RESET_REPLAY_CACHE}) {
-        std::unique_ptr<internal::UndeliveredElementException> exception(
-            internal::call_undelivered_element_catching_exception(enum_handler, command));
+        std::unique_ptr<kotlinx::coroutines::internal::UndeliveredElementException> exception(
+            kotlinx::coroutines::internal::call_undelivered_element_catching_exception(enum_handler, command));
         CHECK(std::string(exception->what()) == "Exception in undelivered element handler for " + flow::to_string(command));
     }
 }
@@ -431,13 +431,13 @@ void conflated_channel_contract() {
     CHECK(latest.try_send("buffered").is_success());
     CHECK(latest.try_send("caller-owned drop").is_success() && undelivered.empty());
     try { latest.send("dropped by send", &completion); CHECK(false); }
-    catch (const internal::UndeliveredElementException& exception) {
+    catch (const kotlinx::coroutines::internal::UndeliveredElementException& exception) {
         CHECK(exception.cause() == failure && undelivered == "dropped by send");
     }
     CHECK(latest.try_receive().get_or_throw() == "buffered");
     latest.close(closing);
     try { latest.send("closed original value", &completion); CHECK(false); }
-    catch (const internal::UndeliveredElementException& exception) {
+    catch (const kotlinx::coroutines::internal::UndeliveredElementException& exception) {
         CHECK(exception.cause() == failure && undelivered == "closed original value");
         CHECK(exception.suppressed_exceptions().size() == 1 && exception.suppressed_exceptions()[0] == closing);
     }
@@ -448,7 +448,7 @@ void conflated_channel_contract() {
     CHECK(oldest.try_send(dropped).is_success());
     dropped.reset();
     try { oldest.try_send(std::make_shared<int>(100)); CHECK(false); }
-    catch (const internal::UndeliveredElementException& exception) { CHECK(exception.cause() == failure); }
+    catch (const kotlinx::coroutines::internal::UndeliveredElementException& exception) { CHECK(exception.cause() == failure); }
     CHECK(dropped_lifetime.expired());
     CHECK(*oldest.try_receive().get_or_throw() == 100);
     for (bool repeated : {false, true}) {
@@ -459,7 +459,7 @@ void conflated_channel_contract() {
         });
         CHECK(cancelled.try_send(1).is_success() && cancelled.try_send(2).is_success());
         try { cancelled.cancel(); CHECK(false); }
-        catch (const internal::UndeliveredElementException& exception) {
+        catch (const kotlinx::coroutines::internal::UndeliveredElementException& exception) {
             CHECK(exception.cause() == failure);
             CHECK(exception.suppressed_exceptions().size() == (repeated ? 0 : 1));
             if (!repeated) CHECK(exception.suppressed_exceptions()[0] == closing);
