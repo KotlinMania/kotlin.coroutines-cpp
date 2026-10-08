@@ -6,6 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest source continuation:** 1bf6abd0, 050fca1f and 5570b19b translate Limit
+operators directly from Limit.kt:17-140. Limit.hpp:43,62,100,154,200,252,297 now
+contains no handwritten continuation frames or coroutine macros. Predicate boxes
+are consumed before emission; abort ownership and cancellation follow the source.
+Strict actual Limit.cpp and test_limit_suspension.cpp checks exit 1 on local
+class/lambda namespace integration, generated code and dependency diagnostics.
+No fresh executable validation exists. The consumed IR/CMake review remains in
+MERGE_SOURCE_REPAIR.md; this batch changes library source, not compiler/CMake.
+Both final full-root scans exit 0; reports are committed in 285a8a24. Limit is
+8/8 matched bodies at similarity 0.07, with 23 target bodies and four types.
+Read LIMIT_SOURCE_AUTHORING_REPAIR.md for source locations and exact receipts.
+The full transliteration/state-machine goal remains active.
+
+
 **Latest source continuation:** 7eb83ee8 translates running_fold, running_reduce
 and chunked in Transform.hpp:704,799,893. Transform now has no handwritten frame
 classes or coroutine macros. Typed source collectors retain actual owners,
