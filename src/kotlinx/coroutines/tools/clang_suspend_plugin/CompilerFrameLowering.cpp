@@ -280,7 +280,11 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
             if (newline != std::string::npos) source.resize(newline + 1);
         }
     }
-    source.insert(0, "#include <optional>\n#include <functional>\n");
+    // This partial parsing context deliberately omits later call sites. Its
+    // unused-function diagnostic cannot establish liveness; the complete host
+    // compilation retains that diagnostic and the user's warning policy.
+    source.insert(0, "#pragma clang diagnostic ignored \"-Wunused-function\"\n"
+                     "#include <optional>\n#include <functional>\n");
     if (instantiated) source += "\n" + instantiated_entry;
     auto invocation = std::make_shared<CompilerInvocation>(compiler.getInvocation());
     auto& frontend = invocation->getFrontendOpts();
