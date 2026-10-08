@@ -1,5 +1,58 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Non-suspending operand temporary continuation
+
+Source checkpoints deb8848c and ae390be1 extend the evaluated-expression
+contract after reading NativeSuspendFunctionLowering.kt:201-252,367-388 and
+CoroutinesVarSpillingLowering.kt:49-105. C++ full-expression materialization
+requires additional lifetime preservation even when an individual operand
+contains no suspend call.
+
+NativeSuspendLowering.cpp:758-770 detects evaluated materialized record/scalar
+objects. It visits lambda capture initializers separately from invoke bodies
+and ignores unevaluated operands. At :824-828, a non-suspending operand containing
+such a temporary enters the existing call/branch slicing paths. Previously a
+temporary receiver used by the left operand of &&/|| or the condition of ?: could
+be destroyed at the generated if statement before a selected sibling suspended.
+The actual receiver now occupies the existing full-expression owning storage.
+Short-circuit and conditional lowering still construct only the executed path.
+
+At :1108-1130, materialized reference arguments are retained even when their
+source value is pure, such as an integer literal. A pure value is not evidence
+that its materialized object's identity/lifetime can be discarded. Borrowed
+source glvalues retain the existing reference policy; no owning handle is
+invented for them. Cleanup uses the prior full-expression/frame cleanup paths.
+
+qualified_locals.cpp:267-301 adds an immovable condition temporary and a scalar
+reference case. Seven operations cover skipped and executed &&/|| operands,
+both selected conditional arms, and an ordinary read_integer(17) that exposes
+the temporary integer's address to a suspending sibling. Pending/resumed
+assertions check object retention and the integer referent value; terminal
+assertions check destructor count and cleanup. Modes include immediate and
+suspended completion, resumed failure, cancellation and immediate failure.
+The executable remains registered with strict warnings and ASan/UBSan.
+
+Final strict fixture syntax exits 0. Clang AST emission also exits 0 and shows
+the actual MaterializeTemporaryExpr below the temporary receiver's member read.
+Final AST emission additionally shows the const-int MaterializeTemporaryExpr
+binding read_integer's literal argument.
+Final strict lowering checking exits 1 in LLVM/Clang dependency headers, with
+no source-local diagnostic. Fresh plugin build exits 2 in the metadata plugin's
+dependency headers. The installed older frontend exits 1 at the existing alias;
+it does not validate these changes. No warning was suppressed. Receipts are
+build/ir-recovery/condition-temporaries-{fixture,fixture-final,ast,ast-final,lowering,
+lowering-final,plugin-build,plugin-build-final,installed-frontend}.log.
+No fresh runtime establishes the new lifetime or skipped-path assertions.
+
+Local nominal/dependent integration, constructor/aggregate materialization
+and broader ordinary C++ expression coverage remain incomplete. This source
+repair does not establish full standalone MLX or actual Native/MLX execution.
+
+Both exact full-root deep scans completed with exit 0 after the final source
+checkpoint, with no concurrent source edits. Generated inventories/reports
+remain unchanged: library 832/2918 bodies, 359/560 types, body similarity 0.26;
+compiler 592/7657 bodies, 174/1727 types, body similarity 0.36.
+
 ## Borrowed argument temporary lifetime continuation
 
 Source checkpoints 0f60aa5b and ee88e8f5 repair argument lifetime around the

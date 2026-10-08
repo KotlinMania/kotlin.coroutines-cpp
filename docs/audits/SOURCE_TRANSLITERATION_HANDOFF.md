@@ -6,6 +6,21 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** deb8848c and ae390be1 preserve materialized
+temporaries in non-suspending operands of split expressions at
+NativeSuspendLowering.cpp:758-770,824-828. Existing call/branch slicing retains
+their objects through selected sibling suspension. Pure materialized reference
+arguments are retained at :1108-1130. qualified_locals adds skipped/executed
+logical operands, both conditional arms, an immovable receiver and a borrowed
+integer literal across suspension, with completion/failure/cancellation checks.
+Final strict fixture syntax and actual Clang AST emission pass; direct strict
+lowering checking has only external dependency diagnostics. Fresh plugin build
+exits 2; the older frontend fails at the existing alias. No fresh runtime
+validates the repair. Local nominal/dependent integration and broader
+constructor/aggregate materialization remain unfinished. Read
+RESUME_ADDRESS_SOURCE_REPAIR.md's new top section. Both final full-root deep scans
+exit 0 and leave generated reports unchanged. The full goal remains active.
+
 **Latest compiler continuation:** 0f60aa5b and ee88e8f5 preserve owned argument
 temporaries through logical suspend-call completion in
 NativeSuspendLowering.cpp:649-663,1121-1154. Sliced record prvalues use direct
