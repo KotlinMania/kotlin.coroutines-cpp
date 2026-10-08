@@ -47,6 +47,7 @@ include("${_KXS_MODULE_DIR}/KotlinxCoroutineTransform.cmake")
 if(NOT TARGET kotlinx::coroutines)
     add_library(kotlinx_coroutines INTERFACE)
     add_library(kotlinx::coroutines ALIAS kotlinx_coroutines)
+    set_target_properties(kotlinx_coroutines PROPERTIES EXPORT_NAME coroutines)
 
     # Header files
     target_include_directories(kotlinx_coroutines INTERFACE
@@ -63,6 +64,14 @@ if(NOT TARGET kotlinx::coroutines)
     target_compile_features(kotlinx_coroutines INTERFACE
         cxx_std_20
     )
+
+    # Ordinary applications consume the translated C++ runtime through the
+    # public package target, including its transitive thread dependency.
+    if(TARGET kotlinx-coroutines-core)
+        target_link_libraries(kotlinx_coroutines INTERFACE kotlinx-coroutines-core)
+    elseif(TARGET kotlinx::kotlinx-coroutines-core)
+        target_link_libraries(kotlinx_coroutines INTERFACE kotlinx::kotlinx-coroutines-core)
+    endif()
 
     # Custom property to mark targets for transformation
     define_property(TARGET PROPERTY KXS_COROUTINE_TRANSFORM
@@ -111,6 +120,7 @@ endfunction()
 if(NOT TARGET kotlinx::coroutines_headers)
     add_library(kotlinx_coroutines_headers INTERFACE)
     add_library(kotlinx::coroutines_headers ALIAS kotlinx_coroutines_headers)
+    set_target_properties(kotlinx_coroutines_headers PROPERTIES EXPORT_NAME coroutines_headers)
 
     target_include_directories(kotlinx_coroutines_headers INTERFACE
         $<BUILD_INTERFACE:${_KXS_INCLUDE_DIR}>

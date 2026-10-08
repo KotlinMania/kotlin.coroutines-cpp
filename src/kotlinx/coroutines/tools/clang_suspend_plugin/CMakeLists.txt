@@ -142,21 +142,25 @@ if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
                     --library "$<TARGET_FILE:kotlinx-coroutines-core>"
                     "--library-link-options=${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}"
                     --work-dir "${CMAKE_CURRENT_BINARY_DIR}/handoff-regression")
-            file(GLOB _KXS_KONANC_DIRS "$ENV{HOME}/.konan/kotlin-native-prebuilt-*/bin")
-            list(SORT _KXS_KONANC_DIRS ORDER DESCENDING)
-            find_program(KXS_KONANC_EXECUTABLE NAMES konanc HINTS ${_KXS_KONANC_DIRS})
-            if(KXS_KONANC_EXECUTABLE)
-                add_test(NAME kxs_kotlin_native_handoff
-                    COMMAND "${Python3_EXECUTABLE}" "${KXS_PLUGIN_ROOT}/src/tests/ir/test_kotlin_native_handoff.py"
-                        --root "${KXS_PLUGIN_ROOT}" --plugin "$<TARGET_FILE:KotlinxSuspendPlugin>"
-                        --ir-plugin "$<TARGET_FILE:KotlinxCoroutinePass>"
-                        --compiler "${KXS_PLUGIN_CLANG}" --konanc "${KXS_KONANC_EXECUTABLE}"
-                        --library "$<TARGET_FILE:kotlinx-coroutines-core>"
-                        "--library-link-options=${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}"
-                        --work-dir "${CMAKE_CURRENT_BINARY_DIR}/kotlin-native-handoff")
-                set_tests_properties(kxs_kotlin_native_handoff PROPERTIES TIMEOUT 180)
-            else()
-                message(STATUS "Actual Kotlin-generated frame regression needs KXS_KONANC_EXECUTABLE")
+            # The real Native toolchain is used only at the explicitly enabled
+            # interoperability boundary. Standalone plugin tests remain C++ only.
+            if(KOTLIN_NATIVE_RUNTIME_AVAILABLE)
+                file(GLOB _KXS_KONANC_DIRS "$ENV{HOME}/.konan/kotlin-native-prebuilt-*/bin")
+                list(SORT _KXS_KONANC_DIRS ORDER DESCENDING)
+                find_program(KXS_KONANC_EXECUTABLE NAMES konanc HINTS ${_KXS_KONANC_DIRS})
+                if(KXS_KONANC_EXECUTABLE)
+                    add_test(NAME kxs_kotlin_native_handoff
+                        COMMAND "${Python3_EXECUTABLE}" "${KXS_PLUGIN_ROOT}/src/tests/ir/test_kotlin_native_handoff.py"
+                            --root "${KXS_PLUGIN_ROOT}" --plugin "$<TARGET_FILE:KotlinxSuspendPlugin>"
+                            --ir-plugin "$<TARGET_FILE:KotlinxCoroutinePass>"
+                            --compiler "${KXS_PLUGIN_CLANG}" --konanc "${KXS_KONANC_EXECUTABLE}"
+                            --library "$<TARGET_FILE:kotlinx-coroutines-core>"
+                            "--library-link-options=${CMAKE_CXX_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}"
+                            --work-dir "${CMAKE_CURRENT_BINARY_DIR}/kotlin-native-handoff")
+                    set_tests_properties(kxs_kotlin_native_handoff PROPERTIES TIMEOUT 180)
+                else()
+                    message(STATUS "Actual Kotlin-generated frame regression needs KXS_KONANC_EXECUTABLE")
+                endif()
             endif()
         endif()
     endif()
