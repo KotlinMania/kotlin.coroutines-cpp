@@ -35,6 +35,7 @@ file(GLOB_RECURSE CORE_SOURCES CONFIGURE_DEPENDS
 list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/Duration.cpp")
 list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/LongSaturatedMath.cpp")
 list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/TimeMark.cpp")
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/ComparableTimeMark.cpp")
 list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/coroutines/cancellation/CancellationException.cpp")
 
 # Exclude non-library sources.

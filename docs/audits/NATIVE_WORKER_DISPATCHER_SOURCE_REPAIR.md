@@ -1,5 +1,50 @@
 # Native WorkerDispatcher source repair — 2026-10-08
 
+## Comparable marks and source interfaces — 2026-10-08
+
+Continuation from `5312f3a0` adds kotlin/Comparable.hpp from the actual Native
+Comparable.kt:11-21. It is the source public generic ordering interface, with a
+borrowed const-reference argument and virtual destruction for C++ cleanup.
+ComparableTimeMark.hpp mirrors TimeSource.kt:197-243: covariant plus/minus,
+different-source difference contract, ordering, nullable Any equality and hash.
+The two default bodies in ComparableTimeMark.cpp delegate minus to plus(-duration)
+and compare_to to the actual virtual difference compared against Duration.ZERO.
+TimeSource.hpp declares the source abstract TimeSource and nested
+WithComparableMarks interfaces, retaining covariant mark_now returns. Returned
+marks follow the existing caller-owned delete/adopt contract. Private algorithms
+remain in .cpp; the actual implementation is registered in CMake.
+
+The equality argument forward-declares the existing real kotlin::Any contract;
+ordinary C++ marks do not inherit the compiler-owned Any representation. The
+generated ValueTimeMark equality/hash/text and its actual Kotlin object boundary
+still require translation. No different-source diagnostic or equality result is
+fabricated as a production implementation. These are upstream abstract methods,
+not placeholder concrete bodies. TimeSource.Monotonic and its value marks remain
+absent; the worker's provisional expression still cannot compile against them.
+
+Strict Clang23.1.2 -Wall/-Wextra/-Wpedantic/-Werror and O1 ASan/UBSan compilation
+and execution of test_comparable_time_mark exit0, with assertions enabled. The
+test uses a controllable source/mark only as test infrastructure. It checks
+covariant mark creation through TimeSource, duration subtraction through the
+comparable base, ordering through Comparable, and propagation of an actual
+different-source exception. Its test-only equality/hash implementations are not
+production parity evidence. Neither worker scheduling nor Native interop executes.
+
+Both relevant deep scans exit0. Current time root:14/44 bodies,4/13 types,0.50
+body similarity,zero scoring failures. TimeSource pair:7/18 bodies,4/7 types,0.36;
+Monotonic, ValueTimeMark and reading type remain missing. Existing AdjustedTimeMark
+and primitive-extension body/symbol scope discrepancies remain. The Native Kotlin
+runtime reference root against src/kotlin reports0/1234 bodies,1/258 types,zero
+scoring failures. Comparable itself has1/1 types and0/0 bodies because it is an
+abstract interface; its1.00 body score cannot establish runtime translation.
+Receipts are build/source-continuation/time-source-distance/ and
+native-ordering-distance/. Source inventories here are bounded working-tree
+references, not the complete Kotlin repository or complete compiler implementation.
+
+Continue actual Monotonic/ValueTimeMark operations, the low-level Native timing
+source, the generated value-class object boundary and Worker/Future. Full library,
+compiler lowering and both standalone/Native MLX paths remain unfinished.
+
 ## TimeMark default operations — 2026-10-08
 
 Continuation from `3ac53464` translates TimeSource.kt:128-195,246-250 into

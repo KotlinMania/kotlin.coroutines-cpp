@@ -6,6 +6,26 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Comparable marks and source interfaces — 2026-10-08
+
+Continuation from `5312f3a0` translates Native Comparable.kt's public interface,
+ComparableTimeMark's abstract API and concrete minus/compare defaults, and the
+abstract TimeSource/WithComparableMarks surfaces. Covariant pointer returns retain
+the caller-owned delete/adopt contract. Nullable equality refers to the real Any
+contract without imposing compiler-owned object representation on ordinary C++.
+The value-mark generated equality/hash/text and actual Kotlin boundary remain open.
+The actual default source and assertion-enabled regression are registered in CMake.
+Strict Clang and O1 ASan/UBSan covariance/ordering/error-propagation execution exit0.
+
+Fresh relevant deep scans exit0: time14/44 bodies,4/13 types,0.50; TimeSource
+pair7/18,4/7,0.36. Native runtime reference root against src/kotlin is0/1234 bodies,
+1/258 types. Comparable1/1 types,0/0 bodies is an abstract surface measurement.
+Both scans have zero scoring failures; existing method scope mismatches remain.
+See NATIVE_WORKER_DISPATCHER_SOURCE_REPAIR.md for evidence and limitations.
+Continue Monotonic/ValueTimeMark, actual timing/object boundaries and Worker/Future.
+The worker's provisional monotonic expression is not compilable yet. Complete
+compiler/library and both MLX paths remain unfinished; keep the full goal active.
+
 ## TimeMark defaults — 2026-10-08
 
 Continuation from `3ac53464` adds TimeMark.hpp/.cpp from TimeSource.kt:128-195,
