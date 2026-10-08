@@ -1175,6 +1175,80 @@ void merge_producer_lambda_contract() {
     }
 }
 
+// Merge.kt:23-33,55-70: real join/acquire suspension keeps source
+// captures alive, and child finally releases exactly one concurrency permit.
+void merge_private_suspension_contract() {
+    {
+        auto previous = std::make_shared<ProducerCoroutine<int>>(
+            EmptyCoroutineContext::instance(), create_channel<int>(0));
+        auto completion = std::make_shared<Completion>();
+        int launches = 0;
+        auto resource = std::make_shared<int>(149);
+        std::weak_ptr<int> lifetime = resource;
+        auto result = flow::internal::transform_latest_emit(previous,
+            [resource, &launches] { CHECK(*resource == 149); ++launches; }, completion);
+        resource.reset();
+        CHECK(intrinsics::is_coroutine_suspended(result));
+        CHECK(previous->is_cancelled() && !previous->is_completed() && launches == 0);
+        CHECK(!lifetime.expired() && completion->resumes == 0);
+        previous->resume_with(Result<Unit>::success(Unit{}));
+        CHECK(previous->is_completed() && launches == 1 && lifetime.expired());
+        CHECK(completion->resumes == 1 && !completion->failure);
+    }
+    {
+        auto semaphore = sync::create_semaphore(1, 1);
+        auto completion = std::make_shared<Completion>();
+        int launches = 0;
+        auto resource = std::make_shared<int>(151);
+        std::weak_ptr<int> lifetime = resource;
+        auto result = flow::internal::acquire_and_launch_merge_inner(nullptr, semaphore,
+            [resource, &launches] { CHECK(*resource == 151); ++launches; }, completion);
+        resource.reset();
+        CHECK(intrinsics::is_coroutine_suspended(result) && launches == 0);
+        CHECK(!lifetime.expired() && completion->resumes == 0);
+        semaphore->release();
+        CHECK(launches == 1 && lifetime.expired() && completion->resumes == 1);
+        CHECK(!completion->failure && semaphore->available_permits() == 0);
+        semaphore->release();
+    }
+    for (bool suspended : {false, true}) for (bool fails : {false, true}) {
+        auto semaphore = sync::create_semaphore(1, 1);
+        auto completion = std::make_shared<Completion>();
+        auto resource = std::make_shared<int>(157);
+        std::weak_ptr<int> lifetime = resource;
+        std::shared_ptr<Continuation<void*>> held_frame;
+        auto failure = std::make_exception_ptr(std::runtime_error("merge child collection failed"));
+        std::exception_ptr observed;
+        void* result = nullptr;
+        int calls = 0;
+        try {
+            result = flow::internal::collect_merge_child(
+                [resource, &calls, &held_frame, suspended, fails, failure](Continuation<void*>* frame) -> void* {
+                    ++calls;
+                    CHECK(*resource == 157);
+                    held_frame = kotlinx::coroutines::internal::retain_continuation(frame);
+                    if (suspended) return intrinsics::get_COROUTINE_SUSPENDED();
+                    if (fails) std::rethrow_exception(failure);
+                    return nullptr;
+                }, semaphore, completion);
+        } catch (...) { observed = std::current_exception(); }
+        resource.reset();
+        CHECK(calls == 1 && held_frame);
+        if (suspended) {
+            CHECK(!observed && intrinsics::is_coroutine_suspended(result));
+            CHECK(semaphore->available_permits() == 0 && !lifetime.expired());
+            held_frame->resume_with(fails ? Result<void*>::failure(failure) : Result<void*>::success(nullptr));
+            CHECK(completion->resumes == 1 && completion->failure == (fails ? failure : nullptr));
+        } else {
+            CHECK(observed == (fails ? failure : nullptr) && completion->resumes == 0);
+        }
+        CHECK(calls == 1 && semaphore->available_permits() == 1 && lifetime.expired());
+        // Keeping a terminated continuation alive must not retain its source captures.
+        CHECK(held_frame);
+        held_frame.reset();
+    }
+}
+
 void channel_flow_surface_contract() {
     auto upstream = flow::unsafe_flow<int>(std::function<void(flow::FlowCollector<int>*)>(
         [](flow::FlowCollector<int>*) {}));
@@ -1364,6 +1438,7 @@ int main() {
         producer_await_close_contract();
         producer_builder_contract();
         merge_producer_lambda_contract();
+        merge_private_suspension_contract();
         channel_flow_surface_contract();
         channel_flow_collect_lambda_contract();
         sending_collector_contract();
