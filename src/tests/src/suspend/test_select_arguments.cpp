@@ -2,6 +2,7 @@
 #include "kotlinx/coroutines/selects/Select.hpp"
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
+#include "kotlinx/coroutines/channels/BufferedChannel.hpp"
 #include <deque>
 #include <iostream>
 #include <string>
@@ -152,6 +153,52 @@ void value_result_contract(bool concrete) {
         CHECK(selection->do_select(&completion) == nullptr && calls == 1 && !completion.resumes);
     }
 }
+// Source contracts: channels/BufferedChannel.kt:241-349,1475-1501.
+void channel_send_contract(bool wait, bool cancel, bool closed) {
+    using namespace kotlinx::coroutines::channels;
+    BufferedChannel<std::string> channel(wait ? 0 : 1);
+    SendChannel<std::string>* expected = &channel;
+    auto job = JobImpl::create(nullptr);
+    Completion completion;
+    completion.context = job;
+    auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+    SelectBuilder<void*>& builder = *selection;
+    int calls = 0;
+    auto cause = std::make_exception_ptr(std::runtime_error("closed select channel"));
+    if (closed) channel.close(cause);
+    builder.invoke<std::string, SendChannel<std::string>*>(channel.on_send(), "channel parameter",
+        std::function<void*(SendChannel<std::string>*, Continuation<void*>*)>(
+            [&](SendChannel<std::string>* result, auto) -> void* {
+                CHECK(result == expected);
+                CHECK(!result->is_closed_for_send());
+                ++calls;
+                return nullptr;
+            }));
+    if (closed) {
+        try { selection->do_select(&completion); CHECK(false); }
+        catch (...) { CHECK(std::current_exception() == cause); }
+        CHECK(calls == 0 && !completion.resumes);
+        return;
+    }
+    auto result = selection->do_select(&completion);
+    if (wait) {
+        CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(result));
+        CHECK(!completion.resumes && calls == 0);
+        if (cancel) {
+            job->cancel(nullptr);
+            CHECK(completion.resumes == 1 && completion.failure && calls == 0);
+            CHECK(channel.try_receive().is_failure());
+            CHECK(channel.try_send("after cancellation").is_failure());
+            return;
+        }
+    } else {
+        CHECK(result == nullptr && calls == 1 && !completion.resumes);
+    }
+    auto element = channel.try_receive();
+    CHECK(element.is_success() && element.get_or_throw() == "channel parameter");
+    CHECK(calls == 1);
+    CHECK(completion.resumes == (wait ? 1 : 0) && !completion.failure);
+}
 }
 int main() {
     try {
@@ -163,6 +210,10 @@ int main() {
         value_result_contract(false);
         value_result_contract(true);
         cancellation_parameter_contract();
+        channel_send_contract(false, false, false);
+        channel_send_contract(true, false, false);
+        channel_send_contract(true, true, false);
+        channel_send_contract(false, false, true);
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n'; return 1;
     }
