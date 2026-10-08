@@ -1,5 +1,44 @@
 # Native WorkerDispatcher source repair — 2026-10-08
 
+## TimeMark default operations — 2026-10-08
+
+Continuation from `3ac53464` translates TimeSource.kt:128-195,246-250 into
+src/kotlin/time/TimeMark.hpp:14 and TimeMark.cpp:10,31-42. The interface exposes
+elapsed_now and the four source defaults. The private AdjustedTimeMark subtracts
+its adjustment and combines further adjustments against the original mark,
+rather than wrapping the previous adjustment. The actual source is registered
+in the library; there is no production replacement clock.
+
+NOTE(port) ownership projection: plus/minus return caller-owned heap marks,
+which callers must delete or adopt in smart pointers. Raw pointer return types
+permit the upstream covariant overrides in the remaining comparable/value-mark
+translation. An adjusted mark retains an existing shared owner of its original
+receiver. Raw/stack receivers remain borrowed and must outlive their adjustments;
+the no-op shared alias does not acquire ownership. Virtual destruction supplies
+the C++ cleanup contract. No existing receiver API or ownership was changed.
+
+Strict Clang23.1.2 -Wall/-Wextra/-Wpedantic/-Werror compilation and O1 ASan/UBSan
+execution of the registered test_time_mark exit0, with assertions retained in
+Release. The controllable test mark is test infrastructure, not a production
+time source. Checks cover repeated live elapsed queries, positive/negative/zero
+passed predicates, composed plus/minus adjustments, original shared-owner
+retention and final destruction, borrowed receiver non-destruction, infinite
+adjustments and opposite-infinity rejection. No worker execution is established.
+
+The refreshed time-root deep scan exits0 and reports12/44 bodies,1/13 types,
+0.46 body similarity and zero scoring failures. TimeSource/TimeMark pairing is
+5/18 bodies,1/7 types,0.27 similarity. AdjustedTimeMark::plus is PRESENT in the
+symbol inventory but missing in body matching. Conversely the Kotlin base
+TimeMark functions appear unscoped in the symbol inventory and are listed missing
+against the scoped C++ definitions; the actual definitions are at .cpp:31-42.
+These scope inconsistencies do not certify completion. Prior arithmetic counts
+below remain the preceding checkpoint, not the current whole-time score.
+
+TimeSource, WithComparableMarks, ComparableTimeMark, ValueTimeMark and Native
+MonotonicTimeSource still require translation. WorkerDispatcher's provisional
+mark_now/operator+ expression still awaits that actual value API. Worker/Future,
+runtime dependencies, complete compiler lowering and both MLX paths remain open.
+
 ## Saturated time arithmetic dependency — 2026-10-08
 
 Continuation from `39965bab` translates all eight source functions in

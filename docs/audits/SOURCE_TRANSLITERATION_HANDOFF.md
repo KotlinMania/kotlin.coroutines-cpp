@@ -6,6 +6,24 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## TimeMark defaults — 2026-10-08
+
+Continuation from `3ac53464` adds TimeMark.hpp/.cpp from TimeSource.kt:128-195,
+246-250. Public defaults live in .cpp with the private AdjustedTimeMark. Further
+adjustments combine against the original mark. Returned raw pointers are
+caller-owned (delete/adopt); this permits later covariant source overrides.
+Original shared owners are retained; raw/stack marks stay borrowed and must
+outlive adjustments. The library source and assertion-enabled test are registered.
+Strict Clang compilation and O1 ASan/UBSan ownership/adjustment execution exit0.
+
+Current time-root deep scan:12/44 bodies,1/13 types,0.46 similarity,zero scoring
+failures. TimeSource pair5/18,1/7,0.27. Body/symbol scope disagreements for base
+TimeMark methods and AdjustedTimeMark::plus are recorded in
+NATIVE_WORKER_DISPATCHER_SOURCE_REPAIR.md; they do not certify whole-time parity.
+Continue the actual comparable/value-mark API, TimeSource and Native monotonic
+operations, then Worker/Future. The provisional worker value-mark call is not
+yet reconciled. Full compiler/library and standalone/Native MLX remain unfinished.
+
 ## Native monotonic arithmetic dependency — 2026-10-08
 
 Continuation from `39965bab` adds the actual eight longSaturatedMath.kt operations
