@@ -1,5 +1,6 @@
 // Source contracts: kotlinx-coroutines-core/common/src/selects/Select.kt:463-470,488-521,612-617,707-724,824-848.
 #include "kotlinx/coroutines/selects/Select.hpp"
+#include "kotlinx/coroutines/selects/OnTimeout.hpp"
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
 #include "kotlinx/coroutines/channels/BufferedChannel.hpp"
@@ -119,6 +120,51 @@ public:
         }
     }
 };
+class TimeoutDispatcher final : public CoroutineDispatcher, public Delay {
+public:
+    class Timer final : public DisposableHandle {
+    public:
+        std::shared_ptr<Runnable> action;
+        int disposals = 0;
+        void dispose() override { ++disposals; action.reset(); }
+    };
+    long long delay_millis = -1;
+    const CoroutineContext* timer_context = nullptr;
+    std::shared_ptr<Timer> timer;
+    mutable std::deque<std::shared_ptr<Runnable>> queue;
+    void dispatch(const CoroutineContext&, std::shared_ptr<Runnable> task) const override {
+        queue.push_back(std::move(task));
+    }
+    void schedule_resume_after_delay(long long, CancellableContinuation<void>&) override { CHECK(false); }
+    std::shared_ptr<DisposableHandle> invoke_on_timeout(long long time, std::shared_ptr<Runnable> action,
+                                                       const CoroutineContext& context) override {
+        delay_millis = time;
+        timer_context = &context;
+        timer = std::make_shared<Timer>();
+        timer->action = std::move(action);
+        return timer;
+    }
+    void fire() { auto action = std::move(timer->action); if (action) action->run(); }
+    void drain() {
+        while (!queue.empty()) { auto task = std::move(queue.front()); queue.pop_front(); task->run(); }
+    }
+};
+// Source contracts: selects/OnTimeout.kt:15-16,25-26,45-61; Delay.kt:149,155-158.
+void timeout_context_contract() {
+    auto dispatcher = std::make_shared<TimeoutDispatcher>();
+    Completion completion;
+    completion.context = dispatcher;
+    auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+    SelectBuilder<void*>& builder = *selection;
+    int calls = 0;
+    builder.on_timeout(90000, [&](Continuation<void*>*) -> void* { ++calls; return nullptr; });
+    CHECK(dispatcher->timer && dispatcher->delay_millis == 90000);
+    CHECK(dispatcher->timer_context == completion.context.get());
+    CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(selection->do_select(&completion)));
+    dispatcher->fire();
+    dispatcher->drain();
+    CHECK(calls == 1 && completion.resumes == 1 && !completion.failure);
+}
 void cancellation_parameter_contract() {
     int object = 12, cancellations = 0, blocks = 0;
     auto dispatcher = std::make_shared<Dispatcher>();
@@ -623,6 +669,7 @@ int main() {
             parameter_contract(true, true, fail);
         }
         value_result_contract(false);
+        timeout_context_contract();
         value_result_contract(true);
         cancellation_parameter_contract();
         channel_send_contract(false, false, false);
