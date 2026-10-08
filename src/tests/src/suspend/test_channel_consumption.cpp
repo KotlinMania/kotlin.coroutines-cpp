@@ -3,6 +3,7 @@
 #include "kotlinx/coroutines/channels/Channels.hpp"
 #include "kotlinx/coroutines/flow/Channels.hpp"
 #include "kotlinx/coroutines/flow/internal/Combine.hpp"
+#include "kotlinx/coroutines/flow/internal/Merge.hpp"
 #include "kotlinx/coroutines/native/Exceptions.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/CompletableJob.hpp"
@@ -1101,6 +1102,79 @@ void producer_builder_contract() {
     CHECK(immediate_completions == 1 && public_channel->is_closed_for_receive());
 }
 
+// Merge.kt:47-49,85-87: both overrides capture the source collectToFun
+// receiver through queued DEFAULT start and retain child flows across send.
+void merge_producer_lambda_contract() {
+    class QueueDispatcher final : public CoroutineDispatcher {
+    public:
+        mutable std::deque<std::shared_ptr<Runnable>> queue;
+        void dispatch(const CoroutineContext&, std::shared_ptr<Runnable> task) const override {
+            queue.push_back(std::move(task));
+        }
+        void drain() {
+            while (!queue.empty()) {
+                auto task = std::move(queue.front());
+                queue.pop_front();
+                task->run();
+            }
+        }
+    };
+    for (bool limited : {false, true}) for (int outcome : {0, 1, 2}) {
+        auto dispatcher = std::make_shared<QueueDispatcher>();
+        auto scope = create_coroutine_scope(dispatcher);
+        int calls = 0;
+        auto resource = std::make_shared<int>(137);
+        std::weak_ptr<int> resource_lifetime = resource;
+        auto inner = flow::unsafe_flow<int>(
+            std::function<void*(flow::FlowCollector<int>*, Continuation<void*>*)>(
+                [resource, &calls](flow::FlowCollector<int>* collector, Continuation<void*>* continuation) -> void* {
+                    ++calls;
+                    CHECK(*resource == 137);
+                    return collector->emit(*resource, continuation);
+                }));
+        std::shared_ptr<flow::internal::ChannelFlow<int>> operation;
+        if (limited) {
+            operation = std::make_shared<flow::internal::ChannelLimitedFlowMerge<int>>(
+                std::vector<std::shared_ptr<flow::Flow<int>>>{inner},
+                EmptyCoroutineContext::instance(), 0, BufferOverflow::DROP_OLDEST);
+        } else {
+            auto outer = flow::unsafe_flow<std::shared_ptr<flow::Flow<int>>>(
+                std::function<void*(flow::FlowCollector<std::shared_ptr<flow::Flow<int>>>*, Continuation<void*>*)>(
+                    [inner](flow::FlowCollector<std::shared_ptr<flow::Flow<int>>>* collector,
+                            Continuation<void*>* continuation) -> void* {
+                        return collector->emit(inner, continuation);
+                    }));
+            operation = std::make_shared<flow::internal::ChannelFlowMerge<int>>(
+                outer, 1, EmptyCoroutineContext::instance(), 0, BufferOverflow::DROP_OLDEST);
+        }
+        std::weak_ptr<flow::Flow<int>> lifetime = operation;
+        auto channel = operation->produce_impl(scope.get());
+        auto* job = dynamic_cast<Job*>(channel.get());
+        CHECK(job && !dispatcher->queue.empty() && calls == 0);
+        operation.reset();
+        inner.reset();
+        resource.reset();
+        CHECK(!lifetime.expired() && !resource_lifetime.expired());
+        auto cancellation = std::make_exception_ptr(CancellationException("merge producer cancelled"));
+        if (outcome == 1) channel->cancel(cancellation);
+        dispatcher->drain();
+        if (outcome == 1) {
+            CHECK(calls == 0 && job->is_completed() && job->is_cancelled());
+        } else {
+            CHECK(calls == 1 && !job->is_completed());
+            if (outcome == 0) {
+                // Source produceImpl defaults to SUSPEND even when the flow's
+                // overflow property is DROP_OLDEST, so this is a rendezvous send.
+                auto value = channel->try_receive();
+                CHECK(value.is_success() && value.get_or_throw() == 137);
+            } else channel->cancel(cancellation);
+            dispatcher->drain();
+            CHECK(job->is_completed() && job->is_cancelled() == (outcome == 2));
+        }
+        CHECK(lifetime.expired() && resource_lifetime.expired());
+    }
+}
+
 void channel_flow_surface_contract() {
     auto upstream = flow::unsafe_flow<int>(std::function<void(flow::FlowCollector<int>*)>(
         [](flow::FlowCollector<int>*) {}));
@@ -1289,6 +1363,7 @@ int main() {
         channel_scope_contract();
         producer_await_close_contract();
         producer_builder_contract();
+        merge_producer_lambda_contract();
         channel_flow_surface_contract();
         channel_flow_collect_lambda_contract();
         sending_collector_contract();
