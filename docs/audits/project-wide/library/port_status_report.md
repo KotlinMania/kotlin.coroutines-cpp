@@ -10,18 +10,18 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 812/2918 matched (target 3031) | 27.8% |
+| Function parity | 811/2918 matched (target 3033) | 27.8% |
 | Class/type parity | 359/560 matched (target 521) | 64.1% |
-| Combined symbol parity | 1171/3478 matched (target 3552) | 33.7% |
+| Combined symbol parity | 1170/3478 matched (target 3554) | 33.6% |
 | Average function body similarity | 0.26 | inline-code cosine |
-| Average documentation similarity | 0.38 | doc text cosine |
+| Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
 | Missing source classes/types | 150 | 0% parity until ported |
 | Missing source symbol files | 99 | 833 symbols |
 | Cheat/scoring failures | 123 | forced to 0% |
 | Total source files | 354 | 100% |
 | Target units (paired) | 600 | - |
-| Target files (total) | 781 | - |
+| Target files (total) | 782 | - |
 | Porting progress | 251 | 70.9% (matched) |
 | Missing files | 103 | 29.1% |
 
@@ -200,43 +200,43 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 156 | `operators.Transform` | `flow.Transform` | 0.07 | 12/13 matched (target 100) | `Flow<*>::filterIsInstance` | 0/0 matched (target 13) | _none_ | - | 1 | 11309.3 |
 | 157 | `operators.Zip` | `flow.Zip` | 0.08 | 13/18 matched (target 27) | `combineTransform`, `combineUnsafe`, `combineTransformUnsafe`, `nullArrayFactory`, `combineTransform` | 0/0 matched (target 1) | _none_ | - | 5 | 51809.2 |
 | 158 | `common.MainCoroutineDispatcher` | `coroutines.MainCoroutineDispatcher` | 0.08 | 3/3 matched | _none_ | 1/1 matched | _none_ | - | 0 | 409.2 |
-| 159 | `internal.NopCollector` | `internal.NopCollector` | 0.08 | 1/1 matched | _none_ | 1/1 matched | _none_ | - | 0 | 209.2 |
-| 160 | `operators.Merge` | `flow.Merge` | 0.08 | 8/9 matched (target 23) | `Iterable<Flow<T>>::merge` | 0/0 matched (target 3) | _none_ | - | 1 | 10909.2 |
-| 161 | `flow.StateFlow` | `flow.StateFlow` | 0.09 | 4/19 matched (target 47) | `MutableStateFlow`, `StateFlowSlot::allocateLocked`, `StateFlowSlot::freeLocked`, `StateFlowSlot::makePending`, `StateFlowSlot::takePending`, `StateFlowSlot::awaitPending`, `StateFlowImpl::compareAndSet`, `StateFlowImpl::updateState`, `StateFlowImpl::tryEmit`, `StateFlowImpl::emit`, `StateFlowImpl::resetReplayCache`, `StateFlowImpl::collect`, `StateFlowImpl::createSlot`, `StateFlowImpl::createSlotArray`, `StateFlowImpl::fuse` | 4/4 matched (target 7) | _none_ | - | 15 | 152309.1 |
-| 162 | `operators.Delay` | `flow.Delay` | 0.09 | 6/10 matched (target 9) | `Flow<T>::debounce`, `Flow<T>::debounce`, `Flow<T>::sample`, `Flow<T>::timeoutInternal` | 0/0 matched (target 1) | _none_ | - | 4 | 41009.1 |
-| 163 | `common.Job` | `coroutines.Job` | 0.10 | 5/24 matched (target 19) | `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelAndJoin`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::ensureActive`, `Job::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke` | 5/7 matched (target 8) | `DisposableHandle`, `DisposeOnCompletion` | - | 21 | 213109.0 |
-| 164 | `internal.InlineList` | `internal.InlineList` | 0.10 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | - | 1 | 10309.0 |
-| 165 | `internal.Symbol` | `internal.Symbol` | 0.11 | 2/2 matched (target 3) | _none_ | 1/1 matched | _none_ | - | 0 | 1000308.9 |
-| 166 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
-| 167 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 4) | _none_ | - | 4 | 41608.8 |
-| 168 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
-| 169 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | - | 0 | 808.7 |
-| 170 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.13 | 1/1 matched (target 8) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 2000208.6 |
-| 171 | `common.EventLoop.common` | `coroutines.EventLoop.common` | 0.14 | 11/38 matched (target 24) | `EventLoop::limitedParallelism`, `delayToNanos`, `delayNanosToMillis`, `EventLoopImplBase::shutdown`, `EventLoopImplBase::scheduleResumeAfterDelay`, `EventLoopImplBase::scheduleInvokeOnTimeout`, `EventLoopImplBase::processNextEvent`, `EventLoopImplBase::dispatch`, `EventLoopImplBase::enqueue`, `EventLoopImplBase::enqueueImpl`, `EventLoopImplBase::dequeue`, `EventLoopImplBase::enqueueDelayedTasks`, `EventLoopImplBase::closeQueue`, `EventLoopImplBase::schedule`, `EventLoopImplBase::shouldUnpark`, `EventLoopImplBase::scheduleImpl`, `EventLoopImplBase::resetAll`, `EventLoopImplBase::rescheduleAllDelayed`, `EventLoopImplBase::DelayedTask::compareTo`, `EventLoopImplBase::DelayedTask::timeToExecute`, `EventLoopImplBase::DelayedTask::scheduleTask`, `EventLoopImplBase::DelayedTask::dispose`, `EventLoopImplBase::DelayedTask::toString`, `EventLoopImplBase::DelayedResumeTask::run`, `EventLoopImplBase::DelayedResumeTask::toString`, `EventLoopImplBase::DelayedRunnableTask::run`, `EventLoopImplBase::DelayedRunnableTask::toString` | 2/10 matched (target 3) | `Queue`, `EventLoopImplPlatform`, `EventLoopImplBase`, `DelayedTask`, `DelayedResumeTask`, `DelayedRunnableTask`, `DelayedTaskQueue`, `DefaultExecutor` | - | 35 | 354808.6 |
-| 172 | `channels.Broadcast` | `channels.Broadcast` | 0.14 | 3/10 matched (target 11) | `ReceiveChannel<E>::broadcast`, `CoroutineScope::broadcast`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancelInternal`, `LazyBroadcastCoroutine::openSubscription`, `LazyBroadcastCoroutine::onStart` | 2/2 matched | _none_ | - | 7 | 71208.6 |
-| 173 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | - | 1 | 11608.5 |
-| 174 | `native.Exceptions` | `native.Exceptions` | 0.15 | 3/4 matched (target 21) | `JobCancellationException::toString` | 1/2 matched | `CancellationException` | - | 2 | 6020608.5 |
-| 175 | `test.CoroutineScopeTest` | `tests.CoroutineScopeTest` | 0.15 | 1/24 matched (target 5) | `CoroutineScopeTest::testScope`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testScopeCancelledFromWithin`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testExceptionFromWithin`, `CoroutineScopeTest::testScopeBlockThrows`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testOuterJobIsCancelled`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testAsyncCancellationFirst`, `CoroutineScopeTest::failedConcurrentSumFirst`, `CoroutineScopeTest::testAsyncCancellationSecond`, `CoroutineScopeTest::failedConcurrentSumSecond`, `CoroutineScopeTest::testDocumentationExample`, `CoroutineScopeTest::loadData`, `CoroutineScopeTest::testCoroutineScopeCancellationVsException`, `CoroutineScopeTest::testLaunchContainsDefaultDispatcher`, `CoroutineScopeTest::testNewCoroutineContextDispatcher`, `CoroutineScopeTest::newContextDispatcher`, `CoroutineScopeTest::testScopePlusContext`, `CoroutineScopeTest::testIncompleteScopeState`, `CoroutineScopeTest::testIsActiveWithoutJob`, `CoroutineScopeTest::testIsActive` | 1/1 matched | _none_ | 0/14 | 23 | 232508.5 |
-| 176 | `intrinsics.Cancellable` | `intrinsics.Cancellable` | 0.15 | 5/5 matched (target 19) | _none_ | 0/0 matched | _none_ | - | 0 | 508.5 |
-| 177 | `flow.Flow` | `flow.Flow` | 0.16 | 1/1 matched (target 6) | _none_ | 2/2 matched (target 5) | _none_ | - | 0 | 28000308.0 |
-| 178 | `common.CompletableDeferred` | `coroutines.CompletableDeferred` | 0.16 | 5/7 matched (target 16) | `CompletableDeferred`, `CompletableDeferred` | 2/2 matched (target 3) | _none_ | - | 2 | 20908.4 |
-| 179 | `selects.SelectUnbiased` | `selects.SelectUnbiased` | 0.16 | 6/6 matched (target 8) | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 708.4 |
-| 180 | `common.Yield` | `coroutines.Yield` | 0.17 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 108.3 |
-| 181 | `channels.Produce` | `channels.Produce` | 0.18 | 4/6 matched (target 14) | `CoroutineScope::produce`, `CoroutineScope::produce` | 1/2 matched | `ProducerScope` | - | 3 | 30808.2 |
-| 182 | `operators.Share` | `flow.Share` | 0.18 | 12/13 matched (target 49) | `SubscribedFlowCollector::onSubscription` | 4/5 matched (target 10) | `SubscribedFlowCollector` | - | 2 | 21808.2 |
-| 183 | `internal.DispatchedTask` | `internal.DispatchedTask` | 0.19 | 9/10 matched (target 14) | `DispatchedTask<*>::runUnconfinedEventLoop` | 2/2 matched (target 3) | _none_ | - | 1 | 11208.1 |
-| 184 | `internal.FlowCoroutine` | `internal.FlowCoroutine` | 0.19 | 3/3 matched (target 8) | _none_ | 1/1 matched | _none_ | - | 0 | 408.1 |
-| 185 | `common.Supervisor` | `coroutines.Supervisor` | 0.19 | 4/5 matched (target 8) | `SupervisorCoroutine::childCancelled` | 2/2 matched (target 3) | _none_ | - | 1 | 10708.1 |
-| 186 | `common.Builders.common` | `coroutines.Builders.common` | 0.19 | 14/14 matched (target 55) | _none_ | 5/6 matched (target 9) | `UndispatchedCoroutine` | - | 1 | 12008.1 |
-| 187 | `internal.Merge` | `internal.Merge` | 0.20 | 9/9 matched (target 37) | _none_ | 3/3 matched (target 8) | _none_ | - | 0 | 1001207.9 |
-| 188 | `selects.Select` | `selects.Select` | 0.21 | 25/30 matched (target 73) | `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | - | 5 | 1054607.9 |
-| 189 | `test.CoroutineDispatcherOperatorFunInvokeTest` | `tests.CoroutineDispatcherOperatorFunInvokeTest` | 0.22 | 3/8 matched (target 12) | `CoroutineDispatcherOperatorFunInvokeTest::testThrowException`, `CoroutineDispatcherOperatorFunInvokeTest::testWithContextChildWaitSameContext`, `CoroutineDispatcherOperatorFunInvokeTest::dispatch`, `CoroutineDispatcherOperatorFunInvokeTest::isDispatchNeeded`, `CoroutineDispatcherOperatorFunInvokeTest::dispatchYield` | 2/2 matched (target 3) | _none_ | 0/2 | 5 | 51007.8 |
-| 190 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
-| 191 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 23) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 65001308.0 |
-| 192 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | - | 0 | 1007.8 |
-| 193 | `sync.Mutex` | `sync.Mutex` | 0.23 | 11/16 matched (target 20) | `Mutex`, `MutexImpl::CancellableContinuationWithOwner::tryResume`, `MutexImpl::CancellableContinuationWithOwner::resume`, `MutexImpl::SelectInstanceWithOwner::trySelect`, `MutexImpl::SelectInstanceWithOwner::selectInRegistrationPhase` | 2/4 matched (target 2) | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` | - | 7 | 72007.7 |
-| 194 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 18/19 matched (target 41) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | - | 1 | 12507.6 |
-| 195 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.24 | 7/7 matched (target 8) | _none_ | 1/1 matched | _none_ | - | 0 | 807.6 |
+| 159 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.08 | 6/7 matched (target 10) | `loop` | 1/1 matched | _none_ | - | 1 | 10809.2 |
+| 160 | `internal.NopCollector` | `internal.NopCollector` | 0.08 | 1/1 matched | _none_ | 1/1 matched | _none_ | - | 0 | 209.2 |
+| 161 | `operators.Merge` | `flow.Merge` | 0.08 | 8/9 matched (target 23) | `Iterable<Flow<T>>::merge` | 0/0 matched (target 3) | _none_ | - | 1 | 10909.2 |
+| 162 | `flow.StateFlow` | `flow.StateFlow` | 0.09 | 4/19 matched (target 47) | `MutableStateFlow`, `StateFlowSlot::allocateLocked`, `StateFlowSlot::freeLocked`, `StateFlowSlot::makePending`, `StateFlowSlot::takePending`, `StateFlowSlot::awaitPending`, `StateFlowImpl::compareAndSet`, `StateFlowImpl::updateState`, `StateFlowImpl::tryEmit`, `StateFlowImpl::emit`, `StateFlowImpl::resetReplayCache`, `StateFlowImpl::collect`, `StateFlowImpl::createSlot`, `StateFlowImpl::createSlotArray`, `StateFlowImpl::fuse` | 4/4 matched (target 7) | _none_ | - | 15 | 152309.1 |
+| 163 | `operators.Delay` | `flow.Delay` | 0.09 | 6/10 matched (target 9) | `Flow<T>::debounce`, `Flow<T>::debounce`, `Flow<T>::sample`, `Flow<T>::timeoutInternal` | 0/0 matched (target 1) | _none_ | - | 4 | 41009.1 |
+| 164 | `common.Job` | `coroutines.Job` | 0.10 | 5/24 matched (target 19) | `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelAndJoin`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::ensureActive`, `Job::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke` | 5/7 matched (target 8) | `DisposableHandle`, `DisposeOnCompletion` | - | 21 | 213109.0 |
+| 165 | `internal.InlineList` | `internal.InlineList` | 0.10 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | - | 1 | 10309.0 |
+| 166 | `internal.Symbol` | `internal.Symbol` | 0.11 | 2/2 matched (target 3) | _none_ | 1/1 matched | _none_ | - | 0 | 1000308.9 |
+| 167 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
+| 168 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 4) | _none_ | - | 4 | 41608.8 |
+| 169 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
+| 170 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | - | 0 | 808.7 |
+| 171 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.13 | 1/1 matched (target 8) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 2000208.6 |
+| 172 | `common.EventLoop.common` | `coroutines.EventLoop.common` | 0.14 | 11/38 matched (target 24) | `EventLoop::limitedParallelism`, `delayToNanos`, `delayNanosToMillis`, `EventLoopImplBase::shutdown`, `EventLoopImplBase::scheduleResumeAfterDelay`, `EventLoopImplBase::scheduleInvokeOnTimeout`, `EventLoopImplBase::processNextEvent`, `EventLoopImplBase::dispatch`, `EventLoopImplBase::enqueue`, `EventLoopImplBase::enqueueImpl`, `EventLoopImplBase::dequeue`, `EventLoopImplBase::enqueueDelayedTasks`, `EventLoopImplBase::closeQueue`, `EventLoopImplBase::schedule`, `EventLoopImplBase::shouldUnpark`, `EventLoopImplBase::scheduleImpl`, `EventLoopImplBase::resetAll`, `EventLoopImplBase::rescheduleAllDelayed`, `EventLoopImplBase::DelayedTask::compareTo`, `EventLoopImplBase::DelayedTask::timeToExecute`, `EventLoopImplBase::DelayedTask::scheduleTask`, `EventLoopImplBase::DelayedTask::dispose`, `EventLoopImplBase::DelayedTask::toString`, `EventLoopImplBase::DelayedResumeTask::run`, `EventLoopImplBase::DelayedResumeTask::toString`, `EventLoopImplBase::DelayedRunnableTask::run`, `EventLoopImplBase::DelayedRunnableTask::toString` | 2/10 matched (target 3) | `Queue`, `EventLoopImplPlatform`, `EventLoopImplBase`, `DelayedTask`, `DelayedResumeTask`, `DelayedRunnableTask`, `DelayedTaskQueue`, `DefaultExecutor` | - | 35 | 354808.6 |
+| 173 | `channels.Broadcast` | `channels.Broadcast` | 0.14 | 3/10 matched (target 11) | `ReceiveChannel<E>::broadcast`, `CoroutineScope::broadcast`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancelInternal`, `LazyBroadcastCoroutine::openSubscription`, `LazyBroadcastCoroutine::onStart` | 2/2 matched | _none_ | - | 7 | 71208.6 |
+| 174 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | - | 1 | 11608.5 |
+| 175 | `native.Exceptions` | `native.Exceptions` | 0.15 | 3/4 matched (target 21) | `JobCancellationException::toString` | 1/2 matched | `CancellationException` | - | 2 | 6020608.5 |
+| 176 | `test.CoroutineScopeTest` | `tests.CoroutineScopeTest` | 0.15 | 1/24 matched (target 5) | `CoroutineScopeTest::testScope`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testScopeCancelledFromWithin`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testExceptionFromWithin`, `CoroutineScopeTest::testScopeBlockThrows`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testOuterJobIsCancelled`, `CoroutineScopeTest::callJobScoped`, `CoroutineScopeTest::testAsyncCancellationFirst`, `CoroutineScopeTest::failedConcurrentSumFirst`, `CoroutineScopeTest::testAsyncCancellationSecond`, `CoroutineScopeTest::failedConcurrentSumSecond`, `CoroutineScopeTest::testDocumentationExample`, `CoroutineScopeTest::loadData`, `CoroutineScopeTest::testCoroutineScopeCancellationVsException`, `CoroutineScopeTest::testLaunchContainsDefaultDispatcher`, `CoroutineScopeTest::testNewCoroutineContextDispatcher`, `CoroutineScopeTest::newContextDispatcher`, `CoroutineScopeTest::testScopePlusContext`, `CoroutineScopeTest::testIncompleteScopeState`, `CoroutineScopeTest::testIsActiveWithoutJob`, `CoroutineScopeTest::testIsActive` | 1/1 matched | _none_ | 0/14 | 23 | 232508.5 |
+| 177 | `intrinsics.Cancellable` | `intrinsics.Cancellable` | 0.15 | 5/5 matched (target 19) | _none_ | 0/0 matched | _none_ | - | 0 | 508.5 |
+| 178 | `flow.Flow` | `flow.Flow` | 0.16 | 1/1 matched (target 6) | _none_ | 2/2 matched (target 5) | _none_ | - | 0 | 28000308.0 |
+| 179 | `common.CompletableDeferred` | `coroutines.CompletableDeferred` | 0.16 | 5/7 matched (target 16) | `CompletableDeferred`, `CompletableDeferred` | 2/2 matched (target 3) | _none_ | - | 2 | 20908.4 |
+| 180 | `selects.SelectUnbiased` | `selects.SelectUnbiased` | 0.16 | 6/6 matched (target 8) | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 708.4 |
+| 181 | `common.Yield` | `coroutines.Yield` | 0.17 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 108.3 |
+| 182 | `channels.Produce` | `channels.Produce` | 0.18 | 4/6 matched (target 14) | `CoroutineScope::produce`, `CoroutineScope::produce` | 1/2 matched | `ProducerScope` | - | 3 | 30808.2 |
+| 183 | `operators.Share` | `flow.Share` | 0.18 | 12/13 matched (target 49) | `SubscribedFlowCollector::onSubscription` | 4/5 matched (target 10) | `SubscribedFlowCollector` | - | 2 | 21808.2 |
+| 184 | `internal.DispatchedTask` | `internal.DispatchedTask` | 0.19 | 9/10 matched (target 14) | `DispatchedTask<*>::runUnconfinedEventLoop` | 2/2 matched (target 3) | _none_ | - | 1 | 11208.1 |
+| 185 | `internal.FlowCoroutine` | `internal.FlowCoroutine` | 0.19 | 3/3 matched (target 8) | _none_ | 1/1 matched | _none_ | - | 0 | 408.1 |
+| 186 | `common.Supervisor` | `coroutines.Supervisor` | 0.19 | 4/5 matched (target 8) | `SupervisorCoroutine::childCancelled` | 2/2 matched (target 3) | _none_ | - | 1 | 10708.1 |
+| 187 | `common.Builders.common` | `coroutines.Builders.common` | 0.19 | 14/14 matched (target 55) | _none_ | 5/6 matched (target 9) | `UndispatchedCoroutine` | - | 1 | 12008.1 |
+| 188 | `internal.Merge` | `internal.Merge` | 0.20 | 9/9 matched (target 37) | _none_ | 3/3 matched (target 8) | _none_ | - | 0 | 1001207.9 |
+| 189 | `selects.Select` | `selects.Select` | 0.21 | 25/30 matched (target 73) | `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | - | 5 | 1054607.9 |
+| 190 | `test.CoroutineDispatcherOperatorFunInvokeTest` | `tests.CoroutineDispatcherOperatorFunInvokeTest` | 0.22 | 3/8 matched (target 12) | `CoroutineDispatcherOperatorFunInvokeTest::testThrowException`, `CoroutineDispatcherOperatorFunInvokeTest::testWithContextChildWaitSameContext`, `CoroutineDispatcherOperatorFunInvokeTest::dispatch`, `CoroutineDispatcherOperatorFunInvokeTest::isDispatchNeeded`, `CoroutineDispatcherOperatorFunInvokeTest::dispatchYield` | 2/2 matched (target 3) | _none_ | 0/2 | 5 | 51007.8 |
+| 191 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
+| 192 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 23) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 65001308.0 |
+| 193 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | - | 0 | 1007.8 |
+| 194 | `sync.Mutex` | `sync.Mutex` | 0.23 | 11/16 matched (target 20) | `Mutex`, `MutexImpl::CancellableContinuationWithOwner::tryResume`, `MutexImpl::CancellableContinuationWithOwner::resume`, `MutexImpl::SelectInstanceWithOwner::trySelect`, `MutexImpl::SelectInstanceWithOwner::selectInRegistrationPhase` | 2/4 matched (target 2) | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` | - | 7 | 72007.7 |
+| 195 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 18/19 matched (target 41) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | - | 1 | 12507.6 |
 | 196 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | - | 0 | 207.6 |
 | 197 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
 | 198 | `channels.BufferedChannel` | `channels.BufferedChannel` | 0.26 | 100/111 matched (target 180) | `BufferedChannel::sendImpl`, `BufferedChannel::receiveImpl`, `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `BufferedChannel::onCancellationChannelResultImplDoNotCall`, `BufferedChannel::onCancellationImplDoNotCall`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0` | 6/6 matched (target 7) | _none_ | - | 11 | 121707.4 |
@@ -582,6 +582,7 @@ These files need significant work:
 - `operators.Transform` -> `flow.Transform` (0.07)
 - `operators.Zip` -> `flow.Zip` (0.08)
 - `common.MainCoroutineDispatcher` -> `coroutines.MainCoroutineDispatcher` (0.08)
+- `internal.OnDemandAllocatingPool` -> `internal.OnDemandAllocatingPool` (0.08)
 - `internal.NopCollector` -> `internal.NopCollector` (0.08)
 - `operators.Merge` -> `flow.Merge` (0.08)
 - `flow.StateFlow` -> `flow.StateFlow` (0.09)
@@ -618,7 +619,6 @@ These files need significant work:
 - `selects.SelectOld` -> `selects.SelectOld` (0.22)
 - `sync.Mutex` -> `sync.Mutex` (0.23)
 - `internal.ChannelFlow` -> `internal.ChannelFlow` (0.24)
-- `internal.OnDemandAllocatingPool` -> `internal.OnDemandAllocatingPool` (0.24)
 - `internal.Synchronized.common` -> `internal.SynchronizedObject` (0.24)
 - `common.CancellableContinuationImpl` -> `coroutines.ContinuationState` (0.25)
 - `channels.BufferedChannel` -> `channels.BufferedChannel` (0.26)
@@ -687,8 +687,8 @@ present in the Rust source file.
 | `internal.Scopes` | `internal.ScopeCoroutine` | 1/2 | `ContextScope` |
 | `common.Builders.common` | `coroutines.Builders.common` | 1/6 | `UndispatchedCoroutine` |
 | `native.SchedulerTask` | `native.SchedulerTask` | 1/1 | `SchedulerTask` |
-| `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1/1 | `LocalAtomicInt` |
 | `native.CloseableCoroutineDispatcher` | `native.CloseableCoroutineDispatcher` | 1/1 | `CloseableCoroutineDispatcher` |
+| `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1/1 | `LocalAtomicInt` |
 
 ## High Priority Missing Files
 
@@ -800,7 +800,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7426 / 7437 lines (100%)
+**Documentation line amount:** 7400 / 7437 lines (100%)
 
 Documentation gaps (>20%), complete list:
 
@@ -832,8 +832,9 @@ Documentation gaps (>20%), complete list:
 - `common.Deferred` - 25% gap (84 → 63 lines)
 - `common.MainDispatcherTestBase` - 100% gap (19 → 0 lines)
 - `common.TestDispatcher` - 100% gap (17 → 0 lines)
-- `test.WithTimeoutDurationTest` - 100% gap (15 → 0 lines)
 - `test.WithTimeoutTest` - 100% gap (15 → 0 lines)
+- `test.WithTimeoutDurationTest` - 100% gap (15 → 0 lines)
+- `internal.OnDemandAllocatingPool` - 38% gap (37 → 23 lines)
 - `concurrent.Builders.concurrent` - 63% gap (19 → 7 lines)
 - `test.WithTimeoutOrNullTest` - 100% gap (12 → 0 lines)
 - `test.WithTimeoutOrNullDurationTest` - 100% gap (12 → 0 lines)
