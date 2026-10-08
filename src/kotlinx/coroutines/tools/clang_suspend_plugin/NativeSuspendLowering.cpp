@@ -239,7 +239,7 @@ private:
                << execute;
         if (exception_region_) {
             output << "} catch (...) {\n_kxs_pending_failure = std::current_exception();\n"
-                   << "__kxs_suspend_point(" << unwind_id << ", &_label, &&_kxs_unwind_" << unwind_id << ");\n"
+                   << suspension_site(unwind_id, "_kxs_unwind_")
                    << "_kxs_reenter = true; return nullptr;\n}\n" << unwind;
         } else output << "} catch (...) { clear_locals(); throw; }\n";
         output << "}\n";
@@ -965,7 +965,7 @@ private:
         unsigned id = suspension_++;
         auto result = new_slot(context_.VoidPtrTy);
         // Save state as late as possible.
-        body_ << "__kxs_suspend_point(" << id << ", &_label, &&_kxs_resume_" << id << ");\n"
+        body_ << suspension_site(id, "_kxs_resume_")
               << result.name << ".emplace(" << invoked << ");\n";
         // NOTE(port): The callee has returned, so C++ argument temporaries end
         // their lifetime even when its result is COROUTINE_SUSPENDED.
@@ -1111,10 +1111,19 @@ private:
     }
     // NOTE(port): Return to the native catch-context wrapper at handler
     // boundaries. Resume still uses the same injected field/blockaddress pair.
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2309-2337
+    // NOTE(port): A marker branch retains the actual labelled region in Clang's
+    // CFG. Mandatory LLVM injection forms its blockaddress and erases the branch
+    // condition; source parsing needs no GNU labels-as-values extension.
+    std::string suspension_site(unsigned id, const std::string& label_prefix) const {
+        const auto name = std::to_string(id);
+        return "__kxs_suspend_site(" + name + ", &_label);\nif (__kxs_resume_point(" + name +
+            ")) goto " + label_prefix + name + ";\n";
+    }
     void emit_context_transition() {
         unsigned id = suspension_++;
-        body_ << "if (_kxs_reenter) {\n__kxs_suspend_point(" << id
-              << ", &_label, &&_kxs_context_" << id << ");\nreturn nullptr;\n}\n"
+        body_ << "if (_kxs_reenter) {\n" << suspension_site(id, "_kxs_context_")
+              << "return nullptr;\n}\n"
               << "_kxs_context_" << id << ":;\n";
     }
     // NOTE(port): Leave native C++ catches before executing retained handlers.

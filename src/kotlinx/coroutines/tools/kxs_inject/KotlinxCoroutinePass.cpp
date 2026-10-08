@@ -24,7 +24,9 @@ class KotlinxCoroutinePass : public PassInfoMixin<KotlinxCoroutinePass> {
 public:
     PreservedAnalyses run(Module& module, ModuleAnalysisManager&) {
         if (!module.getFunction("__kxs_coroutine_begin") &&
-            !module.getFunction("__kxs_suspend_point")) return PreservedAnalyses::all();
+            !module.getFunction("__kxs_suspend_point") &&
+            !module.getFunction("__kxs_suspend_site") &&
+            !module.getFunction("__kxs_resume_point")) return PreservedAnalyses::all();
         std::string message;
         raw_string_ostream diagnostics(message);
         if (verifyModule(module, &diagnostics) ||

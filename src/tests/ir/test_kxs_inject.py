@@ -28,6 +28,17 @@ resume:
 '''
 
 
+# Standard C++ marker branches identify real blocks before LLVM optimization.
+# IDs only pair declarations during compilation; stored state is a block address.
+MARKED_MODULE = MODULE.replace(
+    'declare void @__kxs_suspend_point(i32, ptr, ptr)',
+    'declare void @__kxs_suspend_site(i32, ptr)\ndeclare i1 @__kxs_resume_point(i32)').replace(
+    '  call void @__kxs_suspend_point(i32 9, ptr %label_field, ptr blockaddress(@"frame with spaces", %resume))',
+    '  call void @__kxs_suspend_site(i32 9, ptr %label_field)\n'
+    '  %go = call i1 @__kxs_resume_point(i32 9)\n'
+    '  br i1 %go, label %resume, label %normal\nnormal:')
+
+
 class NativeInjectionTests(unittest.TestCase):
     def setUp(self):
         self.directory = Path(tempfile.mkdtemp(dir=OPTIONS.work_dir, prefix=self._testMethodName + ' '))
@@ -60,6 +71,63 @@ class NativeInjectionTests(unittest.TestCase):
         self.assertIn('indirectbr ptr %kxs_saved_label, [label %resume]', injected)
         self.assertNotIn('alloca', injected)
         self.assertNotIn('store ptr null', injected)
+
+    def test_marker_branches_form_actual_addresses_across_repeated_calls(self):
+        source = MARKED_MODULE.replace('@"frame with spaces"', '@run_frame').replace(
+            'resume:\n  ret ptr %result',
+            'resume:\n  call void @__kxs_suspend_site(i32 3, ptr %label_field)\n'
+            '  %next_resume = call i1 @__kxs_resume_point(i32 3)\n'
+            '  br i1 %next_resume, label %second_resume, label %second_normal\n'
+            'second_normal:\n  ret ptr inttoptr (i64 2 to ptr)\n'
+            'second_resume:\n  ret ptr %result')
+        injected = self.transform(source)
+        self.assertIn('indirectbr ptr %kxs_saved_label, [label %resume, label %second_resume]', injected)
+        self.assertIn('store ptr blockaddress(@run_frame, %resume)', injected)
+        self.assertIn('store ptr blockaddress(@run_frame, %second_resume)', injected)
+        self.assertNotIn('__kxs_', injected)
+        harness = self.directory / 'marker-branches.cpp'
+        harness.write_text('''#include <cassert>
+#include <initializer_list>
+struct Frame { void* guard; void* label; int before; };
+extern "C" void* run_frame(Frame*, void*);
+int main() {
+    int first = 17, second = 29;
+    Frame a{&first, nullptr, 0}, b{&second, nullptr, 0};
+    for (Frame* frame : {&a, &b}) {
+        assert(run_frame(frame, nullptr) == reinterpret_cast<void*>(1));
+        void* first_label = frame->label;
+        assert(first_label && frame->before == 1);
+        assert(run_frame(frame, nullptr) == reinterpret_cast<void*>(2));
+        assert(frame->label && frame->label != first_label);
+        assert(run_frame(frame, frame->guard) == frame->guard);
+        assert(frame->before == 1);
+    }
+}
+''')
+        executable = self.directory / 'marker-branches'
+        self.run_command([OPTIONS.compiler, '-std=c++20', '-UNDEBUG', '-Wall', '-Wextra',
+                          '-Wpedantic', '-Werror', '-fsanitize=address,undefined',
+                          str(harness), str(self.directory / 'output.ll'), '-o', str(executable)])
+        self.run_command([str(executable)])
+
+    def test_marker_branch_contracts_are_rejected_when_unpaired_or_dynamic(self):
+        malformed = [
+            (MARKED_MODULE.replace('call i1 @__kxs_resume_point(i32 9)',
+                                   'call i1 @__kxs_resume_point(i32 8)'), 'unique matching resume'),
+            (MARKED_MODULE.replace('  call void @__kxs_suspend_site(i32 9, ptr %label_field)\n', ''),
+             'no suspension site'),
+            (MARKED_MODULE.replace('  %go = call i1 @__kxs_resume_point(i32 9)',
+                                   '  %ignored = call i1 @__kxs_resume_point(i32 9)\n'
+                                   '  %go = call i1 @__kxs_resume_point(i32 9)'), 'direct conditional branch'),
+            (MARKED_MODULE.replace('  %go = call i1 @__kxs_resume_point(i32 9)',
+                                   '  %dynamic = load i32, ptr %counter\n'
+                                   '  %go = call i1 @__kxs_resume_point(i32 %dynamic)'), 'constant ID'),
+            (MARKED_MODULE.replace('call void @__kxs_suspend_site(i32 9, ptr %label_field)',
+                                   'call void @__kxs_suspend_site(i32 9, ptr %frame)'), 'different frame label'),
+        ]
+        for source, diagnostic in malformed:
+            with self.subTest(diagnostic=diagnostic):
+                self.assertIn(diagnostic, self.transform(source, False))
 
     def test_translated_codegen_merges_normal_and_resumed_results(self):
         generated = self.directory / 'generated.ll'

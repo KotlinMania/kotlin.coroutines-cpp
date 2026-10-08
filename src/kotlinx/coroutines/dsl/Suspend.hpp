@@ -19,6 +19,12 @@
 // IR contracts consumed by kxs-inject before optimization/code generation.
 extern "C" void __kxs_coroutine_begin(void** label_field) noexcept;
 extern "C" void __kxs_suspend_point(int id, void** label_field, void* resume_address) noexcept;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2309-2337
+// NOTE(port): The conditional branch supplies its true successor to mandatory
+// LLVM injection. Both marker calls and their compile-time IDs are erased.
+extern "C" void __kxs_suspend_site(int id, void** label_field) noexcept;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2309-2337
+extern "C" bool __kxs_resume_point(int id) noexcept;
 
 // Helper to create unique label names.
 // Note: __LINE__ must be unique per suspend point; do not put multiple
@@ -50,7 +56,7 @@ inline T suspend(T&& value) {
 /**
  * Frontend result/resume regions for LLVM-injected suspend functions.
  *
- * Supplies labels-as-values to the injector; no source-level resume dispatch
+ * Supplies labelled branches to the injector; no source-level resume dispatch
  * or label-field store is generated here.
  *
  * Usage:
@@ -63,15 +69,15 @@ inline T suspend(T&& value) {
  * NOTE:
  * - The `invoke_suspend` parameter name must be `result` (Result<void*>) so
  *   the macros can mirror Kotlin's `getOrThrow(resultArgument)` behavior.
- * - Entry supplies the exact frame field; sites supply actual resume addresses.
+ * - Entry supplies the exact frame field; marker branches identify resume blocks.
  */
 
 /**
- * LLVM injection authoring surface (Clang labels-as-values extension).
+ * LLVM injection authoring surface (ordinary C++ labelled branches).
  *
  * The _label field is void* storing blockaddress:
  *   - nullptr on first call → jump to start
- *   - &&resume_label on resume → indirectbr to that label
+ *   - LLVM resume block address on resume → indirectbr to that block
  *
  * kxs-inject constructs LLVM indirectbr and address stores. Kotlin/Native interop
  * additionally requires compatible frame, result, ownership and GC contracts.
@@ -97,7 +103,8 @@ inline T suspend(T&& value) {
 // parameter name `result` (Result<void*>), matching Kotlin's invokeSuspend contract.
 #define coroutine_yield(c, expr) \
     do { \
-        ::__kxs_suspend_point(__LINE__, &(c)->_label, &&_KXS_LABEL(_kxs_resume_, __LINE__)); \
+        ::__kxs_suspend_site(__LINE__, &(c)->_label); \
+        if (::__kxs_resume_point(__LINE__)) goto _KXS_LABEL(_kxs_resume_, __LINE__); \
         { \
             auto _kxs_tmp = (expr); \
             if (::kotlin::coroutines::intrinsics::is_coroutine_suspended(_kxs_tmp)) \
@@ -119,7 +126,8 @@ inline T suspend(T&& value) {
 // running resume-only code on the non-suspending fast path.
 #define coroutine_yield_value(c, result, expr, out_lvalue) \
     do { \
-        ::__kxs_suspend_point(__LINE__, &(c)->_label, &&_KXS_LABEL(_kxs_resume_, __LINE__)); \
+        ::__kxs_suspend_site(__LINE__, &(c)->_label); \
+        if (::__kxs_resume_point(__LINE__)) goto _KXS_LABEL(_kxs_resume_, __LINE__); \
         { \
             auto _kxs_tmp = (expr); \
             if (::kotlin::coroutines::intrinsics::is_coroutine_suspended(_kxs_tmp)) \
@@ -136,5 +144,5 @@ inline T suspend(T&& value) {
     return nullptr;
 
 #else
-#error "kotlinx.coroutines-cpp requires Clang for computed goto support"
+#error "kotlinx.coroutines-cpp requires Clang for mandatory LLVM coroutine injection"
 #endif

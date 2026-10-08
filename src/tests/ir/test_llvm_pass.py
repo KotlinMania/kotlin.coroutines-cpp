@@ -58,6 +58,45 @@ class CompilerPassTests(unittest.TestCase):
         self.assertNotIn('call void @__kxs_', ir)
         self.assertNotIn('declare void @__kxs_', ir)
 
+    def test_standard_cpp_marker_branches_execute_with_strict_warnings(self):
+        source = self.work / 'standard.cpp'
+        source.write_text('''#include <cassert>
+extern "C" void __kxs_coroutine_begin(void**) noexcept;
+extern "C" void __kxs_suspend_site(int, void**) noexcept;
+extern "C" bool __kxs_resume_point(int) noexcept;
+struct Frame { void* label = nullptr; int before = 0; };
+void* run(Frame* frame, void* value) {
+    __kxs_coroutine_begin(&frame->label);
+    ++frame->before;
+    __kxs_suspend_site(29, &frame->label);
+    if (__kxs_resume_point(29)) goto resume;
+    return reinterpret_cast<void*>(1);
+resume:
+    return value;
+}
+int main() {
+    int value = 42;
+    Frame* frame = new Frame;
+    assert(run(frame, nullptr) == reinterpret_cast<void*>(1));
+    assert(frame->label && frame->before == 1);
+    assert(run(frame, &value) == &value && frame->before == 1);
+    delete frame;
+}
+''')
+        executable = self.work / 'standard'
+        strict = ['-Wall', '-Wextra', '-Wpedantic', '-Werror']
+        for optimization in ('-O0', '-O2'):
+            self.command([*self.flags(), *strict, optimization, '-fsanitize=address,undefined',
+                          str(source), '-o', str(executable)])
+            self.command([str(executable)])
+        ir_file = self.work / 'standard.ll'
+        self.command([*self.flags(), *strict, '-O0', '-S', '-emit-llvm',
+                      str(source), '-o', str(ir_file)])
+        ir = ir_file.read_text()
+        self.assertIn('blockaddress', ir)
+        self.assertIn('indirectbr', ir)
+        self.assertNotIn('__kxs_', ir)
+
     def test_stack_frame_is_a_compiler_error(self):
         source = self.work / 'invalid.cpp'
         source.write_text('''
