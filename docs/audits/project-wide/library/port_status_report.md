@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 831/2918 matched (target 2982) | 28.5% |
+| Function parity | 831/2918 matched (target 2961) | 28.5% |
 | Class/type parity | 359/560 matched (target 507) | 64.1% |
-| Combined symbol parity | 1190/3478 matched (target 3489) | 34.2% |
+| Combined symbol parity | 1190/3478 matched (target 3468) | 34.2% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -184,9 +184,9 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 140 | `terminal.Reduce` | `flow.Reduce` | 0.03 | 10/10 matched (target 64) | _none_ | 0/0 matched (target 6) | _none_ | - | 0 | 1009.7 |
 | 141 | `channels.Channels` | `channels.Channels` | 0.03 | 1/2 matched (target 1) | `SendChannel<E>::sendBlocking` | 0/0 matched | _none_ | - | 1 | 10209.7 |
 | 142 | `channels.Channels.common` | `channels.Channels.common` | 0.04 | 4/6 matched (target 21) | `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull` | 0/0 matched (target 3) | _none_ | - | 2 | 20609.6 |
-| 143 | `operators.Limit` | `flow.Limit` | 0.04 | 7/8 matched (target 44) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | - | 1 | 10809.6 |
-| 144 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.6 |
-| 145 | `internal.Symbol` | `internal.Symbol` | 0.04 | 2/2 matched (target 4) | _none_ | 1/1 matched | _none_ | - | 0 | 1000309.6 |
+| 143 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.6 |
+| 144 | `internal.Symbol` | `internal.Symbol` | 0.04 | 2/2 matched (target 4) | _none_ | 1/1 matched | _none_ | - | 0 | 1000309.6 |
+| 145 | `operators.Limit` | `flow.Limit` | 0.05 | 7/8 matched (target 23) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | - | 1 | 10809.5 |
 | 146 | `common.TestDispatcher` | `test.TestDispatcher` | 0.05 | 2/6 matched (target 8) | `TestDispatcher::processEvent`, `TestDispatcher::timeoutMessage`, `CancellableContinuationRunnable::run`, `cancellableRunnableIsCancelled` | 1/2 matched | `CancellableContinuationRunnable` | - | 5 | 50809.5 |
 | 147 | `operators.Errors` | `flow.Errors` | 0.05 | 3/6 matched (target 13) | `Flow<T>::catchImpl`, `Throwable::isCancellationCause`, `Throwable::isSameExceptionAs` | 0/0 matched (target 1) | _none_ | - | 3 | 30609.5 |
 | 148 | `test.CancellableResumeTest` | `tests.CancellableResumeTest` | 0.06 | 0/11 matched (target 1) | `CancellableResumeTest::testResumeImmediateNormally`, `CancellableResumeTest::testResumeImmediateAfterCancel`, `CancellableResumeTest::testResumeImmediateAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancel`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancelWithHandlerFailure`, `CancellableResumeTest::testResumeLaterNormally`, `CancellableResumeTest::testResumeLaterAfterCancel`, `CancellableResumeTest::testResumeLaterAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeCancelWhileDispatched`, `CancellableResumeTest::testResumeCancelWhileDispatchedWithHandlerFailure`, `CancellableResumeTest::testResumeUnconfined` | 1/1 matched | _none_ | 0/11 | 11 | 111209.4 |
@@ -566,9 +566,9 @@ These files need significant work:
 - `terminal.Reduce` -> `flow.Reduce` (0.03)
 - `channels.Channels` -> `channels.Channels` (0.03)
 - `channels.Channels.common` -> `channels.Channels.common` (0.04)
-- `operators.Limit` -> `flow.Limit` (0.04)
 - `selects.WhileSelect` -> `selects.WhileSelect` (0.04)
 - `internal.Symbol` -> `internal.Symbol` (0.04, 1 deps)
+- `operators.Limit` -> `flow.Limit` (0.05)
 - `common.TestDispatcher` -> `test.TestDispatcher` (0.05)
 - `operators.Errors` -> `flow.Errors` (0.05)
 - `test.CancellableResumeTest` -> `tests.CancellableResumeTest` (0.06)
@@ -800,7 +800,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7125 / 7437 lines (96%)
+**Documentation line amount:** 7090 / 7437 lines (95%)
 
 Documentation gaps (>20%), complete list:
 

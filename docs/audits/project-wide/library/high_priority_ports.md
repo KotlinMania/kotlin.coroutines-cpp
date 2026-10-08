@@ -191,7 +191,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 179 | `common.LaunchFlow` | `tests.LaunchFlow [STUB]` | 0.00 | 0 | 5/6 matched (target 7) | `LaunchFlowBuilder::catch` | 3/3 matched | _none_ | 1 | 9 | 10910.0 |
 | 180 | `operators.Merge` | `flow.Merge` | 0.10 | 0 | 8/9 matched (target 16) | `Iterable<Flow<T>>::merge` | 0/0 matched | _none_ | 1 | 9 | 10909.0 |
 | 181 | `common.CoroutineDispatcher` | `coroutines.CoroutineDispatcher` | 0.39 | 0 | 7/8 matched (target 10) | `CoroutineDispatcher::limitedParallelism` | 1/1 matched (target 2) | _none_ | 1 | 9 | 10906.1 |
-| 182 | `operators.Limit` | `flow.Limit` | 0.04 | 0 | 7/8 matched (target 44) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | 1 | 8 | 10809.6 |
+| 182 | `operators.Limit` | `flow.Limit` | 0.05 | 0 | 7/8 matched (target 23) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | 1 | 8 | 10809.5 |
 | 183 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.08 | 0 | 6/7 matched (target 10) | `loop` | 1/1 matched | _none_ | 1 | 8 | 10809.2 |
 | 184 | `common.Supervisor` | `coroutines.Supervisor` | 0.19 | 0 | 4/5 matched (target 8) | `SupervisorCoroutine::childCancelled` | 2/2 matched (target 3) | _none_ | 1 | 7 | 10708.1 |
 | 185 | `test.ConcurrentExceptionsStressTest` | `concurrent.ConcurrentExceptionsStressTest [STUB]` | 0.00 | 0 | 3/4 matched (target 5) | `ConcurrentExceptionsStressTest::testStress` | 2/2 matched | _none_ | 1 | 6 | 10610.0 |

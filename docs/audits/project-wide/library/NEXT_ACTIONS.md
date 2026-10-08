@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 831/2918 matched (target 2982) — 28.5%
+- **Function parity:** 831/2918 matched (target 2961) — 28.5%
 - **Class/type parity:** 359/560 matched (target 507) — 64.1%
-- **Combined symbol parity:** 1190/3478 matched (target 3489) — 34.2%
+- **Combined symbol parity:** 1190/3478 matched (target 3468) — 34.2%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -2405,14 +2405,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 182. operators.Limit
 
 - **Target:** `flow.Limit`
-- **Similarity:** 0.04
+- **Similarity:** 0.05
 - **Dependents:** 0
-- **Priority Score:** 10809.6
-- **Functions:** 7/8 matched (target 44)
+- **Priority Score:** 10809.5
+- **Functions:** 7/8 matched (target 23)
 - **Missing functions:** `FlowCollector<T>::emitAbort`
 - **Types:** 0/0 matched (target 4)
 - **Missing types:** _none_
-- **Lint issues:** 9
+- **Lint issues:** 2
 
 ### 183. internal.OnDemandAllocatingPool
 

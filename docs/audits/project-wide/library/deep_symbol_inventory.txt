@@ -2377,30 +2377,16 @@ EXTRA_TARGET_SYMBOL function is_cancellation_exception at /Volumes/stuff/Project
 EXTRA_TARGET_SYMBOL function is_same_exception_as at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Errors.hpp:54
 EXTRA_TARGET_SYMBOL function is_cancellation_cause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Errors.hpp:77
 EXTRA_TARGET_SYMBOL function catch_impl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Errors.hpp:93
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:55: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:57: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:108: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:115: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:136: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:138: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:190: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:192: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:237: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:287: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:374: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:382: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:403: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:405: offset-preserving coroutine statement-macro grammar adaptation
-PRESENT function drop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:17 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:43
-PRESENT function dropWhile at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:30 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:96
-PRESENT function take at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:47 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:177
+PRESENT function drop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:17 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:60
+PRESENT function dropWhile at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:30 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:98
+PRESENT function take at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:47 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:152
 MISSING_SYMBOL function emitAbort at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:70
-PRESENT function takeWhile at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:81 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:275
-PRESENT function transformWhile at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:112 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:345
-PRESENT function collectWhile at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:123 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:363
-EXTRA_TARGET_SYMBOL function invoke_limit_predicate at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:26
-EXTRA_TARGET_SYMBOL function emit_abort at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:167
-EXTRA_TARGET_SYMBOL function emit_abort at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:228
+PRESENT function takeWhile at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:81 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:250
+PRESENT function transformWhile at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:112 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:295
+PRESENT function collectWhile at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:123 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:198
+EXTRA_TARGET_SYMBOL function invoke_limit_predicate at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:25
+EXTRA_TARGET_SYMBOL function emit_abort at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:39
+EXTRA_TARGET_SYMBOL function emit_abort at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp:48
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Lint.hpp: parser errors; symbol inventory may be incomplete
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Lint.hpp:32-32: MISSING identifier
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Lint.hpp:35-35: MISSING identifier
