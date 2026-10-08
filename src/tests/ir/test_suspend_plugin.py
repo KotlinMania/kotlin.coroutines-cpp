@@ -38,6 +38,7 @@ namespace {
 void require(bool value) { if (!value) throw 1; }
 [[clang::annotate("suspend")]]
 void* authored(Job& job, std::shared_ptr<Continuation<void*>> completion) {
+    (void)completion;
     job.join();
     require(true);
     return nullptr;
@@ -49,7 +50,7 @@ void call(Job& job, std::shared_ptr<Continuation<void*>> completion) {
 }
 '''
     warning_command = [args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Werror',
-        '-Wno-unused-parameter', '-I' + str(args.root / 'src'),
+        '-I' + str(args.root / 'src'),
         '-Xclang', '-load', '-Xclang', str(args.plugin), '-Xclang', '-add-plugin',
         '-Xclang', 'kotlinx-suspend', '-fsyntax-only', str(warning_source)]
     warning_source.write_text(warning_text)

@@ -4,10 +4,32 @@
  * Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt
  */
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/ExceptionTransport.hpp"
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 #include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
 
 namespace kotlin::coroutines::native::internal {
+
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:118-127
+std::shared_ptr<CompletedContinuation> CompletedContinuation::instance() {
+    static auto instance = std::make_shared<CompletedContinuation>();
+    return instance;
+}
+
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:119-120
+std::shared_ptr<CoroutineContext> CompletedContinuation::get_context() const {
+    throw kotlinx::coroutines::IllegalStateException("This continuation is already complete");
+}
+
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:122-124
+void CompletedContinuation::resume_with(Result<void*>) {
+    throw kotlinx::coroutines::IllegalStateException("This continuation is already complete");
+}
+
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:126-126
+std::string CompletedContinuation::to_string() const {
+    return "This continuation is already complete";
+}
 // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/DebugProbes.kt:48-60
 // This probe is invoked when a coroutine is resumed using Continuation.resume_with.
 // The coroutine machinery guarantees that frame extends BaseContinuationImpl.

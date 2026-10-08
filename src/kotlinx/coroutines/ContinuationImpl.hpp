@@ -117,20 +117,17 @@ private:
     std::shared_ptr<Continuation<void*>> intercepted_;
 };
 
-class CompletedContinuation : public kotlin::coroutines::Continuation<void*> {
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:118-127
+class CompletedContinuation final : public kotlin::coroutines::Continuation<void*> {
 public:
-    static std::shared_ptr<CompletedContinuation> instance() {
-        static auto instance_ = std::make_shared<CompletedContinuation>();
-        return instance_;
-    }
-
-    std::shared_ptr<kotlin::coroutines::CoroutineContext> get_context() const override {
-        throw std::runtime_error("This continuation is already complete");
-    }
-
-    void resume_with(kotlinx::coroutines::Result<void*> result) override {
-        throw std::runtime_error("This continuation is already complete");
-    }
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:118-127
+    static std::shared_ptr<CompletedContinuation> instance();
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:119-120
+    std::shared_ptr<kotlin::coroutines::CoroutineContext> get_context() const override;
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:122-124
+    void resume_with(kotlinx::coroutines::Result<void*> result) override;
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:126-126
+    std::string to_string() const;
 };
 
 } // namespace kotlin::coroutines::native::internal
