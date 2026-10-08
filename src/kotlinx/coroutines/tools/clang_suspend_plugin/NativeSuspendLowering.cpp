@@ -326,6 +326,44 @@ private:
         else literal += value.isUnsigned() ? "ULL" : "LL";
         return "static_cast<" + type_name + ">(" + literal + ")";
     }
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-108
+    // NOTE(port): Moving a selected C++ default into its caller must preserve
+    // its resolved declaration binding, even across namespaces and class templates.
+    std::string qualified_default_reference(const DeclRefExpr* reference) const {
+        const auto* declaration = reference->getDecl();
+        if (const auto* variable = dyn_cast<VarDecl>(declaration); variable && variable->isLocalVarDeclOrParm()) return {};
+        if (isa<NonTypeTemplateParmDecl>(declaration)) return {};
+        auto name_range = Lexer::makeFileCharRange(
+            CharSourceRange::getTokenRange(reference->getNameInfo().getSourceRange()), manager_, context_.getLangOpts());
+        // NOTE(port): Implicit operator/literal callees have no source name
+        // token to qualify. Their typed operation requires separate AST lowering.
+        if (name_range.isInvalid() || Lexer::getSourceText(name_range, manager_, context_.getLangOpts()) !=
+            reference->getNameInfo().getAsString()) return {};
+        const auto* parent = declaration->getDeclContext();
+        if (const auto* record = dyn_cast<CXXRecordDecl>(parent)) {
+            for (const auto* owner = record->getDeclContext(); !owner->isTranslationUnit(); owner = owner->getParent())
+                if (owner->isFunctionOrMethod()) return {};
+            auto type = TypeName::getFullyQualifiedName(context_.getCanonicalTypeDeclType(record), context_, policy_);
+            if (!type.starts_with("::")) type = "::" + type;
+            return type + "::" + declaration->getNameAsString();
+        }
+        if (const auto* enumeration = dyn_cast<EnumDecl>(parent); enumeration && enumeration->getIdentifier()) {
+            auto type = TypeName::getFullyQualifiedName(context_.getCanonicalTypeDeclType(enumeration), context_, policy_);
+            if (!type.starts_with("::")) type = "::" + type;
+            return type + "::" + declaration->getNameAsString();
+        }
+        if (isa<EnumDecl>(parent)) parent = parent->getParent();
+        std::vector<std::string> scopes;
+        for (; !parent->isTranslationUnit(); parent = parent->getParent()) {
+            const auto* scope = dyn_cast<NamespaceDecl>(parent);
+            if (!scope) return {};
+            if (!scope->isAnonymousNamespace()) scopes.push_back(scope->getNameAsString());
+        }
+        std::string name = "::";
+        for (auto scope = scopes.rbegin(); scope != scopes.rend(); ++scope) name += *scope + "::";
+        return name + declaration->getNameAsString();
+    }
+
     void collect_references(const Stmt* statement, std::vector<Replacement>& replacements, bool type_only = false) const {
         if (!statement) return;
         // NOTE(port): Query the original operand category. A frame getter can
@@ -353,6 +391,14 @@ private:
             }
         }
         if (const auto* reference = dyn_cast<DeclRefExpr>(statement)) {
+            if (default_expression_) {
+                auto name = qualified_default_reference(reference);
+                if (!name.empty()) {
+                    replacements.push_back({offset(reference->getBeginLoc()),
+                        end_offset(reference->getNameInfo().getEndLoc()), name});
+                    return;
+                }
+            }
             auto constant = constant_value(reference);
             if (!constant.empty()) {
                 replacements.push_back({offset(reference->getBeginLoc()), end_offset(reference->getEndLoc()), constant});
@@ -402,6 +448,17 @@ private:
                     auto name = location.getNameLoc();
                     references_.push_back({lowering_.offset(name), lowering_.end_offset(name), alias->second});
                 }
+                return true;
+            }
+            // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:100-105
+            // NOTE(port): A substituted callee type parameter has no declaration
+            // in the caller's helper. Keep Clang's actual replacement type.
+            bool VisitSubstTemplateTypeParmTypeLoc(SubstTemplateTypeParmTypeLoc location) {
+                auto type = location.getType().getCanonicalType();
+                if (type->isDependentType()) return true;
+                auto name = location.getNameLoc();
+                references_.push_back({lowering_.offset(name), lowering_.end_offset(name),
+                    TypeName::getFullyQualifiedName(type, lowering_.context_, lowering_.policy_)});
                 return true;
             }
             // NOTE(port): Template arguments and array bounds can contain
@@ -523,6 +580,8 @@ private:
     bool has_suspend_calls(const Stmt* statement) const {
         if (!statement) return false;
         if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return false;
+        if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(statement))
+            return has_suspend_calls(omitted->getExpr());
         if (const auto* branch = dyn_cast<IfStmt>(statement); branch && branch->isConstexpr()) {
             if (auto selected = branch->getNondiscardedCase(context_))
                 return has_suspend_calls(branch->getInit()) ||
@@ -765,6 +824,8 @@ private:
     // bodies and unevaluated queries have separate/no execution lifetimes.
     bool has_materialized_temporaries(const Stmt* statement) const {
         if (!statement || SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return false;
+        if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(statement))
+            return has_materialized_temporaries(omitted->getExpr());
         if (const auto* lambda = dyn_cast<LambdaExpr>(statement)) {
             for (const auto* initializer : lambda->capture_inits())
                 if (has_materialized_temporaries(initializer)) return true;
@@ -842,6 +903,16 @@ private:
             return emit_expression(conversion->getSubExpr());
         if (const auto* construction = dyn_cast<CXXConstructExpr>(expression)) {
             auto values = slice_constructor_arguments(construction);
+            if (default_expression_) {
+                std::string arguments;
+                for (const auto& value : values) {
+                    if (!arguments.empty()) arguments += ", ";
+                    arguments += value;
+                }
+                auto type = TypeName::getFullyQualifiedName(construction->getType().getCanonicalType(), context_, policy_);
+                return type + (construction->isListInitialization() ? "{" : "(") + arguments +
+                    (construction->isListInitialization() ? "}" : ")");
+            }
             std::vector<Replacement> replacements;
             std::string defaults;
             const Expr* last_explicit_argument = nullptr;
@@ -960,6 +1031,23 @@ private:
         return false;
     }
 
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-108
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt:215-250
+    // NOTE(port): Clang selects the default at the actual call. Lower that
+    // expression in its declaration context before retaining the argument value.
+    std::string emit_default_argument(const CXXDefaultArgExpr* argument, QualType parameter_type) {
+        llvm::SaveAndRestore<bool> default_scope(default_expression_, true);
+        llvm::SaveAndRestore<bool> canonical_types(policy_.PrintAsCanonical, true);
+        const auto* expression = argument->getExpr();
+        const bool reference = expression->isGLValue() && spelled(expression)->isGLValue() &&
+            parameter_type->isReferenceType();
+        auto selected = !has_suspend_calls(expression) && !has_materialized_temporaries(expression)
+            ? SuspendFunctionAnalyzer::default_argument(argument, policy_) : emit_expression(expression);
+        auto value = capture(expression, selected, reference);
+        if (!expression->isLValue()) value = "std::move(" + value + ")";
+        return value;
+    }
+
     // NOTE(port): Clang constructor operands represent Kotlin constructor-call children.
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt:215-250
     std::vector<std::string> slice_constructor_arguments(const CXXConstructExpr* construction) {
@@ -983,13 +1071,8 @@ private:
                 // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-117
                 // Resolve omitted parameter values in order before invoking the constructor.
                 // NOTE(port): Clang supplies the selected default expression rather than Kotlin's mask.
-                const auto* expression = omitted->getExpr();
-                const auto parameter_type = construction->getConstructor()->getParamDecl(index)->getType();
-                const bool reference = expression->isGLValue() && spelled(expression)->isGLValue() &&
-                    parameter_type->isReferenceType();
-                auto value = capture(expression, SuspendFunctionAnalyzer::default_argument(omitted, policy_), reference);
-                if (!expression->isLValue()) value = "std::move(" + value + ")";
-                values[index] = value;
+                values[index] = emit_default_argument(omitted,
+                    construction->getConstructor()->getParamDecl(index)->getType());
                 continue;
             }
             auto value = emit_expression(argument);
@@ -1091,22 +1174,10 @@ private:
             const bool first_only_suspend = first && !has_suspend_call_in_tail[child_index + 1];
             first = false;
             if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(argument)) {
-                if (const auto* callee = call->getDirectCallee()) {
-                    for (const auto* attribute : callee->attrs()) {
-                        const auto* annotation = dyn_cast<AnnotateAttr>(attribute);
-                        if (annotation && annotation->getAnnotation() == "kxs_implicit_continuation") {
-                            // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-130
-                            // Evaluate omitted values before saving the suspend address.
-                            const auto* expression = omitted->getExpr();
-                            const bool reference = expression->isGLValue() && spelled(expression)->isGLValue() &&
-                                callee->getParamDecl(index)->getType()->isReferenceType();
-                            auto value = capture(expression, SuspendFunctionAnalyzer::default_argument(omitted, policy_), reference);
-                            if (!expression->isLValue()) value = "std::move(" + value + ")";
-                            defaults.push_back(value);
-                            break;
-                        }
-                    }
-                }
+                const auto* callee = call->getDirectCallee();
+                if (!callee || index >= callee->getNumParams())
+                    throw std::runtime_error("selected default argument lost its parameter declaration");
+                defaults.push_back(emit_default_argument(omitted, callee->getParamDecl(index)->getType()));
                 ++index;
                 continue;
             }
@@ -1148,16 +1219,33 @@ private:
         // NOTE(port): Kotlin supplies the current continuation implicitly.
         // An annotated authoring intrinsic selects the matching ABI overload
         // with this frame, using the same ownership as an explicit completion.
+        bool implicit_continuation = false;
         if (const auto* callee = call->getDirectCallee()) {
             for (const auto* attribute : callee->attrs()) {
                 const auto* annotation = dyn_cast<AnnotateAttr>(attribute);
                 if (annotation && annotation->getAnnotation() == "kxs_implicit_continuation") {
+                    implicit_continuation = true;
                     const unsigned insertion = offset(call->getRParenLoc());
                     replacements.push_back({insertion, insertion,
                         SuspendFunctionAnalyzer::continuation_arguments(call, variables_.at(completion_).access, policy_, defaults)});
                     break;
                 }
             }
+        }
+        if (!implicit_continuation && !defaults.empty()) {
+            bool preceding = false;
+            for (const auto* argument : call->arguments()) {
+                if (operator_receiver && argument == receiver) continue;
+                preceding = preceding || !isa<CXXDefaultArgExpr>(argument);
+            }
+            std::string suffix;
+            for (const auto& value : defaults) {
+                if (preceding) suffix += ", ";
+                suffix += value;
+                preceding = true;
+            }
+            const unsigned insertion = offset(call->getRParenLoc());
+            replacements.push_back({insertion, insertion, suffix});
         }
         return rewrite(call, replacements);
     }
@@ -1875,6 +1963,7 @@ private:
     std::vector<Loop> loops_;
     std::vector<Slot> comma_temporaries_;
     bool full_expression_ = false;
+    bool default_expression_ = false;
     std::ostringstream body_;
     unsigned suspension_ = 0;
     unsigned loop_ = 0;

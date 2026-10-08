@@ -1,5 +1,46 @@
-# Compiler resume-address source repair — 2026-10-07
+# Compiler resume-address source repair — 2026-10-08
 
+
+## Selected default operands in the connected expression slicer — 2026-10-08
+
+The continuation after 535f304a translates selected default operands from
+DefaultArgumentStubGenerator.kt:91-108 through the existing Native expression
+slicer (NativeSuspendFunctionLowering.kt:215-250). C++ defaults are selected by
+Clang rather than Kotlin's argument mask; their actual parameter declarations
+supply the retained value/reference category.
+
+NativeSuspendLowering.cpp:1038 adds emit_default_argument. Ordinary defaults
+use semantic AST printing with resolved types; defaults containing suspension
+or materialization enter emit_expression. Constructors and call operands both
+consume that selected value. emit_call now evaluates omitted operands for ordinary
+calls as well as implicit-continuation calls, appends those values explicitly,
+and appends the continuation only through the existing annotated ABI path.
+Suspension/materialization discovery traverses CXXDefaultArgExpr's selected
+expression, which is not an ordinary Clang statement child. Default evaluation
+therefore participates in suffix suspension analysis and occurs before saving
+the enclosing suspend-call address.
+
+NativeSuspendLowering.cpp:332 preserves named default declaration references
+in their originating namespace/class/enum context. At :456, substituted type
+parameter locations use Clang's concrete canonical type rather than an unavailable
+callee parameter spelling. Default constructor expressions also use their resolved
+type and selected argument list in the caller helper.
+
+SuspendFunctionAnalyzer.cpp:110 expands semantic default printing to actual
+class-template scopes, anonymous namespace visibility and explicit template
+arguments. At :199-203, canonical types retain their scope during printing.
+Dependent calls in selected defaults participate in overload-resolution deferral
+at :253. Both argument suffix paths exclude the operator receiver from the list
+of arguments written inside parentheses.
+
+No build, runtime check or deep scan was run. Reused default AST occurrence
+identity, implicit operator/literal binding, private/protected declaration access
+from re-emitted caller expressions, direct parameter construction for immovable
+by-value defaults, and aggregate/member initialization context remain unfinished
+compiler dependencies. Result boxing and borrowed-reference ownership are not
+changed by this checkpoint. Optimized spilling, earlier local/aggregate gaps and
+both complete MLX execution paths remain open. These private source changes use
+the existing frontend CMake target and introduce no Kotlin runtime dependency.
 
 ## Indirect source jumps and statement metadata continuation
 

@@ -7,6 +7,7 @@
 #include "clang/AST/Attr.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
+#include "clang/AST/QualTypeNames.h"
 #include "clang/AST/Stmt.h"
 #include "clang/Basic/SourceManager.h"
 
@@ -108,13 +109,58 @@ namespace {
 // NOTE(port): Clang provides the selected default expressions on the call AST.
 class DefaultArgumentReferences : public PrinterHelper {
 public:
+    DefaultArgumentReferences(ASTContext& context, const PrintingPolicy& policy)
+        : context_(context), policy_(policy) {}
     bool handledStmt(Stmt* statement, llvm::raw_ostream& output) override {
         const auto* reference = dyn_cast<DeclRefExpr>(statement);
-        if (!reference || reference->hasExplicitTemplateArgs()) return false;
-        if (const auto* variable = dyn_cast<VarDecl>(reference->getDecl()); variable && variable->isLocalVarDeclOrParm()) return false;
-        output << "::" << reference->getDecl()->getQualifiedNameAsString();
+        if (!reference) return false;
+        const auto* declaration = reference->getDecl();
+        if (const auto* variable = dyn_cast<VarDecl>(declaration); variable && variable->isLocalVarDeclOrParm()) return false;
+        if (isa<NonTypeTemplateParmDecl>(declaration)) return false;
+        const auto* parent = declaration->getDeclContext();
+        if (const auto* record = dyn_cast<CXXRecordDecl>(parent)) {
+            for (const auto* owner = record->getDeclContext(); !owner->isTranslationUnit(); owner = owner->getParent())
+                if (owner->isFunctionOrMethod()) return false;
+            auto type = TypeName::getFullyQualifiedName(context_.getCanonicalTypeDeclType(record), context_, policy_);
+            if (!type.starts_with("::")) output << "::";
+            output << type << "::";
+        } else {
+            std::vector<const NamedDecl*> scopes;
+            std::string prefix = "::";
+            for (; !parent->isTranslationUnit(); parent = parent->getParent()) {
+                if (const auto* scope = dyn_cast<NamespaceDecl>(parent)) {
+                    if (!scope->isAnonymousNamespace()) scopes.push_back(scope);
+                } else if (const auto* scope = dyn_cast<EnumDecl>(parent)) {
+                    if (scope->getIdentifier()) scopes.push_back(scope);
+                } else if (const auto* scope = dyn_cast<CXXRecordDecl>(parent)) {
+                    for (const auto* owner = scope->getDeclContext(); !owner->isTranslationUnit(); owner = owner->getParent())
+                        if (owner->isFunctionOrMethod()) return false;
+                    prefix = TypeName::getFullyQualifiedName(context_.getCanonicalTypeDeclType(scope), context_, policy_);
+                    if (!prefix.starts_with("::")) prefix = "::" + prefix;
+                    prefix += "::";
+                    break;
+                } else return false;
+            }
+            output << prefix;
+            for (auto scope = scopes.rbegin(); scope != scopes.rend(); ++scope)
+                output << (*scope)->getNameAsString() << "::";
+        }
+        output << declaration->getNameAsString();
+        if (reference->hasExplicitTemplateArgs()) {
+            output << "<";
+            bool preceding = false;
+            for (const auto& argument : reference->template_arguments()) {
+                if (preceding) output << ", ";
+                argument.getArgument().print(policy_, output, true);
+                preceding = true;
+            }
+            output << ">";
+        }
         return true;
     }
+private:
+    ASTContext& context_;
+    const PrintingPolicy& policy_;
 };
 }
 
@@ -128,7 +174,12 @@ std::string SuspendFunctionAnalyzer::continuation_arguments(const CallExpr* call
     std::string suffix;
     bool preceding = false;
     unsigned index = 0;
+    const auto* method = dyn_cast_or_null<CXXMethodDecl>(call->getDirectCallee());
+    const bool operator_receiver = isa<CXXOperatorCallExpr>(call) && method && !method->isStatic();
     for (const auto* argument : call->arguments()) {
+        // NOTE(port): Clang stores an operator receiver as argument zero,
+        // but it does not appear inside the authored call's parentheses.
+        if (operator_receiver && argument == call->getArg(0)) continue;
         if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(argument)) {
             if (preceding) suffix += ", ";
             suffix += defaults.empty() ? default_argument(omitted, policy) : defaults.at(index++);
@@ -145,8 +196,11 @@ std::string SuspendFunctionAnalyzer::continuation_arguments(const CallExpr* call
 std::string SuspendFunctionAnalyzer::default_argument(const CXXDefaultArgExpr* argument, const PrintingPolicy& policy) {
     std::string text;
     llvm::raw_string_ostream output(text);
-    DefaultArgumentReferences references;
-    argument->getExpr()->printPretty(output, &references, policy);
+    auto resolved_policy = policy;
+    resolved_policy.PrintAsCanonical = true;
+    resolved_policy.SuppressScope = false;
+    DefaultArgumentReferences references(argument->getParam()->getASTContext(), resolved_policy);
+    argument->getExpr()->printPretty(output, &references, resolved_policy);
     return text;
 }
 
@@ -194,6 +248,11 @@ bool SuspendFunctionAnalyzer::requires_overload_resolution(const FunctionDecl* f
             return RecursiveASTVisitor<UnresolvedCalls>::TraverseStmt(statement);
         }
         bool TraverseDecltypeTypeLoc(DecltypeTypeLoc, bool = true) { return true; }
+        // NOTE(port): A selected default is an evaluated call operand, so its
+        // dependent overloads must resolve before the caller frame is installed.
+        bool TraverseCXXDefaultArgExpr(CXXDefaultArgExpr* expression) {
+            return TraverseStmt(expression->getExpr());
+        }
         bool TraverseIfStmt(IfStmt* branch) {
             if (!branch->isConstexpr()) return RecursiveASTVisitor<UnresolvedCalls>::TraverseIfStmt(branch);
             auto selected = branch->getNondiscardedCase(context_);

@@ -1,4 +1,4 @@
-# Source transliteration handoff — 2026-10-07
+# Source transliteration handoff — 2026-10-08
 
 This is the current continuation handoff, updated at Sydney's explicit request
 following an interrupted ChannelFlow source-edit turn. Read this document and
@@ -6,7 +6,21 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current metadata/jump continuation:** Indirect source jumps now evaluate their
+**Current default-operand continuation — 2026-10-08:** Constructors and ordinary/
+continuation calls now pass selected defaults through the connected expression
+emitter. Suspension/materialization discovery sees the selected default AST;
+ordinary call suffixes contain its lowered values explicitly. Named declaration
+bindings and substituted type locations retain their originating resolved context,
+and semantic printing preserves class-template scopes and explicit template
+arguments. Operator receivers are excluded from authored parenthesized arguments.
+No compilation, runtime check or deep scan was run. Occurrence identity for shared
+default ASTs, implicit operator/literal bindings, private/protected access context,
+immovable by-value parameter construction and aggregate/member initialization
+remain unfinished. Read the new first section of RESUME_ADDRESS_SOURCE_REPAIR.md.
+The full translation goal remains active; acceptance work is deferred.
+
+
+**Source checkpoint 535f304a:** Indirect source jumps now evaluate their
 address once, select only source address-taken labels and execute the existing
 label-specific object/catch cleanup. The liveness visitor uses the same addressed
 label set. Attributed control statements now carry branch/fallthrough/loop hints
