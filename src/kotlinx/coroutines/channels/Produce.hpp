@@ -31,22 +31,27 @@ namespace channels {
  *     parentContext: CoroutineContext, channel: Channel<E>
  * ) : ChannelCoroutine<E>(parentContext, channel, true, active = true), ProducerScope<E>
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:285-299
+// NOTE(port): Generic channel bindings require this private source type in the header.
 template <typename E>
 class ProducerCoroutine : public ChannelCoroutine<E>, public ProducerScope<E> {
 public:
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:285-287
     ProducerCoroutine(
-        std::shared_ptr<CoroutineContext> parentContext,
+        std::shared_ptr<CoroutineContext> parent_context,
         std::shared_ptr<Channel<E>> channel
-    ) : ChannelCoroutine<E>(parentContext, channel, true, true) {}
+    ) : ChannelCoroutine<E>(std::move(parent_context), std::move(channel), true, true) {}
 
     virtual ~ProducerCoroutine() = default;
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:288-289
     bool is_active() const override { return ChannelCoroutine<E>::is_active(); }
 
     /**
      * Called when the coroutine completes normally.
      * Closes the channel without a cause.
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:291-293
     void on_completed(Unit value) override {
         (void)value;
         ChannelCoroutine<E>::_channel->close(nullptr);
@@ -58,9 +63,10 @@ public:
      * If the channel was already closed and the exception wasn't handled,
      * delegates to the coroutine exception handler.
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:295-298
     void on_cancelled(std::exception_ptr cause, bool handled) override {
         bool processed = ChannelCoroutine<E>::_channel->close(cause);
-        if (!processed && !handled && cause) {
+        if (!processed && !handled) {
             // Upstream: if the channel was already closed and the producer's exception
             // wasn't handled by another consumer, delegate to the context's
             // CoroutineExceptionHandler. The C++ port routes the same call here.
@@ -141,63 +147,77 @@ public:
  * @param block The producer block that sends elements to the channel
  * @return A ReceiveChannel to receive the produced elements
  *
- * Transliterated from:
- * public fun <E> CoroutineScope.produce(
- *     context: CoroutineContext = EmptyCoroutineContext,
- *     capacity: Int = Channel.RENDEZVOUS,
- *     block: suspend ProducerScope<E>.() -> Unit
- * ): ReceiveChannel<E>
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:269-283
 template <typename E>
 std::shared_ptr<ReceiveChannel<E>> produce(
-    CoroutineScope* scope,
-    std::shared_ptr<CoroutineContext> context, // defaulted in Kotlin
-    int capacity = 0,
-    BufferOverflow on_buffer_overflow = BufferOverflow::SUSPEND,
-    CoroutineStart start = CoroutineStart::DEFAULT,
-    std::function<void(ProducerScope<E>*)> block = nullptr // should be suspend
-) {
-    // 1. Create Channel
+    CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+    int capacity, BufferOverflow on_buffer_overflow, CoroutineStart start,
+    std::function<void(std::exception_ptr)> on_completion,
+    std::function<void*(ProducerScope<E>*, std::shared_ptr<Continuation<void*>>)> block) {
     auto channel = create_channel<E>(capacity, on_buffer_overflow);
-
-    // 2. Create Context
-    // Kotlin: val newContext = scope.newCoroutineContext(context)
-    if (!context) context = EmptyCoroutineContext::instance();
-    auto newContext = scope->get_coroutine_context()->operator+(context);
-
-    // 3. Create Coroutine
-    auto coroutine = std::make_shared<ProducerCoroutine<E>>(newContext, channel);
-
-    // 4. Start
-    if (block) {
-        // AbstractCoroutine::start expects an explicit std::function<T(R)> (not a generic lambda).
-        std::function<Unit(std::shared_ptr<ProducerCoroutine<E>>)> wrapped_block =
-            [block](std::shared_ptr<ProducerCoroutine<E>> receiver) {
-                block(receiver.get());
-                return Unit();
-            };
-        coroutine->start(start, coroutine, std::move(wrapped_block));
-    }
-
+    auto new_context = new_coroutine_context(
+        scope, context ? std::move(context) : EmptyCoroutineContext::instance());
+    auto coroutine = std::make_shared<ProducerCoroutine<E>>(new_context, channel);
+    if (on_completion) coroutine->invoke_on_completion(std::move(on_completion));
+    coroutine->start(start, static_cast<ProducerScope<E>*>(coroutine.get()), std::move(block));
     return coroutine;
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:269-284
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:269-283
+// NOTE(port): C++ trailing blocks cannot follow defaulted parameters; this
+// forwarding overload supplies Kotlin's omitted onCompletion argument.
 template <typename E>
 std::shared_ptr<ReceiveChannel<E>> produce(
     CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
     int capacity, BufferOverflow on_buffer_overflow, CoroutineStart start,
     std::function<void*(ProducerScope<E>*, std::shared_ptr<Continuation<void*>>)> block) {
-    auto channel = create_channel<E>(capacity, on_buffer_overflow);
-    auto new_context = scope->get_coroutine_context()->operator+(
-        context ? context : EmptyCoroutineContext::instance());
-    if (!new_context->get(ContinuationInterceptor::type_key)) {
-        new_context = new_context->operator+(std::shared_ptr<CoroutineContext>(
-            &Dispatchers::get_default(), [](CoroutineContext*) {}));
-    }
-    auto coroutine = std::make_shared<ProducerCoroutine<E>>(new_context, channel);
-    coroutine->start(start, static_cast<ProducerScope<E>*>(coroutine.get()), std::move(block));
-    return coroutine;
+    return produce<E>(scope, std::move(context), capacity, on_buffer_overflow,
+                      start, nullptr, std::move(block));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:259-266
+template <typename E>
+std::shared_ptr<ReceiveChannel<E>> produce(
+    CoroutineScope* scope, std::shared_ptr<CoroutineContext> context,
+    int capacity, CoroutineStart start,
+    std::function<void(std::exception_ptr)> on_completion,
+    std::function<void*(ProducerScope<E>*, std::shared_ptr<Continuation<void*>>)> block) {
+    return produce<E>(scope, std::move(context), capacity, BufferOverflow::SUSPEND,
+                      start, std::move(on_completion), std::move(block));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:239-244
+// NOTE(port): Place the block before default arguments to express Kotlin's
+// trailing-lambda call with omitted context and capacity in ordinary C++.
+template <typename E>
+std::shared_ptr<ReceiveChannel<E>> produce(
+    CoroutineScope* scope,
+    std::function<void*(ProducerScope<E>*, std::shared_ptr<Continuation<void*>>)> block,
+    std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance(),
+    int capacity = Channel<E>::RENDEZVOUS) {
+    return produce<E>(scope, std::move(context), capacity, BufferOverflow::SUSPEND,
+                      CoroutineStart::DEFAULT, nullptr, std::move(block));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:269-283
+// NOTE(port): An ordinary nonsuspending C++ block enters the same builder.
+template <typename E>
+std::shared_ptr<ReceiveChannel<E>> produce(
+    CoroutineScope* scope,
+    std::shared_ptr<CoroutineContext> context,
+    int capacity,
+    BufferOverflow on_buffer_overflow,
+    CoroutineStart start,
+    std::function<void(ProducerScope<E>*)> block) {
+    std::function<void*(ProducerScope<E>*, std::shared_ptr<Continuation<void*>>)> suspend_block =
+        [block = std::move(block)](ProducerScope<E>* receiver,
+                                  std::shared_ptr<Continuation<void*>>) -> void* {
+            block(receiver);
+            return nullptr;
+        };
+    return produce<E>(scope, std::move(context), capacity, on_buffer_overflow,
+                      start, nullptr, std::move(suspend_block));
 }
 
 /**
@@ -227,39 +247,31 @@ std::shared_ptr<ReceiveChannel<E>> produce(
  * Transliterated from:
  * public suspend fun ProducerScope<*>.awaitClose(block: () -> Unit = {})
  */
-/**
- * Upstream:
- *   public suspend fun ProducerScope<*>.awaitClose(block: () -> Unit = {}) {
- *       check(coroutineContext[Job] === this) {
- *           "awaitClose() can only be invoked from the producer context"
- *       }
- *       try {
- *           suspendCancellableCoroutine<Unit> { cont ->
- *               invokeOnClose { cont.resume(Unit) }
- *           }
- *       } finally {
- *           block()
- *       }
- *   }
- *
- * Routes through suspend_cancellable_coroutine; the inner block is invoked through the
- * try/finally even on cancellation. The C++ port uses RAII to mirror Kotlin's finally
- * semantics — `block` runs in a struct-destructor whether the body suspends or throws.
- */
+namespace internal {
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:60-71
+// NOTE(port): The generic receiver supplies its actual Job and close registration;
+// the concrete suspended try/finally lives in Produce.cpp.
+void* await_close_erased(Job* receiver,
+    std::function<void(std::function<void(std::exception_ptr)>)> register_close,
+    std::function<void()> block, std::shared_ptr<Continuation<void*>> continuation);
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:60-71
 template <typename E>
 void* await_close(ProducerScope<E>* scope, std::function<void()> block,
                   Continuation<void*>* continuation) {
-    struct FinallyGuard {
-        std::function<void()> action;
-        ~FinallyGuard() { if (action) action(); }
-    } guard{std::move(block)};
-    return suspend_cancellable_coroutine<void>(
-        [scope](CancellableContinuation<void>& cont) {
-            scope->invoke_on_close([&cont](std::exception_ptr /*cause*/) {
-                cont.resume();
-            });
-        },
-        continuation);
+    auto* job = dynamic_cast<JobSupport*>(scope);
+    auto owner = job ? job->weak_from_this().lock() : nullptr;
+    return internal::await_close_erased(dynamic_cast<Job*>(scope),
+        [scope, owner = std::move(owner)](std::function<void(std::exception_ptr)> handler) {
+            scope->invoke_on_close(std::move(handler));
+        }, std::move(block), kotlinx::coroutines::internal::retain_continuation(continuation));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:60-71
+template <typename E>
+void* await_close(ProducerScope<E>* scope, Continuation<void*>* continuation) {
+    return await_close<E>(scope, [] {}, continuation);
 }
 
 } // namespace channels
