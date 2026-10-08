@@ -1,5 +1,52 @@
 # Merge source translation and private suspension bodies
 
+## Fold/reduce/chunk source continuation — 2026-10-07
+
+7eb83ee8 continues the complete Transform.kt translation at Transform.hpp:704,
+799,893. The handwritten RunningFoldFrame, RunningReduceFrame, ChunkedFrame and
+nested emission frames are replaced with typed source collectors and annotated
+collection/emission bodies. Transform now contains no handwritten frame classes
+or coroutine macros. All remaining source operations are expressed directly:
+initial emission precedes fold collection, the reduction's first element bypasses
+the operation, full chunks reset after successful emission, and a partial chunk
+is emitted only after normal upstream completion. Each collection has its own
+accumulator/buffer; the supplied operation has an actual shared owner. Nullable
+reduction elements remain distinct from the uninitialized sentinel. The receivers
+retain their existing owner, downstream collectors remain borrowed, and operation
+result boxes are owned and deleted before downstream emission. Existing public
+callable projections remain. KDoc examples and source provenance are updated.
+This is unfinished source authoring, not complete Transform/source/API parity.
+
+7687daed repairs NativeSuspendLowering.cpp:994 to emit a grouped static local
+declaration once, preserving normal C++ static storage rather than emitting the
+whole declaration repeatedly for each variable. The existing qualified_locals
+fixture now checks two grouped statics, stable identities across calls, and
+started/completed counters on normal completion and failure/cancellation paths.
+The existing plugin reproduces duplicate started/finished definitions in the
+actual generated helper source. That receipt establishes the old defect; it does
+not prove execution of the repaired source.
+
+Fresh strict compilation of the actual test_transform_suspension.cpp exits 1.
+The new fold/reduce/chunk collector entries are discovered; instantiated local
+methods still fail namespace-context integration alongside generated/dependency
+diagnostics. The actual qualified fixture also exits 1, including the duplicate
+statics and GNU address-of-label diagnostic from the old plugin. Fresh plugin
+build exits 2 in KotlinxClassMetadataPlugin's LLVM/Clang unused-parameter warnings.
+No warnings are relaxed and no fresh executable/lifetime result is established.
+Receipts under build/ir-recovery: transform-fold-reduce-chunk-source-consumer.log,
+qualified-grouped-static-source-consumer.log and grouped-static-source-plugins.log.
+Neither complete ordinary C++/MLX nor real Native GPU handoff acceptance is proved.
+
+Both exact full-root scans exit 0 with no simultaneous source edits; refreshed
+reports are in 5345dbb0. Receipts use
+transform-fold-reduce-chunk-{library,compiler}-deep.log. Transform remains 12/13
+matched bodies at similarity 0.07, target inventory 61 bodies and 7 types.
+Library totals remain 831/2918 bodies and 359/560 types at 0.26, with 123 scoring
+failures. Compiler totals remain 592/7657 bodies and 174/1727 types at 0.36, with
+24 failures. All 52 ranged Transform and 32 ranged lowering references resolve;
+the changed source and fixture have no prohibited markers. The full goal remains
+active; name matching and source annotations do not establish completion.
+
 ## Indexed/action source and spill qualification continuation — 2026-10-07
 
 8a49a5c5 continues the full Transform.kt translation at Transform.hpp:544,590.

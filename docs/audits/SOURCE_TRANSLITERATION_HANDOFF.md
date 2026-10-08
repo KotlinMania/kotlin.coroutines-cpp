@@ -6,6 +6,19 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest source continuation:** 7eb83ee8 translates running_fold, running_reduce
+and chunked in Transform.hpp:704,799,893. Transform now has no handwritten frame
+classes or coroutine macros. Typed source collectors retain actual owners,
+operation-result boxes are consumed before emission, and each collection has its
+own accumulator/buffer. 7687daed repairs duplicate grouped static declarations in
+lowering and extends the existing qualification regression. Strict actual source
+consumer and static fixture exit 1; fresh plugin build exits 2 in LLVM/Clang
+headers. No runtime validation of the new bodies/repair exists. Both full-root
+scans exit 0; reports are in 5345dbb0. Transform stays 12/13 at 0.07, target 61
+bodies and 7 types. Read the new MERGE_SOURCE_REPAIR.md top section and current
+API_AUDIT.md row. The full transliteration/state-machine goal remains active.
+
+
 **Latest source continuation:** 8a49a5c5 translates with_index and on_each in
 Transform.hpp:544,590, removing their manual frames. 7b70ebcf preserves declared
 cv-qualification in spill fields; fd57ae36 emits loop continuation targets only
