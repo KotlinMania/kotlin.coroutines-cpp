@@ -687,14 +687,7 @@ inline std::shared_ptr<Flow<R>> scan(
 
 /**
  * Folds the given flow with operation, emitting every intermediate result, including initial value.
- *
- * @tparam T The element type of the source flow.
- * @tparam R The accumulator and result element type.
- * @tparam Operation Binary callable `(const R&, T)` returning `R` synchronously or via Continuation ABI.
- * @param upstream The source flow.
- * @param initial The initial accumulator value.
- * @param operation The folding function applied sequentially to each element.
- * @return A flow emitting the intermediate accumulated results.
+ * The initial value should be immutable, as it is shared between different collectors.
  *
  * ```cpp
  * auto append = [](std::vector<int> accumulator, int value) {
@@ -705,123 +698,72 @@ inline std::shared_ptr<Flow<R>> scan(
  *     as_flow(std::vector<int>{1, 2, 3}), {}, append);
  * // Collects {}, {1}, {1, 2}, {1, 2, 3}.
  * ```
- *
- * A suspending operation accepts an additional `Continuation<void*>*` and returns
- * the suspension sentinel or an owned heap-allocated `R*`. On successful return
- * or resume, the frame consumes and deletes that result box before emitting.
- * A failed resume propagates without assigning a new accumulator.
- *
- * Initial Emission & Accumulator Lifecycle:
- * - Immediate initial emission: The initial accumulator value is emitted immediately upon collection start
- *   before any upstream elements are collected. If downstream emission of the initial value suspends, upstream
- *   collection does not start until the initial emission completes.
- * - Accumulator independence: Each collection maintains its own independent accumulator state copied from `initial`.
- *   However, if `initial` contains mutable shared pointers or references, mutations through those pointers are not
- *   isolated; callers must ensure shared pointees remain immutable.
- * - Empty flow: If the upstream flow produces no elements, exactly the initial value is emitted.
- *
- * Sequential Updates & Fault Tolerance:
- * - Sequential accumulation: For each upstream element, `operation(accumulator, value)` is evaluated while the
- *   existing accumulator remains unmodified in place.
- * - Successful state advancement: The accumulator is updated ONLY after the operation successfully produces a result.
- *   If the operation fails or is cancelled, the accumulator is never updated and no stale or partial emission occurs.
- * - Tail emission: Downstream emission of the updated accumulator is awaited via `coroutine_yield` before completing
- *   the emit frame with Unit (`nullptr`).
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:101-108
 template <typename T, typename R, typename Operation>
 inline std::shared_ptr<Flow<R>> running_fold(
     std::shared_ptr<Flow<T>> upstream,
     R initial,
-    Operation operation) {
+    Operation operation_fn) {
+    auto operation = std::make_shared<Operation>(std::move(operation_fn));
     return internal::unsafe_flow<R>([upstream = std::move(upstream),
-                                      initial = std::move(initial),
-                                      operation = std::move(operation)](
-        FlowCollector<R>* collector, Continuation<void*>* completion) mutable -> void* {
-        class RunningFoldFrame final : public ContinuationImpl, public FlowCollector<T> {
-            class EmitFrame final : public ContinuationImpl {
-            public:
-                EmitFrame(RunningFoldFrame* owner, T value, Continuation<void*>* completion)
-                    : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                      owner_(owner), value_(std::move(value)) {}
-
-                void retain() { self_ref_ = shared_from_this(); }
-
-                void* invoke_suspend(Result<void*> result) override {
-                    coroutine_begin(this)
-                    coroutine_yield_value(this, result,
-                        detail::invoke_fold_op(owner_->operation_, this, owner_->accumulator_, value_), op_result_);
-                    {
-                        std::unique_ptr<R> box(static_cast<R*>(op_result_));
-                        op_result_ = nullptr;
-                        owner_->accumulator_ = std::move(*box);
-                    }
-                    coroutine_yield(this, owner_->downstream_->emit(owner_->accumulator_, this));
-                    coroutine_end(this)
-                }
-
-            protected:
-                void release_intercepted() override {
-                    ContinuationImpl::release_intercepted();
-                    self_ref_.reset();
-                }
-
-            private:
-                void* _label = nullptr;
-                RunningFoldFrame* owner_;
-                T value_;
-                void* op_result_ = nullptr;
-                std::shared_ptr<BaseContinuationImpl> self_ref_;
-            };
-
+        initial = std::move(initial), operation = std::move(operation)](
+        FlowCollector<R>* collector, Continuation<void*>* completion) -> void* {
+        // NOTE(port): This typed source collector captures the collection's accumulator.
+        // Source operations are lowered by the compiler, without handwritten frames.
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:102-107
+        class RunningFoldCollector final : public FlowCollector<T>,
+            public std::enable_shared_from_this<RunningFoldCollector> {
         public:
-            RunningFoldFrame(std::shared_ptr<Flow<T>> upstream, FlowCollector<R>* downstream, R initial,
-                             Operation operation, Continuation<void*>* completion)
-                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                  upstream_(std::move(upstream)), downstream_(downstream),
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:102-107
+            RunningFoldCollector(std::shared_ptr<Flow<T>> upstream, FlowCollector<R>* downstream,
+                R initial, std::shared_ptr<Operation> operation)
+                : upstream_(std::move(upstream)), downstream_(downstream),
                   accumulator_(std::move(initial)), operation_(std::move(operation)) {}
 
-            void retain() { self_ref_ = shared_from_this(); }
-
-            void* invoke_suspend(Result<void*> result) override {
-                coroutine_begin(this)
-                // 1. Emit initial value
-                coroutine_yield(this, downstream_->emit(accumulator_, this));
-                // 2. Collect upstream flow
-                coroutine_yield(this, upstream_->collect(this, this));
-                coroutine_end(this)
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:103-107
+            [[clang::annotate("suspend")]]
+            void* collect(std::shared_ptr<Continuation<void*>> completion) {
+                auto owner = this->shared_from_this();
+                dsl::suspend(downstream_->emit(accumulator_, completion.get()));
+                dsl::suspend(upstream_->collect(this, completion.get()));
+                return nullptr;
             }
 
-            void* emit(T value, Continuation<void*>* cont) override {
-                auto frame = std::make_shared<EmitFrame>(this, std::move(value), cont);
-                frame->retain();
-                return frame->start(Result<void*>::success(nullptr));
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:104-107
+            void* emit(T value, Continuation<void*>* completion) override {
+                return emit(std::move(value), kotlinx::coroutines::internal::retain_continuation(completion));
             }
 
-        protected:
-            void release_intercepted() override {
-                ContinuationImpl::release_intercepted();
-                self_ref_.reset();
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:105-106
+            [[clang::annotate("suspend")]]
+            void* emit(T value, std::shared_ptr<Continuation<void*>> completion) {
+                auto owner = this->shared_from_this();
+                void* raw = dsl::suspend(detail::invoke_fold_op(*operation_, completion.get(), accumulator_, std::move(value)));
+                // NOTE(port): The receiving side owns and deletes the erased R box.
+                std::unique_ptr<R> box(static_cast<R*>(raw));
+                accumulator_ = std::move(*box);
+                box.reset();
+                dsl::suspend(downstream_->emit(accumulator_, completion.get()));
+                return nullptr;
             }
 
         private:
-            void* _label = nullptr;
-            std::shared_ptr<Flow<T>> upstream_;
-            FlowCollector<R>* downstream_;
+            const std::shared_ptr<Flow<T>> upstream_;
+            FlowCollector<R>* const downstream_;
             R accumulator_;
-            Operation operation_;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
+            const std::shared_ptr<Operation> operation_;
         };
 
-        auto frame = std::make_shared<RunningFoldFrame>(upstream, collector, initial, operation, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+        auto receiver = std::make_shared<RunningFoldCollector>(upstream, collector, initial, operation);
+        return receiver->collect(kotlinx::coroutines::internal::retain_continuation(completion));
     });
 }
 
 /**
  * Synchronous functional overload of running_fold.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:101-108
 template <typename T, typename R>
 inline std::shared_ptr<Flow<R>> running_fold(
     std::shared_ptr<Flow<T>> upstream,
@@ -833,6 +775,7 @@ inline std::shared_ptr<Flow<R>> running_fold(
 /**
  * Suspending functional overload of running_fold.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:101-108
 template <typename T, typename R>
 inline std::shared_ptr<Flow<R>> running_fold(
     std::shared_ptr<Flow<T>> upstream,
@@ -842,136 +785,80 @@ inline std::shared_ptr<Flow<R>> running_fold(
 }
 
 /**
- * Reduces the given flow with operation, emitting every intermediate result, starting from the first element.
- *
- * The first element of the upstream flow is emitted immediately without applying the operation. Every subsequent
- * element is combined with the accumulated value using the operation, and the new result is emitted.
- * The sibling operator `scan` takes an explicit initial value.
- *
- * @tparam T The element type of the source flow.
- * @tparam Operation Binary callable `(const T&, T)` returning `T` synchronously or via Continuation ABI.
- * @param upstream The source flow.
- * @param operation The reducing function applied to elements.
- * @return A flow emitting intermediate reduced results.
+ * Reduces the given flow with operation, emitting every intermediate result, including the initial value.
+ * The first element supplies the initial accumulator. The sibling operator scan takes an explicit initial value.
  *
  * ```cpp
  * auto values = running_reduce<int>(as_flow(std::vector<int>{1, 2, 3, 4}),
  *     [](int accumulator, int value) { return accumulator + value; });
  * // Collects 1, 3, 6, 10.
  * ```
- *
- * A suspending operation accepts an additional `Continuation<void*>*` and returns
- * the suspension sentinel or an owned heap-allocated `T*`. On successful return
- * or resume, the frame consumes and deletes the result box before emitting.
- *
- * Initial State & Uninitialized Sentinel:
- * - Disengaged sentinel: Accumulator state is managed via `std::optional<T> accumulator_` (initially `std::nullopt`).
- *   No default constructor of `T` is ever called, safely supporting non-default-constructible types.
- * - Nullable elements: When `T` is a nullable type (such as `std::optional<U>`), `accumulator_.has_value()` distinguishes
- *   uninitialized state from an initialized null element (e.g. `std::nullopt` emitted as the first element).
- * - First element: The first element is captured directly via `accumulator_.emplace(std::move(value))` and emitted downstream.
- *   `operation` is NOT called on the first element.
- * - Empty flow: If the upstream flow is empty, `running_reduce` produces exactly 0 emissions.
- *
- * Sequential Updates & Fault Tolerance:
- * - State protection: During operation execution, `*accumulator_` is passed by const reference and remains intact.
- * - Successful assignment: Only upon successful operation return is `accumulator_` updated with the new result.
- *   Failure or cancellation during operation preserves state and aborts without emitting.
- * - Tail emission: Emission is awaited via `coroutine_yield` before completing with Unit (`nullptr`).
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:121-131
 template <typename T, typename Operation>
 inline std::shared_ptr<Flow<T>> running_reduce(
     std::shared_ptr<Flow<T>> upstream,
-    Operation operation) {
-    return internal::unsafe_flow<T>([upstream = std::move(upstream),
-                                      operation = std::move(operation)](
-        FlowCollector<T>* collector, Continuation<void*>* completion) mutable -> void* {
-        class RunningReduceFrame final : public ContinuationImpl, public FlowCollector<T> {
-            class EmitFrame final : public ContinuationImpl {
-            public:
-                EmitFrame(RunningReduceFrame* owner, T value, Continuation<void*>* completion)
-                    : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                      owner_(owner), value_(std::move(value)) {}
-
-                void retain() { self_ref_ = shared_from_this(); }
-
-                void* invoke_suspend(Result<void*> result) override {
-                    coroutine_begin(this)
-                    if (!owner_->accumulator_.has_value()) {
-                        owner_->accumulator_.emplace(std::move(value_));
-                    } else {
-                        coroutine_yield_value(this, result,
-                            detail::invoke_reduce_op(owner_->operation_, this, *owner_->accumulator_, value_), op_result_);
-                        {
-                            std::unique_ptr<T> box(static_cast<T*>(op_result_));
-                            op_result_ = nullptr;
-                            owner_->accumulator_.emplace(std::move(*box));
-                        }
-                    }
-                    coroutine_yield(this, owner_->downstream_->emit(*owner_->accumulator_, this));
-                    coroutine_end(this)
-                }
-
-            protected:
-                void release_intercepted() override {
-                    ContinuationImpl::release_intercepted();
-                    self_ref_.reset();
-                }
-
-            private:
-                void* _label = nullptr;
-                RunningReduceFrame* owner_;
-                T value_;
-                void* op_result_ = nullptr;
-                std::shared_ptr<BaseContinuationImpl> self_ref_;
-            };
-
+    Operation operation_fn) {
+    auto operation = std::make_shared<Operation>(std::move(operation_fn));
+    return internal::unsafe_flow<T>([upstream = std::move(upstream), operation = std::move(operation)](
+        FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:122-130
+        class RunningReduceCollector final : public FlowCollector<T>,
+            public std::enable_shared_from_this<RunningReduceCollector> {
         public:
-            RunningReduceFrame(std::shared_ptr<Flow<T>> upstream, FlowCollector<T>* downstream,
-                               Operation operation, Continuation<void*>* completion)
-                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                  upstream_(std::move(upstream)), downstream_(downstream),
-                  operation_(std::move(operation)), accumulator_(std::nullopt) {}
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:122-130
+            RunningReduceCollector(std::shared_ptr<Flow<T>> upstream, FlowCollector<T>* downstream,
+                std::shared_ptr<Operation> operation)
+                : upstream_(std::move(upstream)), downstream_(downstream), operation_(std::move(operation)) {}
 
-            void retain() { self_ref_ = shared_from_this(); }
-
-            void* invoke_suspend(Result<void*> result) override {
-                coroutine_begin(this)
-                coroutine_yield(this, upstream_->collect(this, this));
-                coroutine_end(this)
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:123-130
+            [[clang::annotate("suspend")]]
+            void* collect(std::shared_ptr<Continuation<void*>> completion) {
+                auto owner = this->shared_from_this();
+                dsl::suspend(upstream_->collect(this, completion.get()));
+                return nullptr;
             }
 
-            void* emit(T value, Continuation<void*>* cont) override {
-                auto frame = std::make_shared<EmitFrame>(this, std::move(value), cont);
-                frame->retain();
-                return frame->start(Result<void*>::success(nullptr));
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:123-130
+            void* emit(T value, Continuation<void*>* completion) override {
+                return emit(std::move(value), kotlinx::coroutines::internal::retain_continuation(completion));
             }
 
-        protected:
-            void release_intercepted() override {
-                ContinuationImpl::release_intercepted();
-                self_ref_.reset();
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:124-129
+            [[clang::annotate("suspend")]]
+            void* emit(T value, std::shared_ptr<Continuation<void*>> completion) {
+                auto owner = this->shared_from_this();
+                if (!accumulator_.has_value()) {
+                    accumulator_.emplace(std::move(value));
+                } else {
+                    void* raw = dsl::suspend(detail::invoke_reduce_op(*operation_, completion.get(), *accumulator_, std::move(value)));
+                    // NOTE(port): The receiving side owns and deletes the erased T box.
+                    std::unique_ptr<T> box(static_cast<T*>(raw));
+                    accumulator_.emplace(std::move(*box));
+                    box.reset();
+                }
+                dsl::suspend(downstream_->emit(*accumulator_, completion.get()));
+                return nullptr;
             }
 
         private:
-            void* _label = nullptr;
-            std::shared_ptr<Flow<T>> upstream_;
-            FlowCollector<T>* downstream_;
-            Operation operation_;
-            std::optional<T> accumulator_ = std::nullopt;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
+            const std::shared_ptr<Flow<T>> upstream_;
+            FlowCollector<T>* const downstream_;
+            const std::shared_ptr<Operation> operation_;
+            // NOTE(port): Disengagement represents the source NULL sentinel,
+            // independently of any nullable value stored inside T.
+            std::optional<T> accumulator_;
         };
 
-        auto frame = std::make_shared<RunningReduceFrame>(upstream, collector, operation, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+        auto receiver = std::make_shared<RunningReduceCollector>(upstream, collector, operation);
+        return receiver->collect(kotlinx::coroutines::internal::retain_continuation(completion));
     });
 }
 
 /**
  * Synchronous functional overload of running_reduce.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:121-131
 template <typename T>
 inline std::shared_ptr<Flow<T>> running_reduce(
     std::shared_ptr<Flow<T>> upstream,
@@ -982,6 +869,7 @@ inline std::shared_ptr<Flow<T>> running_reduce(
 /**
  * Suspending functional overload of running_reduce.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:121-131
 template <typename T>
 inline std::shared_ptr<Flow<T>> running_reduce(
     std::shared_ptr<Flow<T>> upstream,
@@ -990,47 +878,15 @@ inline std::shared_ptr<Flow<T>> running_reduce(
 }
 
 /**
- * Splits the given flow into a flow of non-overlapping lists (std::vector<T>), each not exceeding the given size,
- * but never empty.
- *
- * @tparam T The element type of the source flow.
- * @param upstream The source flow.
- * @param size The maximum number of elements per chunk. Must be strictly positive (size >= 1).
- * @return A flow emitting `std::vector<T>` chunks.
- * @throws std::invalid_argument Immediately upon invocation if `size < 1`.
- *
- * The final chunk may have fewer elements than `size`.
+ * Splits the given flow into non-overlapping lists, each not exceeding size and never empty.
+ * The final list may have fewer elements than size.
  *
  * ```cpp
  * auto chunks = chunked(as_flow(std::vector<std::string>{"a", "b", "c", "d", "e"}), 2);
- * auto values = map<std::vector<std::string>, std::string>(chunks,
- *     [](std::vector<std::string> chunk) {
- *         std::string joined;
- *         for (const auto& value : chunk) joined += value;
- *         return joined;
- *     });
- * struct Printer final : FlowCollector<std::string> {
- *     void* emit(std::string value, Continuation<void*>*) override {
- *         std::cout << value << '\n';
- *         return nullptr;
- *     }
- * } printer;
- * values->collect(&printer, nullptr); // Prints "ab", "cd", "e" on separate lines.
+ * // Collects {"a", "b"}, {"c", "d"}, {"e"}.
  * ```
  *
- * The printing example requires `<iostream>`. Collection completes synchronously;
- * the local printer remains alive until it returns.
- *
- * Batching & Buffer Lifetime:
- * - Lazy allocation: The chunk buffer `std::optional<std::vector<T>> result_` is allocated on demand on the first element.
- * - Buffer emission by value: When a chunk is emitted downstream (either a full batch or terminal partial batch),
- *   the buffer is passed by value to `FlowCollector::emit`. The owned source buffer in `ChunkedFrame` remains intact
- *   while the downstream emission is pending and is reset only after the emission settles.
- * - Terminal partial chunk: When upstream collection completes normally, any non-empty trailing partial chunk is
- *   emitted downstream before terminating.
- * - Failure / cancellation contract: If upstream collection terminates exceptionally or is cancelled, the partial
- *   chunk is NOT flushed downstream; buffered elements are cleanly destroyed.
- * - Empty flow: If the upstream flow produces no elements, exactly 0 chunks are emitted.
+ * Throws std::invalid_argument when size is not positive.
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:150-166
 template <typename T>
@@ -1041,87 +897,57 @@ inline std::shared_ptr<Flow<std::vector<T>>> chunked(
         throw std::invalid_argument("Expected positive chunk size, but got " + std::to_string(size));
     }
     return internal::unsafe_flow<std::vector<T>>([upstream = std::move(upstream), size](
-        FlowCollector<std::vector<T>>* collector, Continuation<void*>* completion) mutable -> void* {
-        class ChunkedFrame final : public ContinuationImpl, public FlowCollector<T> {
-            class EmitFrame final : public ContinuationImpl {
-            public:
-                EmitFrame(ChunkedFrame* owner, T value, Continuation<void*>* completion)
-                    : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                      owner_(owner), value_(std::move(value)) {}
-
-                void retain() { self_ref_ = shared_from_this(); }
-
-                void* invoke_suspend(Result<void*> result) override {
-                    coroutine_begin(this)
-                    // Allocate if needed.
-                    if (!owner_->result_.has_value()) {
-                        owner_->result_.emplace();
-                        owner_->result_->reserve(owner_->size_);
-                    }
-                    owner_->result_->push_back(std::move(value_));
-                    if (static_cast<int>(owner_->result_->size()) == owner_->size_) {
-                        coroutine_yield(this, owner_->downstream_->emit(*owner_->result_, this));
-                        // Cleanup, but don't allocate: this may be the last element.
-                        owner_->result_.reset();
-                    }
-                    coroutine_end(this)
-                }
-
-            protected:
-                void release_intercepted() override {
-                    ContinuationImpl::release_intercepted();
-                    self_ref_.reset();
-                }
-
-            private:
-                void* _label = nullptr;
-                ChunkedFrame* owner_;
-                T value_;
-                std::shared_ptr<BaseContinuationImpl> self_ref_;
-            };
-
+        FlowCollector<std::vector<T>>* collector, Continuation<void*>* completion) -> void* {
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:153-165
+        class ChunkedCollector final : public FlowCollector<T>,
+            public std::enable_shared_from_this<ChunkedCollector> {
         public:
-            ChunkedFrame(std::shared_ptr<Flow<T>> upstream, FlowCollector<std::vector<T>>* downstream, int size,
-                         Continuation<void*>* completion)
-                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                  upstream_(std::move(upstream)), downstream_(downstream), size_(size) {}
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:153-165
+            ChunkedCollector(std::shared_ptr<Flow<T>> upstream, FlowCollector<std::vector<T>>* downstream, int size)
+                : upstream_(std::move(upstream)), downstream_(downstream), size_(size) {}
 
-            void retain() { self_ref_ = shared_from_this(); }
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:154-165
+            [[clang::annotate("suspend")]]
+            void* collect(std::shared_ptr<Continuation<void*>> completion) {
+                auto owner = this->shared_from_this();
+                dsl::suspend(upstream_->collect(this, completion.get()));
+                if (result_.has_value()) dsl::suspend(downstream_->emit(*result_, completion.get()));
+                return nullptr;
+            }
 
-            void* invoke_suspend(Result<void*> result) override {
-                coroutine_begin(this)
-                coroutine_yield(this, upstream_->collect(this, this));
-                if (result_.has_value()) {
-                    coroutine_yield(this, downstream_->emit(*result_, this));
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:154-163
+            void* emit(T value, Continuation<void*>* completion) override {
+                return emit(std::move(value), kotlinx::coroutines::internal::retain_continuation(completion));
+            }
+
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:155-162
+            [[clang::annotate("suspend")]]
+            void* emit(T value, std::shared_ptr<Continuation<void*>> completion) {
+                auto owner = this->shared_from_this();
+                // Allocate if needed.
+                if (!result_.has_value()) {
+                    result_.emplace();
+                    result_->reserve(size_);
+                }
+                auto& acc = *result_;
+                acc.push_back(std::move(value));
+                if (static_cast<int>(acc.size()) == size_) {
+                    dsl::suspend(downstream_->emit(acc, completion.get()));
+                    // Cleanup, but don't allocate: this may be the last element.
                     result_.reset();
                 }
-                coroutine_end(this)
-            }
-
-            void* emit(T value, Continuation<void*>* cont) override {
-                auto frame = std::make_shared<EmitFrame>(this, std::move(value), cont);
-                frame->retain();
-                return frame->start(Result<void*>::success(nullptr));
-            }
-
-        protected:
-            void release_intercepted() override {
-                ContinuationImpl::release_intercepted();
-                self_ref_.reset();
+                return nullptr;
             }
 
         private:
-            void* _label = nullptr;
-            std::shared_ptr<Flow<T>> upstream_;
-            FlowCollector<std::vector<T>>* downstream_;
-            int size_;
-            std::optional<std::vector<T>> result_ = std::nullopt; // Do not preallocate anything.
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
+            const std::shared_ptr<Flow<T>> upstream_;
+            FlowCollector<std::vector<T>>* const downstream_;
+            const int size_;
+            std::optional<std::vector<T>> result_; // Do not preallocate anything.
         };
 
-        auto frame = std::make_shared<ChunkedFrame>(upstream, collector, size, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+        auto receiver = std::make_shared<ChunkedCollector>(upstream, collector, size);
+        return receiver->collect(kotlinx::coroutines::internal::retain_continuation(completion));
     });
 }
 
