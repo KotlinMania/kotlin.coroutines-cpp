@@ -6,6 +6,43 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Current debug-bridge continuation — 2026-10-08:** From c233adf7, four
+actual debug operations from llvmDebugInfoC/DebugInfoC.cpp:253-286 are translated
+in DebugInfoC.hpp/.cpp and registered on all three LLVM consumers. They preserve
+the real DIBuilder, borrowed LLVM metadata/storage, source default debug options
+and ordered declaration expressions. The compiler integration test verifies
+storage/metadata identity, declarations before the terminator and an actual
+LLVM23 module. Strict syntax, Native-OFF plugin/helper builds, CTest and ASan/UBSan
+pass. The initial multi-target build regenerated CMake, then did not know the new
+test target; its subsequent explicit build and execution pass.
+
+Correction to the previous receipt: tmp/kotlin is sparse. The pinned Git tree
+fee29910d8dddd2b1f7b44036c00533cee493351 contains the previously reported missing
+sources. Restored native/base, kotlin-native/llvmDebugInfoC and
+compiler/ir/backend.native reveal BinaryType.kt, InlineClasses.kt and
+IrTypeInlineClassesSupport.kt at that same revision. Existing untracked Native
+stdlib files were preserved. Binary classification, IR-keyed caches,
+VariableManager's consumers, frame allocation/root operations and public
+object-result calls still need translation; the new bridge alone does not
+implement them.
+
+Three deep scans completed. Full kotlinx.coroutines root:663/2918 bodies,
+178/560 types,body similarity0.24,12 scoring failures. ChannelFlow remains
+18/19,6/6,0.25; flow Channels remains12/12,0.22. The C++ bridge scan cannot pair
+the files: upstream's LLVM conversion namespace is extracted as its package,
+while our bindings use the compiler namespace. Direct comparison also uses
+strict C++ names rather than mapping upstream PascalCase to snake_case; its
+inventory sees28 source/4 target functions but certifies no matched bodies.
+The current sparse tmp/kotlin root scan reports196/6201 bodies,88/1441 types,
+similarity0.36,3 scoring failures across604 source files. This is the checked-out
+compiler corpus, not the full pinned Git tree. CodeGenerator remains73/145,
+6/15,0.24; ContextUtils38/51,31/36,0.47; LlvmUtils21/49,7/10,0.20.
+Source conversion macros produce parser missing-semicolon diagnostics. Record
+these tool limitations, not a four-body parity claim. Evidence is in
+build/source-continuation/{debug,library,compiler}-source-distance. Actual frame/root/
+call/exception consumers, generation-state entry and both complete standalone
+MLX/Native handoff acceptance paths remain unfinished. Goal active.
+
 **Current aggregate/runtime-type continuation — 2026-10-08:** From 62a3a77b,
 ConstArray, Zero, const_value, RuntimeAware type/object-return/Nothing extensions
 and unsigned extraction at LlvmUtils.kt:45-54,82-110 are translated. Array
@@ -15,9 +52,9 @@ are preserved. Strict compile with/without NDEBUG, Native-OFF LLVM consumers,
 existing code-generation fixture and bounded ASan/UBSan aggregate/import checks
 pass. Scoped deep LlvmUtils:21/49 bodies,7/10 types,similarity0.20; target parsing
 has no errors, generated source criteria remain provisional. VariableManager /
-DataLayout tracing found missing binary-classification and LLVM debug bridge
-definitions in the pinned source snapshot. Locate/restore their matching source
-contracts before translating those dependencies; do not infer enums, debug
+DataLayout tracing did not find binary-classification and LLVM debug bridge
+definitions in the sparse working tree. This was incorrectly described as a
+missing pinned snapshot; the current receipt corrects it. Do not infer enums, debug
 options, IR cache equality or frame allocator callbacks. Other source work is
 available. Actual frame/root/call/exception consumers, generation-state entry,
 Runtime loader/caches, full-root measurements and both complete acceptance paths

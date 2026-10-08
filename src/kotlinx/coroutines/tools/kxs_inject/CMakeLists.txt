@@ -39,6 +39,7 @@ target_link_libraries(kxs_codegen_test PRIVATE LLVM)
 foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
     target_link_libraries(${KXS_IR_TARGET} PRIVATE Threads::Threads)
     target_sources(${KXS_IR_TARGET} PRIVATE
+        ../kotlinc_native_ref/DebugInfoC.cpp
         ../kotlinc_native_ref/Runtime.cpp
         ../kotlinc_native_ref/ContextUtils.cpp
         ../kotlinc_native_ref/LlvmAttributes.cpp
@@ -68,6 +69,14 @@ foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
         ../kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/descriptors/annotations/AnnotatedImpl.cpp)
 endforeach()
+
+add_executable(kxs_debug_info_test ../kotlinc_native_ref/DebugInfoContractTest.cpp
+    ../kotlinc_native_ref/DebugInfoC.cpp)
+target_include_directories(kxs_debug_info_test SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS})
+target_compile_features(kxs_debug_info_test PRIVATE cxx_std_20)
+target_compile_options(kxs_debug_info_test PRIVATE -UNDEBUG)
+target_link_libraries(kxs_debug_info_test PRIVATE LLVM)
+add_test(NAME kxs_debug_info_contract COMMAND kxs_debug_info_test)
 
 add_executable(kxs_ir_name_test ../kotlinc_native_ref/NameContractTest.cpp
     ../kotlinc_native_ref/kotlin/native/Runtime.cpp

@@ -1,5 +1,61 @@
 # Compiler resume-address source repair — 2026-10-08
 
+## Actual debug bridge source dependencies — 2026-10-08
+
+Continuation from c233adf7 translates upstream
+kotlin-native/llvmDebugInfoC/src/main/cpp/DebugInfoC.cpp:253-286.
+DebugInfoC.hpp:16 and DebugInfoC.cpp:14 define auto-variable creation;
+the remaining three operations create parameter metadata, an empty expression
+and an inserted declaration. Source default debug options are preserved by
+calling the actual selected LLVM DIBuilder overloads. Context-owned metadata,
+builder and storage remain borrowed. The signed expression operands are copied
+to uint64_t in order, as upstream does. C exports use snake_case functions in
+the existing compiler namespace; the expression pointer is const because the
+source only reads it. Both adaptations are explicitly marked in the header.
+
+tools/kxs_inject/CMakeLists.txt:42 registers the bridge on kxs-inject,
+KotlinxCoroutinePass and kxs_codegen_test. DebugInfoContractTest.cpp constructs
+real local/parameter metadata and an LLVM function with storage and a terminator.
+It checks metadata/storage identity, source defaults, parameter numbering,
+nonempty/empty DWARF expressions, declaration insertion before ret and
+LLVMVerifyModule after DIBuilder finalization. LLVM23 emits debug records here;
+the bridge uses the same insertDeclare operation as source. The test is registered
+at CMakeLists.txt:74. Strict -Wall -Wextra -Werror compile, Native-OFF plugin/helper
+builds, the existing code-generation fixture, the new CTest and ASan/UBSan pass.
+The first multi-target build regenerated CMake and then could not resolve the
+new test target; a fresh explicit target build passed. These are compiler/debug
+dependency checks, not either complete runtime/MLX acceptance path.
+
+The prior source-absence claim was incorrect: tmp/kotlin's working tree is sparse.
+Pinned Git HEAD fee29910d8dddd2b1f7b44036c00533cee493351 already contains
+native/base/.../BinaryType.kt and InlineClasses.kt, compiler/ir/backend.native/
+.../IrTypeInlineClassesSupport.kt and kotlin-native/llvmDebugInfoC. Those paths
+are now checked out at the same revision; no upstream code was modified and
+existing untracked libraries/stdlib/native files remain. IrType binary
+classification calls the actual InlineClassesSupport contract; it must not be
+replaced by pointer-shape inference. The broad Git grep was deliberately stopped
+after verifying its live process and locating the exact source paths.
+
+Deep scans completed for the C++ debug source root, full kotlinx.coroutines
+root and current sparse tmp/kotlin root. The debug scan reports no paired files: codebase.hpp:1505 rejects namespace
+context because the source conversion helpers occupy namespace llvm while the
+binding functions are global; target bindings occupy the compiler namespace.
+The direct function comparison inventories28 source and4 target bodies but its
+strict C++ name policy does not map PascalCase C exports to snake_case. Upstream
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS invocations also produce parser missing-semicolon
+diagnostics. Target debug source parsing has no errors. No matched-body score is
+claimed for this bridge. Full library:663/2918 bodies,178/560 types,similarity0.24,
+12 scoring failures; ChannelFlow18/19,6/6,0.25 and flow Channels12/12,0.22 remain.
+The sparse compiler working-tree scan reports196/6201 bodies,88/1441 types,
+similarity0.36,3 scoring failures and604 source files. It does not cover the full
+pinned Git tree. CodeGenerator remains73/145 bodies,6/15 types,similarity0.24;
+ContextUtils38/51,31/36,0.47; LlvmUtils21/49,7/10,0.20. Reports, inventories and direct comparison are in
+build/source-continuation/{debug,library,compiler}-source-distance. Scoring failures and
+unsupported source emission require investigation; these are not completion
+measurements. VariableManager/debug-location consumers, DataLayout's actual
+classification/cache, full frame/root/call/exception translation and both complete
+runtime acceptance paths remain open.
+
 
 ## LLVM aggregate constants and RuntimeAware type contracts — 2026-10-08
 
@@ -41,14 +97,12 @@ required and open.
 
 Tracing VariableManager.kt and DataLayout.kt confirms that actual variable and
 frame translation still needs computePrimitiveBinaryTypeOrNull/binaryTypeIsReference,
-IR-keyed type caching and the debug bridge contracts. A no-ignore search of
-pinned tmp/kotlin Kotlin/Java/C++/header sources finds calls but no definitions
-for the binary-classification helpers or DICreateAutoVariable. The original
-DICreateParameterVariable/DIInsertDeclaration bridge implementations also were
-not found. No enum classification, LLVM debug-option defaults, pointer-keyed
-cache or callback allocator was guessed from those call sites. The missing
-source contracts must be located/restored at the matching revision before their
-translation is treated as complete. Other LLVM/IR source work remains available;
+IR-keyed type caching and the debug bridge contracts. The working-tree search
+found calls but no definitions because the source checkout is sparse; the
+earlier missing-snapshot conclusion is corrected by the current receipt above.
+No enum classification, pointer-keyed cache or callback allocator was guessed
+from those call sites. The restored source contracts still require translation
+and integration beyond the four debug operations now implemented. Other LLVM/IR source work remains available;
 this is not an overall goal blockage. Frame/root/call/exception consumers,
 generation-state entry, Runtime loading/caches and both full acceptance paths
 remain unfinished. Evidence is under build/source-continuation/llvm-source-distance.
