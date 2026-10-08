@@ -1,5 +1,60 @@
 # Compiler resume-address source repair — 2026-10-08
 
+## Primitive-name catalog dependency — 2026-10-08
+
+Continuation from `50c511a2` translates `PrimitiveType.kt:11-28,34-58` into
+`org/jetbrains/kotlin/builtins/PrimitiveType.hpp:13` and its matching `.cpp`.
+All eight named instances, primitive/array Name properties, lazily published
+FqName properties and both exact short-name lookups follow the pinned source.
+Nullable lookup results borrow canonical immutable instances. Property-bearing
+Kotlin enum instances use a concrete singleton class; generated enum APIs
+(name/ordinal/values/entries/valueOf/comparison) remain untranslated. NUMBER_TYPES
+still requires actual setOf/LinkedHashSet implementation; no alternate set API
+or placeholder was added. StandardNames.hpp:8 and .cpp translate only the two
+built-in package properties at StandardNames.kt:73-81, with static getters to
+avoid translation-unit initialization order. The remaining object is incomplete.
+
+Lazy getters also reference SafePublicationLazyImpl's actual CAS algorithm,
+LazyJVM.kt:114-133. Multiple candidates may compute, but all callers receive the
+winner. Selected libc++ rejects atomic<shared_ptr>; the final implementation uses
+atomic owned FqName pointers. unique_ptr frees losing candidates; the instance
+destructor frees the two winning boxes. Getter references are borrowed for the
+instance lifetime. This is internal C++ compiler metadata ownership, not a Native
+GC object/frame representation or a replacement coroutine state machine.
+
+CMakeLists.txt:46-47 registers both source units on kxs-inject,
+KotlinxCoroutinePass and kxs_codegen_test; :80 registers the focused contract test.
+Native-OFF Release configure and all four target builds pass with LLVM23.1.2.
+Strict -Wall/-Wextra/-Werror debug sanitizer compile and release syntax pass.
+Three focused CTests pass; primitive_type_sanitized passes ASan/UBSan. The new
+fixture races16 first readers, checks published identity for both properties,
+all eight names/array names and exact rejection of qualified/unsigned/incorrect
+names. Existing actual LLVM codegen fixture emits/verifies its module. These
+checks do not establish actual IR classification or either complete acceptance
+path in docking_ring.md.
+
+Both final-root deep scans completed after the storage repair. Restoring the
+pinned builtin directory expands the sparse Kotlin corpus661→669 files; this
+changes the measurement scope. Compiler root:248/6845 bodies,106/1568 types,
+0.34 average,4 scoring failures. PrimitiveType:2/2 explicit bodies,1/1 type,
+0.08 reported body similarity; target has8 bodies. StandardNames:0/19 bodies,
+1/2 types,0.00. Both generated emitters fall back on the enclosing enum/object
+and report generated parse errors; target parse errors are absent. Their
+normalized logic/text scores are0 and provisional. The inventories do not count
+missing enum-generated/property/set contracts as missing explicit bodies, so
+2/2 cannot imply complete PrimitiveType translation. Evidence is in
+build/source-continuation/compiler-source-distance/{scan.log,
+deep_symbol_inventory.txt,deep_transliteration_evidence.txt,port_status_report.md}.
+Full coroutine root:663/2918 bodies,178/560 types,0.24,12 scoring failures,
+400 paired units/594 target files; ChannelFlow and Channels remain unchanged.
+
+Next source consumers are KonanFqNames and KonanPrimitiveType in InlineClasses.kt,
+including its source CHAR→SHORT mapping and structural byFqNameParts grouping.
+Their actual collection dependencies, InlineClassesSupport, real IR classifier
+hooks/cache keys and VariableManager/frame/call consumers remain required. No
+fake IR descriptors or LLVM-pointer shape classification was introduced. The
+full translation/state-machine goal remains active.
+
 ## Qualified-name and class-ID classification dependencies — 2026-10-08
 
 Continuation from48959b4a restores core/names at the same pinned Kotlin revision

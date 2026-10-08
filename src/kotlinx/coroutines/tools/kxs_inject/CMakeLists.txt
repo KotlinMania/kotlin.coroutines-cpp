@@ -43,6 +43,8 @@ foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
         ../kotlinc_native_ref/org/jetbrains/kotlin/name/FqName.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/name/FqNameUnsafe.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/name/ClassId.cpp
+        ../kotlinc_native_ref/org/jetbrains/kotlin/builtins/PrimitiveType.cpp
+        ../kotlinc_native_ref/org/jetbrains/kotlin/builtins/StandardNames.cpp
         ../kotlinc_native_ref/BinaryType.cpp
         ../kotlinc_native_ref/DebugInfoC.cpp
         ../kotlinc_native_ref/Runtime.cpp
@@ -74,6 +76,17 @@ foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
         ../kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/descriptors/annotations/AnnotatedImpl.cpp)
 endforeach()
+
+add_executable(kxs_primitive_type_test ../kotlinc_native_ref/PrimitiveTypeContractTest.cpp
+    ../kotlinc_native_ref/org/jetbrains/kotlin/builtins/PrimitiveType.cpp
+    ../kotlinc_native_ref/org/jetbrains/kotlin/builtins/StandardNames.cpp
+    ../kotlinc_native_ref/org/jetbrains/kotlin/name/Name.cpp
+    ../kotlinc_native_ref/org/jetbrains/kotlin/name/FqName.cpp
+    ../kotlinc_native_ref/org/jetbrains/kotlin/name/FqNameUnsafe.cpp)
+target_compile_features(kxs_primitive_type_test PRIVATE cxx_std_20)
+target_compile_options(kxs_primitive_type_test PRIVATE -UNDEBUG)
+target_link_libraries(kxs_primitive_type_test PRIVATE Threads::Threads)
+add_test(NAME kxs_primitive_type_contract COMMAND kxs_primitive_type_test)
 
 add_executable(kxs_fq_name_test ../kotlinc_native_ref/FqNameContractTest.cpp
     ../kotlinc_native_ref/org/jetbrains/kotlin/name/Name.cpp
