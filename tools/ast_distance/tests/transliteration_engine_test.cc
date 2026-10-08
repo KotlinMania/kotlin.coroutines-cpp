@@ -113,7 +113,7 @@ int main() {
     assert(metadata.documentation_parity == 1 && metadata.normalized_logic == 1);
     auto narrative_extra = transliteration_distance("fun plainValue(): Int = 1", Language::KOTLIN,
         "// A copied narrative about variables and algorithms\nint plain_value() { return 1; }", Language::CPP);
-    assert(narrative_extra.documentation_parity == 0 && narrative_extra.score == metadata.score);
+    assert(narrative_extra.documentation_parity == 0 && narrative_extra.score < metadata.score);
     auto expression = transliterate("fun state(): String = \"ready\"", Language::KOTLIN, Language::CPP);
     assert(expression.rule_misses == 0 && expression.buffer.find("return \"ready\"") != std::string::npos);
     auto loop = transliterate("fun sumValue(limit: Int): Int { var value = 0; while (value < limit) { value += 1 }; val total = value; return total }", Language::KOTLIN, Language::CPP);

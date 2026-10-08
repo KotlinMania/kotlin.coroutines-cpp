@@ -179,18 +179,21 @@ score = max(0, base - fallback_penalty) * normalized_logic
 ```
 
 Generated fallback argument strings are excluded from translated text vocabulary.
-Parsed comments never raise implementation metrics. Documentation correspondence
-is reported separately as ordered comment-word correspondence, lowering only
-identifier-bearing reference/tag syntax, with no contribution to the primary
-literal score. Documentation terms are compared after the
-same bounded reference/tag lowering, preserving narrative spelling; comment delimiters
-and punctuation are excluded. Anchored `Transliterated from:` and `port-lint:`
-metadata lines are preserved but excluded from narrative correspondence. Separate `documentation_misses` record unsupported
-example syntax without reducing executable rule coverage. A preserved
-comment does not compensate for an omitted branch. A changed operator or literal
-appears in the full ordered sequences even when a long function retains a high
-numeric similarity. Parser errors make the result provisional. None of these
-metrics establish compiler equivalence or semantic correctness.
+The primary literal score includes ordered comment/KDoc words at their actual
+positions alongside executable tokens. Missing, reordered or changed narrative,
+parameter documentation, references and examples reduce correspondence even when
+the executable body is unchanged. Only comment delimiters, markup punctuation,
+and anchored `Transliterated from:` / `port-lint:` metadata differ without a
+narrative penalty. Source reference/tag syntax uses the bounded C++ lowering
+rules above. Comments are translated, not dropped to simplify parsing.
+
+Documentation correspondence is also reported separately to locate failures;
+it is not excluded from primary fidelity. Executable AST and normalized-logic
+metrics remain explicitly code-only diagnostics so copied prose cannot establish
+an implemented algorithm. Separate `documentation_misses` expose unsupported
+example translation rules while preserving their text. Parser errors make the
+result provisional. None of these metrics establish compiler equivalence or
+semantic correctness.
 
 Native and captured CLI regression tests exercise faithful emission, byte/line
 maps, expression returns, namespace identity, overloads/defaults, while loops,

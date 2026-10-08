@@ -28,6 +28,26 @@ file(READ "${TEST_DIR}/emitted.cpp" emitted)
 if(NOT emitted MATCHES "@param input_value" OR NOT emitted MATCHES "ref next_value")
     message(FATAL_ERROR "KDoc identifier/reference lowering missing: ${emitted}")
 endif()
+# Documentation is part of primary fidelity, including when code is unchanged.
+string(FIND "${emitted}" "int next_value" code_start)
+string(SUBSTRING "${emitted}" ${code_start} -1 without_docs)
+file(WRITE "${TEST_DIR}/without-docs.cpp" "${without_docs}")
+execute_process(COMMAND "${AST_DISTANCE}" --translit-distance "${TEST_DIR}/source.kt" kotlin "${TEST_DIR}/without-docs.cpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_VARIABLE missing_docs_report ERROR_VARIABLE error RESULT_VARIABLE result)
+file(WRITE "${TEST_DIR}/without-docs.report.txt" "${missing_docs_report}\n${error}")
+if(NOT result EQUAL 0 OR missing_docs_report MATCHES "score: 1.000000" OR
+   NOT missing_docs_report MATCHES "normalized_logic: 1.000000" OR
+   NOT missing_docs_report MATCHES "documentation_correspondence: 0.000000")
+    message(FATAL_ERROR "Missing KDoc did not reduce primary fidelity: ${missing_docs_report}: ${error}")
+endif()
+string(REPLACE "the value passed" "an unrelated result" changed_docs "${emitted}")
+file(WRITE "${TEST_DIR}/changed-docs.cpp" "${changed_docs}")
+execute_process(COMMAND "${AST_DISTANCE}" --translit-distance "${TEST_DIR}/source.kt" kotlin "${TEST_DIR}/changed-docs.cpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_VARIABLE changed_docs_report ERROR_VARIABLE error RESULT_VARIABLE result)
+if(NOT result EQUAL 0 OR changed_docs_report MATCHES "score: 1.000000" OR
+   NOT changed_docs_report MATCHES "normalized_logic: 1.000000")
+    message(FATAL_ERROR "Changed KDoc did not reduce primary fidelity: ${changed_docs_report}: ${error}")
+endif()
 string(REPLACE "50" "500" drift "${emitted}")
 file(WRITE "${TEST_DIR}/drift.cpp" "${drift}")
 execute_process(COMMAND "${AST_DISTANCE}" --translit-distance "${TEST_DIR}/source.kt" kotlin "${TEST_DIR}/drift.cpp" cpp
