@@ -182,7 +182,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 170 | `flow.CombineStressTest` | `flow.CombineStressTest [STUB]` | 0.00 | 0 | 0/2 matched | `CombineStressTest::testCancellation`, `CombineStressTest::testFailure` | 1/1 matched | _none_ | 2 | 3 | 20310.0 |
 | 171 | `channels.FlowCallbackTest` | `channels.FlowCallbackTest` | 0.38 | 0 | 0/2 matched | `FlowCallbackTest::testClosedPrematurely`, `FlowCallbackTest::testNotClosedPrematurely` | 1/1 matched | _none_ | 2 | 3 | 20306.2 |
 | 172 | `test.CoroutineExceptionHandlerTest` | `tests.CoroutineExceptionHandlerTest` | 0.73 | 0 | 0/2 matched | `CoroutineExceptionHandlerTest::testJob`, `CoroutineExceptionHandlerTest::testCompletableDeferred` | 1/1 matched | _none_ | 2 | 3 | 20302.7 |
-| 173 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 0 | 18/19 matched (target 42) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | 1 | 25 | 12507.6 |
+| 173 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 0 | 18/19 matched (target 38) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | 1 | 25 | 12507.6 |
 | 174 | `common.TestCoroutineScheduler` | `tests.TestCoroutineScheduler [STUB]` | 0.00 | 0 | 18/19 matched (target 26) | `TestCoroutineScheduler::read` | 3/3 matched (target 4) | _none_ | 1 | 22 | 12210.0 |
 | 175 | `common.Builders.common` | `coroutines.Builders.common` | 0.19 | 0 | 14/14 matched (target 55) | _none_ | 5/6 matched (target 9) | `UndispatchedCoroutine` | 1 | 20 | 12008.1 |
 | 176 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 0 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | 1 | 16 | 11608.5 |

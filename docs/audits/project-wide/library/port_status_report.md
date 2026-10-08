@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 831/2918 matched (target 3037) | 28.5% |
-| Class/type parity | 359/560 matched (target 519) | 64.1% |
-| Combined symbol parity | 1190/3478 matched (target 3556) | 34.2% |
+| Function parity | 831/2918 matched (target 3033) | 28.5% |
+| Class/type parity | 359/560 matched (target 518) | 64.1% |
+| Combined symbol parity | 1190/3478 matched (target 3551) | 34.2% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -234,7 +234,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 190 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 19) | _none_ | 1/1 matched | _none_ | - | 0 | 65001308.0 |
 | 191 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | - | 0 | 1007.8 |
 | 192 | `sync.Mutex` | `sync.Mutex` | 0.23 | 11/16 matched (target 20) | `Mutex`, `MutexImpl::CancellableContinuationWithOwner::tryResume`, `MutexImpl::CancellableContinuationWithOwner::resume`, `MutexImpl::SelectInstanceWithOwner::trySelect`, `MutexImpl::SelectInstanceWithOwner::selectInRegistrationPhase` | 2/4 matched (target 2) | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` | - | 7 | 72007.7 |
-| 193 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 18/19 matched (target 42) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | - | 1 | 12507.6 |
+| 193 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 18/19 matched (target 38) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | - | 1 | 12507.6 |
 | 194 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | - | 0 | 207.6 |
 | 195 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
 | 196 | `internal.DispatchedTask` | `internal.DispatchedTask` | 0.25 | 10/10 matched (target 15) | _none_ | 2/2 matched (target 4) | _none_ | - | 0 | 1207.5 |

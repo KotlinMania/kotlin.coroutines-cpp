@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 831/2918 matched (target 3037) — 28.5%
-- **Class/type parity:** 359/560 matched (target 519) — 64.1%
-- **Combined symbol parity:** 1190/3478 matched (target 3556) — 34.2%
+- **Function parity:** 831/2918 matched (target 3033) — 28.5%
+- **Class/type parity:** 359/560 matched (target 518) — 64.1%
+- **Combined symbol parity:** 1190/3478 matched (target 3551) — 34.2%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -2299,11 +2299,11 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.24
 - **Dependents:** 0
 - **Priority Score:** 12507.6
-- **Functions:** 18/19 matched (target 42)
+- **Functions:** 18/19 matched (target 38)
 - **Missing functions:** `ChannelFlowOperator::toString`
-- **Types:** 6/6 matched (target 7)
+- **Types:** 6/6 matched
 - **Missing types:** _none_
-- **Lint issues:** 3
+- **Lint issues:** 2
 
 ### 174. common.TestCoroutineScheduler
 
