@@ -40,6 +40,7 @@ endfunction()
 
 # Core coroutine tests
 add_coroutine_test(test_timeout)
+add_coroutine_test(test_native_exception_namespace)
 
 # Transliterated Kotlin tests
 add_coroutine_test(AsyncTest)
