@@ -12,10 +12,13 @@
  * - channel_flow(): Creates a cold flow backed by a channel
  */
 #pragma once
+// port-lint: source kotlinx-coroutines-core/common/src/flow/Builders.kt
 
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
 #include "kotlinx/coroutines/flow/internal/FlowCoroutine.hpp"
@@ -80,11 +83,12 @@ template <typename T>
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:52-59
 std::shared_ptr<Flow<T>> flow(std::function<void*(FlowCollector<T>*, Continuation<void*>*)> block) {
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:55-59
-    class SafeFlow : public AbstractFlow<T> {
-        std::function<void*(FlowCollector<T>*, Continuation<void*>*)> block_;
+    // Named anonymous object
+    class SafeFlow final : public AbstractFlow<T> {
+        const std::function<void*(FlowCollector<T>*, Continuation<void*>*)> block_;
     public:
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:55-55
-        SafeFlow(std::function<void*(FlowCollector<T>*, Continuation<void*>*)> b) : block_(b) {}
+        SafeFlow(std::function<void*(FlowCollector<T>*, Continuation<void*>*)> b) : block_(std::move(b)) {}
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:56-58
         void* collect_safely(FlowCollector<T>* collector, Continuation<void*>* continuation) override {
              return block_(collector, continuation);
@@ -125,7 +129,7 @@ inline std::shared_ptr<Flow<T>> flow(std::function<void(FlowCollector<T>*)> bloc
 template <typename T>
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:64-66
 std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
-    return flow<T>([func](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+    return internal::unsafe_flow<T>([func](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
         return collector->emit(func(), cont);
     });
 }
@@ -134,7 +138,7 @@ std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:78-80
 template <typename T>
 std::shared_ptr<Flow<T>> as_flow(std::function<void*(Continuation<void*>*)> function) {
-    return flow<T>([function = std::move(function)](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
+    return internal::unsafe_flow<T>([function = std::move(function)](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
         // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:78-80
         class Frame final : public ContinuationImpl {
         public:
@@ -229,7 +233,7 @@ template <typename T>
 std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
     // Upstream:
     //   public fun <T> Iterable<T>.asFlow(): Flow<T> = flow { forEach { value -> emit(value) } }
-    return flow<T>([iterable](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+    return internal::unsafe_flow<T>([iterable](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
         auto sm = std::make_shared<detail::AsFlowContinuation<T>>(iterable, collector, cont);
         sm->retain();
         return sm->start(Result<void*>::success(nullptr));
@@ -242,7 +246,7 @@ std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
 template <typename T, std::size_t N>
 std::shared_ptr<Flow<T>> as_flow(const std::array<T, N>& array) {
     // NOTE(port): This C++ reference borrows the array; the caller keeps it alive during collection.
-    return flow<T>([&array](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
+    return internal::unsafe_flow<T>([&array](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
         // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:150-152,161-163,172-174
         class Frame final : public ContinuationImpl {
         public:
@@ -290,7 +294,7 @@ auto as_flow(Iterator first, Iterator last)
     // NOTE(port): C++ uses an iterator/sentinel pair; the pair retains its cursor across collections.
     // The caller owns the iterated storage and must retain it during collection.
     auto cursor = std::make_shared<Iterator>(std::move(first));
-    return flow<T>([cursor, last](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
+    return internal::unsafe_flow<T>([cursor, last](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
         // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:94-98
         class Frame final : public ContinuationImpl {
         public:
@@ -359,7 +363,11 @@ std::shared_ptr<Flow<T>> flow_of(std::initializer_list<T> elements) {
 template <typename T>
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:127-133
 std::shared_ptr<Flow<T>> flow_of(T value) {
-    return flow<T>([value](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+    return internal::unsafe_flow<T>([value](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
+        /*
+         * Implementation note: this is just an "optimized" overload of flow_of(vararg)
+         * which significantly reduces the footprint of widespread single-value flows.
+         */
         return collector->emit(value, cont);
     });
 }
@@ -429,7 +437,7 @@ private:
 /** Creates a cold flow from an inclusive Int range. */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:180-184
 inline std::shared_ptr<Flow<int>> as_flow_range(int first, int last) {
-    return flow<int>([first, last](FlowCollector<int>* collector, Continuation<void*>* completion) -> void* {
+    return internal::unsafe_flow<int>([first, last](FlowCollector<int>* collector, Continuation<void*>* completion) -> void* {
         auto frame = std::make_shared<detail::RangeFlowContinuation<int>>(first, last, collector, completion);
         frame->retain();
         return frame->start(Result<void*>::success(nullptr));
@@ -439,7 +447,7 @@ inline std::shared_ptr<Flow<int>> as_flow_range(int first, int last) {
 /** Creates a cold flow from an inclusive Long range. */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:189-193
 inline std::shared_ptr<Flow<long>> as_flow_range(long first, long last) {
-    return flow<long>([first, last](FlowCollector<long>* collector, Continuation<void*>* completion) -> void* {
+    return internal::unsafe_flow<long>([first, last](FlowCollector<long>* collector, Continuation<void*>* completion) -> void* {
         auto frame = std::make_shared<detail::RangeFlowContinuation<long>>(first, last, collector, completion);
         frame->retain();
         return frame->start(Result<void*>::success(nullptr));
@@ -460,11 +468,12 @@ std::shared_ptr<Flow<R>> scoped_flow(std::function<void(CoroutineScope&, FlowCol
 
 namespace internal {
 
+// ChannelFlow implementation that is the first in the chain of flow operations and introduces (builds) a flow
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:305-320
 template <typename T>
 class ChannelFlowBuilder : public ChannelFlow<T> {
 private:
-    std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block_;
+    const std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block_;
 
 public:
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:305-311
@@ -504,50 +513,22 @@ public:
         : ChannelFlowBuilder<T>(block, std::move(context), capacity, on_buffer_overflow), block_(std::move(block)) {}
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:329-345
+    [[clang::annotate("suspend")]]
     void* collect_to(channels::ProducerScope<T>* scope,
                      std::shared_ptr<Continuation<void*>> completion) override {
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:329-345
-        class Frame final : public ContinuationImpl {
-        public:
-            Frame(CallbackFlowBuilder<T>* flow, channels::ProducerScope<T>* scope,
-                  std::shared_ptr<Continuation<void*>> completion)
-                : ContinuationImpl(std::move(completion)), flow_(flow), scope_(scope) {}
-
-            void retain() { self_ref_ = shared_from_this(); }
-
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:330-344
-            void* invoke_suspend(Result<void*> result) override {
-                try {
-                    coroutine_begin(this)
-                    coroutine_yield(this, flow_->ChannelFlowBuilder<T>::collect_to(scope_, shared_from_this()));
-                    /*
-                     * We expect user either call `awaitClose` from within a block (then the channel is closed at this moment)
-                     * or being closed/cancelled externally/manually. Otherwise "user forgot to call
-                     * awaitClose and receives unhelpful ClosedSendChannelException exceptions" situation is detected.
-                     */
-                    if (!scope_->is_closed_for_send()) {
-                        throw std::logic_error(
-                            "'awaitClose { yourCallbackOrListener.cancel() }' should be used in the end of callbackFlow block.\n"
-                            "Otherwise, a callback/listener may leak in case of external cancellation.\n"
-                            "See callbackFlow API documentation for the details.");
-                    }
-                    self_ref_.reset();
-                    coroutine_end(this)
-                } catch (...) {
-                    self_ref_.reset();
-                    throw;
-                }
-            }
-
-        private:
-            void* _label = nullptr;
-            CallbackFlowBuilder<T>* flow_;
-            channels::ProducerScope<T>* scope_;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
-        };
-        auto frame = std::make_shared<Frame>(this, scope, std::move(completion));
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+        dsl::suspend(ChannelFlowBuilder<T>::collect_to(scope, completion));
+        /*
+         * We expect user either call `await_close` from within a block (then the channel is closed at this moment)
+         * or being closed/cancelled externally/manually. Otherwise "user forgot to call
+         * await_close and receives unhelpful ClosedSendChannelException exceptions" situation is detected.
+         */
+        if (!scope->is_closed_for_send()) {
+            throw IllegalStateException(
+                "'awaitClose { yourCallbackOrListener.cancel() }' should be used in the end of callbackFlow block.\n"
+                "Otherwise, a callback/listener may leak in case of external cancellation.\n"
+                "See callbackFlow API documentation for the details.");
+        }
+        return nullptr;
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:347-348
@@ -557,7 +538,7 @@ public:
     }
 
 private:
-    std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block_;
+    const std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block_;
 };
 
 } // namespace internal
