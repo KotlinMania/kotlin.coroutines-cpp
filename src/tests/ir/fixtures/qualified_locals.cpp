@@ -48,6 +48,10 @@ void* await_value(std::shared_ptr<Continuation<void*>> completion) {
 
 [[clang::annotate("suspend")]]
 void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion) {
+    using Value = QualifiedValue;
+    using Fixed = const Value;
+    typedef volatile Value Observed;
+    using Both = const volatile Value;
     const int initial = seed + 5;
     static int started = seed - 37, finished = initial - 42;
     static const int cached = initialize_static(initial + seed);
@@ -61,14 +65,16 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
     started_identity = std::addressof(started);
     finished_identity = std::addressof(finished);
     ++started;
-    const auto fixed = QualifiedValue(42);
-    volatile QualifiedValue observed(43);
-    const volatile QualifiedValue both(44);
+    Fixed fixed(42);
+    Observed observed(43);
+    Both both(44);
     fixed_identity = std::addressof(fixed);
     observed_identity = std::addressof(observed);
     both_identity = std::addressof(both);
     int total = 0;
     for (int index = 0; index < 2; ++index) {
+        using Value = int;
+        Value increment = Value(7);
         total += fixed.read() + observed.read() + both.read();
         void* raw = dsl::suspend(await_value(completion));
         std::unique_ptr<int> box(static_cast<int*>(raw));
@@ -77,6 +83,7 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
         assert(std::addressof(both) == both_identity);
         assert(cached_identity == std::addressof(cached));
         assert(cached == 79 && static_initializations == 1);
+        assert(*box == static_cast<Value>(increment));
         total += fixed.read() + observed.read() + both.read() + *box;
     }
     ++finished;

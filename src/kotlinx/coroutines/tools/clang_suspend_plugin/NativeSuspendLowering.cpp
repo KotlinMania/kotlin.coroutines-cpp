@@ -329,6 +329,17 @@ private:
                     if (!TraverseStmt(initializer)) return false;
                 return true;
             }
+            // NOTE(port): C++ aliases introduce no object or nominal type.
+            // Preserve the compiler's declaration binding, including aliases
+            // shadowed by a different declaration in a nested source scope.
+            bool VisitTypedefTypeLoc(TypedefTypeLoc location) {
+                auto alias = lowering_.local_aliases_.find(location.getTypePtr()->getDecl());
+                if (alias != lowering_.local_aliases_.end()) {
+                    auto name = location.getNameLoc();
+                    references_.push_back({lowering_.offset(name), lowering_.end_offset(name), alias->second});
+                }
+                return true;
+            }
             bool VisitSubstNonTypeTemplateParmExpr(SubstNonTypeTemplateParmExpr* expression) {
                 class Symbols : public PrinterHelper {
                 public:
@@ -445,6 +456,10 @@ private:
         // NOTE(port): A resolved auto still carries placeholder sugar; remove
         // it before qualifying the type in the synthesized frame's scope.
         if (type->getContainedAutoType() && !type->isDependentType()) type = type.getCanonicalType();
+        // NOTE(port): Local alias spellings are unavailable outside their source
+        // scope. Canonicalization retains the actual type and cv-qualification,
+        // including alias arguments nested inside a template specialization.
+        if (!local_aliases_.empty()) type = type.getCanonicalType();
         std::string reference_type = deduced_type;
         if (const auto* record = type->getAsCXXRecordDecl()) {
             auto found = reference_types_.find(record->getCanonicalDecl());
@@ -981,8 +996,20 @@ private:
               << result.name << ".emplace(_kxs_result.get_or_throw());\n_kxs_continue_" << id << ":;\n";
         return result.access;
     }
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesVarSpillingLowering.kt:49-105
+    // NOTE(port): C++ declarations additionally preserve static initialization,
+    // alias bindings and object construction in their original storage category.
     void emit_declaration(const DeclStmt* statement, bool generated = false) {
         for (const Decl* declaration : statement->decls()) {
+            if (const auto* alias = dyn_cast<TypedefNameDecl>(declaration)) {
+                // NOTE(port): Bind the original alias declaration to a unique
+                // frame spelling; an alias has no initialization or cleanup.
+                std::string name = "_kxs_type_" + std::to_string(local_aliases_.size());
+                local_aliases_.emplace(alias, name);
+                fields_.push_back("using " + name + " = " + TypeName::getFullyQualifiedName(
+                    alias->getUnderlyingType().getCanonicalType(), context_, policy_) + ";");
+                continue;
+            }
             llvm::SaveAndRestore<bool> expression_scope(full_expression_, true);
             size_t first_comma = comma_temporaries_.size();
             const auto* variable = dyn_cast<VarDecl>(declaration);
@@ -1372,6 +1399,7 @@ private:
     PrintingPolicy policy_;
     SourceManager& manager_;
     std::map<const ValueDecl*, Slot> variables_;
+    std::map<const TypedefNameDecl*, std::string> local_aliases_;
     std::map<const CXXRecordDecl*, std::string> reference_types_;
     std::vector<std::string> reference_classes_;
     std::vector<std::string> fields_;
