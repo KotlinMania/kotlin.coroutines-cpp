@@ -1,5 +1,48 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Constructor reference-materialization continuation
+
+Source checkpoint 2e4eb601 repairs constructor-child slicing after reading
+NativeSuspendFunctionLowering.kt:215-250. Kotlin treats the allocated instance
+as the first constructor operand; the C++ adaptation additionally preserves
+materialized reference arguments and guaranteed elision of ordinary prvalues.
+
+NativeSuspendLowering.cpp:829-834 recognizes Clang's constructor-conversion
+functional cast as the selected constructor's wrapper. Its child is lowered
+directly, preserving a single prvalue construction rather than introducing a
+second value slot/move. At :994-1006, materialized constructor reference arguments
+are retained even when their source expression is pure. Source glvalues still
+bind as borrowed references. The existing full-expression storage supplies
+the scalar argument lifetime; the constructed receiver borrows that actual
+object and does not acquire ownership of the reference.
+
+qualified_locals.cpp:284-299 adds an immovable ConstructorCondition receiver
+whose const-reference constructor binds literal 17. Operation 7 in condition_flow
+uses that receiver before a suspending sibling. The sibling checks the literal's
+referent; receiver destruction also checks its value and identity, requiring
+the receiver to be destroyed while the referent still lives. Existing fixture
+modes cover immediate/suspended completion, resumed failure, cancellation and
+immediate failure, with pending retention and terminal destruction assertions.
+
+Strict fixture syntax and Clang AST emission exit 0. The AST shows the selected
+ConstructorConversion, constructor call and const-int MaterializeTemporaryExpr.
+Strict lowering-unit checking exits 1 in LLVM/Clang dependency headers with no
+source-local diagnostic. Fresh plugin build exits 2 in the metadata plugin's
+dependency headers; the older frontend exits 1 at the existing alias declaration.
+No warning was suppressed. Receipts are
+build/ir-recovery/constructor-temporaries-{fixture,ast,lowering,plugin-build,
+installed-frontend}.log. No fresh runtime validates construction, retention,
+destructor ordering or failure/cancellation cleanup for this repair.
+
+Local nominal/dependent integration, aggregate/array materialization and
+broader ordinary C++ expression coverage remain incomplete. Standalone MLX and
+actual Native/MLX shared-state-machine execution acceptance remain unproven.
+
+Both exact full-root deep scans completed with exit 0 after the source checkpoint
+without concurrent source edits. Generated inventories/reports are unchanged:
+library 832/2918 bodies, 359/560 types, body similarity 0.26; compiler 592/7657
+bodies, 174/1727 types, body similarity 0.36.
+
 ## Non-suspending operand temporary continuation
 
 Source checkpoints deb8848c and ae390be1 extend the evaluated-expression

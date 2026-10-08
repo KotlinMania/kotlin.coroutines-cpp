@@ -6,6 +6,19 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** 2e4eb601 retains pure materialized constructor
+reference arguments in NativeSuspendLowering.cpp:994-1006 and lowers the selected
+constructor directly through its Clang functional-cast wrapper at :829-834.
+qualified_locals adds an immovable ConstructorCondition that borrows literal
+17 before a sibling suspends, with referent identity/value checks in its
+destructor. Strict fixture syntax and actual Clang AST emission pass; strict
+lowering checking has only external dependency diagnostics. Fresh plugin build
+exits 2; the older frontend fails at the existing alias. No fresh runtime
+validates the repair. Local nominal/dependent integration, aggregate/array
+materialization and full executable acceptance remain unfinished. Read
+RESUME_ADDRESS_SOURCE_REPAIR.md's new top section. Both full-root deep scans
+exit 0 and leave generated reports unchanged. The full goal remains active.
+
 **Latest compiler continuation:** deb8848c and ae390be1 preserve materialized
 temporaries in non-suspending operands of split expressions at
 NativeSuspendLowering.cpp:758-770,824-828. Existing call/branch slicing retains
