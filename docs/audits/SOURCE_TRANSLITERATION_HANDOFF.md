@@ -6,7 +6,38 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current binary-result checkpoint 43eb5c38 — 2026-10-08:** From 6cf05519,
+**Current qualified-name/class-ID continuation — 2026-10-08:** From48959b4a,
+scalar FqName/FqNameUnsafe and ClassId contracts needed by the primitive catalog
+are translated and registered on the production LLVM consumers. UTF-16 names,
+quoted-dot parent parsing, cached child metadata, root diagnostics, prefix
+boundaries, structural equality/hash and class-ID slash/backtick/locality behavior
+follow the pinned source. C++ immutable value handles share private backing;
+the safe-view cache avoids a strong ownership cycle. This documented internal
+representation does not supply Kotlin/Native object identity or frame/root ABI.
+The ROOT companion property uses a static root() getter to avoid C++ cross-unit
+initialization order; a catalog-style initializer before main is exercised.
+Generated ClassId components/copy/equality/hash reference the actual IR generator;
+Boolean's1231/1237 hashes are preserved after source inspection corrected the
+initial term. Strict debug/release syntax, Native-OFF LLVM builds, existing codegen
+fixture, CTest and ASan/UBSan pass; the test includes64 upstream prefix cases.
+
+FqName pathSegments/fromSegments and Unsafe pathSegments/collectSegmentsOf are
+still absent pending actual List/ArrayList translation; no different collection
+API or stub was added. ClassIdBasedLocality metadata/opt-in warning policy and
+unused Unsafe SPLIT_BY_DOTS cache remain untranslated. Deep FqName:12/14 bodies,
+1/1 type,0.71; Unsafe15/17,1/1,0.22; ClassId8/9,1/2,0.57. Its private nested
+extension helper is implemented but not paired by lexical-scope name matching.
+No target name parse errors; unsupported source emission and unrelated source
+parser errors remain. Sparse compiler root is now661 source files:246/6807,
+104/1554,0.36,4 failures. Full library remains663/2918,178/560,0.24,12 failures.
+Both root reports/inventories are refreshed in build/source-continuation/
+{compiler,library}-source-distance; source-scope changes prevent direct completion
+percentage comparisons. Next translate the actual primitive catalog, list/metadata
+dependencies, InlineClassesSupport and IR classification/type cache, then variable
+and full frame/root/call/exception consumers. Both complete MLX/Native paths remain
+unproven. See RESUME_ADDRESS_SOURCE_REPAIR.md's first section. Goal active.
+
+**Binary-result checkpoint 43eb5c38 — 2026-10-08:** From 6cf05519,
 BinaryType.hpp/.cpp translate native/base/.../BinaryType.kt:8-20: all nine
 primitive kinds, the sealed Primitive/Reference family, typed lazy reference
 sequences, nullability and primitive extraction. The internal common family

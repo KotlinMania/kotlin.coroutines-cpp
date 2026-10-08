@@ -1,6 +1,67 @@
 # Compiler resume-address source repair — 2026-10-08
 
-## Binary classification result and lazy sequence contracts — 2026-10-08
+## Qualified-name and class-ID classification dependencies — 2026-10-08
+
+Continuation from48959b4a restores core/names at the same pinned Kotlin revision
+and translates the scalar contracts in FqName.kt, FqNameUnsafe.kt and ClassId.kt.
+name/FqName.hpp:14, FqNameUnsafe.hpp:15 and ClassId.hpp:16 expose the concrete
+types. Implementations stay in the matching .cpp files. Names keep UTF-16 units,
+backtick-aware last-dot parsing, cached child short names and parents, root
+diagnostics, both prefix boundary checks and source structural hashing/equality.
+Unsafe-to-safe conversion preserves the source's cache-dependent isSafe behavior,
+including the fact that conversion does not validate the text.
+
+Like existing Name, C++ names use immutable value handles. A private shared
+backing retains the unsafe text/parent/short-name caches; a safe view uses the
+same backing rather than creating a strong ownership cycle. This deliberate
+internal representation adaptation is marked in FqNameUnsafe.cpp:10. It is not
+a Native object/frame representation. It does not establish reference identity
+of actual Kotlin/Native objects or coroutine/frame interoperability.
+The companion ROOT field maps to a static root() getter with local initialization,
+avoiding C++ translation-unit initialization order. A catalog-style ClassId
+initializer before main exercises that path; the getter keeps the canonical
+root backing. No global constructor may dereference a not-yet-built root.
+
+ClassId.cpp translates nested/outer/outermost IDs, locality propagation, slash
+escaping, qualified text, top-level construction and backtick-aware from_string.
+Data-class components/copy/equality/hash are tied to the actual IR generator.
+The initial boolean hash term was corrected after reading
+DataClassMembersGenerator.kt:178-221,269-307 and Boolean.kt:66-67: source Boolean
+hashes are1231/1237. Source assertions map to NDEBUG/compiler logic_error, with
+UTF-8/WTF-8 diagnostics. The private encoder is compiled only with its assertion,
+resolving a fresh release unused-function error without suppressing warnings.
+
+tools/kxs_inject/CMakeLists.txt:42-45 registers Name/FqName/FqNameUnsafe/ClassId
+on all three production LLVM targets. The new standalone contract test at :78
+ports all64 prefix cases from FqNameUnsafeTest.java and adds quoted-dot parsing,
+cached vs reparsed child names, root failures/empty child, safe-view backing
+identity, UTF-16 retained values, escaped class-ID round trips, nested/local
+propagation, source Boolean hash difference, data-class copy/components and the
+non-ASCII assertion diagnostic. Strict compile with/without NDEBUG, Native-OFF
+plugin/injector/helper builds, existing LLVM codegen fixture, CTest and ASan/UBSan
+pass. No actual IR class or classifier is fabricated in these tests.
+
+Both root deep scans completed. FqName:12/14 bodies,1/1 type,similarity0.71;
+FqNameUnsafe:15/17,1/1,0.22; ClassId:8/9,1/2,0.57. No target name parse errors.
+ClassId's nested extension escapeSlashes is present as a private namespace helper;
+the lexical-scope name matching does not pair it. Its locality opt-in annotation
+and compiler warning policy remain untranslated. FqName.pathSegments/fromSegments
+and FqNameUnsafe.pathSegments/collectSegmentsOf remain absent until their actual
+List/ArrayList dependencies are translated; no vector API or placeholder was
+substituted. The unused SPLIT_BY_DOTS regex cache is also untranslated. Source
+emission limitations and unrelated StandardClassIds parser errors remain visible.
+
+Current sparse compiler root:246/6807 bodies,104/1554 types,similarity0.36,
+4 scoring failures,661 source files after restoring9 core/names Kotlin files.
+These counts have a different source scope from the previous652-file corpus.
+Full kotlinx.coroutines remains663/2918 bodies,178/560 types,0.24,12 failures.
+Evidence is under build/source-continuation/{compiler,library}-source-distance.
+Next translate the primitive catalog and remaining list/metadata dependencies,
+InlineClassesSupport/IR classification, the structural type cache and frame
+consumers. Generation-state entry and both complete MLX/Native acceptance paths
+remain unfinished. Goal active.
+
+## Binary classification result and lazy sequence contracts — 2026-10-08 (historical 43eb5c38 receipt)
 
 Continuation from 6cf05519 translates native/base/src/main/kotlin/org/jetbrains/
 kotlin/backend/konan/BinaryType.kt:8-20. BinaryType.hpp:11,19,31,41 and
