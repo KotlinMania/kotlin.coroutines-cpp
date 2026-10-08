@@ -5,6 +5,7 @@
 #include "kotlinx/coroutines/CompletableJob.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
