@@ -279,6 +279,15 @@ void* condition_wait(std::shared_ptr<Continuation<void*>> completion) {
     assert(condition_alive == 1 && condition_destroyed == 0 && *box == 7);
     return nullptr;
 }
+const int* borrowed_integer = nullptr;
+bool read_integer(const int& value) { borrowed_integer = std::addressof(value); return value == 17; }
+[[clang::annotate("suspend")]]
+void* scalar_condition_wait(std::shared_ptr<Continuation<void*>> completion) {
+    void* raw = await_value(completion);
+    std::unique_ptr<int> box(static_cast<int*>(raw));
+    assert(borrowed_integer && *borrowed_integer == 17 && *box == 7);
+    return nullptr;
+}
 [[clang::annotate("suspend")]]
 void* condition_flow(int operation, std::shared_ptr<Continuation<void*>> completion) {
     bool selected = false;
@@ -288,7 +297,8 @@ void* condition_flow(int operation, std::shared_ptr<Continuation<void*>> complet
     if (operation == 3) selected = ConditionTemporary(false).read() || condition_wait(completion) == nullptr;
     if (operation == 4) selected = ConditionTemporary(true).read() ? condition_wait(completion) == nullptr : false;
     if (operation == 5) selected = ConditionTemporary(false).read() ? false : condition_wait(completion) == nullptr;
-    assert(condition_alive == 0 && condition_destroyed == 1);
+    if (operation == 6) selected = read_integer(17) && scalar_condition_wait(completion) == nullptr;
+    assert(condition_alive == 0 && condition_destroyed == (operation == 6 ? 0 : 1));
     return new int(selected ? 1 : 0);
 }
 int main() {
@@ -331,13 +341,13 @@ int main() {
         assert(*started_identity == mode + 1);
         assert(*finished_identity == (mode == 0 ? 1 : 2));
     }
-    for (int operation = 0; operation != 6; ++operation) for (mode = 0; mode != 5; ++mode) {
+    for (int operation = 0; operation != 7; ++operation) for (mode = 0; mode != 5; ++mode) {
         calls = condition_destroyed = 0;
         auto done = std::make_shared<Done>();
         try {
             auto result = condition_flow(operation, done);
             if (intrinsics::is_coroutine_suspended(result)) {
-                assert(condition_alive == 1 && condition_destroyed == 0 && pending);
+                assert(condition_alive == (operation == 6 ? 0 : 1) && condition_destroyed == 0 && pending);
                 auto held = std::move(pending);
                 if (mode == 2) held->resume_with(Result<void*>::failure(std::make_exception_ptr(std::runtime_error("condition"))));
                 else if (mode == 3) held->resume_with(Result<void*>::failure(std::make_exception_ptr(CancellationException("condition"))));
@@ -348,6 +358,6 @@ int main() {
         assert(done->cancelled == (operation >= 2 && mode == 3));
         assert(done->failed || done->value == (operation == 0 ? 0 : 1));
         assert(calls == (operation >= 2 ? 1 : 0));
-        assert(condition_alive == 0 && condition_destroyed == 1 && !pending && frame.expired());
+        assert(condition_alive == 0 && condition_destroyed == (operation == 6 ? 0 : 1) && !pending && frame.expired());
     }
 }

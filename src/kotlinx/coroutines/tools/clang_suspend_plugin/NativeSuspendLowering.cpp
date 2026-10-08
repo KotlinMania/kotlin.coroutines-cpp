@@ -763,7 +763,7 @@ private:
             return false;
         }
         if (const auto* temporary = dyn_cast<MaterializeTemporaryExpr>(statement);
-            temporary && temporary->getType()->isRecordType()) return true;
+            temporary && (temporary->getType()->isRecordType() || temporary->getType()->isScalarType())) return true;
         for (const auto* child : statement->children())
             if (has_materialized_temporaries(child)) return true;
         return false;
@@ -1107,17 +1107,20 @@ private:
             // explicitly spelled glvalue denotes existing borrowed storage.
             bool reference = argument->isGLValue() && spelled(argument)->isGLValue() &&
                 (!parameter_type.isNull() ? parameter_type->isReferenceType() : !callee);
+            const bool owns_temporary = argument->isGLValue() && spelled(argument)->isPRValue() &&
+                !parameter_type.isNull() && parameter_type->isReferenceType();
             auto value = emit_expression(argument);
             const auto* variable = dyn_cast<DeclRefExpr>(spelled(argument));
             bool current_frame = variable && variable->getDecl() == completion_;
             // NOTE(port): Suspend-call operands precede the saved address.
             // C++ constructed/dependent values retain their existing lifetime
             // storage; scalar trailing operands can remain in the final call.
-            const bool retain = SuspendFunctionAnalyzer::is_suspend_call(call) ||
+            const bool retain = owns_temporary || SuspendFunctionAnalyzer::is_suspend_call(call) ||
                 (!first_only_suspend && has_suspend_call_in_tail[child_index]) ||
                 has_impure_child_in_tail[child_index + 1] ||
                 argument->getType()->isRecordType() || argument->getType()->isDependentType();
-            if (!argument->getType()->isVoidType() && !current_frame && !is_pure(argument) && retain) {
+            if (!argument->getType()->isVoidType() && !current_frame &&
+                (!is_pure(argument) || owns_temporary) && retain) {
                 value = capture(argument, value, reference);
                 if (!argument->isLValue()) value = "std::move(" + value + ")";
             }
