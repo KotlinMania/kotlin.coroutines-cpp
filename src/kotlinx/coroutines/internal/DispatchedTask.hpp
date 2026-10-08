@@ -162,7 +162,7 @@ void dispatch(DispatchedTask<T>* task, int mode);
 template<typename T>
 void resume(DispatchedTask<T>* task, std::shared_ptr<Continuation<T>> delegate, bool undispatched);
 
-class EventLoop;
+struct EventLoop;
 // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:180-200
 template<typename T, typename Block>
 inline void run_unconfined_event_loop(DispatchedTask<T>* task, EventLoop& event_loop, Block&& block);
