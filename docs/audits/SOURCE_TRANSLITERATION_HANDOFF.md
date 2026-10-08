@@ -6,7 +6,21 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current lifetime/slot dependency continuation — 2026-10-08:** From
+**Current LLVM module/annotation continuation — 2026-10-08:** From
+61e3e6fe, BasicLlvmHelpers now reads the actual LLVM target triple and runtime
+annotation operands with source lazy snapshots, grouping and pointer-policy
+branches. get_as_c_string/get_operands retain source termination checks and
+operand order. Strict compilation, plugin/helper builds and an LLVM-backed
+ASan/UBSan annotation/snapshot harness pass on the opaque-pointer path. Older
+typed pointers and zero-filled empty-string representation remain unverified.
+Explicit line-free port-lint headers restore deep pairing for the edited files:
+ContextUtils12/51 bodies,21/36 types,similarity0.17; LlvmUtils16/49 bodies,4/10
+types,similarity0.17. Continue runtime imports, allocation/root operations,
+VariableManager and public object-result calls. Full-root comparison and both
+complete acceptance paths remain open. See RESUME_ADDRESS_SOURCE_REPAIR.md's
+first section; the full goal remains active.
+
+**Lifetime/slot checkpoint 61e3e6fe — 2026-10-08:** From
 7e9d2aec, ContextUtils.hpp/.cpp translate every SlotType and Lifetime variant
 from ContextUtils.kt:21-130. Static slot identities remain borrowed; dynamically
 created parameter slots are owned by their creating lifetime. The same mutable

@@ -1,4 +1,5 @@
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-43,235-243,307-351
+// port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-43,118-125,235-243,307-351,358-359
 #include "LlvmUtils.hpp"
 #include <cassert>
 #include <stdexcept>
@@ -93,4 +94,21 @@ void add_llvm_function_enum_attribute(LLVMValueRef function, const LlvmAttribute
 LLVMTypeRef function_type(LLVMTypeRef return_type, const std::vector<LLVMTypeRef>& param_types) {
     return function_type(return_type, false, param_types);
 }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:118-125
+std::string get_as_c_string(LLVMValueRef value) {
+    std::size_t length = 0;
+    const auto* data = LLVMGetAsString(value, &length);
+    if (!data || length < 1 || data[length - 1] != '\0')
+        throw std::invalid_argument("Expected null-terminated string from llvm");
+    return std::string(data);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:358-359
+std::vector<LLVMValueRef> get_operands(LLVMValueRef value) {
+    std::vector<LLVMValueRef> operands;
+    const auto count = LLVMGetNumOperands(value);
+    operands.reserve(count);
+    for (int index = 0; index < count; ++index) operands.push_back(LLVMGetOperand(value, index));
+    return operands;
+}
+
 }

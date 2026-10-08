@@ -1,6 +1,54 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## LLVM module context and runtime annotations — 2026-10-08
+
+Continuation from 61e3e6fe translates BasicLlvmHelpers from
+ContextUtils.kt:300-326 into ContextUtils.hpp:289 and ContextUtils.cpp:155-191.
+The LLVM boundary receives the actual compiler-owned context/module and
+useLlvmOpaquePointers policy. The target triple and runtime annotation map
+retain Kotlin's synchronized lazy snapshots. Annotations come from actual
+llvm.global.annotations initializer operands: both source pointer branches,
+null-initializer/empty-key filtering, grouped values and operand order are
+preserved. Partial construction remains local so failed lazy initialization can
+retry. The compiler continues to own every returned LLVM handle.
+
+LlvmUtils.cpp:98,106 ports getAsCString and getOperands from
+LlvmUtils.kt:118-125,358-359. The source null-termination requirement and error
+text remain; nonterminated data is rejected rather than silently converted.
+Private lazy storage stays in the implementation file. Existing CMake source
+registration covers both edited implementation files; no new dependency is added.
+
+Strict syntax compilation with C++20,-Wall,-Wextra,-Werror passed for both
+implementations. KotlinxCoroutinePass and kxs_codegen_test rebuilt successfully
+with LLVM 23.1.2 and Native runtime OFF. The existing code-generation fixture
+verified/emitted its module. An LLVM-backed ASan/UBSan harness passed actual
+annotation grouping/order, missing initializer filtering, absent/present lazy
+snapshots, target-triple snapshot and nonterminated-string rejection; its module
+also passes LLVMVerifyModule. Source/executable are under
+build/source-continuation/llvm-source-distance/annotation_contract.*.
+Only the opaque-pointer branch was exercised. The first harness used a zero-filled
+empty-string constant that LLVMGetAsString did not expose as data; that input
+triggered the preserved source requirement. The fixture now uses the actual
+missing-initializer source branch. Zero-filled string representation compatibility
+and the older typed-pointer execution path remain unverified.
+
+The scoped deep scan was refreshed. Initially it classified ContextUtils as
+MISSING_FILE despite the compiled types/bodies. Inspection of
+ tools/ast_distance/include/porting_utils.hpp:311-331 shows the first provenance
+payload is returned as written; explicit line-free port-lint source headers on
+ContextUtils and LlvmUtils restored deterministic pairing while retaining all
+per-function ranges. Final measurements are ContextUtils 12/51 bodies,21/36 types,
+function similarity0.17; LlvmUtils16/49 bodies,4/10 types,similarity0.17.
+The new ContextUtils properties are getters, not additional explicit Kotlin
+function bodies. Generated-emission criteria remain provisional. No full-root
+measurement or complete runtime acceptance is established by these scoped checks.
+
+Continue CodegenLlvmHelpers/runtime imports, allocation/root operations,
+VariableManager and public object-result call lowering. BasicLlvmHelpers is a
+translated dependency; the public call path and complete state-machine/interop
+paths remain unfinished. The full goal remains active.
+
 ## Escape-analysis lifetime and slot classes — 2026-10-08
 
 Continuation from 7e9d2aec translates ContextUtils.kt:21-130 into

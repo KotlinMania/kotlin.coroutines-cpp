@@ -1,5 +1,8 @@
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130
+// port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130,300-326
 #pragma once
+#include <llvm-c/Core.h>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -282,4 +285,30 @@ private:
     const std::shared_ptr<std::vector<int>> parameters_;
     const bool use_return_slot_;
 };
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:300-326
+class BasicLlvmHelpers {
+public:
+    // NOTE(port): Supply the actual BitcodePostProcessingContext LLVM handle
+    // and opaque-pointer policy at this boundary; LLVM objects remain borrowed.
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:300-302
+    BasicLlvmHelpers(LLVMContextRef llvm_context, LLVMModuleRef module, bool use_llvm_opaque_pointers);
+    virtual ~BasicLlvmHelpers();
+    BasicLlvmHelpers(const BasicLlvmHelpers&) = delete;
+    BasicLlvmHelpers& operator=(const BasicLlvmHelpers&) = delete;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:300-300
+    LLVMModuleRef module() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:302-302
+    LLVMContextRef llvm_context() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:303-305
+    const std::string& target_triple() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:307-325
+    const std::map<std::string, std::vector<LLVMValueRef>>& runtime_annotation_map() const;
+private:
+    const LLVMContextRef llvm_context_;
+    const LLVMModuleRef module_;
+    const bool use_llvm_opaque_pointers_;
+    class LazyProperties;
+    std::unique_ptr<LazyProperties> lazy_;
+};
+
 }

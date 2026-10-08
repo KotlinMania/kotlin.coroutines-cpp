@@ -1,5 +1,8 @@
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130
+// port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130,300-326
 #include "ContextUtils.hpp"
+#include "LlvmUtils.hpp"
+#include <mutex>
 #include <stdexcept>
 #include <utility>
 
@@ -139,4 +142,51 @@ std::string Lifetime::ParametersField::to_string() const {
     return "PARAMETERS_FIELD(" + content + "], useReturnSlot='" +
         (use_return_slot_ ? "true" : "false") + "')";
 }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:303-325
+// NOTE(port): Serialize first initialization like Kotlin's default lazy mode.
+class BasicLlvmHelpers::LazyProperties {
+public:
+    std::once_flag target_triple_once;
+    std::string target_triple;
+    std::once_flag runtime_annotation_map_once;
+    std::map<std::string, std::vector<LLVMValueRef>> runtime_annotation_map;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:300-302
+BasicLlvmHelpers::BasicLlvmHelpers(LLVMContextRef llvm_context, LLVMModuleRef module,
+    bool use_llvm_opaque_pointers)
+    : llvm_context_(llvm_context), module_(module), use_llvm_opaque_pointers_(use_llvm_opaque_pointers),
+      lazy_(std::make_unique<LazyProperties>()) {}
+// NOTE(port): Only lazy storage is owned; the enclosing compiler owns LLVM.
+BasicLlvmHelpers::~BasicLlvmHelpers() = default;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:300-300
+LLVMModuleRef BasicLlvmHelpers::module() const { return module_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:302-302
+LLVMContextRef BasicLlvmHelpers::llvm_context() const { return llvm_context_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:303-305
+const std::string& BasicLlvmHelpers::target_triple() const {
+    std::call_once(lazy_->target_triple_once, [&] { lazy_->target_triple = LLVMGetTarget(module_); });
+    return lazy_->target_triple;
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:307-325
+const std::map<std::string, std::vector<LLVMValueRef>>& BasicLlvmHelpers::runtime_annotation_map() const {
+    std::call_once(lazy_->runtime_annotation_map_once, [&] {
+        const auto global = LLVMGetNamedGlobal(module_, "llvm.global.annotations");
+        const auto initializer = global ? LLVMGetInitializer(global) : nullptr;
+        if (!initializer) return;
+        // Build the snapshot locally so a failed lazy initialization can retry.
+        std::map<std::string, std::vector<LLVMValueRef>> annotations;
+        for (const auto entry : get_operands(initializer)) {
+            const auto string_operand = LLVMGetOperand(entry, 1);
+            const auto string_global = use_llvm_opaque_pointers_ ? string_operand : LLVMGetOperand(string_operand, 0);
+            const auto string_initializer = LLVMGetInitializer(string_global);
+            const auto key = string_initializer ? get_as_c_string(string_initializer) : "";
+            const auto value_operand = LLVMGetOperand(entry, 0);
+            const auto value = use_llvm_opaque_pointers_ ? value_operand : LLVMGetOperand(value_operand, 0);
+            if (!key.empty()) annotations[key].push_back(value);
+        }
+        lazy_->runtime_annotation_map = std::move(annotations);
+    });
+    return lazy_->runtime_annotation_map;
+}
+
 }

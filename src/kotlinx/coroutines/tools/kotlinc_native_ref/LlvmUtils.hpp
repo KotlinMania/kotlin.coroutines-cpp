@@ -1,4 +1,5 @@
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-43,235-243,307-351
+// port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-43,118-125,235-243,307-351,358-359
 #pragma once
 #include <llvm-c/Core.h>
 #include <memory>
@@ -55,4 +56,9 @@ void add_llvm_function_enum_attribute(LLVMValueRef function, const LlvmAttribute
 // NOTE(port): Concrete overload for Kotlin's omitted isVarArg named argument.
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:235-243
 LLVMTypeRef function_type(LLVMTypeRef return_type, const std::vector<LLVMTypeRef>& param_types);
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:118-125
+std::string get_as_c_string(LLVMValueRef value);
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:358-359
+std::vector<LLVMValueRef> get_operands(LLVMValueRef value);
+
 }
