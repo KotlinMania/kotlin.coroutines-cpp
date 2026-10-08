@@ -1,5 +1,36 @@
 # Merge source translation and private suspension bodies
 
+## Consumed map dependency continuation — 2026-10-07
+
+06da4bbf continues the source repair into the actual map dependency after reading
+the full pinned Transform.kt, Emitters.kt:44-51 and the existing typed bodies.
+Transform.hpp:124 replaces unsafe_transform's manual CollectFrame with its
+source collector binding and an annotated collection body at :140. It keeps
+upstream ownership and a borrowed downstream collector. Transform.hpp:472
+replaces MapFrame with the source transform-then-emit lambda: the supplied
+callable is moved into owned storage, the result is received as an owning R box,
+and that box is deleted before the source emit. The raw completion projection
+retains the actual supplied continuation. No manual label, spill or frame cycle
+remains in these two bodies; other Transform bodies still use handwritten frames.
+
+Fresh strict actual test_transform_suspension.cpp and public Merge overload
+probe checks both exit 1 using the existing plugins. The instantiated
+TransformCollector member and map lambda report the same missing namespace
+context integration; generated template/frame and dependency diagnostics also
+remain. Receipts are merge-map-source-{consumer,instantiation}.log. The full
+Native-disabled core build exits 2 on its plugin dependency's LLVM/Clang header
+diagnostics (source-continuation-core-build.log). No fresh executable, capture
+retention, terminal cleanup or MLX acceptance result is established.
+
+Both final full-root deep scans exit 0, with no concurrent source changes;
+reports are in 9c1a935f and receipts use merge-map-source-{library,compiler}-deep.log.
+Transform stays 12/13 matched bodies at similarity 0.07, with target inventory
+falling from 100 to 94 bodies and 13 to 12 types. Public/internal Merge retain
+the measurements below. Library totals remain 831/2918 bodies, 359/560 types,
+similarity 0.26 and 123 scoring failures. The 22 ranged Transform references
+resolve and the file contains no prohibited markers. These are measured partial
+source changes, not completed translation or successful runtime validation.
+
 ## Continued transliteration and compiler integration — 2026-10-07
 
 Source commits d573b064, c9f3038b and 2cbadce9 follow the checkpoint below.

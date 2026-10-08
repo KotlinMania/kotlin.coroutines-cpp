@@ -6,6 +6,17 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest source continuation:** 06da4bbf translates the actual map dependency in
+Transform.hpp:124,140,472, replacing unsafe_transform CollectFrame and MapFrame
+with typed source bodies and owning result unboxing. The complete Transform.kt
+and consumed Emitters.kt body were read. Other Transform manual bodies remain.
+The final strict actual consumer and public overload probe exit 1; frontend
+local-class/lambda namespace integration, generated frames/templates and
+dependency diagnostics remain. The Native-disabled full core build exits 2 in
+its plugin dependency. No fresh executable evidence exists. Final full-root
+reports are committed in 9c1a935f; both scans exit 0. Transform remains 12/13
+bodies and similarity 0.07. See MERGE_SOURCE_REPAIR.md for exact receipts.
+
 **Continued transliteration:** d573b064 directly translates internal collector
 cancel/join/acquire/child cleanup bodies. c9f3038b and 2cbadce9 replace public
 Merge manual frames and duplicated stack mappers with the source operations and
