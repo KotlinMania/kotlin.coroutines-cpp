@@ -938,6 +938,23 @@ void iteration_contract() {
     }
 }
 
+// ChannelFlow.kt:26-30,55-56,69-100,188: inherited defaults, public
+// operator removal and the shared producer lambda are callable on the real types.
+void channel_flow_surface_contract() {
+    auto upstream = flow::unsafe_flow<int>(std::function<void(flow::FlowCollector<int>*)>(
+        [](flow::FlowCollector<int>*) {}));
+    auto operation = std::make_shared<flow::internal::ChannelFlowOperatorImpl<int>>(upstream);
+    CHECK(operation->fuse() == operation.get());
+    CHECK(operation->drop_channel_operators() == upstream.get());
+    auto collect = operation->get_collect_to_fun();
+    CHECK(static_cast<bool>(collect));
+    std::weak_ptr<flow::Flow<int>> lifetime = operation;
+    operation.reset();
+    CHECK(!lifetime.expired());
+    collect = {};
+    CHECK(lifetime.expired());
+}
+
 void list_contract() {
     for (bool suspended : {false, true}) {
         auto channel = std::make_shared<RecordingChannel>();
@@ -1048,6 +1065,7 @@ int main() {
         safe_collector_ancestry_contract();
         safe_collector_checked_job_cast_contract();
         channel_scope_contract();
+        channel_flow_surface_contract();
         sending_collector_contract();
         combine_contract();
         zip_contract();
