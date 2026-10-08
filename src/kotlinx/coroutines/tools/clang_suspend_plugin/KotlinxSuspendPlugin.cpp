@@ -280,7 +280,7 @@ public:
                 return false;
             }
             active_bodies_.emplace(identity, source_body);
-            auto release_active = llvm::make_scope_exit([&] { active_bodies_.erase(identity); });
+            llvm::scope_exit release_active([&] { active_bodies_.erase(identity); });
             auto& context = compiler_.getASTContext();
             SuspendFunctionAnalyzer analyzer(context, function);
             if (!analyzer.analyze()) return false;
