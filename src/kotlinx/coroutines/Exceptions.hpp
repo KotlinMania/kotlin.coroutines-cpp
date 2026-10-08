@@ -1,5 +1,6 @@
 #pragma once
 // port-lint: source kotlinx-coroutines-core/common/src/Exceptions.common.kt
+// port-lint: source libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt
 /**
  * @file Exceptions.hpp
  * @brief Exception types for kotlinx.coroutines
@@ -54,6 +55,11 @@ public:
     std::exception_ptr get_cause() const { return cause_; }
 };
 
+} // namespace coroutines
+} // namespace kotlinx
+
+namespace kotlin::coroutines::cancellation {
+
 /**
  * Thrown by cancellable suspending functions if the Job of the coroutine is
  * cancelled while it is suspending. It indicates normal cancellation of a coroutine.
@@ -62,7 +68,9 @@ public:
  */
 // Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:11-16
 // Transliterated from: kotlinx-coroutines-core/common/src/Exceptions.common.kt:12-14
-class CancellationException : public IllegalStateException {
+// NOTE(port): The existing C++ exception base supplies std::exception transport;
+// its full kotlin.IllegalStateException ancestry remains a separate consumed dependency.
+class CancellationException : public kotlinx::coroutines::IllegalStateException {
 private:
     std::optional<std::string> message_;
     std::exception_ptr cause_;
@@ -99,6 +107,13 @@ public:
 
     ~CancellationException() override = default;
 };
+
+} // namespace kotlin::coroutines::cancellation
+
+namespace kotlinx::coroutines {
+// Native Exceptions.kt imports the actual stdlib class, preserving its identity.
+// Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:9-9
+using kotlin::coroutines::cancellation::CancellationException;
 
 // Transliterated from: kotlinx-coroutines-core/common/src/Exceptions.common.kt:16-22
 class JobCancellationException;
@@ -188,8 +203,7 @@ inline bool is_cancellation_exception(std::exception_ptr exception) {
  */
 extern const bool RECOVER_STACK_TRACES;
 
-} // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlinx::coroutines
 
 // The common expect surface exposes the selected Native actual implementation.
 #include "native/Exceptions.hpp"

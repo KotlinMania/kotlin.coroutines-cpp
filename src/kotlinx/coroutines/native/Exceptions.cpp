@@ -1,4 +1,5 @@
 // port-lint: source kotlinx-coroutines-core/native/src/Exceptions.kt
+// port-lint: source libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt
 /**
  * Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt
  */
@@ -9,7 +10,7 @@
 #include <iterator>
 #include "../../../../third_party/utfcpp/utf8/with_replacement.h"
 
-namespace kotlinx::coroutines {
+namespace kotlin::coroutines::cancellation {
 
 // Transliterated from: libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:12-12
 CancellationException::CancellationException() : CancellationException(std::nullopt, nullptr) {}
@@ -46,6 +47,10 @@ const std::optional<std::string>& CancellationException::get_message() const { r
 // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:27-27
 std::exception_ptr CancellationException::get_cause() const { return cause_; }
 
+} // namespace kotlin::coroutines::cancellation
+
+namespace kotlinx::coroutines {
+
 // Transliterated from: kotlinx-coroutines-core/native/src/Exceptions.kt:13-14
 // NOTE(port): This owning factory result must be deleted by its C++ caller.
 CancellationException* cancellation_exception(const std::string& message, std::exception_ptr cause) {
@@ -62,6 +67,10 @@ CancellationException* cancellation_exception(const char* message, std::exceptio
     return new CancellationException(message, cause);
 }
 
+} // namespace kotlinx::coroutines
+
+namespace kotlin::coroutines::cancellation {
+
 // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:31-31
 bool CancellationException::equals(const std::exception* other) const {
     return this == other;
@@ -73,6 +82,10 @@ std::int32_t CancellationException::hash_code() const {
     // NOTE(port): Inline the actual Native identity primitive for ordinary C++ object storage.
     return std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(this)));
 }
+
+} // namespace kotlin::coroutines::cancellation
+
+namespace kotlinx::coroutines {
 
 namespace {
 // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/String.kt:19-21
