@@ -225,7 +225,7 @@ void* collect_while(std::shared_ptr<Flow<T>> upstream, Predicate predicate, Cont
             auto owner = this->shared_from_this();
             // Evaluate predicate first, then throw. A suspending predicate makes
             // this source operation non-tail-suspending and requires lowering.
-            void* raw = dsl::suspend(detail::invoke_limit_predicate(predicate_, completion.get(), std::move(value)));
+            void* raw = dsl::suspend(detail::invoke_limit_predicate(predicate_, completion.get(), value));
             std::unique_ptr<bool> box(static_cast<bool*>(raw));
             bool keep_collecting = *box;
             box.reset();
@@ -277,6 +277,18 @@ std::shared_ptr<Flow<T>> take_while(std::shared_ptr<Flow<T>> upstream, Predicate
  *
  * This generalizes take_while: a download-progress transform can emit progress
  * before returning !progress.is_done(), retaining the final completed update.
+ *
+ * ```cpp
+ * auto complete_when_done(std::shared_ptr<Flow<DownloadProgress>> updates) {
+ *     return transform_while<DownloadProgress, DownloadProgress>(updates,
+ *         [](FlowCollector<DownloadProgress>* collector, DownloadProgress progress,
+ *            std::shared_ptr<Continuation<void*>> completion)
+ *            __attribute__((annotate("suspend"))) -> void* {
+ *             dsl::suspend(collector->emit(progress, completion.get()));
+ *             return new bool(!progress.is_done());
+ *         });
+ * }
+ * ```
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:112-120
 template<typename T, typename R, typename Transform>
