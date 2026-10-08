@@ -60,6 +60,9 @@ std::vector<T> collect_now(std::shared_ptr<Flow<T>> flow) {
 void test_suspend_lambda_as_flow() {
     auto lambda = std::function<void*(Continuation<void*>*)>([](Continuation<void*>*) -> void* { return new int(42); });
     require(collect_now(as_flow<int>(std::move(lambda))) == std::vector<int>{42});
+    auto owned = std::function<void*(std::shared_ptr<Continuation<void*>>)>(
+        [](std::shared_ptr<Continuation<void*>>) -> void* { return new int(42); });
+    require(collect_now(as_flow<int>(std::move(owned))) == std::vector<int>{42});
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/test/flow/BuildersTest.kt:16-22

@@ -206,6 +206,18 @@ std::shared_ptr<Flow<T>> as_flow(std::function<void*(Continuation<void*>*)> func
     });
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:78-80
+// NOTE(port): Owning Continuation projection for compiler-authored functions.
+// The collection body retains the callable; its returned T box has the same
+// receiving-side ownership policy as the raw Continuation projection.
+template <typename T>
+std::shared_ptr<Flow<T>> as_flow(
+    std::function<void*(std::shared_ptr<Continuation<void*>>)> function) {
+    return as_flow<T>([function = std::move(function)](Continuation<void*>* completion) -> void* {
+        return function(kotlinx::coroutines::internal::retain_continuation(completion));
+    });
+}
+
 /** Creates a cold flow from an iterable; each collection starts at its beginning. */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:85-90
 template <typename T>
