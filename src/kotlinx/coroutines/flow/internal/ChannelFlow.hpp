@@ -150,7 +150,11 @@ public:
     std::function<void*(ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)>
     get_collect_to_fun();
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override;
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120
+    void* collect(FlowCollector<T>* collector,
+        std::shared_ptr<Continuation<void*>> completion);
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:58-59
     int produce_capacity() const;
@@ -292,14 +296,23 @@ inline std::shared_ptr<ReceiveChannel<T>> ChannelFlow<T>::produce_impl(Coroutine
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120
 template <typename T>
 inline void* ChannelFlow<T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {
-    return collect_in_scope([this, collector, owner = this->weak_from_this().lock()](
-        CoroutineScope* scope, std::shared_ptr<Continuation<void*>> completion) -> void* {
-        auto channel = produce_impl(scope);
-        return collect_channel_flow(
-            [collector, channel = std::move(channel), owner](Continuation<void*>* frame) {
-                return kotlinx::coroutines::flow::emit_all(collector, channel.get(), frame);
-            }, std::move(completion));
-    }, continuation);
+    return collect(collector, kotlinx::coroutines::internal::retain_continuation(continuation));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120
+// NOTE(port): The frontend retains the existing receiver owner across scope
+// completion. Raw and stack receivers remain borrowed.
+template <typename T>
+[[clang::annotate("suspend")]]
+inline void* ChannelFlow<T>::collect(FlowCollector<T>* collector,
+    std::shared_ptr<Continuation<void*>> completion) {
+    auto owner = this->weak_from_this().lock();
+    dsl::suspend(collect_in_scope([this, collector](
+        CoroutineScope* scope, std::shared_ptr<Continuation<void*>> continuation) -> void* {
+        return kotlinx::coroutines::flow::emit_all(collector, produce_impl(scope),
+            std::move(continuation));
+    }, completion.get()));
+    return nullptr;
 }
 
 template <typename T>

@@ -28,6 +28,13 @@ void* emit_all(
     channels::ReceiveChannel<T>* channel,
     Continuation<void*>* completion);
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:25-26
+template <typename T>
+void* emit_all(
+    FlowCollector<T>* receiver,
+    std::shared_ptr<channels::ReceiveChannel<T>> channel,
+    std::shared_ptr<Continuation<void*>> completion);
+
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
 template <typename T>
 void* emit_all_impl(
@@ -188,6 +195,18 @@ inline void* emit_all(
     channels::ReceiveChannel<T>* channel,
     Continuation<void*>* completion) {
     return emit_all_impl(receiver, channel, /*consume=*/true, completion);
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:25-26
+// NOTE(port): The owning channel entry forwards its existing owner into the
+// same source collection body. The collector remains borrowed.
+template <typename T>
+inline void* emit_all(
+    FlowCollector<T>* receiver,
+    std::shared_ptr<channels::ReceiveChannel<T>> channel,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return emit_all_impl(receiver, std::move(channel), /*consume=*/true,
+        std::move(completion));
 }
 
 /**
