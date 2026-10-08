@@ -40,6 +40,22 @@ imports the direct body in process, preserving frame-free tail forwarding.
 State-machine calls continue to receive the current frame. This follows the two
 cases in NativeAddContinuationToFunctionCallsLowering.kt:15-22.
 
+`Job::join()` uses that same authoring contract. The source transform-latest
+body in `flow/internal/Merge.cpp` cancels the previous Job, calls
+`previous_flow->join()`, then launches its replacement. The frontend generates
+the non-tail frame and supplies its continuation to the actual virtual join ABI;
+LLVM injection supplies the saved address and resume dispatch. The no-argument
+authoring declaration rejects an unlowered call during code generation.
+Smart-pointer receivers lower their resolved `operator->` before the suspend
+address is saved, preserving the receiver's actual object identity.
+
+The Clang integration completes queued host template instantiations before
+importing a frame, so ordinary standard-library deduction stays in the host
+compiler. Main-file helpers parse only through the current namespace-scope
+definition; later includes and definitions remain owned by the original parser.
+The late-include regression checks this boundary with ordinary Result assignment
+and dispatcher headers after a lowered function.
+
 Omitted authoring arguments are materialized before that final continuation
 argument. Resolved default-expression names retain their namespace identity.
 Frame calls evaluate defaults into argument storage before saving the resume
