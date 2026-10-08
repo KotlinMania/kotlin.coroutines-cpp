@@ -222,7 +222,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 210 | `internal.ThreadSafeHeap` | `internal.ThreadSafeHeap` | 0.38 | 0 | 14/14 matched (target 20) | _none_ | 2/2 matched | _none_ | 0 | 16 | 1606.2 |
 | 211 | `terminal.Reduce` | `flow.Reduce` | 0.03 | 0 | 10/10 matched (target 64) | _none_ | 0/0 matched (target 6) | _none_ | 0 | 10 | 1009.7 |
 | 212 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 0 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | 0 | 10 | 1007.8 |
-| 213 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.39 | 0 | 9/9 matched (target 16) | _none_ | 1/1 matched | _none_ | 0 | 10 | 1006.1 |
+| 213 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.29 | 0 | 9/9 matched (target 17) | _none_ | 1/1 matched | _none_ | 0 | 10 | 1007.1 |
 | 214 | `flow.VirtualTime` | `flow.VirtualTime` | 0.51 | 0 | 7/7 matched (target 11) | _none_ | 2/2 matched | _none_ | 0 | 9 | 904.9 |
 | 215 | `terminal.Collect` | `flow.Collect` | 0.13 | 0 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | 0 | 8 | 808.7 |
 | 216 | `channels.Produce` | `channels.Produce` | 0.27 | 0 | 6/6 matched (target 23) | _none_ | 2/2 matched (target 3) | _none_ | 0 | 8 | 807.3 |

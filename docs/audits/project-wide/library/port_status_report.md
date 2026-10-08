@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 824/2918 matched (target 3038) | 28.2% |
+| Function parity | 824/2918 matched (target 3039) | 28.2% |
 | Class/type parity | 359/560 matched (target 519) | 64.1% |
-| Combined symbol parity | 1183/3478 matched (target 3557) | 34.0% |
+| Combined symbol parity | 1183/3478 matched (target 3558) | 34.0% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -247,18 +247,18 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 203 | `flow.SafeFlowTest` | `flow.SafeFlowTest` | 0.28 | 2/3 matched | `SafeFlowTest::testEmissionsFromDifferentStateMachine` | 1/1 matched | _none_ | 0/1 | 1 | 10407.2 |
 | 204 | `channels.ChannelCoroutine` | `channels.ChannelCoroutine` | 0.29 | 2/4 matched (target 18) | `ChannelCoroutine::cancel`, `ChannelCoroutine::cancel` | 1/1 matched | _none_ | - | 2 | 20507.1 |
 | 205 | `internal.SendingCollector` | `internal.SendingCollector` | 0.29 | 1/1 matched (target 2) | _none_ | 1/1 matched | _none_ | - | 0 | 207.1 |
-| 206 | `flow.IdFlowTest` | `flow.IdFlowTest` | 0.30 | 1/3 matched | `IdFlowTest::testCancelInCollect`, `IdFlowTest::testCancelInFlow` | 1/1 matched | _none_ | 0/2 | 2 | 20407.0 |
-| 207 | `test.MultithreadedDispatchersTest` | `test.MultithreadedDispatchersTest` | 0.31 | 1/4 matched | `MultithreadedDispatchersTest::testNotAllocatingExtraDispatchers`, `MultithreadedDispatchersTest::spin`, `MultithreadedDispatchersTest::timeoutsNotPreventingClosing` | 2/2 matched | _none_ | 0/2 | 3 | 30606.9 |
-| 208 | `flow.SharingStarted` | `flow.SharingStarted` | 0.32 | 7/10 matched (target 21) | `SharingStarted.Companion::WhileSubscribed`, `StartedWhileSubscribed::equals`, `StartedWhileSubscribed::hashCode` | 5/5 matched (target 7) | _none_ | - | 3 | 31506.8 |
-| 209 | `test.CoroutinesTest` | `tests.CoroutinesTest` | 0.32 | 1/20 matched (target 8) | `CoroutinesTest::testSimple`, `CoroutinesTest::testYield`, `CoroutinesTest::testLaunchAndYieldJoin`, `CoroutinesTest::testLaunchUndispatched`, `CoroutinesTest::testNested`, `CoroutinesTest::testWaitChild`, `CoroutinesTest::testCancelChildExplicit`, `CoroutinesTest::testCancelChildWithFinally`, `CoroutinesTest::testWaitNestedChild`, `CoroutinesTest::testExceptionPropagation`, `CoroutinesTest::testCancelParentOnChildException`, `CoroutinesTest::testCancelParentOnNestedException`, `CoroutinesTest::testJoinWithFinally`, `CoroutinesTest::testCancelAndJoin`, `CoroutinesTest::testCancelAndJoinChildCrash`, `CoroutinesTest::testYieldInFinally`, `CoroutinesTest::testCancelAndJoinChildren`, `CoroutinesTest::testParentCrashCancelsChildren`, `CoroutinesTest::testNotCancellableChildWithExceptionCancelled` | 1/1 matched | _none_ | 0/19 | 19 | 192106.8 |
-| 210 | `internal.Concurrent` | `internal.Concurrent` | 0.32 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | - | 1 | 14010907.0 |
-| 211 | `internal.LockFreeTaskQueue` | `internal.LockFreeTaskQueue` | 0.33 | 19/21 matched (target 27) | `LockFreeTaskQueueCore::wo`, `LockFreeTaskQueueCore::withState` | 4/4 matched | _none_ | - | 2 | 22506.7 |
-| 212 | `test.MultithreadedDispatcherStressTest` | `concurrent.MultithreadedDispatcherStressTest` | 0.33 | 0/1 matched | `MultithreadedDispatcherStressTest::testClosingNotDroppingTasks` | 1/1 matched | _none_ | 0/1 | 1 | 10206.7 |
-| 213 | `flow.SharedFlow` | `flow.SharedFlow` | 0.35 | 26/31 matched (target 48) | `MutableSharedFlow`, `SharedFlowImpl::fuse`, `Array<Any?>::getBufferAt`, `Array<Any?>::setBufferAt`, `SharedFlow<T>::fuseSharedFlow` | 5/5 matched (target 8) | _none_ | - | 5 | 53606.5 |
-| 214 | `internal.ThreadSafeHeap` | `internal.ThreadSafeHeap` | 0.38 | 14/14 matched (target 20) | _none_ | 2/2 matched | _none_ | - | 0 | 1606.2 |
-| 215 | `test.CompletableDeferredTest` | `tests.CompletableDeferredTest` | 0.38 | 5/18 matched (target 9) | `CompletableDeferredTest::testFresh`, `CompletableDeferredTest::testComplete`, `CompletableDeferredTest::testCompleteWithIncompleteResult`, `CompletableDeferredTest::testCancelWithException`, `CompletableDeferredTest::testCompleteWithResultOK`, `CompletableDeferredTest::testCompleteWithResultException`, `CompletableDeferredTest::testParentCancelsChild`, `CompletableDeferredTest::testParentActiveOnChildCompletion`, `CompletableDeferredTest::testParentCancelledOnChildException`, `CompletableDeferredTest::testParentActiveOnChildCancellation`, `CompletableDeferredTest::testAwait`, `CompletableDeferredTest::testCancelAndAwaitParentWaitChildren`, `CompletableDeferredTest::testCompleteAndAwaitParentWaitChildren` | 1/1 matched | _none_ | 0/13 | 13 | 131906.2 |
-| 216 | `channels.FlowCallbackTest` | `channels.FlowCallbackTest` | 0.38 | 0/2 matched | `FlowCallbackTest::testClosedPrematurely`, `FlowCallbackTest::testNotClosedPrematurely` | 1/1 matched | _none_ | 0/2 | 2 | 20306.2 |
-| 217 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.39 | 9/9 matched (target 16) | _none_ | 1/1 matched | _none_ | - | 0 | 1006.1 |
+| 206 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.29 | 9/9 matched (target 17) | _none_ | 1/1 matched | _none_ | - | 0 | 1007.1 |
+| 207 | `flow.IdFlowTest` | `flow.IdFlowTest` | 0.30 | 1/3 matched | `IdFlowTest::testCancelInCollect`, `IdFlowTest::testCancelInFlow` | 1/1 matched | _none_ | 0/2 | 2 | 20407.0 |
+| 208 | `test.MultithreadedDispatchersTest` | `test.MultithreadedDispatchersTest` | 0.31 | 1/4 matched | `MultithreadedDispatchersTest::testNotAllocatingExtraDispatchers`, `MultithreadedDispatchersTest::spin`, `MultithreadedDispatchersTest::timeoutsNotPreventingClosing` | 2/2 matched | _none_ | 0/2 | 3 | 30606.9 |
+| 209 | `flow.SharingStarted` | `flow.SharingStarted` | 0.32 | 7/10 matched (target 21) | `SharingStarted.Companion::WhileSubscribed`, `StartedWhileSubscribed::equals`, `StartedWhileSubscribed::hashCode` | 5/5 matched (target 7) | _none_ | - | 3 | 31506.8 |
+| 210 | `test.CoroutinesTest` | `tests.CoroutinesTest` | 0.32 | 1/20 matched (target 8) | `CoroutinesTest::testSimple`, `CoroutinesTest::testYield`, `CoroutinesTest::testLaunchAndYieldJoin`, `CoroutinesTest::testLaunchUndispatched`, `CoroutinesTest::testNested`, `CoroutinesTest::testWaitChild`, `CoroutinesTest::testCancelChildExplicit`, `CoroutinesTest::testCancelChildWithFinally`, `CoroutinesTest::testWaitNestedChild`, `CoroutinesTest::testExceptionPropagation`, `CoroutinesTest::testCancelParentOnChildException`, `CoroutinesTest::testCancelParentOnNestedException`, `CoroutinesTest::testJoinWithFinally`, `CoroutinesTest::testCancelAndJoin`, `CoroutinesTest::testCancelAndJoinChildCrash`, `CoroutinesTest::testYieldInFinally`, `CoroutinesTest::testCancelAndJoinChildren`, `CoroutinesTest::testParentCrashCancelsChildren`, `CoroutinesTest::testNotCancellableChildWithExceptionCancelled` | 1/1 matched | _none_ | 0/19 | 19 | 192106.8 |
+| 211 | `internal.Concurrent` | `internal.Concurrent` | 0.32 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | - | 1 | 14010907.0 |
+| 212 | `internal.LockFreeTaskQueue` | `internal.LockFreeTaskQueue` | 0.33 | 19/21 matched (target 27) | `LockFreeTaskQueueCore::wo`, `LockFreeTaskQueueCore::withState` | 4/4 matched | _none_ | - | 2 | 22506.7 |
+| 213 | `test.MultithreadedDispatcherStressTest` | `concurrent.MultithreadedDispatcherStressTest` | 0.33 | 0/1 matched | `MultithreadedDispatcherStressTest::testClosingNotDroppingTasks` | 1/1 matched | _none_ | 0/1 | 1 | 10206.7 |
+| 214 | `flow.SharedFlow` | `flow.SharedFlow` | 0.35 | 26/31 matched (target 48) | `MutableSharedFlow`, `SharedFlowImpl::fuse`, `Array<Any?>::getBufferAt`, `Array<Any?>::setBufferAt`, `SharedFlow<T>::fuseSharedFlow` | 5/5 matched (target 8) | _none_ | - | 5 | 53606.5 |
+| 215 | `internal.ThreadSafeHeap` | `internal.ThreadSafeHeap` | 0.38 | 14/14 matched (target 20) | _none_ | 2/2 matched | _none_ | - | 0 | 1606.2 |
+| 216 | `test.CompletableDeferredTest` | `tests.CompletableDeferredTest` | 0.38 | 5/18 matched (target 9) | `CompletableDeferredTest::testFresh`, `CompletableDeferredTest::testComplete`, `CompletableDeferredTest::testCompleteWithIncompleteResult`, `CompletableDeferredTest::testCancelWithException`, `CompletableDeferredTest::testCompleteWithResultOK`, `CompletableDeferredTest::testCompleteWithResultException`, `CompletableDeferredTest::testParentCancelsChild`, `CompletableDeferredTest::testParentActiveOnChildCompletion`, `CompletableDeferredTest::testParentCancelledOnChildException`, `CompletableDeferredTest::testParentActiveOnChildCancellation`, `CompletableDeferredTest::testAwait`, `CompletableDeferredTest::testCancelAndAwaitParentWaitChildren`, `CompletableDeferredTest::testCompleteAndAwaitParentWaitChildren` | 1/1 matched | _none_ | 0/13 | 13 | 131906.2 |
+| 217 | `channels.FlowCallbackTest` | `channels.FlowCallbackTest` | 0.38 | 0/2 matched | `FlowCallbackTest::testClosedPrematurely`, `FlowCallbackTest::testNotClosedPrematurely` | 1/1 matched | _none_ | 0/2 | 2 | 20306.2 |
 | 218 | `internal.NamedDispatcher` | `internal.NamedDispatcher` | 0.39 | 2/4 matched | `NamedDispatcher::isDispatchNeeded`, `NamedDispatcher::dispatchYield` | 1/1 matched | _none_ | - | 2 | 20506.1 |
 | 219 | `common.CoroutineDispatcher` | `coroutines.CoroutineDispatcher` | 0.39 | 7/8 matched (target 10) | `CoroutineDispatcher::limitedParallelism` | 1/1 matched (target 2) | _none_ | - | 1 | 10906.1 |
 | 220 | `channels.ChannelBuildersFlowTest` | `channels.ChannelBuildersFlowTest` | 0.39 | 0/10 matched | `ChannelBuildersFlowTest::testChannelConsumeAsFlow`, `ChannelBuildersFlowTest::testChannelReceiveAsFlow`, `ChannelBuildersFlowTest::testConsumeAsFlowCancellation`, `ChannelBuildersFlowTest::testReceiveAsFlowCancellation`, `ChannelBuildersFlowTest::testConsumeAsFlowException`, `ChannelBuildersFlowTest::testReceiveAsFlowException`, `ChannelBuildersFlowTest::testConsumeAsFlowProduceFusing`, `ChannelBuildersFlowTest::testReceiveAsFlowProduceFusing`, `ChannelBuildersFlowTest::testConsumeAsFlowProduceBuffered`, `ChannelBuildersFlowTest::testProduceInAtomicity` | 1/1 matched | _none_ | 0/10 | 10 | 101106.1 |
@@ -629,6 +629,7 @@ These files need significant work:
 - `flow.SafeFlowTest` -> `flow.SafeFlowTest` (0.28)
 - `channels.ChannelCoroutine` -> `channels.ChannelCoroutine` (0.29)
 - `internal.SendingCollector` -> `internal.SendingCollector` (0.29)
+- `common.AbstractCoroutine` -> `coroutines.AbstractCoroutine` (0.29)
 - `flow.IdFlowTest` -> `flow.IdFlowTest` (0.30)
 - `test.MultithreadedDispatchersTest` -> `test.MultithreadedDispatchersTest` (0.31)
 - `flow.SharingStarted` -> `flow.SharingStarted` (0.32)
@@ -640,7 +641,6 @@ These files need significant work:
 - `internal.ThreadSafeHeap` -> `internal.ThreadSafeHeap` (0.38)
 - `test.CompletableDeferredTest` -> `tests.CompletableDeferredTest` (0.38)
 - `channels.FlowCallbackTest` -> `channels.FlowCallbackTest` (0.38)
-- `common.AbstractCoroutine` -> `coroutines.AbstractCoroutine` (0.39)
 - `internal.NamedDispatcher` -> `internal.NamedDispatcher` (0.39)
 - `common.CoroutineDispatcher` -> `coroutines.CoroutineDispatcher` (0.39)
 - `channels.ChannelBuildersFlowTest` -> `channels.ChannelBuildersFlowTest` (0.39)
@@ -800,7 +800,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7238 / 7437 lines (97%)
+**Documentation line amount:** 7232 / 7437 lines (97%)
 
 Documentation gaps (>20%), complete list:
 
