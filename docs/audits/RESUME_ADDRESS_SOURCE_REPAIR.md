@@ -1,5 +1,52 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Retained local constant-value continuation
+
+Source checkpoint 12589756 continues the original-variable binding work after
+rereading NativeSuspendFunctionLowering.kt:368-410, including the IrConst and
+immutable-value purity contract. C++ additionally distinguishes constant reads
+that do not require a variable's identity from reads that require its object.
+
+NativeSuspendLowering.cpp:277 now uses Clang's NOUR_Constant classification,
+constant-expression usability and actual integral evaluation for retained
+locals/parameters. It prints the evaluated value with the original unqualified
+expression type, including enum types. Standard signed/unsigned 64-bit literals
+retain their full range; the signed minimum uses a representable literal pair.
+At :324, these constant reads retain their compile-time value; address-taking
+and reference uses continue to use the actual stored variable. At :377, the
+type-location visitor also handles constant references inside template arguments
+and array bounds. Global traits and template members are not folded by this
+local binding adaptation, and no second constexpr object is introduced.
+
+qualified_locals.cpp:112-125 adds constexpr and constant-initialized integer
+locals, an enum constant, uint64 maximum and int64 minimum, an actual std::array
+template argument, static assertions and a retained pointer to the count object.
+At :195, repeated suspension checks the same object's address and values.
+The actual Clang AST marks the value reads non_odr_use_constant, while the
+address-taking reference retains its ordinary identity-bearing use.
+
+Strict ordinary fixture syntax/AST emission exits 0. Final direct strict compiler
+translation-unit checking exits 1 in LLVM/Clang dependency headers, with no
+diagnostics located in NativeSuspendLowering.cpp. Fresh CMake frontend build
+exits 2 in dependency headers. The older installed plugin rejects the fixture's
+earlier alias declaration, so its exit 1 does not execute this repair. Receipts
+under build/ir-recovery: constant-locals-source.log,
+constant-locals-lowering-final.log, constant-locals-plugin-build.log and
+constant-locals-fixture.log. No warnings were suppressed; no fresh runtime
+establishes constant object identity or cleanup for this changed compiler.
+
+Non-integral and wider extension constant values, dependent type/binding cases,
+evaluated polymorphic typeid with suspension, local classes and nested invoke
+lexical binding remain incomplete. Both complete executable acceptance paths
+remain unproven. Older sections below describe their source checkpoints.
+
+Both exact full-root deep scans exit 0 without concurrent source edits. Receipts:
+constant-locals-library-deep.log and constant-locals-compiler-deep.log. Generated
+reports remain unchanged: library 832/2918 bodies, 359/560 types, similarity 0.26
+with 123 scoring failures; compiler 592/7657 bodies, 174/1727 types, similarity
+0.36 with 24 failures. Those measurements do not validate constant expression
+preservation or runtime identity through the compiler pipeline.
+
 ## Unevaluated type query continuation
 
 Source checkpoint 05a52132 continues the runtime-call traversal contract after

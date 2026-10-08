@@ -6,6 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** 12589756 preserves retained integral/enum
+constant reads through Clang's non-ODR-use and constant-evaluation contracts.
+NativeSuspendLowering.cpp:277,324,377 emits typed constant values in ordinary
+expressions and template/type argument locations; address/reference uses retain
+the actual stored object. qualified_locals adds integer limits, an enum constant,
+template/static assertion uses and address identity across suspension. Strict
+source syntax/AST emission exits 0. Final strict lowering syntax exits 1 in
+dependency headers, with no source-local diagnostics; fresh plugin build exits
+2. The older frontend rejects the alias declaration. No fresh runtime validates
+this repair. Non-integral/wider extension constants and broader dependent/lexical
+integration remain incomplete. Read RESUME_ADDRESS_SOURCE_REPAIR.md's new top
+section. Both full-root scans exit 0 and leave generated reports unchanged.
+The full transliteration/state-machine goal remains active.
+
 **Latest compiler continuation:** 05a52132 preserves concrete decltype types and
 original operand categories for C++ type queries. Suspend discovery, tail edits,
 overload deferral and source checking respect unevaluated operands; local static
