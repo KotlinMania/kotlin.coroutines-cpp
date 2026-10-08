@@ -42,3 +42,21 @@ and both MLX GPU acceptance paths remain incomplete. In particular,
 cancellation_exception_message still hardcodes AbstractCoroutine instead of the
 source classSimpleName contract. Native JobCancellationException.to_string and
 Continuation.to_debug_string also remain genuine dependency-impact source gaps.
+
+Both full-root deep scans completed with exit 0 using the existing analyzer
+binary; its fresh strict rebuild remains unresolved. Library measurements:
+824/2918 functions, 359/560 types, average body cosine 0.26, documentation cosine
+0.37, documentation line amount 7232/7437 (97%), 123 scoring failures.
+AbstractCoroutine remains 9/9 function names and 1/1 type, but reported body
+cosine changed from 0.39 to 0.29 after typed overload and unused binding changes.
+This measured regression is retained without weakening the oracle. Full symbol
+presence and all-eight exact KDoc text presence do not establish full source
+body parity. The line-amount decrease from 7238 to 7232 reflects replacing the
+long invented class description with the actual shorter KDoc; quantity and
+correspondence must be evaluated separately.
+
+Consumed compiler/stdlib measurements: 592/7657 functions, 174/1727 types,
+body cosine 0.36, documentation cosine 0.60, documentation line amount
+2090/5654 (37%), 24 scoring failures. Positional deep comparison, word-frequency
+cosines, capped per-file documentation amount and exact block text are distinct
+evidence. The source-first goal remains active.
