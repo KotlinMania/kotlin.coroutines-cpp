@@ -26,6 +26,25 @@ def main():
     args = parser.parse_args()
     work = args.work_dir.resolve()
     work.mkdir(parents=True, exist_ok=True)
+    # Lowering must not import definitions or includes ahead of the host parser.
+    late_include = work / 'late_include.cpp'
+    late_include.write_text('''#include <kotlinx/coroutines/ContinuationImpl.hpp>
+#include <kotlinx/coroutines/dsl/Suspend.hpp>
+using namespace kotlinx::coroutines;
+[[clang::annotate("suspend")]] void* external(std::shared_ptr<Continuation<void*>>);
+namespace authoring::nested {
+[[suspend]] void* lowered(std::shared_ptr<Continuation<void*>> completion) {
+    auto result = external(completion);
+    return result;
+}
+}
+#include <kotlinx/coroutines/internal/DispatchedContinuation.hpp>
+void assign(Result<void*>& a, const Result<void*>& b) { a = b; }
+''')
+    run([args.compiler, '-std=c++20', '-I' + str(args.root / 'src'),
+         '-Xclang', '-load', '-Xclang', str(args.plugin), '-Xclang', '-add-plugin',
+         '-Xclang', 'kotlinx-suspend', '-fsyntax-only', str(late_include)],
+        work, 'late-include-scope')
     rejected = subprocess.run([args.compiler, '-std=c++23',
         '-Xclang', '-load', '-Xclang', str(args.plugin), '-Xclang', '-add-plugin',
         '-Xclang', 'kotlinx-suspend', '-fsyntax-only',
