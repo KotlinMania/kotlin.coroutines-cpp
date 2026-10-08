@@ -25,6 +25,10 @@ int array_copies = 0;
 int array_destroyed[4]{};
 int array_destructions = 0;
 int array_sources = 0;
+int branch_alive = 0;
+int branch_constructed = 0;
+int branch_destroyed = 0;
+int empty_branch_inits = 0;
 std::shared_ptr<Continuation<void*>> pending;
 std::weak_ptr<Continuation<void*>> frame;
 struct QualifiedValue {
@@ -37,6 +41,12 @@ struct QualifiedValue {
     int read() const volatile & { return value_ + 2; }
 private:
     int value_;
+};
+struct BranchGuard {
+    explicit BranchGuard(int index) : index(index) { ++branch_alive; ++branch_constructed; }
+    BranchGuard(const BranchGuard&) = delete;
+    ~BranchGuard() { --branch_alive; ++branch_destroyed; }
+    int index;
 };
 struct MemberParts {
     int first;
@@ -177,27 +187,39 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
     for (int index = 0; index < 2; ++index) {
         using Value = int;
         Value increment = Value(7);
-        total += fixed.read() + observed.read() + both.read();
-        void* raw = dsl::suspend(await_value(completion));
-        std::unique_ptr<int> box(static_cast<int*>(raw));
-        assert(std::addressof(fixed) == fixed_identity);
-        assert(std::addressof(observed) == observed_identity);
-        assert(std::addressof(both) == both_identity);
-        assert(cached_identity == std::addressof(cached));
-        assert(cached == 79 && static_initializations == 1);
-        assert(*box == static_cast<Value>(increment));
-        assert(std::addressof(head) == head_identity && head_identity == &items[0]);
-        assert(head == 4 && tail == 4 && copy_head == 3 && copy_tail == 4);
-        assert(first_row[0] == 1 && first_row[1] == 2 && second_row[0] == 3 && second_row[1] == 4);
-        assert(first_copy.value == 11 && second_copy.value == 12);
-        assert(std::addressof(first_copy) == copy_identity && copy_identity != &originals[0]);
-        assert(array_copies == 2 && array_sources == 1);
-        assert(std::addressof(count) == count_identity && *count_identity == 2);
-        assert(constants[0] == count && constants[1] == multiplier);
-        assert(member_first == 3 && member_second == 5);
-        assert(from_get == 3 && from_get_second == 4 && binding_evaluations == 2);
-        assert(resource.get() == resource_identity && tag == 1);
-        total += fixed.read() + observed.read() + both.read() + *box;
+        if constexpr (++empty_branch_inits; false) {
+            std::unique_ptr<int> unused(static_cast<int*>(dsl::suspend(await_value(completion))));
+            assert(unused);
+        }
+        if constexpr (BranchGuard guard(index); count == 2) {
+            assert(guard.index == index && branch_alive == 1);
+            total += fixed.read() + observed.read() + both.read();
+            void* raw = dsl::suspend(await_value(completion));
+            std::unique_ptr<int> box(static_cast<int*>(raw));
+            assert(std::addressof(fixed) == fixed_identity);
+            assert(std::addressof(observed) == observed_identity);
+            assert(std::addressof(both) == both_identity);
+            assert(cached_identity == std::addressof(cached));
+            assert(cached == 79 && static_initializations == 1);
+            assert(*box == static_cast<Value>(increment));
+            assert(std::addressof(head) == head_identity && head_identity == &items[0]);
+            assert(head == 4 && tail == 4 && copy_head == 3 && copy_tail == 4);
+            assert(first_row[0] == 1 && first_row[1] == 2 && second_row[0] == 3 && second_row[1] == 4);
+            assert(first_copy.value == 11 && second_copy.value == 12);
+            assert(std::addressof(first_copy) == copy_identity && copy_identity != &originals[0]);
+            assert(array_copies == 2 && array_sources == 1);
+            assert(std::addressof(count) == count_identity && *count_identity == 2);
+            assert(constants[0] == count && constants[1] == multiplier);
+            assert(member_first == 3 && member_second == 5);
+            assert(from_get == 3 && from_get_second == 4 && binding_evaluations == 2);
+            assert(resource.get() == resource_identity && tag == 1);
+            total += fixed.read() + observed.read() + both.read() + *box;
+        } else {
+            struct DiscardedValue { int value; };
+            DiscardedValue discarded{0};
+            std::unique_ptr<int> unused(static_cast<int*>(dsl::suspend(await_value(completion))));
+            assert(discarded.value == 0 && unused);
+        }
     }
     ++finished;
     return new int(total);
@@ -223,13 +245,15 @@ int main() {
         binding_evaluations = 0;
         array_copies = array_destructions = 0;
         array_sources = 0;
+        branch_constructed = branch_destroyed = 0;
+        empty_branch_inits = 0;
         auto done = std::make_shared<Done>();
         assert(ordinary_type_queries(done) && calls == 0);
         try {
             void* result = qualified_locals(37 + mode, done);
             if (intrinsics::is_coroutine_suspended(result)) {
                 while (pending) {
-                    assert(alive == 4 && array_alive == 4 && done->resumes == 0);
+                    assert(alive == 4 && array_alive == 4 && branch_alive == 1 && done->resumes == 0);
                     auto held = std::move(pending);
                     if (mode == 2 && calls == 2)
                         held->resume_with(Result<void*>::failure(std::make_exception_ptr(std::runtime_error("resumed failure"))));
@@ -244,6 +268,8 @@ int main() {
         assert(done->failed || done->value == 542);
         assert(calls == (mode == 5 ? 0 : mode == 4 ? 1 : 2));
         assert(alive == 0 && !pending && frame.expired());
+        assert(branch_alive == 0 && branch_constructed == calls && branch_destroyed == calls);
+        assert(empty_branch_inits == calls);
         assert(array_alive == 0 && array_copies == 2 && array_sources == 1);
         assert(array_destructions == (mode == 5 ? 3 : 4));
         assert(array_destroyed[0] == (mode == 5 ? 11 : 12));

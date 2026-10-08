@@ -491,6 +491,11 @@ private:
     bool has_suspend_calls(const Stmt* statement) const {
         if (!statement) return false;
         if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return false;
+        if (const auto* branch = dyn_cast<IfStmt>(statement); branch && branch->isConstexpr()) {
+            if (auto selected = branch->getNondiscardedCase(context_))
+                return has_suspend_calls(branch->getInit()) ||
+                    has_suspend_calls(branch->getConditionVariableDeclStmt()) || has_suspend_calls(*selected);
+        }
         if (const auto* lambda = dyn_cast<LambdaExpr>(statement)) {
             for (const auto* initializer : lambda->capture_inits())
                 if (has_suspend_calls(initializer)) return true;
@@ -1415,14 +1420,23 @@ private:
             scopes_.emplace_back();
             emit_statement(branch->getInit());
             emit_statement(branch->getConditionVariableDeclStmt());
-            auto condition = emit_condition(branch->getCond());
-            body_ << "if (" << condition << ") {\n";
-            emit_statement(branch->getThen());
-            body_ << "}\n";
-            if (branch->getElse()) {
-                body_ << "else {\n";
-                emit_statement(branch->getElse());
+            if (branch->isConstexpr()) {
+                // NOTE(port): C++ discarded arms do not instantiate their
+                // storage or suspension operations. Init objects still have
+                // the statement's ordinary construction and cleanup scope.
+                auto selected = branch->getNondiscardedCase(context_);
+                if (!selected) throw std::runtime_error("constexpr branch requires resolved template instantiation");
+                emit_statement(*selected);
+            } else {
+                auto condition = emit_condition(branch->getCond());
+                body_ << "if (" << condition << ") {\n";
+                emit_statement(branch->getThen());
                 body_ << "}\n";
+                if (branch->getElse()) {
+                    body_ << "else {\n";
+                    emit_statement(branch->getElse());
+                    body_ << "}\n";
+                }
             }
             clear_scope(scopes_.size() - 1);
             scopes_.pop_back();

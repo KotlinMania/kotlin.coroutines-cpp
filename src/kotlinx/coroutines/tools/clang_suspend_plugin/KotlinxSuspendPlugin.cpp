@@ -300,6 +300,14 @@ private:
         std::function<void(const Stmt*, const Expr*, bool)> visit = [&](const Stmt* statement, const Expr* root, bool already_returned) {
             if (!statement || isa<LambdaExpr>(statement)) return;
             if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return;
+            if (const auto* branch = dyn_cast<IfStmt>(statement); branch && branch->isConstexpr()) {
+                if (auto selected = branch->getNondiscardedCase(context)) {
+                    visit(branch->getInit(), nullptr, already_returned);
+                    visit(branch->getConditionVariableDeclStmt(), nullptr, already_returned);
+                    visit(*selected, nullptr, already_returned);
+                    return;
+                }
+            }
             if (isa<ReturnStmt>(statement)) already_returned = true;
             if (const auto* expression = dyn_cast<Expr>(statement)) {
                 if (!root) root = expression;
@@ -462,6 +470,14 @@ private:
         }
         std::function<void(const Stmt*)> visit = [&](const Stmt* statement) {
             if (!statement) return;
+            if (const auto* branch = dyn_cast<IfStmt>(statement); branch && branch->isConstexpr()) {
+                if (auto selected = branch->getNondiscardedCase(ctx)) {
+                    visit(branch->getInit());
+                    visit(branch->getConditionVariableDeclStmt());
+                    visit(*selected);
+                    return;
+                }
+            }
             if (const auto* lambda = dyn_cast<LambdaExpr>(statement)) {
                 for (const auto* initializer : lambda->capture_inits()) visit(initializer);
                 return;

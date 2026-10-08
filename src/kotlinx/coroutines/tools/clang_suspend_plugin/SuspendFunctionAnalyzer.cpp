@@ -212,12 +212,25 @@ bool SuspendFunctionAnalyzer::is_unevaluated_expression(const Stmt* statement) {
 bool SuspendFunctionAnalyzer::requires_overload_resolution(const FunctionDecl* function) {
     class UnresolvedCalls : public RecursiveASTVisitor<UnresolvedCalls> {
     public:
+        explicit UnresolvedCalls(const ASTContext& context) : context_(context) {}
         bool unresolved = false;
         bool TraverseStmt(Stmt* statement) {
             if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return true;
             return RecursiveASTVisitor<UnresolvedCalls>::TraverseStmt(statement);
         }
         bool TraverseDecltypeTypeLoc(DecltypeTypeLoc, bool = true) { return true; }
+        bool TraverseIfStmt(IfStmt* branch) {
+            if (!branch->isConstexpr()) return RecursiveASTVisitor<UnresolvedCalls>::TraverseIfStmt(branch);
+            auto selected = branch->getNondiscardedCase(context_);
+            if (!selected) {
+                // NOTE(port): Instantiation chooses the C++ arm before its
+                // calls and field types can participate in frame lowering.
+                unresolved = true;
+                return true;
+            }
+            return TraverseStmt(branch->getInit()) && TraverseStmt(branch->getConditionVariableDeclStmt()) &&
+                TraverseStmt(*selected);
+        }
         // NOTE(port): Local class member calls resolve in their own context.
         bool TraverseDecl(Decl* declaration) {
             if (declaration && (isa<RecordDecl>(declaration) || isa<FunctionDecl>(declaration))) return true;
@@ -247,7 +260,9 @@ bool SuspendFunctionAnalyzer::requires_overload_resolution(const FunctionDecl* f
             unresolved |= suspend && ordinary;
             return true;
         }
-    } calls;
+    private:
+        const ASTContext& context_;
+    } calls(function->getASTContext());
     calls.TraverseStmt(function->getBody());
     return calls.unresolved;
 }

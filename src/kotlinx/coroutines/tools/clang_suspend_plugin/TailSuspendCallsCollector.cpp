@@ -17,7 +17,7 @@ struct VisitorState { bool inside_try_block; bool is_tail_expression; };
 // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt:29-119
 class Visitor {
 public:
-    explicit Visitor(bool is_unit_return) : is_unit_return_(is_unit_return) {}
+    Visitor(const ASTContext& context, bool is_unit_return) : context_(context), is_unit_return_(is_unit_return) {}
     TailSuspendCalls result{{}, false};
 
     // NOTE(port): Clang node dispatch supplies Kotlin IrElement.accept visitor selection.
@@ -64,6 +64,12 @@ private:
     void visit_when(const IfStmt* expression, VisitorState data) {
         accept(expression->getInit(), {data.inside_try_block, false});
         accept(expression->getConditionVariableDeclStmt(), {data.inside_try_block, false});
+        if (expression->isConstexpr()) {
+            if (auto selected = expression->getNondiscardedCase(context_)) {
+                accept(*selected, data);
+                return;
+            }
+        }
         accept(expression->getCond(), {data.inside_try_block, false});
         accept(expression->getThen(), data);
         accept(expression->getElse(), data);
@@ -129,6 +135,7 @@ private:
     bool is_return_if_suspended_call(const CallExpr* expression) const {
         return SuspendFunctionAnalyzer::is_suspend_wrapper(expression);
     }
+    const ASTContext& context_;
     bool is_unit_return_;
 };
 }
@@ -142,7 +149,7 @@ TailSuspendCalls collect_tail_suspend_calls(const clang::FunctionDecl* function)
     }
     if (!is_suspend) throw std::invalid_argument("A suspend function expected");
     if (!function->hasBody()) return {{}, false};
-    Visitor visitor(is_unit_return);
+    Visitor visitor(function->getASTContext(), is_unit_return);
     visitor.accept(function->getBody(), {false, true});
     return visitor.result;
 }
