@@ -2882,29 +2882,25 @@ public:
 
     virtual void on_receive_dequeued() {}
 
-    // -------------------------------------------------------------------------
-    // From OnUndeliveredElement.kt Lines 8-24:
-    // internal fun <E> OnUndeliveredElement<E>.callUndeliveredElementCatchingException(...)
-    // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/OnUndeliveredElement.kt:8-24
     std::exception_ptr call_undelivered_element_catching_exception(
         E element,
         std::exception_ptr undelivered_element_exception = nullptr
     ) {
-        try {
-            if (on_undelivered_element_) {
-                on_undelivered_element_(element);
-            }
-        } catch (...) {
-            std::exception_ptr ex = std::current_exception();
-            if (undelivered_element_exception) {
-                // Upstream: cause?.addSuppressed(suppressed) — C++ has no addSuppressed
-                // analogue; the original exception is returned unchanged.
-                return undelivered_element_exception;
-            } else {
-                return ex;
+        if (!on_undelivered_element_) return undelivered_element_exception;
+        internal::UndeliveredElementException* previous = nullptr;
+        if (undelivered_element_exception) {
+            try {
+                std::rethrow_exception(undelivered_element_exception);
+            } catch (internal::UndeliveredElementException& exception) {
+                previous = &exception;
             }
         }
-        return undelivered_element_exception;
+        auto* result = internal::call_undelivered_element_catching_exception<E>(
+            on_undelivered_element_, element, previous);
+        if (result == previous) return undelivered_element_exception;
+        std::unique_ptr<internal::UndeliveredElementException> exception(result);
+        return exception ? std::make_exception_ptr(*exception) : nullptr;
     }
 
     // -------------------------------------------------------------------------
@@ -3027,6 +3023,7 @@ public:
         }
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:826-872
     void drop_first_element_until_the_specified_cell_is_in_the_buffer(int64_t global_cell_index) {
         assert(is_conflated_drop_oldest());
         ChannelSegment<E>* segment = receive_segment_.load(std::memory_order_acquire);
@@ -3057,9 +3054,11 @@ public:
             } else {
                 // Clean the reference to the previous segment.
                 segment->clean_prev();
+                // NOTE(port): update_cell_receive transfers an owning E result box.
+                // Destroy the box after dropping its value, including handler failure.
+                std::unique_ptr<E> element(static_cast<E*>(upd_cell_result));
                 if (on_undelivered_element_) {
-                    E element = *static_cast<E*>(upd_cell_result);
-                    std::exception_ptr ex = call_undelivered_element_catching_exception(element);
+                    std::exception_ptr ex = call_undelivered_element_catching_exception(*element);
                     if (ex) {
                         std::rethrow_exception(ex);
                     }
