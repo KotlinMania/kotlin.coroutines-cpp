@@ -1,5 +1,6 @@
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
+#include "kotlinx/coroutines/CoroutineName.hpp"
 #include "kotlinx/coroutines/channels/Channels.hpp"
 #include "kotlinx/coroutines/flow/Channels.hpp"
 #include "kotlinx/coroutines/flow/Collect.hpp"
@@ -19,7 +20,7 @@ int ownership_failure(int line) {
     return 1;
 }
 
-class QueueDispatcher final : public kotlinx::coroutines::CoroutineDispatcher {
+class QueueDispatcher : public kotlinx::coroutines::CoroutineDispatcher {
 public:
     mutable std::deque<std::shared_ptr<kotlinx::coroutines::Runnable>> queue;
 
@@ -156,6 +157,63 @@ int main() {
     using kotlinx::coroutines::channels::create_channel;
     using kotlinx::coroutines::flow::consume_as_flow;
     using kotlinx::coroutines::flow::receive_as_flow;
+
+    // ChannelFlow.kt:155-170: equal but distinct interceptors use the
+    // undispatched path. An added name forces the full-context check to differ.
+    for (bool equal : {true, false}) {
+        class EqualDispatcher final : public QueueDispatcher {
+        public:
+            explicit EqualDispatcher(int value) : value_(value) {}
+            bool equals(const kotlin::coroutines::CoroutineContext* other) const override {
+                auto dispatcher = dynamic_cast<const EqualDispatcher*>(other);
+                return dispatcher && dispatcher->value_ == value_;
+            }
+        private:
+            int value_;
+        };
+        auto caller_dispatcher = std::make_shared<EqualDispatcher>(1);
+        auto upstream_dispatcher = std::make_shared<EqualDispatcher>(equal ? 1 : 2);
+        auto upstream_context = upstream_dispatcher->operator+(
+            std::make_shared<kotlinx::coroutines::CoroutineName>("upstream"));
+        int collections = 0;
+        bool undispatched_collector = false;
+        bool upstream_context_seen = false;
+        auto source = kotlinx::coroutines::flow::unsafe_flow<int>(
+            [&](kotlinx::coroutines::flow::FlowCollector<int>* collector,
+                kotlin::coroutines::Continuation<void*>* continuation) -> void* {
+                ++collections;
+                undispatched_collector = dynamic_cast<kotlinx::coroutines::flow::internal::
+                    UndispatchedContextCollector<int>*>(collector) != nullptr;
+                upstream_context_seen = continuation->get_context()->get(
+                    kotlin::coroutines::ContinuationInterceptor::type_key).get() == upstream_dispatcher.get();
+                return nullptr;
+            });
+        class ObservedOperator final : public kotlinx::coroutines::flow::internal::ChannelFlowOperatorImpl<int> {
+        public:
+            using ChannelFlowOperatorImpl<int>::ChannelFlowOperatorImpl;
+            int producers = 0;
+            std::shared_ptr<kotlinx::coroutines::channels::ReceiveChannel<int>> produce_impl(
+                kotlinx::coroutines::CoroutineScope* scope) override {
+                ++producers;
+                return ChannelFlowOperatorImpl<int>::produce_impl(scope);
+            }
+        };
+        auto operated = std::make_shared<ObservedOperator>(source, upstream_context);
+        RecordingContinuation completion;
+        completion.ctx_ = caller_dispatcher;
+        std::vector<int> values;
+        VectorCollector<int> collector(&values);
+        auto result = operated->collect(&collector, &completion);
+        upstream_dispatcher->drain();
+        caller_dispatcher->drain();
+        if (collections != 1 || !upstream_context_seen || undispatched_collector != equal ||
+            operated->producers != (equal ? 0 : 1) || !values.empty())
+            return ownership_failure(__LINE__);
+        if (equal) {
+            if (result != nullptr || completion.completed) return ownership_failure(__LINE__);
+        } else if (result != kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED() ||
+                   !completion.completed || completion.failure) return ownership_failure(__LINE__);
+    }
 
     // Build a channel with some buffered values.
     auto ch = create_channel<int>(Channel<int>::BUFFERED);
