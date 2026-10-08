@@ -238,7 +238,7 @@ void buffered_channel_resource_contract() {
     }
 }
 // Source contracts: channels/BufferedChannel.kt:875-961,1504-1567.
-void channel_receive_contract(bool catching, bool wait, bool closed, bool cancel) {
+void channel_receive_contract(bool catching, bool wait, bool closed, bool cancel, bool reregister = false) {
     using namespace kotlinx::coroutines::channels;
     BufferedChannel<std::shared_ptr<int>> channel(wait ? 0 : 1);
     Completion completion;
@@ -252,7 +252,7 @@ void channel_receive_contract(bool catching, bool wait, bool closed, bool cancel
     int calls = 0;
     auto cause = std::make_exception_ptr(std::runtime_error("receive close cause"));
     if (closed) channel.close(cause);
-    else if (!wait) CHECK(channel.try_send(resource).is_success());
+    else if (!wait && !reregister) CHECK(channel.try_send(resource).is_success());
     auto receive = [&](std::shared_ptr<int> result) -> void* {
         CHECK(result.get() == identity && *result == 93);
         ++calls;
@@ -274,6 +274,7 @@ void channel_receive_contract(bool catching, bool wait, bool closed, bool cancel
             std::function<void*(std::shared_ptr<int>, Continuation<void*>*)>(
                 [&](auto result, auto) { return receive(std::move(result)); }));
     }
+    if (reregister) CHECK(channel.try_send(resource).is_success());
     try {
         auto result = selection->do_select(&completion);
         CHECK(!closed || catching);
@@ -334,6 +335,30 @@ void channel_receive_prompt_cancellation(bool catching, bool handler) {
     CHECK(completion.resumes == 1 && completion.failure && calls == 0);
     CHECK(deliveries == (handler ? 1 : 0) && lifetime.expired());
 }
+// Source contract: channels/BufferedChannel.kt:1504-1510,1544-1546.
+void channel_receive_borrowed_pointer(bool wait) {
+    using namespace kotlinx::coroutines::channels;
+    const int value = 95;
+    BufferedChannel<const int*> channel(wait ? 0 : 1);
+    if (!wait) CHECK(channel.try_send(&value).is_success());
+    Completion completion;
+    auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+    SelectBuilder<void*>& builder = *selection;
+    int calls = 0;
+    builder.invoke<const int*>(channel.on_receive(),
+        std::function<void*(const int*, Continuation<void*>*)>([&](auto* result, auto) -> void* {
+            CHECK(result == &value && *result == 95);
+            ++calls;
+            return nullptr;
+        }));
+    auto result = selection->do_select(&completion);
+    if (wait) {
+        CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(result) && calls == 0);
+        CHECK(channel.try_send(&value).is_success());
+        CHECK(completion.resumes == 1 && !completion.failure);
+    } else CHECK(result == nullptr && !completion.resumes);
+    CHECK(calls == 1 && value == 95);
+}
 }
 int main() {
     try {
@@ -355,9 +380,12 @@ int main() {
             channel_receive_contract(catching, true, false, false);
             channel_receive_contract(catching, true, false, true);
             channel_receive_contract(catching, false, true, false);
+            channel_receive_contract(catching, false, false, false, true);
             channel_receive_prompt_cancellation(catching, false);
             channel_receive_prompt_cancellation(catching, true);
         }
+        channel_receive_borrowed_pointer(false);
+        channel_receive_borrowed_pointer(true);
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n'; return 1;
     }
