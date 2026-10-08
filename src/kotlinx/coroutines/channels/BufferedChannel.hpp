@@ -40,6 +40,7 @@
 #include <cstdint>
 #include <cstring>
 #include <array>
+#include <type_traits>
 
 namespace kotlinx {
 namespace coroutines {
@@ -1845,7 +1846,7 @@ public:
                     if constexpr (std::is_pointer_v<E>) {
                         // NOTE(port): Unbox the pointer value without adopting its borrowed pointee.
                         std::unique_ptr<E> owner(box);
-                        return static_cast<void*>(*owner);
+                        return const_cast<void*>(static_cast<const void*>(*owner));
                     } else {
                         return static_cast<void*>(box);
                     }
@@ -2139,6 +2140,7 @@ private:
     // -------------------------------------------------------------------------
     // Lines 963-1004: private inline fun receiveImplOnNoWaiter(...)
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:963-1004
     void receive_impl_on_no_waiter(
         ChannelSegment<E>* segment,
         int index,
@@ -2153,7 +2155,8 @@ private:
             prepare_receiver_for_suspension(waiter, segment, index);
         } else if (upd_cell_result == static_cast<void*>(&FAILED())) {
             if (r < senders_counter()) segment->clean_prev();
-            receive_impl_with_waiter(waiter, on_element_retrieved, on_closed);
+            receive_impl(waiter, on_element_retrieved,
+                [](ChannelSegment<E>*, int, int64_t) {}, on_closed);
         } else {
             segment->clean_prev();
             auto* elem_ptr = static_cast<E*>(upd_cell_result);
@@ -2161,30 +2164,6 @@ private:
             delete elem_ptr;
             on_element_retrieved(std::move(elem));
         }
-    }
-
-    // -------------------------------------------------------------------------
-    // Helper for receive_impl_on_no_waiter RESULT_FAILED case
-    // -------------------------------------------------------------------------
-    void receive_impl_with_waiter(
-        Waiter* waiter,
-        std::function<void(E)> on_element_retrieved,
-        std::function<void()> on_closed
-    ) {
-        // Increment receivers counter and get segment/index
-        int64_t r = receivers_.fetch_add(1, std::memory_order_acq_rel);
-        int64_t id = r / SEGMENT_SIZE;
-        int index = static_cast<int>(r % SEGMENT_SIZE);
-
-        ChannelSegment<E>* segment = find_segment_receive(id, receive_segment_.load(std::memory_order_acquire));
-        if (segment == nullptr) {
-            // Channel closed
-            on_closed();
-            return;
-        }
-
-        // Try again with new cell
-        receive_impl_on_no_waiter(segment, index, r, waiter, on_element_retrieved, on_closed);
     }
 
     // =========================================================================
@@ -2287,8 +2266,11 @@ private:
     // -------------------------------------------------------------------------
     // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1531-1537
     void register_select_for_receive(selects::SelectInstance<void*>* select, void* /*ignored_param*/) {
+        // NOTE(port): Convert the actual select to its Waiter subobject before erasure.
+        auto* waiter = dynamic_cast<Waiter*>(select);
+        if (!waiter) throw std::bad_cast();
         receive_impl(
-            select,
+            waiter,
             [select](E elem) { select->select_in_registration_phase(new E(std::move(elem))); },
             [](ChannelSegment<E>*, int, int64_t) {},
             [this, select]() { on_closed_select_on_receive(select); }
@@ -2451,14 +2433,11 @@ private:
 
     // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:875-961,1531-1537
     void receive_impl(
-        selects::SelectInstance<void*>* select,
+        Waiter* waiter,
         std::function<void(E)> on_element_retrieved,
         std::function<void(ChannelSegment<E>*, int, int64_t)> on_suspend,
         std::function<void()> on_closed
     ) {
-        // NOTE(port): Preserve the actual Waiter subobject in erased cell storage.
-        auto* waiter = dynamic_cast<Waiter*>(select);
-        if (!waiter) throw std::bad_cast();
         ChannelSegment<E>* segment = receive_segment_.load(std::memory_order_acquire);
         while (true) {
             if (is_closed_for_receive()) { on_closed(); return; }
@@ -2472,7 +2451,7 @@ private:
             }
             void* result = update_cell_receive(segment, i, r, waiter);
             if (result == &SUSPEND()) {
-                prepare_receiver_for_suspension(waiter, segment, i);
+                if (waiter) prepare_receiver_for_suspension(waiter, segment, i);
                 on_suspend(segment, i, r);
                 return;
             }
