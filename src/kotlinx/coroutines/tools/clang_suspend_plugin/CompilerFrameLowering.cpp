@@ -65,10 +65,19 @@ public:
             if (auto* record = llvm::dyn_cast<clang::RecordDecl>(function->getDeclContext()))
                 key += ":owner=" + clang::QualType(context_.getCanonicalTypeDeclType(record)).getAsString();
         }
-        declarations.emplace(std::move(key), declaration);
+        // Template-local declarations can share a source location and printed
+        // type while belonging to different instantiations. Never bind an
+        // ambiguous textual identity to an arbitrary declaration from that set.
+        if (ambiguous.contains(key)) return true;
+        auto [existing, inserted] = declarations.emplace(key, declaration);
+        if (!inserted && existing->second->getCanonicalDecl() != declaration->getCanonicalDecl()) {
+            declarations.erase(existing);
+            ambiguous.insert(std::move(key));
+        }
         return true;
     }
     std::map<std::string, clang::Decl*> declarations;
+    std::set<std::string> ambiguous;
     std::vector<clang::FunctionDecl*> functions;
 private:
     clang::ASTContext& context_;
