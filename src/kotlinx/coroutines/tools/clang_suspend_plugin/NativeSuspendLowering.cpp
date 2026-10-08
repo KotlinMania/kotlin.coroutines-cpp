@@ -478,8 +478,13 @@ private:
         }
         // NOTE(port): A synthesized frame has a different declaration context;
         // preserve namespaces on concrete value types and their template arguments.
-        std::string value_type = reference_type.empty() ? TypeName::getFullyQualifiedName(type.getUnqualifiedType(), context_, policy_) :
-                                 "std::remove_cv_t<" + reference_type + ">";
+        // NOTE(port): The spill keeps the declared C++ cv-qualification. Removing
+        // it changes overload resolution and decltype when the body is reparsed.
+        std::string value_type = reference_type.empty() ? TypeName::getFullyQualifiedName(type, context_, policy_) : reference_type;
+        if (!reference_type.empty() && type.isConstQualified())
+            value_type = "std::add_const_t<" + value_type + ">";
+        if (!reference_type.empty() && type.isVolatileQualified())
+            value_type = "std::add_volatile_t<" + value_type + ">";
         std::string stored_type = value_type;
         Slot slot{name, "(*" + name + ")", stored_type, false};
         fields_.push_back("std::optional<" + stored_type + "> " + name + ";");
