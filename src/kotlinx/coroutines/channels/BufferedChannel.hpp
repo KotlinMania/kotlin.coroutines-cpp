@@ -27,6 +27,7 @@
 #include "kotlinx/coroutines/dsl/CancellableReusable.hpp"
 #include "kotlinx/coroutines/Waiter.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
+#include "kotlinx/coroutines/internal/OnUndeliveredElement.hpp"
 #include "kotlinx/coroutines/internal/ConcurrentLinkedList.hpp"
 #include "kotlinx/coroutines/selects/Select.hpp"
 #include "kotlinx/coroutines/EventLoop.hpp"
@@ -2277,10 +2278,11 @@ private:
         if (!on_undelivered_element_) {
             return nullptr;
         }
-        return [this](void* /*select*/, void* /*param*/, void* element) -> selects::OnCancellationAction {
-            return [this, element](std::exception_ptr, void*, std::shared_ptr<CoroutineContext>) {
+        return [this](void* select, void* /*param*/, void* element) -> selects::OnCancellationAction {
+            auto context = static_cast<selects::SelectInstance<void*>*>(select)->get_context();
+            return [this, element, context](std::exception_ptr, void*, std::shared_ptr<CoroutineContext>) {
                 if (element != static_cast<void*>(&CHANNEL_CLOSED())) {
-                    on_undelivered_element_(*static_cast<E*>(element));
+                    internal::call_undelivered_element<E>(on_undelivered_element_, *static_cast<E*>(element), *context);
                 }
             };
         };
