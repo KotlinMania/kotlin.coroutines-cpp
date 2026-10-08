@@ -3060,7 +3060,7 @@ static void print_emission_evidence(const TransliterationOutput& output, std::os
 }
 static void print_transliteration_distance(const TransliterationDistance& report, std::ostream& stream) {
 stream << std::fixed << std::setprecision(6)
-    << "score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission\n"
+    << "score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission\n"
     << "translated_text_cosine: " << report.translated_text_cosine << '\n'
     << "translated_ast_cosine: " << report.translated_ast_cosine << '\n'
     << "function_name_parity: " << report.symbol_parity << '\n'
@@ -3069,7 +3069,7 @@ stream << std::fixed << std::setprecision(6)
     << "span_rule_coverage: " << report.translation.rule_coverage << '\n'
     << "unsupported_fraction (diagnostic only): " << report.fallback_penalty << '\n'
     << "score: " << report.score << '\n'
-    << "Score evidence: " << (report.translation.rule_misses || report.translated_parse_errors || report.target_parse_errors ? "provisional (unsupported rules or parse errors)" : "supported") << '\n'
+    << "Score evidence: " << (report.translation.rule_misses || report.translation.documentation_misses || report.translated_parse_errors || report.target_parse_errors ? "provisional (unsupported rules or parse errors)" : "supported") << '\n'
     << "Generated parse errors: " << (report.translated_parse_errors ? "yes (provisional)" : "no") << '\n'
     << "Target parse errors: " << (report.target_parse_errors ? "yes (provisional)" : "no") << '\n';
 print_emission_evidence(report.translation, stream);

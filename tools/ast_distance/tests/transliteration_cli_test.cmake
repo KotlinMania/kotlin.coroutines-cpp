@@ -93,3 +93,15 @@ if(NOT result EQUAL 0 OR output MATCHES "normalized_logic: 1.000000" OR output M
     message(FATAL_ERROR "Class method drift invisible: ${result}: ${output}: ${error}")
 endif()
 message(STATUS "Captured emitted target buffer and full metric report passed")
+
+file(WRITE "${TEST_DIR}/unsupported-doc.kt" [=[/** Example: `fun example() = 1` */
+fun documentedValue(): Int = 1
+]=])
+execute_process(COMMAND "${AST_DISTANCE}" --transliterate "${TEST_DIR}/unsupported-doc.kt" kotlin cpp
+    WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_FILE "${TEST_DIR}/unsupported-doc.cpp" RESULT_VARIABLE result)
+execute_process(COMMAND "${AST_DISTANCE}" --translit-distance "${TEST_DIR}/unsupported-doc.kt" kotlin "${TEST_DIR}/unsupported-doc.cpp" cpp
+    WORKING_DIRECTORY "${TEST_DIR}" OUTPUT_VARIABLE unsupported_docs_report ERROR_VARIABLE error RESULT_VARIABLE result)
+if(NOT result EQUAL 0 OR NOT unsupported_docs_report MATCHES "documentation misses: 1" OR
+   NOT unsupported_docs_report MATCHES "Score evidence: provisional")
+    message(FATAL_ERROR "Unsupported documentation translation was labeled supported: ${unsupported_docs_report}: ${error}")
+endif()
