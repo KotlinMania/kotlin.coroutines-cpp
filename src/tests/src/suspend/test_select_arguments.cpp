@@ -3,6 +3,7 @@
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
 #include "kotlinx/coroutines/channels/BufferedChannel.hpp"
+#include "kotlinx/coroutines/internal/OnUndeliveredElement.hpp"
 #include <deque>
 #include <iostream>
 #include <string>
@@ -298,20 +299,35 @@ void channel_receive_contract(bool catching, bool wait, bool closed, bool cancel
     CHECK(lifetime.expired());
 }
 // Source contract: channels/BufferedChannel.kt:1561-1567.
-void channel_receive_prompt_cancellation(bool catching, bool handler) {
+class ExceptionHandler final : public CoroutineExceptionHandler {
+public:
+    int calls = 0;
+    CoroutineContext* context = nullptr;
+    std::exception_ptr failure;
+    void handle_exception(CoroutineContext& actual_context, std::exception_ptr exception) override {
+        ++calls;
+        context = &actual_context;
+        failure = exception;
+    }
+};
+void channel_receive_prompt_cancellation(bool catching, bool handler, bool throwing = false) {
     using namespace kotlinx::coroutines::channels;
     int deliveries = 0, calls = 0;
     int* identity = nullptr;
+    auto failure = std::make_exception_ptr(std::runtime_error("undelivered original"));
     OnUndeliveredElement<std::shared_ptr<int>> on_undelivered;
     if (handler) on_undelivered = [&](auto element) {
         CHECK(element.get() == identity && *element == 94);
         ++deliveries;
+        if (throwing) std::rethrow_exception(failure);
     };
     BufferedChannel<std::shared_ptr<int>> channel(1, on_undelivered);
     auto dispatcher = std::make_shared<Dispatcher>();
     auto job = JobImpl::create(nullptr);
     Completion completion;
     completion.context = dispatcher->operator+(job);
+    auto exception_handler = std::make_shared<ExceptionHandler>();
+    completion.context = completion.context->operator+(exception_handler);
     auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
     SelectBuilder<void*>& builder = *selection;
     if (catching) {
@@ -334,6 +350,35 @@ void channel_receive_prompt_cancellation(bool catching, bool handler) {
     dispatcher->drain();
     CHECK(completion.resumes == 1 && completion.failure && calls == 0);
     CHECK(deliveries == (handler ? 1 : 0) && lifetime.expired());
+    CHECK(exception_handler->calls == (throwing ? 1 : 0));
+    if (throwing) {
+        CHECK(exception_handler->context == completion.context.get());
+        try { std::rethrow_exception(exception_handler->failure); }
+        catch (const internal::UndeliveredElementException& exception) { CHECK(exception.cause() == failure); }
+    }
+}
+// Source contract: internal/OnUndeliveredElement.kt:8-23.
+void undelivered_exception_contract() {
+    auto first_cause = std::make_exception_ptr(std::runtime_error("first cause"));
+    auto next_cause = std::make_exception_ptr(std::runtime_error("next cause"));
+    internal::OnUndeliveredElement<std::string> first_handler = [&](auto) { std::rethrow_exception(first_cause); };
+    internal::OnUndeliveredElement<std::string> next_handler = [&](auto) { std::rethrow_exception(next_cause); };
+    std::unique_ptr<internal::UndeliveredElementException> first(
+        internal::call_undelivered_element_catching_exception(first_handler, std::string("first element")));
+    CHECK(first && first->cause() == first_cause);
+    CHECK(std::string(first->what()) == "Exception in undelivered element handler for first element");
+    CHECK(internal::call_undelivered_element_catching_exception(next_handler, std::string("next element"), first.get()) == first.get());
+    CHECK(first->suppressed_exceptions().size() == 1 && first->suppressed_exceptions()[0] == next_cause);
+    std::unique_ptr<internal::UndeliveredElementException> repeated(
+        internal::call_undelivered_element_catching_exception(first_handler, std::string("repeated element"), first.get()));
+    CHECK(repeated.get() != first.get() && repeated->cause() == first_cause);
+    CHECK(repeated->suppressed_exceptions().empty());
+    internal::OnUndeliveredElement<int> non_standard = [](int) { throw 17; };
+    std::unique_ptr<internal::UndeliveredElementException> other(
+        internal::call_undelivered_element_catching_exception(non_standard, 96));
+    CHECK(other);
+    try { std::rethrow_exception(other->cause()); }
+    catch (int value) { CHECK(value == 17); }
 }
 // Source contract: channels/BufferedChannel.kt:1504-1510,1544-1546.
 void channel_receive_borrowed_pointer(bool wait) {
@@ -383,9 +428,11 @@ int main() {
             channel_receive_contract(catching, false, false, false, true);
             channel_receive_prompt_cancellation(catching, false);
             channel_receive_prompt_cancellation(catching, true);
+            channel_receive_prompt_cancellation(catching, true, true);
         }
         channel_receive_borrowed_pointer(false);
         channel_receive_borrowed_pointer(true);
+        undelivered_exception_contract();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n'; return 1;
     }
