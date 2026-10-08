@@ -6,6 +6,7 @@
 #include "kotlin/Comparable.hpp"
 #include "kotlin/time/TimeMark.hpp"
 #include <cstdint>
+#include <string>
 
 namespace kotlin { class Any; }
 namespace kotlin::time {
@@ -29,6 +30,10 @@ public:
     virtual bool equals(const kotlin::Any* other) const = 0;
     // Transliterated from: libraries/stdlib/src/kotlin/time/TimeSource.kt:242
     virtual std::int32_t hash_code() const = 0;
+    // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt:46-52
+    // NOTE(port): Expose the inherited text contract for ordinary C++ marks,
+    // without adopting compiler-owned Any storage. Used in source diagnostics.
+    virtual std::string to_string() const = 0;
 };
 } // namespace kotlin::time
 #endif

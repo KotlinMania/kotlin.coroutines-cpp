@@ -20,6 +20,7 @@ public:
     // Equality is outside this test's scope; these test marks are not Any objects.
     bool equals(const kotlin::Any*) const override { return false; }
     std::int32_t hash_code() const override { return source_; }
+    std::string to_string() const override { return "test mark"; }
 private:
     int source_;
     Duration reading_;

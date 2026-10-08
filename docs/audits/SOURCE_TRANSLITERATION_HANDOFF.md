@@ -6,6 +6,33 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Monotonic/value-mark source draft — 2026-10-08
+
+Continuation from `92551b0c` adds the actual Native monotonic zero/read and
+saturated elapsed/difference/adjustment bodies. Public Monotonic and ValueTimeMark
+operations are in MonotonicTimeSource.cpp with source provenance. Generated hash
+and decimal text follow the actual pinned DataClassMembersGenerator and Long hash.
+The inherited comparable text contract supports the original cross-source error.
+ValueTimeMark's nested name aliases the same predeclared concrete C++ class to
+allow covariant return validation. Caller-owned marks keep the delete/adopt policy.
+WorkerDispatcher now owns mark_now temporarily and shares its actual adjustment;
+the provisional static/value operator expression is removed.
+
+The source remains incomplete: ValueTimeMark::equals(const Any*) is declared but
+has no implementation because its real boxed-object/type-check boundary is absent.
+No false equality body, borrowed-to-owned conversion or fake object representation
+is supplied. Strict object compilation exits0; actual consumer linking exits1 on
+that one vtable method. No value-mark runtime result exists. Existing comparable
+ASan/UBSan regression still executes with exit0 after its test text override.
+
+Three deep scans exit0: time14/44 bodies,7/13 types,0.50; Native root9/1234,
+2/258,0.64; library670/2918,181/560,0.24 with11 scoring failures. Time/Native scans
+have zero scoring failures. Native Monotonic6/6 bodies,1/2 types,0.58; common
+TimeSource7/18,7/7,0.36 has mixed-provenance method-pairing gaps. See the source
+repair record for actual missing equality and tool limitations. Continue the real
+boxing/equality contract, Worker/Future and compiler source lowering; both full
+MLX/docking-ring paths remain open and the full goal remains active.
+
 ## Native timing implementation — 2026-10-08
 
 Continuation from `16c4a550` translates all six Native Timing.kt functions in

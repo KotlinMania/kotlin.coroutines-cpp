@@ -111,8 +111,10 @@ std::shared_ptr<DisposableHandle> WorkerDispatcher::schedule(
     // Transliterated from: libraries/stdlib/src/kotlin/time/TimeSource.kt:51-52,70-85
     // NOTE(port): Box the source value mark for the TimeMark interface captured
     // by the recursive worker extension.
-    auto target_moment = std::make_shared<kotlin::time::TimeSource::Monotonic::ValueTimeMark>(
-        kotlin::time::TimeSource::Monotonic::mark_now() + kotlin::time::milliseconds(time_millis));
+    auto now = std::unique_ptr<kotlin::time::TimeSource::Monotonic::ValueTimeMark>(
+        kotlin::time::TimeSource::Monotonic::instance().mark_now());
+    auto target_moment = std::shared_ptr<kotlin::time::TimeMark>(
+        now->plus(kotlin::time::milliseconds(time_millis)));
     run_after_delay(impl_->worker, disposable_block, std::move(target_moment));
     return disposable_block;
 }

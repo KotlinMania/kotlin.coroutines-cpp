@@ -37,6 +37,7 @@ list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/LongSaturatedM
 list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/TimeMark.cpp")
 list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/ComparableTimeMark.cpp")
 list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/system/Timing.cpp")
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/MonotonicTimeSource.cpp")
 list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/coroutines/cancellation/CancellationException.cpp")
 
 # Exclude non-library sources.

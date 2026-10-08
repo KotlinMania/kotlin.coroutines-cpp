@@ -1,5 +1,63 @@
 # Native WorkerDispatcher source repair — 2026-10-08
 
+## Monotonic and value-mark source bodies — 2026-10-08
+
+Continuation from `92551b0c` translates Native MonotonicTimeSource.kt:12-31 and
+TimeSource.kt:43-115 into TimeSource.hpp and MonotonicTimeSource.cpp. The actual
+private source clock stores its zero reading, reads wrapped get_time_nanos()-zero,
+and delegates elapsed/difference/adjustment to the translated saturated math.
+The public Monotonic singleton delegates to it. Value marks implement elapsed,
+plus/minus, passed predicates, typed and interface differences and typed ordering.
+Different-source failures retain the original diagnostic with both marks' text.
+The inherited text contract is exposed on the comparable interface without
+adopting compiler-owned Any representation for ordinary C++ objects.
+
+The generated hash and text were traced to the pinned compiler's
+DataClassMembersGenerator.kt:178-185,237-265,331 and Native Long.hashCode at
+Primitives.kt:1851-1852. A single Long property hashes with its original upper/lower
+bit XOR and prints ValueTimeMark(reading=<decimal>). The exact pinned compiler
+file was read with git show into build/source-continuation/ for reference only.
+Its original source remains in the pinned tree, without upstream content edits.
+
+Equality is not implemented: the generated source requires a nullable Any type
+check and extraction of the actual boxed mark's reading. No matching boxed-object
+boundary exists yet for these ordinary C++ value marks. The real equals signature
+is declared; it has no fabricated false result or object reinterpretation. This
+is an incomplete source draft with an unresolved implementation, not a completed
+ValueTimeMark port. Continue its actual boxing/type-check contract before claiming
+any mark runtime or complete clock dependency closure.
+
+NOTE(port): C++ defines the mark before Monotonic to validate covariant returns;
+Monotonic::ValueTimeMark aliases that same class. Pointer-returning marks use the
+existing caller-owned delete/adopt contract rather than pretending to have Native
+inline storage. WorkerDispatcher.cpp:114 now owns mark_now's result temporarily,
+then adopts the adjusted result in its existing shared TimeMark capture. The
+previous provisional static mark_now/operator+ expression is removed. No raw
+receiver ownership or Native object identity is changed.
+
+Strict Clang23.1.2 object compilation with -Wall/-Wextra/-Wpedantic/-Werror exits0.
+The actual small Monotonic consumer compiles its sources but linking exits1 solely
+on ValueTimeMark::equals(const Any*) from the vtable. The log is
+build/source-continuation/monotonic-consumer.log; nm confirms that unresolved
+symbol in monotonic-time-source.o. No fresh value-mark runtime executes. The
+existing comparable regression, updated only for the inherited text contract,
+still compiles strictly and executes under ASan/UBSan with exit0. Worker/Future
+remain absent, so this does not establish actual worker scheduling.
+
+Three relevant deep scans exit0. Time root14/44 bodies,7/13 types,0.50 similarity,
+zero scoring failures. Its TimeSource group7/18 bodies,7/7 types,0.36 still misses
+the public method bodies because the mixed-provenance .cpp is paired to the Native
+Monotonic source; header types match. Native runtime root9/1234 bodies,2/258 types,
+0.64 similarity,zero failures. Monotonic6/6 bodies,1/2 types,0.58; its reading alias
+is defined in the shared header but remains unpaired. These measurements do not
+certify complete source parity or ignore the real equality link failure.
+Library root670/2918 bodies,181/560 types,0.24 similarity,11 scoring failures.
+Receipts are the existing time-source-distance/, native-ordering-distance/ and
+library-source-distance/ directories under build/source-continuation/.
+
+Continue generated equality/boxing, Worker/Future and runtime consumers, plus
+actual compiler lowering. Both complete standalone/Native MLX paths remain open.
+
 ## Native timing source operations — 2026-10-08
 
 Continuation from `16c4a550` adds kotlin/system/Timing.hpp/.cpp from Native
