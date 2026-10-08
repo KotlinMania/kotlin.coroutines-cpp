@@ -624,7 +624,7 @@ private:
         slots_.push_back(slot);
         return slot;
     }
-    void construct(const Slot& slot, const std::string& value) {
+    void construct(const Slot& slot, const std::string& value, bool list_initialization = false) {
         if (slot.dynamic) {
             body_ << "if constexpr (std::is_reference_v<typename " << slot.name << "_receiver::expression_type>) {\n"
                   << slot.name << ".bind(" << value << ");\n} else {\n"
@@ -640,7 +640,7 @@ private:
             // NOTE(port): Raw aligned storage preserves delayed construction,
             // native array reference types and partial-initialization cleanup.
             body_ << "::new (static_cast<void*>(" << slot.name << ".data)) " << slot.type
-                  << (slot.object ? "(" + value + ")" : value) << ";\n"
+                  << (slot.object && !list_initialization ? "(" + value + ")" : value) << ";\n"
                   << slot.name << ".engaged = true;\n";
             return;
         }
@@ -1285,6 +1285,12 @@ private:
         variables_[variable] = slot;
         if (!scopes_.empty()) scopes_.back().push_back(slot);
         if (!owner.name.empty()) construct(slot, owner.access);
+        else if (aggregate) {
+            // NOTE(port): Keep braces at the destination new-expression;
+            // reference-member and aggregate initialization are not a call
+            // taking a synthesized temporary aggregate as an argument.
+            construct(slot, generated ? generated_expression(initializer) : emit_expression(initializer), true);
+        }
         else if (slot.array && isa_and_nonnull<ArrayInitLoopExpr>(unwrapped)) {
             const auto* copy = cast<ArrayInitLoopExpr>(unwrapped);
             // NOTE(port): Evaluate the source array once. Its component
