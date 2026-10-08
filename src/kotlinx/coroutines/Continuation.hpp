@@ -28,21 +28,30 @@ public:
     virtual ~ContinuationBase() = default;
 };
 
-/** Interface representing a continuation after a suspension point that returns a value of type T. */
+/**
+ * Interface representing a continuation after a suspension point that returns a value of type `T`.
+ */
 // Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:16-27
 template <typename T>
 class Continuation {
 public:
     virtual ~Continuation() = default;
-    /** The context of the coroutine that corresponds to this continuation. */
+/**
+     * The context of the coroutine that corresponds to this continuation.
+     */
     // Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:20-20
     virtual std::shared_ptr<CoroutineContext> get_context() const = 0;
-    /** Resumes execution with the successful or failed result of the last suspension point. */
+/**
+     * Resumes the execution of the corresponding coroutine passing a successful or failed [result] as the
+     * return value of the last suspension point.
+     */
     // Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:26-26
     virtual void resume_with(Result<T> result) = 0;
 };
 
-/** Resumes the corresponding coroutine with value as the result of the last suspension point. */
+/**
+ * Resumes the execution of the corresponding coroutine passing [value] as the return value of the last suspension point.
+ */
 // Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:44-45
 template <typename T>
 inline void resume(Continuation<T>& continuation, T value) {
@@ -55,7 +64,10 @@ inline void resume(Continuation<void>& continuation) {
     continuation.resume_with(Result<void>::success());
 }
 
-/** Resumes execution so that the exception is rethrown immediately after the last suspension point. */
+/**
+ * Resumes the execution of the corresponding coroutine so that the [exception] is re-thrown right after the
+ * last suspension point.
+ */
 // Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:53-54
 template <typename T>
 inline void resume_with_exception(Continuation<T>& continuation, std::exception_ptr exception) {
@@ -80,7 +92,9 @@ private:
     std::function<void(Result<T>)> resume_with_;
 };
 
-/** Creates a Continuation with the given context and implementation of resume_with. */
+/**
+ * Creates a [Continuation] instance with the given [context] and implementation of [resumeWith] method.
+ */
 // Transliterated from: libraries/stdlib/src/kotlin/coroutines/Continuation.kt:62-72
 template <typename T>
 std::shared_ptr<Continuation<T>> make_continuation(
