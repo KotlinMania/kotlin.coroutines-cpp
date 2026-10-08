@@ -6,6 +6,88 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Callable declaration ownership and invoke identity — 2026-10-08
+
+Continuation from `827b1c9c` repairs the production Clang integration of
+AbstractFunctionReferenceLowering.kt:261-288's specific invoke declaration and
+parent remapping. The previous turn's saved default-callable failure came from
+an intermediate frontend: the final tail-only default lambda already passes.
+A newly added non-tail default lambda reproduced the real retained-frame defect.
+Its implicit Clang closure record ends at the capture introducer; using that
+range truncated generated frame construction. getLambdaContextDecl is optional
+and was null in the concrete default-parameter case.
+
+CompilerFrameLowering.cpp:118 now resolves the actual containing declaration
+from the host AST ancestry when the explicit lambda context is absent. At :215
+it preserves the owning function/class/variable declaration, its namespaces and
+its complete source boundary; prototype/variable/record semicolons are restored.
+This is Clang infrastructure for the source parent-remapping contract, not an
+invented Kotlin IR owner or alternate frame. Runtime checks then exposed a second
+mismatch: sibling lambdas in one complete class can have identical invoke names
+and canonical types. At :423 the importer also compares original source identity
+before selecting the replacement body. It no longer installs a sibling's original
+body over the requested lowered invoke. Existing explicit template-instantiation
+entry selection stays separate. Temporary debugging diagnostics were removed.
+
+The existing default-callable fixture now covers a tail default plus non-tail
+function-prototype, function-definition, namespace, global initializer, member
+initializer and member-parameter contexts. Its runtime branch is enabled only
+by KXS_TEST_DEFAULT_CALLABLE_RUNTIME; the normal syntax gate still checks the
+source declarations. The test driver registers strict ordinary in-compiler
+compilation and execution of all35 outcome cases. Seven contexts each exercise
+immediate success, resumed success, resumed failure, resumed cancellation and
+immediate failure; the tail entry forwards the parent, the six non-tail entries
+hand off their current frame, and each completes once. Result boxes have explicit
+unique_ptr deletion. Empty closure contexts are tested; arbitrary captured-object
+and temporary callable ownership is not established by this fixture.
+
+ContinuationImpl.cpp:6 removes its unused DispatchedContinuation include after
+comparison with the actual Native ContinuationImpl.kt imports/body. No runtime
+algorithm or substitute implementation was added. Fresh actual context_impl.cpp,
+ContinuationInterceptor.cpp, ContinuationImpl.cpp and the stdlib
+CancellationException.cpp form the bounded runtime dependency archive used here.
+They build without Kotlin tools/runtime. The context/interceptor/continuation
+units report eight existing unused-parameter warnings under -Wall/-Wextra/
+-Wpedantic; those warnings remain unsuppressed and are not a strict dependency
+build pass. CancellationException and the generated fixture compile strictly.
+
+The frontend builds against LLVM23.1.2 with Native runtime OFF. The default-callable
+fixture passes -Wall/-Wextra/-Wpedantic/-Werror compilation and ASan/UBSan execution.
+otool lists libc++, libSystem and Clang's ASan runtime, with no Kotlin/JVM link.
+The Unit-tail fixture also passes fresh sanitizer execution, and the earlier
+expression-slicing fixture now executes its comma temporary destruction, borrowed
+resource identity, repeated suspension, resumed failure/cancellation and ordered
+cleanup assertions successfully against the same actual dependency units. This
+supersedes the last checkpoint's lack of runtime evidence for those bounded cases;
+it does not prove a fresh full-core build, MLX GPU execution or actual Native
+shared-frame interoperability. An additional strict qualified_locals.cpp compile
+fails before import on unremapped structured-binding names head/resource in
+static_assert(noexcept(...)); no qualified-local runtime pass is claimed here.
+That source query/declaration remapping remains another lowering gap.
+
+The full authoring driver advances through its warning controls, source rejection
+checks, new syntax gate, direct extraction/in-process execution,35 default-callable
+cases and Unit fixture. It now stops at default_arguments/factory.cpp:22:
+a relocated nonsuspending default-expression lambda prints make() in the global
+caller frame, losing its actual defaults::make symbol context. Continue the
+AbstractFunctionReferenceLowering.cpp:74 BoundValues printer's ordinary declaration
+reference remapping, compared with the existing DefaultArgumentReferences printer
+and DefaultArgumentStubGenerator.kt:91-108. Do not fix that fixture by manually
+qualifying its upstream-context source or by replacing the default expression.
+
+Final compiler/library/frontend deep scans completed. Compiler reference root:
+286/7163 bodies,132/1617 types,0.28 similarity,10 scoring failures,695 sparse files,
+193 paired units/285 target files. Coroutine root:663/2918 bodies,178/560 types,
+0.24 similarity,12 failures,412 paired units/614 target files. Frontend root:
+14/7163 bodies,6/1617 types,0.04 similarity,0 scoring failures,15 paired units/
+25 target files. Clang AST infrastructure changes do not certify additional Kotlin
+IR/classifier/metadata parity. Current reports remain in build/source-continuation/
+{compiler,library,frontend}-source-distance. Build/runtime evidence is in
+build/source-continuation/default-callable-runtime; the full driver failure is in
+default-callable-full-regression.log. Full transliteration, general callable/IR
+lowering, both required MLX/Native executable paths and complete lifetime contracts
+remain unfinished. The original goal remains active.
+
 ## Tail expression containers and C++ temporary retention — 2026-10-08
 
 Continuation from `9cd3e1b3` returns to the production frontend's state-machine

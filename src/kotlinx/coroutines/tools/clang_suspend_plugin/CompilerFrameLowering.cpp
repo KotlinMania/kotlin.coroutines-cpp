@@ -111,6 +111,39 @@ public:
     }
     std::set<clang::FunctionDecl*> functions;
 };
+// NOTE(port): Clang's implicit lambda record omits its expression range and
+// can omit its context declaration. Resolve the actual declaration ancestry
+// used by Kotlin's invoke-body declaration-parent remapping
+// (AbstractFunctionReferenceLowering.kt:271-288), without synthesizing an owner.
+class LambdaDeclarationOwner : public clang::RecursiveASTVisitor<LambdaDeclarationOwner> {
+public:
+    explicit LambdaDeclarationOwner(const clang::CXXRecordDecl* closure) : closure_(closure) {}
+    bool shouldVisitTemplateInstantiations() const { return true; }
+    bool TraverseDecl(clang::Decl* declaration) {
+        if (!declaration || owner) return true;
+        bool enclosing = clang::isa<clang::VarDecl>(declaration) &&
+            !clang::isa<clang::ParmVarDecl>(declaration);
+        if (const auto* record = clang::dyn_cast<clang::CXXRecordDecl>(declaration))
+            enclosing = !record->isLambda() && !record->isImplicit();
+        if (const auto* function = clang::dyn_cast<clang::FunctionDecl>(declaration)) {
+            const auto* method = clang::dyn_cast<clang::CXXMethodDecl>(function);
+            enclosing = !function->isImplicit() && (!method || !method->getParent()->isLambda());
+        }
+        if (enclosing) declarations_.push_back(declaration);
+        const bool result = RecursiveASTVisitor::TraverseDecl(declaration);
+        if (enclosing) declarations_.pop_back();
+        return result;
+    }
+    bool VisitLambdaExpr(clang::LambdaExpr* expression) {
+        if (expression->getLambdaClass() == closure_ && !declarations_.empty())
+            owner = declarations_.front();
+        return true;
+    }
+    const clang::Decl* owner = nullptr;
+private:
+    const clang::CXXRecordDecl* closure_;
+    std::vector<const clang::Decl*> declarations_;
+};
 }
 // NOTE(port): Preserve the Clang plugin entry API while the translated lowering
 // retains its Kotlin compiler package identity.
@@ -180,7 +213,27 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
     if (!header) {
         const Decl* lexical_container = nullptr;
         std::vector<const NamespaceDecl*> namespace_scopes;
-        for (auto* scope = function->getLexicalDeclContext(); !scope->isTranslationUnit(); scope = scope->getParent()) {
+        for (const auto* scope = function->getLexicalDeclContext(); !scope->isTranslationUnit();) {
+            // NOTE(port): A default-argument/member-initializer lambda can have
+            // an explicit Clang context declaration. Its implicit closure record
+            // ends at the capture introducer, not the complete expression.
+            // Retain the actual owning function/class declaration when parsing
+            // the replacement invoke body (Kotlin declaration-parent remapping).
+            if (auto* closure = dyn_cast<CXXRecordDecl>(scope); closure && closure->isLambda()) {
+                if (auto* owner = closure->getLambdaContextDecl()) {
+                    scope = owner->getDeclContext();
+                    continue;
+                }
+                LambdaDeclarationOwner enclosing(closure);
+                enclosing.TraverseDecl(context.getTranslationUnitDecl());
+                if (enclosing.owner) {
+                    lexical_container = enclosing.owner;
+                    scope = enclosing.owner->getDeclContext();
+                    continue;
+                }
+                scope = scope->getParent();
+                continue;
+            }
             if (auto* namespace_scope = dyn_cast<NamespaceDecl>(scope)) {
                 namespace_scopes.push_back(namespace_scope);
             } else if (isa<CXXRecordDecl, FunctionDecl>(scope)) {
@@ -188,6 +241,7 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
             } else {
                 return fail("suspend definition has an unsupported lexical container");
             }
+            scope = scope->getParent();
         }
         if (lexical_container) {
             auto container_end = manager.getSpellingLoc(lexical_container->getEndLoc());
@@ -196,9 +250,11 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
             main_original_limit = manager.getFileOffset(Lexer::getLocForEndOfToken(
                 container_end, 0, manager, context.getLangOpts()));
             source.resize(main_original_limit + replacement_size - (end - begin));
-            // Record source ranges end at the closing brace; its declaration
-            // semicolon is outside the range. Function definitions need none.
-            if (isa<CXXRecordDecl>(lexical_container)) source += ";";
+            // Record, variable and function-prototype ranges omit the declaration
+            // semicolon. Function definitions already include their body.
+            const auto* enclosing_function = dyn_cast<FunctionDecl>(lexical_container);
+            if (isa<CXXRecordDecl, VarDecl>(lexical_container) ||
+                (enclosing_function && !enclosing_function->doesThisDeclarationHaveABody())) source += ";";
         } else {
             source.resize(begin + replacement_size);
         }
@@ -360,11 +416,29 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
                                  begin, end, replacement_size,
                                  header ? "" : main_file->getName().str(), parser_includes.size(), main_original_limit);
     generated.TraverseDecl(unit->getASTContext().getTranslationUnitDecl());
+    // NOTE(port): Multiple lambdas in one complete class have the same invoke
+    // name and type. Kotlin remaps the specific invokeFunction declaration,
+    // so match its actual source identity before importing its replacement.
+    const auto original_location = manager.getExpansionLoc(function->getLocation());
+    auto is_replaced_definition = [&](const FunctionDecl* candidate) {
+        if (instantiated) return true;
+        auto& generated_manager = unit->getASTContext().getSourceManager();
+        const auto location = generated_manager.getExpansionLoc(candidate->getLocation());
+        if (original_location.isInvalid() || location.isInvalid()) return false;
+        long offset = generated_manager.getFileOffset(location);
+        if (manager.isWrittenInMainFile(original_location)) {
+            if (!generated_manager.isWrittenInMainFile(location)) return false;
+            offset -= parser_includes.size();
+        } else {
+            if (generated_manager.getFilename(location) != manager.getFilename(original_location)) return false;
+        }
+        return offset == manager.getFileOffset(original_location);
+    };
     for (auto* candidate : generated.functions)
         if (((!local_frame || (instantiated && !member)) && candidate->getNameAsString() == name) ||
             (local_frame && (!instantiated || member) && candidate->getQualifiedNameAsString() == function->getQualifiedNameAsString() &&
              candidate->getType().getCanonicalType().getAsString() == function->getType().getCanonicalType().getAsString() &&
-             candidate->doesThisDeclarationHaveABody())) wrapper = candidate;
+             candidate->doesThisDeclarationHaveABody() && is_replaced_definition(candidate))) wrapper = candidate;
     if (!wrapper) return fail("generated continuation entry was not parsed");
     ASTImporter importer(context, compiler.getFileManager(), unit->getASTContext(),
                          unit->getFileManager(), false);

@@ -266,6 +266,16 @@ int main() {
         '-fpass-plugin=' + str(args.ir_plugin)]
     run(ordinary_command, work, 'direct-in-process-compile')
     assert run([str(ordinary)], work, 'direct-in-process-run') == expected
+    default_callable_executable = work / 'default-callable'
+    run([args.compiler, '-std=c++23', '-Wall', '-Wextra', '-Wpedantic', '-Werror',
+         '-I' + str(args.root / 'src'), '-DKXS_TEST_DEFAULT_CALLABLE_RUNTIME',
+         '-Xclang', '-load', '-Xclang', str(args.plugin), '-Xclang', '-add-plugin',
+         '-Xclang', 'kotlinx-suspend', '-fpass-plugin=' + str(args.ir_plugin),
+         '-O1', '-UNDEBUG', '-fsanitize=address,undefined', '-fno-sanitize-recover=all',
+         str(args.root / 'src/tests/ir/fixtures/suspend_default_callable.cpp'), str(args.library),
+         '-pthread', *shlex.split(args.library_link_options), '-o', str(default_callable_executable)],
+        work, 'default-callable-compile')
+    assert run([str(default_callable_executable)], work, 'default-callable-run') == ''
     unit_executable = work / 'unit-tail'
     run([args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Wpedantic', '-Werror',
          '-I' + str(args.root / 'src'),

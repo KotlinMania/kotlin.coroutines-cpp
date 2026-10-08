@@ -6,7 +6,6 @@
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/ExceptionTransport.hpp"
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
-#include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
 
 namespace kotlin::coroutines::native::internal {
 
