@@ -280,7 +280,8 @@ int main() {
         run(command, work, 'default-' + name + '-compile')
         assert run([str(executable)], work, 'default-' + name + '-run') == 'direct implicit continuation:42\n'
     slicing_executable = work / 'expression-slicing'
-    run([args.compiler, '-std=c++20', '-I' + str(args.root / 'src'),
+    run([args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Wpedantic', '-Werror',
+         '-I' + str(args.root / 'src'),
          '-Xclang', '-load', '-Xclang', str(args.plugin), '-Xclang', '-add-plugin',
          '-Xclang', 'kotlinx-suspend', '-fpass-plugin=' + str(args.ir_plugin),
          '-O1', '-UNDEBUG', '-fsanitize=address,undefined', '-fno-sanitize-recover=all',

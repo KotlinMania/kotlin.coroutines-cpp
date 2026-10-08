@@ -1,6 +1,7 @@
 // NOTE(port): Compiler regression for immutable reads, mutable snapshots,
 // observable loads and side-effect order around a nested suspension.
 #include "kotlinx/coroutines/dsl/Coroutines.hpp"
+#include "kotlinx/coroutines/Exceptions.hpp"
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -36,16 +37,57 @@ struct Done final : Continuation<void*> {
     int calls = 0;
     int value = 0;
     bool failed = false;
+    bool cancelled = false;
     std::shared_ptr<CoroutineContext> get_context() const override { return EmptyCoroutineContext::instance(); }
     void resume_with(Result<void*> result) override {
         ++calls;
         try {
             std::unique_ptr<int> box(static_cast<int*>(result.get_or_throw()));
             value = *box;
-        } catch (const std::runtime_error&) { failed = true; }
+        } catch (const CancellationException&) { failed = true; cancelled = true; }
+        catch (const std::runtime_error&) { failed = true; }
     }
 };
 int constructions = 0;
+int argument_alive = 0;
+int argument_destroyed = 0;
+std::vector<int> argument_destroy_order;
+struct TemporaryArgument {
+    int value;
+    explicit TemporaryArgument(int value) : value(value) { ++argument_alive; }
+    TemporaryArgument(const TemporaryArgument&) = delete;
+    TemporaryArgument(TemporaryArgument&&) = delete;
+    ~TemporaryArgument() {
+        --argument_alive;
+        ++argument_destroyed;
+        argument_destroy_order.push_back(value);
+    }
+};
+[[clang::annotate("suspend")]]
+void* borrowing_argument(const TemporaryArgument& value, int mode,
+                        std::shared_ptr<Continuation<void*>> caller) {
+    const auto* identity = std::addressof(value);
+    int total = value.value;
+    for (int index = 0; index != 2; ++index) {
+        void* raw = external_call(mode, caller);
+        std::unique_ptr<int> box(static_cast<int*>(raw));
+        assert(argument_alive == 2 && std::addressof(value) == identity && value.value == 2);
+        total += *box;
+    }
+    return new int(total);
+}
+void* finish_argument(const TemporaryArgument& value, void* raw) {
+    std::unique_ptr<int> box(static_cast<int*>(raw));
+    assert(argument_alive == 2 && value.value == 1);
+    return new int(*box + value.value);
+}
+[[clang::annotate("suspend")]]
+void* owning_arguments(int mode, std::shared_ptr<Continuation<void*>> caller) {
+    void* raw = finish_argument(TemporaryArgument(1),
+        borrowing_argument(TemporaryArgument(2), mode, caller));
+    assert(argument_alive == 0 && argument_destroyed == 2);
+    return raw;
+}
 struct Constructed {
     int value;
     Constructed(int snapshot, int changed, void* raw) {
@@ -79,6 +121,34 @@ void* default_constructed_result(const DefaultConstructed& item) { return new in
     return new int(item.value);
 }
 int main() {
+    for (int mode = 0; mode != 4; ++mode) {
+        argument_destroyed = 0;
+        argument_destroy_order.clear();
+        auto done = std::make_shared<Done>();
+        auto result = owning_arguments(mode, done);
+        if (!mode) {
+            std::unique_ptr<int> box(static_cast<int*>(result));
+            assert(*box == 85 && done->calls == 0);
+        } else {
+            assert(intrinsics::is_coroutine_suspended(result));
+            assert(argument_alive == 2 && argument_destroyed == 0);
+            for (int index = 0; pending; ++index) {
+                assert(index < 2 && argument_alive == 2 && argument_destroyed == 0);
+                auto held = std::move(pending);
+                if (mode == 2) held->resume_with(Result<void*>::failure(std::make_exception_ptr(std::runtime_error("borrowed-argument"))));
+                else if (mode == 3 && index == 1) held->resume_with(Result<void*>::failure(
+                    std::make_exception_ptr(CancellationException("borrowed-argument"))));
+                else held->resume_with(Result<void*>::success(new int(41)));
+                held.reset();
+                if (pending) assert(done->calls == 0 && argument_alive == 2 && argument_destroyed == 0);
+            }
+            assert(done->calls == 1 && done->failed == (mode >= 2));
+            assert(done->cancelled == (mode == 3));
+            if (mode == 1) assert(done->value == 85);
+        }
+        assert(argument_alive == 0 && argument_destroyed == 2 && !pending);
+        assert(argument_destroy_order == (std::vector<int>{2, 1}));
+    }
     for (bool expression : {false, true}) {
         for (int mode = 0; mode != 3; ++mode) {
             tail_order.clear();

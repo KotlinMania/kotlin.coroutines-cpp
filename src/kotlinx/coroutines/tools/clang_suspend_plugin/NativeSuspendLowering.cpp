@@ -651,8 +651,14 @@ private:
         std::string deduced_type;
         if (type->isDependentType())
             deduced_type = "std::remove_reference_t<decltype(" + rewrite(expression, {}, true) + ")>";
-        auto slot = new_slot(type, reference, false, deduced_type);
+        // NOTE(port): A sliced prvalue must construct directly in its owning
+        // storage, preserving C++ guaranteed elision for immovable objects.
+        const bool object = !reference && type->isRecordType() && spelled(expression)->isPRValue();
+        auto slot = new_slot(type, reference, object, deduced_type);
         construct(slot, value);
+        // NOTE(port): ABI suspension does not end the source full expression.
+        // Reference parameters may still borrow this owned temporary on resume.
+        if (!reference && full_expression_) comma_temporaries_.push_back(slot);
         return slot.access;
     }
     const Expr* spelled(const Expr* expression) const {
@@ -1129,18 +1135,19 @@ private:
         // Save state as late as possible.
         body_ << suspension_site(id, "_kxs_resume_")
               << result.name << ".emplace(" << invoked << ");\n";
-        // NOTE(port): The callee has returned, so C++ argument temporaries end
-        // their lifetime even when its result is COROUTINE_SUSPENDED.
+        body_ << "if (kotlin::coroutines::intrinsics::is_coroutine_suspended(" << result.access
+              << ")) return " << result.access << ";\n"
+              << "goto _kxs_continue_" << id << ";\n_kxs_resume_" << id << ":\n"
+              << result.name << ".emplace(_kxs_result.get_or_throw());\n_kxs_continue_" << id << ":;\n";
+        // NOTE(port): Release transient argument bindings only after logical
+        // call completion. Owned full-expression temporaries live through any
+        // enclosing call; failure/cancellation uses the frame cleanup path.
         for (size_t i = argument_end; i > first_argument; --i) {
             const auto& slot = slots_[i - 1];
             if (std::any_of(comma_temporaries_.begin(), comma_temporaries_.end(),
                             [&](const Slot& retained) { return retained.name == slot.name; })) continue;
             body_ << slot.name << ".reset();\n";
         }
-        body_ << "if (kotlin::coroutines::intrinsics::is_coroutine_suspended(" << result.access
-              << ")) return " << result.access << ";\n"
-              << "goto _kxs_continue_" << id << ";\n_kxs_resume_" << id << ":\n"
-              << result.name << ".emplace(_kxs_result.get_or_throw());\n_kxs_continue_" << id << ":;\n";
         return result.access;
     }
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesVarSpillingLowering.kt:49-105
