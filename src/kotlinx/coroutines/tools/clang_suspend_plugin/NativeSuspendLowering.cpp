@@ -271,6 +271,29 @@ private:
         return Lexer::getSourceText(file_range(statement),
                                     manager_, context_.getLangOpts()).str();
     }
+    // NOTE(port): C++ constant-value reads do not require the variable's object
+    // identity. Use Clang's actual constant evaluation; address/reference uses
+    // continue to bind the original retained variable.
+    std::string constant_value(const DeclRefExpr* reference) const {
+        if (reference->isNonOdrUse() != NOUR_Constant ||
+            !reference->getType()->isIntegralOrEnumerationType()) return {};
+        const auto* variable = dyn_cast<VarDecl>(reference->getDecl());
+        if (!variable || !variables_.contains(variable) ||
+            !variable->isUsableInConstantExpressions(context_)) return {};
+        Expr::EvalResult evaluated;
+        if (!reference->EvaluateAsInt(evaluated, context_) || !evaluated.Val.isInt()) return {};
+        const auto& value = evaluated.Val.getInt();
+        // NOTE(port): Standard C++ integer types fit the compiler's 64-bit
+        // literal forms; wider extension types require separate literal lowering.
+        if (value.getBitWidth() > 64) return {};
+        llvm::SmallString<32> digits;
+        value.toString(digits, 10);
+        std::string literal = digits.str().str();
+        if (literal == "-9223372036854775808") literal = "(-9223372036854775807LL - 1LL)";
+        else literal += value.isUnsigned() ? "ULL" : "LL";
+        auto type = reference->getType().getCanonicalType().getUnqualifiedType();
+        return "static_cast<" + TypeName::getFullyQualifiedName(type, context_, policy_) + ">(" + literal + ")";
+    }
     void collect_references(const Stmt* statement, std::vector<Replacement>& replacements, bool type_only = false) const {
         if (!statement) return;
         // NOTE(port): Query the original operand category. A frame getter can
@@ -298,6 +321,11 @@ private:
             }
         }
         if (const auto* reference = dyn_cast<DeclRefExpr>(statement)) {
+            auto constant = constant_value(reference);
+            if (!constant.empty()) {
+                replacements.push_back({offset(reference->getBeginLoc()), end_offset(reference->getEndLoc()), constant});
+                return;
+            }
             if (const auto* variable = dyn_cast<ValueDecl>(reference->getDecl())) {
                 auto found = variables_.find(variable);
                 if (found != variables_.end()) {
@@ -342,6 +370,14 @@ private:
                     auto name = location.getNameLoc();
                     references_.push_back({lowering_.offset(name), lowering_.end_offset(name), alias->second});
                 }
+                return true;
+            }
+            // NOTE(port): Template arguments and array bounds can contain
+            // constant references that are not statement children.
+            bool VisitDeclRefExpr(DeclRefExpr* expression) {
+                auto constant = lowering_.constant_value(expression);
+                if (!constant.empty()) references_.push_back({lowering_.offset(expression->getBeginLoc()),
+                    lowering_.end_offset(expression->getEndLoc()), constant});
                 return true;
             }
             // NOTE(port): A frame access is an expression, not the original

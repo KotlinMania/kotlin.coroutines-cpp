@@ -10,7 +10,11 @@
 #include <utility>
 #include <type_traits>
 #include <typeinfo>
+#include <array>
+#include <cstdint>
+#include <limits>
 using namespace kotlinx::coroutines;
+enum class ConstantKind { VALUE = 3 };
 
 int alive = 0;
 int mode = 0;
@@ -105,6 +109,18 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
     using Fixed = const Value;
     typedef volatile Value Observed;
     using Both = const volatile Value;
+    constexpr int count = 2;
+    const int multiplier = 3;
+    constexpr ConstantKind kind = ConstantKind::VALUE;
+    constexpr std::uint64_t high = std::numeric_limits<std::uint64_t>::max();
+    constexpr std::int64_t low = std::numeric_limits<std::int64_t>::min();
+    std::array<int, count> constants{count, multiplier};
+    const int* count_identity = std::addressof(count);
+    static_assert(count == 2 && multiplier == 3);
+    static_assert(std::integral_constant<int, count>::value == 2);
+    static_assert(std::integral_constant<ConstantKind, kind>::value == ConstantKind::VALUE);
+    static_assert(high == UINT64_MAX && low == INT64_MIN);
+    static_assert(std::is_same_v<decltype(count), const int>);
     const int initial = seed + 5;
     static int started = seed - 37, finished = initial - 42;
     static const int cached = initialize_static(initial + seed);
@@ -176,6 +192,8 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
         assert(first_copy.value == 11 && second_copy.value == 12);
         assert(std::addressof(first_copy) == copy_identity && copy_identity != &originals[0]);
         assert(array_copies == 2 && array_sources == 1);
+        assert(std::addressof(count) == count_identity && *count_identity == 2);
+        assert(constants[0] == count && constants[1] == multiplier);
         assert(member_first == 3 && member_second == 5);
         assert(from_get == 3 && from_get_second == 4 && binding_evaluations == 2);
         assert(resource.get() == resource_identity && tag == 1);
