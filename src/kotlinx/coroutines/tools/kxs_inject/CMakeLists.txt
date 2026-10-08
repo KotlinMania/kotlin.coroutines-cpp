@@ -49,6 +49,8 @@ foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
         ../kotlinc_native_ref/KonanFqNames.cpp
         ../kotlinc_native_ref/InlineClasses.cpp
         ../kotlinc_native_ref/BinaryType.cpp
+        ../kotlinc_native_ref/kotlin/Numbers.cpp
+        ../kotlinc_native_ref/kotlin/collections/HashMapFunctions.cpp
         ../kotlinc_native_ref/DebugInfoC.cpp
         ../kotlinc_native_ref/Runtime.cpp
         ../kotlinc_native_ref/ContextUtils.cpp
@@ -79,6 +81,13 @@ foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
         ../kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/descriptors/annotations/AnnotatedImpl.cpp)
 endforeach()
+
+add_executable(kxs_numbers_test ../kotlinc_native_ref/NumbersContractTest.cpp
+    ../kotlinc_native_ref/kotlin/Numbers.cpp
+    ../kotlinc_native_ref/kotlin/collections/HashMapFunctions.cpp)
+target_compile_features(kxs_numbers_test PRIVATE cxx_std_20)
+target_compile_options(kxs_numbers_test PRIVATE -UNDEBUG)
+add_test(NAME kxs_numbers_contract COMMAND kxs_numbers_test)
 
 add_executable(kxs_grouping_test ../kotlinc_native_ref/GroupingContractTest.cpp)
 target_compile_features(kxs_grouping_test PRIVATE cxx_std_20)

@@ -6,6 +6,63 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Numbers and Native HashMap sizing dependency — 2026-10-08
+
+Continuation from `490cb209` translates the26 public scalar operations in Native
+Numbers.kt:12-265, together with the six private intrinsic/runtime helpers that
+supply them. Numbers.hpp keeps the public declarations and short source comments;
+Numbers.cpp owns implementations and private helpers. Int/Long bit counts, zero
+cases, highest/lowest set bits and rotations follow the pinned source. Unsigned
+arithmetic preserves Kotlin wrapping and masked shifts without signed-overflow
+or shift-width undefined behavior, including INT_MIN rotation counts. Float/Double
+classification and raw/canonical bits use the actual Operator.cpp implementations,
+Primitives.kt NaN definitions and scalar reinterpret contracts. Companion from_bits
+functions call private source intrinsic implementations. Native GCUnsafeCall and
+TypedIntrinsic compiler metadata/exported Native ABI are not established here.
+
+HashMapFunctions.hpp/.cpp translate HashMap.kt:599-601 computeHashSize and
+computeShift in the existing private-companion namespace convention. Sizing uses
+capacity.coerceAtLeast(1), wrapping multiplication by3, and the actual highest-bit
+operation; shift uses the actual leading-zero operation plus1. These are source
+algorithms, not a replacement HashMap. The917-line concrete HashMap, storage,
+hash/equality, view and iterator contracts remain untranslated. Its source
+AbstractMutableCollection and AbstractMutableSet bases have been opened; the
+AbstractCollection/AbstractSet dependencies must also be translated. Fresh-map
+Grouping operations and byFqNameParts remain absent, followed by actual
+InlineClassesSupport/classifier/cache/frame consumers.
+
+CMakeLists.txt:52-53 registers both implementation units on KotlinxCoroutinePass,
+kxs-inject and kxs_codegen_test; :85 registers kxs_numbers_test. Native-OFF
+LLVM23.1.2 configure and all four affected target builds succeeded. Strict debug
+-Wall/-Wextra/-Werror ASan/UBSan compile and execution, strict release syntax,
+six focused CTests and the existing actual LLVM module-generation fixture pass.
+The numeric fixture covers all single-bit positions, zero/sign bits, extreme
+rotation counts, wrapping map sizing, NaN payload/canonicalization, negative zero,
+infinity and finite limits. No warnings are suppressed. This is scalar dependency
+and existing LLVM fixture evidence, not full coroutine/Native/MLX acceptance.
+
+Both final deep scans completed. Restoring Native/Wasm collection sources expands
+the compiler corpus from673 to695 sparse files:266/7163 matched bodies,
+125/1617 types,0.28 body similarity,10 scoring failures,190 paired units/279 target
+files. Scope changed; these totals do not measure improvement against the earlier
+corpus. Numbers reports6/20 explicit bodies,0/0 types,0.05 body score,32 target
+bodies. Fourteen Int/Long receiver and Float/Double companion bodies remain
+unmatched against the actual C++ overload/namespace forms. The extractor records
+Kotlin extension receivers as parents (symbol_extraction.cpp:662-688); source
+emission also falls back on function nodes. Target parser errors are absent, while
+normalized source logic/text is provisional. Do not infer absent implementation
+or completed parity solely from that score.
+
+The scanner explicitly rejects HashMap.kt [kotlin.collections] versus
+HashMapFunctions.hpp [kotlin.collections.hash_map.detail] with IDENTITY_MISMATCH.
+The two private sizing bodies therefore have no certified match count, and the
+HashMap source file remains missing in the oracle. This is an observed namespace
+pairing limitation, not permission to report full HashMap parity. Full coroutine
+root remains663/2918 bodies,178/560 types,0.24 similarity,12 failures,409 paired
+units/608 target files. Generated evidence and priorities remain under
+build/source-continuation/{compiler-source-distance,library-source-distance}.
+The full transliteration/state-machine goal remains active.
+
 ## Grouping destination operations — 2026-10-08
 
 Continuation from `e5392502` translates Grouping.kt's public interface and all
