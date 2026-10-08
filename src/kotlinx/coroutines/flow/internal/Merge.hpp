@@ -10,18 +10,13 @@
 
 #include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
-#include "kotlinx/coroutines/ContinuationImpl.hpp"
-#include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
-#include "kotlinx/coroutines/flow/internal/FlowCoroutine.hpp"
 #include "kotlinx/coroutines/sync/Semaphore.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Builders.hpp"
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/channels/Channel.hpp"
 #include "kotlinx/coroutines/channels/Produce.hpp" // For produce
-#include "kotlinx/coroutines/Dispatchers.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
-#include "kotlinx/coroutines/EventLoop.hpp"
 #include <memory>
 #include <functional>
 #include <vector>
@@ -35,7 +30,6 @@ using kotlinx::coroutines::sync::Semaphore;
 using kotlinx::coroutines::sync::create_semaphore;
 using kotlinx::coroutines::channels::Channel;
 using kotlinx::coroutines::channels::BufferOverflow;
-// using kotlinx::coroutines::channels::SendingCollector; // moved to flow/internal
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
 void* transform_latest_emit(std::shared_ptr<Job> previous_flow,
@@ -105,6 +99,7 @@ class ChannelFlowTransformLatest : public ChannelFlowOperator<T, R> {
 public:
     using TransformType = std::function<void*(FlowCollector<R>*, T, Continuation<void*>*)>;
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:9-15
     ChannelFlowTransformLatest(
         TransformType transform,
         std::shared_ptr<Flow<T>> flow,
@@ -114,6 +109,7 @@ public:
     ) : ChannelFlowOperator<T, R>(std::move(flow), std::move(context), capacity, on_buffer_overflow),
         transform_(std::move(transform)) {}
 
+protected:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:16-17
     ChannelFlow<R>* create(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_buffer_overflow) override {
         return new ChannelFlowTransformLatest<T, R>(transform_, this->upstream(), std::move(context), capacity, on_buffer_overflow);
@@ -150,12 +146,14 @@ public:
         : ChannelFlow<T>(std::move(context), capacity, on_buffer_overflow),
           flow_(std::move(flow)), concurrency_(concurrency) {}
 
+protected:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:44-45
     ChannelFlow<T>* create(std::shared_ptr<CoroutineContext> context, int capacity,
                            BufferOverflow on_buffer_overflow) override {
         return new ChannelFlowMerge<T>(flow_, concurrency_, std::move(context), capacity, on_buffer_overflow);
     }
 
+public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:47-49
     std::shared_ptr<ReceiveChannel<T>> produce_impl(CoroutineScope* scope) override {
         return channels::produce<T>(scope, this->context(), this->capacity(),
@@ -238,12 +236,14 @@ public:
         BufferOverflow on_buffer_overflow = BufferOverflow::SUSPEND)
         : ChannelFlow<T>(std::move(context), capacity, on_buffer_overflow), flows_(std::move(flows)) {}
 
+protected:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:82-83
     ChannelFlow<T>* create(std::shared_ptr<CoroutineContext> context, int capacity,
                            BufferOverflow on_buffer_overflow) override {
         return new ChannelLimitedFlowMerge<T>(flows_, std::move(context), capacity, on_buffer_overflow);
     }
 
+public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:85-87
     std::shared_ptr<ReceiveChannel<T>> produce_impl(CoroutineScope* scope) override {
         return channels::produce<T>(scope, this->context(), this->capacity(),
