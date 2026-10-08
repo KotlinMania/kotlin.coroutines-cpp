@@ -1,3 +1,4 @@
+// port-lint: source kotlinx-coroutines-core/native/src/CoroutineContext.kt
 #pragma once
 /**
  * @file CoroutineContextUtils.hpp
@@ -6,42 +7,39 @@
  * - kotlinx-coroutines-core/common/src/CoroutineContext.common.kt (expect declarations)
  * - kotlinx-coroutines-core/native/src/CoroutineContext.kt (native actuals)
  *
- * On native, these helpers are no-ops that just run the block.
+ * The Native context wrappers directly invoke their block.
  */
 
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
-#include <functional>
 #include <string>
 #include <typeinfo>
 
 namespace kotlinx {
 namespace coroutines {
 
-/**
- * Kotlin: internal actual inline fun <T> withCoroutineContext(...)
- * Native actual is a no-op wrapper.
- */
+// No debugging facilities on native
+// countOrElement -- pre-cached value for ThreadContext.kt
+// NOTE(port): Native does not read the context/cache arguments. Keep their
+// source names as comments; accept the inline block without type erasure.
 // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:43-43
-template<typename R>
+template<typename R, typename Block>
 inline R with_coroutine_context(
-    const std::shared_ptr<CoroutineContext>& context,
-    void* count_or_element,
-    std::function<R()> block
+    const std::shared_ptr<CoroutineContext>& /* context */,
+    void* /* count_or_element */,
+    Block&& block
 ) {
     return block();
 }
 
-/**
- * Kotlin: internal actual inline fun <T> withContinuationContext(...)
- * Native actual is a no-op wrapper.
- */
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineContext.common.kt:24-26
+// NOTE(port): The same Native inline-block projection applies here.
 // Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:44-44
-template<typename R, typename T>
+template<typename R, typename T, typename Block>
 inline R with_continuation_context(
-    const std::shared_ptr<Continuation<T>>& continuation,
-    void* count_or_element,
-    std::function<R()> block
+    const std::shared_ptr<Continuation<T>>& /* continuation */,
+    void* /* count_or_element */,
+    Block&& block
 ) {
     return block();
 }
