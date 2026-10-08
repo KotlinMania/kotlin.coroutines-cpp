@@ -4,6 +4,8 @@
 #include "kotlinx/coroutines/JobImpl.hpp"
 #include "kotlinx/coroutines/channels/BufferedChannel.hpp"
 #include "kotlinx/coroutines/internal/OnUndeliveredElement.hpp"
+#include "kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
+#include "kotlinx/coroutines/flow/SharingStarted.hpp"
 #include <deque>
 #include <iostream>
 #include <string>
@@ -379,6 +381,60 @@ void undelivered_exception_contract() {
     CHECK(other != nullptr);
     try { std::rethrow_exception(other->cause()); }
     catch (int value) { CHECK(value == 17); }
+    internal::OnUndeliveredElement<Unit> unit_handler = [&](Unit) { std::rethrow_exception(first_cause); };
+    std::unique_ptr<internal::UndeliveredElementException> unit(
+        internal::call_undelivered_element_catching_exception(unit_handler, Unit{}));
+    CHECK(std::string(unit->what()) == "Exception in undelivered element handler for kotlin.Unit");
+    using flow::SharingCommand;
+    internal::OnUndeliveredElement<SharingCommand> enum_handler = [&](auto) { std::rethrow_exception(first_cause); };
+    for (auto command : {SharingCommand::START, SharingCommand::STOP, SharingCommand::STOP_AND_RESET_REPLAY_CACHE}) {
+        std::unique_ptr<internal::UndeliveredElementException> exception(
+            internal::call_undelivered_element_catching_exception(enum_handler, command));
+        CHECK(std::string(exception->what()) == "Exception in undelivered element handler for " + flow::to_string(command));
+    }
+}
+// Source contract: channels/ConflatedBufferedChannel.kt:31-88.
+void conflated_channel_contract() {
+    using namespace kotlinx::coroutines::channels;
+    Completion completion;
+    auto failure = std::make_exception_ptr(std::runtime_error("conflated handler failure"));
+    auto closing = std::make_exception_ptr(std::runtime_error("conflated close failure"));
+    std::string undelivered;
+    ConflatedBufferedChannel<std::string> latest(1, BufferOverflow::DROP_LATEST, [&](auto element) {
+        undelivered = element;
+        std::rethrow_exception(failure);
+    });
+    CHECK(latest.try_send("buffered").is_success());
+    CHECK(latest.try_send("caller-owned drop").is_success() && undelivered.empty());
+    try { latest.send("dropped by send", &completion); CHECK(false); }
+    catch (const internal::UndeliveredElementException& exception) {
+        CHECK(exception.cause() == failure && undelivered == "dropped by send");
+    }
+    CHECK(latest.try_receive().get_or_throw() == "buffered");
+    latest.close(closing);
+    try { latest.send("closed original value", &completion); CHECK(false); }
+    catch (const internal::UndeliveredElementException& exception) {
+        CHECK(exception.cause() == failure && undelivered == "closed original value");
+        CHECK(exception.suppressed_exceptions().size() == 1 && exception.suppressed_exceptions()[0] == closing);
+    }
+    for (auto overflow : {BufferOverflow::DROP_OLDEST, BufferOverflow::DROP_LATEST}) {
+        ConflatedBufferedChannel<std::shared_ptr<int>> channel(1, overflow);
+        auto resource = std::make_shared<int>(97);
+        std::weak_ptr<int> lifetime = resource;
+        CHECK(channel.try_send(resource).is_success());
+        resource.reset();
+        auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+        int calls = 0;
+        SelectBuilder<void*>& builder = *selection;
+        builder.invoke<std::shared_ptr<int>, SendChannel<std::shared_ptr<int>>*>(channel.on_send(), std::make_shared<int>(98),
+            std::function<void*(SendChannel<std::shared_ptr<int>>*, Continuation<void*>*)>(
+                [&](auto* result, auto) -> void* { CHECK(result == &channel); ++calls; return nullptr; }));
+        CHECK(selection->do_select(&completion) == nullptr && calls == 1 && !completion.resumes);
+        auto received = channel.try_receive().get_or_throw();
+        CHECK(*received == (overflow == BufferOverflow::DROP_OLDEST ? 98 : 97));
+        received.reset();
+        CHECK(lifetime.expired());
+    }
 }
 // Source contract: channels/BufferedChannel.kt:1504-1510,1544-1546.
 void channel_receive_borrowed_pointer(bool wait) {
@@ -433,6 +489,7 @@ int main() {
         channel_receive_borrowed_pointer(false);
         channel_receive_borrowed_pointer(true);
         undelivered_exception_contract();
+        conflated_channel_contract();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n'; return 1;
     }
