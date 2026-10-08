@@ -2208,10 +2208,10 @@ protected:
     virtual void register_select_for_send(selects::SelectInstance<void*>* select, void* element_any) {
         E element = *static_cast<E*>(element_any);
         // Upstream calls into the inline `sendImpl(...)` machinery. In the C++ port the
-        // inline call site is `send_impl_with_select`, which routes through the same four
+        // inline call site is `send_impl`, which routes through the same four
         // onRendezvousOrBuffered / onSuspend / onClosed / onNoWaiterSuspend continuations
         // the Kotlin source uses, applied to a select-aware waiter.
-        send_impl_with_select(
+        send_impl(
             element,
             select,
             [select]() { select->select_in_registration_phase(nullptr); }, // onRendezvousOrBuffered: Unit
@@ -2366,7 +2366,7 @@ private:
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:241-349,1483-1490
-    void send_impl_with_select(
+    void send_impl(
         E element,
         selects::SelectInstance<void*>* select,
         std::function<void()> on_rendezvous_or_buffered,
