@@ -283,7 +283,7 @@ void channel_receive_contract(bool catching, bool wait, bool closed, bool cancel
             if (cancel) {
                 job->cancel(nullptr);
                 CHECK(completion.resumes == 1 && completion.failure && calls == 0);
-                CHECK(channel.try_send(resource).is_failure());
+                CHECK(channel.try_send(std::make_shared<int>(-1)).is_failure());
             } else {
                 CHECK(channel.try_send(resource).is_success());
                 CHECK(completion.resumes == 1 && !completion.failure && calls == 1);
