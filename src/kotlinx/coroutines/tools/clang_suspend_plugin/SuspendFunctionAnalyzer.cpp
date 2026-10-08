@@ -1,5 +1,8 @@
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:24-277
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:31-44
 #include "SuspendFunctionAnalyzer.hpp"
 #include <algorithm>
+#include <stdexcept>
 
 #include "clang/AST/Attr.h"
 #include "clang/AST/Expr.h"
@@ -23,40 +26,12 @@ bool SuspendFunctionAnalyzer::analyze() {
         return false;
     }
 
-    if (!build_cfg()) {
-        return false;
-    }
-
+    spilled_variables_.clear();
     collect_local_variables();
     find_suspend_points();
 
     if (!suspend_points_.empty()) {
         compute_liveness();
-    }
-
-    return true;
-}
-
-bool SuspendFunctionAnalyzer::build_cfg() {
-    CFG::BuildOptions options;
-    options.AddEHEdges = true;
-    options.AddInitializers = true;
-    options.AddImplicitDtors = false;  // Keep it simpler for now
-    options.AddTemporaryDtors = false;
-
-    cfg_ = CFG::buildCFG(fd_, fd_->getBody(), &ctx_, options);
-    if (!cfg_) {
-        return false;
-    }
-
-    // Build statement-to-block mapping for quick lookup.
-    for (const CFGBlock* block : *cfg_) {
-        if (!block) continue;
-        for (const CFGElement& elem : *block) {
-            if (auto stmt_elem = elem.getAs<CFGStmt>()) {
-                stmt_to_block_[stmt_elem->getStmt()] = block;
-            }
-        }
     }
 
     return true;
@@ -302,271 +277,317 @@ bool SuspendFunctionAnalyzer::is_suspend_call(const Stmt* stmt) {
     return false;
 }
 
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt:367-388
+// NOTE(port): Clang keeps unevaluated operands, discarded constexpr arms and
+// nested function bodies in its AST. Only this function's executed expressions
+// participate in the Kotlin suspend-call walk.
 void SuspendFunctionAnalyzer::find_suspend_points() {
-    suspend_points_.clear();
-
-    // Collect CFG suspension sites, then assign IDs in source traversal order.
-    for (const CFGBlock* block : *cfg_) {
-        if (!block) continue;
-
-        for (const CFGElement& elem : *block) {
-            if (auto stmt_elem = elem.getAs<CFGStmt>()) {
-                const Stmt* stmt = stmt_elem->getStmt();
-                if (is_suspend_call(stmt)) {
-                    // A wrapper around an already marked callee represents one
-                    // suspension site, rather than a second nested suspension.
-                    if (const auto* expression = dyn_cast<Expr>(stmt)) {
-                        const auto* call = dyn_cast<CallExpr>(expression->IgnoreParenImpCasts());
-                        if (call && is_suspend_wrapper(call) &&
-                            call->getNumArgs() == 1 && is_suspend_call(call->getArg(0)->IgnoreUnlessSpelledInSource()))
-                            continue;
-                    }
-                    SuspendPointInfo info;
-                    info.suspend_stmt = stmt;
-                    info.state_id = 0;
-                    // live_variables will be populated by compute_liveness()
-                    suspend_points_.push_back(info);
-                }
-            }
+    class SuspensionPoints : public RecursiveASTVisitor<SuspensionPoints> {
+    public:
+        explicit SuspensionPoints(ASTContext& context) : context_(context) {}
+        std::vector<SuspendPointInfo> points;
+        bool shouldTraversePostOrder() const { return true; }
+        bool TraverseStmt(Stmt* statement) {
+            if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return true;
+            return RecursiveASTVisitor<SuspensionPoints>::TraverseStmt(statement);
         }
-    }
-    const auto& manager = ctx_.getSourceManager();
-    std::stable_sort(suspend_points_.begin(), suspend_points_.end(), [&](const auto& left, const auto& right) {
-        return manager.isBeforeInTranslationUnit(left.suspend_stmt->getBeginLoc(), right.suspend_stmt->getBeginLoc());
-    });
-    for (size_t i = 0; i < suspend_points_.size(); ++i)
-        suspend_points_[i].state_id = static_cast<unsigned>(i + 1);
-
+        bool TraverseDecltypeTypeLoc(DecltypeTypeLoc, bool = true) { return true; }
+        bool TraverseCXXDefaultArgExpr(CXXDefaultArgExpr* expression) {
+            return TraverseStmt(expression->getExpr());
+        }
+        bool TraverseCXXDefaultInitExpr(CXXDefaultInitExpr* expression) {
+            return TraverseStmt(expression->getExpr());
+        }
+        bool TraverseDecl(Decl* declaration) {
+            if (declaration && (isa<RecordDecl>(declaration) || isa<FunctionDecl>(declaration))) return true;
+            return RecursiveASTVisitor<SuspensionPoints>::TraverseDecl(declaration);
+        }
+        bool TraverseLambdaExpr(LambdaExpr* expression) {
+            for (auto* initializer : expression->capture_inits())
+                if (!TraverseStmt(initializer)) return false;
+            return true;
+        }
+        bool TraverseIfStmt(IfStmt* branch) {
+            if (!branch->isConstexpr()) return RecursiveASTVisitor<SuspensionPoints>::TraverseIfStmt(branch);
+            auto selected = branch->getNondiscardedCase(context_);
+            if (!selected) throw std::runtime_error("suspend-call walk requires resolved constexpr branch");
+            return TraverseStmt(branch->getInit()) && TraverseStmt(branch->getConditionVariableDeclStmt()) &&
+                TraverseStmt(*selected);
+        }
+        bool VisitStmt(Stmt* statement) {
+            if (!SuspendFunctionAnalyzer::is_suspend_call(statement)) return true;
+            // NOTE(port): Implicit expression wrappers do not add IR calls.
+            if (const auto* expression = dyn_cast<Expr>(statement);
+                expression && expression != expression->IgnoreParenImpCasts()) return true;
+            if (const auto* call = dyn_cast<CallExpr>(statement);
+                call && SuspendFunctionAnalyzer::is_suspend_wrapper(call) && call->getNumArgs() == 1 &&
+                SuspendFunctionAnalyzer::is_suspend_call(call->getArg(0)->IgnoreUnlessSpelledInSource())) return true;
+            points.push_back({statement, static_cast<unsigned>(points.size() + 1), {}});
+            return true;
+        }
+    private:
+        ASTContext& context_;
+    } visitor(ctx_);
+    visitor.TraverseStmt(fd_->getBody());
+    suspend_points_ = std::move(visitor.points);
 }
 
-/// AST visitor to collect variable uses (reads).
-class UseCollector : public RecursiveASTVisitor<UseCollector> {
+namespace {
+using LiveVariables = std::set<const VarDecl*>;
+
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:47-277
+// NOTE(port): Clang node dispatch adapts Kotlin's IR visitor. Concrete declaration
+// identities replace variable bit indices; C++ parameters are also tracked because
+// their source bodies have not yet been rewritten to argument-field reads.
+class LivenessAnalysisVisitor {
 public:
-    std::set<const VarDecl*>& uses;
-    explicit UseCollector(std::set<const VarDecl*>& u) : uses(u) {}
-    // NOTE(port): A class declaration does not execute its member bodies.
-    bool TraverseDecl(Decl* declaration) {
-        if (declaration && (isa<RecordDecl>(declaration) || isa<FunctionDecl>(declaration))) return true;
-        return RecursiveASTVisitor<UseCollector>::TraverseDecl(declaration);
-    }
-    // NOTE(port): Capture construction reads enclosing variables. The closure
-    // body executes later and has its own local-variable liveness analysis.
-    bool TraverseLambdaExpr(LambdaExpr* expression) {
-        for (auto* initializer : expression->capture_inits())
-            if (!TraverseStmt(initializer)) return false;
-        return true;
+    explicit LivenessAnalysisVisitor(const ASTContext& context) : context_(context) {}
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:58-64
+    std::map<const Stmt*, LiveVariables> run(const Stmt* body) {
+        accept(body, {});
+        return filtered_element_ends_;
     }
 
-    bool VisitDeclRefExpr(DeclRefExpr* dre) {
-        if (const VarDecl* vd = dyn_cast<VarDecl>(dre->getDecl())) {
-            // Check if this is a read (not a write).
-            // For simplicity, treat all DeclRefExpr as potential reads.
-            // The def collector will handle writes.
-            uses.insert(vd);
-        }
-        return true;
+private:
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:86-98
+    void save(const Stmt* element, const LiveVariables& data) {
+        if (!SuspendFunctionAnalyzer::is_suspend_call(element)) return;
+        auto& live = filtered_element_ends_[element];
+        live.insert(data.begin(), data.end());
+        live.insert(catches_.begin(), catches_.end());
+        // NOTE(port): The LLVM label field and point IDs are not source VarDecls,
+        // so Kotlin's suspensionPointIdParameters cannot enter this set.
     }
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:104-113
+    LiveVariables visit_element(const Stmt* element, LiveVariables data) {
+        std::vector<const Stmt*> children;
+        for (const auto* child : element->children()) if (child) children.push_back(child);
+        for (auto child = children.rbegin(); child != children.rend(); ++child)
+            data = accept(*child, std::move(data));
+        return data;
+    }
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:115-139
+    LiveVariables visit_variable(const VarDecl* variable, LiveVariables data) {
+        data.erase(variable);
+        return accept(variable->getInit(), std::move(data));
+    }
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:169-183
+    LiveVariables visit_when(const Stmt* condition, const Stmt* selected,
+                             const Stmt* otherwise, const LiveVariables& data) {
+        auto live = accept(otherwise, data);
+        auto branch = accept(selected, data);
+        live.insert(branch.begin(), branch.end());
+        return accept(condition, std::move(live));
+    }
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:189-215
+    LiveVariables visit_try(const CXXTryStmt* region, const LiveVariables& data) {
+        LiveVariables current_catches;
+        for (unsigned index = 0; index < region->getNumHandlers(); ++index) {
+            const auto* handler = region->getHandler(index);
+            auto live = accept(handler->getHandlerBlock(), data);
+            if (const auto* variable = handler->getExceptionDecl()) live.erase(variable);
+            current_catches.insert(live.begin(), live.end());
+        }
+        auto previous_catches = catches_;
+        catches_.insert(current_catches.begin(), current_catches.end());
+        auto after_try = data;
+        after_try.insert(current_catches.begin(), current_catches.end());
+        auto before_try = accept(region->getTryBlock(), std::move(after_try));
+        current_catches.insert(before_try.begin(), before_try.end());
+        catches_ = std::move(previous_catches);
+        return current_catches;
+    }
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:225-277
+    // NOTE(port): For/range-for increments execute before the next condition;
+    // continue targets that increment, while break targets the loop's end.
+    LiveVariables handle_loop(const Stmt* condition,
+                              const Stmt* body, const Stmt* increment,
+                              const VarDecl* condition_variable,
+                              const DeclStmt* iteration_variable,
+                              const LiveVariables& data, bool at_least_once) {
+        break_targets_.push_back(data);
+        continue_targets_.emplace_back();
+        auto condition_start = [&](LiveVariables after) {
+            if (condition) after.insert(data.begin(), data.end());
+            after = accept(condition, std::move(after));
+            if (condition_variable) after = visit_variable(condition_variable, std::move(after));
+            return after;
+        };
+        auto body_end = accept(increment, condition_start(condition ? data : LiveVariables{}));
+        LiveVariables body_start;
+        for (;;) {
+            continue_targets_.back() = body_end;
+            auto current_start = accept(body, body_end);
+            current_start = accept(iteration_variable, std::move(current_start));
+            body_start.insert(current_start.begin(), current_start.end());
+            auto next_end = accept(increment, condition_start(std::move(current_start)));
+            if (next_end == body_end) break;
+            body_end = std::move(next_end);
+        }
+        continue_targets_.pop_back();
+        break_targets_.pop_back();
+        if (at_least_once) return body_start;
+        // NOTE(port): A C++ for(;;) has no zero-iteration condition edge.
+        if (!condition) return body_start;
+        body_start.insert(data.begin(), data.end());
+        return condition_start(std::move(body_start));
+    }
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:169-183,225-230
+    // NOTE(port): C++ switch permits fallthrough. Traverse the body backwards
+    // and union each label's incoming values at its dispatch instead of treating
+    // every labelled result as an independent Kotlin when branch.
+    LiveVariables visit_switch(const SwitchStmt* branch, const LiveVariables& data) {
+        break_targets_.push_back(data);
+        switch_entries_.emplace_back();
+        accept(branch->getBody(), data);
+        auto live = std::move(switch_entries_.back());
+        switch_entries_.pop_back();
+        break_targets_.pop_back();
+        bool exhaustive = false;
+        for (const auto* label = branch->getSwitchCaseList(); label; label = label->getNextSwitchCase())
+            exhaustive = exhaustive || isa<DefaultStmt>(label);
+        if (!exhaustive) live.insert(data.begin(), data.end());
+        live = accept(branch->getCond(), std::move(live));
+        if (const auto* variable = branch->getConditionVariable())
+            live = visit_variable(variable, std::move(live));
+        return accept(branch->getInit(), std::move(live));
+    }
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:104-277
+    LiveVariables accept(const Stmt* element, LiveVariables data) {
+        if (!element || SuspendFunctionAnalyzer::is_unevaluated_expression(element)) return data;
+        save(element, data);
+        if (const auto* reference = dyn_cast<DeclRefExpr>(element)) {
+            if (const auto* variable = dyn_cast<VarDecl>(reference->getDecl())) data.insert(variable);
+            else if (const auto* binding = dyn_cast<BindingDecl>(reference->getDecl())) {
+                if (const auto* variable = dyn_cast<VarDecl>(binding->getDecomposedDecl())) data.insert(variable);
+            }
+            return data;
+        }
+        if (const auto* declaration = dyn_cast<DeclStmt>(element)) {
+            std::vector<const VarDecl*> variables;
+            for (const auto* child : declaration->decls())
+                if (const auto* variable = dyn_cast<VarDecl>(child)) variables.push_back(variable);
+            for (auto variable = variables.rbegin(); variable != variables.rend(); ++variable)
+                data = visit_variable(*variable, std::move(data));
+            // NOTE(port): Nested class/function bodies and type declarations
+            // do not execute in this function's value-liveness traversal.
+            return data;
+        }
+        if (const auto* assignment = dyn_cast<BinaryOperator>(element)) {
+            if (assignment->isAssignmentOp()) {
+                const auto* target = dyn_cast<DeclRefExpr>(assignment->getLHS()->IgnoreParenImpCasts());
+                const auto* variable = target ? dyn_cast<VarDecl>(target->getDecl()) : nullptr;
+                // NOTE(port): Writing through a reference does not redefine the
+                // retained binding; member/subscript destinations read receivers.
+                if (variable && !variable->getType()->isReferenceType()) {
+                    data.erase(variable);
+                    if (assignment->isCompoundAssignmentOp()) data.insert(variable);
+                    return accept(assignment->getRHS(), std::move(data));
+                }
+                return visit_element(element, std::move(data));
+            }
+            if (assignment->isLogicalOp()) {
+                auto selected = accept(assignment->getRHS(), data);
+                selected.insert(data.begin(), data.end());
+                return accept(assignment->getLHS(), std::move(selected));
+            }
+        }
+        if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(element))
+            return accept(omitted->getExpr(), std::move(data));
+        if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(element))
+            return accept(initialized->getExpr(), std::move(data));
+        if (const auto* returned = dyn_cast<ReturnStmt>(element))
+            return accept(returned->getRetValue(), {});
+        if (const auto* thrown = dyn_cast<CXXThrowExpr>(element))
+            return accept(thrown->getSubExpr(), catches_);
+        if (const auto* branch = dyn_cast<ConditionalOperator>(element))
+            return visit_when(branch->getCond(), branch->getTrueExpr(), branch->getFalseExpr(), data);
+        if (const auto* branch = dyn_cast<IfStmt>(element)) {
+            if (branch->isConstexpr()) {
+                auto selected = branch->getNondiscardedCase(context_);
+                if (!selected) throw std::runtime_error("liveness requires resolved constexpr branch");
+                data = accept(*selected, std::move(data));
+            } else data = visit_when(branch->getCond(), branch->getThen(), branch->getElse(), data);
+            if (const auto* variable = branch->getConditionVariable())
+                data = visit_variable(variable, std::move(data));
+            return accept(branch->getInit(), std::move(data));
+        }
+        if (const auto* region = dyn_cast<CXXTryStmt>(element)) return visit_try(region, data);
+        if (const auto* loop = dyn_cast<WhileStmt>(element))
+            return handle_loop(loop->getCond(), loop->getBody(), nullptr,
+                               loop->getConditionVariable(), nullptr, data, false);
+        if (const auto* loop = dyn_cast<DoStmt>(element))
+            return handle_loop(loop->getCond(), loop->getBody(), nullptr, nullptr, nullptr, data, true);
+        if (const auto* loop = dyn_cast<ForStmt>(element)) {
+            data = handle_loop(loop->getCond(), loop->getBody(), loop->getInc(),
+                               loop->getConditionVariable(), nullptr, data, false);
+            return accept(loop->getInit(), std::move(data));
+        }
+        if (const auto* loop = dyn_cast<CXXForRangeStmt>(element)) {
+            data = handle_loop(loop->getCond(), loop->getBody(), loop->getInc(),
+                               nullptr, loop->getLoopVarStmt(), data, false);
+            data = accept(loop->getEndStmt(), std::move(data));
+            data = accept(loop->getBeginStmt(), std::move(data));
+            data = accept(loop->getRangeStmt(), std::move(data));
+            return accept(loop->getInit(), std::move(data));
+        }
+        if (isa<BreakStmt>(element)) {
+            if (break_targets_.empty()) throw std::runtime_error("unknown liveness break target");
+            return break_targets_.back();
+        }
+        if (isa<ContinueStmt>(element)) {
+            if (continue_targets_.empty()) throw std::runtime_error("unknown liveness continue target");
+            return continue_targets_.back();
+        }
+        if (const auto* branch = dyn_cast<SwitchStmt>(element)) return visit_switch(branch, data);
+        if (const auto* label = dyn_cast<SwitchCase>(element)) {
+            data = accept(label->getSubStmt(), std::move(data));
+            if (switch_entries_.empty()) throw std::runtime_error("unknown liveness switch target");
+            switch_entries_.back().insert(data.begin(), data.end());
+            return data;
+        }
+        if (const auto* lambda = dyn_cast<LambdaExpr>(element)) {
+            std::vector<const Expr*> initializers(lambda->capture_init_begin(), lambda->capture_init_end());
+            for (auto initializer = initializers.rbegin(); initializer != initializers.rend(); ++initializer)
+                data = accept(*initializer, std::move(data));
+            return data;
+        }
+        return visit_element(element, std::move(data));
+    }
+
+    const ASTContext& context_;
+    std::map<const Stmt*, LiveVariables> filtered_element_ends_;
+    std::vector<LiveVariables> break_targets_;
+    std::vector<LiveVariables> continue_targets_;
+    std::vector<LiveVariables> switch_entries_;
+    LiveVariables catches_;
 };
-
-void SuspendFunctionAnalyzer::collect_uses(const Stmt* stmt, std::set<const VarDecl*>& uses) {
-    if (!stmt) return;
-    UseCollector collector(uses);
-    collector.TraverseStmt(const_cast<Stmt*>(stmt));
 }
 
-void SuspendFunctionAnalyzer::collect_defs(const Stmt* stmt, std::set<const VarDecl*>& defs) {
-    if (!stmt) return;
-
-    // Check for variable declarations with initializers.
-    if (const auto* ds = dyn_cast<DeclStmt>(stmt)) {
-        for (const Decl* d : ds->decls()) {
-            if (const auto* vd = dyn_cast<VarDecl>(d)) {
-                defs.insert(vd);
-            }
-        }
-        return;
-    }
-
-    // Check for assignment operators.
-    if (const auto* bo = dyn_cast<BinaryOperator>(stmt)) {
-        if (bo->isAssignmentOp()) {
-            if (const auto* dre = dyn_cast<DeclRefExpr>(bo->getLHS()->IgnoreParenImpCasts())) {
-                if (const auto* vd = dyn_cast<VarDecl>(dre->getDecl())) {
-                    defs.insert(vd);
-                }
-            }
-        }
-    }
-
-    // Check for unary increment/decrement.
-    if (const auto* uo = dyn_cast<UnaryOperator>(stmt)) {
-        if (uo->isIncrementDecrementOp()) {
-            if (const auto* dre = dyn_cast<DeclRefExpr>(uo->getSubExpr()->IgnoreParenImpCasts())) {
-                if (const auto* vd = dyn_cast<VarDecl>(dre->getDecl())) {
-                    defs.insert(vd);
-                }
-            }
-        }
-    }
-}
-
-const CFGBlock* SuspendFunctionAnalyzer::find_block_containing(const Stmt* stmt) const {
-    auto it = stmt_to_block_.find(stmt);
-    if (it != stmt_to_block_.end()) {
-        return it->second;
-    }
-    return nullptr;
-}
-
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:31-44
 void SuspendFunctionAnalyzer::compute_liveness() {
-    // Classic backward dataflow liveness analysis.
-    //
-    // For each basic block B:
-    //   LIVE_out[B] = union of LIVE_in[S] for all successors S
-    //   LIVE_in[B] = (LIVE_out[B] - KILL[B]) union GEN[B]
-    //
-    // Where:
-    //   GEN[B] = variables used (read) in B before any definition
-    //   KILL[B] = variables defined (written) in B
-    //
-    // Iterate until fixed point.
-
-    if (!cfg_) return;
-
-    // Initialize all blocks to empty sets.
-    for (const CFGBlock* block : *cfg_) {
-        if (!block) continue;
-        live_in_[block->getBlockID()] = {};
-        live_out_[block->getBlockID()] = {};
-    }
-
-    // Compute GEN and KILL sets for each block.
-    std::map<unsigned, std::set<const VarDecl*>> gen;
-    std::map<unsigned, std::set<const VarDecl*>> kill;
-
-    for (const CFGBlock* block : *cfg_) {
-        if (!block) continue;
-        unsigned id = block->getBlockID();
-        gen[id] = {};
-        kill[id] = {};
-
-        // Process statements in FORWARD order to compute gen/kill correctly.
-        // A use before a def contributes to GEN.
-        // A def adds to KILL.
-        for (const CFGElement& elem : *block) {
-            if (auto stmt_elem = elem.getAs<CFGStmt>()) {
-                const Stmt* stmt = stmt_elem->getStmt();
-
-                // Collect uses that are not already killed.
-                std::set<const VarDecl*> uses;
-                collect_uses(stmt, uses);
-                for (const VarDecl* vd : uses) {
-                    if (kill[id].find(vd) == kill[id].end()) {
-                        gen[id].insert(vd);
-                    }
-                }
-
-                // Collect definitions.
-                std::set<const VarDecl*> defs;
-                collect_defs(stmt, defs);
-                for (const VarDecl* vd : defs) {
-                    kill[id].insert(vd);
-                }
-            }
+    const auto live = LivenessAnalysisVisitor(ctx_).run(fd_->getBody());
+    const auto* completion = continuation_parameter(fd_);
+    for (auto& point : suspend_points_) {
+        auto found = live.find(point.suspend_stmt);
+        if (found == live.end()) continue;
+        point.live_variables = found->second;
+        // NOTE(port): Completion is stored by the base continuation; source
+        // variables from nested declarations are excluded by the visitor.
+        point.live_variables.erase(completion);
+        for (auto variable = point.live_variables.begin(); variable != point.live_variables.end();) {
+            if (!(*variable)->isLocalVarDeclOrParm()) variable = point.live_variables.erase(variable);
+            else ++variable;
         }
-    }
-
-    // Iterate until fixed point.
-    bool changed = true;
-
-    while (changed) {
-        changed = false;
-
-        // Process blocks in reverse post-order for faster convergence.
-        // For simplicity, we just iterate all blocks.
-        for (const CFGBlock* block : *cfg_) {
-            if (!block) continue;
-            unsigned id = block->getBlockID();
-
-            // LIVE_out = union of LIVE_in of all successors.
-            std::set<const VarDecl*> new_live_out;
-            for (auto succ_it = block->succ_begin(); succ_it != block->succ_end(); ++succ_it) {
-                const CFGBlock* succ = *succ_it;
-                if (succ) {
-                    for (const VarDecl* vd : live_in_[succ->getBlockID()]) {
-                        new_live_out.insert(vd);
-                    }
-                }
-            }
-
-            // LIVE_in = (LIVE_out - KILL) union GEN
-            std::set<const VarDecl*> new_live_in;
-
-            // Start with LIVE_out.
-            new_live_in = new_live_out;
-
-            // Remove KILL.
-            for (const VarDecl* vd : kill[id]) {
-                new_live_in.erase(vd);
-            }
-
-            // Add GEN.
-            for (const VarDecl* vd : gen[id]) {
-                new_live_in.insert(vd);
-            }
-
-            // Check for changes.
-            if (live_out_[id] != new_live_out || live_in_[id] != new_live_in) {
-                changed = true;
-                live_out_[id] = new_live_out;
-                live_in_[id] = new_live_in;
-            }
-        }
-    }
-
-    // Now compute live variables at each suspension point.
-    // A variable is live at a suspend point if it is in LIVE_out at that statement.
-    // Since we have block-level liveness, we need to compute statement-level.
-
-    for (SuspendPointInfo& sp : suspend_points_) {
-        const CFGBlock* block = find_block_containing(sp.suspend_stmt);
-        if (!block) continue;
-
-        // Compute liveness at this specific statement by walking backward
-        // from block exit to the statement.
-        std::set<const VarDecl*> live = live_out_[block->getBlockID()];
-
-        // Walk statements in reverse order.
-        for (auto it = block->rbegin(); it != block->rend(); ++it) {
-            if (auto stmt_elem = it->getAs<CFGStmt>()) {
-                const Stmt* stmt = stmt_elem->getStmt();
-
-                if (stmt == sp.suspend_stmt) {
-                    // Record liveness AFTER this statement (for spilling).
-                    // Variables live after the suspend call need to be preserved.
-                    sp.live_variables = live;
-                    break;
-                }
-
-                // Update liveness: LIVE = (LIVE - DEF) union USE
-                std::set<const VarDecl*> defs;
-                collect_defs(stmt, defs);
-                for (const VarDecl* vd : defs) {
-                    live.erase(vd);
-                }
-
-                std::set<const VarDecl*> uses;
-                collect_uses(stmt, uses);
-                for (const VarDecl* vd : uses) {
-                    live.insert(vd);
-                }
-            }
-        }
-
-        // Add to global spilled variables set.
-        for (const VarDecl* vd : sp.live_variables) {
-            spilled_variables_.insert(vd);
-        }
+        spilled_variables_.insert(point.live_variables.begin(), point.live_variables.end());
     }
 }
 

@@ -6,6 +6,34 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+
+**Current source direction:** Compilation, runtime checks and deep scans are
+now deferred at the user's direction until the connected translation is ready.
+SuspendFunctionAnalyzer.cpp:284 replaces CFG suspension discovery with the
+Native evaluated-call walk. Its private LivenessAnalysisVisitor at :342 ports
+the common Kotlin backward visitor, including catch-live propagation, branch
+merging, loop fixed points and jump targets. compute_liveness at :576 connects
+its results to existing suspension metadata. C++ switch/for/range-for and lexical
+function boundaries are adapted explicitly. Native frame storage still preserves
+C++ lifetimes independently; optimized spill allocation, unstructured label/goto
+analysis and shared default-expression identity remain incomplete. No build,
+runtime or scan result is claimed for this source checkpoint.
+
+
+**Latest compiler continuation:** ea4a97db and d97189ee construct aggregate
+InitListExpr locals directly in aligned owning spill storage in
+NativeSuspendLowering.cpp:1284-1298, preserving braces at the destination
+new-expression. qualified_locals adds an immovable aggregate with a const
+unique_ptr member, repeated-suspension resource identity checks and exactly one
+destruction across completion/failure/cancellation. Strict fixture syntax and
+actual AST emission pass; final strict lowering checking has only external
+dependency diagnostics. Fresh plugin build exits 2; the older frontend fails
+at the existing alias. No fresh runtime validates the repair. Extended lifetimes
+of aggregate reference-member temporaries, aggregate/array expression slicing,
+local nominal/dependent integration and full executable acceptance remain
+unfinished. Read RESUME_ADDRESS_SOURCE_REPAIR.md's new top section. The full
+goal remains active.
+
 **Latest compiler continuation:** 2e4eb601 retains pure materialized constructor
 reference arguments in NativeSuspendLowering.cpp:994-1006 and lowers the selected
 constructor directly through its Clang functional-cast wrapper at :829-834.

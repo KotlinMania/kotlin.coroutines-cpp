@@ -1,5 +1,82 @@
 # Compiler resume-address source repair — 2026-10-07
 
+
+## Connected suspend-call and liveness translation
+
+The user directed source translation to continue before compilation, runtime
+checks or deep scans. Those acceptance operations are deferred for this source
+checkpoint; no new validation or completion result is claimed.
+
+SuspendFunctionAnalyzer.cpp:284 translates the evaluated suspend-call walk from
+NativeSuspendFunctionLowering.kt:367-388. Calls are collected after their children;
+implicit wrappers and a DSL wrapper around an already annotated call do not add a
+second suspension site. Nested class/function bodies, unevaluated operands and
+discarded constexpr arms do not participate. Lambda capture initializers and
+selected default expressions execute in their enclosing call context.
+
+SuspendFunctionAnalyzer.cpp:342 translates the connected LivenessAnalysisVisitor
+from compiler/ir/backend.common/.../optimizations/LivenessAnalysis.kt:47-277.
+Reverse child propagation, variable reads/declarations/assignments, function
+returns, conditional branches, throws, catch-live propagation, loop fixed points,
+and break/continue targets now replace the prior block GEN/KILL approximation.
+The Clang adaptation also handles short circuit operands, for/range-for increments,
+switch fallthrough, reference writes and decomposed declaration identity.
+compute_liveness at :576 attaches the resulting sets to the existing suspension
+metadata and excludes completion, which the base continuation retains.
+
+The production frontend consumes this analyzer before frame installation.
+NativeSuspendLowering still retains actual C++ local storage independently of
+value liveness because destruction and borrowed referents have separate lifetime
+requirements. This checkpoint does not claim optimized spill-field allocation or
+completion of CoroutinesVarSpillingLowering. Unstructured C++ label/goto liveness,
+shared default-expression identity and the previously documented aggregate/local
+integration gaps remain unfinished source work. Both compiler targets and their
+CMake integration were read; this checkpoint changes the already registered
+frontend source and requires no new target or runtime dependency.
+
+## Direct aggregate spill construction continuation
+
+Source checkpoints ea4a97db and d97189ee repair local aggregate construction
+against the typed field contract in CoroutinesVarSpillingLowering.kt:49-105
+and NativeSuspendFunctionLowering.kt:201-252. C++ aggregate lists additionally
+require direct destination construction with their original braces.
+
+NativeSuspendLowering.cpp:1284-1289 selects the existing aligned owning storage
+for a non-reference record local initialized by InitListExpr. At :1293-1298 it
+constructs that aggregate directly at its destination with braces.
+construct at :627-647 preserves list initialization for this path. Previously
+the local list was forwarded to optional::emplace, imposing initializer
+deduction/move requirements absent from ordinary C++ aggregate initialization.
+The engagement bit is set only after successful native construction; existing
+scope/frame cleanup destroys the actual object. No public ownership API or
+alternate state-machine representation changes.
+
+qualified_locals.cpp adds AggregateOwner with a const unique_ptr member and a
+const tag, making it an immovable aggregate. Static assertions establish its
+source category. The aggregate's resource is initialized by an ordinary C++
+factory before repeated suspension. Pending/resumed assertions check retention
+and actual resource identity; its destructor checks member values and terminal
+assertions require exactly one destruction. Existing modes include immediate/
+suspended completion, immediate/resumed failure, cancellation and later partial
+array-construction failure. The result-box delete policy remains unchanged.
+
+Strict fixture syntax and actual Clang AST emission exit 0; the AST contains
+the aggregate InitListExpr. Final strict lowering-unit checking exits 1 in
+LLVM/Clang dependency headers, with no source-local diagnostic. Fresh plugin
+build exits 2 in the metadata plugin's dependency headers. The installed older
+frontend exits 1 at the existing alias declaration. No warning was suppressed.
+Receipts are build/ir-recovery/aggregate-storage-{fixture,ast,lowering,
+lowering-final,plugin-build,plugin-build-final,installed-frontend}.log.
+No fresh runtime validates native construction, resource identity or destruction.
+
+Extended lifetimes of materialized temporaries bound to aggregate reference
+members remain unfinished. Such a temporary can belong to the containing
+aggregate local's lifetime rather than its initialization full expression;
+its owner must be mapped and cleaned after the aggregate, preserving evaluation
+order. Aggregate/array expression slicing and local nominal/dependent integration
+also remain incomplete. Standalone MLX and actual Native/MLX shared-state-machine
+execution acceptance remain unproven.
+
 ## Constructor reference-materialization continuation
 
 Source checkpoint 2e4eb601 repairs constructor-child slicing after reading
