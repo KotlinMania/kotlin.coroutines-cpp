@@ -6,6 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** 90204a13 implements actual structured binding
+registration in NativeSuspendLowering.cpp:1042,1123. Compiler-provided tuple
+holding variables use the same variable lifetime path; member/array bindings
+refer to their actual owner, including bit-fields. Implicit xvalue casts retain
+rvalue get selection. qualified_locals adds array identity, bit-field mutation,
+user get evaluation counts and an owning tuple resource. Source syntax and AST
+dump exit 0. Final direct strict lowering syntax exits 1 in dependency headers,
+with no source-local diagnostics; fresh plugin build exits 2. The older frontend
+rejects the alias declaration. No fresh runtime validates the new bindings.
+Copied array/dependent decomposition and broader lexical declaration integration
+remain incomplete. Read RESUME_ADDRESS_SOURCE_REPAIR.md's new top section.
+Both full-root scans exit 0 and leave generated reports unchanged.
+The full transliteration/state-machine goal remains active.
+
 **Latest compiler continuation:** c57aa777 implements local alias binding in
 NativeSuspendLowering.cpp:335,462,1002. Each actual alias declaration receives a
 unique frame name; type uses follow declaration identity and spill types retain

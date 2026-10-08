@@ -1,5 +1,55 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Structured binding continuation
+
+Source checkpoint 90204a13 grows the same declaration/storage lowering after
+rereading NativeSuspendFunctionLowering.kt:119-170,197-335 and the complete
+CoroutinesVarSpillingLowering.kt. The Kotlin source maps original variables to
+their retained fields. C++ decomposition requires additional actual compiler
+bindings; it must not synthesize new component objects or transfer borrowed
+component ownership.
+
+NativeSuspendLowering.cpp:1042 extracts the shared variable construction path.
+At :1123, actual DecompositionDecl bindings register their compiler expressions.
+Array/member bindings refer directly to their underlying retained object,
+including bit-fields, without pointer storage that cannot represent a bit-field.
+Tuple holding variables use the same construction/cleanup path, in declaration
+order; a borrowed tuple component does not acquire ownership. Lifetime-extended
+holding initializers retain the actual owner using existing delayed storage.
+At :578, compiler-generated lvalue-to-xvalue casts print std::move so implicit
+tuple decomposition retains its selected rvalue get overload. This is a C++ AST
+adaptation, not a replacement state machine or a new tuple protocol.
+
+The existing qualified_locals execution fixture now covers array reference
+identity, member bit-field mutation, rvalue-qualified user get calls that must
+execute exactly twice, and a tuple owning a unique_ptr to an immovable resource.
+Four resources must remain alive during repeated suspension and all must be
+destroyed after success, immediate/resumed failure or cancellation. These are
+pending executable assertions, not a fresh runtime result.
+
+Strict ordinary fixture syntax and its actual Clang AST dump exit 0. The dump
+confirms direct member/array bindings, value holding variables for user get, and
+rvalue reference holding variables for the pair's owned component. Final direct
+strict compiler translation-unit syntax exits 1 in dependency headers, with no
+diagnostics located in NativeSuspendLowering.cpp. Fresh CMake frontend build
+exits 2 in dependency headers. The older installed frontend still rejects the
+earlier alias declaration, so its fixture check exits 1 before testing this
+repair. Receipts under build/ir-recovery: decomposition-source-syntax.log,
+decomposition-source-ast.log, decomposition-lowering-final.log,
+decomposition-plugin-build.log and decomposition-fixture-final.log.
+
+No warning suppression was added. No fresh plugin executable validates cleanup
+or overload preservation. Dependent decomposition, copied array decomposition,
+local nominal classes and separately lowered invoke lexical integration remain
+incomplete. Both full executable acceptance paths remain unproven.
+
+Both exact full-root deep scans exit 0 without concurrent source edits. Receipts:
+decomposition-library-deep.log and decomposition-compiler-deep.log. Generated
+reports remain unchanged: library 832/2918 matched bodies, 359/560 types, body
+similarity 0.26 with 123 scoring failures; compiler 592/7657 matched bodies,
+174/1727 types, body similarity 0.36 with 24 failures. These coarse measurements
+do not validate the compiler binding adaptation.
+
 ## Local alias binding continuation
 
 Source checkpoint c57aa777 extends the same Native-derived frame lowering.
