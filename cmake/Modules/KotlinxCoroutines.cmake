@@ -87,8 +87,9 @@ endif()
 
   kxs_enable_suspend(<target>)
 
-  This enables the IR transformation pipeline for targets that use
-  suspend functions. Call this AFTER adding all sources to the target.
+  This injects LLVM addresses into explicit Continuation-ABI marker regions.
+  Annotated C++ bodies and generic library builders require
+  kxs_enable_suspend_dsl instead. Call AFTER adding all target sources.
 #]============================================================================]
 function(kxs_enable_suspend TARGET)
     if(NOT TARGET ${TARGET})

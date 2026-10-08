@@ -70,7 +70,7 @@ endif()
 # -----------------------------------------------------------------------------
 # Optional compiler tooling (Clang suspend DSL plugin)
 # -----------------------------------------------------------------------------
-option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build Clang suspend DSL plugin (Apple-focused)" ON)
+option(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN "Build the in-tree Clang suspend plugin (otherwise use an external plugin)" ON)
 if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
     add_subdirectory(src/kotlinx/coroutines/tools/clang_suspend_plugin)
 endif()
@@ -93,7 +93,7 @@ endif()
 # Usage after installation:
 #   find_package(KotlinxCoroutines REQUIRED)
 #   target_link_libraries(my_app PRIVATE kotlinx::coroutines)
-#   kxs_enable_suspend(my_app)
+#   kxs_enable_suspend_dsl(my_app)
 # =============================================================================
 
 # Add our modules to the path
@@ -102,22 +102,15 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 # Include the package definition
 include(KotlinxCoroutines)
 
-# Suspend.hpp emits markers in production frames and in test template instantiations.
-# Inject dispatch and persistent resume-address stores before LLVM optimization.
-if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
-    kxs_enable_suspend_dsl(kotlinx-coroutines-core)
-else()
-    kxs_enable_suspend(kotlinx-coroutines-core)
-endif()
+# Production bodies and test template instantiations require frontend frame
+# construction followed by mandatory LLVM address injection. Disabling the
+# in-tree tool build selects an external frontend; it cannot skip this stage.
+kxs_enable_suspend_dsl(kotlinx-coroutines-core)
 get_property(KXS_COROUTINE_TEST_TARGETS DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/tests" PROPERTY BUILDSYSTEM_TARGETS)
 foreach(KXS_COROUTINE_TEST_TARGET IN LISTS KXS_COROUTINE_TEST_TARGETS)
     get_target_property(KXS_COROUTINE_TEST_TYPE "${KXS_COROUTINE_TEST_TARGET}" TYPE)
     if(KXS_COROUTINE_TEST_TYPE STREQUAL "EXECUTABLE")
-        if(KOTLINX_BUILD_CLANG_SUSPEND_PLUGIN)
-            kxs_enable_suspend_dsl("${KXS_COROUTINE_TEST_TARGET}")
-        else()
-            kxs_enable_suspend("${KXS_COROUTINE_TEST_TARGET}")
-        endif()
+        kxs_enable_suspend_dsl("${KXS_COROUTINE_TEST_TARGET}")
     endif()
 endforeach()
 
