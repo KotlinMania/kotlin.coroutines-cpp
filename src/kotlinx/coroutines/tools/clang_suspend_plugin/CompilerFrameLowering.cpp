@@ -35,8 +35,10 @@ public:
     bool TraverseLambdaExpr(clang::LambdaExpr* expression) {
         for (auto* initializer : expression->capture_inits())
             if (!TraverseStmt(initializer)) return false;
-        if (!WalkUpFromCXXRecordDecl(expression->getLambdaClass())) return false;
-        return TraverseCXXMethodDecl(expression->getCallOperator());
+        // A generic lambda owns a function template and its instantiated call
+        // operators. Traverse that declaration context, including its template
+        // parameters, so imports retain the actual generic callable identity.
+        return TraverseDecl(expression->getLambdaClass());
     }
     bool VisitFunctionDecl(clang::FunctionDecl* function) {
         functions.push_back(function);
