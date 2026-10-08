@@ -2898,10 +2898,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/lib
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Arrays.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Arrays.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.429022
+translated_ast_cosine: 0.426424
 function_name_parity: 0.600000
 normalized_logic: 0.000000
-documentation_correspondence: 0.047461
+documentation_correspondence: 0.043632
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -2943,22 +2943,22 @@ Diagnostic: 108: unsupported function_declaration
 Diagnostic: 110: unsupported function_declaration
 Diagnostic: 111: unsupported function_declaration
 Diagnostic: 112: unsupported function_declaration
-Function arrayOfNulls:84 -> kotlin::collections::array_of_nulls:68 | normalized logic: 0.000000
+Function arrayOfNulls:84 -> kotlin::collections::array_of_nulls:70 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:maybeunused identifier:reference identifier:std type:any type:array node:66 identifier:size identifier:std type:signed32 node:5 node:43 identifier:kotlin identifier:arrayofnulls identifier:std type:any identifier:size
-Function collectionToArray:87 -> kotlin::collections::collection_to_array:74 | normalized logic: 0.000000
+  Target logic: node:66 identifier:std type:any type:array operator:& node:66 identifier:size identifier:std type:signed32 node:5 node:43 identifier:kotlin identifier:arrayofnulls identifier:std type:any identifier:size
+Function collectionToArray:87 -> kotlin::collections::collection_to_array:76 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:collection identifier:std type:any type:collection node:5 node:43 identifier:collectiontoarraycommonimpl identifier:collection
-Function collectionToArray:89 -> kotlin::collections::collection_to_array:79 | normalized logic: 0.000000
+Function collectionToArray:89 -> kotlin::collections::collection_to_array:81 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:collection identifier:std type:any type:collection node:66 identifier:array identifier:std type:any type:array node:5 node:43 identifier:collectiontoarraycommonimpl identifier:collection node:43 identifier:std identifier:move identifier:array
-Function terminateCollectionToArray:91 -> kotlin::collections::terminate_collection_to_array:27 | normalized logic: 0.000000
+Function terminateCollectionToArray:91 -> kotlin::collections::terminate_collection_to_array:28 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:collectionsize identifier:maybeunused identifier:std type:signed32 node:66 identifier:array type:array type:t node:5 identifier:array
-Function Array<E>::copyOfNulls:96 -> kotlin::collections::copy_of_nulls:51 | normalized logic: 0.000000
+  Target logic: node:66 identifier:std type:signed32 node:66 identifier:array type:array type:t node:5 identifier:array
+Function Array<E>::copyOfNulls:96 -> kotlin::collections::copy_of_nulls:52 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:array type:array type:e node:66 identifier:newsize identifier:std type:signed32 node:5 node:43 identifier:copyofnulls identifier:array literal:51:0 identifier:newsize
-Function Array<E>::copyOfNulls:98 -> kotlin::collections::copy_of_nulls:34 | normalized logic: 0.000000
+Function Array<E>::copyOfNulls:98 -> kotlin::collections::copy_of_nulls:35 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:array type:array type:e node:66 identifier:fromindex identifier:std type:signed32 node:66 identifier:std identifier:toindex type:signed32 identifier:newsize operator:= node:43 identifier:bitcast identifier:std identifier:std type:signed32 node:43 identifier:staticcast identifier:std identifier:toindex type:unsigned32 operator:- node:43 identifier:fromindex identifier:staticcast identifier:std type:unsigned32 node:1 identifier:newsize operator:< literal:51:0 node:10 node:43 identifier:std identifier:invalidargument node:43 identifier:std identifier:tostring identifier:fromindex operator:+ literal:52:" > " operator:+ node:43 identifier:std identifier:tostring identifier:toindex identifier:result operator:= node:43 identifier:arrayofnulls identifier:kotlin identifier:newsize type:e node:43 identifier:copyinto identifier:array identifier:result literal:51:0 identifier:fromindex node:43 identifier:std identifier:min identifier:toindex node:43 identifier:array identifier:getsize node:5 identifier:result
 Missing source function: orEmpty:12

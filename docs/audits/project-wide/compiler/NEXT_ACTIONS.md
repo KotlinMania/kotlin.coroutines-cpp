@@ -994,14 +994,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 71. collections.Arrays
 
 - **Target:** `collections.Arrays`
-- **Similarity:** 0.26
+- **Similarity:** 0.27
 - **Dependents:** 0
-- **Priority Score:** 41007.4
+- **Priority Score:** 41007.3
 - **Functions:** 6/10 matched (target 6)
 - **Missing functions:** `orEmpty`, `checkCopyOfRangeArguments`, `Array<out T>::subarrayContentToString`, `contentDeepHashCodeImpl`
 - **Types:** 0/0 matched
 - **Missing types:** _none_
-- **Lint issues:** 2
+- **Lint issues:** 1
 
 ### 72. impl.ValueParameterDescriptorImpl
 

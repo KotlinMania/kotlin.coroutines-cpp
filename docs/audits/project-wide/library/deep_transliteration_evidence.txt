@@ -11593,7 +11593,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/internal/OnDemandAllocatingPool.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/internal/OnDemandAllocatingPool.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.487662
+translated_ast_cosine: 0.487985
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.192394
