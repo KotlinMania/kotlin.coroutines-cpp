@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 825/2918 matched (target 3048) — 28.3%
-- **Class/type parity:** 359/560 matched (target 522) — 64.1%
-- **Combined symbol parity:** 1184/3478 matched (target 3570) — 34.0%
+- **Function parity:** 825/2918 matched (target 3043) — 28.3%
+- **Class/type parity:** 359/560 matched (target 521) — 64.1%
+- **Combined symbol parity:** 1184/3478 matched (target 3564) — 34.0%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -18,12 +18,12 @@ Based on AST analysis, here are the concrete next steps.
 ## Priority 1: Fix Incomplete High-Dependency Files
 
 ### 1. flow.Channels
-- **Similarity:** 0.21 (needs 64% improvement)
+- **Similarity:** 0.22 (needs 63% improvement)
 - **Dependencies:** 65
 - **Priority Score:** 65001308.0
-- **Functions:** 12/12 matched (target 24)
+- **Functions:** 12/12 matched (target 19)
 - **Missing functions:** _none_
-- **Types:** 1/1 matched (target 3)
+- **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 - **Action:** Deep review - likely missing major functionality
 
@@ -61,14 +61,13 @@ Every matched file is listed below with function and type symbol parity.
 ### 1. flow.Channels
 
 - **Target:** `flow.Channels`
-- **Similarity:** 0.21
+- **Similarity:** 0.22
 - **Dependents:** 65
 - **Priority Score:** 65001308.0
-- **Functions:** 12/12 matched (target 24)
+- **Functions:** 12/12 matched (target 19)
 - **Missing functions:** _none_
-- **Types:** 1/1 matched (target 3)
+- **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
-- **Lint issues:** 1
 
 ### 2. flow.Flow
 

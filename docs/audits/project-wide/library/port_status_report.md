@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 825/2918 matched (target 3048) | 28.3% |
-| Class/type parity | 359/560 matched (target 522) | 64.1% |
-| Combined symbol parity | 1184/3478 matched (target 3570) | 34.0% |
+| Function parity | 825/2918 matched (target 3043) | 28.3% |
+| Class/type parity | 359/560 matched (target 521) | 64.1% |
+| Combined symbol parity | 1184/3478 matched (target 3564) | 34.0% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -230,9 +230,9 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 186 | `common.Builders.common` | `coroutines.Builders.common` | 0.19 | 14/14 matched (target 55) | _none_ | 5/6 matched (target 9) | `UndispatchedCoroutine` | - | 1 | 12008.1 |
 | 187 | `internal.OnUndeliveredElement` | `internal.OnUndeliveredElement` | 0.21 | 2/2 matched (target 12) | _none_ | 2/2 matched (target 3) | _none_ | - | 0 | 407.9 |
 | 188 | `selects.Select` | `selects.Select` | 0.21 | 25/30 matched (target 73) | `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | - | 5 | 1054607.9 |
-| 189 | `flow.Channels` | `flow.Channels` | 0.21 | 12/12 matched (target 24) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 65001308.0 |
-| 190 | `test.CoroutineDispatcherOperatorFunInvokeTest` | `tests.CoroutineDispatcherOperatorFunInvokeTest` | 0.22 | 3/8 matched (target 12) | `CoroutineDispatcherOperatorFunInvokeTest::testThrowException`, `CoroutineDispatcherOperatorFunInvokeTest::testWithContextChildWaitSameContext`, `CoroutineDispatcherOperatorFunInvokeTest::dispatch`, `CoroutineDispatcherOperatorFunInvokeTest::isDispatchNeeded`, `CoroutineDispatcherOperatorFunInvokeTest::dispatchYield` | 2/2 matched (target 3) | _none_ | 0/2 | 5 | 51007.8 |
-| 191 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
+| 189 | `test.CoroutineDispatcherOperatorFunInvokeTest` | `tests.CoroutineDispatcherOperatorFunInvokeTest` | 0.22 | 3/8 matched (target 12) | `CoroutineDispatcherOperatorFunInvokeTest::testThrowException`, `CoroutineDispatcherOperatorFunInvokeTest::testWithContextChildWaitSameContext`, `CoroutineDispatcherOperatorFunInvokeTest::dispatch`, `CoroutineDispatcherOperatorFunInvokeTest::isDispatchNeeded`, `CoroutineDispatcherOperatorFunInvokeTest::dispatchYield` | 2/2 matched (target 3) | _none_ | 0/2 | 5 | 51007.8 |
+| 190 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
+| 191 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 19) | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 65001308.0 |
 | 192 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | - | 0 | 1007.8 |
 | 193 | `sync.Mutex` | `sync.Mutex` | 0.23 | 11/16 matched (target 20) | `Mutex`, `MutexImpl::CancellableContinuationWithOwner::tryResume`, `MutexImpl::CancellableContinuationWithOwner::resume`, `MutexImpl::SelectInstanceWithOwner::trySelect`, `MutexImpl::SelectInstanceWithOwner::selectInRegistrationPhase` | 2/4 matched (target 2) | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` | - | 7 | 72007.7 |
 | 194 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 18/19 matched (target 42) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | - | 1 | 12507.6 |
@@ -612,9 +612,9 @@ These files need significant work:
 - `common.Builders.common` -> `coroutines.Builders.common` (0.19)
 - `internal.OnUndeliveredElement` -> `internal.OnUndeliveredElement` (0.21)
 - `selects.Select` -> `selects.Select` (0.21, 1 deps)
-- `flow.Channels` -> `flow.Channels` (0.21, 65 deps)
 - `test.CoroutineDispatcherOperatorFunInvokeTest` -> `tests.CoroutineDispatcherOperatorFunInvokeTest` (0.22)
 - `native.CoroutineContext` -> `coroutines.UndispatchedCoroutine` (0.22, 6 deps)
+- `flow.Channels` -> `flow.Channels` (0.22, 65 deps)
 - `selects.SelectOld` -> `selects.SelectOld` (0.22)
 - `sync.Mutex` -> `sync.Mutex` (0.23)
 - `internal.ChannelFlow` -> `internal.ChannelFlow` (0.24)
