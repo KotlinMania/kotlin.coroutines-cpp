@@ -186,7 +186,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 174 | `common.TestCoroutineScheduler` | `tests.TestCoroutineScheduler [STUB]` | 0.00 | 0 | 18/19 matched (target 26) | `TestCoroutineScheduler::read` | 3/3 matched (target 4) | _none_ | 1 | 22 | 12210.0 |
 | 175 | `common.Builders.common` | `coroutines.Builders.common` | 0.19 | 0 | 14/14 matched (target 55) | _none_ | 5/6 matched (target 9) | `UndispatchedCoroutine` | 1 | 20 | 12008.1 |
 | 176 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 0 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | 1 | 16 | 11608.5 |
-| 177 | `operators.Transform` | `flow.Transform` | 0.07 | 0 | 12/13 matched (target 94) | `Flow<*>::filterIsInstance` | 0/0 matched (target 12) | _none_ | 1 | 13 | 11309.3 |
+| 177 | `operators.Transform` | `flow.Transform` | 0.07 | 0 | 12/13 matched (target 82) | `Flow<*>::filterIsInstance` | 0/0 matched (target 9) | _none_ | 1 | 13 | 11309.3 |
 | 178 | `internal.LimitedDispatcher` | `internal.LimitedDispatcher` | 0.27 | 0 | 9/10 matched (target 12) | `CoroutineDispatcher::namedOrThis` | 2/2 matched (target 3) | _none_ | 1 | 12 | 11207.3 |
 | 179 | `common.LaunchFlow` | `tests.LaunchFlow [STUB]` | 0.00 | 0 | 5/6 matched (target 7) | `LaunchFlowBuilder::catch` | 3/3 matched | _none_ | 1 | 9 | 10910.0 |
 | 180 | `operators.Merge` | `flow.Merge` | 0.10 | 0 | 8/9 matched (target 16) | `Iterable<Flow<T>>::merge` | 0/0 matched | _none_ | 1 | 9 | 10909.0 |
