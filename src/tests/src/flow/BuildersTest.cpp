@@ -201,29 +201,32 @@ void test_undispatched_context_and_resume() {
 
 void test_callback_checks_after_suspension() {
     for (bool close_channel : {false, true}) {
-        auto channel = channels::create_channel<int>(channels::Channel<int>::BUFFERED);
-        auto scope = std::make_shared<channels::ProducerCoroutine<int>>(EmptyCoroutineContext::instance(), channel);
         auto completion = std::make_shared<Completion>();
-        Continuation<void*>* pending = nullptr;
-        kotlinx::coroutines::flow::internal::CallbackFlowBuilder<int> builder(
-            [&](channels::ProducerScope<int>*, std::shared_ptr<Continuation<void*>> continuation) -> void* {
-                pending = continuation.get();
+        completion->context = std::shared_ptr<CoroutineContext>(
+            &Dispatchers::get_unconfined(), [](CoroutineContext*) {});
+        std::shared_ptr<Continuation<void*>> pending;
+        channels::ProducerScope<int>* producer = nullptr;
+        auto instance = callback_flow<int>(
+            [&](channels::ProducerScope<int>* scope, std::shared_ptr<Continuation<void*>> continuation) -> void* {
+                producer = scope;
+                pending = std::move(continuation);
                 return intrinsics::get_COROUTINE_SUSPENDED();
             });
-        require(intrinsics::is_coroutine_suspended(builder.collect_to(scope.get(), completion)));
-        require(completion->resumes == 0);
-        if (close_channel) channel->close(nullptr);
-        pending->resume_with(Result<void*>::success(nullptr));
+        Collector<int> collector;
+        require(intrinsics::is_coroutine_suspended(instance->collect(&collector, completion.get())));
+        require(producer && pending && completion->resumes == 0);
+        if (close_channel) producer->get_channel()->close(nullptr);
+        auto active = std::move(pending);
+        active->resume_with(Result<void*>::success(nullptr));
+        active.reset();
         require(completion->resumes == 1);
         require(completion->result.is_success() == close_channel);
         if (!close_channel) {
             try { completion->result.get_or_throw(); require(false); }
-            catch (const std::logic_error& error) {
+            catch (const IllegalStateException& error) {
                 require(std::string(error.what()).find("awaitClose") != std::string::npos);
             }
-            channel->close(nullptr);
         }
-        scope->resume_with(Result<Unit>::success(Unit{}));
     }
 }
 
