@@ -462,12 +462,12 @@ std::shared_ptr<Flow<R>> scoped_flow(std::function<void(CoroutineScope&, FlowCol
         });
 }
 
-namespace internal {
-
 // ChannelFlow implementation that is the first in the chain of flow operations and introduces (builds) a flow
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:305-320
+// NOTE(port): The source-private generic type requires a header definition for
+// arbitrary C++ element types; its namespace follows the Kotlin declaration.
 template <typename T>
-class ChannelFlowBuilder : public ChannelFlow<T> {
+class ChannelFlowBuilder : public internal::ChannelFlow<T> {
 private:
     const std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block_;
 
@@ -478,10 +478,11 @@ public:
         std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance(),
         int capacity = channels::Channel<T>::BUFFERED,
         channels::BufferOverflow on_buffer_overflow = channels::BufferOverflow::SUSPEND
-    ) : ChannelFlow<T>(context, capacity, on_buffer_overflow), block_(std::move(block)) {}
+    ) : internal::ChannelFlow<T>(context, capacity, on_buffer_overflow), block_(std::move(block)) {}
 
+protected:
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:312-313
-    ChannelFlow<T>* create(
+    internal::ChannelFlow<T>* create(
         std::shared_ptr<CoroutineContext> context,
         int capacity,
         channels::BufferOverflow on_buffer_overflow) override {
@@ -508,6 +509,7 @@ public:
         channels::BufferOverflow on_buffer_overflow = channels::BufferOverflow::SUSPEND)
         : ChannelFlowBuilder<T>(block, std::move(context), capacity, on_buffer_overflow), block_(std::move(block)) {}
 
+protected:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:329-345
     [[clang::annotate("suspend")]]
     void* collect_to(channels::ProducerScope<T>* scope,
@@ -528,7 +530,7 @@ public:
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:347-348
-    ChannelFlow<T>* create(std::shared_ptr<CoroutineContext> context, int capacity,
+    internal::ChannelFlow<T>* create(std::shared_ptr<CoroutineContext> context, int capacity,
                            channels::BufferOverflow on_buffer_overflow) override {
         return new CallbackFlowBuilder<T>(block_, std::move(context), capacity, on_buffer_overflow);
     }
@@ -537,15 +539,13 @@ private:
     const std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block_;
 };
 
-} // namespace internal
-
 /**
  * Upstream:
  *   public fun <T> channelFlow(@BuilderInference block: suspend ProducerScope<T>.() -> Unit): Flow<T> =
  *       ChannelFlowBuilder(block)
  *
  * `ChannelFlowBuilder` lives in flow/Builders.kt; the C++ port routes through
- * `internal::ChannelFlowBuilder<T>` which keeps the producer block and replays it once per
+ * `ChannelFlowBuilder<T>` which keeps the producer block and replays it once per
  * collector.
  */
 template <typename T>
@@ -553,7 +553,7 @@ template <typename T>
 inline std::shared_ptr<Flow<T>> channel_flow(
     std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)>
         block) {
-    return std::make_shared<internal::ChannelFlowBuilder<T>>(std::move(block));
+    return std::make_shared<ChannelFlowBuilder<T>>(std::move(block));
 }
 
 
@@ -561,7 +561,7 @@ inline std::shared_ptr<Flow<T>> channel_flow(
 template <typename T>
 inline std::shared_ptr<Flow<T>> callback_flow(
     std::function<void*(channels::ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)> block) {
-    return std::make_shared<internal::CallbackFlowBuilder<T>>(std::move(block));
+    return std::make_shared<CallbackFlowBuilder<T>>(std::move(block));
 }
 
 
