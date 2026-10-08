@@ -14,7 +14,7 @@ constexpr std::uint32_t IS_CLOSED_MASK = std::uint32_t{1} << 31;
 // Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt:96-100
 // NOTE(port): Nonlocal returns in the source inline call sites expand to the
 // allocation/close loops in the header; this is the private helper's own body.
-[[noreturn]] void loop(std::function<void()> block) {
+[[maybe_unused, noreturn]] inline void loop(std::function<void()> block) {
     while (true) {
         block();
     }
