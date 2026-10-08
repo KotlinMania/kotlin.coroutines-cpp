@@ -280,11 +280,7 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
             if (newline != std::string::npos) source.resize(newline + 1);
         }
     }
-    // This partial parsing context deliberately omits later call sites. Its
-    // unused-function diagnostic cannot establish liveness; the complete host
-    // compilation retains that diagnostic and the user's warning policy.
-    source.insert(0, "#pragma clang diagnostic ignored \"-Wunused-function\"\n"
-                     "#include <optional>\n#include <functional>\n");
+    source.insert(0, "#include <optional>\n#include <functional>\n");
     if (instantiated) source += "\n" + instantiated_entry;
     auto invocation = std::make_shared<CompilerInvocation>(compiler.getInvocation());
     auto& frontend = invocation->getFrontendOpts();
@@ -306,8 +302,11 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
     auto helper_diagnostics = CompilerInstance::createDiagnostics(files->getVirtualFileSystem(), *diagnostics);
     parser_active = true;
     auto parser_scope = llvm::scope_exit([&] { parser_active = false; });
+    // This AST contains only the prefix reached by the owning parser. Tell
+    // Clang it is a prefix, so translation-unit completion happens in the
+    // owning compilation, with all call sites and its original diagnostics.
     auto owned_unit = ASTUnit::LoadFromCompilerInvocation(invocation, compiler.getPCHContainerOperations(),
-        diagnostics, helper_diagnostics, files);
+        diagnostics, helper_diagnostics, files, false, CaptureDiagsKind::None, 0, TU_Prefix);
     if (!owned_unit || helper_diagnostics->hasErrorOccurred()) return fail("generated frame could not be parsed");
     auto* unit = owned_unit.release();
     // Imported attributed types can retain attribute storage from the source
