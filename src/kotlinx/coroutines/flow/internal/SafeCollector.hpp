@@ -41,14 +41,16 @@ std::shared_ptr<Job> transitive_coroutine_parent(
  */
 class SafeCollectorBase {
 public:
-    explicit SafeCollectorBase(std::shared_ptr<CoroutineContext> collectContext);
+    explicit SafeCollectorBase(std::shared_ptr<CoroutineContext> collect_context);
     virtual ~SafeCollectorBase() = default;
 
+    // Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:9-9
     const std::shared_ptr<CoroutineContext>& get_collect_context() const { return collect_context_; }
+    // Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:13-13
     int get_collect_context_size() const { return collect_context_size_; }
 
 protected:
-    void check_context(const CoroutineContext& currentContext);
+    void check_context(const CoroutineContext& current_context);
     
     std::shared_ptr<CoroutineContext> collect_context_;
     int collect_context_size_;
@@ -65,18 +67,21 @@ protected:
  *                 and kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:7-28
  */
 template <typename T>
-class SafeCollector : public FlowCollector<T>, public SafeCollectorBase {
+class SafeCollector final : public FlowCollector<T>, public SafeCollectorBase {
 public:
     /**
      * Creates a SafeCollector wrapping the given downstream collector.
      *
-     * @param downstream The collector to wrap and protect
-     * @param collectContext The context in which collection started
+     * @param collector The collector to wrap and protect
+     * @param collect_context The context in which collection started
      *
      * Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:7-10
      */
-    SafeCollector(FlowCollector<T>* downstream, std::shared_ptr<CoroutineContext> collectContext)
-        : SafeCollectorBase(std::move(collectContext)), downstream_(downstream) {}
+    SafeCollector(FlowCollector<T>* collector, std::shared_ptr<CoroutineContext> collect_context)
+        : SafeCollectorBase(std::move(collect_context)), collector_(collector) {}
+
+    // Transliterated from: kotlinx-coroutines-core/native/src/flow/internal/SafeCollector.kt:8-8
+    FlowCollector<T>* get_collector() const { return collector_; }
 
     /**
      * Emits a value after validating the execution context.
@@ -90,7 +95,7 @@ public:
             check_context(*current_context);
             last_emission_context_ = current_context;
         }
-        return downstream_->emit(std::move(value), continuation);
+        return collector_->emit(std::move(value), continuation);
     }
 
     /**
@@ -102,7 +107,7 @@ public:
     }
 
 private:
-    FlowCollector<T>* downstream_;
+    FlowCollector<T>* collector_;
 };
 
 /**

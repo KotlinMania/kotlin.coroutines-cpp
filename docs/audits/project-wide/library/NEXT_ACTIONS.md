@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 811/2918 matched (target 3028) — 27.8%
+- **Function parity:** 811/2918 matched (target 3029) — 27.8%
 - **Class/type parity:** 359/560 matched (target 521) — 64.1%
-- **Combined symbol parity:** 1170/3478 matched (target 3549) — 33.6%
+- **Combined symbol parity:** 1170/3478 matched (target 3550) — 33.6%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -2483,7 +2483,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.12
 - **Dependents:** 0
 - **Priority Score:** 10508.8
-- **Functions:** 3/4 matched (target 12)
+- **Functions:** 3/4 matched (target 13)
 - **Missing functions:** `SafeCollector<*>::checkContext`
 - **Types:** 1/1 matched (target 3)
 - **Missing types:** _none_

@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 811/2918 matched (target 3028) | 27.8% |
+| Function parity | 811/2918 matched (target 3029) | 27.8% |
 | Class/type parity | 359/560 matched (target 521) | 64.1% |
-| Combined symbol parity | 1170/3478 matched (target 3549) | 33.6% |
+| Combined symbol parity | 1170/3478 matched (target 3550) | 33.6% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -209,7 +209,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 165 | `internal.Symbol` | `internal.Symbol` | 0.11 | 2/2 matched (target 3) | _none_ | 1/1 matched | _none_ | - | 0 | 1000308.9 |
 | 166 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
 | 167 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 4) | _none_ | - | 4 | 41608.8 |
-| 168 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 12) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
+| 168 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
 | 169 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | - | 0 | 808.7 |
 | 170 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.13 | 1/1 matched (target 8) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 2000208.6 |
 | 171 | `common.EventLoop.common` | `coroutines.EventLoop.common` | 0.14 | 11/38 matched (target 24) | `EventLoop::limitedParallelism`, `delayToNanos`, `delayNanosToMillis`, `EventLoopImplBase::shutdown`, `EventLoopImplBase::scheduleResumeAfterDelay`, `EventLoopImplBase::scheduleInvokeOnTimeout`, `EventLoopImplBase::processNextEvent`, `EventLoopImplBase::dispatch`, `EventLoopImplBase::enqueue`, `EventLoopImplBase::enqueueImpl`, `EventLoopImplBase::dequeue`, `EventLoopImplBase::enqueueDelayedTasks`, `EventLoopImplBase::closeQueue`, `EventLoopImplBase::schedule`, `EventLoopImplBase::shouldUnpark`, `EventLoopImplBase::scheduleImpl`, `EventLoopImplBase::resetAll`, `EventLoopImplBase::rescheduleAllDelayed`, `EventLoopImplBase::DelayedTask::compareTo`, `EventLoopImplBase::DelayedTask::timeToExecute`, `EventLoopImplBase::DelayedTask::scheduleTask`, `EventLoopImplBase::DelayedTask::dispose`, `EventLoopImplBase::DelayedTask::toString`, `EventLoopImplBase::DelayedResumeTask::run`, `EventLoopImplBase::DelayedResumeTask::toString`, `EventLoopImplBase::DelayedRunnableTask::run`, `EventLoopImplBase::DelayedRunnableTask::toString` | 2/10 matched (target 3) | `Queue`, `EventLoopImplPlatform`, `EventLoopImplBase`, `DelayedTask`, `DelayedResumeTask`, `DelayedRunnableTask`, `DelayedTaskQueue`, `DefaultExecutor` | - | 35 | 354808.6 |

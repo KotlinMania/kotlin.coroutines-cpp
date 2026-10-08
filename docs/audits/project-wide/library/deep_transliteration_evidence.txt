@@ -10793,10 +10793,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.common.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.584220
+translated_ast_cosine: 0.591089
 function_name_parity: 0.750000
 normalized_logic: 0.000000
-documentation_correspondence: 0.005292
+documentation_correspondence: 0.000000
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -10816,25 +10816,26 @@ Diagnostic: 11: unsupported class_declaration
 Diagnostic: 22: unsupported function_declaration
 Diagnostic: 92: unsupported function_declaration
 Diagnostic: 103: unsupported function_declaration
-Function transitiveCoroutineParent:92 -> kotlinx::coroutines::flow::internal::transitive_coroutine_parent:41 | normalized logic: 0.000000
+Function transitiveCoroutineParent:92 -> kotlinx::coroutines::flow::internal::transitive_coroutine_parent:42 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:currentjob identifier:std type:job type:sharedptr node:66 identifier:collectjob identifier:std type:job type:sharedptr identifier:cur operator:= identifier:currentjob node:3 identifier:cur operator:!= node:1 node:43 identifier:cur identifier:get operator:== node:43 identifier:collectjob identifier:get node:5 identifier:cur node:1 operator:! node:43 identifier:dynamiccast identifier:kotlinx identifier:coroutines identifier:internal type:scopecoroutinebase operator:* node:43 identifier:cur identifier:get node:5 identifier:cur identifier:cur operator:= node:43 identifier:cur identifier:getparent node:5
-Function unsafeFlow:103 -> kotlinx::coroutines::flow::internal::unsafe_flow:237 | normalized logic: 0.000000
+Function unsafeFlow:103 -> kotlinx::coroutines::flow::internal::unsafe_flow:247 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:function type:void operator:* node:66 type:flowcollector type:t operator:* node:66 type:continuation type:void operator:* operator:* identifier:block type:unsafeflowimpl type:flow type:t identifier:std type:function type:void operator:* node:66 type:flowcollector type:t operator:* node:66 type:continuation type:void operator:* operator:* identifier:block identifier:unsafeflowimpl node:66 identifier:std type:function type:void operator:* node:66 type:flowcollector type:t operator:* node:66 type:continuation type:void operator:* operator:* identifier:b identifier:block node:43 identifier:std identifier:move identifier:b type:void identifier:collect node:66 identifier:collector type:flowcollector type:t node:66 type:continuation type:void operator:* identifier:continuation node:5 node:43 identifier:block identifier:collector identifier:continuation node:5 node:43 identifier:std identifier:makeshared type:unsafeflowimpl node:43 identifier:std identifier:move identifier:block
-Function collect:106 -> kotlinx::coroutines::flow::internal::UnsafeFlowImpl::collect:244 | normalized logic: 0.000000
+Function collect:106 -> kotlinx::coroutines::flow::internal::UnsafeFlowImpl::collect:254 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:collector type:flowcollector type:t node:66 type:continuation type:void operator:* identifier:continuation node:5 node:43 identifier:block identifier:collector identifier:continuation
 Missing source function: SafeCollector<*>::checkContext:22
-Extra target function: SafeCollectorBase::SafeCollectorBase:59
-Extra target function: SafeCollectorBase::check_context:69
-Extra target function: kotlinx::coroutines::flow::internal::SafeCollectorBase::get_collect_context:169
-Extra target function: kotlinx::coroutines::flow::internal::SafeCollectorBase::get_collect_context_size:170
-Extra target function: kotlinx::coroutines::flow::internal::SafeCollector::SafeCollector:200
-Extra target function: kotlinx::coroutines::flow::internal::SafeCollector::emit:208
-Extra target function: kotlinx::coroutines::flow::internal::SafeCollector::release_intercepted:223
-Extra target function: kotlinx::coroutines::flow::internal::UnsafeFlowImpl::UnsafeFlowImpl:241
-Extra target function: kotlinx::coroutines::flow::internal::unsafe_flow:252
+Extra target function: SafeCollectorBase::SafeCollectorBase:60
+Extra target function: SafeCollectorBase::check_context:70
+Extra target function: kotlinx::coroutines::flow::internal::SafeCollectorBase::get_collect_context:175
+Extra target function: kotlinx::coroutines::flow::internal::SafeCollectorBase::get_collect_context_size:177
+Extra target function: kotlinx::coroutines::flow::internal::SafeCollector::SafeCollector:207
+Extra target function: kotlinx::coroutines::flow::internal::SafeCollector::get_collector:211
+Extra target function: kotlinx::coroutines::flow::internal::SafeCollector::emit:218
+Extra target function: kotlinx::coroutines::flow::internal::SafeCollector::release_intercepted:233
+Extra target function: kotlinx::coroutines::flow::internal::UnsafeFlowImpl::UnsafeFlowImpl:251
+Extra target function: kotlinx::coroutines::flow::internal::unsafe_flow:262
 === Emitted target buffer ===
 namespace kotlinx::coroutines::flow::internal {
 
@@ -10852,11 +10853,11 @@ __ast_distance_unmapped__("function_declaration", "@PublishedApi\ninternal inlin
 Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:103	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.hpp:115	unsafeFlow -> kotlinx::coroutines::flow::internal::unsafe_flow
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:103	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.hpp:120	unsafeFlow -> kotlinx::coroutines::flow::internal::unsafe_flow
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
-TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:103	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.hpp:130	unsafeFlow -> kotlinx::coroutines::flow::internal::unsafe_flow
+TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:103	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.hpp:135	unsafeFlow -> kotlinx::coroutines::flow::internal::unsafe_flow
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
-TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:106	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.hpp:122	collect -> kotlinx::coroutines::flow::internal::UnsafeFlowImpl::collect
+TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/SafeCollector.common.kt:106	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.hpp:127	collect -> kotlinx::coroutines::flow::internal::UnsafeFlowImpl::collect
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 2
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.

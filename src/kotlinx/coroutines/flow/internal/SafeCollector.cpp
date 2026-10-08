@@ -11,6 +11,7 @@
 #include "kotlinx/coroutines/context_impl.hpp"
 #include <limits>
 #include <string>
+#include <typeinfo>
 
 namespace kotlinx {
 namespace coroutines {
@@ -60,8 +61,12 @@ void SafeCollectorBase::check_context(const CoroutineContext& current_context) {
             return count + 1;
         }
 
-        auto collect_job = std::dynamic_pointer_cast<Job>(collect_element);
-        auto emission_job = std::dynamic_pointer_cast<Job>(element);
+        // NOTE(port): Kotlin's checked as casts use C++ RTTI reference casts.
+        // A failed cast throws std::bad_cast; shared handles keep their original owners.
+        auto collect_job = collect_element
+            ? std::shared_ptr<Job>(collect_element, &dynamic_cast<Job&>(*collect_element))
+            : nullptr;
+        auto emission_job = std::shared_ptr<Job>(element, &dynamic_cast<Job&>(*element));
         auto emission_parent_job = transitive_coroutine_parent(emission_job, collect_job);
 
         if (emission_parent_job.get() != collect_job.get()) {

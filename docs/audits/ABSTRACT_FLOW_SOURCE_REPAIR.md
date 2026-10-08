@@ -46,14 +46,64 @@ establish body parity; outstanding source gaps remain represented by the oracle.
 SafeCollector ancestry follow-up (2026-10-07): common SafeCollector.kt:92-97
 checks the actual ScopeCoroutine<*> type before following its parent. The old
 C++ JobSupport/is_scoped_coroutine flag test allowed an unrelated job to bypass
-this check. SafeCollector.cpp:21,30 now checks the erased identity of actual
+this check. SafeCollector.cpp:22,31 now checks the erased identity of actual
 ScopeCoroutine specializations. ScopeCoroutine.hpp:40 can only be constructed
 by ScopeCoroutine<T>; it supplies no algorithm or alternate state machine.
 The source's final scoped property is preserved. The regression at
-test_channel_consumption.cpp:375 failed at :388 before the fix and now exercises
+test_channel_consumption.cpp:376 failed at :388 before the fix and now exercises
 real void*/int scope chains, unrelated flag-bearing jobs, null/identical parents,
 Native context rejection, downstream exception identity and real relationship
 cleanup. Ten focused executables finished with zero failures before checkpoint
 e42543fc. Receipts: safe-collector-ancestry-focused-{build,tests}.log and
 safe-collector-ancestry-before-tests.log. This source fix is included in that
 full-tree recovery commit; it does not close every SafeCollector mismatch.
+
+SafeCollector checked-cast follow-up (2026-10-07): the nullable collection Job
+cast and non-null emission Job cast at common SafeCollector.kt:32-33 now use
+checked RTTI reference casts at SafeCollector.cpp:65,68. Previously, nullable
+C++ dynamic_pointer_cast results converted malformed non-Job elements into
+absent Jobs. A forged Job-key emission into an empty collection context could
+therefore reach the downstream collector. The new regression at
+src/tests/src/suspend/test_channel_consumption.cpp:471 reproduces that behavior
+before the source change, failing at :496. Receipt:
+build/ir-recovery/safe-collector-cast-before-tests.log.
+
+The collection cast runs first, accepts actual null, and rejects a non-Job
+object. The emission cast then requires an actual Job. Shared-pointer bindings
+retain the original context owners; no borrowed object is adopted. Failed
+validation occurs before the Native lastEmissionContext assignment or downstream
+emission. C++ uses std::bad_cast for its checked RTTI cast, explicitly documented
+with NOTE(port); this does not claim a completed Native Throwable/exception
+interop mapping. The regression exercises malformed collection and emission
+elements, repeated failed validation, matching real Jobs and canonical empty
+contexts. Existing actual ScopeCoroutine ancestry cases remain exercised.
+
+The consumed Native class surface is also aligned: SafeCollector.hpp:70 marks
+the class final, matching Kotlin's closed class; :84 exposes the source's
+read-only collector property. Constructor parameters and the private collector
+field follow the source names in snake_case. Getter provenance at :48,50,84
+names the exact Native property lines. The regression verifies original collector
+and context identity plus actual context element counts, including malformed
+contexts whose constructor fold still follows the Native source. No ownership
+policy changes accompany these property bindings.
+
+After the final header/source/fixture changes, the core and ten focused
+executables build and all ten CTests report zero failures (2.46 seconds).
+The changed SafeCollector.cpp and full regression fixture are directly
+instrumented with AddressSanitizer and UndefinedBehaviorSanitizer, using the
+existing frontend and mandatory LLVM plugins; execution exits zero without
+diagnostics. Receipts: safe-collector-cast-focused-{build,tests}.log and
+safe-collector-cast-sanitizer-{build,tests}.log. All thirteen ranged provenance
+references across the SafeCollector pair have valid source bounds; neither file
+contains prohibited markers. Receipt: safe-collector-cast-provenance.log.
+
+Both complete-root deep scans finish with exit zero after final source changes.
+Library totals remain 811/2918 body names, 359/560 types, average body similarity
+0.26 and 123 scoring failures; the extra C++ property getter is not presented as
+new upstream function parity. The compiler/prerequisite scan is refreshed and
+unchanged. The inventory still lists the checkContext extension under its Kotlin
+receiver while the C++ concrete algorithm resides on SafeCollectorBase; the
+source/type-erasure structural gap is visible and no matching rule is weakened.
+These bounded checks do not establish full SafeCollector source parity or the
+required Native/MLX product acceptance paths. Deep receipts:
+safe-collector-cast-{library,compiler}-deep.log.

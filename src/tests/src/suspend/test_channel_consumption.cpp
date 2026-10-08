@@ -10,6 +10,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <typeinfo>
 
 using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::channels;
@@ -465,6 +466,51 @@ void safe_collector_ancestry_contract() {
     outer->cancel();
     orphan->cancel();
     root->cancel();
+}
+
+// Source contract: SafeCollector.common.kt:32-33 uses checked Job casts,
+// while Native SafeCollector.kt:16-24 validates before downstream emission.
+void safe_collector_checked_job_cast_contract() {
+    class NonJob final : public AbstractCoroutineContextElement {
+    public:
+        NonJob() : AbstractCoroutineContextElement(Job::type_key) {}
+    };
+    class Collector final : public flow::FlowCollector<int> {
+    public:
+        int emits = 0;
+        void* emit(int value, Continuation<void*>*) override { emits += value; return nullptr; }
+    };
+    auto empty = EmptyCoroutineContext::instance();
+    auto non_job = std::make_shared<NonJob>();
+    auto job = std::make_shared<JobSupport>(true);
+    Collector downstream;
+    // A failed non-null cast must not become a missing Job, including when
+    // both contexts return the same malformed element for the Job key.
+    for (const auto& collect : std::vector<std::shared_ptr<CoroutineContext>>{empty, non_job, job}) {
+        flow::internal::SafeCollector<int> safe(&downstream, collect);
+        CHECK(safe.get_collector() == &downstream && safe.get_collect_context() == collect);
+        CHECK(safe.get_collect_context_size() == (collect == empty ? 0 : 1));
+        auto malformed_completion = make_continuation<void*>(non_job, [](Result<void*>) {});
+        for (int attempt = 0; attempt < 2; ++attempt) {
+            bool cast_rejected = false;
+            try { safe.emit(1, malformed_completion.get()); }
+            catch (const std::bad_cast&) { cast_rejected = true; }
+            CHECK(cast_rejected && downstream.emits == 0);
+        }
+    }
+    // The nullable collectJob cast accepts null, but rejects a non-Job object
+    // even when the emitting element is an actual Job.
+    flow::internal::SafeCollector<int> invalid_collect(&downstream, non_job);
+    auto job_completion = make_continuation<void*>(job, [](Result<void*>) {});
+    bool cast_rejected = false;
+    try { invalid_collect.emit(1, job_completion.get()); }
+    catch (const std::bad_cast&) { cast_rejected = true; }
+    CHECK(cast_rejected && downstream.emits == 0);
+    flow::internal::SafeCollector<int> valid_collect(&downstream, job);
+    CHECK(valid_collect.emit(2, job_completion.get()) == nullptr && downstream.emits == 2);
+    auto empty_completion = make_continuation<void*>(empty, [](Result<void*>) {});
+    flow::internal::SafeCollector<int> empty_collect(&downstream, empty);
+    CHECK(empty_collect.emit(4, empty_completion.get()) == nullptr && downstream.emits == 6);
 }
 
 // ChannelFlow.kt:118-121 uses CoroutineScope.kt:279-288 directly: the
@@ -1000,6 +1046,7 @@ int main() {
         job_cancellation_hash_contract();
         polymorphic_context_contract();
         safe_collector_ancestry_contract();
+        safe_collector_checked_job_cast_contract();
         channel_scope_contract();
         sending_collector_contract();
         combine_contract();
