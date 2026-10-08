@@ -461,7 +461,7 @@ inline std::shared_ptr<Flow<R>> map_not_null(
         // absent result. A null erased result is accepted as absent by this C++ ABI.
         std::unique_ptr<std::optional<R>> box(static_cast<std::optional<R>*>(raw));
         std::optional<R> transformed;
-        if (box) transformed = std::move(*box);
+        if (box && box->has_value()) transformed.emplace(std::move(**box));
         box.reset();
         if (!transformed.has_value()) return nullptr;
         dsl::suspend(collector->emit(std::move(*transformed), completion.get()));
