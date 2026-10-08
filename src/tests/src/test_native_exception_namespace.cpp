@@ -1,5 +1,6 @@
 // Source contracts: native/src/Exceptions.kt:9-14 and
 // libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:11-16.
+#include "kotlin/coroutines/cancellation/CancellationException.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
 #include <memory>
 #include <stdexcept>
