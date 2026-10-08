@@ -1581,8 +1581,8 @@ MISSING_SYMBOL function zip at /Volumes/stuff/Projects/kotlinmania/kotlin.corout
 MISSING_SYMBOL function consumes at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Deprecated.kt:505
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.cpp:24: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.cpp:40: offset-preserving coroutine statement-macro grammar adaptation
-MISSING_SYMBOL type ProducerScope at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:10
-MISSING_SYMBOL property ProducerScope::channel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:18
+PRESENT type ProducerScope at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:10 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ProducerScope.hpp:13
+DECLARATION_ONLY property ProducerScope::channel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:18 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ProducerScope.hpp:19
 PRESENT function awaitClose at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:60 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:301
 PRESENT function produce at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:238 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:234
 PRESENT function produce at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:258 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:234
@@ -1608,6 +1608,7 @@ EXTRA_TARGET_SYMBOL function ProducerCoroutine::close at /Volumes/stuff/Projects
 EXTRA_TARGET_SYMBOL function ProducerCoroutine::invoke_on_close at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:92
 EXTRA_TARGET_SYMBOL function ProducerCoroutine::get_channel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:105
 EXTRA_TARGET_SYMBOL function await_close_erased at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:282
+EXTRA_TARGET_SYMBOL function ProducerScope::~ProducerScope at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ProducerScope.hpp:14
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:152: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:159: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:205: offset-preserving coroutine statement-macro grammar adaptation
@@ -6422,4 +6423,4 @@ MISSING_SYMBOL property isNative at /Volumes/stuff/Projects/kotlinmania/kotlin.c
 MISSING_SYMBOL property isBoundByJsTestTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:61
 MISSING_SYMBOL property isJavaAndWindows at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:63
 MISSING_SYMBOL property usesSharedEventLoop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:65
-Inventory totals: present=2478, declaration_only=115, missing=2004
+Inventory totals: present=2479, declaration_only=116, missing=2002

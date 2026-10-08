@@ -11,8 +11,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Metric | Count | Percentage |
 |--------|-------|------------|
 | Function parity | 820/2918 matched (target 3042) | 28.1% |
-| Class/type parity | 358/560 matched (target 520) | 63.9% |
-| Combined symbol parity | 1178/3478 matched (target 3562) | 33.9% |
+| Class/type parity | 359/560 matched (target 521) | 64.1% |
+| Combined symbol parity | 1179/3478 matched (target 3563) | 33.9% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -242,7 +242,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 198 | `sync.Semaphore` | `sync.Semaphore` | 0.26 | 18/21 matched (target 45) | `Semaphore`, `SemaphoreAndMutexImpl::acquire`, `SemaphoreAndMutexImpl::acquire` | 4/4 matched (target 9) | _none_ | - | 3 | 32507.4 |
 | 199 | `internal.LimitedDispatcher` | `internal.LimitedDispatcher` | 0.27 | 9/10 matched (target 12) | `CoroutineDispatcher::namedOrThis` | 2/2 matched (target 3) | _none_ | - | 1 | 11207.3 |
 | 200 | `channels.BufferedChannel` | `channels.BufferedChannel` | 0.27 | 104/111 matched (target 179) | `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0` | 6/6 matched (target 7) | _none_ | - | 7 | 81707.3 |
-| 201 | `channels.Produce` | `channels.Produce` | 0.27 | 6/6 matched (target 23) | _none_ | 1/2 matched | `ProducerScope` | - | 1 | 10807.3 |
+| 201 | `channels.Produce` | `channels.Produce` | 0.27 | 6/6 matched (target 23) | _none_ | 2/2 matched (target 3) | _none_ | - | 0 | 807.3 |
 | 202 | `common.Delay` | `coroutines.Delay` | 0.28 | 6/6 matched (target 11) | _none_ | 2/2 matched | _none_ | - | 0 | 807.2 |
 | 203 | `flow.SafeFlowTest` | `flow.SafeFlowTest` | 0.28 | 2/3 matched | `SafeFlowTest::testEmissionsFromDifferentStateMachine` | 1/1 matched | _none_ | 0/1 | 1 | 10407.2 |
 | 204 | `channels.ChannelCoroutine` | `channels.ChannelCoroutine` | 0.29 | 2/4 matched (target 18) | `ChannelCoroutine::cancel`, `ChannelCoroutine::cancel` | 1/1 matched | _none_ | - | 2 | 20507.1 |
@@ -676,8 +676,8 @@ present in the Rust source file.
 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 2/7 | `UserSupplied`, `CompletedContinuation` |
 | `channels.TestChannelKind` | `channels.TestChannelKind [ZERO]` | 1/2 | `ChannelViaBroadcast` |
 | `sync.Mutex` | `sync.Mutex` | 2/4 | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` |
-| `native.Dispatchers` | `native.Dispatchers [STUB]` | 2/2 | `Dispatchers`, `DefaultIoScheduler` |
 | `native.Builders` | `native.Builders [ZERO]` | 2/2 | `ThreadLocalKeepAlive`, `BlockingCoroutine` |
+| `native.Dispatchers` | `native.Dispatchers [STUB]` | 2/2 | `Dispatchers`, `DefaultIoScheduler` |
 | `common.TestDispatcher` | `test.TestDispatcher` | 1/2 | `CancellableContinuationRunnable` |
 | `common.CompletionState` | `coroutines.CompletionState` | 2/2 | `CompletedExceptionally`, `CancelledContinuation` |
 | `internal.Concurrent.common` | `internal.Concurrent.common [ZERO]` | 3/3 | `ReentrantLock`, `BenignDataRace`, `WorkaroundAtomicReference` |
@@ -685,7 +685,6 @@ present in the Rust source file.
 | `operators.Share` | `flow.Share` | 1/5 | `SubscribedFlowCollector` |
 | `internal.Scopes` | `internal.ScopeCoroutine` | 1/2 | `ContextScope` |
 | `common.Builders.common` | `coroutines.Builders.common` | 1/6 | `UndispatchedCoroutine` |
-| `channels.Produce` | `channels.Produce` | 1/2 | `ProducerScope` |
 | `common.Exceptions.common` | `coroutines.Exceptions [ZERO]` | 1/4 | `CancellationException` |
 | `native.SchedulerTask` | `native.SchedulerTask` | 1/1 | `SchedulerTask` |
 | `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1/1 | `LocalAtomicInt` |
