@@ -1,3 +1,55 @@
+# Translated documentation and immutable source fields — 2026-10-07
+
+The complete common Flow Channels.kt and Channels.hpp were read before editing.
+This remains the first dependency-impact group, with 65 dependents. All five
+source KDoc blocks remain present; their references now use actual C++ method,
+namespace and constant names. The consumeEach shorthand is translated to the
+existing channels::consume_each continuation-call interface, including the real
+collector emit call. The example's executable validity is not established by
+documentation presence. Source branch comments identify direct collection,
+additional buffering, fast repeated-consumption rejection and efficient receiving.
+
+Channels.hpp:271-272 now declares channel_ and consume_ const, matching the two
+private source val fields. The supplied shared owner and underlying channel remain
+the same objects; the pointee is not made immutable. The atomic consumed field
+continues to implement source getAndSet. No new continuation helpers or manual
+state machines were added. Twenty-one ranged provenance references resolve to
+existing Kotlin files and valid bounds. Receipt:
+build/ir-recovery/flow-channels-doc-reference-check.json. This validates presence
+and references, not exact whole-file translation or runtime behavior.
+
+The full NopCollector Kotlin/header pair was read after its warning appeared in
+the actual channel-flow consumer. NopCollector.hpp:17 is final as the source
+object specifies. Its genuinely empty emit hook retains unused parameter names
+as comments, avoiding warnings without suppression or dummy argument reads.
+The source `does nothing` comment is retained. The existing typed specialization
+is documented as a projection of Kotlin's contravariant Any collector; it does
+not convert arbitrary C++ values. The canonical port-lint source path is restored.
+
+Fresh verification:
+
+- NopCollector<int>, NopCollector<std::string> and a move-only unique_ptr element
+  instantiate with Clang C++20 -Wall -Wextra -Wpedantic -Werror: exit 0.
+  Receipt: build/ir-recovery/nop-collector-source-strict.log.
+- The actual CMake test_channel_as_flow_smoke target build exits 2 in compilation
+  of compiler-plugin dependencies: LLVM/Clang 23 headers expose unused-parameter
+  warnings. Receipt: flow-channels-doc-immutable-build.log under build/ir-recovery.
+- Direct strict syntax compilation of the actual consumer using existing
+  frontend/LLVM modules exits 1. NopCollector's two warnings are gone. Remaining
+  dependency warnings, GNU label extensions, generated missing exception-context
+  initializer and unresolved template T prevent an executable. Receipt:
+  build/ir-recovery/flow-channels-doc-final-fixture.log. This does not verify
+  suspended emission, ownership cleanup or the translated example at runtime.
+- Both full-root deep inventories are refreshed after the source edits.
+  Their body/parameter metrics and documentation metrics remain distinct.
+
+The analyzer now rebuilds successfully in build/ast-identity and includes comment
+words in primary literal fidelity. Earlier analyzer-build limitations recorded
+below are historical; the compiler-plugin rebuild failure above is still current.
+Channel diagnostic interpolation still formats a numeric address rather than the
+actual channel string. Broader source/lowering and both MLX acceptance paths
+remain incomplete.
+
 # Current typed emission source body
 
 The complete common Channels.kt and the C++ pair were reread. Channels.hpp:61
