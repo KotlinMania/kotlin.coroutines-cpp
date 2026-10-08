@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 825/2918 matched (target 3043) — 28.3%
-- **Class/type parity:** 359/560 matched (target 521) — 64.1%
-- **Combined symbol parity:** 1184/3478 matched (target 3564) — 34.0%
+- **Function parity:** 825/2918 matched (target 3039) — 28.3%
+- **Class/type parity:** 359/560 matched (target 520) — 64.1%
+- **Combined symbol parity:** 1184/3478 matched (target 3559) — 34.0%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -28,19 +28,19 @@ Based on AST analysis, here are the concrete next steps.
 - **Action:** Deep review - likely missing major functionality
 
 ### 2. flow.Flow
-- **Similarity:** 0.16 (needs 69% improvement)
+- **Similarity:** 0.17 (needs 68% improvement)
 - **Dependencies:** 28
 - **Priority Score:** 28000308.0
-- **Functions:** 1/1 matched (target 6)
+- **Functions:** 1/1 matched (target 2)
 - **Missing functions:** _none_
-- **Types:** 2/2 matched (target 5)
+- **Types:** 2/2 matched (target 4)
 - **Missing types:** _none_
 - **Action:** Deep review - likely missing major functionality
 
 ### 3. internal.Concurrent
-- **Similarity:** 0.36 (needs 49% improvement)
+- **Similarity:** 0.32 (needs 53% improvement)
 - **Dependencies:** 14
-- **Priority Score:** 14010906.0
+- **Priority Score:** 14010907.0
 - **Functions:** 6/6 matched (target 11)
 - **Missing functions:** _none_
 - **Types:** 2/3 matched (target 2)
@@ -72,21 +72,21 @@ Every matched file is listed below with function and type symbol parity.
 ### 2. flow.Flow
 
 - **Target:** `flow.Flow`
-- **Similarity:** 0.16
+- **Similarity:** 0.17
 - **Dependents:** 28
 - **Priority Score:** 28000308.0
-- **Functions:** 1/1 matched (target 6)
+- **Functions:** 1/1 matched (target 2)
 - **Missing functions:** _none_
-- **Types:** 2/2 matched (target 5)
+- **Types:** 2/2 matched (target 4)
 - **Missing types:** _none_
-- **Lint issues:** 2
+- **Lint issues:** 1
 
 ### 3. internal.Concurrent
 
 - **Target:** `internal.Concurrent`
-- **Similarity:** 0.36
+- **Similarity:** 0.32
 - **Dependents:** 14
-- **Priority Score:** 14010906.0
+- **Priority Score:** 14010907.0
 - **Functions:** 6/6 matched (target 11)
 - **Missing functions:** _none_
 - **Types:** 2/3 matched (target 2)

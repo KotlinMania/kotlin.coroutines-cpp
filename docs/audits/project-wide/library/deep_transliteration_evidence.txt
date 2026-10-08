@@ -1285,13 +1285,13 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 === kotlinx-coroutines-core/common/src/flow/Flow.kt -> kotlinx/coroutines/flow/Flow.hpp ===
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Flow.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.hpp
+Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.574414
+translated_ast_cosine: 0.525606
 function_name_parity: 1.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.003059
+documentation_correspondence: 0.008059
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -1308,14 +1308,10 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 Diagnostic: 176: unsupported class_declaration
 Diagnostic: 197: documentation example retains unsupported Kotlin syntax
 Diagnostic: 220: unsupported class_declaration
-Function AbstractFlow::collect:223 -> AbstractFlow<T>::collect:370 | normalized logic: 0.000000
+Function AbstractFlow::collect:223 -> AbstractFlow<T>::collect:290 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:collector type:flowcollector type:t node:66 type:continuation type:void operator:* identifier:continuation identifier:safecollector operator:= node:43 identifier:collector identifier:internal identifier:makeshared identifier:std type:safecollector type:t node:43 identifier:continuation identifier:getcontext node:5 node:43 identifier:internal identifier:collectabstractflow node:45 identifier:owner operator:= node:43 node:43 identifier:weakfromthis identifier:lock identifier:safecollector node:66 type:continuation type:void operator:* identifier:frame node:5 node:43 identifier:collectsafely node:43 identifier:safecollector identifier:get identifier:frame node:45 identifier:safecollector node:43 identifier:safecollector identifier:releaseintercepted identifier:continuation
-Extra target function: kotlinx::coroutines::flow::internal::CollectFrame::CollectFrame:19
-Extra target function: kotlinx::coroutines::flow::internal::CollectFrame::retain:29
-Extra target function: kotlinx::coroutines::flow::internal::CollectFrame::invoke_suspend:32
-Extra target function: kotlinx::coroutines::flow::internal::CollectFrame::release_intercepted:47
-Extra target function: kotlinx::coroutines::flow::internal::collect_abstract_flow:64
+  Target logic: node:66 identifier:collector type:flowcollector type:t node:66 type:continuation type:void operator:* identifier:continuation node:5 node:43 identifier:collect identifier:collector node:43 identifier:kotlinx identifier:coroutines identifier:internal identifier:retaincontinuation identifier:continuation
+Extra target function: AbstractFlow<T>::collect:298
 === Emitted target buffer ===
 namespace kotlinx::coroutines::flow {
 
@@ -1350,8 +1346,10 @@ __ast_distance_unmapped__("class_declaration", "@ExperimentalCoroutinesApi\npubl
 Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
-NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Flow.kt:223	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.hpp:295	AbstractFlow::collect -> AbstractFlow<T>::collect
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
+TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Flow.kt:223	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.hpp:290	AbstractFlow::collect -> AbstractFlow<T>::collect
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
+MARKER_ONLY_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Flow.kt:223	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.hpp:298	AbstractFlow::collect -> AbstractFlow<T>::collect
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=307 indirect-goto-lines=none candidates=2 parse=clean
 Explicit suspension contracts reviewed: 1
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/flow/operators/Lint.kt -> kotlinx/coroutines/flow/Lint.hpp ===
@@ -8077,14 +8075,14 @@ Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/internal/Concurrent.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Concurrent.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Concurrent.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.018066
-translated_ast_cosine: 0.347016
+translated_text_cosine: 0.018089
+translated_ast_cosine: 0.346983
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.018066
+score: 0.018089
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -8107,24 +8105,24 @@ Function ReentrantLock::withLock:9 -> kotlinx::coroutines::internal::with_lock:1
   Target logic: node:66 identifier:lock type:reentrantlock node:66 identifier:action identifier:std type:function type:void identifier:guard identifier:std type:lockguard type:reentrantlock node:66 type:lock node:43 identifier:action
 Function identitySet:11 -> kotlinx::coroutines::internal::identity_set:48 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:expectedsize type:signed32 node:5 node:43 identifier:std identifier:unorderedset type:e
-Function WorkaroundAtomicReference::get:19 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::get:65 | normalized logic: 0.000000
+  Target logic: node:66 type:signed32 node:5 node:43 identifier:std identifier:unorderedset type:e
+Function WorkaroundAtomicReference::get:19 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::get:66 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:5 node:43 identifier:nativeatomic identifier:load identifier:std identifier:memoryorderseqcst
-Function WorkaroundAtomicReference::set:21 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::set:70 | normalized logic: 0.000000
+Function WorkaroundAtomicReference::set:21 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::set:71 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:value type:v node:43 identifier:nativeatomic identifier:store identifier:value identifier:std identifier:memoryorderseqcst
-Function WorkaroundAtomicReference::getAndSet:25 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::get_and_set:75 | normalized logic: 0.000000
+Function WorkaroundAtomicReference::getAndSet:25 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::get_and_set:76 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:value type:v node:5 node:43 identifier:nativeatomic identifier:exchange identifier:value identifier:std identifier:memoryorderseqcst
-Function WorkaroundAtomicReference::compareAndSet:27 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::compare_and_set:80 | normalized logic: 0.000000
+Function WorkaroundAtomicReference::compareAndSet:27 -> kotlinx::coroutines::internal::WorkaroundAtomicReference::compare_and_set:81 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:expected type:v node:66 identifier:value type:v node:5 node:43 identifier:nativeatomic identifier:compareexchangestrong identifier:expected identifier:value identifier:std identifier:memoryorderseqcst identifier:std identifier:memoryorderseqcst
 Extra target function: kotlinx::coroutines::internal::with_lock:38
-Extra target function: kotlinx::coroutines::internal::WorkaroundAtomicReference::WorkaroundAtomicReference:62
-Extra target function: kotlinx::coroutines::internal::get_value:93
-Extra target function: kotlinx::coroutines::internal::set_value:99
-Extra target function: kotlinx::coroutines::internal::loop:105
+Extra target function: kotlinx::coroutines::internal::WorkaroundAtomicReference::WorkaroundAtomicReference:63
+Extra target function: kotlinx::coroutines::internal::get_value:94
+Extra target function: kotlinx::coroutines::internal::set_value:100
+Extra target function: kotlinx::coroutines::internal::loop:106
 === Emitted target buffer ===
 namespace kotlinx::coroutines::internal {
 

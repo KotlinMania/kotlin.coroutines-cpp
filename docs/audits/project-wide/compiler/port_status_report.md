@@ -21,7 +21,7 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Cheat/scoring failures | 24 | forced to 0% |
 | Total source files | 678 | 100% |
 | Target units (paired) | 603 | - |
-| Target files (total) | 787 | - |
+| Target files (total) | 786 | - |
 | Porting progress | 109 | 16.1% (matched) |
 | Missing files | 569 | 83.9% |
 
