@@ -8,7 +8,7 @@
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
-#include <functional>
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include <memory>
 
 namespace kotlinx {
@@ -253,6 +253,11 @@ public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) final override;
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
+    // NOTE(port): The owning Continuation ABI entry is lowered by the frontend.
+    void* collect(FlowCollector<T>* collector,
+                  std::shared_ptr<Continuation<void*>> continuation);
+
     /**
      * Accepts the given [collector] and [emits][FlowCollector.emit] values into it.
      *
@@ -278,31 +283,34 @@ public:
 
 namespace kotlinx::coroutines::flow {
 
-namespace internal {
-
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
-// NOTE(port): Only the typed SafeCollector binding needs header instantiation.
-// The shared continuation and finally algorithm are concrete in Flow.cpp.
-void* collect_abstract_flow(
-    std::function<void*(Continuation<void*>*)> collect_safely,
-    std::function<void()> release_intercepted,
-    Continuation<void*>* completion);
-
-} // namespace internal
-
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
+// NOTE(port): The virtual raw entry retains an existing continuation owner;
+// borrowed continuations and flow receivers remain borrowed.
 template<typename T>
 inline void* AbstractFlow<T>::collect(FlowCollector<T>* collector, Continuation<void*>* continuation) {
+    return collect(collector, kotlinx::coroutines::internal::retain_continuation(continuation));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Flow.kt:223-230
+// NOTE(port): Public element types require this template definition in the header.
+// The frontend owns frame creation, spills and resumed exception handling.
+template<typename T>
+[[clang::annotate("suspend")]]
+inline void* AbstractFlow<T>::collect(
+    FlowCollector<T>* collector, std::shared_ptr<Continuation<void*>> continuation) {
+    // NOTE(port): Keep an existing C++ receiver owner through collection;
+    // weak_from_this does not adopt a stack or raw receiver.
+    auto owner = this->weak_from_this().lock();
     auto safe_collector = std::make_shared<internal::SafeCollector<T>>(
         collector, continuation->get_context());
-    // NOTE(port): Retain an existing owner of the actual Kotlin receiver across
-    // suspension. A stack or raw receiver remains borrowed.
-    return internal::collect_abstract_flow(
-        [this, owner = this->weak_from_this().lock(), safe_collector](Continuation<void*>* frame) {
-            return collect_safely(safe_collector.get(), frame);
-        },
-        [safe_collector] { safe_collector->release_intercepted(); },
-        continuation);
+    try {
+        dsl::suspend(collect_safely(safe_collector.get(), continuation.get()));
+    } catch (...) {
+        safe_collector->release_intercepted();
+        throw;
+    }
+    safe_collector->release_intercepted();
+    return nullptr;
 }
 
 } // namespace kotlinx::coroutines::flow
