@@ -1,5 +1,47 @@
 # Native WorkerDispatcher source repair — 2026-10-08
 
+## Native timing source operations — 2026-10-08
+
+Continuation from `16c4a550` adds kotlin/system/Timing.hpp/.cpp from Native
+Timing.kt:11-118 and its actual Time.cpp/Porting.cpp consumers. All six source
+functions have definitions: three steady time reads and three inline measurement
+functions. Private clock selection stays in .cpp and mirrors Porting.cpp:263-264:
+high_resolution_clock when steady, otherwise steady_clock. Millisecond,
+microsecond and nanosecond duration casts retain the source implementation.
+The unsigned runtime reading is mapped to the same signed Long bits explicitly.
+Public inline callable templates preserve actual C++ callable types without
+copies/type erasure; elapsed subtraction uses unsigned wrapping, as Kotlin Long
+requires. The source deprecation preference for measureTime/Monotonic is recorded.
+
+This is standalone execution of the actual translated platform operations. It
+defines no Kotlin_system runtime exports, substitutes no calls-checker guard or
+GC runtime, and does not claim the actual Native GCUnsafeCall boundary. Native
+interop still requires its real linked runtime. Time.cpp's separate system-clock
+operation and the rest of Porting.cpp are not translated by this checkpoint.
+Native MonotonicTimeSource can now consume the real get_time_nanos dependency,
+but its ValueTimeMark API/body and generated object boundary remain absent.
+
+The actual source and assertion-enabled test_system_timing are registered in
+CMake. Strict Clang23.1.2 -Wall/-Wextra/-Wpedantic/-Werror compilation and O1
+ASan/UBSan execution exit0. Ordered readings bracket the same clock in different
+units across100 iterations; each measurement invokes its original block once;
+a move-only captured object works; a thrown exception preserves its original
+exception_ptr identity. otool -L lists only libc++, libSystem and ASan. This is
+bounded timing evidence, not complete library build or coroutine/MLX execution.
+
+The refreshed relevant Native-runtime-root deep scan exits0:3/1234 bodies,
+1/258 types,0.67 aggregate body similarity,zero scoring failures. Timing itself
+is3/3 source bodies (target6),0.34 similarity. Its three external Kotlin getters
+have no source bodies; all six functions are PRESENT in symbol inventory. The
+body score reflects explicit unsigned wrapping/type mapping and does not prove
+Native runtime boundary equivalence. Receipts remain in
+build/source-continuation/native-ordering-distance/. The unchanged time-root
+checkpoint remains14/44 bodies,4/13 types,0.50 similarity.
+
+Continue Monotonic/ValueTimeMark and actual generated equality/hash/text contracts,
+then Worker/Future and runtime consumers. Compiler state-machine transliteration,
+complete library translation and both full docking-ring/MLX paths remain open.
+
 ## Comparable marks and source interfaces — 2026-10-08
 
 Continuation from `5312f3a0` adds kotlin/Comparable.hpp from the actual Native

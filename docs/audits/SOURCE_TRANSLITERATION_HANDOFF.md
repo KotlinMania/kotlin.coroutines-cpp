@@ -6,6 +6,27 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Native timing implementation — 2026-10-08
+
+Continuation from `16c4a550` translates all six Native Timing.kt functions in
+src/kotlin/system/Timing.hpp/.cpp. The actual Porting.cpp steady-clock selection
+and duration casts implement the three external source getters for standalone
+C++. Inline measurements retain actual callable types, one invocation and wrapped
+Long subtraction. No Kotlin runtime exports/checker guards or substitute runtime
+are provided. Native's real GCUnsafeCall boundary remains a separately linked
+requirement. The actual get_time_nanos dependency is now available for the pending
+MonotonicTimeSource translation. Source and assertion-enabled test are registered.
+
+Strict Clang/O1 ASan/UBSan execution exit0 for100 cross-unit clock brackets,
+single block invocation, move-only capture and original exception identity.
+otool shows libc++, libSystem and ASan only. Fresh relevant deep scan exits0:
+Native reference root3/1234 bodies,1/258 types,0.67 aggregate similarity; Timing
+3/3 source bodies,0.34, all six symbols PRESENT,zero scoring failures. External
+getters are declarations in Kotlin, not three additional source bodies.
+See NATIVE_WORKER_DISPATCHER_SOURCE_REPAIR.md for exact scope and remaining gaps.
+Continue Monotonic/ValueTimeMark/generated object boundary, Worker/Future and
+actual compiler lowering. Both complete docking-ring/MLX paths remain unverified.
+
 ## Comparable marks and source interfaces — 2026-10-08
 
 Continuation from `5312f3a0` translates Native Comparable.kt's public interface,
