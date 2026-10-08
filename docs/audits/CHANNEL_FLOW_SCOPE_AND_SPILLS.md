@@ -1,5 +1,54 @@
 # ChannelFlow source scope and private spill repair
 
+## Current source authoring checkpoint — 2026-10-07
+
+The complete pinned flow/Channels.kt and flow/internal/ChannelFlow.kt and the
+existing C++ counterparts were read after rereading the docking-ring, IR lowering
+and declaration/scope designs. The active objective keeps library source
+translation ahead of compiler infrastructure.
+
+Commit c659aa94 removes the handwritten CollectContinuation from
+src/kotlinx/coroutines/flow/internal/ChannelFlow.cpp. The existing owning entry
+at :58 is now annotated suspend and directly calls
+`dsl::suspend(collect(completion.get()))`, then returns Unit's erased value.
+There are no manually authored labels, yield macros or frame retention cycle in
+that entry. The existing typed call bindings remain: collect_channel_flow is
+still a C++ adaptation, not a source Kotlin declaration. Removing that adapter
+and restoring direct source lambda/member calls remains unfinished. No new
+adapter was introduced. Callable captures and the owning continuation must stay
+alive through suspension and release on termination through compiler lowering.
+The former executable evidence below predates this change and cannot establish
+its new retention/destruction behavior.
+
+Commit b330b6ee restores source val immutability for ChannelFlow context/capacity/
+overflow, ChannelFlowOperator's upstream flow and UndispatchedContextCollector's
+context/precomputed count/function reference. ChannelFlowOperatorImpl (:387),
+UndispatchedContextCollector (:462) and ChannelAsFlow (flow/Channels.hpp:203)
+are final, as their Kotlin declarations are. Missing source KDoc for
+ChannelFlow.drop_channel_operators (:132-139) and produce_impl (:164-173) is now
+translated; the latter preserves the #1825 reason for ATOMIC start and the
+on_completion/finally cleanup explanation. Source field comments are restored.
+
+Fresh strict Clang/LLVM 23 checks use the existing frontend and mandatory LLVM
+module plugins, with -Wall -Wextra -Wpedantic -Werror and no suppression.
+ChannelFlow.cpp compilation exits 1; the frontend recognizes the authored entry
+but generated GNU address-of-label code is rejected, alongside existing unused
+parameter diagnostics in dependencies. The actual test_channel_as_flow_smoke.cpp
+consumer also exits 1 on dependency/generated-frame diagnostics. No executable
+was built or run for this checkpoint. Receipts are
+build/ir-recovery/channel-flow-source-authoring-syntax.log and
+channel-flow-authoring-final-consumer.log. Full fresh runtime retention, result,
+failure/cancellation and cleanup checks remain required.
+
+The source-reference receipt records 47 ranged references in ChannelFlow.hpp
+and 12 in ChannelFlow.cpp with valid source bounds and no prohibited source
+markers. This verifies references, not complete transliteration. Both complete
+MLX GPU acceptance paths, real IR declaration/scopes integration, diagnostic
+string representation, the missing upstream-prefixed to_string and remaining
+source/body/KDoc mismatches are still unfinished.
+
+Historical checkpoints below retain their original evidence.
+
 Date: 2026-10-07. Read complete common flow Channels.kt, Flow.kt,
 flow/internal/ChannelFlow.kt, CoroutineScope.kt, internal/Scopes.kt and
 intrinsics/Undispatched.kt before repairing the dependency used by the leading
