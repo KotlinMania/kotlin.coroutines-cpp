@@ -1540,7 +1540,7 @@ translated_text_cosine: 0.000000
 translated_ast_cosine: 0.240853
 function_name_parity: 0.342105
 normalized_logic: 0.031856
-documentation_correspondence: 0.012516
+documentation_correspondence: 0.006961
 span_rule_coverage: 0.003919
 unsupported_fraction (diagnostic only): 0.996081
 score: 0.000000

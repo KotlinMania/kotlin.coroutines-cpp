@@ -231,7 +231,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** `EventLoop::limitedParallelism`, `EventLoopImplBase::shutdown`, `EventLoopImplBase::scheduleResumeAfterDelay`, `EventLoopImplBase::scheduleInvokeOnTimeout`, `EventLoopImplBase::processNextEvent`, `EventLoopImplBase::dispatch`, `EventLoopImplBase::enqueue`, `EventLoopImplBase::enqueueImpl`, `EventLoopImplBase::dequeue`, `EventLoopImplBase::enqueueDelayedTasks`, `EventLoopImplBase::closeQueue`, `EventLoopImplBase::schedule`, `EventLoopImplBase::shouldUnpark`, `EventLoopImplBase::scheduleImpl`, `EventLoopImplBase::resetAll`, `EventLoopImplBase::rescheduleAllDelayed`, `EventLoopImplBase::DelayedTask::compareTo`, `EventLoopImplBase::DelayedTask::timeToExecute`, `EventLoopImplBase::DelayedTask::scheduleTask`, `EventLoopImplBase::DelayedTask::dispose`, `EventLoopImplBase::DelayedTask::toString`, `EventLoopImplBase::DelayedResumeTask::run`, `EventLoopImplBase::DelayedResumeTask::toString`, `EventLoopImplBase::DelayedRunnableTask::run`, `EventLoopImplBase::DelayedRunnableTask::toString`
 - **Types:** 2/10 matched (target 3)
 - **Missing types:** `Queue`, `EventLoopImplPlatform`, `EventLoopImplBase`, `DelayedTask`, `DelayedResumeTask`, `DelayedRunnableTask`, `DelayedTaskQueue`, `DefaultExecutor`
-- **Lint issues:** 5
+- **Lint issues:** 4
 
 ### 16. sharing.SharedFlowTest
 
