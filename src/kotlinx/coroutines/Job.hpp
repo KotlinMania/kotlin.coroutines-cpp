@@ -268,16 +268,16 @@ struct Job : public virtual CoroutineContext::Element {
      * @param continuation The continuation to resume when job completes
      * @return COROUTINE_SUSPENDED if suspended, nullptr if completed immediately
      */
-    // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:299
+    // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:288
     virtual void* join(Continuation<void*>* continuation) = 0;
 
-    // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:299
+    // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:288
     // NOTE(port): Compiler authoring surface; lowering supplies the actual continuation.
     [[clang::annotate("suspend"), clang::annotate("kxs_implicit_continuation")]]
     __attribute__((error("join() requires suspend lowering; use join(continuation) at an explicit ABI boundary")))
     void join();
 
-    // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:299
+    // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:288
     // NOTE(port): Owned continuation binding forwards to the virtual Continuation ABI.
     void* join(std::shared_ptr<Continuation<void*>> continuation);
 

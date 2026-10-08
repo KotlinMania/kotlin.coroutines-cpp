@@ -582,6 +582,12 @@ private:
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt:197-335
     std::string emit_expression(const Expr* original) {
         if (!original) return "";
+        // NOTE(port): An implicit overloaded arrow has no complete standalone
+        // source expression. Preserve the resolved operator call and its result
+        // rather than extracting the syntactic receiver plus the arrow token.
+        if (const auto* arrow = dyn_cast<CXXOperatorCallExpr>(original->IgnoreParenImpCasts());
+            arrow && arrow->getOperator() == OO_Arrow)
+            return "(" + emit_expression(arrow->getArg(0)) + ").operator->()";
         const Expr* expression = spelled(original);
         if (const auto* reference = dyn_cast<LambdaExpr>(expression)) {
             const auto type = build_reference_class(reference);
@@ -834,7 +840,13 @@ private:
                 value = capture(receiver, value, receiver->getType()->isRecordType());
                 if (receiver->isXValue()) value = "std::move(" + value + ")";
             }
-            replacements.push_back({offset(receiver->getBeginLoc()), end_offset(receiver->getEndLoc()), value});
+            unsigned receiver_end = end_offset(receiver->getEndLoc());
+            if (const auto* arrow = dyn_cast<CXXOperatorCallExpr>(receiver->IgnoreParenImpCasts());
+                arrow && arrow->getOperator() == OO_Arrow) {
+                const auto* member = cast<MemberExpr>(callee_expression);
+                receiver_end = offset(member->getOperatorLoc());
+            }
+            replacements.push_back({offset(receiver->getBeginLoc()), receiver_end, value});
         }
         // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt:212-252
         // NOTE(port): An indirect C++ callee is evaluated before its arguments.
@@ -1322,7 +1334,7 @@ private:
             llvm::SaveAndRestore<bool> expression_scope(full_expression_, true);
             size_t first_comma = comma_temporaries_.size();
             auto value = emit_expression(expression);
-            body_ << value << ";\n";
+            body_ << "static_cast<void>(" << value << ");\n";
             clear_comma_temporaries(first_comma);
         }
         else if (isa<NullStmt>(statement)) body_ << ";\n";
