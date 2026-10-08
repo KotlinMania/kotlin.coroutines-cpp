@@ -14,6 +14,11 @@ int alive = 0;
 int mode = 0;
 int calls = 0;
 int binding_evaluations = 0;
+int array_alive = 0;
+int array_copies = 0;
+int array_destroyed[4]{};
+int array_destructions = 0;
+int array_sources = 0;
 std::shared_ptr<Continuation<void*>> pending;
 std::weak_ptr<Continuation<void*>> frame;
 struct QualifiedValue {
@@ -31,6 +36,24 @@ struct MemberParts {
     int first;
     unsigned second : 4;
 };
+struct ArrayValue {
+    explicit ArrayValue(int value) : value(value) { ++array_alive; }
+    ArrayValue(const ArrayValue& other) : value(other.value) {
+        ++array_copies;
+        if (mode == 5 && array_copies == 2) throw std::runtime_error("array copy failure");
+        ++array_alive;
+    }
+    ~ArrayValue() {
+        --array_alive;
+        assert(array_destructions < 4);
+        array_destroyed[array_destructions++] = value;
+    }
+    int value;
+};
+ArrayValue (&source_once(ArrayValue (&values)[2]))[2] {
+    ++array_sources;
+    return values;
+}
 struct TupleParts {
     int first;
     int second;
@@ -90,7 +113,16 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
     Both both(44);
     int items[2]{3, 4};
     auto& [head, tail] = items;
+    auto [copy_head, copy_tail] = items;
+    ++head;
     int* head_identity = std::addressof(head);
+    int grid[2][2]{{1, 2}, {3, 4}};
+    auto [first_row, second_row] = grid;
+    grid[0][0] = 9;
+    ArrayValue originals[2]{ArrayValue(11), ArrayValue(12)};
+    auto [first_copy, second_copy] = source_once(originals);
+    originals[0].value = 99;
+    ArrayValue* copy_identity = std::addressof(first_copy);
     auto [member_first, member_second] = MemberParts{3, 4};
     ++member_second;
     auto [from_get, from_get_second] = TupleParts{3, 4};
@@ -114,7 +146,11 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
         assert(cached == 79 && static_initializations == 1);
         assert(*box == static_cast<Value>(increment));
         assert(std::addressof(head) == head_identity && head_identity == &items[0]);
-        assert(head == 3 && tail == 4);
+        assert(head == 4 && tail == 4 && copy_head == 3 && copy_tail == 4);
+        assert(first_row[0] == 1 && first_row[1] == 2 && second_row[0] == 3 && second_row[1] == 4);
+        assert(first_copy.value == 11 && second_copy.value == 12);
+        assert(std::addressof(first_copy) == copy_identity && copy_identity != &originals[0]);
+        assert(array_copies == 2 && array_sources == 1);
         assert(member_first == 3 && member_second == 5);
         assert(from_get == 3 && from_get_second == 4 && binding_evaluations == 2);
         assert(resource.get() == resource_identity && tag == 1);
@@ -139,15 +175,17 @@ struct Done final : Continuation<void*> {
     }
 };
 int main() {
-    for (mode = 0; mode < 5; ++mode) {
+    for (mode = 0; mode < 6; ++mode) {
         calls = 0;
         binding_evaluations = 0;
+        array_copies = array_destructions = 0;
+        array_sources = 0;
         auto done = std::make_shared<Done>();
         try {
             void* result = qualified_locals(37 + mode, done);
             if (intrinsics::is_coroutine_suspended(result)) {
                 while (pending) {
-                    assert(alive == 4 && done->resumes == 0);
+                    assert(alive == 4 && array_alive == 4 && done->resumes == 0);
                     auto held = std::move(pending);
                     if (mode == 2 && calls == 2)
                         held->resume_with(Result<void*>::failure(std::make_exception_ptr(std::runtime_error("resumed failure"))));
@@ -160,8 +198,14 @@ int main() {
         assert(done->resumes == 1 && done->failed == (mode >= 2));
         assert(done->cancelled == (mode == 3));
         assert(done->failed || done->value == 542);
-        assert(calls == (mode == 4 ? 1 : 2));
+        assert(calls == (mode == 5 ? 0 : mode == 4 ? 1 : 2));
         assert(alive == 0 && !pending && frame.expired());
+        assert(array_alive == 0 && array_copies == 2 && array_sources == 1);
+        assert(array_destructions == (mode == 5 ? 3 : 4));
+        assert(array_destroyed[0] == (mode == 5 ? 11 : 12));
+        assert(array_destroyed[1] == (mode == 5 ? 12 : 11));
+        assert(array_destroyed[2] == (mode == 5 ? 11 : 12));
+        if (mode != 5) assert(array_destroyed[3] == 99);
         assert(*started_identity == mode + 1);
         assert(*finished_identity == (mode == 0 ? 1 : 2));
     }

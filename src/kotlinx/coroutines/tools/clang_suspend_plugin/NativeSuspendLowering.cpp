@@ -16,6 +16,7 @@
 #include "llvm/Support/MD5.h"
 #include "llvm/ADT/SmallString.h"
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <sstream>
 #include <stdexcept>
@@ -482,10 +483,25 @@ private:
             if (type->isArrayType() && !context_.getAsConstantArrayType(type))
                 throw std::runtime_error("retained arrays require a constant complete array type");
             std::string storage = name + "_storage";
+            std::string destruction;
+            std::string element = "get()";
+            unsigned dimensions = 0;
+            for (auto current = type; current->isArrayType();) {
+                const auto* array = context_.getAsConstantArrayType(current);
+                if (!array) throw std::runtime_error("retained array dimension requires a constant bound");
+                auto index = "_kxs_destroy_" + std::to_string(dimensions++);
+                destruction += "for (std::size_t " + index + " = " +
+                    std::to_string(array->getSize().getZExtValue()) + "; " + index + " > 0; --" + index + ") { ";
+                element += "[" + index + " - 1]";
+                current = array->getElementType();
+            }
+            // NOTE(port): Native C++ arrays destroy in reverse element order.
+            // std::destroy_at on an array instead visits elements forward.
+            destruction += "std::destroy_at(std::addressof(" + element + ")); " + std::string(dimensions, '}');
             fields_.push_back("struct " + storage + " { using type = " + (reference_type.empty() ? type.getAsString(policy_) : reference_type) +
                 "; alignas(type) unsigned char data[sizeof(type)]; bool engaged = false; "
                 "type& get() { return *std::launder(reinterpret_cast<type*>(data)); } "
-                "void reset() { if (engaged) { engaged = false; std::destroy_at(&get()); } } "
+                "void reset() { if (engaged) { engaged = false; " + destruction + " } } "
                 "~" + storage + "() { reset(); } }; " + storage + " " + name + ";");
             Slot slot{name, name + ".get()", storage + "::type", false, type->isArrayType(), retained_object};
             slots_.push_back(slot);
@@ -564,12 +580,48 @@ private:
     // NOTE(port): Clang's implicit iterator and decomposition operations have no independent
     // source tokens. Print their AST with retained variable references.
     // NOTE(port): C++ AST printing support; no direct Kotlin counterpart.
-    std::string generated_expression(const Expr* expression) const {
+    std::string generated_expression(const Expr* expression,
+        std::map<const OpaqueValueExpr*, std::string> opaque_values = {}) const {
         class References : public PrinterHelper {
         public:
-            References(const std::map<const ValueDecl*, Slot>& variables, const PrintingPolicy& policy)
-                : variables_(variables), policy_(policy) {}
+            References(const std::map<const ValueDecl*, Slot>& variables, const PrintingPolicy& policy,
+                       std::map<const OpaqueValueExpr*, std::string>& opaque_values)
+                : variables_(variables), policy_(policy), opaque_values_(opaque_values) {}
             bool handledStmt(Stmt* statement, llvm::raw_ostream& output) override {
+                // NOTE(port): Clang's implicit array copy has semantic element
+                // initializers, not independent source tokens. Emit one native
+                // array initializer so Clang owns partial-construction cleanup.
+                if (const auto* loop = dyn_cast<ArrayInitLoopExpr>(statement)) {
+                    const auto* common = loop->getCommonExpr();
+                    bool inserted = !opaque_values_.contains(common);
+                    if (inserted) {
+                        std::string value;
+                        llvm::raw_string_ostream stream(value);
+                        common->getSourceExpr()->printPretty(stream, this, policy_);
+                        opaque_values_.emplace(common, value);
+                    }
+                    output << "{";
+                    const auto size = loop->getArraySize().getZExtValue();
+                    for (std::uint64_t index = 0; index < size; ++index) {
+                        if (index) output << ", ";
+                        llvm::SaveAndRestore<std::string> element(array_index_, std::to_string(index));
+                        loop->getSubExpr()->printPretty(output, this, policy_);
+                    }
+                    output << "}";
+                    if (inserted) opaque_values_.erase(common);
+                    return true;
+                }
+                if (isa<ArrayInitIndexExpr>(statement)) {
+                    if (array_index_.empty()) throw std::runtime_error("array initializer index has no owning loop");
+                    output << array_index_;
+                    return true;
+                }
+                if (const auto* opaque = dyn_cast<OpaqueValueExpr>(statement)) {
+                    auto value = opaque_values_.find(opaque);
+                    if (value == opaque_values_.end()) return false;
+                    output << value->second;
+                    return true;
+                }
                 // NOTE(port): Implicit decomposition casts select get() && or
                 // the rvalue tuple overload. The pretty-printer otherwise
                 // omits this cast and changes overload resolution to lvalue.
@@ -591,7 +643,9 @@ private:
         private:
             const std::map<const ValueDecl*, Slot>& variables_;
             const PrintingPolicy& policy_;
-        } references(variables_, policy_);
+            std::map<const OpaqueValueExpr*, std::string>& opaque_values_;
+            std::string array_index_;
+        } references(variables_, policy_, opaque_values);
         if (has_suspend_calls(expression))
             throw std::runtime_error("implicit compiler expression suspension requires expression lowering");
         std::string text;
@@ -1099,6 +1153,15 @@ private:
         variables_[variable] = slot;
         if (!scopes_.empty()) scopes_.back().push_back(slot);
         if (!owner.name.empty()) construct(slot, owner.access);
+        else if (slot.array && isa_and_nonnull<ArrayInitLoopExpr>(unwrapped)) {
+            const auto* copy = cast<ArrayInitLoopExpr>(unwrapped);
+            // NOTE(port): Evaluate the source array once. Its component
+            // constructors then execute in array order; the native array
+            // new-expression destroys completed elements if one throws.
+            const auto* source = copy->getCommonExpr()->getSourceExpr();
+            auto retained_source = capture(source, generated ? generated_expression(source) : emit_expression(source), true);
+            construct(slot, generated_expression(copy, {{copy->getCommonExpr(), retained_source}}));
+        }
         else if (generated) construct(slot, generated_expression(initializer));
         else if (slot.array) {
             auto value = initializer ? emit_expression(initializer) : "";
