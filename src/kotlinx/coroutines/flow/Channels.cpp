@@ -2,10 +2,12 @@
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt
  */
-#include "kotlinx/coroutines/flow/Channels.hpp"
+#include "kotlinx/coroutines/ExceptionTransport.hpp"
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
-#include <utility>
+#include <atomic>
+#include <functional>
+#include <memory>
 
 namespace kotlinx::coroutines::flow::internal {
 
