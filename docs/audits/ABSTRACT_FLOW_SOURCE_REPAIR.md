@@ -1,3 +1,37 @@
+# Current typed source authoring migration
+
+Date: 2026-10-07. Complete common Flow.kt and the existing C++ pair reread.
+Flow remains second in dependency priority (28 groups). The manual CollectFrame
+and callback-based collect_abstract_flow entry are removed. Flow.cpp is deleted:
+its only implementation was that source-invented frame. CMake's existing
+CONFIGURE_DEPENDS source glob owns the source-list refresh.
+
+AbstractFlow.collect at Flow.hpp:299 now directly constructs the typed
+SafeCollector, invokes collect_safely and releases interception on both successful
+and exceptional paths. The generic source body requires a header definition for
+arbitrary element types. The current source try/finally is expressed as catch
+cleanup/rethrow plus successful cleanup outside the catch, so a cleanup failure
+is not caught and cleanup is not repeated. The raw virtual entry at :290 retains
+the caller through the existing ownership binding and calls the owning overload.
+An existing shared flow owner remains a local through suspension; stack and raw
+flow receivers remain borrowed. Frame creation, local spilling and resume dispatch
+are assigned to the existing Clang frontend and mandatory LLVM injection.
+
+This migration is not verified by execution. Compilation of the actual
+src/tests/src/suspend/test_channel_as_flow_smoke.cpp with -Wall -Wextra -Wpedantic
+-Werror and the previously built compiler modules exits one. The frontend finds
+the actual collect specialization but its generated frame contains an unresolved
+T identifier, an incomplete exception-context initializer and GNU label-address
+diagnostics. Dependency unused-parameter/macro diagnostics remain visible too.
+No warning suppression is introduced. Current plugin rebuilding still fails on
+the installed SDK diagnostics recorded in WARNING_SUPPRESSION_REMOVAL.md.
+Receipt: build/ir-recovery/abstract-flow-authored-fixture-build.log. Earlier runtime
+receipts below predate the removal and do not prove current execution, retention,
+cleanup or cancellation behavior. Both required MLX acceptance paths remain
+unverified; complete source parity remains unfinished.
+
+The historical checkpoints below describe earlier implementations.
+
 # AbstractFlow collection source repair
 
 Date: 2026-10-07. Complete common flow/Flow.kt read alongside the C++ pair

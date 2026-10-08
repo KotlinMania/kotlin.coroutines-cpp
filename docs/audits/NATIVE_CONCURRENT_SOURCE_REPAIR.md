@@ -1,3 +1,13 @@
+# Warning-visible Native argument binding
+
+The complete Native and common Concurrent sources were reread. Native
+Concurrent.kt:11 explicitly ignores expectedSize. Concurrent.hpp:32 preserves
+its int argument and empty set construction, omitting only the unused C++ local
+binding. This does not add reserve behavior, an invented read or a suppression
+attribute. The concrete Concurrent.cpp compiles with -Wall -Wextra -Wpedantic
+-Werror, exit zero. Receipt: build/ir-recovery/concurrent-warning-visible-build.log.
+Existing historical full-core results below predate warning suppression removal.
+
 # Native Concurrent source repair
 
 Date: 2026-10-07. Source authority is the complete Native `internal/Concurrent.kt`
