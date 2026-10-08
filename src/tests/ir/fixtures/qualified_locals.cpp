@@ -29,6 +29,12 @@ const volatile QualifiedValue* observed_identity = nullptr;
 const volatile QualifiedValue* both_identity = nullptr;
 int* started_identity = nullptr;
 int* finished_identity = nullptr;
+const int* cached_identity = nullptr;
+int static_initializations = 0;
+int initialize_static(int value) {
+    ++static_initializations;
+    return value;
+}
 
 [[clang::annotate("suspend")]]
 void* await_value(std::shared_ptr<Continuation<void*>> completion) {
@@ -41,8 +47,13 @@ void* await_value(std::shared_ptr<Continuation<void*>> completion) {
 }
 
 [[clang::annotate("suspend")]]
-void* qualified_locals(std::shared_ptr<Continuation<void*>> completion) {
-    static int started = 0, finished = 0;
+void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion) {
+    const int initial = seed + 5;
+    static int started = seed - 37, finished = initial - 42;
+    static const int cached = initialize_static(initial + seed);
+    assert(cached == 79 && static_initializations == 1);
+    if (cached_identity) assert(cached_identity == std::addressof(cached));
+    cached_identity = std::addressof(cached);
     if (started_identity) {
         assert(started_identity == std::addressof(started));
         assert(finished_identity == std::addressof(finished));
@@ -64,6 +75,8 @@ void* qualified_locals(std::shared_ptr<Continuation<void*>> completion) {
         assert(std::addressof(fixed) == fixed_identity);
         assert(std::addressof(observed) == observed_identity);
         assert(std::addressof(both) == both_identity);
+        assert(cached_identity == std::addressof(cached));
+        assert(cached == 79 && static_initializations == 1);
         total += fixed.read() + observed.read() + both.read() + *box;
     }
     ++finished;
@@ -89,7 +102,7 @@ int main() {
         calls = 0;
         auto done = std::make_shared<Done>();
         try {
-            void* result = qualified_locals(done);
+            void* result = qualified_locals(37 + mode, done);
             if (intrinsics::is_coroutine_suspended(result)) {
                 while (pending) {
                     assert(alive == 3 && done->resumes == 0);

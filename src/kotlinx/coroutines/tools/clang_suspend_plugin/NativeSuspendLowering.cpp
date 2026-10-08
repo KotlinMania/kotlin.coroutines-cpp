@@ -990,7 +990,10 @@ private:
             if (variable->isStaticLocal()) {
                 // NOTE(port): Storage duration belongs to the whole C++
                 // declaration statement. Emit a grouped static declaration once.
-                body_ << source(statement) << ";\n";
+                // Its initializer still reads the source binding map: parameters,
+                // automatic locals and the receiver now reside in this frame.
+                // Keep the actual static declaration and its initialization guard.
+                body_ << rewrite(statement) << ";\n";
                 return;
             }
             const Expr* initializer = variable->getInit();
