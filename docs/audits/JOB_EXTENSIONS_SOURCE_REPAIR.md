@@ -86,5 +86,18 @@ failures. Job is 10/24 functions with body similarity 0.14. Compiler evidence is
 ContinuationImpl is 9/9 function names, 4/4 types and body similarity 0.36;
 symbol presence does not establish complete source-body equivalence.
 Receipts: job-extensions-warning-clean-{library,compiler}-deep.log.
+
+The four broader compiler/interoperability regressions also exit zero:
+kxs_analyzer_liveness, kxs_tail_collector, kxs_plugin_handoff and
+kxs_kotlin_native_handoff. The handoff suite exercises ordinary and forced-include
+CMake compilation, repeated suspension, retained/reference/temporary ownership,
+resumed failure and cancellation, sanitizer execution and source rejection
+diagnostics. Receipt: build/ir-recovery/job-extensions-prefix-plugin-tests.log.
+Existing pointer-to-bool conversion warnings in the retained-locals test fixture
+remain visible in its compile logs; this repair does not suppress them. The
+separately executed final warning control uses the final header and no warning
+disable flags. The existing Native handoff regression is a bounded actual
+interop check and does not establish the complete GPU acceptance path.
+
 Full-library parity and the required complete standalone/Native shared-state
 MLX GPU paths remain unfinished. The parent Kanban task and goal remain active.
