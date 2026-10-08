@@ -1276,7 +1276,12 @@ private:
                 if (const auto* id = dyn_cast<DeclRefExpr>(initializer->IgnoreImpCasts()))
                     reference = id->getDecl()->getType()->isReferenceType();
             }
-        auto slot = new_slot(variable->getType(), reference, false, deduced_type);
+        // NOTE(port): Aggregate brace initialization must construct directly
+        // in the variable's storage. Passing the list through optional::emplace
+        // introduces deduction/move requirements absent from the source.
+        const bool aggregate = !reference && initializer && variable->getType()->isRecordType() &&
+            isa<InitListExpr>(spelled(initializer));
+        auto slot = new_slot(variable->getType(), reference, aggregate, deduced_type);
         variables_[variable] = slot;
         if (!scopes_.empty()) scopes_.back().push_back(slot);
         if (!owner.name.empty()) construct(slot, owner.access);

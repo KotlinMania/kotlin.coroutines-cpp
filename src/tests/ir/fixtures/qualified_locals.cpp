@@ -33,6 +33,22 @@ int branch_alive = 0;
 int branch_constructed = 0;
 int branch_destroyed = 0;
 int empty_branch_inits = 0;
+int aggregate_alive = 0;
+int aggregate_destroyed = 0;
+struct AggregateOwner {
+    const std::unique_ptr<int> resource;
+    const int tag;
+    ~AggregateOwner() {
+        assert(resource && *resource == 17 && tag == 1);
+        --aggregate_alive;
+        ++aggregate_destroyed;
+    }
+};
+static_assert(std::is_aggregate_v<AggregateOwner> && !std::is_move_constructible_v<AggregateOwner>);
+std::unique_ptr<int> aggregate_resource() {
+    ++aggregate_alive;
+    return std::make_unique<int>(17);
+}
 std::shared_ptr<Continuation<void*>> pending;
 std::weak_ptr<Continuation<void*>> frame;
 struct QualifiedValue {
@@ -119,6 +135,8 @@ bool ordinary_type_queries(std::shared_ptr<Continuation<void*>> completion) {
 
 [[clang::annotate("suspend")]]
 void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion) {
+    AggregateOwner aggregate{aggregate_resource(), 1};
+    const int* aggregate_identity = aggregate.resource.get();
     using Value = QualifiedValue;
     using Fixed = const Value;
     typedef volatile Value Observed;
@@ -228,6 +246,7 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
             assert(std::addressof(first_copy) == copy_identity && copy_identity != &originals[0]);
             assert(array_copies == 2 && array_sources == 1);
             assert(std::addressof(count) == count_identity && *count_identity == 2);
+            assert(aggregate.resource.get() == aggregate_identity && *aggregate_identity == 17 && aggregate.tag == 1);
             assert(std::addressof(wide) == wide_identity && *wide_identity == wide);
             assert(wide_low < -wide && wide_high == ~static_cast<__uint128_t>(0));
             assert(static_cast<__uint128_t>(wide_kind) == static_cast<__uint128_t>(wide));
@@ -319,6 +338,7 @@ void* condition_flow(int operation, std::shared_ptr<Continuation<void*>> complet
 }
 int main() {
     for (mode = 0; mode < 6; ++mode) {
+        aggregate_destroyed = 0;
         calls = 0;
         binding_evaluations = 0;
         array_copies = array_destructions = 0;
@@ -331,7 +351,7 @@ int main() {
             void* result = qualified_locals(37 + mode, done);
             if (intrinsics::is_coroutine_suspended(result)) {
                 while (pending) {
-                    assert(alive == 4 && array_alive == 4 && branch_alive == 1 && done->resumes == 0);
+                    assert(alive == 4 && array_alive == 4 && branch_alive == 1 && aggregate_alive == 1 && done->resumes == 0);
                     auto held = std::move(pending);
                     if (mode == 2 && calls == 2)
                         held->resume_with(Result<void*>::failure(std::make_exception_ptr(std::runtime_error("resumed failure"))));
@@ -346,6 +366,7 @@ int main() {
         assert(done->failed || done->value == 542);
         assert(calls == (mode == 5 ? 0 : mode == 4 ? 1 : 2));
         assert(alive == 0 && !pending && frame.expired());
+        assert(aggregate_alive == 0 && aggregate_destroyed == 1);
         assert(branch_alive == 0 && branch_constructed == calls && branch_destroyed == calls);
         assert(empty_branch_inits == calls);
         assert(array_alive == 0 && array_copies == 2 && array_sources == 1);
