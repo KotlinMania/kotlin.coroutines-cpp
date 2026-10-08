@@ -42,19 +42,6 @@ static ReexportConfig g_reexport_config;
 static AstConfig g_ast_config;
 static void print_transliteration_distance(const TransliterationDistance& report, std::ostream& stream);
 
-static std::optional<std::chrono::seconds> file_age_seconds(const std::string& path) {
-    try {
-        if (!std::filesystem::exists(path)) return std::nullopt;
-        auto ftime = std::filesystem::last_write_time(path);
-        auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
-            ftime - decltype(ftime)::clock::now() + std::chrono::system_clock::now());
-        auto age = std::chrono::system_clock::now() - sctp;
-        return std::chrono::duration_cast<std::chrono::seconds>(age);
-    } catch (...) {
-        return std::nullopt;
-    }
-}
-
 // Forward declarations for guardrails helpers defined later in this file.
 
 static std::string ltrim_copy(std::string s) {
@@ -123,37 +110,6 @@ static std::vector<std::string> rust_significant_lines(const std::string& conten
     return out;
 }
 
-static bool rust_is_module_wiring_only(const std::filesystem::path& source_path) {
-    std::string contents;
-    try {
-        contents = CodebaseComparator::read_file_to_string(source_path.string());
-    } catch (...) {
-        return false;
-    }
-
-    auto lines = rust_significant_lines(contents);
-    if (lines.empty()) {
-        // Empty after stripping comments/whitespace: treat as wiring-only.
-        return true;
-    }
-
-    static const std::regex mod_re(
-        R"(^\s*(pub(\(crate\))?\s+)?mod\s+[A-Za-z_][A-Za-z0-9_]*\s*;\s*$)");
-    static const std::regex use_re(
-        R"(^\s*(pub(\(crate\))?\s+)?use\s+.*;\s*$)");
-    static const std::regex attr_re(
-        R"(^\s*#\s*\[.*\]\s*$)");
-
-    for (const auto& l : lines) {
-        if (std::regex_match(l, mod_re)) continue;
-        if (std::regex_match(l, use_re)) continue;
-        if (std::regex_match(l, attr_re)) continue;
-        return false;
-    }
-
-    return true;
-}
-
 Language parse_language(const std::string& lang_str) {
     if (lang_str == "rust") return Language::RUST;
     if (lang_str == "kotlin") return Language::KOTLIN;
@@ -183,14 +139,6 @@ const char* language_config_name(Language lang) {
         case Language::TYPESCRIPT: return "typescript";
     }
     return "unknown";
-}
-
-static std::string current_project_name() {
-    try {
-        return std::filesystem::current_path().filename().string();
-    } catch (...) {
-        return "ast-distance-port";
-    }
 }
 
 static std::optional<std::filesystem::path> find_repo_root(std::filesystem::path path) {
@@ -2223,10 +2171,7 @@ void generate_reports(const Codebase& source, const Codebase& target,
 	        if (doc_gaps.empty()) {
 	            report << "No significant documentation line-count gaps found; text/reference correspondence is separate.\n\n";
 	        } else {
-	            // Preserve the complete documentation-gap tally for report consumers.
-	            int shown_docs = 0;
 	            for (const auto& [gap, m] : doc_gaps) {
-	                shown_docs++;
 	                report << "- `" << m->source_qualified << "` - " 
 	                       << std::fixed << std::setprecision(0) << (gap * 100) << "% gap ("
 	                       << m->source_doc_lines << " → " << m->target_doc_lines << " lines)\n";

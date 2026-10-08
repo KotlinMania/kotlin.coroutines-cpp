@@ -9,7 +9,8 @@
 
 namespace kotlin::collections {
 // Transliterated from: libraries/stdlib/native-wasm/src/kotlin/collections/Arrays.kt:85-85
-Array<std::any> array_of_nulls(const Array<std::any>& reference,
+// NOTE(port): The Native body does not read its reference argument.
+Array<std::any> array_of_nulls(const Array<std::any>&,
                                std::int32_t size) {
   return ::kotlin::array_of_nulls<std::any>(size);
 }

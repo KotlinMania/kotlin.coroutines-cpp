@@ -163,9 +163,6 @@ Visibility rust_extract_visibility(TSNode node) {
         TSNode child = ts_node_child(node, i);
         std::string type(ts_node_type(child));
         if (type == "visibility_modifier") {
-            std::string text = "";
-            uint32_t start = ts_node_start_byte(child);
-            uint32_t end = ts_node_end_byte(child);
             // We need the source, but we don't have it here.
             // Use child structure: pub(crate) has a child node
             if (ts_node_child_count(child) > 1) {
@@ -666,13 +663,11 @@ void kotlin_extract_symbols_recursive(
             // (simple_identifier). A user_type AFTER simple_identifier is the return type.
             // We must only treat user_type as a receiver if it precedes simple_identifier.
             std::string receiver;
-            bool found_name = false;
             uint32_t fcount = ts_node_named_child_count(node);
             for (uint32_t fi = 0; fi < fcount; ++fi) {
                 TSNode fchild = ts_node_named_child(node, fi);
                 std::string ftype(ts_node_type(fchild));
                 if (ftype == "simple_identifier") {
-                    found_name = true;
                     break; // Stop: anything after this is not a receiver
                 }
                 // user_type before simple_identifier = extension receiver
@@ -709,7 +704,6 @@ void kotlin_extract_symbols_recursive(
             // Determine what kind of Rust symbol this maps to
             bool is_sealed = kotlin_has_modifier(node, source, "sealed");
             bool is_enum = kotlin_has_modifier(node, source, "enum");
-            bool is_data = kotlin_has_modifier(node, source, "data");
 
             // Detect stubs
             bool is_stub = kotlin_class_is_stub(node, source);

@@ -24,7 +24,8 @@ Array<std::any> collection_to_array(const Collection<std::any>& collection,
 // This is the actual Native body, not the JVM null-termination operation.
 // Transliterated from: libraries/stdlib/native-wasm/src/kotlin/collections/Arrays.kt:91-91
 template <typename T>
-Array<T> terminate_collection_to_array(std::int32_t collection_size,
+// NOTE(port): The Native identity body does not read its collection-size argument.
+Array<T> terminate_collection_to_array(std::int32_t,
                                        Array<T> array) {
   return array;
 }
