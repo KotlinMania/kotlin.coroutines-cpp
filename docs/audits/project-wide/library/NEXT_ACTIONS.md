@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 831/2918 matched (target 3021) — 28.5%
-- **Class/type parity:** 359/560 matched (target 513) — 64.1%
-- **Combined symbol parity:** 1190/3478 matched (target 3534) — 34.2%
+- **Function parity:** 831/2918 matched (target 3015) — 28.5%
+- **Class/type parity:** 359/560 matched (target 512) — 64.1%
+- **Combined symbol parity:** 1190/3478 matched (target 3527) — 34.2%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -2348,11 +2348,11 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.07
 - **Dependents:** 0
 - **Priority Score:** 11309.3
-- **Functions:** 12/13 matched (target 100)
+- **Functions:** 12/13 matched (target 94)
 - **Missing functions:** `Flow<*>::filterIsInstance`
-- **Types:** 0/0 matched (target 13)
+- **Types:** 0/0 matched (target 12)
 - **Missing types:** _none_
-- **Lint issues:** 10
+- **Lint issues:** 9
 
 ### 178. internal.LimitedDispatcher
 
