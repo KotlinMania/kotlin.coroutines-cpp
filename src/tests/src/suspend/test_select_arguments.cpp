@@ -376,7 +376,7 @@ void undelivered_exception_contract() {
     internal::OnUndeliveredElement<int> non_standard = [](int) { throw 17; };
     std::unique_ptr<internal::UndeliveredElementException> other(
         internal::call_undelivered_element_catching_exception(non_standard, 96));
-    CHECK(other);
+    CHECK(other != nullptr);
     try { std::rethrow_exception(other->cause()); }
     catch (int value) { CHECK(value == 17); }
 }
