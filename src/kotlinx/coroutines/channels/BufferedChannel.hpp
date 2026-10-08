@@ -1802,6 +1802,7 @@ public:
      *           regFunc = BufferedChannel<*>::registerSelectForSend as RegistrationFunction,
      *           processResFunc = BufferedChannel<*>::processResultSelectSend as ProcessResultFunction)
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1475-1480
     selects::SelectClause2<E, SendChannel<E>*>& on_send() override {
         if (!on_send_clause_) {
             on_send_clause_ = std::make_unique<selects::SelectClause2Impl<E, SendChannel<E>*>>(
@@ -1812,7 +1813,10 @@ public:
                         static_cast<E*>(element));
                 },
                 /*processResFunc=*/[this](void* /*clause*/, void* ignored, void* result) {
-                    return this->process_result_select_send(ignored, result);
+                    auto* channel = static_cast<BufferedChannel<E>*>(
+                        this->process_result_select_send(ignored, result));
+                    // NOTE(port): Project the actual receiver to its virtual interface before erasure.
+                    return static_cast<void*>(static_cast<SendChannel<E>*>(channel));
                 });
         }
         return *on_send_clause_;
@@ -2188,6 +2192,7 @@ private:
     // -------------------------------------------------------------------------
     // Lines 1499-1501: private fun processResultSelectSend(ignoredParam: Any?, selectResult: Any?): Any?
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1499-1501
     void* process_result_select_send(void* /*ignored_param*/, void* select_result) {
         if (select_result == static_cast<void*>(&CHANNEL_CLOSED())) {
             std::rethrow_exception(send_exception());
@@ -2199,6 +2204,7 @@ private:
     // Lines 1483-1490: protected open fun registerSelectForSend(select: SelectInstance<*>, element: Any?)
     // -------------------------------------------------------------------------
 protected:
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1483-1490
     virtual void register_select_for_send(selects::SelectInstance<void*>* select, void* element_any) {
         E element = *static_cast<E*>(element_any);
         // Upstream calls into the inline `sendImpl(...)` machinery. In the C++ port the
@@ -2359,49 +2365,60 @@ private:
         send_impl_on_no_waiter(segment, index, element, s, waiter, on_rendezvous_or_buffered, on_closed);
     }
 
-    /**
-     * Select-aware send entry. Upstream is Kotlin's inline `sendImpl(...)` with a select
-     * waiter:
-     *   sendImpl(element = element, waiter = select,
-     *            onRendezvousOrBuffered = { select.selectInRegistrationPhase(Unit) },
-     *            onSuspend = { _, _ -> },
-     *            onClosed = { onClosedSelectOnSend(element, select) })
-     *
-     * The C++ port routes through the trySend fast path first; on suspension the waiter
-     * is the SelectInstance, which owns the resume hand-off through its own cancellation
-     * machinery (the on_suspend callback is invoked with the segment/index pair so the
-     * select clause can register itself for resumption).
-     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:241-349,1483-1490
     void send_impl_with_select(
         E element,
-        selects::SelectInstance<void*>* waiter,
+        selects::SelectInstance<void*>* select,
         std::function<void()> on_rendezvous_or_buffered,
         std::function<void(ChannelSegment<E>*, int)> on_suspend,
         std::function<void()> on_closed
     ) {
-        auto result = send_impl_try_send(element);
-        if (result.is_success()) {
-            on_rendezvous_or_buffered();
-            return;
+        // NOTE(port): Kotlin's checked Waiter cast adjusts the multiple-inheritance subobject.
+        auto* waiter = dynamic_cast<Waiter*>(select);
+        if (!waiter) throw std::bad_cast();
+        ChannelSegment<E>* segment = send_segment_.load(std::memory_order_acquire);
+        while (true) {
+            int64_t current = senders_and_close_status_.fetch_add(1, std::memory_order_acq_rel);
+            int64_t s = channels::senders_counter(current);
+            bool closed = is_closed_for_send_internal(current);
+            int64_t id = s / SEGMENT_SIZE;
+            int i = static_cast<int>(s % SEGMENT_SIZE);
+            if (segment->id != id) {
+                auto* found = find_segment_send(id, segment);
+                if (!found) {
+                    if (closed) { on_closed(); return; }
+                    continue;
+                }
+                segment = found;
+            }
+            switch (update_cell_send(segment, i, element, s, waiter, closed)) {
+                case RESULT_RENDEZVOUS:
+                    segment->clean_prev();
+                    on_rendezvous_or_buffered();
+                    return;
+                case RESULT_BUFFERED:
+                    on_rendezvous_or_buffered();
+                    return;
+                case RESULT_SUSPEND:
+                    if (closed) {
+                        segment->on_slot_cleaned();
+                        on_closed();
+                        return;
+                    }
+                    prepare_sender_for_suspension(waiter, segment, i);
+                    on_suspend(segment, i);
+                    return;
+                case RESULT_CLOSED:
+                    if (s < receivers_counter()) segment->clean_prev();
+                    on_closed();
+                    return;
+                case RESULT_FAILED:
+                    segment->clean_prev();
+                    continue;
+                case RESULT_SUSPEND_NO_WAITER:
+                    throw std::logic_error("unexpected");
+            }
         }
-        if (result.is_closed()) {
-            on_closed();
-            return;
-        }
-        // Suspension path: register the select waiter against the next available cell.
-        int64_t s = senders_and_close_status_.fetch_add(1, std::memory_order_acq_rel)
-                    & SENDERS_COUNTER_MASK;
-        int64_t id = s / SEGMENT_SIZE;
-        int index = static_cast<int>(s % SEGMENT_SIZE);
-        ChannelSegment<E>* segment = find_segment_send(
-            id, send_segment_.load(std::memory_order_acquire));
-        if (segment == nullptr) {
-            on_closed();
-            return;
-        }
-        segment->store_element(index, element);
-        segment->set_state(index, waiter);
-        on_suspend(segment, index);
     }
 
     /**
@@ -2438,26 +2455,6 @@ private:
     }
 
 public:
-    // -------------------------------------------------------------------------
-    // Lines 1475-1480: override val onSend: SelectClause2<E, BufferedChannel<E>>
-    // -------------------------------------------------------------------------
-    selects::SelectClause2Impl<E, BufferedChannel<E>> get_on_send() {
-        return selects::SelectClause2Impl<E, BufferedChannel<E>>(
-            static_cast<void*>(this),
-            // regFunc
-            [this](void* /*clause_object*/, void* select, void* param) {
-                register_select_for_send(
-                    static_cast<selects::SelectInstance<void*>*>(select),
-                    param
-                );
-            },
-            // processResFunc
-            [this](void* /*clause_object*/, void* param, void* clause_result) {
-                return process_result_select_send(param, clause_result);
-            }
-        );
-    }
-
     // -------------------------------------------------------------------------
     // Lines 1504-1510: override val onReceive: SelectClause1<E>
     // -------------------------------------------------------------------------
