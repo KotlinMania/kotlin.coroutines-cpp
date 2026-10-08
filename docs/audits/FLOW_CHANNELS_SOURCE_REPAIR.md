@@ -30,6 +30,18 @@ Receipt: build/ir-recovery/flow-channels-authored-build.log. Full executable
 ownership/failure/cancellation checks and both MLX acceptance paths remain
 unverified for this new body. The diagnostic channel string mismatch also remains.
 
+Both absolute full-root deep commands completed with exit zero after the final
+source edits. They use the previously built ast_distance executable because the
+strict analyzer rebuild is still unsuccessful. Flow Channels retains 12/12 source
+function names and 1/1 source types, with body similarity 0.22 (previously 0.21)
+and 65 dependents. Extra target functions decreased from 24 to 19 and types from
+3 to 2. Library totals remain 825/2918 functions, 359/560 types, similarity 0.26
+and 123 scoring failures. Compiler totals remain 592/7657, 174/1727, similarity
+0.36 and 24 failures. These are incomplete translation measurements, not runtime
+verification. Receipts: flow-channels-authored-{library,compiler}-deep.log under
+build/ir-recovery. No prohibited comments or suppression controls occur in the
+edited Channels source/header pair.
+
 The historical checkpoints below describe the earlier handwritten frame, which
 has now been removed. They do not establish execution of the current source.
 
