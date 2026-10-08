@@ -985,7 +985,7 @@ void channel_flow_collect_lambda_contract() {
             ? std::make_exception_ptr(std::runtime_error("collect lambda send failed"))
             : std::make_exception_ptr(CancellationException("collect lambda cancelled"));
         if (outcome == 1) {
-            // Channel.kt:243-247: close does not abort sends that already suspended.
+            // Channel.kt:144-146,234-236: close does not abort sends that already suspended.
             // Close first to exercise the source's immediate send failure instead.
             channel->close(failure);
             std::exception_ptr observed;
@@ -1006,6 +1006,8 @@ void channel_flow_collect_lambda_contract() {
         }
         CHECK(!lifetime.expired() && !resource_lifetime.expired());
         if (outcome == 0) {
+            channel->close(nullptr);
+            CHECK(!completion->resumes);
             auto value = channel->try_receive();
             CHECK(value.is_success() && value.get_or_throw() == 117);
         } else channel->cancel(failure);
