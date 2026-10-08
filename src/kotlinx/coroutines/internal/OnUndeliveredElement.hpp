@@ -52,6 +52,7 @@ UndeliveredElementException* call_undelivered_element_catching_exception(
             std::ostringstream message;
             message << std::boolalpha << "Exception in undelivered element handler for ";
             if constexpr (requires { element.to_string(); }) message << element.to_string();
+            else if constexpr (requires { to_string(element); }) message << to_string(element);
             else message << element;
             return new UndeliveredElementException(message.str(), exception);
         }

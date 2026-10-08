@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source kotlinx-coroutines-core/common/src/flow/SharingStarted.kt
 /**
  * @file SharingStarted.hpp
  * @brief Sharing strategy for shareIn and stateIn operators
@@ -47,6 +48,11 @@ enum class SharingCommand {
      */
     STOP_AND_RESET_REPLAY_CACHE
 };
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt:11-32
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Enum.kt:36-38
+std::string to_string(SharingCommand command);
+
 
 /**
  * A strategy for starting and stopping the sharing coroutine in share_in and state_in operators.

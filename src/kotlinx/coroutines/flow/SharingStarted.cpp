@@ -31,6 +31,18 @@
 
 namespace kotlinx::coroutines::flow {
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt:11-32
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Enum.kt:36-38
+std::string to_string(SharingCommand command) {
+    // NOTE(port): C++ enum names supply the inherited Enum.toString result.
+    switch (command) {
+        case SharingCommand::START: return "START";
+        case SharingCommand::STOP: return "STOP";
+        case SharingCommand::STOP_AND_RESET_REPLAY_CACHE: return "STOP_AND_RESET_REPLAY_CACHE";
+    }
+    throw std::invalid_argument("Invalid SharingCommand value");
+}
+
 namespace {
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/SharingStarted.kt:171-185
