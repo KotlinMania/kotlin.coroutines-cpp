@@ -25,6 +25,23 @@ predate this overload and warning suppression removal. Remaining ordinary C++
 callable authoring/current-continuation adaptation, broader lazy builder behavior,
 compiler lowering and both MLX acceptance paths remain incomplete.
 
+The normalized exact check finds all seven source KDoc blocks present in the
+header; the eighth C++ block is file provenance. It verifies source block text,
+not the complete surrounding documentation/algorithm contract. Both absolute
+full-root deep scans finish with exit zero using the previous analyzer executable;
+strict analyzer rebuilding remains unsuccessful. CoroutineStart keeps 1/1 source
+body name and 1/1 type; measured function-body similarity is 0.15 (previously 0.13).
+This remains far below complete transliteration correspondence.
+
+Code and documentation measurements are reported separately. Whole-library body
+similarity is 0.26 and documentation text similarity is 0.37, with 7238/7437
+documentation lines (97% by amount), compared with 7229/7437 before the KDoc
+repair. Compiler/prerequisite body similarity is 0.36 and documentation similarity
+0.60. Library totals remain 824/2918 functions, 359/560 types and 123 scoring
+failures; compiler totals remain 592/7657, 174/1727 and 24 failures. Text/line
+measurements do not prove accurate comments or working algorithms. Receipts:
+coroutine-start-typed-{library,compiler}-deep.log under build/ir-recovery.
+
 Historical checkpoints follow.
 
 # CoroutineStart source selection repair
