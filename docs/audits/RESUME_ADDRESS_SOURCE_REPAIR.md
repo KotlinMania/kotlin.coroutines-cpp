@@ -1,5 +1,56 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Complete lexical-container parsing continuation
+
+Source checkpoint 0f47180e repairs helper parsing and declaration reuse in
+CompilerFrameLowering.cpp after reading LocalDeclarationPopupLowering.kt:26-122
+and the Native suspend entry/body replacement dependencies. Kotlin moves local
+declarations into their declaration container after local-declaration lowering.
+C++ integration must preserve actual lexical/nominal identities instead of
+moving local classes into an unrelated namespace.
+
+CompilerFrameLowering.cpp:181-211 now finds the outer enclosing lexical class or
+function for an in-class/local method body, reparses through that complete
+declaration, and closes its namespaces. Previously the in-class path parsed the
+rest of the main file, including definitions the host parser had not reached.
+Record source ranges end at the brace, so the helper supplies the declaration
+semicolon; function definitions need none. Out-of-class/free entries retain
+their existing body-boundary parsing. No declaration is hoisted by this change.
+
+At :48-68, generated declaration offsets are mapped back through the body rewrite
+before applying the original parser boundary. At :359,373, source/host inventories
+exclude the replaced body and include original members after it within the
+completed lexical container. This allows a later field or method to reuse its
+actual host AST node rather than being excluded solely because it follows the
+suspend method's body. Generated frame declarations still have no host twin.
+The instantiated-local-method namespace restriction remains unresolved; this
+change does not claim broader local class/lambda lowering completion.
+
+test_suspend_plugin.py:74-82 extends the registered late-include regression with
+an in-class suspend method that accesses a field declared after its body and a
+later ordinary accessor. The later DispatchedContinuation include and Result
+assignment remain present. Both suspend definitions use the supported Clang
+annotation spelling, allowing ordinary source syntax checking without the
+attribute-registration plugin.
+
+The extracted registered source passes ordinary default syntax checking (exit
+0). Strict source syntax exits 1 on existing unused parameters in JobSupport.hpp
+and CancellableContinuationImpl.hpp reached through the later include. Direct
+strict importer checking exits 1 in LLVM/Clang dependency headers, with no
+diagnostic located in CompilerFrameLowering.cpp. Fresh CMake plugin build exits
+2 in the metadata plugin's dependency headers. The installed older frontend exits
+1 on generated GNU address-of-label code in the member frame; no fresh runtime
+or current-helper integration result is established. Python AST parsing and
+git diff --check pass. No warning was suppressed. Receipts are
+build/ir-recovery/lexical-prefix-{importer,plugin-build,regression-syntax,
+regression-default-syntax,installed-frontend}.log.
+
+Both exact full-root deep scans completed with exit 0 against the committed
+source without concurrent source edits. Generated inventories/reports are
+unchanged: library 832/2918 bodies and 359/560 types, body similarity 0.26;
+compiler 592/7657 bodies and 174/1727 types, body similarity 0.36. Standalone
+MLX and actual Native/MLX shared-state-machine acceptance remain unproven.
+
 ## Instantiated body delivery continuation
 
 Source checkpoints 077818e0 and 01b09e0d repair the Clang integration around

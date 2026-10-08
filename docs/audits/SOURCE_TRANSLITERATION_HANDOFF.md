@@ -6,6 +6,21 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** 0f47180e bounds helper parsing for in-class and
+local method bodies to their complete enclosing lexical declaration in
+CompilerFrameLowering.cpp:181-211. Declaration reuse at :48-68 maps offsets back
+through the rewrite before applying that boundary and includes later members
+while excluding the rewritten body. Local classes are not namespace-hoisted.
+The registered late-include regression adds an in-class suspend method that
+uses a later field/accessor. Default source syntax and Python parsing pass;
+strict source syntax fails on existing coroutine dependency unused parameters.
+Strict importer checking has only external dependency diagnostics; fresh plugin
+build exits 2. The older frontend rejects generated GNU label code. No fresh
+runtime validates the repair. Instantiated local-method scope and broader
+dependent/local import remain unfinished. Read RESUME_ADDRESS_SOURCE_REPAIR.md's
+new top section. Both full-root scans exit 0 and leave generated reports
+unchanged. The full translation/state-machine goal remains active.
+
 **Latest compiler continuation:** 077818e0 and 01b09e0d repair instantiated body
 delivery in KotlinxSuspendPlugin.cpp:250-298. Canonical declaration/body tracking
 prevents repeat lowering and rejects re-entry before body replacement.
