@@ -1,6 +1,49 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## LLVM runtime-function imports — 2026-10-08
+
+Continuation from df67badd translates ContextUtils.kt:329-365,411-441,573-579
+and LlvmUtils.kt:128-134. CodegenLlvmHelpers at ContextUtils.hpp:316 and
+ContextUtils.cpp:193 binds actual compiler-owned LLVM context/output/runtime
+modules. The module boundary supplies the runtime module explicitly and does
+not parse, invent or link a Native runtime. Layout and target are copied before
+eager imports. Twenty-four source bindings retain actual symbol names and
+explicit object-result flags for allocation, root updates, frame operations,
+initializers/TLS and exception retrieval. Returned descriptors own their source
+attribute provider while LLVM values remain borrowed.
+
+Private import_function at :280 rejects duplicate/missing symbols, obtains the
+actual global function type and copies declaration attributes in full. The
+existing provider preserves filtered call-site attributes. import_memset at :293,
+llvm_intrinsic at :301 and import_rt_function at :310 translate source naming,
+signatures and enum attributes; llvm.trap retains cold/noreturn/nounwind.
+get_global_function_type/get_global_type at LlvmUtils.cpp:115,117 delegate to
+LLVMGlobalGetValueType. The complete generation-state constructor, RuntimeAware,
+externalFunction/prototypes/dependency tracking and later lazy Native/ObjC
+bindings remain untranslated. This LLVM-module entry is an explicit partial
+compiler boundary, not a completed CodegenLlvmHelpers or Native pipeline.
+
+Strict syntax compilation with -Wall -Wextra -Werror passed. KotlinxCoroutinePass
+and kxs_codegen_test rebuilt with LLVM 23.1.2 and Native runtime OFF; the existing
+code-generation fixture verified/emitted its module. The bounded import_contract
+harness compiled with ASan/UBSan and exited zero. Its input is an LLVM declaration
+fixture using source symbol names; it tests actual type/attribute copying,
+object-result metadata independent of pointer shape, layout/target, intrinsic
+contracts, duplicate/missing diagnostics and LLVMVerifyModule. It does not run
+Native runtime functions, use an actual runtime bitcode module or prove Native
+interop/frame ownership. Source/executable remain under
+build/source-continuation/llvm-source-distance/import_contract.*.
+
+The refreshed scoped deep scan exited zero: ContextUtils16/51 bodies,22/36 types,
+function similarity0.20; LlvmUtils18/49 bodies,4/10 types,similarity0.19.
+Generated-emission criteria remain provisional; full-root measurements remain
+open. Existing CMake registration already includes these implementations, so
+no source-list or new runtime-link dependency was added. Continue allocation/
+root operations and VariableManager, public object-result calls and genThrow,
+with actual Native imports supplied at the explicit interop boundary. Complete
+standalone/MLX and Native handoff acceptance remain open; the full goal is active.
+
 ## LLVM module context and runtime annotations — 2026-10-08
 
 Continuation from 61e3e6fe translates BasicLlvmHelpers from

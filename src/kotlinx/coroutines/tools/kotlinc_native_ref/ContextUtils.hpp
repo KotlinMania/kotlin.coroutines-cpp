@@ -1,7 +1,8 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130,300-326
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130,300-365,411-441,573-579
 #pragma once
 #include <llvm-c/Core.h>
+#include "LlvmCallable.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -309,6 +310,108 @@ private:
     const bool use_llvm_opaque_pointers_;
     class LazyProperties;
     std::unique_ptr<LazyProperties> lazy_;
+};
+
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:329-363,411-441,573-579
+class CodegenLlvmHelpers : public BasicLlvmHelpers {
+public:
+    // NOTE(port): Bind the actual compiler and Runtime LLVM modules directly;
+    // their owners outlive this helper and its attribute providers.
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:329-330,411-441
+    CodegenLlvmHelpers(LLVMContextRef llvm_context, LLVMModuleRef module,
+        bool use_llvm_opaque_pointers, LLVMModuleRef runtime_module);
+    ~CodegenLlvmHelpers() override;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:418-418
+    const LlvmFunction& alloc_instance_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:419-419
+    const LlvmFunction& alloc_array_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:420-420
+    const LlvmFunction& register_global_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:421-421
+    const LlvmFunction& update_heap_ref_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:422-422
+    const LlvmFunction& update_stack_ref_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:423-423
+    const LlvmFunction& update_return_ref_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:424-424
+    const LlvmFunction& zero_heap_ref_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:425-425
+    const LlvmFunction& zero_array_refs_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:426-426
+    const LlvmFunction& enter_frame_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:427-427
+    const LlvmFunction& leave_frame_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:428-428
+    const LlvmFunction& set_current_frame_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:429-429
+    const LlvmFunction& check_current_frame_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:430-430
+    const LlvmFunction& lookup_interface_table_record() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:431-431
+    const LlvmFunction& is_subtype_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:432-432
+    const LlvmFunction& is_subclass_fast_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:433-433
+    const LlvmFunction& get_type_info() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:434-434
+    const LlvmFunction& throw_exception_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:435-435
+    const LlvmFunction& append_to_initalizers_tail() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:436-436
+    const LlvmFunction& call_init_global_possibly_lock() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:437-437
+    const LlvmFunction& call_init_thread_local() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:438-438
+    const LlvmFunction& add_tls_record() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:439-439
+    const LlvmFunction& lookup_tls() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:440-440
+    const LlvmFunction& init_runtime_if_needed() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:441-441
+    const LlvmFunction& kotlin_get_exception_object() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:573-573
+    const LlvmCallable& memset_function() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:575-579
+    const LlvmFunction::Declaration& llvm_trap() const;
+private:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:332-347
+    std::unique_ptr<LlvmFunction::Declaration> import_function(const std::string& name,
+        LLVMModuleRef other_module, bool returns_object_type);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:349-356
+    std::unique_ptr<LlvmFunction::Declaration> import_memset();
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:358-365
+    std::unique_ptr<LlvmFunction::Declaration> llvm_intrinsic(const std::string& name,
+        LLVMTypeRef type, const std::vector<std::string>& attributes = {});
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:416-416
+    std::unique_ptr<LlvmFunction::Declaration> import_rt_function(const std::string& name, bool returns_object_type);
+    const LLVMModuleRef runtime_module_;
+    const bool use_llvm_opaque_pointers_;
+    const std::unique_ptr<LlvmFunction::Declaration> alloc_instance_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> alloc_array_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> register_global_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> update_heap_ref_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> update_stack_ref_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> update_return_ref_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> zero_heap_ref_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> zero_array_refs_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> enter_frame_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> leave_frame_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> set_current_frame_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> check_current_frame_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> lookup_interface_table_record_;
+    const std::unique_ptr<LlvmFunction::Declaration> is_subtype_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> is_subclass_fast_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> get_type_info_;
+    const std::unique_ptr<LlvmFunction::Declaration> throw_exception_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> append_to_initalizers_tail_;
+    const std::unique_ptr<LlvmFunction::Declaration> call_init_global_possibly_lock_;
+    const std::unique_ptr<LlvmFunction::Declaration> call_init_thread_local_;
+    const std::unique_ptr<LlvmFunction::Declaration> add_tls_record_;
+    const std::unique_ptr<LlvmFunction::Declaration> lookup_tls_;
+    const std::unique_ptr<LlvmFunction::Declaration> init_runtime_if_needed_;
+    const std::unique_ptr<LlvmFunction::Declaration> kotlin_get_exception_object_;
+    const std::unique_ptr<LlvmFunction::Declaration> memset_function_;
+    const std::unique_ptr<LlvmFunction::Declaration> llvm_trap_;
 };
 
 }

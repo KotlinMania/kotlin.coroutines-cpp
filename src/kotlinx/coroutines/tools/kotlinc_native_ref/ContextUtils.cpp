@@ -1,5 +1,5 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130,300-326
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130,300-365,411-441,573-579
 #include "ContextUtils.hpp"
 #include "LlvmUtils.hpp"
 #include <mutex>
@@ -187,6 +187,129 @@ const std::map<std::string, std::vector<LLVMValueRef>>& BasicLlvmHelpers::runtim
         lazy_->runtime_annotation_map = std::move(annotations);
     });
     return lazy_->runtime_annotation_map;
+}
+
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:329-330,411-441
+CodegenLlvmHelpers::CodegenLlvmHelpers(LLVMContextRef llvm_context, LLVMModuleRef module,
+    bool use_llvm_opaque_pointers, LLVMModuleRef runtime_module)
+    : BasicLlvmHelpers(llvm_context, module, use_llvm_opaque_pointers),
+      runtime_module_(runtime_module), use_llvm_opaque_pointers_(use_llvm_opaque_pointers),
+      alloc_instance_function_((LLVMSetDataLayout(module, LLVMGetDataLayoutStr(runtime_module)),
+          LLVMSetTarget(module, LLVMGetTarget(runtime_module)), import_rt_function("AllocInstance", true))),
+      alloc_array_function_(import_rt_function("AllocArrayInstance", true)),
+      register_global_function_(import_rt_function("RegisterGlobal", false)),
+      update_heap_ref_function_(import_rt_function("UpdateHeapRef", false)),
+      update_stack_ref_function_(import_rt_function("UpdateStackRef", false)),
+      update_return_ref_function_(import_rt_function("UpdateReturnRef", false)),
+      zero_heap_ref_function_(import_rt_function("ZeroHeapRef", false)),
+      zero_array_refs_function_(import_rt_function("ZeroArrayRefs", false)),
+      enter_frame_function_(import_rt_function("EnterFrame", false)),
+      leave_frame_function_(import_rt_function("LeaveFrame", false)),
+      set_current_frame_function_(import_rt_function("SetCurrentFrame", false)),
+      check_current_frame_function_(import_rt_function("CheckCurrentFrame", false)),
+      lookup_interface_table_record_(import_rt_function("LookupInterfaceTableRecord", false)),
+      is_subtype_function_(import_rt_function("IsSubtype", false)),
+      is_subclass_fast_function_(import_rt_function("IsSubclassFast", false)),
+      get_type_info_(import_rt_function("Kotlin_Any_getTypeInfo", false)),
+      throw_exception_function_(import_rt_function("ThrowException", false)),
+      append_to_initalizers_tail_(import_rt_function("AppendToInitializersTail", false)),
+      call_init_global_possibly_lock_(import_rt_function("CallInitGlobalPossiblyLock", false)),
+      call_init_thread_local_(import_rt_function("CallInitThreadLocal", false)),
+      add_tls_record_(import_rt_function("AddTLSRecord", false)),
+      lookup_tls_(import_rt_function("LookupTLS", false)),
+      init_runtime_if_needed_(import_rt_function("Kotlin_initRuntimeIfNeeded", false)),
+      kotlin_get_exception_object_(import_rt_function("Kotlin_getExceptionObject", true)),
+      memset_function_(import_memset()),
+      llvm_trap_(llvm_intrinsic("llvm.trap", function_type(LLVMVoidTypeInContext(llvm_context)),
+          {"cold", "noreturn", "nounwind"})) {}
+// NOTE(port): Own compiler-side callable descriptors; LLVM modules stay borrowed.
+CodegenLlvmHelpers::~CodegenLlvmHelpers() = default;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:418-418
+const LlvmFunction& CodegenLlvmHelpers::alloc_instance_function() const { return *alloc_instance_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:419-419
+const LlvmFunction& CodegenLlvmHelpers::alloc_array_function() const { return *alloc_array_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:420-420
+const LlvmFunction& CodegenLlvmHelpers::register_global_function() const { return *register_global_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:421-421
+const LlvmFunction& CodegenLlvmHelpers::update_heap_ref_function() const { return *update_heap_ref_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:422-422
+const LlvmFunction& CodegenLlvmHelpers::update_stack_ref_function() const { return *update_stack_ref_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:423-423
+const LlvmFunction& CodegenLlvmHelpers::update_return_ref_function() const { return *update_return_ref_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:424-424
+const LlvmFunction& CodegenLlvmHelpers::zero_heap_ref_function() const { return *zero_heap_ref_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:425-425
+const LlvmFunction& CodegenLlvmHelpers::zero_array_refs_function() const { return *zero_array_refs_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:426-426
+const LlvmFunction& CodegenLlvmHelpers::enter_frame_function() const { return *enter_frame_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:427-427
+const LlvmFunction& CodegenLlvmHelpers::leave_frame_function() const { return *leave_frame_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:428-428
+const LlvmFunction& CodegenLlvmHelpers::set_current_frame_function() const { return *set_current_frame_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:429-429
+const LlvmFunction& CodegenLlvmHelpers::check_current_frame_function() const { return *check_current_frame_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:430-430
+const LlvmFunction& CodegenLlvmHelpers::lookup_interface_table_record() const { return *lookup_interface_table_record_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:431-431
+const LlvmFunction& CodegenLlvmHelpers::is_subtype_function() const { return *is_subtype_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:432-432
+const LlvmFunction& CodegenLlvmHelpers::is_subclass_fast_function() const { return *is_subclass_fast_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:433-433
+const LlvmFunction& CodegenLlvmHelpers::get_type_info() const { return *get_type_info_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:434-434
+const LlvmFunction& CodegenLlvmHelpers::throw_exception_function() const { return *throw_exception_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:435-435
+const LlvmFunction& CodegenLlvmHelpers::append_to_initalizers_tail() const { return *append_to_initalizers_tail_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:436-436
+const LlvmFunction& CodegenLlvmHelpers::call_init_global_possibly_lock() const { return *call_init_global_possibly_lock_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:437-437
+const LlvmFunction& CodegenLlvmHelpers::call_init_thread_local() const { return *call_init_thread_local_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:438-438
+const LlvmFunction& CodegenLlvmHelpers::add_tls_record() const { return *add_tls_record_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:439-439
+const LlvmFunction& CodegenLlvmHelpers::lookup_tls() const { return *lookup_tls_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:440-440
+const LlvmFunction& CodegenLlvmHelpers::init_runtime_if_needed() const { return *init_runtime_if_needed_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:441-441
+const LlvmFunction& CodegenLlvmHelpers::kotlin_get_exception_object() const { return *kotlin_get_exception_object_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:573-573
+const LlvmCallable& CodegenLlvmHelpers::memset_function() const { return *memset_function_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:575-579
+const LlvmFunction::Declaration& CodegenLlvmHelpers::llvm_trap() const { return *llvm_trap_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:332-347
+std::unique_ptr<LlvmFunction::Declaration> CodegenLlvmHelpers::import_function(const std::string& name,
+    LLVMModuleRef other_module, bool returns_object_type) {
+    if (LLVMGetNamedFunction(module(), name.c_str()))
+        throw std::invalid_argument("function " + name + " already exists");
+    const auto external_function = LLVMGetNamedFunction(other_module, name.c_str());
+    if (!external_function) throw std::runtime_error("function " + name + " not found");
+    const auto attributes_copier = LlvmFunctionAttributeProvider::copy_from_external(external_function);
+    const auto type = get_global_function_type(external_function);
+    const auto function = LLVMAddFunction(module(), name.c_str(), type);
+    attributes_copier->add_function_attributes(function);
+    return std::make_unique<LlvmFunction::Declaration>(type, returns_object_type, function, attributes_copier);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:349-356
+std::unique_ptr<LlvmFunction::Declaration> CodegenLlvmHelpers::import_memset() {
+    const auto context = llvm_context();
+    const auto type = function_type(LLVMVoidTypeInContext(context), false,
+        {LLVMPointerTypeInContext(context, 0), LLVMInt8TypeInContext(context),
+         LLVMInt32TypeInContext(context), LLVMInt1TypeInContext(context)});
+    return llvm_intrinsic(use_llvm_opaque_pointers_ ? "llvm.memset.p0.i32" : "llvm.memset.p0i8.i32", type);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:358-365
+std::unique_ptr<LlvmFunction::Declaration> CodegenLlvmHelpers::llvm_intrinsic(const std::string& name,
+    LLVMTypeRef type, const std::vector<std::string>& attributes) {
+    const auto result = LLVMAddFunction(module(), name.c_str(), type);
+    for (const auto& attribute : attributes)
+        add_llvm_function_enum_attribute(result, get_llvm_attribute_kind_id(attribute));
+    return std::make_unique<LlvmFunction::Declaration>(type, false, result,
+        LlvmFunctionAttributeProvider::copy_from_external(result));
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:416-416
+std::unique_ptr<LlvmFunction::Declaration> CodegenLlvmHelpers::import_rt_function(const std::string& name,
+    bool returns_object_type) {
+    return import_function(name, runtime_module_, returns_object_type);
 }
 
 }

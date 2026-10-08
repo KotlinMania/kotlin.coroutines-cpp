@@ -1,5 +1,5 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-43,118-125,235-243,307-351,358-359
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-43,118-134,235-243,307-351,358-359
 #include "LlvmUtils.hpp"
 #include <cassert>
 #include <stdexcept>
@@ -110,5 +110,10 @@ std::vector<LLVMValueRef> get_operands(LLVMValueRef value) {
     for (int index = 0; index < count; ++index) operands.push_back(LLVMGetOperand(value, index));
     return operands;
 }
+
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:128-130
+LLVMTypeRef get_global_function_type(LLVMValueRef function) { return get_global_type(function); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:132-134
+LLVMTypeRef get_global_type(LLVMValueRef global) { return LLVMGlobalGetValueType(global); }
 
 }

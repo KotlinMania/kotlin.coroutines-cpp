@@ -6,7 +6,22 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current LLVM module/annotation continuation — 2026-10-08:** From
+**Current runtime-function import continuation — 2026-10-08:** From df67badd,
+CodegenLlvmHelpers binds actual supplied compiler/runtime LLVM modules, copies
+layout/target and imports twenty-four eager source runtime symbols with actual
+signatures, attributes and explicit object-result flags. Private function,
+memset/intrinsic/runtime import operations and global-type helpers are translated.
+No Native runtime implementation/link or Kotlin compiler dependency was added.
+Strict compilation, LLVM target builds and a bounded ASan/UBSan declaration
+fixture pass; that fixture does not exercise actual Native bitcode/runtime.
+Scoped deep:ContextUtils16/51 bodies,22/36 types,similarity0.20;
+LlvmUtils18/49 bodies,4/10 types,similarity0.19. Generation-state/RuntimeAware,
+external prototypes/tracking and later lazy bindings remain absent. Continue
+allocation/root operations, VariableManager, public object-result calls and
+exception emission. Both complete acceptance paths and full-root measurements
+remain open; see RESUME_ADDRESS_SOURCE_REPAIR.md's first section. Goal active.
+
+**Module/annotation checkpoint df67badd — 2026-10-08:** From
 61e3e6fe, BasicLlvmHelpers now reads the actual LLVM target triple and runtime
 annotation operands with source lazy snapshots, grouping and pointer-policy
 branches. get_as_c_string/get_operands retain source termination checks and
