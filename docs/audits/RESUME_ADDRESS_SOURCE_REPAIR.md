@@ -1,6 +1,42 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## Default-expression occurrence identity — 2026-10-08
+
+The continuation after ca15c58b translates the identity contract used by
+DefaultArgumentStubGenerator.kt:91-108, InitializersLowering.kt:34-55 and
+LivenessAnalysis.kt:47,79-89. Kotlin prepares default arguments in the selected
+function and copies instance initializers into their constructor. Clang can
+instead share a declaration expression between different default-use nodes.
+A raw expression pointer alone therefore does not identify the evaluated use.
+
+SuspendPointInfo at SuspendFunctionAnalyzer.hpp:17 now records the enclosing
+CXXDefaultArgExpr/CXXDefaultInitExpr use path. Suspension discovery at
+SuspendFunctionAnalyzer.cpp:357,364 pushes and restores those actual AST nodes
+while visiting each selected expression. Nested uses include the whole path,
+so a shared inner default wrapper cannot collapse different outer call sites.
+The ASTContext continues to own these nodes; this metadata borrows them.
+
+The private SuspensionOccurrence key at SuspendFunctionAnalyzer.cpp:413 pairs
+that path with the actual suspension statement. LivenessAnalysisVisitor::save
+at :451 unions snapshots only for the same occurrence, preserving Kotlin's
+loop-iteration merge without conflating independent uses. Both default visitors
+at :605,612 use the same path, and compute_liveness at :712 attaches snapshots
+by the complete key. Calls without defaults retain an empty path.
+
+This changes analyzer metadata and its attachment algorithm. Native frame
+emission already allocates fresh slots/resume markers on each emitted use;
+optimized spill allocation is still unfinished. No compilation, AST emission,
+runtime check or deep scan was run. Implicit operator/literal bindings,
+private/protected access context, immovable by-value parameter construction,
+aggregate/member expression slicing and earlier local integration remain
+unfinished. Both complete MLX execution paths remain unproven.
+
+CMake source review confirms SuspendFunctionAnalyzer.cpp remains registered in
+KotlinxSuspendPlugin and the existing kxs_enable_suspend_frontend chain loads
+that frontend with the mandatory LLVM module pass. This source change requires
+no additional target, runtime library or Kotlin compiler invocation.
+
 ## Selected default operands in the connected expression slicer — 2026-10-08
 
 The continuation after 535f304a translates selected default operands from

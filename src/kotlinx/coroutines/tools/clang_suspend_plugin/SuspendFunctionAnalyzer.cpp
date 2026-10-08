@@ -2,7 +2,9 @@
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:31-44
 #include "SuspendFunctionAnalyzer.hpp"
 #include <algorithm>
+#include <functional>
 #include <stdexcept>
+#include <utility>
 
 #include "clang/AST/Attr.h"
 #include "clang/AST/Expr.h"
@@ -351,11 +353,19 @@ void SuspendFunctionAnalyzer::find_suspend_points() {
             return RecursiveASTVisitor<SuspensionPoints>::TraverseStmt(statement);
         }
         bool TraverseDecltypeTypeLoc(DecltypeTypeLoc, bool = true) { return true; }
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-108
         bool TraverseCXXDefaultArgExpr(CXXDefaultArgExpr* expression) {
-            return TraverseStmt(expression->getExpr());
+            default_expression_path_.push_back(expression);
+            const bool traversed = TraverseStmt(expression->getExpr());
+            default_expression_path_.pop_back();
+            return traversed;
         }
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
         bool TraverseCXXDefaultInitExpr(CXXDefaultInitExpr* expression) {
-            return TraverseStmt(expression->getExpr());
+            default_expression_path_.push_back(expression);
+            const bool traversed = TraverseStmt(expression->getExpr());
+            default_expression_path_.pop_back();
+            return traversed;
         }
         bool TraverseDecl(Decl* declaration) {
             if (declaration && (isa<RecordDecl>(declaration) || isa<FunctionDecl>(declaration))) return true;
@@ -381,11 +391,12 @@ void SuspendFunctionAnalyzer::find_suspend_points() {
             if (const auto* call = dyn_cast<CallExpr>(statement);
                 call && SuspendFunctionAnalyzer::is_suspend_wrapper(call) && call->getNumArgs() == 1 &&
                 SuspendFunctionAnalyzer::is_suspend_call(call->getArg(0)->IgnoreUnlessSpelledInSource())) return true;
-            points.push_back({statement, static_cast<unsigned>(points.size() + 1), {}});
+            points.push_back({statement, static_cast<unsigned>(points.size() + 1), {}, default_expression_path_});
             return true;
         }
     private:
         ASTContext& context_;
+        std::vector<const Stmt*> default_expression_path_;
     } visitor(ctx_);
     visitor.TraverseStmt(fd_->getBody());
     suspend_points_ = std::move(visitor.points);
@@ -393,6 +404,26 @@ void SuspendFunctionAnalyzer::find_suspend_points() {
 
 namespace {
 using LiveVariables = std::set<const VarDecl*>;
+
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-108
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:47,79-89
+// NOTE(port): Kotlin prepares default expressions in the selected function's IR.
+// Clang shares their declaration AST instead. Actual enclosing default-use nodes
+// distinguish evaluated occurrences, including nested defaults and member defaults.
+using SuspensionOccurrence = std::pair<const Stmt*, std::vector<const Stmt*>>;
+
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:47,79-89
+// NOTE(port): The ordered C++ map needs a total order over actual AST pointers.
+struct SuspensionOccurrenceLess {
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:47,79-89
+    bool operator()(const SuspensionOccurrence& left, const SuspensionOccurrence& right) const {
+        const std::less<const Stmt*> before;
+        if (left.first != right.first) return before(left.first, right.first);
+        return std::lexicographical_compare(left.second.begin(), left.second.end(),
+                                            right.second.begin(), right.second.end(), before);
+    }
+};
+using SuspensionLiveness = std::map<SuspensionOccurrence, LiveVariables, SuspensionOccurrenceLess>;
 
 // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:44-267
 // NOTE(port): Clang node dispatch adapts Kotlin's IR visitor. Concrete declaration
@@ -403,7 +434,7 @@ public:
     explicit LivenessAnalysisVisitor(const ASTContext& context) : context_(context) {}
 
     // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:54-59,248-265
-    std::map<const Stmt*, LiveVariables> run(const Stmt* body) {
+    SuspensionLiveness run(const Stmt* body) {
         // NOTE(port): Kotlin returnable-block and loop symbols have structured
         // targets. C++ labels can form cycles outside loops; saturate their
         // actual declaration targets with the same backwards fixed-point rule.
@@ -419,7 +450,7 @@ private:
     // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:79-89
     void save(const Stmt* element, const LiveVariables& data) {
         if (!SuspendFunctionAnalyzer::is_suspend_call(element)) return;
-        auto& live = filtered_element_ends_[element];
+        auto& live = filtered_element_ends_[{element, default_expression_path_}];
         live.insert(data.begin(), data.end());
         live.insert(catches_.begin(), catches_.end());
         // NOTE(port): The LLVM label field and point IDs are not source VarDecls,
@@ -568,10 +599,22 @@ private:
                 return accept(assignment->getLHS(), std::move(selected));
             }
         }
-        if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(element))
-            return accept(omitted->getExpr(), std::move(data));
-        if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(element))
-            return accept(initialized->getExpr(), std::move(data));
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-108
+        // NOTE(port): Keep the use path until the selected declaration expression
+        // has been visited; sibling uses of that AST have independent snapshots.
+        if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(element)) {
+            default_expression_path_.push_back(omitted);
+            data = accept(omitted->getExpr(), std::move(data));
+            default_expression_path_.pop_back();
+            return data;
+        }
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(element)) {
+            default_expression_path_.push_back(initialized);
+            data = accept(initialized->getExpr(), std::move(data));
+            default_expression_path_.pop_back();
+            return data;
+        }
         // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:123-136,248-265
         // NOTE(port): Retain Clang's declaration-bound jump targets. Values on
         // the unreachable lexical suffix do not flow through an unconditional jump.
@@ -654,7 +697,8 @@ private:
     }
 
     const ASTContext& context_;
-    std::map<const Stmt*, LiveVariables> filtered_element_ends_;
+    SuspensionLiveness filtered_element_ends_;
+    std::vector<const Stmt*> default_expression_path_;
     std::map<const LabelDecl*, LiveVariables> label_starts_;
     std::set<const LabelDecl*> addressed_labels_;
     std::vector<LiveVariables> break_targets_;
@@ -669,7 +713,7 @@ void SuspendFunctionAnalyzer::compute_liveness() {
     const auto live = LivenessAnalysisVisitor(ctx_).run(fd_->getBody());
     const auto* completion = continuation_parameter(fd_);
     for (auto& point : suspend_points_) {
-        auto found = live.find(point.suspend_stmt);
+        auto found = live.find({point.suspend_stmt, point.default_expression_path});
         if (found == live.end()) continue;
         point.live_variables = found->second;
         // NOTE(port): Completion is stored by the base continuation; source

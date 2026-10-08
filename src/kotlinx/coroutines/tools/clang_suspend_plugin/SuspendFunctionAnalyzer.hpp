@@ -12,11 +12,15 @@
 namespace kotlinx {
 namespace suspend {
 
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:29-40
 /// Information about a single suspension point in a suspend function.
 struct SuspendPointInfo {
     const clang::Stmt* suspend_stmt;
     unsigned state_id;
     std::set<const clang::VarDecl*> live_variables;
+    // NOTE(port): Clang shares the declaration expression of C++ defaults.
+    // Retain its enclosing use nodes to identify this evaluated occurrence.
+    std::vector<const clang::Stmt*> default_expression_path;
 };
 
 /// Dispatch mode for generated state machines.

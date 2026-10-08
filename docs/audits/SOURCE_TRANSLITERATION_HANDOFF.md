@@ -6,7 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current default-operand continuation — 2026-10-08:** Constructors and ordinary/
+**Current default-occurrence continuation — 2026-10-08:** Suspension discovery
+and liveness now identify a selected default by its actual statement plus the
+enclosing CXXDefaultArgExpr/CXXDefaultInitExpr use path. Nested defaults retain
+all enclosing uses. Loop analysis merges the same occurrence; separate calls
+using a shared declaration AST keep separate snapshots. Source locations and
+Kotlin provenance are in RESUME_ADDRESS_SOURCE_REPAIR.md's first section.
+CMake source review confirms the existing frontend/LLVM chain consumes the
+edited analyzer. No build, AST emission, runtime check or deep scan was run.
+Optimized spilling, declaration access context, immovable default parameter
+construction, implicit bindings and aggregate/member expression slicing remain
+unfinished. Continue translating those connected compiler dependencies; the
+full translation goal remains active and acceptance work remains deferred.
+
+**Source checkpoint ca15c58b:** Constructors and ordinary/
 continuation calls now pass selected defaults through the connected expression
 emitter. Suspension/materialization discovery sees the selected default AST;
 ordinary call suffixes contain its lowered values explicitly. Named declaration
