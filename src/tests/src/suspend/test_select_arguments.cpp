@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <stdexcept>
+#include <any>
 
 using namespace kotlinx::coroutines;
 using namespace kotlinx::coroutines::selects;
@@ -30,6 +31,28 @@ struct Parameter {
     std::shared_ptr<int> resource;
     std::string text;
 };
+struct OpaquePayload {
+    std::shared_ptr<int> resource;
+};
+// Channel.kt:1398-1402: a null handler does not require any element-text operation.
+void channel_without_handler_contract() {
+    using namespace kotlinx::coroutines::channels;
+    for (auto overflow : {BufferOverflow::SUSPEND, BufferOverflow::DROP_OLDEST, BufferOverflow::DROP_LATEST}) {
+        auto channel = create_channel<OpaquePayload>(1, overflow);
+        auto resource = std::make_shared<int>(102);
+        auto* identity = resource.get();
+        std::weak_ptr<int> lifetime = resource;
+        CHECK(channel->try_send(OpaquePayload{resource}).is_success());
+        resource.reset();
+        auto result = channel->try_receive().get_or_throw();
+        CHECK(result.resource.get() == identity && *result.resource == 102);
+        result.resource.reset();
+        CHECK(lifetime.expired());
+    }
+    auto channel = create_channel<std::any>(1);
+    CHECK(channel->try_send(std::string("erased payload")).is_success());
+    CHECK(std::any_cast<std::string>(channel->try_receive().get_or_throw()) == "erased payload");
+}
 void parameter_contract(bool wait, bool reregister, bool fail) {
     int object = 9, registrations = 0, calls = 0;
     void* parameter_identity = nullptr;
@@ -515,6 +538,7 @@ int main() {
         channel_receive_borrowed_pointer(true);
         undelivered_exception_contract();
         conflated_channel_contract();
+        channel_without_handler_contract();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n'; return 1;
     }
