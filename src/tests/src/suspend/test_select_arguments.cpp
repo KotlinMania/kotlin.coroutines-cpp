@@ -5,6 +5,7 @@
 #include "kotlinx/coroutines/channels/BufferedChannel.hpp"
 #include "kotlinx/coroutines/internal/OnUndeliveredElement.hpp"
 #include "kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
+#include "kotlinx/coroutines/channels/Channels.hpp"
 #include "kotlinx/coroutines/flow/SharingStarted.hpp"
 #include <deque>
 #include <iostream>
@@ -34,7 +35,7 @@ struct Parameter {
 struct OpaquePayload {
     std::shared_ptr<int> resource;
 };
-// Channel.kt:1398-1402: a null handler does not require any element-text operation.
+// Channel.kt:1425-1454: a null handler does not require any element-text operation.
 void channel_without_handler_contract() {
     using namespace kotlinx::coroutines::channels;
     for (auto overflow : {BufferOverflow::SUSPEND, BufferOverflow::DROP_OLDEST, BufferOverflow::DROP_LATEST}) {
