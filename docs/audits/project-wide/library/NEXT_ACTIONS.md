@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 818/2918 matched (target 3032) — 28.0%
+- **Function parity:** 818/2918 matched (target 3033) — 28.0%
 - **Class/type parity:** 358/560 matched (target 520) — 63.9%
-- **Combined symbol parity:** 1176/3478 matched (target 3552) — 33.8%
+- **Combined symbol parity:** 1176/3478 matched (target 3553) — 33.8%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -2309,10 +2309,10 @@ Every matched file is listed below with function and type symbol parity.
 ### 174. internal.ChannelFlow
 
 - **Target:** `internal.ChannelFlow`
-- **Similarity:** 0.24
+- **Similarity:** 0.25
 - **Dependents:** 0
-- **Priority Score:** 12507.6
-- **Functions:** 18/19 matched (target 41)
+- **Priority Score:** 12507.5
+- **Functions:** 18/19 matched (target 42)
 - **Missing functions:** `ChannelFlowOperator::toString`
 - **Types:** 6/6 matched (target 7)
 - **Missing types:** _none_

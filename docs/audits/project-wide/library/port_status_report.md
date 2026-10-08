@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 818/2918 matched (target 3032) | 28.0% |
+| Function parity | 818/2918 matched (target 3033) | 28.0% |
 | Class/type parity | 358/560 matched (target 520) | 63.9% |
-| Combined symbol parity | 1176/3478 matched (target 3552) | 33.8% |
+| Combined symbol parity | 1176/3478 matched (target 3553) | 33.8% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -237,9 +237,9 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 193 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 23) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 65001308.0 |
 | 194 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | - | 0 | 1007.8 |
 | 195 | `sync.Mutex` | `sync.Mutex` | 0.23 | 11/16 matched (target 20) | `Mutex`, `MutexImpl::CancellableContinuationWithOwner::tryResume`, `MutexImpl::CancellableContinuationWithOwner::resume`, `MutexImpl::SelectInstanceWithOwner::trySelect`, `MutexImpl::SelectInstanceWithOwner::selectInRegistrationPhase` | 2/4 matched (target 2) | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` | - | 7 | 72007.7 |
-| 196 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 18/19 matched (target 41) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | - | 1 | 12507.6 |
-| 197 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | - | 0 | 207.6 |
-| 198 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
+| 196 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | - | 0 | 207.6 |
+| 197 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
+| 198 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.25 | 18/19 matched (target 42) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | - | 1 | 12507.5 |
 | 199 | `sync.Semaphore` | `sync.Semaphore` | 0.26 | 18/21 matched (target 45) | `Semaphore`, `SemaphoreAndMutexImpl::acquire`, `SemaphoreAndMutexImpl::acquire` | 4/4 matched (target 9) | _none_ | - | 3 | 32507.4 |
 | 200 | `internal.LimitedDispatcher` | `internal.LimitedDispatcher` | 0.27 | 9/10 matched (target 12) | `CoroutineDispatcher::namedOrThis` | 2/2 matched (target 3) | _none_ | - | 1 | 11207.3 |
 | 201 | `channels.BufferedChannel` | `channels.BufferedChannel` | 0.27 | 104/111 matched (target 179) | `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0` | 6/6 matched (target 7) | _none_ | - | 7 | 81707.3 |
@@ -619,9 +619,9 @@ These files need significant work:
 - `flow.Channels` -> `flow.Channels` (0.22, 65 deps)
 - `selects.SelectOld` -> `selects.SelectOld` (0.22)
 - `sync.Mutex` -> `sync.Mutex` (0.23)
-- `internal.ChannelFlow` -> `internal.ChannelFlow` (0.24)
 - `internal.Synchronized.common` -> `internal.SynchronizedObject` (0.24)
 - `common.CancellableContinuationImpl` -> `coroutines.ContinuationState` (0.25)
+- `internal.ChannelFlow` -> `internal.ChannelFlow` (0.25)
 - `sync.Semaphore` -> `sync.Semaphore` (0.26)
 - `internal.LimitedDispatcher` -> `internal.LimitedDispatcher` (0.27)
 - `channels.BufferedChannel` -> `channels.BufferedChannel` (0.27)
