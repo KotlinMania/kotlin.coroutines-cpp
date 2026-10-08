@@ -1,3 +1,22 @@
+# Current warning-visible pool build
+
+Complete OnDemandAllocatingPool.kt and both C++ files reread. The private unused
+loop duplicate in .cpp was removed. Its source inline nonlocal-return call sites
+already expand to the actual while loops in allocate/close; those algorithms are
+unchanged. No suppression annotation or dummy call is used. Concrete control-bit
+and formatting bodies remain in .cpp at lines 17,22,32.
+
+The existing test_concurrent_native.cpp was freshly compiled with Concurrent.cpp
+and OnDemandAllocatingPool.cpp using -Wall -Wextra -Wpedantic -Werror, then executed.
+Build and execution both return zero. It exercises actual set/reference/lock
+operations, pool reservation/publication races, resource identity and cleanup,
+concurrent closing and the source creation-failure behavior. Receipts under
+build/ir-recovery: concurrent-warning-visible-test-{build,run}.log. This bounded
+component executable does not establish current whole-core compilation, the
+changed Flow suspension paths or the Native/MLX acceptance scenarios.
+
+Historical source and build checkpoints follow.
+
 # On-demand allocating pool source repair
 
 Ground truth: `tmp/kotlinx.coroutines/kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt`, read in full before changing its counterpart. Native MultithreadedDispatchers.kt consumes this pool for on-demand Worker creation; that file was also read in full.

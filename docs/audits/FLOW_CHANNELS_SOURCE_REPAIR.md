@@ -1,3 +1,32 @@
+# Current typed emission source body
+
+The complete common Channels.kt and the C++ pair were reread. Channels.hpp:61
+now contains the typed source emit_all_impl algorithm. The callback binding
+bind_emit_all, EmitAllArguments manual storage and emit_all_erased entry are
+removed. Channels.cpp is deleted because its only remaining body was that erased
+callback loop. The generic public element type requires this header definition;
+CMake's existing source glob owns regeneration. This supersedes the concrete
+callback-loop migration described below.
+
+The body checks collector activity before try, creates the actual channel
+iterator, waits for has_next, deletes the owning bool result before emission,
+reads the next typed element, and waits for the real collector emit call. It
+preserves the caught cause and conditional consumed-channel cleanup on normal and
+exceptional completion. Existing raw/owning overloads delegate to this body;
+supplied owners bind their actual receiver pointers and remain owned arguments.
+Raw borrowers are never adopted. Iterator and element are now ordinary local
+variables for the frontend to spill, with no manual resume state or storage class.
+
+Compilation of the actual test_channel_as_flow_smoke.cpp with the current strict
+warning flags and previously built frontend/LLVM modules returns one. Existing
+AbstractFlow generated unresolved T, exception-context initializer, label-address
+and dependency diagnostics prevent a working executable. The typed emission
+replacement has not executed and its retained iterator/element/owner cleanup
+remains unverified. No suppression or alternate runtime frame was introduced.
+Receipt: build/ir-recovery/flow-channels-typed-fixture-build.log. Historical
+execution evidence below does not verify the current body. Complete source parity,
+channel diagnostic text and both MLX acceptance paths remain unfinished.
+
 # Current source authoring migration — warning-visible build
 
 The complete common Flow Channels.kt and C++ pair were reread. The first oracle
