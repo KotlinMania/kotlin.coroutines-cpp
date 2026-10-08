@@ -1,13 +1,15 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-43,56-82,118-134,235-243,251-254,307-351,358-359
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-109,118-134,235-243,251-254,307-351,358-359
 #pragma once
 #include <llvm-c/Core.h>
+#include "Runtime.hpp"
 #include <memory>
 #include <cstdint>
 #include <string>
 #include <vector>
 
 namespace org::jetbrains::kotlin::backend::konan::llvm {
+class LlvmRetType;
 // Represents the value which can be emitted as bitcode const value.
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-22
 class ConstValue {
@@ -15,6 +17,19 @@ public:
     virtual ~ConstValue() = default;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:21-21
     virtual LLVMValueRef llvm() const = 0;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:45-54
+class ConstArray : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:45-54
+    ConstArray(LLVMTypeRef element_type, std::shared_ptr<std::vector<std::shared_ptr<const ConstValue>>> elements);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:45-45
+    const std::shared_ptr<std::vector<std::shared_ptr<const ConstValue>>>& elements() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:53-53
+    LLVMValueRef llvm() const override;
+private:
+    const std::shared_ptr<std::vector<std::shared_ptr<const ConstValue>>> elements_;
+    const LLVMValueRef llvm_;
 };
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:56-82
 class Struct : public ConstValue {
@@ -34,6 +49,33 @@ private:
     const std::shared_ptr<std::vector<std::shared_ptr<const ConstValue>>> elements_;
     const LLVMValueRef llvm_;
 };
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:82-84
+class Zero : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:82-83
+    explicit Zero(LLVMTypeRef type);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:82-82
+    LLVMTypeRef type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:83-83
+    LLVMValueRef llvm() const override;
+private:
+    const LLVMTypeRef type_;
+    const LLVMValueRef llvm_;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:86-92
+std::shared_ptr<ConstValue> const_value(LLVMValueRef value);
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:94-95
+LLVMTypeRef type_info_type(const RuntimeAware& runtime_aware);
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:96-97
+LLVMTypeRef obj_header_type(const RuntimeAware& runtime_aware);
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:98-99
+LlvmRetType obj_header_ptr_return_type(const RuntimeAware& runtime_aware);
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:100-101
+LLVMTypeRef array_header_type(const RuntimeAware& runtime_aware);
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:103-105
+LLVMValueRef nothing_fake_value(const RuntimeAware& runtime_aware);
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:107-110
+std::int64_t extract_const_unsigned_int(LLVMValueRef value);
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:251-254
 std::string to_type_string(LLVMTypeRef type);
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:24-25

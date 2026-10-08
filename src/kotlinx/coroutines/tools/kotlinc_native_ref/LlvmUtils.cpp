@@ -1,12 +1,28 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-43,56-82,118-134,235-243,251-254,307-351,358-359
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-110,118-134,235-243,251-254,307-351,358-359
 #include "LlvmUtils.hpp"
 #include <cassert>
 #include <stdexcept>
 #include <utility>
 #include "LlvmAttributes.hpp"
+#include "LlvmParamType.hpp"
 
 namespace org::jetbrains::kotlin::backend::konan::llvm {
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:94-95
+LLVMTypeRef type_info_type(const RuntimeAware& runtime_aware) { return runtime_aware.runtime().type_info_type(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:96-97
+LLVMTypeRef obj_header_type(const RuntimeAware& runtime_aware) { return runtime_aware.runtime().obj_header_type(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:98-99
+LlvmRetType obj_header_ptr_return_type(const RuntimeAware& runtime_aware) { return LlvmRetType(runtime_aware.runtime().pointer_type(), true); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:100-101
+LLVMTypeRef array_header_type(const RuntimeAware& runtime_aware) { return runtime_aware.runtime().array_header_type(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:103-105
+LLVMValueRef nothing_fake_value(const RuntimeAware& runtime_aware) { return LLVMGetUndef(runtime_aware.runtime().pointer_type()); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:107-110
+std::int64_t extract_const_unsigned_int(LLVMValueRef value) {
+    assert(LLVMIsConstant(value) != 0);
+    return static_cast<std::int64_t>(LLVMConstIntGetZExtValue(value));
+}
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:251-254
 std::string to_type_string(LLVMTypeRef type) {
     if (!type) return "<null type>";
@@ -14,6 +30,33 @@ std::string to_type_string(LLVMTypeRef type) {
     const std::unique_ptr<char, decltype(&LLVMDisposeMessage)> message(LLVMPrintTypeToString(type), LLVMDisposeMessage);
     return std::string(message.get());
 }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:45-54
+ConstArray::ConstArray(LLVMTypeRef element_type, std::shared_ptr<std::vector<std::shared_ptr<const ConstValue>>> elements)
+    : elements_(std::move(elements)), llvm_([this, element_type] {
+        // NOTE(port): Source assertions follow the C++ NDEBUG policy; failures become compiler exceptions.
+#ifndef NDEBUG
+        for (const auto& element : *elements_) {
+            const auto actual_type = llvm_type(*element);
+            if (actual_type != element_type)
+                throw std::logic_error("Expected element type: " + to_type_string(element_type) +
+                    ", actual: " + to_type_string(actual_type));
+        }
+#endif
+        std::vector<LLVMValueRef> values;
+        values.reserve(elements_->size());
+        for (const auto& element : *elements_) values.push_back(element->llvm());
+        return LLVMConstArray(element_type, values.data(), static_cast<unsigned>(values.size()));
+    }()) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:45-45
+const std::shared_ptr<std::vector<std::shared_ptr<const ConstValue>>>& ConstArray::elements() const { return elements_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:53-53
+LLVMValueRef ConstArray::llvm() const { return llvm_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:82-83
+Zero::Zero(LLVMTypeRef type) : type_(type), llvm_(LLVMConstNull(type)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:82-82
+LLVMTypeRef Zero::type() const { return type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:83-83
+LLVMValueRef Zero::llvm() const { return llvm_; }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:56-82
 Struct::Struct(LLVMTypeRef type, std::shared_ptr<std::vector<std::shared_ptr<const ConstValue>>> elements)
     : type_(type), elements_(std::move(elements)), llvm_([this] {
@@ -51,6 +94,16 @@ const std::shared_ptr<std::vector<std::shared_ptr<const ConstValue>>>& Struct::e
 LLVMValueRef Struct::llvm() const { return llvm_; }
 
 namespace {
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:86-92
+class ConstantValue final : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:86-89
+    explicit ConstantValue(LLVMValueRef value) : value_(value) { assert(LLVMIsConstant(value) == 1); }
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:91-91
+    LLVMValueRef llvm() const override { return value_; }
+private:
+    const LLVMValueRef value_;
+};
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:32-38
 class ConstantPointer final : public ConstPointer {
 public:
@@ -82,6 +135,8 @@ LLVMTypeRef llvm_type(const ConstValue& value) { return LLVMTypeOf(value.llvm())
 std::shared_ptr<ConstPointer> ConstPointer::get_element_ptr(LLVMContextRef context, LLVMTypeRef pointee_type, int index) const {
     return std::make_shared<ConstGetElementPtr>(context, pointee_type, *this, index);
 }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:86-92
+std::shared_ptr<ConstValue> const_value(LLVMValueRef value) { return std::make_shared<ConstantValue>(value); }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:32-38
 std::shared_ptr<ConstPointer> const_pointer(LLVMValueRef value) { return std::make_shared<ConstantPointer>(value); }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:311-317

@@ -6,7 +6,24 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current LLVM type/constant continuation — 2026-10-08:** From 0ed4ddd4,
+**Current aggregate/runtime-type continuation — 2026-10-08:** From 62a3a77b,
+ConstArray, Zero, const_value, RuntimeAware type/object-return/Nothing extensions
+and unsigned extraction at LlvmUtils.kt:45-54,82-110 are translated. Array
+metadata retains the actual shared element list while LLVM emission retains
+its eager snapshot; source type diagnostics and explicit object-result flags
+are preserved. Strict compile with/without NDEBUG, Native-OFF LLVM consumers,
+existing code-generation fixture and bounded ASan/UBSan aggregate/import checks
+pass. Scoped deep LlvmUtils:21/49 bodies,7/10 types,similarity0.20; target parsing
+has no errors, generated source criteria remain provisional. VariableManager /
+DataLayout tracing found missing binary-classification and LLVM debug bridge
+definitions in the pinned source snapshot. Locate/restore their matching source
+contracts before translating those dependencies; do not infer enums, debug
+options, IR cache equality or frame allocator callbacks. Other source work is
+available. Actual frame/root/call/exception consumers, generation-state entry,
+Runtime loader/caches, full-root measurements and both complete acceptance paths
+remain open. See RESUME_ADDRESS_SOURCE_REPAIR.md's first section. Goal active.
+
+**LLVM type/constant checkpoint 62a3a77b — 2026-10-08:** From 0ed4ddd4,
 nine concrete constant classes, eleven LLVM types, source factories/raw-value
 wrappers, literal/null properties, struct/packed/flexible-array helpers and
 LlvmUtils Struct/type-string dependencies are translated. Shared Struct element

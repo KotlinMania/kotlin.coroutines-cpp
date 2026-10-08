@@ -1,7 +1,59 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
-## LLVM type/constant and Struct source dependencies — 2026-10-08
+## LLVM aggregate constants and RuntimeAware type contracts — 2026-10-08
+
+Continuation from 62a3a77b translates LlvmUtils.kt:45-54,82-110.
+ConstArray/Zero at LlvmUtils.hpp:22,53 and LlvmUtils.cpp:34,55 retain actual LLVM
+constant values and source types. ConstArray retains the shared source element
+list and its descriptor owners, validates element types under the documented
+NDEBUG assertion mapping, preserves the source diagnostic, and emits its array
+eagerly. Later list mutations do not re-emit the constant. Zero uses the actual
+LLVMConstNull for its supplied type. The private ConstantValue implementation
+backs const_value at LlvmUtils.cpp:139; its LLVM value remains borrowed and the
+source constant predicate is retained.
+
+RuntimeAware extensions at LlvmUtils.hpp:68-78 and LlvmUtils.cpp:12-25 return
+actual runtime TypeInfo/ObjHeader/ArrayHeader types, a LlvmRetType with the explicit
+source isObjectType=true flag, and source LLVM undef for Nothing's unreachable
+value. No pointer-shape inference or alternative result ABI was added.
+extract_const_unsigned_int retains source constant validation, LLVM zero extension
+and the Long bit representation. The return descriptor is forward-declared in
+the header to avoid the existing LlvmAttributes/LlvmUtils include cycle; the
+implementation includes its actual definition.
+
+Fresh strict -Wall -Wextra -Werror compilation passed with/without NDEBUG.
+KotlinxCoroutinePass/kxs_codegen_test rebuilt with LLVM23.1.2 and Native runtime
+OFF; the existing LLVM fixture verified/emitted its module. The bounded
+aggregate_contract harness passed ASan/UBSan: retained element-list identity,
+array order and eager snapshot after mutation, empty arrays, typed mismatch
+message, integer/pointer/struct zero constants, arbitrary constant identity,
+8/32/64-bit unsigned extraction, runtime type identity, actual object-result
+metadata and the upstream Nothing undef. Earlier constant/lazy-import checks
+remain in that fixture. The input is an LLVM declaration/type fixture, not actual
+Native runtime execution or either complete MLX/shared-state-machine path.
+
+Scoped ast_distance --deep completed. LlvmUtils:21/49 matched explicit bodies,
+7/10 types,similarity0.20,target44 bodies. Target parsing reports no errors;
+unsupported source emission/generated parse errors keep criteria provisional
+(normalized logic0.174421, supported span0.085799). Full-root measurements remain
+required and open.
+
+Tracing VariableManager.kt and DataLayout.kt confirms that actual variable and
+frame translation still needs computePrimitiveBinaryTypeOrNull/binaryTypeIsReference,
+IR-keyed type caching and the debug bridge contracts. A no-ignore search of
+pinned tmp/kotlin Kotlin/Java/C++/header sources finds calls but no definitions
+for the binary-classification helpers or DICreateAutoVariable. The original
+DICreateParameterVariable/DIInsertDeclaration bridge implementations also were
+not found. No enum classification, LLVM debug-option defaults, pointer-keyed
+cache or callback allocator was guessed from those call sites. The missing
+source contracts must be located/restored at the matching revision before their
+translation is treated as complete. Other LLVM/IR source work remains available;
+this is not an overall goal blockage. Frame/root/call/exception consumers,
+generation-state entry, Runtime loading/caches and both full acceptance paths
+remain unfinished. Evidence is under build/source-continuation/llvm-source-distance.
+
+## LLVM type/constant and Struct source dependencies — 2026-10-08 (historical 62a3a77b receipt)
 
 Continuation from 0ed4ddd4 translates ContextUtils.kt:264-298,514-571 and
 LlvmUtils.kt:56-82,251-254. Nine concrete ConstInt/ConstUInt/ConstChar/ConstFloat
