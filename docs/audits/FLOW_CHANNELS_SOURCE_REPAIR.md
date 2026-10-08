@@ -1,3 +1,36 @@
+# Current source authoring migration — warning-visible build
+
+The complete common Flow Channels.kt and C++ pair were reread. The first oracle
+priority remains this group (65 dependents). Channels.cpp:29 replaces the manual
+EmitAllContinuation class with an annotated concrete suspend entry. Its source
+loop creates the iterator inside try, awaits has_next and emit_next, retains the
+caught cause and runs conditional consumed-channel cleanup. The existing typed
+bindings remain unchanged; actual supplied owners remain owned and raw arguments
+remain borrowed. No new runtime continuation class or manual label/spill fields
+were introduced. The receiving scope deletes the transferred bool box before
+emission, on both immediate and resumed results.
+
+This is an incomplete plugin migration, not fresh runtime validation. Compiling
+the actual Channels.cpp with the current CMake target flags (-Wall -Wextra
+-Wpedantic -Werror), and the previously built frontend/LLVM modules, reaches
+emit_all_erased frame generation but returns one. The generated exception context
+has a missing previous initializer and generated address-of-label expressions
+trigger -Wgnu-label-as-value. No suppression or warning-policy reduction is used.
+The current plugin modules themselves cannot be rebuilt because the unsuppressed
+Clang/LLVM dependency diagnostics documented in WARNING_SUPPRESSION_REMOVAL.md
+remain exposed. Existing runtime-test results below predate this migration.
+
+The concrete .cpp includes only the ABI and exception types it consumes. The
+public generic bindings remain in Channels.hpp; removing its unnecessary include
+from .cpp prevents parsing unrelated channel implementation templates there.
+It does not fix the outstanding warnings in those templates or dependencies.
+Receipt: build/ir-recovery/flow-channels-authored-build.log. Full executable
+ownership/failure/cancellation checks and both MLX acceptance paths remain
+unverified for this new body. The diagnostic channel string mismatch also remains.
+
+The historical checkpoints below describe the earlier handwritten frame, which
+has now been removed. They do not establish execution of the current source.
+
 # Flow channel emission source repair
 
 Date: 2026-10-07. Complete common flow/Channels.kt and the existing C++ pair

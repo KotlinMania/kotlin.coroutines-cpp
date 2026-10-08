@@ -39,9 +39,13 @@ void* emit_all_erased(
         while (true) {
             // NOTE(port): The iterator transfers an owning bool result box on
             // both immediate and resumed returns; this call site releases it.
-            auto has_next_box = std::unique_ptr<bool>(static_cast<bool*>(
-                dsl::suspend(has_next(completion.get()))));
-            if (!*has_next_box) break;
+            bool more;
+            {
+                auto has_next_box = std::unique_ptr<bool>(static_cast<bool*>(
+                    dsl::suspend(has_next(completion.get()))));
+                more = *has_next_box;
+            }
+            if (!more) break;
             dsl::suspend(emit_next(completion.get()));
             finish_emit();
         }
