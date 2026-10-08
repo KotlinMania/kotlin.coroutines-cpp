@@ -32,7 +32,7 @@ private:
     BufferOverflow on_buffer_overflow_;
 
 public:
-    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:14-27
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:14-26
     ConflatedBufferedChannel(int capacity, BufferOverflow on_buffer_overflow,
                              OnUndeliveredElement<E> on_undelivered_element = nullptr)
         : BufferedChannel<E>(capacity, on_undelivered_element)
@@ -48,12 +48,12 @@ public:
         }
     }
 
-    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:29-30
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:28-29
     bool is_conflated_drop_oldest() const override {
         return on_buffer_overflow_ == BufferOverflow::DROP_OLDEST;
     }
 
-    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:32-41
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:31-40
     void* send(E element, Continuation<void*>* continuation) override {
         auto result = try_send_impl(element, true);
         if (result.is_closed()) {
@@ -71,7 +71,7 @@ public:
         return nullptr;
     }
 
-    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:43-48
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:42-47
     void* send_broadcast(E element, Continuation<void*>* continuation) override {
         // Should never suspend, implement via `trySend(..)`.
         auto result = try_send_impl(std::move(element), true);
@@ -82,27 +82,27 @@ public:
         return new bool(false);
     }
 
-    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:50-50
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:49-49
     ChannelResult<void> try_send(E element) override {
         return try_send_impl(std::move(element), false);
     }
 
-    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:92-92
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:88-88
     bool should_send_suspend() const override {
         return false;  // never suspends
     }
 
 private:
-    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:52-54
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:51-53
     ChannelResult<void> try_send_impl(E element, bool is_send_op) {
         if (on_buffer_overflow_ == BufferOverflow::DROP_LATEST) {
             return try_send_drop_latest(std::move(element), is_send_op);
         } else {
-            return try_send_drop_oldest(std::move(element));
+            return this->try_send_drop_oldest(std::move(element));
         }
     }
 
-    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:56-72
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:55-69
     ChannelResult<void> try_send_drop_latest(E element, bool is_send_op) {
         // Try to send the element without suspension.
         auto result = BufferedChannel<E>::try_send(element);
@@ -124,7 +124,7 @@ private:
     }
 
 protected:
-    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:75-90
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt:72-86
     void register_select_for_send(selects::SelectInstance<void*>* select, void* element) override {
         auto result = try_send(*static_cast<E*>(element));
         if (result.is_success()) {

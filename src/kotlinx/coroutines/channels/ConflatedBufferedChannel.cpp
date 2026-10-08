@@ -1,9 +1,7 @@
+// port-lint: source channels/ConflatedBufferedChannel.kt
 /**
- * @file ConflatedBufferedChannel.cpp
- * @brief Implementation of ConflatedBufferedChannel.
- *
- * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp`.
+ * Transliterated from: kotlinx-coroutines-core/common/src/channels/ConflatedBufferedChannel.kt
+ * Generic source algorithms live in the co-located header; this file instantiates common element types.
  */
 
 #include "kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
