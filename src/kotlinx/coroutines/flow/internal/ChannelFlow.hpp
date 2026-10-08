@@ -129,6 +129,13 @@ public:
     virtual ~ChannelFlow() = default;
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:67-67
+    /**
+     * When this ChannelFlow implementation can work without a channel (supports
+     * channels::Channel<T>::OPTIONAL_CHANNEL), return a non-null value so that a
+     * caller can use it without additional flow_on and buffer operators, by
+     * incorporating its context, capacity and on_buffer_overflow into its own
+     * implementation.
+     */
     virtual Flow<T>* drop_channel_operators() { return nullptr; }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:69-100
@@ -154,6 +161,15 @@ public:
     virtual std::string to_string();
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:114-115
+    /**
+     * Here we use ATOMIC start for a reason (#1825).
+     * NB: produce_impl is used for flow_on.
+     * For non-atomic start it is possible to observe the situation where the
+     * pipeline after flow_on successfully executes its handlers (mostly
+     * on_completion), while the pipeline before does not, because it was
+     * cancelled during its dispatch. Thus on_completion and finally blocks
+     * would not execute, which may lead to memory leaks.
+     */
     virtual std::shared_ptr<ReceiveChannel<T>> produce_impl(CoroutineScope* scope);
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:44-44
@@ -172,9 +188,12 @@ protected:
                              std::shared_ptr<Continuation<void*>> completion) = 0;
 
 private:
-    std::shared_ptr<CoroutineContext> context_;
-    int capacity_;
-    BufferOverflow on_overflow_;
+    // upstream context
+    const std::shared_ptr<CoroutineContext> context_;
+    // buffer capacity between upstream and downstream context
+    const int capacity_;
+    // buffer overflow strategy
+    const BufferOverflow on_overflow_;
 };
 
 template <typename T>
@@ -360,12 +379,12 @@ private:
     void* collect_with_context_undispatched(FlowCollector<T>* collector,
         std::shared_ptr<CoroutineContext> new_context, Continuation<void*>* completion);
 
-    std::shared_ptr<Flow<S>> flow_;
+    const std::shared_ptr<Flow<S>> flow_;
 };
 
 template <typename T>
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:179-192
-class ChannelFlowOperatorImpl : public ChannelFlowOperator<T, T> {
+class ChannelFlowOperatorImpl final : public ChannelFlowOperator<T, T> {
 public:
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:179-184
     ChannelFlowOperatorImpl(std::shared_ptr<Flow<T>> flow,
@@ -440,7 +459,7 @@ inline R with_context_undispatched(
 // Now if the underlying collector was accepting concurrent emits, then this one is too.
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:203-212
 template <typename T>
-class UndispatchedContextCollector : public FlowCollector<T> {
+class UndispatchedContextCollector final : public FlowCollector<T> {
 public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:203-208
     UndispatchedContextCollector(FlowCollector<T>* downstream, std::shared_ptr<CoroutineContext> emit_context)
@@ -456,9 +475,10 @@ public:
     }
 
 private:
-    std::shared_ptr<CoroutineContext> emit_context_;
-    void* count_or_element_;
-    std::function<void*(T, Continuation<void*>*)> emit_ref_;
+    const std::shared_ptr<CoroutineContext> emit_context_;
+    void* const count_or_element_; // precompute for fast with_context_undispatched
+    // allocate suspend function ref once on creation
+    const std::function<void*(T, Continuation<void*>*)> emit_ref_;
 };
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:196-201

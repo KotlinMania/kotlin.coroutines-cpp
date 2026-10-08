@@ -200,7 +200,7 @@ inline void* emit_all(
 // NOTE(port): The source-private generic class requires a header definition for
 // arbitrary C++ element types. Its namespace preserves the source declaration.
 template <typename T>
-class ChannelAsFlow : public internal::ChannelFlow<T> {
+class ChannelAsFlow final : public internal::ChannelFlow<T> {
 public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:95-102
     ChannelAsFlow(
