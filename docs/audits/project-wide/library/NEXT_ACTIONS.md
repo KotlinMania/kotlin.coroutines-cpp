@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 827/2918 matched (target 3042) — 28.3%
-- **Class/type parity:** 359/560 matched (target 520) — 64.1%
-- **Combined symbol parity:** 1186/3478 matched (target 3562) — 34.1%
+- **Function parity:** 827/2918 matched (target 3040) — 28.3%
+- **Class/type parity:** 359/560 matched (target 519) — 64.1%
+- **Combined symbol parity:** 1186/3478 matched (target 3559) — 34.1%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -21,7 +21,7 @@ Based on AST analysis, here are the concrete next steps.
 - **Similarity:** 0.22 (needs 63% improvement)
 - **Dependencies:** 65
 - **Priority Score:** 65001308.0
-- **Functions:** 12/12 matched (target 18)
+- **Functions:** 12/12 matched (target 19)
 - **Missing functions:** _none_
 - **Types:** 1/1 matched
 - **Missing types:** _none_
@@ -64,7 +64,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.22
 - **Dependents:** 65
 - **Priority Score:** 65001308.0
-- **Functions:** 12/12 matched (target 18)
+- **Functions:** 12/12 matched (target 19)
 - **Missing functions:** _none_
 - **Types:** 1/1 matched
 - **Missing types:** _none_
@@ -2823,11 +2823,11 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.13
 - **Dependents:** 0
 - **Priority Score:** 808.7
-- **Functions:** 8/8 matched (target 29)
+- **Functions:** 8/8 matched (target 26)
 - **Missing functions:** _none_
-- **Types:** 0/0 matched (target 5)
+- **Types:** 0/0 matched (target 4)
 - **Missing types:** _none_
-- **Lint issues:** 3
+- **Lint issues:** 2
 
 ### 216. channels.Produce
 

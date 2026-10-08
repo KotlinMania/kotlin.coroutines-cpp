@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 827/2918 matched (target 3042) | 28.3% |
-| Class/type parity | 359/560 matched (target 520) | 64.1% |
-| Combined symbol parity | 1186/3478 matched (target 3562) | 34.1% |
+| Function parity | 827/2918 matched (target 3040) | 28.3% |
+| Class/type parity | 359/560 matched (target 519) | 64.1% |
+| Combined symbol parity | 1186/3478 matched (target 3559) | 34.1% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -20,8 +20,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Missing source symbol files | 99 | 833 symbols |
 | Cheat/scoring failures | 123 | forced to 0% |
 | Total source files | 354 | 100% |
-| Target units (paired) | 603 | - |
-| Target files (total) | 785 | - |
+| Target units (paired) | 602 | - |
+| Target files (total) | 784 | - |
 | Porting progress | 251 | 70.9% (matched) |
 | Missing files | 103 | 29.1% |
 
@@ -210,7 +210,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 166 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
 | 167 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 4) | _none_ | - | 4 | 41608.8 |
 | 168 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
-| 169 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | - | 0 | 808.7 |
+| 169 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 26) | _none_ | 0/0 matched (target 4) | _none_ | - | 0 | 808.7 |
 | 170 | `common.Job` | `coroutines.Job` | 0.14 | 10/24 matched (target 28) | `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke` | 5/7 matched (target 8) | `DisposableHandle`, `DisposeOnCompletion` | - | 16 | 163108.6 |
 | 171 | `channels.Broadcast` | `channels.Broadcast` | 0.14 | 3/10 matched (target 11) | `ReceiveChannel<E>::broadcast`, `CoroutineScope::broadcast`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancelInternal`, `LazyBroadcastCoroutine::openSubscription`, `LazyBroadcastCoroutine::onStart` | 2/2 matched | _none_ | - | 7 | 71208.6 |
 | 172 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | - | 1 | 11608.5 |
@@ -231,7 +231,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 187 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.21 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
 | 188 | `selects.Select` | `selects.Select` | 0.21 | 25/30 matched (target 73) | `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | - | 5 | 1054607.9 |
 | 189 | `test.CoroutineDispatcherOperatorFunInvokeTest` | `tests.CoroutineDispatcherOperatorFunInvokeTest` | 0.22 | 3/8 matched (target 12) | `CoroutineDispatcherOperatorFunInvokeTest::testThrowException`, `CoroutineDispatcherOperatorFunInvokeTest::testWithContextChildWaitSameContext`, `CoroutineDispatcherOperatorFunInvokeTest::dispatch`, `CoroutineDispatcherOperatorFunInvokeTest::isDispatchNeeded`, `CoroutineDispatcherOperatorFunInvokeTest::dispatchYield` | 2/2 matched (target 3) | _none_ | 0/2 | 5 | 51007.8 |
-| 190 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 18) | _none_ | 1/1 matched | _none_ | - | 0 | 65001308.0 |
+| 190 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 19) | _none_ | 1/1 matched | _none_ | - | 0 | 65001308.0 |
 | 191 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | - | 0 | 1007.8 |
 | 192 | `sync.Mutex` | `sync.Mutex` | 0.23 | 11/16 matched (target 20) | `Mutex`, `MutexImpl::CancellableContinuationWithOwner::tryResume`, `MutexImpl::CancellableContinuationWithOwner::resume`, `MutexImpl::SelectInstanceWithOwner::trySelect`, `MutexImpl::SelectInstanceWithOwner::selectInRegistrationPhase` | 2/4 matched (target 2) | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` | - | 7 | 72007.7 |
 | 193 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 18/19 matched (target 42) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | - | 1 | 12507.6 |

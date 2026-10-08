@@ -10,7 +10,7 @@ This list is complete and includes function/type detail for every matched file. 
 
 | Rank | Source | Target | Function similarity | Deps | Functions | Missing functions | Types | Missing types | SymDeficit | SrcSymbols | Priority |
 |------|--------|--------|------------|------|-----------|-------------------|-------|---------------|-----------|------------|----------|
-| 1 | `flow.Channels` | `flow.Channels` | 0.22 | 65 | 12/12 matched (target 18) | _none_ | 1/1 matched | _none_ | 0 | 13 | 65001308.0 |
+| 1 | `flow.Channels` | `flow.Channels` | 0.22 | 65 | 12/12 matched (target 19) | _none_ | 1/1 matched | _none_ | 0 | 13 | 65001308.0 |
 | 2 | `flow.Flow` | `flow.Flow` | 0.17 | 28 | 1/1 matched (target 2) | _none_ | 2/2 matched (target 4) | _none_ | 0 | 3 | 28000308.0 |
 | 3 | `internal.Concurrent` | `internal.Concurrent` | 0.32 | 14 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | 1 | 9 | 14010907.0 |
 | 4 | `native.Exceptions` | `native.Exceptions` | 0.15 | 6 | 3/4 matched (target 10) | `JobCancellationException::toString` | 1/2 matched | `CancellationException` | 2 | 6 | 6020608.5 |
@@ -224,7 +224,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 212 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 0 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | 0 | 10 | 1007.8 |
 | 213 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.29 | 0 | 9/9 matched (target 17) | _none_ | 1/1 matched | _none_ | 0 | 10 | 1007.1 |
 | 214 | `flow.VirtualTime` | `flow.VirtualTime` | 0.51 | 0 | 7/7 matched (target 11) | _none_ | 2/2 matched | _none_ | 0 | 9 | 904.9 |
-| 215 | `terminal.Collect` | `flow.Collect` | 0.13 | 0 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | 0 | 8 | 808.7 |
+| 215 | `terminal.Collect` | `flow.Collect` | 0.13 | 0 | 8/8 matched (target 26) | _none_ | 0/0 matched (target 4) | _none_ | 0 | 8 | 808.7 |
 | 216 | `channels.Produce` | `channels.Produce` | 0.27 | 0 | 6/6 matched (target 23) | _none_ | 2/2 matched (target 3) | _none_ | 0 | 8 | 807.3 |
 | 217 | `common.Delay` | `coroutines.Delay` | 0.28 | 0 | 6/6 matched (target 11) | _none_ | 2/2 matched | _none_ | 0 | 8 | 807.2 |
 | 218 | `channels.ConflatedBufferedChannel` | `channels.ConflatedBufferedChannel` | 0.40 | 0 | 7/7 matched (target 9) | _none_ | 1/1 matched | _none_ | 0 | 8 | 806.0 |
@@ -395,7 +395,7 @@ These files need immediate attention:
 - **flow.Channels** → `flow.Channels`
   - Function similarity: 0.22
   - Dependencies: 65
-  - Functions: 12/12 matched (target 18)
+  - Functions: 12/12 matched (target 19)
   - Missing functions: _none_
   - Types: 1/1 matched
   - Missing types: _none_
