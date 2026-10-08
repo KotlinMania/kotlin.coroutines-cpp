@@ -3,6 +3,7 @@
 #pragma once
 #include <llvm-c/Core.h>
 #include "LlvmCallable.hpp"
+#include "Runtime.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -313,14 +314,16 @@ private:
 };
 
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:329-363,411-441,573-579
-class CodegenLlvmHelpers : public BasicLlvmHelpers {
+class CodegenLlvmHelpers : public BasicLlvmHelpers, public RuntimeAware {
 public:
-    // NOTE(port): Bind the actual compiler and Runtime LLVM modules directly;
+    // NOTE(port): Bind actual compiler LLVM handles and Runtime metadata directly;
     // their owners outlive this helper and its attribute providers.
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:329-330,411-441
     CodegenLlvmHelpers(LLVMContextRef llvm_context, LLVMModuleRef module,
-        bool use_llvm_opaque_pointers, LLVMModuleRef runtime_module);
+        bool use_llvm_opaque_pointers, const Runtime& runtime);
     ~CodegenLlvmHelpers() override;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:409-409
+    const Runtime& runtime() const override;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:418-418
     const LlvmFunction& alloc_instance_function() const;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:419-419
@@ -384,7 +387,7 @@ private:
         LLVMTypeRef type, const std::vector<std::string>& attributes = {});
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:416-416
     std::unique_ptr<LlvmFunction::Declaration> import_rt_function(const std::string& name, bool returns_object_type);
-    const LLVMModuleRef runtime_module_;
+    const Runtime& runtime_;
     const bool use_llvm_opaque_pointers_;
     const std::unique_ptr<LlvmFunction::Declaration> alloc_instance_function_;
     const std::unique_ptr<LlvmFunction::Declaration> alloc_array_function_;

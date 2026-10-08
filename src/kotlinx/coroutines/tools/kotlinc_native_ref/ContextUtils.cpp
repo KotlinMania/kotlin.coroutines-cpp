@@ -191,11 +191,11 @@ const std::map<std::string, std::vector<LLVMValueRef>>& BasicLlvmHelpers::runtim
 
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:329-330,411-441
 CodegenLlvmHelpers::CodegenLlvmHelpers(LLVMContextRef llvm_context, LLVMModuleRef module,
-    bool use_llvm_opaque_pointers, LLVMModuleRef runtime_module)
+    bool use_llvm_opaque_pointers, const Runtime& runtime)
     : BasicLlvmHelpers(llvm_context, module, use_llvm_opaque_pointers),
-      runtime_module_(runtime_module), use_llvm_opaque_pointers_(use_llvm_opaque_pointers),
-      alloc_instance_function_((LLVMSetDataLayout(module, LLVMGetDataLayoutStr(runtime_module)),
-          LLVMSetTarget(module, LLVMGetTarget(runtime_module)), import_rt_function("AllocInstance", true))),
+      runtime_(runtime), use_llvm_opaque_pointers_(use_llvm_opaque_pointers),
+      alloc_instance_function_((LLVMSetDataLayout(module, runtime.data_layout().c_str()),
+          LLVMSetTarget(module, runtime.target().c_str()), import_rt_function("AllocInstance", true))),
       alloc_array_function_(import_rt_function("AllocArrayInstance", true)),
       register_global_function_(import_rt_function("RegisterGlobal", false)),
       update_heap_ref_function_(import_rt_function("UpdateHeapRef", false)),
@@ -224,6 +224,8 @@ CodegenLlvmHelpers::CodegenLlvmHelpers(LLVMContextRef llvm_context, LLVMModuleRe
           {"cold", "noreturn", "nounwind"})) {}
 // NOTE(port): Own compiler-side callable descriptors; LLVM modules stay borrowed.
 CodegenLlvmHelpers::~CodegenLlvmHelpers() = default;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:409-409
+const Runtime& CodegenLlvmHelpers::runtime() const { return runtime_; }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:418-418
 const LlvmFunction& CodegenLlvmHelpers::alloc_instance_function() const { return *alloc_instance_function_; }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:419-419
@@ -309,7 +311,7 @@ std::unique_ptr<LlvmFunction::Declaration> CodegenLlvmHelpers::llvm_intrinsic(co
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:416-416
 std::unique_ptr<LlvmFunction::Declaration> CodegenLlvmHelpers::import_rt_function(const std::string& name,
     bool returns_object_type) {
-    return import_function(name, runtime_module_, returns_object_type);
+    return import_function(name, runtime().llvm_module(), returns_object_type);
 }
 
 }

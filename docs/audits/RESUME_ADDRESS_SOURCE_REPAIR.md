@@ -1,7 +1,54 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
-## LLVM runtime-function imports — 2026-10-08
+## Compiler Runtime metadata and RuntimeAware wiring — 2026-10-08
+
+Continuation from b5b16a95 translates Runtime.kt:14-23,27-122 into
+Runtime.hpp:12,123 and Runtime.cpp:49-218. This is the compiler's LLVM metadata
+object, not a Native runtime implementation. Required and optional named types
+retain source lookup order, including the touch-global fallback. Source target
+and data-layout snapshots, actual LLVM target data, eager header/frame types,
+synchronized lazy ObjC/block types, ABI size/alignment/offset calculations,
+pointer properties, string-header extra size, object alignment and byte order
+are implemented. Created target data is owned and disposed; LLVM module/context
+and types stay borrowed. All algorithmic bodies are in Runtime.cpp.
+
+CodegenLlvmHelpers now implements RuntimeAware at ContextUtils.hpp:317 and
+ContextUtils.cpp:228. Its explicit compiler boundary takes a borrowed Runtime
+metadata object instead of a raw runtime-module argument. Layout/target copying
+uses the source metadata snapshots, and import_rt_function at :312 uses the
+metadata's actual module. CMake registers Runtime.cpp on the three LLVM consumer
+targets. No Kotlin compiler invocation or Native runtime link was added.
+
+The phase-context/diagnostic bitcode-loading constructor and the two IR-keyed
+caches at Runtime.kt:24-25 are still missing. No pointer-keyed replacement cache
+was introduced. The complete generation-state constructor, frame allocation,
+root-update consumers, VariableManager, public object-result calls and exception
+emission remain unfinished. This source advance supplies frameOverlayType,
+pointerSize and pointerAlignment dependencies; it does not complete their callers.
+
+Fresh -Wall -Wextra -Werror syntax compilation passed. KotlinxCoroutinePass and
+kxs_codegen_test rebuilt under LLVM 23.1.2 with Native runtime OFF, and the existing
+code-generation fixture verified/emitted its module. The bounded runtime_contract
+harness passed ASan/UBSan using LLVM layout/type fixtures: 32-bit big-endian and
+64-bit little-endian layout, touch-global fallback, missing required/optional
+types, metadata snapshots, ObjC shapes/identity, lazy failure/retry and borrowed
+module survival. The updated import_contract passed ASan/UBSan and verifies the
+actual RuntimeAware object identity plus the previous declaration-import behavior.
+These fixtures contain no actual Native runtime bodies and prove neither required
+MLX/shared-state-machine acceptance path.
+
+Scoped ast_distance --deep completed against the LLVM Kotlin source directory and
+kotlinc_native_ref target root. Runtime:7/7 matched explicit function bodies,
+2/2 types, body similarity0.36; ContextUtils:16/51 bodies,22/36 types,0.21.
+Runtime's complete property/constructor/cache parity is not represented by the
+7/7 count. deep_transliteration_evidence.txt explicitly reports unsupported class
+emission, generated parse errors, zero supported span/normalized logic and a
+provisional score; target parsing reports no errors. Full-root compiler/library
+measurements and both complete runtime acceptance paths remain open. Evidence is
+under build/source-continuation/llvm-source-distance (ignored build artifacts).
+
+## LLVM runtime-function imports — 2026-10-08 (historical b5b16a95 receipt)
 
 Continuation from df67badd translates ContextUtils.kt:329-365,411-441,573-579
 and LlvmUtils.kt:128-134. CodegenLlvmHelpers at ContextUtils.hpp:316 and

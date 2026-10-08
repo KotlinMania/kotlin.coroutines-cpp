@@ -39,6 +39,7 @@ target_link_libraries(kxs_codegen_test PRIVATE LLVM)
 foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
     target_link_libraries(${KXS_IR_TARGET} PRIVATE Threads::Threads)
     target_sources(${KXS_IR_TARGET} PRIVATE
+        ../kotlinc_native_ref/Runtime.cpp
         ../kotlinc_native_ref/ContextUtils.cpp
         ../kotlinc_native_ref/LlvmAttributes.cpp
         ../kotlinc_native_ref/LlvmParamType.cpp

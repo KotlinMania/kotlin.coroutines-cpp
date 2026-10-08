@@ -6,7 +6,23 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current runtime-function import continuation — 2026-10-08:** From df67badd,
+**Current Runtime metadata continuation — 2026-10-08:** From b5b16a95,
+Runtime.hpp/.cpp translate compiler LLVM metadata: named/touch-global type lookup,
+layout/target snapshots, header/frame types, lazy ObjC/block metadata, ABI layout
+and pointer/alignment/string/byte-order properties. CodegenLlvmHelpers now takes a
+borrowed Runtime and implements RuntimeAware; runtime imports use its actual
+module and layout copying uses source snapshots. Native-OFF LLVM targets rebuild,
+strict syntax compilation and bounded ASan/UBSan metadata/import fixtures pass.
+Scoped deep Runtime:7/7 explicit bodies,2/2 types,similarity0.36;
+ContextUtils:16/51 bodies,22/36 types,0.21. Unsupported source class emission keeps
+normalized logic/span criteria provisional. Runtime's phase-context bitcode loader
+and IR-keyed caches remain missing. Continue source frame allocation/root updates,
+VariableManager, object-result calls and exception emission; do not substitute
+callback hooks or pointer-keyed maps for missing compiler dependencies. Both full
+acceptance paths and full-root measurements remain open. See the first section of
+RESUME_ADDRESS_SOURCE_REPAIR.md. Goal active.
+
+**Runtime-function import checkpoint b5b16a95 — 2026-10-08:** From df67badd,
 CodegenLlvmHelpers binds actual supplied compiler/runtime LLVM modules, copies
 layout/target and imports twenty-four eager source runtime symbols with actual
 signatures, attributes and explicit object-result flags. Private function,
