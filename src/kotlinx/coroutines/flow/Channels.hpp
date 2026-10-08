@@ -59,8 +59,8 @@ namespace internal {
 void mark_channel_consumed(bool consume, std::atomic<bool>& consumed);
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
-// NOTE(port): Type erasure keeps the private loop and lowered suspension frame
-// concrete in Channels.cpp. The bindings below carry actual iterator/element types.
+// NOTE(port): Type erasure keeps the source loop concrete in Channels.cpp.
+// The Clang frontend generates its suspension frame and retained local storage.
 void* emit_all_erased(
     std::function<void()> make_iterator,
     std::function<void*(Continuation<void*>*)> has_next,
@@ -71,8 +71,8 @@ void* emit_all_erased(
     std::shared_ptr<Continuation<void*>> completion);
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
-// NOTE(port): These are typed frame spills, not an independent coroutine state
-// machine. Shared owners stay owned; raw arguments stay explicitly borrowed.
+// NOTE(port): Typed bindings carry the actual iterator and element through the
+// concrete loop. Shared owners stay owned; raw arguments stay borrowed.
 template <typename T>
 struct EmitAllArguments {
     FlowCollector<T>* receiver;
