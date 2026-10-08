@@ -7398,10 +7398,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Builders.cpp
 score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.603184
-function_name_parity: 0.478261
+translated_ast_cosine: 0.602548
+function_name_parity: 0.652174
 normalized_logic: 0.000000
-documentation_correspondence: 0.004465
+documentation_correspondence: 0.002203
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -7505,10 +7505,22 @@ Function Array<T>::asFlow:149 -> kotlinx::coroutines::flow::as_flow:243 | normal
   Target logic: node:66 identifier:array identifier:std type:array type:n type:t node:5 node:43 identifier:internal identifier:unsafeflow type:t node:45 operator:& identifier:array node:66 identifier:collector type:flowcollector type:t node:66 type:continuation type:void operator:* identifier:completion type:void operator:* type:frame type:continuationimpl identifier:frame node:66 identifier:array identifier:std type:array type:n type:t node:66 identifier:collector type:flowcollector type:t node:66 type:continuation type:void operator:* identifier:completion identifier:continuationimpl node:43 identifier:kotlinx identifier:coroutines identifier:internal identifier:retaincontinuation identifier:completion identifier:array identifier:array identifier:collector identifier:collector type:void identifier:retain identifier:selfref operator:= node:43 identifier:sharedfromthis type:void identifier:invokesuspend node:66 type:result type:void operator:* identifier:result node:9 node:43 identifier:coroutinebegin node:3 identifier:index operator:< identifier:n node:43 identifier:coroutineyield node:43 identifier:collector identifier:emit identifier:array identifier:index operator:++ identifier:index node:43 identifier:selfref identifier:reset node:43 identifier:coroutineend node:43 identifier:selfref identifier:reset node:10 identifier:label type:void operator:= identifier:array identifier:std type:array type:n type:t identifier:collector type:flowcollector type:t identifier:std type:sizet identifier:index operator:= identifier:selfref identifier:std type:basecontinuationimpl type:sharedptr identifier:frame operator:= node:43 identifier:array identifier:collector identifier:completion identifier:makeshared identifier:std type:frame node:43 identifier:frame identifier:retain node:5 node:43 identifier:frame identifier:start node:43 type:result type:void operator:* identifier:success
 Function channelFlow:239 -> kotlinx::coroutines::flow::channel_flow:553 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:std type:function type:void operator:* node:66 identifier:channels type:producerscope type:t operator:* node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:block node:5 node:43 identifier:std identifier:makeshared identifier:internal type:channelflowbuilder type:t node:43 identifier:std identifier:move identifier:block
+  Target logic: node:66 identifier:std type:function type:void operator:* node:66 identifier:channels type:producerscope type:t operator:* node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:block node:5 node:43 identifier:std identifier:makeshared type:channelflowbuilder type:t node:43 identifier:std identifier:move identifier:block
 Function callbackFlow:303 -> kotlinx::coroutines::flow::callback_flow:562 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:std type:function type:void operator:* node:66 identifier:channels type:producerscope type:t operator:* node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:block node:5 node:43 identifier:std identifier:makeshared identifier:internal type:callbackflowbuilder type:t node:43 identifier:std identifier:move identifier:block
+  Target logic: node:66 identifier:std type:function type:void operator:* node:66 identifier:channels type:producerscope type:t operator:* node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:block node:5 node:43 identifier:std identifier:makeshared type:callbackflowbuilder type:t node:43 identifier:std identifier:move identifier:block
+Function ChannelFlowBuilder::create:312 -> kotlinx::coroutines::flow::ChannelFlowBuilder::create:485 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr node:66 identifier:capacity type:signed32 node:66 identifier:channels identifier:onbufferoverflow type:bufferoverflow node:5 type:channelflowbuilder type:t identifier:block identifier:context identifier:capacity identifier:onbufferoverflow
+Function ChannelFlowBuilder::collectTo:315 -> kotlinx::coroutines::flow::ChannelFlowBuilder::collect_to:493 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:channels identifier:scope type:producerscope type:t node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:completion node:5 node:43 identifier:block identifier:scope node:43 identifier:std identifier:move identifier:completion
+Function CallbackFlowBuilder::collectTo:329 -> kotlinx::coroutines::flow::CallbackFlowBuilder::collect_to:514 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:channels identifier:scope type:producerscope type:t node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:completion node:43 identifier:dsl identifier:suspend node:43 type:channelflowbuilder type:t identifier:collectto identifier:scope identifier:completion node:1 operator:! node:43 identifier:scope identifier:isclosedforsend node:10 node:43 identifier:illegalstateexception literal:52:"'awaitClose { yourCallbackOrListener.cancel() }' should be used in the end of callbackFlow block.\n" literal:52:"Otherwise, a callback/listener may leak in case of external cancellation.\n" literal:52:"See callbackFlow API documentation for the details." node:5
+Function CallbackFlowBuilder::create:347 -> kotlinx::coroutines::flow::CallbackFlowBuilder::create:533 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr node:66 identifier:capacity type:signed32 node:66 identifier:channels identifier:onbufferoverflow type:bufferoverflow node:5 type:callbackflowbuilder type:t identifier:block node:43 identifier:std identifier:move identifier:context identifier:capacity identifier:onbufferoverflow
 Missing source function: Iterable<T>::asFlow:85
 Missing source function: Iterator<T>::asFlow:94
 Missing source function: Sequence<T>::asFlow:103
@@ -7516,11 +7528,7 @@ Missing source function: IntArray::asFlow:160
 Missing source function: LongArray::asFlow:171
 Missing source function: IntRange::asFlow:180
 Missing source function: LongRange::asFlow:189
-Missing source function: ChannelFlowBuilder::create:312
-Missing source function: ChannelFlowBuilder::collectTo:315
 Missing source function: ChannelFlowBuilder::toString:318
-Missing source function: CallbackFlowBuilder::collectTo:329
-Missing source function: CallbackFlowBuilder::create:347
 Extra target function: kotlinx::coroutines::flow::SafeFlow::SafeFlow:91
 Extra target function: kotlinx::coroutines::flow::flow:106
 Extra target function: kotlinx::coroutines::flow::Frame::Frame:141
@@ -7543,12 +7551,8 @@ Extra target function: kotlinx::coroutines::flow::detail::RangeFlowContinuation:
 Extra target function: kotlinx::coroutines::flow::as_flow_range:435
 Extra target function: kotlinx::coroutines::flow::as_flow_range:445
 Extra target function: kotlinx::coroutines::flow::scoped_flow:456
-Extra target function: kotlinx::coroutines::flow::internal::ChannelFlowBuilder::ChannelFlowBuilder:476
-Extra target function: kotlinx::coroutines::flow::internal::ChannelFlowBuilder::create:484
-Extra target function: kotlinx::coroutines::flow::internal::ChannelFlowBuilder::collect_to:492
-Extra target function: kotlinx::coroutines::flow::internal::CallbackFlowBuilder::CallbackFlowBuilder:504
-Extra target function: kotlinx::coroutines::flow::internal::CallbackFlowBuilder::collect_to:512
-Extra target function: kotlinx::coroutines::flow::internal::CallbackFlowBuilder::create:531
+Extra target function: kotlinx::coroutines::flow::ChannelFlowBuilder::ChannelFlowBuilder:476
+Extra target function: kotlinx::coroutines::flow::CallbackFlowBuilder::CallbackFlowBuilder:505
 === Emitted target buffer ===
 __ast_distance_unmapped__("file_annotation", "@file:JvmMultifileClass")
 __ast_distance_unmapped__("file_annotation", "@file:JvmName(\"FlowKt\")")
@@ -7758,8 +7762,10 @@ TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinma
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:303	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:562	callbackFlow -> kotlinx::coroutines::flow::callback_flow
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
-MISSING_TARGET_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:315	-	ChannelFlowBuilder::collectTo
-MISSING_TARGET_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:329	-	CallbackFlowBuilder::collectTo
+TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:315	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:493	ChannelFlowBuilder::collectTo -> kotlinx::coroutines::flow::ChannelFlowBuilder::collect_to
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
+MARKER_ONLY_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:329	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:514	CallbackFlowBuilder::collectTo -> kotlinx::coroutines::flow::CallbackFlowBuilder::collect_to
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=517 indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 8
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/channels/Channels.common.kt -> kotlinx/coroutines/channels/Channels.hpp ===

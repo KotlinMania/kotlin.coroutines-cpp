@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 827/2918 matched (target 3037) | 28.3% |
+| Function parity | 831/2918 matched (target 3037) | 28.5% |
 | Class/type parity | 359/560 matched (target 519) | 64.1% |
-| Combined symbol parity | 1186/3478 matched (target 3556) | 34.1% |
+| Combined symbol parity | 1190/3478 matched (target 3556) | 34.2% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -186,28 +186,28 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 142 | `channels.Channels.common` | `channels.Channels.common` | 0.04 | 4/6 matched (target 21) | `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull` | 0/0 matched (target 3) | _none_ | - | 2 | 20609.6 |
 | 143 | `operators.Limit` | `flow.Limit` | 0.04 | 7/8 matched (target 44) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | - | 1 | 10809.6 |
 | 144 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.6 |
-| 145 | `flow.Builders` | `flow.FlowBuilders` | 0.04 | 11/23 matched (target 39) | `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::create`, `ChannelFlowBuilder::collectTo`, `ChannelFlowBuilder::toString`, `CallbackFlowBuilder::collectTo`, `CallbackFlowBuilder::create` | 4/4 matched (target 8) | _none_ | - | 12 | 122709.6 |
-| 146 | `internal.Symbol` | `internal.Symbol` | 0.04 | 2/2 matched (target 4) | _none_ | 1/1 matched | _none_ | - | 0 | 1000309.6 |
-| 147 | `common.TestDispatcher` | `test.TestDispatcher` | 0.05 | 2/6 matched (target 8) | `TestDispatcher::processEvent`, `TestDispatcher::timeoutMessage`, `CancellableContinuationRunnable::run`, `cancellableRunnableIsCancelled` | 1/2 matched | `CancellableContinuationRunnable` | - | 5 | 50809.5 |
-| 148 | `operators.Errors` | `flow.Errors` | 0.05 | 3/6 matched (target 13) | `Flow<T>::catchImpl`, `Throwable::isCancellationCause`, `Throwable::isSameExceptionAs` | 0/0 matched (target 1) | _none_ | - | 3 | 30609.5 |
-| 149 | `test.CancellableResumeTest` | `tests.CancellableResumeTest` | 0.06 | 0/11 matched (target 1) | `CancellableResumeTest::testResumeImmediateNormally`, `CancellableResumeTest::testResumeImmediateAfterCancel`, `CancellableResumeTest::testResumeImmediateAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancel`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancelWithHandlerFailure`, `CancellableResumeTest::testResumeLaterNormally`, `CancellableResumeTest::testResumeLaterAfterCancel`, `CancellableResumeTest::testResumeLaterAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeCancelWhileDispatched`, `CancellableResumeTest::testResumeCancelWhileDispatchedWithHandlerFailure`, `CancellableResumeTest::testResumeUnconfined` | 1/1 matched | _none_ | 0/11 | 11 | 111209.4 |
-| 150 | `operators.Emitters` | `flow.Emitters` | 0.06 | 6/8 matched (target 16) | `Flow<T>::unsafeTransform`, `FlowCollector<T>::invokeSafely` | 1/1 matched (target 2) | _none_ | - | 2 | 20909.4 |
-| 151 | `operators.Context` | `flow.Context` | 0.06 | 5/7 matched | `Flow<T>::buffer`, `checkFlowContext` | 1/2 matched (target 1) | `CancellableFlow` | - | 3 | 30909.4 |
-| 152 | `flow.NamedDispatchers` | `testing.NamedDispatchers` | 0.07 | 5/9 matched (target 15) | `NamedDispatchers::invoke`, `NamedDispatchers::named`, `NamedDispatchers::dispatch`, `ArrayStack::ensureCapacity` | 2/2 matched (target 3) | _none_ | - | 4 | 41109.3 |
-| 153 | `internal.AbstractSharedFlow` | `internal.AbstractSharedFlow` | 0.07 | 1/4 matched (target 6) | `AbstractSharedFlow::allocateSlot`, `AbstractSharedFlow::freeSlot`, `SubscriptionCountStateFlow::increment` | 3/3 matched (target 4) | _none_ | - | 3 | 30709.3 |
-| 154 | `internal.MainDispatcherFactory` | `internal.MainDispatcherFactory` | 0.07 | 1/1 matched | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 209.3 |
-| 155 | `common.CompletionState` | `coroutines.CompletionState` | 0.07 | 3/6 matched (target 3) | `CompletedExceptionally::makeHandled`, `CompletedExceptionally::toString`, `CancelledContinuation::makeResumed` | 0/2 matched (target 0) | `CompletedExceptionally`, `CancelledContinuation` | - | 5 | 50809.3 |
-| 156 | `kotlinx-coroutines-core.nativeDarwin.test.Launcher` | `test.Launcher` | 0.07 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.3 |
-| 157 | `operators.Transform` | `flow.Transform` | 0.07 | 12/13 matched (target 100) | `Flow<*>::filterIsInstance` | 0/0 matched (target 13) | _none_ | - | 1 | 11309.3 |
-| 158 | `selects.OnTimeout` | `selects.OnTimeout` | 0.07 | 3/3 matched (target 8) | _none_ | 1/1 matched | _none_ | - | 0 | 409.3 |
-| 159 | `operators.Zip` | `flow.Zip` | 0.08 | 13/18 matched (target 27) | `combineTransform`, `combineUnsafe`, `combineTransformUnsafe`, `nullArrayFactory`, `combineTransform` | 0/0 matched (target 1) | _none_ | - | 5 | 51809.2 |
-| 160 | `common.MainCoroutineDispatcher` | `coroutines.MainCoroutineDispatcher` | 0.08 | 3/3 matched | _none_ | 1/1 matched | _none_ | - | 0 | 409.2 |
-| 161 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.08 | 6/7 matched (target 10) | `loop` | 1/1 matched | _none_ | - | 1 | 10809.2 |
-| 162 | `operators.Merge` | `flow.Merge` | 0.08 | 8/9 matched (target 23) | `Iterable<Flow<T>>::merge` | 0/0 matched (target 3) | _none_ | - | 1 | 10909.2 |
-| 163 | `flow.StateFlow` | `flow.StateFlow` | 0.09 | 4/19 matched (target 47) | `MutableStateFlow`, `StateFlowSlot::allocateLocked`, `StateFlowSlot::freeLocked`, `StateFlowSlot::makePending`, `StateFlowSlot::takePending`, `StateFlowSlot::awaitPending`, `StateFlowImpl::compareAndSet`, `StateFlowImpl::updateState`, `StateFlowImpl::tryEmit`, `StateFlowImpl::emit`, `StateFlowImpl::resetReplayCache`, `StateFlowImpl::collect`, `StateFlowImpl::createSlot`, `StateFlowImpl::createSlotArray`, `StateFlowImpl::fuse` | 4/4 matched (target 7) | _none_ | - | 15 | 152309.1 |
-| 164 | `operators.Delay` | `flow.Delay` | 0.09 | 6/10 matched (target 9) | `Flow<T>::debounce`, `Flow<T>::debounce`, `Flow<T>::sample`, `Flow<T>::timeoutInternal` | 0/0 matched (target 1) | _none_ | - | 4 | 41009.1 |
-| 165 | `internal.InlineList` | `internal.InlineList` | 0.10 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | - | 1 | 10309.0 |
-| 166 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
+| 145 | `internal.Symbol` | `internal.Symbol` | 0.04 | 2/2 matched (target 4) | _none_ | 1/1 matched | _none_ | - | 0 | 1000309.6 |
+| 146 | `common.TestDispatcher` | `test.TestDispatcher` | 0.05 | 2/6 matched (target 8) | `TestDispatcher::processEvent`, `TestDispatcher::timeoutMessage`, `CancellableContinuationRunnable::run`, `cancellableRunnableIsCancelled` | 1/2 matched | `CancellableContinuationRunnable` | - | 5 | 50809.5 |
+| 147 | `operators.Errors` | `flow.Errors` | 0.05 | 3/6 matched (target 13) | `Flow<T>::catchImpl`, `Throwable::isCancellationCause`, `Throwable::isSameExceptionAs` | 0/0 matched (target 1) | _none_ | - | 3 | 30609.5 |
+| 148 | `test.CancellableResumeTest` | `tests.CancellableResumeTest` | 0.06 | 0/11 matched (target 1) | `CancellableResumeTest::testResumeImmediateNormally`, `CancellableResumeTest::testResumeImmediateAfterCancel`, `CancellableResumeTest::testResumeImmediateAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancel`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancelWithHandlerFailure`, `CancellableResumeTest::testResumeLaterNormally`, `CancellableResumeTest::testResumeLaterAfterCancel`, `CancellableResumeTest::testResumeLaterAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeCancelWhileDispatched`, `CancellableResumeTest::testResumeCancelWhileDispatchedWithHandlerFailure`, `CancellableResumeTest::testResumeUnconfined` | 1/1 matched | _none_ | 0/11 | 11 | 111209.4 |
+| 149 | `operators.Emitters` | `flow.Emitters` | 0.06 | 6/8 matched (target 16) | `Flow<T>::unsafeTransform`, `FlowCollector<T>::invokeSafely` | 1/1 matched (target 2) | _none_ | - | 2 | 20909.4 |
+| 150 | `operators.Context` | `flow.Context` | 0.06 | 5/7 matched | `Flow<T>::buffer`, `checkFlowContext` | 1/2 matched (target 1) | `CancellableFlow` | - | 3 | 30909.4 |
+| 151 | `flow.NamedDispatchers` | `testing.NamedDispatchers` | 0.07 | 5/9 matched (target 15) | `NamedDispatchers::invoke`, `NamedDispatchers::named`, `NamedDispatchers::dispatch`, `ArrayStack::ensureCapacity` | 2/2 matched (target 3) | _none_ | - | 4 | 41109.3 |
+| 152 | `internal.AbstractSharedFlow` | `internal.AbstractSharedFlow` | 0.07 | 1/4 matched (target 6) | `AbstractSharedFlow::allocateSlot`, `AbstractSharedFlow::freeSlot`, `SubscriptionCountStateFlow::increment` | 3/3 matched (target 4) | _none_ | - | 3 | 30709.3 |
+| 153 | `internal.MainDispatcherFactory` | `internal.MainDispatcherFactory` | 0.07 | 1/1 matched | _none_ | 1/1 matched (target 2) | _none_ | - | 0 | 209.3 |
+| 154 | `common.CompletionState` | `coroutines.CompletionState` | 0.07 | 3/6 matched (target 3) | `CompletedExceptionally::makeHandled`, `CompletedExceptionally::toString`, `CancelledContinuation::makeResumed` | 0/2 matched (target 0) | `CompletedExceptionally`, `CancelledContinuation` | - | 5 | 50809.3 |
+| 155 | `kotlinx-coroutines-core.nativeDarwin.test.Launcher` | `test.Launcher` | 0.07 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.3 |
+| 156 | `operators.Transform` | `flow.Transform` | 0.07 | 12/13 matched (target 100) | `Flow<*>::filterIsInstance` | 0/0 matched (target 13) | _none_ | - | 1 | 11309.3 |
+| 157 | `selects.OnTimeout` | `selects.OnTimeout` | 0.07 | 3/3 matched (target 8) | _none_ | 1/1 matched | _none_ | - | 0 | 409.3 |
+| 158 | `operators.Zip` | `flow.Zip` | 0.08 | 13/18 matched (target 27) | `combineTransform`, `combineUnsafe`, `combineTransformUnsafe`, `nullArrayFactory`, `combineTransform` | 0/0 matched (target 1) | _none_ | - | 5 | 51809.2 |
+| 159 | `common.MainCoroutineDispatcher` | `coroutines.MainCoroutineDispatcher` | 0.08 | 3/3 matched | _none_ | 1/1 matched | _none_ | - | 0 | 409.2 |
+| 160 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.08 | 6/7 matched (target 10) | `loop` | 1/1 matched | _none_ | - | 1 | 10809.2 |
+| 161 | `operators.Merge` | `flow.Merge` | 0.08 | 8/9 matched (target 23) | `Iterable<Flow<T>>::merge` | 0/0 matched (target 3) | _none_ | - | 1 | 10909.2 |
+| 162 | `flow.StateFlow` | `flow.StateFlow` | 0.09 | 4/19 matched (target 47) | `MutableStateFlow`, `StateFlowSlot::allocateLocked`, `StateFlowSlot::freeLocked`, `StateFlowSlot::makePending`, `StateFlowSlot::takePending`, `StateFlowSlot::awaitPending`, `StateFlowImpl::compareAndSet`, `StateFlowImpl::updateState`, `StateFlowImpl::tryEmit`, `StateFlowImpl::emit`, `StateFlowImpl::resetReplayCache`, `StateFlowImpl::collect`, `StateFlowImpl::createSlot`, `StateFlowImpl::createSlotArray`, `StateFlowImpl::fuse` | 4/4 matched (target 7) | _none_ | - | 15 | 152309.1 |
+| 163 | `operators.Delay` | `flow.Delay` | 0.09 | 6/10 matched (target 9) | `Flow<T>::debounce`, `Flow<T>::debounce`, `Flow<T>::sample`, `Flow<T>::timeoutInternal` | 0/0 matched (target 1) | _none_ | - | 4 | 41009.1 |
+| 164 | `internal.InlineList` | `internal.InlineList` | 0.10 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | - | 1 | 10309.0 |
+| 165 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
+| 166 | `flow.Builders` | `flow.FlowBuilders` | 0.12 | 15/23 matched (target 39) | `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::toString` | 4/4 matched (target 8) | _none_ | - | 8 | 82708.9 |
 | 167 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 4) | _none_ | - | 4 | 41608.8 |
 | 168 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
 | 169 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 26) | _none_ | 0/0 matched (target 4) | _none_ | - | 0 | 808.7 |
@@ -568,7 +568,6 @@ These files need significant work:
 - `channels.Channels.common` -> `channels.Channels.common` (0.04)
 - `operators.Limit` -> `flow.Limit` (0.04)
 - `selects.WhileSelect` -> `selects.WhileSelect` (0.04)
-- `flow.Builders` -> `flow.FlowBuilders` (0.04)
 - `internal.Symbol` -> `internal.Symbol` (0.04, 1 deps)
 - `common.TestDispatcher` -> `test.TestDispatcher` (0.05)
 - `operators.Errors` -> `flow.Errors` (0.05)
@@ -590,6 +589,7 @@ These files need significant work:
 - `operators.Delay` -> `flow.Delay` (0.09)
 - `internal.InlineList` -> `internal.InlineList` (0.10)
 - `terminal.Collection` -> `flow.Collection` (0.11)
+- `flow.Builders` -> `flow.FlowBuilders` (0.12)
 - `internal.ConcurrentLinkedList` -> `internal.ConcurrentLinkedList` (0.12)
 - `internal.SafeCollector.common` -> `internal.SafeCollector.common` (0.12)
 - `terminal.Collect` -> `flow.Collect` (0.13)
