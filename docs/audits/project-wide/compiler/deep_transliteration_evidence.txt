@@ -2,7 +2,7 @@
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/time/Duration.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/time/Duration.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/time/Duration.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.259152
 function_name_parity: 0.297297
@@ -218,7 +218,7 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Unit.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Unit.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Unit.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.338562
 function_name_parity: 1.000000
@@ -262,15 +262,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/DebugProbes.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/DebugProbes.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.038348
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.000000
 translated_ast_cosine: 0.514334
 function_name_parity: 0.333333
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.038348
+score: 0.000000
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -336,7 +336,7 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.513686
 function_name_parity: 0.333333
@@ -508,7 +508,7 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/context_impl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/context_impl.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.397095
 function_name_parity: 0.652174
@@ -689,15 +689,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationImpl.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.003880
 translated_ast_cosine: 0.468229
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.003758
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.003880
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -773,15 +773,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/intrinsics/Intrinsics.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Intrinsics.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.354259
 translated_ast_cosine: 0.564855
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.141317
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.354259
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -849,15 +849,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationInterceptor.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationInterceptor.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.007505
 translated_ast_cosine: 0.466515
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.007505
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -896,15 +896,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/IntrinsicsNative.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/IntrinsicsNative.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.003509
 translated_ast_cosine: 0.434484
 function_name_parity: 0.555556
 normalized_logic: 0.000000
 documentation_correspondence: 0.001919
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.003509
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -1150,7 +1150,7 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.327263
 function_name_parity: 1.000000
@@ -1220,15 +1220,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/Any.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/AnyIdentity.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/AnyToString.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.198025
 translated_ast_cosine: 0.350294
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.139801
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.198025
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -1268,15 +1268,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Array.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/Array.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.157028
 translated_ast_cosine: 0.343197
 function_name_parity: 0.333333
 normalized_logic: 0.000000
 documentation_correspondence: 0.130045
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.157028
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -1330,7 +1330,7 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/CodeGenerator.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/CodeGenerator.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.271598
 function_name_parity: 0.220690
@@ -1666,15 +1666,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Arrays.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/IntArray.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/IntArray.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.135916
 translated_ast_cosine: 0.307256
 function_name_parity: 0.125000
 normalized_logic: 0.000000
 documentation_correspondence: 0.058649
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.135916
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -1959,15 +1959,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KType.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KType.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.236289
 translated_ast_cosine: 0.294398
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.964562
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.236289
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -1996,15 +1996,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/Runtime.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/Runtime.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/Runtime.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.285447
 translated_ast_cosine: 0.570653
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.111290
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.285447
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -2117,15 +2117,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KClass.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClass.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.216930
 translated_ast_cosine: 0.437203
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.115071
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.216930
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -2154,15 +2154,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Map.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Map.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.086785
 translated_ast_cosine: 0.427103
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.028936
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.086785
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -2237,15 +2237,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Set.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Set.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.174786
 translated_ast_cosine: 0.297698
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.075902
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.174786
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -2303,15 +2303,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/ArrayIntrinsics.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/ArrayIntrinsics.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/ArrayIntrinsics.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.201149
 translated_ast_cosine: 0.493657
 function_name_parity: 0.111111
 normalized_logic: 0.000000
 documentation_correspondence: 0.150241
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.201149
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -2441,15 +2441,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/IrToBitcode_coroutines.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/IrToBitcode_coroutines.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.030392
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.000000
 translated_ast_cosine: 0.465287
 function_name_parity: 0.005435
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.030392
+score: 0.000000
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -2734,7 +2734,7 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/fir/checkers/src/org/jetbrains/kotlin/fir/analysis/checkers/expression/FirSuspendCallChecker.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/FirSuspendCallChecker.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/FirSuspendCallChecker.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.493222
 function_name_parity: 0.333333
@@ -2796,15 +2796,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KCallable.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KCallable.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.286972
 translated_ast_cosine: 0.486173
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.232495
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.286972
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -2833,15 +2833,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KProperty.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KProperty.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.383238
 translated_ast_cosine: 0.553197
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.829177
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.383238
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -2896,15 +2896,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Arrays.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Arrays.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Arrays.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.034024
 translated_ast_cosine: 0.426424
 function_name_parity: 0.600000
 normalized_logic: 0.000000
 documentation_correspondence: 0.043632
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.034024
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -3006,15 +3006,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/reflect/KClassifier.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClassifier.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.475761
 translated_ast_cosine: 0.372348
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.824958
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.475761
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -3046,7 +3046,7 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/UpgradeCallableReferences.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/UpgradeCallableReferences.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/UpgradeCallableReferences.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.503864
 function_name_parity: 0.130435
@@ -3116,15 +3116,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/TailSuspendCallsCollector.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/TailSuspendCallsCollector.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.017289
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.002260
 translated_ast_cosine: 0.580510
 function_name_parity: 0.571429
 normalized_logic: 0.008282
 documentation_correspondence: 0.018376
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.017289
+score: 0.002260
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -3203,15 +3203,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Iterator.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Iterator.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableIterator.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.137558
 translated_ast_cosine: 0.332901
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.071419
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.137558
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -3271,15 +3271,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/collections/ArrayUtil.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArrayUtil.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArrayUtil.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/NativeArrayUtil.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/NativeArrayUtil.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.098286
 translated_ast_cosine: 0.368500
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.073890
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.098286
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -3417,15 +3417,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Collections.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Collections.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionFunctions.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionFunctions.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.109395
 translated_ast_cosine: 0.398752
 function_name_parity: 0.090909
 normalized_logic: 0.000000
 documentation_correspondence: 0.064912
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.109395
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -3607,15 +3607,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/List.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableList.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.152306
 translated_ast_cosine: 0.346023
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.046534
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.152306
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -3678,15 +3678,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/generated/_ArraysNative.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArraysNative.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArraysNative.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.145983
 translated_ast_cosine: 0.255944
 function_name_parity: 0.037500
 normalized_logic: 0.000000
 documentation_correspondence: 0.020532
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.145983
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -6034,15 +6034,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/RandomAccess.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/RandomAccess.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.562027
 translated_ast_cosine: 0.395374
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.963624
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.562027
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -6071,15 +6071,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KAnnotatedElement.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KAnnotatedElement.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.408770
 translated_ast_cosine: 0.350035
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.824310
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.408770
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -6108,15 +6108,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrElement.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElement.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.153438
 translated_ast_cosine: 0.267189
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.095970
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.153438
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -6155,15 +6155,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeFunctionReferenceLowering.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/NativeFunctionReferenceLowering.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/NativeFunctionReferenceLowering.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.013956
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.000000
 translated_ast_cosine: 0.419998
 function_name_parity: 0.052632
 normalized_logic: 0.000000
 documentation_correspondence: 0.011242
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.013956
+score: 0.000000
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -6221,15 +6221,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/concurrent/atomics/Atomics.native.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/concurrent/atomics/Atomics.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/concurrent/atomics/Atomics.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.114080
 translated_ast_cosine: 0.149876
 function_name_parity: 0.290323
 normalized_logic: 0.000000
 documentation_correspondence: 0.039573
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.114080
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -6633,15 +6633,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/KClassImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/KClassImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/KClassIdentity.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/KClassNames.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.185045
 translated_ast_cosine: 0.345165
 function_name_parity: 0.363636
 normalized_logic: 0.000000
 documentation_correspondence: 0.378517
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.185045
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -6735,15 +6735,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/IrAttribute.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrAttribute.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.120364
 translated_ast_cosine: 0.419326
 function_name_parity: 0.500000
 normalized_logic: 0.000000
 documentation_correspondence: 0.085679
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.120364
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -6863,15 +6863,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/text/StringNumberConversions.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/text/StringNumberConversions.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/text/StringNumberConversions.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.201841
 translated_ast_cosine: 0.495994
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.095027
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.201841
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -7093,15 +7093,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/language.model/src/org/jetbrains/kotlin/types/Variance.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/Variance.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/Variance.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.014991
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.231369
 translated_ast_cosine: 0.318551
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.613469
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.014991
+score: 0.231369
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -7146,15 +7146,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrStatement.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrStatement.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.063246
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.508583
 translated_ast_cosine: 0.831782
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.629941
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.063246
+score: 0.508583
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -7187,15 +7187,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/AbstractFunctionReferenceLowering.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/AbstractFunctionReferenceLowering.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/AbstractFunctionReferenceLowering.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.001661
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.005686
 translated_ast_cosine: 0.574813
 function_name_parity: 0.105263
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.001661
+score: 0.005686
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -7314,15 +7314,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Collection.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableCollection.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.158520
 translated_ast_cosine: 0.385468
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.055520
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.158520
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -7383,15 +7383,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/collections/Collections.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionToArray.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionToArray.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.030960
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.140395
 translated_ast_cosine: 0.560983
 function_name_parity: 0.037037
 normalized_logic: 0.000000
 documentation_correspondence: 0.075789
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.030960
+score: 0.140395
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -7895,15 +7895,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KDeclarationContainer.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KDeclarationContainer.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.422789
 translated_ast_cosine: 0.350035
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.816497
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.422789
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -7932,15 +7932,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/TypeInfoNames.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoNames.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoNames.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoNamesNative.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.161519
 translated_ast_cosine: 0.408706
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.178247
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.161519
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -7991,15 +7991,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/types/IrType.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/types/IrType.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/types/IrType.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.162585
 translated_ast_cosine: 0.312528
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.113161
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.162585
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -8063,15 +8063,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/collections/PrimitiveIterators.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/PrimitiveIterators.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/PrimitiveIterators.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.104141
 translated_ast_cosine: 0.176245
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.036203
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.104141
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -8391,15 +8391,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/collections/MutableCollections.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableCollections.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.192774
 translated_ast_cosine: 0.566606
 function_name_parity: 0.121212
 normalized_logic: 0.000000
 documentation_correspondence: 0.103567
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.192774
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -8719,15 +8719,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/TypeInfoHolder.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoHolder.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.045268
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.501161
 translated_ast_cosine: 0.430483
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.770208
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.045268
+score: 0.501161
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -8761,15 +8761,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/IrElementBase.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElementBase.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElementBase.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElementBaseAttributes.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.006858
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.179720
 translated_ast_cosine: 0.399969
 function_name_parity: 0.727273
 normalized_logic: 0.000000
 documentation_correspondence: 0.306041
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.006858
+score: 0.179720
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -8843,15 +8843,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/mpp/TypeRefMarker.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/mpp/TypeRefMarker.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.106904
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.514336
 translated_ast_cosine: 0.480911
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.968246
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.106904
+score: 0.514336
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -8882,15 +8882,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/util/transform.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/util/Transform.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/util/TransformIfNeeded.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/util/TransformInPlace.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.264209
 translated_ast_cosine: 0.496812
 function_name_parity: 0.333333
 normalized_logic: 0.000000
 documentation_correspondence: 0.303077
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.264209
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -8999,15 +8999,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/symbols/IrSymbol.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrSymbol.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.012188
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.217940
 translated_ast_cosine: 0.335320
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.148492
 span_rule_coverage: 0.012821
 unsupported_fraction (diagnostic only): 0.987179
-score: 0.012188
+score: 0.217940
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -9098,15 +9098,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/Modality.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Modality.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Modality.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.064550
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.388079
 translated_ast_cosine: 0.543314
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.435261
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.064550
+score: 0.388079
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -9137,15 +9137,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrBody.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrBody.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrBody.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.049875
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.281036
 translated_ast_cosine: 0.662050
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.438770
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.049875
+score: 0.281036
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -9184,15 +9184,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/ClassKind.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ClassKind.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ClassKind.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.404581
 translated_ast_cosine: 0.277193
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.651658
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.404581
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -9276,15 +9276,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrVisitor.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrVisitor.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.023424
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.090439
 translated_ast_cosine: 0.102266
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.424938
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.023424
+score: 0.090439
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -9583,15 +9583,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/Visibility.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibility.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibility.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.229910
 translated_ast_cosine: 0.232960
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.523556
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.229910
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -9642,15 +9642,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/visitors/Deprecated.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/Deprecated.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.148522
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.486142
 translated_ast_cosine: 0.733014
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.797130
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.148522
+score: 0.486142
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -9693,15 +9693,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrClass.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrClass.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrClass.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrClassChildren.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.020362
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.130492
 translated_ast_cosine: 0.346698
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.157360
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.020362
+score: 0.130492
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -9743,15 +9743,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/symbols/IrSymbol.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueSymbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassSymbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassifierSymbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassifierSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrTypeParameterSymbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrTypeParameterSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueParameterSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueParameterSymbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrVariableSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrVariableSymbol.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.009497
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.114221
 translated_ast_cosine: 0.495136
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.074202
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.009497
+score: 0.114221
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10064,15 +10064,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/Visibilities.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibilities.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibilities.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.009241
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.148499
 translated_ast_cosine: 0.249386
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.444142
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.009241
+score: 0.148499
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10148,15 +10148,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrTransformer.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrTransformer.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.078256
 translated_ast_cosine: 0.126439
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.489140
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.078256
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10463,15 +10463,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSetValue.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSetValue.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSetValue.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.042679
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.267704
 translated_ast_cosine: 0.357728
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.462250
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.042679
+score: 0.267704
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10512,15 +10512,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrGetValue.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrGetValue.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrGetValue.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.066227
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.342904
 translated_ast_cosine: 0.697408
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.462250
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.066227
+score: 0.342904
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10557,15 +10557,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/Substitutable.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Substitutable.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.646348
 translated_ast_cosine: 0.573378
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.884032
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.646348
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10608,15 +10608,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrVariable.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrVariable.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrVariable.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.015089
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.196437
 translated_ast_cosine: 0.377468
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.411196
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.015089
+score: 0.196437
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10658,15 +10658,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrExpression.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpression.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpression.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.254305
 translated_ast_cosine: 0.587940
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.412996
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.254305
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10705,15 +10705,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.144458
 translated_ast_cosine: 0.486946
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.287475
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.144458
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10767,15 +10767,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/mpp/DeclarationSymbolMarkers.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/mpp/DeclarationSymbolMarkers.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.038278
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.290297
 translated_ast_cosine: 0.278172
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.545895
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.038278
+score: 0.290297
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10846,15 +10846,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclaration.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclaration.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.310918
 translated_ast_cosine: 0.462283
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.569275
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.310918
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10889,15 +10889,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.031686
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.300898
 translated_ast_cosine: 0.605463
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.399225
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.031686
+score: 0.300898
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10933,15 +10933,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/types/model/TypeSystemContext.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/model/TypeSystemContext.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.052687
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.257209
 translated_ast_cosine: 0.307144
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.225371
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.052687
+score: 0.257209
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11197,15 +11197,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrVarargElement.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrVarargElement.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.115470
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.497468
 translated_ast_cosine: 0.865200
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.623610
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.115470
+score: 0.497468
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11240,15 +11240,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrParameterKind.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrParameterKind.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.163663
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.667283
 translated_ast_cosine: 0.913125
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.923936
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.163663
+score: 0.667283
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11277,15 +11277,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.196642
 translated_ast_cosine: 0.372616
 function_name_parity: 0.500000
 normalized_logic: 0.000000
 documentation_correspondence: 0.430331
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.196642
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11327,15 +11327,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.017345
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.224581
 translated_ast_cosine: 0.369652
 function_name_parity: 0.250000
 normalized_logic: 0.000000
 documentation_correspondence: 0.462250
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.017345
+score: 0.224581
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11380,15 +11380,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrValueParameter.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueParameter.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueParameter.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.024289
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.149181
 translated_ast_cosine: 0.294167
 function_name_parity: 0.250000
 normalized_logic: 0.000000
 documentation_correspondence: 0.145685
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.024289
+score: 0.149181
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11436,15 +11436,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.033113
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.284897
 translated_ast_cosine: 0.384048
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.462250
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.033113
+score: 0.284897
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11485,15 +11485,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/DescriptorVisibility.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/DescriptorVisibility.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/DescriptorVisibility.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.317880
 translated_ast_cosine: 0.216884
 function_name_parity: 0.666667
 normalized_logic: 0.000000
 documentation_correspondence: 0.854942
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.317880
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11554,15 +11554,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.023338
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.303175
 translated_ast_cosine: 0.511842
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.719032
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.023338
+score: 0.303175
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11596,15 +11596,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/annotations/Annotations.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/annotations/Annotated.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.132068
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.757410
 translated_ast_cosine: 0.514438
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.873711
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.132068
+score: 0.757410
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11684,15 +11684,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.047458
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.251688
 translated_ast_cosine: 0.564831
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.366196
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.047458
+score: 0.251688
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11728,15 +11728,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.048002
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.172988
 translated_ast_cosine: 0.211662
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.462613
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.048002
+score: 0.172988
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11787,15 +11787,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.033851
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.225384
 translated_ast_cosine: 0.203782
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.462613
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.033851
+score: 0.225384
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11848,15 +11848,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.024650
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.165770
 translated_ast_cosine: 0.176481
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.360041
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.024650
+score: 0.165770
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11920,15 +11920,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationParent.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationParent.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.111111
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.490965
 translated_ast_cosine: 0.858315
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.623610
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.111111
+score: 0.490965
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -11963,15 +11963,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.039920
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.406600
 translated_ast_cosine: 0.371260
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.419686
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.039920
+score: 0.406600
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: yes (provisional)
@@ -12017,15 +12017,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.049903
 translated_ast_cosine: 0.047581
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.407971
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.049903
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -12606,15 +12606,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrVariableSymbolImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrVariableSymbolImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrTypeParameterSymbolImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrTypeParameterSymbolImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrValueParameterSymbolImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrValueParameterSymbolImpl.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.042934
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.171499
 translated_ast_cosine: 0.376080
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.294253
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.042934
+score: 0.171499
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -12709,15 +12709,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrMetadataSourceOwner.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrMetadataSourceOwner.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.072739
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.372546
 translated_ast_cosine: 0.647711
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.212182
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.072739
+score: 0.372546
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -12752,15 +12752,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrAnnotationContainer.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrAnnotationContainer.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.032478
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.446050
 translated_ast_cosine: 0.636479
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.796972
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.032478
+score: 0.446050
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -12791,15 +12791,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrDeclarationReference.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrDeclarationReference.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.045644
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.454124
 translated_ast_cosine: 0.744100
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.623610
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.045644
+score: 0.454124
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -12834,15 +12834,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithName.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithName.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.034503
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.393283
 translated_ast_cosine: 0.552461
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.623610
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.034503
+score: 0.393283
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -12877,15 +12877,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationContainer.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationContainer.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.067116
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.341140
 translated_ast_cosine: 0.719618
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.301769
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.067116
+score: 0.341140
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -12920,15 +12920,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrValueAccessExpression.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrValueAccessExpression.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.032686
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.380795
 translated_ast_cosine: 0.425251
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.623610
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.032686
+score: 0.380795
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -12963,15 +12963,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.056857
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.246564
 translated_ast_cosine: 0.360158
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.462250
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.056857
+score: 0.246564
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -13012,15 +13012,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.024098
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.121021
 translated_ast_cosine: 0.192628
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.429456
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.024098
+score: 0.121021
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -13082,15 +13082,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.045015
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.163974
 translated_ast_cosine: 0.213402
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.462613
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.045015
+score: 0.163974
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -13143,15 +13143,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrTypeParametersContainer.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParametersContainer.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.318471
 translated_ast_cosine: 0.687210
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.516103
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.318471
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -13184,15 +13184,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.022824
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.115219
 translated_ast_cosine: 0.156573
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.429456
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.022824
+score: 0.115219
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -13262,15 +13262,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithVisibility.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithVisibility.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.064957
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.411829
 translated_ast_cosine: 0.575490
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.623610
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.064957
+score: 0.411829
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -13305,15 +13305,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrMutableAnnotationContainer.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrMutableAnnotationContainer.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.032898
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.382291
 translated_ast_cosine: 0.621324
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.623610
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.032898
+score: 0.382291
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -13348,15 +13348,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrPossiblyExternalDeclaration.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrPossiblyExternalDeclaration.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.085126
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.439704
 translated_ast_cosine: 0.600429
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.623610
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.085126
+score: 0.439704
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -13389,15 +13389,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.007172
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.018636
 translated_ast_cosine: 0.237086
 function_name_parity: 0.857143
 normalized_logic: 0.000000
 documentation_correspondence: 0.069007
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.007172
+score: 0.018636
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -13485,15 +13485,15 @@ Inferred suspension and call-target resolution require compiler evidence; scores
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.cpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.036407
+score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.239438
 translated_ast_cosine: 0.225111
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.462613
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.036407
+score: 0.239438
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
