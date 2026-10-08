@@ -3028,7 +3028,19 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **TODOs:** 7
 
-### 233. terminal.Count
+### 233. internal.NopCollector
+
+- **Target:** `internal.NopCollector`
+- **Similarity:** 0.02
+- **Dependents:** 0
+- **Priority Score:** 209.8
+- **Functions:** 1/1 matched
+- **Missing functions:** _none_
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Lint issues:** 2
+
+### 234. terminal.Count
 
 - **Target:** `flow.Count`
 - **Similarity:** 0.03
@@ -3040,7 +3052,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 2
 
-### 234. internal.MainDispatcherFactory
+### 235. internal.MainDispatcherFactory
 
 - **Target:** `internal.MainDispatcherFactory`
 - **Similarity:** 0.07
@@ -3050,18 +3062,6 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
-
-### 235. internal.NopCollector
-
-- **Target:** `internal.NopCollector`
-- **Similarity:** 0.08
-- **Dependents:** 0
-- **Priority Score:** 209.2
-- **Functions:** 1/1 matched
-- **Missing functions:** _none_
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Lint issues:** 2
 
 ### 236. internal.Synchronized.common
 

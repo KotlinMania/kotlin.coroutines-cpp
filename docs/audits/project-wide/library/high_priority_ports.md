@@ -242,9 +242,9 @@ This list is complete and includes function/type detail for every matched file. 
 | 230 | `test.DefaultDispatchersConcurrencyTest` | `concurrent.DefaultDispatchersConcurrencyTest [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 2/2 matched | _none_ | 0 | 2 | 210.0 |
 | 231 | `internal.FlowExceptions` | `kotlinx.coroutines.native.flow.internal.FlowExceptions [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 2/2 matched | _none_ | 0 | 2 | 210.0 |
 | 232 | `common.TestDispatchers` | `tests.TestDispatchers [STUB]` | 0.00 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 210.0 |
-| 233 | `terminal.Count` | `flow.Count` | 0.03 | 0 | 2/2 matched (target 26) | _none_ | 0/0 matched (target 2) | _none_ | 0 | 2 | 209.7 |
-| 234 | `internal.MainDispatcherFactory` | `internal.MainDispatcherFactory` | 0.07 | 0 | 1/1 matched | _none_ | 1/1 matched (target 2) | _none_ | 0 | 2 | 209.3 |
-| 235 | `internal.NopCollector` | `internal.NopCollector` | 0.08 | 0 | 1/1 matched | _none_ | 1/1 matched | _none_ | 0 | 2 | 209.2 |
+| 233 | `internal.NopCollector` | `internal.NopCollector` | 0.02 | 0 | 1/1 matched | _none_ | 1/1 matched | _none_ | 0 | 2 | 209.8 |
+| 234 | `terminal.Count` | `flow.Count` | 0.03 | 0 | 2/2 matched (target 26) | _none_ | 0/0 matched (target 2) | _none_ | 0 | 2 | 209.7 |
+| 235 | `internal.MainDispatcherFactory` | `internal.MainDispatcherFactory` | 0.07 | 0 | 1/1 matched | _none_ | 1/1 matched (target 2) | _none_ | 0 | 2 | 209.3 |
 | 236 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 0 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | 0 | 2 | 207.6 |
 | 237 | `internal.SendingCollector` | `internal.SendingCollector` | 0.29 | 0 | 1/1 matched (target 2) | _none_ | 1/1 matched | _none_ | 0 | 2 | 207.1 |
 | 238 | `test.ConcurrentTestUtilities` | `test.ConcurrentTestUtilities` | 0.50 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 205.0 |

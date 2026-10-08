@@ -10694,7 +10694,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NopCollector.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NopCollector.hpp
 score_method: positional exact-token cosine including code and translated comment words after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.581790
+translated_ast_cosine: 0.607343
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
@@ -10710,9 +10710,9 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 3	42:76	48:48	import_list	yes
 5	76:205	49:233	object_declaration	fallback
 Diagnostic: 5: unsupported object_declaration
-Function NopCollector::emit:6 -> kotlinx::coroutines::flow::internal::NopCollector::emit:37 | normalized logic: 0.000000
+Function NopCollector::emit:6 -> kotlinx::coroutines::flow::internal::NopCollector::emit:39 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:value type:t node:66 type:continuation type:void operator:* identifier:continuation node:5
+  Target logic: node:66 type:t node:66 type:continuation type:void operator:* operator:* node:5
 === Emitted target buffer ===
 namespace kotlinx::coroutines::flow::internal {
 
@@ -10723,7 +10723,7 @@ __ast_distance_unmapped__("object_declaration", "internal object NopCollector : 
 Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
-NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/NopCollector.kt:6	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NopCollector.hpp:17	NopCollector::emit -> kotlinx::coroutines::flow::internal::NopCollector::emit
+NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/NopCollector.kt:6	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NopCollector.hpp:19	NopCollector::emit -> kotlinx::coroutines::flow::internal::NopCollector::emit
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 1
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
