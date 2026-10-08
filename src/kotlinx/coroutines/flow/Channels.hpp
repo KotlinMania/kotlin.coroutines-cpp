@@ -55,9 +55,6 @@ namespace kotlinx::coroutines::flow {
 
 namespace internal {
 
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:104-108
-void mark_channel_consumed(bool consume, std::atomic<bool>& consumed);
-
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
 // NOTE(port): Type erasure keeps the source loop concrete in Channels.cpp.
 // The Clang frontend generates its suspension frame and retained local storage.
@@ -215,7 +212,12 @@ public:
 private:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:104-108
     void mark_consumed() {
-        internal::mark_channel_consumed(consume_, consumed_);
+        if (consume_) {
+            if (consumed_.exchange(true)) {
+                throw IllegalStateException(
+                    "ReceiveChannel.consumeAsFlow can be collected just once");
+            }
+        }
     }
 
 protected:

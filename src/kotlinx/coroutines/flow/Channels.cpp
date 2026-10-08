@@ -2,25 +2,12 @@
 /**
  * Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt
  */
-#include "kotlinx/coroutines/ExceptionTransport.hpp"
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
-#include <atomic>
 #include <functional>
 #include <memory>
 
 namespace kotlinx::coroutines::flow::internal {
-
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:104-108
-// NOTE(port): The generic receiver binds its concrete Boolean state here.
-void mark_channel_consumed(bool consume, std::atomic<bool>& consumed) {
-    if (consume) {
-        if (consumed.exchange(true)) {
-            throw IllegalStateException(
-                "ReceiveChannel.consumeAsFlow can be collected just once");
-        }
-    }
-}
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
 // NOTE(port): Typed bindings retain the source iterator and element. The Clang

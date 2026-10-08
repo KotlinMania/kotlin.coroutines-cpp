@@ -1,7 +1,7 @@
 # Current source authoring migration — warning-visible build
 
 The complete common Flow Channels.kt and C++ pair were reread. The first oracle
-priority remains this group (65 dependents). Channels.cpp:29 replaces the manual
+priority remains this group (65 dependents). Channels.cpp:16 replaces the manual
 EmitAllContinuation class with an annotated concrete suspend entry. Its source
 loop creates the iterator inside try, awaits has_next and emit_next, retains the
 caught cause and runs conditional consumed-channel cleanup. The existing typed
@@ -20,7 +20,9 @@ The current plugin modules themselves cannot be rebuilt because the unsuppressed
 Clang/LLVM dependency diagnostics documented in WARNING_SUPPRESSION_REMOVAL.md
 remain exposed. Existing runtime-test results below predate this migration.
 
-The concrete .cpp includes only the ABI and exception types it consumes. The
+ChannelAsFlow.mark_consumed at Channels.hpp:214 now directly mirrors the source
+consume/atomic-get-and-set/check sequence. The separate concrete consumption helper
+is removed. The concrete .cpp includes only the ABI types it consumes. The
 public generic bindings remain in Channels.hpp; removing its unnecessary include
 from .cpp prevents parsing unrelated channel implementation templates there.
 It does not fix the outstanding warnings in those templates or dependencies.
