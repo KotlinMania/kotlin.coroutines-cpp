@@ -150,6 +150,18 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
     const bool local_frame = member || header || function->getDescribedFunctionTemplate() || instantiated;
     long replacement_size = instantiated ? end - begin : local_frame ? lowered.size() : 1;
     if (!instantiated) source.replace(begin, end - begin, local_frame ? lowered : ";");
+    // A helper may use only declarations already reached by the owning parser.
+    // Parsing later main-file definitions imports their template instantiations
+    // prematurely and can overwrite the host's still-pending deduction state.
+    // An in-class body needs its complete class scope; header handling below
+    // already restricts the including main file to its include directive.
+    if (!header && !isa<CXXRecordDecl>(function->getLexicalDeclContext())) {
+        source.resize(begin + replacement_size);
+        for (auto* scope = function->getLexicalDeclContext(); !scope->isTranslationUnit(); scope = scope->getParent()) {
+            if (!isa<NamespaceDecl>(scope)) return fail("main-file suspend definition requires a namespace scope");
+            source += "\n}";
+        }
+    }
     std::string name = "__kxs_entry_" + function->getNameAsString() + "_" + std::to_string(begin);
     std::string instantiated_entry;
     if (instantiated) {
