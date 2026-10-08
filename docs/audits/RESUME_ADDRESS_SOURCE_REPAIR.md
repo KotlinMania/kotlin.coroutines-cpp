@@ -1,6 +1,40 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## Call/invoke selection and bit operations — 2026-10-08
+
+Continuation from f98313b8 translates CodeGenerator.kt:87-92,850-886,966-998.
+ExceptionHandler preserves None/Caller singleton types and the abstract Local
+unwind-block getter in CodeGenerator.hpp:15. Its genThrow body remains absent
+pending the actual call/runtime dependencies. CodeGenerator.cpp:239 translates
+private call_raw: nounwind direct calls, caller propagation without a cleanup
+landingpad, caller cleanup-use tracking, local unwind selection, the source
+missing-handler diagnostic and call_success invoke/positioning. The enclosing
+LLVM boundary borrows an explicitly supplied actual cleanup block; source
+Native prologue/frame construction and cleanup epilogue are still untranslated.
+The public object-result call/slot algorithm is absent, so call_raw has no
+production caller yet and is not presented as wired exception lowering.
+
+CodeGenerator.cpp:304-349 translates not/and/or/xor, zero/sign extension,
+extension selection, truncation and left/arithmetic/logical right shifts.
+Operator keywords receive trailing underscores. Private shift preserves the
+zero-amount operand identity and constructs nonzero amounts with the actual
+operand type and Kotlin Int-to-Long sign conversion. No Native roots or runtime
+functions are inferred from pointer shapes.
+
+Strict CodeGenerator.cpp syntax compilation passed with C++20, -Wall -Wextra
+-Werror and the actual LLVM headers. KotlinxCoroutinePass and kxs_codegen_test
+rebuilt successfully in build/source-continuation; the existing executable exited
+zero and verified/emitted coroutine_codegen.ll. Those existing fixture checks
+do not exercise private call_raw or all new bit operations. The refreshed scoped
+LLVM deep scan exited zero and measures CodeGenerator at 73/145 matched bodies,
+6/15 types and 0.24 function similarity (previously 61/145,2/15,0.19).
+The same matching/emission limitations recorded in the following checkpoint
+remain; this does not refresh full-root measurements or establish complete
+runtime acceptance. Continue actual object-result slots, frame/root and exception
+runtime bindings, VariableManager and the connected expression driver. The full
+goal remains active.
+
 ## LLVM value operations and focused build repair — 2026-10-08
 
 Continuation from bc4c1b51 translates CodeGenerator.kt:1014-1033 into

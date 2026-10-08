@@ -1,8 +1,10 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:74-78,390-393,616-621,667-678,720-732,754-758,890-907,948-964,1001-1042,1208-1262,1264-1276,1342-1347,1461-1463,1505-1558,1566-1599
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:74-78,390-393,616-621,667-678,720-732,754-758,87-92,639-650,850-907,948-1042,1208-1262,1264-1276,1342-1347,1461-1463,1505-1558,1566-1599
 #include "CodeGenerator.hpp"
 #include <llvm-c/DebugInfo.h>
 #include <map>
+#include <stdexcept>
+#include <cstdint>
 #include "IrToBitcode_coroutines.hpp"
 #include <type_traits>
 #include <utility>
@@ -10,6 +12,21 @@ namespace org::jetbrains::kotlin::backend::konan::llvm {
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2884-2887
 LocationInfo::LocationInfo(LLVMMetadataRef scope, int line, int column, LocationInfo* inlined_at)
     : scope(scope), line(line), column(column), inlined_at(inlined_at) {}
+
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:87-92
+ExceptionHandler::ExceptionHandler() = default;
+// NOTE(port): Polymorphic C++ lifetime boundary for source handler variants.
+ExceptionHandler::~ExceptionHandler() = default;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:88-88
+ExceptionHandler::None::None() = default;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:88-88
+const ExceptionHandler::None ExceptionHandler::NONE;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:89-89
+ExceptionHandler::Caller::Caller() = default;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:89-89
+const ExceptionHandler::Caller ExceptionHandler::CALLER;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:90-92
+ExceptionHandler::Local::Local() = default;
 
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:616-621
 // NOTE(port): Each map update owns its range object. Shared handles preserve
@@ -69,13 +86,15 @@ private:
 FunctionGenerationContext::FunctionGenerationContext(LLVMValueRef function)
     : FunctionGenerationContext(function, false) {}
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:591-615
-FunctionGenerationContext::FunctionGenerationContext(LLVMValueRef function, bool contain_location_debug_info)
-    : function_(function), context_(LLVMGetModuleContext(LLVMGetGlobalParent(function))),
+FunctionGenerationContext::FunctionGenerationContext(LLVMValueRef function, bool contain_location_debug_info,
+    LLVMBasicBlockRef cleanup_landingpad)
+    : cleanup_landingpad_(cleanup_landingpad), function_(function), context_(LLVMGetModuleContext(LLVMGetGlobalParent(function))),
       contain_location_debug_info_(contain_location_debug_info), debug_locations_(std::make_unique<DebugLocationState>()),
       current_position_holder_(std::make_unique<PositionHolder>(*this)) {}
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:591-600
-FunctionGenerationContext::FunctionGenerationContext(const LlvmFunction::Definition& function, bool contain_location_debug_info)
-    : FunctionGenerationContext(function.as_callback(), contain_location_debug_info) {
+FunctionGenerationContext::FunctionGenerationContext(const LlvmFunction::Definition& function, bool contain_location_debug_info,
+    LLVMBasicBlockRef cleanup_landingpad)
+    : FunctionGenerationContext(function.as_callback(), contain_location_debug_info, cleanup_landingpad) {
     definition_ = &function;
 }
 // NOTE(port): Supplied compiler policy, rather than inferred LLVM metadata.
@@ -216,6 +235,32 @@ void FunctionGenerationContext::store(LLVMValueRef value, LLVMValueRef pointer,
     if (memory_order) LLVMSetOrdering(instruction, *memory_order);
     if (alignment) LLVMSetAlignment(instruction, *alignment);
 }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:850-886
+LLVMValueRef FunctionGenerationContext::call_raw(const LlvmCallable& llvm_callable,
+    const std::vector<LLVMValueRef>& args, const ExceptionHandler& exception_handler) {
+    if (const auto* function = dynamic_cast<const LlvmFunction*>(&llvm_callable);
+        function && function->is_no_unwind()) {
+        return llvm_callable.build_call(builder(), args);
+    }
+    LLVMBasicBlockRef unwind;
+    if (&exception_handler == &ExceptionHandler::CALLER) {
+        if (!cleanup_landingpad_) return llvm_callable.build_call(builder(), args);
+        cleanup_landingpad_is_used_ = true;
+        unwind = cleanup_landingpad_;
+    } else if (const auto* local = dynamic_cast<const ExceptionHandler::Local*>(&exception_handler)) {
+        unwind = local->unwind();
+    } else {
+        throw std::invalid_argument("No exception handler specified when calling function " +
+            llvm_callable.name().value_or("null") + " without nounwind attr");
+    }
+    const auto call_position = position();
+    const auto end_location = call_position ? call_position->end : nullptr;
+    const auto success = basic_block("call_success", end_location);
+    const auto result = llvm_callable.build_invoke(builder(), args, success, unwind);
+    position_at_end(success);
+    return result;
+}
+
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:890-892
 LLVMValueRef FunctionGenerationContext::phi(LLVMTypeRef type, const std::string& name) {
     return LLVMBuildPhi(builder(), type, name.c_str());
@@ -254,6 +299,53 @@ LLVMValueRef FunctionGenerationContext::cond_br(LLVMValueRef condition, LLVMBasi
 LLVMValueRef FunctionGenerationContext::block_address(LLVMBasicBlockRef block) {
     if (definition_) return definition_->block_address(block);
     return LLVMBlockAddress(function_, block);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:966-966
+LLVMValueRef FunctionGenerationContext::not_(LLVMValueRef arg, const std::string& name) {
+    return LLVMBuildNot(builder(), arg, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:967-967
+LLVMValueRef FunctionGenerationContext::and_(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildAnd(builder(), arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:968-968
+LLVMValueRef FunctionGenerationContext::or_(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildOr(builder(), arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:969-969
+LLVMValueRef FunctionGenerationContext::xor_(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildXor(builder(), arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:971-972
+LLVMValueRef FunctionGenerationContext::zext(LLVMValueRef arg, LLVMTypeRef type) {
+    return LLVMBuildZExt(builder(), arg, type, "");
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:974-975
+LLVMValueRef FunctionGenerationContext::sext(LLVMValueRef arg, LLVMTypeRef type) {
+    return LLVMBuildSExt(builder(), arg, type, "");
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:977-982
+LLVMValueRef FunctionGenerationContext::ext(LLVMValueRef arg, LLVMTypeRef type, bool is_signed) {
+    return is_signed ? sext(arg, type) : zext(arg, type);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:984-985
+LLVMValueRef FunctionGenerationContext::trunc(LLVMValueRef arg, LLVMTypeRef type) {
+    return LLVMBuildTrunc(builder(), arg, type, "");
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:987-992
+LLVMValueRef FunctionGenerationContext::shift(LLVMOpcode op, LLVMValueRef arg, int amount) {
+    if (amount == 0) return arg;
+    const auto shift_amount = LLVMConstInt(LLVMTypeOf(arg),
+        static_cast<uint64_t>(static_cast<int64_t>(amount)), false);
+    return LLVMBuildBinOp(builder(), op, arg, shift_amount, "");
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:994-994
+LLVMValueRef FunctionGenerationContext::shl(LLVMValueRef arg, int amount) {
+    return shift(LLVMShl, arg, amount);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:996-998
+LLVMValueRef FunctionGenerationContext::shr(LLVMValueRef arg, int amount, bool is_signed) {
+    return shift(is_signed ? LLVMAShr : LLVMLShr, arg, amount);
 }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1001
 LLVMValueRef FunctionGenerationContext::icmp_eq(LLVMValueRef left, LLVMValueRef right, const std::string& name) {

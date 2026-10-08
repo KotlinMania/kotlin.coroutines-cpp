@@ -6,7 +6,21 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current LLVM value/build continuation — 2026-10-08:** From bc4c1b51,
+**Current call/invoke and bit-operation continuation — 2026-10-08:** From
+f98313b8, private call_raw and None/Caller/Local handler variants now mirror
+CodeGenerator.kt's nounwind, caller-cleanup and local-unwind decisions. The LLVM
+boundary borrows the actual supplied cleanup block. Public call/result slots,
+Native frame/cleanup generation and ExceptionHandler.genThrow remain absent;
+private call_raw has no production caller yet. Bit operations, integer extension/
+truncation and signed/unsigned shifts are translated. Strict source compilation,
+plugin/helper builds and the existing module-verifying fixture pass. Scoped deep
+comparison measures CodeGenerator 73/145 bodies,6/15 types,similarity0.24.
+Continue actual slot/frame/root/exception dependencies, VariableManager and the
+connected expression emitter. Full-root comparison and both complete runtime
+acceptance paths remain open. See RESUME_ADDRESS_SOURCE_REPAIR.md's first
+section; the full goal remains active.
+
+**LLVM value/build checkpoint f98313b8 — 2026-10-08:** From bc4c1b51,
 14 LLVM value operations and the ten distinct nested attribute object types are
 translated against the actual Kotlin source. Six connected implementations pass
 strict syntax compilation. The root CMake build reconfigured and built
