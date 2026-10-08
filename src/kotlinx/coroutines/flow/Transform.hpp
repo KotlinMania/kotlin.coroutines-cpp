@@ -538,18 +538,6 @@ inline std::shared_ptr<Flow<std::shared_ptr<R>>> map_not_null(
 
 /**
  * Returns a flow that wraps each element into IndexedValue, containing value and its index starting from zero.
- *
- * @tparam T The element type of the source flow.
- * @param upstream The source flow to index.
- * @return A flow emitting `IndexedValue<T>` elements.
- *
- * State Isolation & Overflow Contract:
- * - Per-collection isolation: Every new collection invocation starts with an independent `index = 0`.
- * - Execution order: Copies the current index value, increments the stored index (wrapping to minimum value
- *   upon reaching maximum value to prevent signed integer overflow undefined behavior), then validates the copied
- *   old index via `internal::check_index_overflow` before emitting downstream. Subsequent emissions detect the negative
- *   index and throw `std::overflow_error`.
- * - Upstream settlement: The outer `WithIndexFrame` settles upstream collection before releasing the downstream collector.
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:64-69
 template <typename T>
@@ -557,114 +545,70 @@ inline std::shared_ptr<Flow<IndexedValue<T>>> with_index(
     std::shared_ptr<Flow<T>> upstream) {
     return internal::unsafe_flow<IndexedValue<T>>([upstream = std::move(upstream)](
         FlowCollector<IndexedValue<T>>* collector, Continuation<void*>* completion) -> void* {
-        class WithIndexFrame final : public ContinuationImpl, public FlowCollector<T> {
+        // NOTE(port): The typed source collector captures the per-collection index.
+        // The compiler retains its actual owner through upstream collection.
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:65-68
+        class WithIndexCollector final : public FlowCollector<T>,
+            public std::enable_shared_from_this<WithIndexCollector> {
         public:
-            WithIndexFrame(std::shared_ptr<Flow<T>> upstream, FlowCollector<IndexedValue<T>>* downstream,
-                           Continuation<void*>* completion)
-                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                  upstream_(std::move(upstream)), downstream_(downstream), index_(0) {}
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:65-68
+            WithIndexCollector(std::shared_ptr<Flow<T>> upstream, FlowCollector<IndexedValue<T>>* downstream)
+                : upstream_(std::move(upstream)), downstream_(downstream) {}
 
-            void retain() { self_ref_ = shared_from_this(); }
-
-            void* invoke_suspend(Result<void*> result) override {
-                coroutine_begin(this)
-                coroutine_yield(this, upstream_->collect(this, this));
-                coroutine_end(this)
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:66-68
+            [[clang::annotate("suspend")]]
+            void* collect(std::shared_ptr<Continuation<void*>> completion) {
+                auto owner = this->shared_from_this();
+                dsl::suspend(upstream_->collect(this, completion.get()));
+                return nullptr;
             }
 
-            void* emit(T value, Continuation<void*>* cont) override {
-                int curr = index_;
-                index_ = (index_ == std::numeric_limits<int>::max())
-                       ? std::numeric_limits<int>::min()
-                       : index_ + 1;
-                int checked_idx = internal::check_index_overflow(curr);
-                return downstream_->emit(IndexedValue<T>(checked_idx, std::move(value)), cont);
-            }
-
-        protected:
-            void release_intercepted() override {
-                ContinuationImpl::release_intercepted();
-                self_ref_.reset();
+            // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:67-67
+            void* emit(T value, Continuation<void*>* completion) override {
+                const int index = index_;
+                // NOTE(port): Kotlin Int post-increment wraps; signed C++ overflow is undefined.
+                index_ = index_ == std::numeric_limits<int>::max() ? std::numeric_limits<int>::min() : index_ + 1;
+                return downstream_->emit(IndexedValue<T>(internal::check_index_overflow(index), std::move(value)), completion);
             }
 
         private:
-            void* _label = nullptr;
-            std::shared_ptr<Flow<T>> upstream_;
-            FlowCollector<IndexedValue<T>>* downstream_;
+            const std::shared_ptr<Flow<T>> upstream_;
+            FlowCollector<IndexedValue<T>>* const downstream_;
             int index_ = 0;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
         };
 
-        auto frame = std::make_shared<WithIndexFrame>(upstream, collector, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+        auto receiver = std::make_shared<WithIndexCollector>(upstream, collector);
+        return receiver->collect(kotlinx::coroutines::internal::retain_continuation(completion));
     });
 }
 
 /**
  * Returns a flow that invokes the given action before each value of the upstream flow is emitted downstream.
- *
- * @tparam T The element type of the source flow.
- * @tparam Action Callable accepting `const T&` or `T`, returning void synchronously or Unit (`nullptr`) suspending.
- * @param upstream The source flow.
- * @param action The side-effect action invoked for each element.
- * @return A flow emitting the original elements unchanged after executing the action.
- *
- * Continuation ABI & Protocol:
- * - Action execution: Suspending actions accept `(value, Continuation<void*>*)` and return
- *   `intrinsics::get_COROUTINE_SUSPENDED()` or Unit (`nullptr`).
- * - Sequential ordering: The action must complete successfully before downstream emission begins.
- * - Fault tolerance: If the action throws or is cancelled, downstream emission does not occur, and the failure
- *   is propagated immediately.
- * - Tail emission: Emission is awaited via `coroutine_yield` before returning Unit (`nullptr`).
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:74-77
 template <typename T, typename Action>
 inline std::shared_ptr<Flow<T>> on_each(
     std::shared_ptr<Flow<T>> upstream,
-    Action action) {
-    return internal::unsafe_transform<T, T>(
-        std::move(upstream),
-        [action = std::move(action)](
-            FlowCollector<T>* collector, T value, Continuation<void*>* cont) mutable -> void* {
-            class OnEachFrame final : public ContinuationImpl {
-            public:
-                OnEachFrame(FlowCollector<T>* collector, Action& action, T value, Continuation<void*>* completion)
-                    : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                      collector_(collector), action_(action), value_(std::move(value)) {}
-
-                void retain() { self_ref_ = shared_from_this(); }
-
-                void* invoke_suspend(Result<void*> result) override {
-                    coroutine_begin(this)
-                    coroutine_yield(this, detail::invoke_action_fn(action_, this, value_));
-                    coroutine_yield(this, collector_->emit(std::move(value_), this));
-                    coroutine_end(this)
-                }
-
-            protected:
-                void release_intercepted() override {
-                    ContinuationImpl::release_intercepted();
-                    self_ref_.reset();
-                }
-
-            private:
-                void* _label = nullptr;
-                FlowCollector<T>* collector_;
-                Action& action_;
-                T value_;
-                std::shared_ptr<BaseContinuationImpl> self_ref_;
-            };
-
-            auto frame = std::make_shared<OnEachFrame>(collector, action, std::move(value), cont);
-            frame->retain();
-            return frame->start(Result<void*>::success(nullptr));
+    Action action_fn) {
+    auto action = std::make_shared<Action>(std::move(action_fn));
+    auto block = [action = std::move(action)](FlowCollector<T>* collector, T value,
+        std::shared_ptr<Continuation<void*>> completion)
+        __attribute__((annotate("suspend"))) -> void* {
+        dsl::suspend(detail::invoke_action_fn(*action, completion.get(), value));
+        dsl::suspend(collector->emit(std::move(value), completion.get()));
+        return nullptr;
+    };
+    return internal::unsafe_transform<T, T>(std::move(upstream),
+        [block = std::move(block)](FlowCollector<T>* collector, T value,
+            Continuation<void*>* completion) -> void* {
+            return block(collector, std::move(value), kotlinx::coroutines::internal::retain_continuation(completion));
         });
 }
 
 /**
  * Synchronous functional overload of on_each.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:74-77
 template <typename T>
 inline std::shared_ptr<Flow<T>> on_each(
     std::shared_ptr<Flow<T>> upstream,
@@ -675,6 +619,7 @@ inline std::shared_ptr<Flow<T>> on_each(
 /**
  * Suspending functional overload of on_each.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Transform.kt:74-77
 template <typename T>
 inline std::shared_ptr<Flow<T>> on_each(
     std::shared_ptr<Flow<T>> upstream,
