@@ -1,5 +1,64 @@
 # Compiler resume-address source repair — 2026-10-08
 
+## Actual function-address dependencies in imported frames — 2026-10-08
+
+Continuation from `b28cd6d6` closes the missing libc++ variant definition dependency
+found by the retained fixture. ReferencedFunctions previously followed only direct
+CallExpr targets and constructor/destructor declarations. Variant visitation builds
+constexpr dispatch tables whose actual function targets are returned as addresses;
+those dependencies need not appear as direct calls in the enclosing body.
+CompilerFrameLowering.cpp:125 now follows actual FunctionDecl references and the
+actual initializer of each referenced VarDecl once, using canonical declaration
+identity to stop cycles. Existing unevaluated-expression and decltype exclusions
+remain intact. This is Clang infrastructure, not a literal Kotlin IR translation.
+The comparison source IrToBitcode.kt:2265-2276 resolves a raw function reference
+through expression.symbol.owner and codegen.functionEntryPointAddress; no invented
+function identity, alternate variant/Result implementation or runtime was added.
+
+The LLVM23.1.2 frontend builds successfully. The original retained input.cpp now
+compiles with frontend plus LLVM pass at O1, and llvm-nm --undefined-only shows no
+variant __invoke/__generic_assign/__dispatch helper references. The original fixture
+and its source operations are intact; no optimization or fixture expectation was
+changed to eliminate the failing operation. Temporary declaration diagnostics were
+removed after investigation.
+
+The new function_address_dependencies.cpp compiler fixture exercises actual C++
+function-pointer arrays and both std::variant alternatives inside a retained native
+catch. Strict -Wall/-Wextra/-Wpedantic/-Werror compilation and ASan/UBSan execution
+pass at O0 and O1. All five modes check normal immediate execution, three repeated
+suspensions, native catch object/current-exception identity, resumed failure,
+resumed CancellationException, immediate failure, original owned-object cleanup,
+completion once, and frame release. The expected success result is46. The fixture
+uses the existing actual continuation dependency archive; its external suspension
+callee is compiler test infrastructure rather than another coroutine runtime.
+The authoring regression driver registers both optimization levels before the
+qualified-local and larger CMake stages. Full retained runtime and both complete
+standalone/Native MLX GPU acceptance paths remain required.
+
+The full driver passes its earlier direct/default/expression/qualified-local,
+restricted-receiver and ordinary/nested CMake callable runtime stages, including
+the new O1 function-address gate. Its larger retained fixture extracts and compiles
+through CMake at O2; linking now fails only on missing actual Yield/Delay/Duration
+definitions, with no variant helper reference. The retained compile reports twelve
+unsuppressed warnings. The subsequently registered O0/O1 driver block was executed
+directly from its final source and both gates pass. No larger retained runtime,
+forced-include, termination or later rejection gate is claimed.
+
+Actual Yield/Delay/Duration dependency closure is still required. The current
+native/CoroutineContext.cpp DefaultExecutor substitutes detached-thread timing for
+CoroutineContext.kt:6-24's actual WorkerDispatcher delegation, and the WorkerDispatcher
+source class in native/MultithreadedDispatchers.kt:20-76 is absent from production
+C++ sources. Port those dependencies instead of treating the timer substitution or
+a test-only definition as faithful source closure.
+
+All three deep scans complete on the changed compiler source: compiler reference
+286/7163 bodies,132/1617 types,0.28 similarity,10 scoring failures; coroutine root
+665/2918 bodies,179/560 types,0.24 similarity,12 failures; frontend14/7163 bodies,
+6/1617 types,0.04 similarity,zero scoring failures. Aggregate counts remain unchanged.
+Existing sparse compiler snapshot and namespace/provenance/scoring limitations
+remain visible in the generated inventories. C++ integration coverage does not
+establish full Kotlin IR/class/emitter or coroutine-library translation.
+
 ## Preserve ordinary full expressions during suspend lowering — 2026-10-08
 
 Continuation from `eee1d016` repairs the six retained-handler extraction failures

@@ -118,7 +118,21 @@ public:
         if (auto* function = call->getDirectCallee()) functions.insert(function->getCanonicalDecl());
         return true;
     }
+    // NOTE(port): Ordinary C++ can dispatch through function addresses retained
+    // in a constexpr table. These are real definition dependencies even when
+    // no CallExpr names the function directly. Follow the actual declaration
+    // and its initializer once, without evaluating or replacing either value.
+    bool VisitDeclRefExpr(clang::DeclRefExpr* reference) {
+        if (auto* function = llvm::dyn_cast<clang::FunctionDecl>(reference->getDecl()))
+            functions.insert(function->getCanonicalDecl());
+        else if (auto* variable = llvm::dyn_cast<clang::VarDecl>(reference->getDecl());
+                 variable && variable->hasInit() && initialized_variables.insert(variable->getCanonicalDecl()).second)
+            return TraverseStmt(variable->getInit());
+        return true;
+    }
     std::set<clang::FunctionDecl*> functions;
+private:
+    std::set<const clang::VarDecl*> initialized_variables;
 };
 // NOTE(port): Clang's implicit lambda record omits its expression range and
 // can omit its context declaration. Resolve the actual declaration ancestry

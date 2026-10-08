@@ -6,6 +6,45 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Function-address dependency closure — 2026-10-08
+
+Continuation from `b28cd6d6` repairs the missing libc++ variant helper dependency
+in CompilerFrameLowering.cpp:125. The actual visitor previously followed direct
+calls and constructor/destructor targets only. It now includes referenced function
+addresses and follows the actual initializer of each referenced variable once,
+using canonical Clang declaration identity. Unevaluated and decltype operands stay
+excluded. This is Clang integration infrastructure; no new Kotlin IR identity,
+variant/Result runtime, application ownership rule or state machine was substituted.
+Compared with IrToBitcode.kt:2265-2276, function targets remain the actual resolved
+declaration rather than a reconstructed name or shape.
+
+The rebuilt LLVM23.1.2 frontend compiles original retained input.cpp at O1 with the
+mandatory LLVM pass. Its object has no undefined variant dispatch helper references.
+The new function_address_dependencies compiler fixture compiles strictly and runs
+under ASan/UBSan at O0 and O1. Five modes check function-pointer tables, both variant
+alternatives, same catch/current-exception identity across repeated suspension,
+failure/cancellation, completion once, owned-object destruction and frame release.
+Both success modes return46. Both optimization levels are registered in the driver;
+the final O0/O1 driver block also executes successfully. The full driver passes its
+earlier runtime gates and the larger retained CMake extraction/compilation. Linking
+now fails only on missing actual Yield/Delay/Duration definitions; the variant helper
+failure is gone. Twelve retained compilation warnings remain unsuppressed. No larger
+retained runtime or later forced-include/termination/rejection gate is claimed.
+This focused execution does not establish the complete retained fixture or either
+complete standalone/Native MLX GPU path.
+
+Continue actual Yield/Delay/Duration dependencies. The Native DefaultExecutor in
+native/CoroutineContext.cpp still substitutes detached timers for the source's
+WorkerDispatcher delegation; native/MultithreadedDispatchers.kt:20-76's production
+WorkerDispatcher class is missing. Translate those dependencies, not test-only
+link replacements. The latest full-driver output records the remaining link gate.
+
+All three deep scans finish with unchanged aggregates: compiler286/7163 bodies,
+132/1617 types,0.28 similarity,10 scoring failures; coroutine665/2918 bodies,
+179/560 types,0.24 similarity,12 failures; frontend14/7163 bodies,6/1617 types,
+0.04 similarity,zero scoring failures. Existing source/pairing/scoring limitations
+remain recorded. See RESUME_ADDRESS_SOURCE_REPAIR.md for the detailed evidence.
+
 ## Ordinary full-expression lowering repair — 2026-10-08
 
 Continuation from `eee1d016` closes the six retained-handler extraction conflicts

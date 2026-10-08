@@ -307,6 +307,19 @@ int main() {
          '-pthread', *shlex.split(args.library_link_options), '-o', str(slicing_executable)],
         work, 'expression-slicing-compile')
     assert run([str(slicing_executable)], work, 'expression-slicing-run') == 'slicing:94; immutable reads; mutable snapshot; volatile load; effects once; resumed failure; trailing effects:44 in order\n'
+    for optimization in ('O0', 'O1'):
+        addresses_name = 'function-address-dependencies-' + optimization
+        addresses_executable = work / addresses_name
+        run([args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Wpedantic', '-Werror',
+             '-I' + str(args.root / 'src'),
+             '-Xclang', '-load', '-Xclang', str(args.plugin), '-Xclang', '-add-plugin',
+             '-Xclang', 'kotlinx-suspend', '-fpass-plugin=' + str(args.ir_plugin),
+             '-' + optimization, '-UNDEBUG', '-fsanitize=address,undefined', '-fno-sanitize-recover=all',
+             str(args.root / 'src/tests/ir/fixtures/function_address_dependencies.cpp'), str(args.library),
+             '-pthread', *shlex.split(args.library_link_options), '-o', str(addresses_executable)],
+            work, addresses_name + '-compile')
+        assert run([str(addresses_executable)], work, addresses_name + '-run') == (
+            'function addresses:46; catch identity; repeated suspension; failure; cancellation; cleanup\n')
     qualified_executable = work / 'qualified-locals'
     run([args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Wpedantic', '-Werror',
          '-I' + str(args.root / 'src'),
