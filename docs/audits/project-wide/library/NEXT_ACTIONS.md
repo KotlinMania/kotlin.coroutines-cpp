@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 815/2918 matched (target 3022) — 27.9%
-- **Class/type parity:** 358/560 matched (target 519) — 63.9%
-- **Combined symbol parity:** 1173/3478 matched (target 3541) — 33.7%
+- **Function parity:** 815/2918 matched (target 3028) — 27.9%
+- **Class/type parity:** 358/560 matched (target 520) — 63.9%
+- **Combined symbol parity:** 1173/3478 matched (target 3548) — 33.7%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -2922,18 +2922,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 1
 
-### 224. internal.OnUndeliveredElement
-
-- **Target:** `internal.OnUndeliveredElement`
-- **Similarity:** 0.13
-- **Dependents:** 0
-- **Priority Score:** 408.7
-- **Functions:** 2/2 matched (target 6)
-- **Missing functions:** _none_
-- **Types:** 2/2 matched
-- **Missing types:** _none_
-
-### 225. internal.FlowCoroutine
+### 224. internal.FlowCoroutine
 
 - **Target:** `internal.FlowCoroutine`
 - **Similarity:** 0.19
@@ -2943,6 +2932,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 1/1 matched
 - **Missing types:** _none_
+
+### 225. internal.OnUndeliveredElement
+
+- **Target:** `internal.OnUndeliveredElement`
+- **Similarity:** 0.21
+- **Dependents:** 0
+- **Priority Score:** 407.9
+- **Functions:** 2/2 matched (target 12)
+- **Missing functions:** _none_
+- **Types:** 2/2 matched (target 3)
+- **Missing types:** _none_
+- **Lint issues:** 2
 
 ### 226. internal.FlowExceptions.common
 
@@ -2991,9 +2992,9 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **TODOs:** 4
 
-### 230. common.TestDispatchers
+### 230. test.EmptyContext
 
-- **Target:** `tests.TestDispatchers [STUB]`
+- **Target:** `tests.EmptyContext [STUB]`
 - **Similarity:** 0.00
 - **Dependents:** 0
 - **Priority Score:** 210.0
@@ -3001,7 +3002,8 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 0/0 matched
 - **Missing types:** _none_
-- **TODOs:** 7
+- **TODOs:** 12
+- **Lint issues:** 1
 
 ### 231. internal.FlowExceptions
 
@@ -3015,9 +3017,9 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 2
 
-### 232. test.EmptyContext
+### 232. common.TestDispatchers
 
-- **Target:** `tests.EmptyContext [STUB]`
+- **Target:** `tests.TestDispatchers [STUB]`
 - **Similarity:** 0.00
 - **Dependents:** 0
 - **Priority Score:** 210.0
@@ -3025,8 +3027,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 0/0 matched
 - **Missing types:** _none_
-- **TODOs:** 12
-- **Lint issues:** 1
+- **TODOs:** 7
 
 ### 233. terminal.Count
 
@@ -3200,18 +3201,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 248. internal.NullSurrogate
-
-- **Target:** `internal.NullSurrogate [ZERO]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 10.0
-- **Functions:** 0/0 matched (target 3)
-- **Missing functions:** _none_
-- **Types:** 0/0 matched
-- **Missing types:** _none_
-
-### 249. internal.ProbesSupport.common
+### 248. internal.ProbesSupport.common
 
 - **Target:** `internal.ProbesSupport.common [ZERO]`
 - **Similarity:** 0.00
@@ -3222,6 +3212,17 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 0/0 matched
 - **Missing types:** _none_
 - **Lint issues:** 1
+
+### 249. internal.NullSurrogate
+
+- **Target:** `internal.NullSurrogate [ZERO]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 10.0
+- **Functions:** 0/0 matched (target 3)
+- **Missing functions:** _none_
+- **Types:** 0/0 matched
+- **Missing types:** _none_
 
 ### 250. concurrent.Dispatchers
 

@@ -233,15 +233,15 @@ This list is complete and includes function/type detail for every matched file. 
 | 221 | `common.Unconfined` | `coroutines.Unconfined` | 0.47 | 0 | 4/4 matched (target 7) | _none_ | 2/2 matched (target 3) | _none_ | 0 | 6 | 605.3 |
 | 222 | `intrinsics.Cancellable` | `intrinsics.Cancellable` | 0.15 | 0 | 5/5 matched (target 19) | _none_ | 0/0 matched | _none_ | 0 | 5 | 508.5 |
 | 223 | `common.MainCoroutineDispatcher` | `coroutines.MainCoroutineDispatcher` | 0.08 | 0 | 3/3 matched | _none_ | 1/1 matched | _none_ | 0 | 4 | 409.2 |
-| 224 | `internal.OnUndeliveredElement` | `internal.OnUndeliveredElement` | 0.13 | 0 | 2/2 matched (target 6) | _none_ | 2/2 matched | _none_ | 0 | 4 | 408.7 |
-| 225 | `internal.FlowCoroutine` | `internal.FlowCoroutine` | 0.19 | 0 | 3/3 matched (target 8) | _none_ | 1/1 matched | _none_ | 0 | 4 | 408.1 |
+| 224 | `internal.FlowCoroutine` | `internal.FlowCoroutine` | 0.19 | 0 | 3/3 matched (target 8) | _none_ | 1/1 matched | _none_ | 0 | 4 | 408.1 |
+| 225 | `internal.OnUndeliveredElement` | `internal.OnUndeliveredElement` | 0.21 | 0 | 2/2 matched (target 12) | _none_ | 2/2 matched (target 3) | _none_ | 0 | 4 | 407.9 |
 | 226 | `internal.FlowExceptions.common` | `internal.FlowExceptions` | 0.50 | 0 | 2/2 matched (target 3) | _none_ | 2/2 matched | _none_ | 0 | 4 | 405.0 |
 | 227 | `terminal.Logic` | `flow.Logic` | 0.02 | 0 | 3/3 matched (target 23) | _none_ | 0/0 matched (target 4) | _none_ | 0 | 3 | 309.8 |
 | 228 | `terminal.Collection` | `flow.Collection` | 0.11 | 0 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | 0 | 3 | 308.9 |
 | 229 | `test.DefaultDispatchersConcurrencyTest` | `concurrent.DefaultDispatchersConcurrencyTest [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 2/2 matched | _none_ | 0 | 2 | 210.0 |
-| 230 | `common.TestDispatchers` | `tests.TestDispatchers [STUB]` | 0.00 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 210.0 |
+| 230 | `test.EmptyContext` | `tests.EmptyContext [STUB]` | 0.00 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 210.0 |
 | 231 | `internal.FlowExceptions` | `kotlinx.coroutines.native.flow.internal.FlowExceptions [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 2/2 matched | _none_ | 0 | 2 | 210.0 |
-| 232 | `test.EmptyContext` | `tests.EmptyContext [STUB]` | 0.00 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 210.0 |
+| 232 | `common.TestDispatchers` | `tests.TestDispatchers [STUB]` | 0.00 | 0 | 2/2 matched | _none_ | 0/0 matched | _none_ | 0 | 2 | 210.0 |
 | 233 | `terminal.Count` | `flow.Count` | 0.03 | 0 | 2/2 matched (target 26) | _none_ | 0/0 matched (target 2) | _none_ | 0 | 2 | 209.7 |
 | 234 | `internal.MainDispatcherFactory` | `internal.MainDispatcherFactory` | 0.07 | 0 | 1/1 matched | _none_ | 1/1 matched (target 2) | _none_ | 0 | 2 | 209.3 |
 | 235 | `internal.NopCollector` | `internal.NopCollector` | 0.08 | 0 | 1/1 matched | _none_ | 1/1 matched | _none_ | 0 | 2 | 209.2 |
@@ -257,8 +257,8 @@ This list is complete and includes function/type detail for every matched file. 
 | 245 | `flow.FlowCollector` | `flow.FlowCollector` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |
 | 246 | `common.CompletionHandler.common` | `coroutines.CompletionHandler` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |
 | 247 | `common.Deferred` | `coroutines.Deferred` | 1.00 | 0 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 100.0 |
-| 248 | `internal.NullSurrogate` | `internal.NullSurrogate [ZERO]` | 0.00 | 0 | 0/0 matched (target 3) | _none_ | 0/0 matched | _none_ | 0 | 0 | 10.0 |
-| 249 | `internal.ProbesSupport.common` | `internal.ProbesSupport.common [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 0/0 matched | _none_ | 0 | 0 | 10.0 |
+| 248 | `internal.ProbesSupport.common` | `internal.ProbesSupport.common [ZERO]` | 0.00 | 0 | 0/0 matched (target 2) | _none_ | 0/0 matched | _none_ | 0 | 0 | 10.0 |
+| 249 | `internal.NullSurrogate` | `internal.NullSurrogate [ZERO]` | 0.00 | 0 | 0/0 matched (target 3) | _none_ | 0/0 matched | _none_ | 0 | 0 | 10.0 |
 | 250 | `concurrent.Dispatchers` | `concurrent.Dispatchers` | 1.00 | 0 | 0/0 matched | _none_ | 0/0 matched | _none_ | 0 | 0 | 0.0 |
 | 251 | `concurrent.Builders.concurrent` | `concurrent.Builders.concurrent` | 1.00 | 0 | 0/0 matched | _none_ | 0/0 matched | _none_ | 0 | 0 | 0.0 |
 
@@ -381,12 +381,12 @@ This list is complete and includes function/type detail for every matched file. 
 - `selects.SelectMutexStressTest` -> `selects.SelectMutexStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `operators.ConflateTest` -> `operators.ConflateTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `test.DefaultDispatchersConcurrencyTest` -> `concurrent.DefaultDispatchersConcurrencyTest [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
-- `common.TestDispatchers` -> `tests.TestDispatchers [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `internal.FlowExceptions` -> `kotlinx.coroutines.native.flow.internal.FlowExceptions [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
 - `test.EmptyContext` -> `tests.EmptyContext [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `internal.FlowExceptions` -> `kotlinx.coroutines.native.flow.internal.FlowExceptions [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
+- `common.TestDispatchers` -> `tests.TestDispatchers [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `common.Runnable.common` -> `coroutines.Runnable [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
-- `internal.NullSurrogate` -> `internal.NullSurrogate [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
 - `internal.ProbesSupport.common` -> `internal.ProbesSupport.common [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
+- `internal.NullSurrogate` -> `internal.NullSurrogate [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
 
 ## Critical Issues (Function Similarity < 0.60 with Dependencies)
 

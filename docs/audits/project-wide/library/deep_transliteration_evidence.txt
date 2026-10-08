@@ -11232,10 +11232,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/OnUndeliveredElement.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/OnUndeliveredElement.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.511576
+translated_ast_cosine: 0.506917
 function_name_parity: 1.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.026325
+documentation_correspondence: 0.000000
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -11255,16 +11255,22 @@ Diagnostic: 6: unsupported type_alias
 Diagnostic: 8: unsupported function_declaration
 Diagnostic: 26: unsupported function_declaration
 Diagnostic: 36: unsupported class_declaration
-Function OnUndeliveredElement<E>::callUndeliveredElementCatchingException:8 -> kotlinx::coroutines::internal::call_undelivered_element_catching_exception:39 | normalized logic: 0.000000
+Function OnUndeliveredElement<E>::callUndeliveredElementCatchingException:8 -> kotlinx::coroutines::internal::call_undelivered_element_catching_exception:77 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:handler type:e type:onundeliveredelement node:66 identifier:element type:e type:undeliveredelementexception identifier:undeliveredelementexception operator:= node:9 node:43 identifier:handler identifier:element identifier:exception operator:= node:43 identifier:currentexception identifier:std node:1 identifier:undeliveredelementexception operator:&& node:43 identifier:undeliveredelementexception identifier:cause operator:!= identifier:exception node:43 identifier:undeliveredelementexception identifier:addsuppressed identifier:exception identifier:message identifier:std type:ostringstream identifier:message operator:<< identifier:std identifier:boolalpha operator:<< literal:52:"Exception in undelivered element handler for " node:1 node:43 identifier:element identifier:tostring identifier:message operator:<< node:43 identifier:element identifier:tostring node:1 node:43 identifier:tostring identifier:element identifier:message operator:<< node:43 identifier:tostring identifier:element identifier:message operator:<< identifier:element node:5 type:undeliveredelementexception node:43 identifier:message identifier:str identifier:exception node:5 identifier:undeliveredelementexception
-Function OnUndeliveredElement<E>::callUndeliveredElement:26 -> kotlinx::coroutines::internal::call_undelivered_element:65 | normalized logic: 0.000000
+  Target logic: node:66 identifier:handler type:e type:onundeliveredelement node:66 identifier:element type:e type:undeliveredelementexception identifier:undeliveredelementexception operator:= node:9 node:43 identifier:handler identifier:element identifier:exception operator:= node:43 identifier:currentexception identifier:std node:1 identifier:undeliveredelementexception operator:&& node:43 identifier:undeliveredelementexception identifier:cause operator:!= identifier:exception node:43 identifier:undeliveredelementexception identifier:addsuppressed identifier:exception node:5 type:undeliveredelementexception literal:52:"Exception in undelivered element handler for " operator:+ node:43 identifier:handler identifier:elementtostring identifier:element identifier:exception node:5 identifier:undeliveredelementexception
+Function OnUndeliveredElement<E>::callUndeliveredElement:26 -> kotlinx::coroutines::internal::call_undelivered_element:98 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:handler type:e type:onundeliveredelement node:66 identifier:element type:e node:66 identifier:context type:coroutinecontext identifier:exception identifier:std type:undeliveredelementexception type:uniqueptr node:66 type:callundeliveredelementcatchingexception node:66 type:handler node:66 identifier:std type:move node:66 type:element node:1 identifier:exception node:43 identifier:handlecoroutineexception identifier:context node:43 identifier:std identifier:makeexceptionptr operator:* identifier:exception
-Extra target function: UndeliveredElementException::UndeliveredElementException:86
-Extra target function: UndeliveredElementException::cause:90
-Extra target function: UndeliveredElementException::add_suppressed:93
-Extra target function: UndeliveredElementException::suppressed_exceptions:104
+Extra target function: kotlinx::coroutines::internal::UndeliveredElementHandlerBinding::UndeliveredElementHandlerBinding:26
+Extra target function: kotlinx::coroutines::internal::UndeliveredElementHandlerBinding::UndeliveredElementHandlerBinding:31
+Extra target function: kotlinx::coroutines::internal::UndeliveredElementHandlerBinding::operator bool:34
+Extra target function: kotlinx::coroutines::internal::UndeliveredElementHandlerBinding::operator():35
+Extra target function: kotlinx::coroutines::internal::UndeliveredElementHandlerBinding::element_to_string:36
+Extra target function: kotlinx::coroutines::internal::UndeliveredElementHandlerBinding::format_element:42
+Extra target function: UndeliveredElementException::UndeliveredElementException:119
+Extra target function: UndeliveredElementException::cause:123
+Extra target function: UndeliveredElementException::add_suppressed:126
+Extra target function: UndeliveredElementException::suppressed_exceptions:137
 === Emitted target buffer ===
 namespace kotlinx::coroutines::internal {
 
