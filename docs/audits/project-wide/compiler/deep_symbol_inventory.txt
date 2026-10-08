@@ -13086,9 +13086,10 @@ MISSING_SYMBOL function stackTraceToString at /Volumes/stuff/Projects/kotlinmani
 MISSING_SYMBOL function printStackTrace at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:180
 MISSING_SYMBOL function addSuppressed at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:189
 MISSING_SYMBOL property suppressedExceptions at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:203
-MISSING_FILE kotlin-native/runtime/src/main/kotlin/kotlin/Unit.kt
-MISSING_SYMBOL type Unit at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Unit.kt:13
-MISSING_SYMBOL function Unit::toString at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Unit.kt:15
+PRESENT type Unit at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Unit.kt:13 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Unit.hpp:11
+PRESENT function Unit::toString at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Unit.kt:15 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Unit.cpp:9
+EXTRA_TARGET_SYMBOL function Unit::operator== at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Unit.hpp:12
+EXTRA_TARGET_SYMBOL function Unit::operator!= at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Unit.hpp:13
 MISSING_FILE kotlin-native/runtime/src/main/kotlin/kotlin/Unsigned.kt
 MISSING_SYMBOL function uintRemainder at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Unsigned.kt:14
 MISSING_SYMBOL function uintDivide at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Unsigned.kt:17
@@ -18208,4 +18209,4 @@ MISSING_SYMBOL property buildProperties at /Volumes/stuff/Projects/kotlinmania/k
 MISSING_SYMBOL property composeRuntimeSnapshotVersions at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/settings.gradle.kts:106
 MISSING_SYMBOL property mirrorRepo at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/settings.gradle.kts:134
 MISSING_SYMBOL property buildProperties at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/settings.gradle.kts:141
-Inventory totals: present=773, declaration_only=92, missing=14919
+Inventory totals: present=775, declaration_only=92, missing=14917
