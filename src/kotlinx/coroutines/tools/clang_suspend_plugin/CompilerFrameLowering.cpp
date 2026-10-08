@@ -35,10 +35,8 @@ public:
     bool TraverseLambdaExpr(clang::LambdaExpr* expression) {
         for (auto* initializer : expression->capture_inits())
             if (!TraverseStmt(initializer)) return false;
-        // A generic lambda owns a function template and its instantiated call
-        // operators. Traverse that declaration context, including its template
-        // parameters, so imports retain the actual generic callable identity.
-        return TraverseDecl(expression->getLambdaClass());
+        if (!WalkUpFromCXXRecordDecl(expression->getLambdaClass())) return false;
+        return TraverseCXXMethodDecl(expression->getCallOperator());
     }
     bool VisitFunctionDecl(clang::FunctionDecl* function) {
         functions.push_back(function);
@@ -67,19 +65,10 @@ public:
             if (auto* record = llvm::dyn_cast<clang::RecordDecl>(function->getDeclContext()))
                 key += ":owner=" + clang::QualType(context_.getCanonicalTypeDeclType(record)).getAsString();
         }
-        // Template-local declarations can share a source location and printed
-        // type while belonging to different instantiations. Never bind an
-        // ambiguous textual identity to an arbitrary declaration from that set.
-        if (ambiguous.contains(key)) return true;
-        auto [existing, inserted] = declarations.emplace(key, declaration);
-        if (!inserted && existing->second->getCanonicalDecl() != declaration->getCanonicalDecl()) {
-            declarations.erase(existing);
-            ambiguous.insert(std::move(key));
-        }
+        declarations.emplace(std::move(key), declaration);
         return true;
     }
     std::map<std::string, clang::Decl*> declarations;
-    std::set<std::string> ambiguous;
     std::vector<clang::FunctionDecl*> functions;
 private:
     clang::ASTContext& context_;
@@ -441,6 +430,15 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
         auto* installed = llvm::dyn_cast_or_null<FunctionDecl>(importer.GetAlreadyImportedOrNull(generated_function));
         if (!installed || !original_functions.contains(installed) ||
             !referenced.functions.contains(installed->getCanonicalDecl()) || !generated_function->hasBody()) continue;
+        // An imported definition can already have deduced auto/decltype(auto).
+        // Reusing its prototype must transfer that concrete type along with the
+        // body; a body attached to an undeduced prototype cannot be deduced again.
+        if (installed->getReturnType()->isUndeducedType() &&
+            !generated_function->getReturnType()->isUndeducedType()) {
+            auto type = importer.Import(generated_function->getType());
+            if (!type) return fail(llvm::toString(type.takeError()));
+            installed->setType(*type);
+        }
         if (!installed->hasBody()) {
             for (unsigned i = 0; i < generated_function->getNumParams(); ++i)
                 importer.RegisterImportedDecl(generated_function->getParamDecl(i), installed->getParamDecl(i));
