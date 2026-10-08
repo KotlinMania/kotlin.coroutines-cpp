@@ -24,7 +24,7 @@ void UndeliveredElementException::add_suppressed(std::exception_ptr exception) {
     suppressed_exceptions_.push_back(std::move(exception));
 }
 
-// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:206-208
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:203-206
 const std::vector<std::exception_ptr>& UndeliveredElementException::suppressed_exceptions() const noexcept {
     return suppressed_exceptions_;
 }
