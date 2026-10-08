@@ -37,18 +37,15 @@ void* emit_all(FlowCollector<T>* collector, std::shared_ptr<Flow<T>> upstream,
 
 /**
  * Name of the property that defines the value of DEFAULT_CONCURRENCY.
- *
- * Kotlin source: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
- *   public const val DEFAULT_CONCURRENCY_PROPERTY_NAME: String = "kotlinx.coroutines.flow.defaultConcurrency"
+ * This preview API may change incompatibly within one release.
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:19
 inline constexpr const char* DEFAULT_CONCURRENCY_PROPERTY_NAME = "kotlinx.coroutines.flow.defaultConcurrency";
 
 /**
  * Default concurrency limit used by flatten_merge and flat_map_merge.
- *
- * Kotlin source: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
- *   public val DEFAULT_CONCURRENCY: Int = systemProp(DEFAULT_CONCURRENCY_PROPERTY_NAME, 16, 1, Int.MAX_VALUE)
+ * The default is 16. On JVM, the DEFAULT_CONCURRENCY_PROPERTY_NAME property
+ * changes this limit. This preview API may change incompatibly within one release.
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:26-30
 inline const int DEFAULT_CONCURRENCY = kotlinx::coroutines::internal::system_prop_int(
@@ -89,11 +86,9 @@ std::shared_ptr<Flow<T>> merge(std::vector<std::shared_ptr<Flow<T>>> flows) {
 
 /**
  * Merges the given flows into a single flow without preserving an order of elements.
- *
- * Kotlin source: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
- *   public fun <T> merge(vararg flows: Flow<T>): Flow<T> = flows.asIterable().merge()
+ * All flows are collected concurrently without a concurrency limit.
  */
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:122
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:114
 template <typename T>
 std::shared_ptr<Flow<T>> merge(std::initializer_list<std::shared_ptr<Flow<T>>> flows) {
     return merge<T>(std::vector<std::shared_ptr<Flow<T>>>(flows));
@@ -102,15 +97,13 @@ std::shared_ptr<Flow<T>> merge(std::initializer_list<std::shared_ptr<Flow<T>>> f
 /**
  * Flattens the given flow of flows into a single flow with a [concurrency] limit.
  */
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:154-157
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:135-138
 template <typename T>
 std::shared_ptr<Flow<T>> flatten_merge(std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> upstream, int concurrency = DEFAULT_CONCURRENCY) {
-    // Kotlin: require(concurrency > 0) { "Expected positive concurrency level, but had $concurrency" }
     if (concurrency <= 0) {
         throw std::invalid_argument("Expected positive concurrency level, but had " + std::to_string(concurrency));
     }
 
-    // Kotlin: if (concurrency == 1) flattenConcat() else ChannelFlowMerge(this, concurrency)
     if (concurrency == 1) {
         return flatten_concat<T>(upstream);
     }
@@ -121,10 +114,8 @@ std::shared_ptr<Flow<T>> flatten_merge(std::shared_ptr<Flow<std::shared_ptr<Flow
 /**
  * Transforms elements emitted by the original flow by applying transform, that returns another flow,
  * and then concatenating and flattening these flows.
- *
- * Kotlin source: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
- *   public fun <T, R> Flow<T>.flatMapConcat(transform: suspend (value: T) -> Flow<R>): Flow<R> =
- *       map(transform).flattenConcat()
+ * This is a shortcut for map(transform).flatten_concat(). In regular application
+ * flows, a suspending map operation is often sufficient and easier to reason about.
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:42-43
 template <typename T, typename R>
@@ -188,50 +179,100 @@ std::shared_ptr<Flow<R>> flat_map_merge(
  * Returns a flow that produces element by [transform] function every time the original flow emits a value.
  * When the original flow emits a new value, the previous `transform` block is cancelled.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:162-163
 template <typename T, typename R>
-std::shared_ptr<Flow<R>> transform_latest(std::shared_ptr<Flow<T>> upstream, 
-                                        std::function<void*(FlowCollector<R>*, T, Continuation<void*>*)> transform_fn) {
-    return std::make_shared<ChannelFlowTransformLatest<T, R>>(transform_fn, upstream);
+std::shared_ptr<Flow<R>> transform_latest(std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(FlowCollector<R>*, T, Continuation<void*>*)> transform) {
+    return std::make_shared<ChannelFlowTransformLatest<T, R>>(std::move(transform), std::move(upstream));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:162-163
+// NOTE(port): The owning continuation projection preserves the supplied caller
+// for compiler-authored transform lambdas; downstream collectors stay borrowed.
+template <typename T, typename R>
+std::shared_ptr<Flow<R>> transform_latest(std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(FlowCollector<R>*, T, std::shared_ptr<Continuation<void*>>)> transform) {
+    return transform_latest<T, R>(std::move(upstream),
+        std::function<void*(FlowCollector<R>*, T, Continuation<void*>*)>(
+            [transform = std::move(transform)](FlowCollector<R>* collector, T value,
+                Continuation<void*>* completion) -> void* {
+                return transform(collector, std::move(value),
+                    kotlinx::coroutines::internal::retain_continuation(completion));
+            }));
 }
 
 /**
- * Returns a flow that emits elements from the original flow transformed by [transform] function.
- * When the original flow emits a new value, computation of the [transform] block for previous value is cancelled.
+ * Returns a flow that emits transformed elements from the original flow.
+ * A new upstream value cancels the previous transform computation.
+ * The operator is buffered by default; buffer changes the output buffer size.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:212-213
+// NOTE(port): A suspending transform returns an owned R result box. The receiving
+// lambda unboxes and deletes it before downstream emission.
 template <typename T, typename R>
-std::shared_ptr<Flow<R>> map_latest(std::shared_ptr<Flow<T>> upstream, std::function<R(T)> transform_fn) {
-    return transform_latest<T, R>(upstream, [transform_fn](FlowCollector<R>* collector, T value, Continuation<void*>* cont) -> void* {
-        // emit() returns the Continuation-ABI value: either a real result or
-        // COROUTINE_SUSPENDED. transform_latest already drives suspension through `cont`
-        // so callers see the standard suspend semantics.
-        return collector->emit(transform_fn(value), cont);
-    });
+std::shared_ptr<Flow<R>> map_latest(std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(T, Continuation<void*>*)> transform) {
+    return transform_latest<T, R>(std::move(upstream),
+        std::function<void*(FlowCollector<R>*, T, std::shared_ptr<Continuation<void*>>)>(
+            [transform = std::move(transform)](FlowCollector<R>* collector, T value,
+                std::shared_ptr<Continuation<void*>> completion)
+                __attribute__((annotate("suspend"))) -> void* {
+                void* raw = dsl::suspend(transform(std::move(value), completion.get()));
+                std::unique_ptr<R> box(static_cast<R*>(raw));
+                R transformed = std::move(*box);
+                box.reset();
+                dsl::suspend(collector->emit(std::move(transformed), completion.get()));
+                return nullptr;
+            }));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:212-213
+// NOTE(port): Ordinary C++ transforms remain callable through the same source
+// operation; the adapter boxes their result for the Continuation ABI receiver.
+template <typename T, typename R>
+std::shared_ptr<Flow<R>> map_latest(std::shared_ptr<Flow<T>> upstream,
+    std::function<R(T)> transform) {
+    return map_latest<T, R>(std::move(upstream),
+        std::function<void*(T, Continuation<void*>*)>(
+            [transform = std::move(transform)](T value, Continuation<void*>*) -> void* {
+                return new R(transform(std::move(value)));
+            }));
 }
 
 /**
- * Returns a flow that switches to a new flow produced by transform every time the original flow emits a value.
- *
- * Kotlin source: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
- *   public inline fun <T, R> Flow<T>.flatMapLatest(crossinline transform: suspend (value: T) -> Flow<R>): Flow<R> =
- *       transformLatest { emitAll(transform(it)) }
+ * Switches to the flow returned by transform for each upstream value.
+ * A new upstream value cancels the previous transformed flow.
+ * The operator is buffered by default; buffer changes the output buffer size.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:188-189
+// NOTE(port): The transform returns an owned shared_ptr<Flow<R>> result box.
+// emit_all retains the extracted flow while collecting; the box is deleted here.
 template <typename T, typename R>
-std::shared_ptr<Flow<R>> flat_map_latest(
-    std::shared_ptr<Flow<T>> upstream,
-    std::function<std::shared_ptr<Flow<R>>(T)> transform
-) {
-    // Upstream:
-    //   public fun <T, R> Flow<T>.flatMapLatest(
-    //       transform: suspend (value: T) -> Flow<R>): Flow<R> =
-    //       transformLatest { emitAll(transform(it)) }
-    //
-    // The transform callable's suspension is carried by the inner collect call's
-    // Continuation; transform_latest cancels the previous inner collect on each new value
-    // matching the upstream `emitAll(transform(it))` semantics.
-    return transform_latest<T, R>(upstream, [transform](FlowCollector<R>* collector, T value, Continuation<void*>* cont) -> void* {
-        auto inner = transform(value);
-        return inner->collect(collector, cont);
-    });
+std::shared_ptr<Flow<R>> flat_map_latest(std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(T, Continuation<void*>*)> transform) {
+    return transform_latest<T, R>(std::move(upstream),
+        std::function<void*(FlowCollector<R>*, T, std::shared_ptr<Continuation<void*>>)>(
+            [transform = std::move(transform)](FlowCollector<R>* collector, T value,
+                std::shared_ptr<Continuation<void*>> completion)
+                __attribute__((annotate("suspend"))) -> void* {
+                void* raw = dsl::suspend(transform(std::move(value), completion.get()));
+                std::unique_ptr<std::shared_ptr<Flow<R>>> box(static_cast<std::shared_ptr<Flow<R>>*>(raw));
+                auto inner = std::move(*box);
+                box.reset();
+                dsl::suspend(emit_all<R>(collector, std::move(inner), completion.get()));
+                return nullptr;
+            }));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:188-189
+template <typename T, typename R>
+std::shared_ptr<Flow<R>> flat_map_latest(std::shared_ptr<Flow<T>> upstream,
+    std::function<std::shared_ptr<Flow<R>>(T)> transform) {
+    return flat_map_latest<T, R>(std::move(upstream),
+        std::function<void*(T, Continuation<void*>*)>(
+            [transform = std::move(transform)](T value, Continuation<void*>*) -> void* {
+                return new std::shared_ptr<Flow<R>>(transform(std::move(value)));
+            }));
 }
 
 
