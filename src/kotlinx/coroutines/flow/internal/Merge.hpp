@@ -78,6 +78,7 @@ private:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:29-31
     void launch_next(T value) {
         auto argument = std::make_shared<T>(std::move(value));
+        // Do not pay for dispatch here, it's never necessary.
         previous_flow_ = kotlinx::coroutines::launch(
             scope_, EmptyCoroutineContext::instance(), CoroutineStart::UNDISPATCHED,
             std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)>(
@@ -87,10 +88,10 @@ private:
                 }));
     }
 
-    std::shared_ptr<Flow<T>> flow_;
+    const std::shared_ptr<Flow<T>> flow_;
     const TransformType transform_;
-    FlowCollector<R>* collector_;
-    CoroutineScope* scope_;
+    FlowCollector<R>* const collector_;
+    CoroutineScope* const scope_;
     std::shared_ptr<Job> previous_flow_;
 };
 
@@ -116,7 +117,6 @@ protected:
         return new ChannelFlowTransformLatest<T, R>(transform_, this->upstream(), std::move(context), capacity, on_buffer_overflow);
     }
 
-protected:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:19-34
     void* flow_collect(FlowCollector<R>* collector, Continuation<void*>* continuation) override {
         return flow_collect(collector, kotlinx::coroutines::internal::retain_continuation(continuation));
@@ -212,11 +212,11 @@ public:
                         }));
             }
 
-            std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> flow_;
-            ProducerScope<T>* scope_;
-            std::shared_ptr<Semaphore> semaphore_;
-            std::shared_ptr<SendingCollector<T>> collector_;
-            std::shared_ptr<Job> job_;
+            const std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> flow_;
+            ProducerScope<T>* const scope_;
+            const std::shared_ptr<Semaphore> semaphore_;
+            const std::shared_ptr<SendingCollector<T>> collector_;
+            const std::shared_ptr<Job> job_;
         };
         auto owner = this->weak_from_this().lock();
         auto receiver = std::make_shared<MergeCollector>(flow_, concurrency_, scope, completion);

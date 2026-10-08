@@ -1,7 +1,6 @@
 // port-lint: source kotlinx-coroutines-core/common/src/flow/internal/Merge.kt
 /** Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt */
 #include "kotlinx/coroutines/flow/internal/Merge.hpp"
-#include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
 #include "kotlinx/coroutines/dsl/Suspend.hpp"
 
