@@ -310,8 +310,12 @@ public:
 class SelectInstanceBase {
 public:
     virtual ~SelectInstanceBase() = default;
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:221-221
+    virtual std::shared_ptr<CoroutineContext> get_context() const = 0;
     // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:233-233
     virtual bool try_select(void* clause_object, void* result) = 0;
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:239-239
+    virtual void dispose_on_completion(std::shared_ptr<DisposableHandle> handle) = 0;
     // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:246-246
     virtual void select_in_registration_phase(void* internal_result) = 0;
 };
