@@ -3067,6 +3067,7 @@ public:
         }
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2040-2132
     void remove_unprocessed_elements(ChannelSegment<E>* last_segment) {
         auto on_undelivered_element = on_undelivered_element_;
         std::exception_ptr undelivered_element_exception = nullptr;
@@ -3093,10 +3094,8 @@ public:
                         if (segment->cas_state(index, state, static_cast<void*>(&CHANNEL_CLOSED()))) {
                             if (on_undelivered_element) {
                                 E element = segment->get_element(index);
-                                std::exception_ptr ex = call_undelivered_element_catching_exception(element, undelivered_element_exception);
-                                if (ex && !undelivered_element_exception) {
-                                    undelivered_element_exception = ex;
-                                }
+                                undelivered_element_exception = call_undelivered_element_catching_exception(
+                                    element, undelivered_element_exception);
                             }
                             segment->clean_element(index);
                             segment->on_slot_cleaned();
@@ -3121,10 +3120,8 @@ public:
                             segment->clear_waiter_ref(index);
                             if (on_undelivered_element) {
                                 E element = segment->get_element(index);
-                                std::exception_ptr ex = call_undelivered_element_catching_exception(element, undelivered_element_exception);
-                                if (ex && !undelivered_element_exception) {
-                                    undelivered_element_exception = ex;
-                                }
+                                undelivered_element_exception = call_undelivered_element_catching_exception(
+                                    element, undelivered_element_exception);
                             }
                             suspended_senders.push_back(sender);
                             segment->clean_element(index);
