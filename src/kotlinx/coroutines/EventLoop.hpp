@@ -18,14 +18,14 @@ namespace coroutines {
 // Use SchedulerTask for type-erased storage in queues
 
 /**
- * Extended by [CoroutineDispatcher] implementations that have event loop inside and can
+ * Extended by \ref CoroutineDispatcher implementations that have event loop inside and can
  * be asked to process next event from their event queue.
  *
- * It may optionally implement [Delay] interface and support time-scheduled tasks.
- * It is created or pigged back onto (see [ThreadLocalEventLoop])
- * by `runBlocking` and by [Dispatchers.Unconfined].
+ * It may optionally implement \ref Delay interface and support time-scheduled tasks.
+ * It is created or pigged back onto (see \ref ThreadLocalEventLoop)
+ * by `run_blocking` and by \ref Dispatchers::get_unconfined.
  *
- * @suppress **This an internal API and should not be used from general code.**
+ * **This an internal API and should not be used from general code.**
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:19-120
 struct EventLoop : CoroutineDispatcher {
@@ -38,7 +38,7 @@ struct EventLoop : CoroutineDispatcher {
      * The result of this function is to be interpreted like this:
      * - `<= 0` -- there are potentially more events for immediate processing;
      * - `> 0` -- a number of nanoseconds to wait for next scheduled event;
-     * - [Long.MAX_VALUE] -- no more events.
+     * - `LLONG_MAX` -- no more events.
      *
      * **NOTE**: Must be invoked only from the event loop's thread
      *          (no check for performance reasons, may be added in the future).
@@ -50,15 +50,15 @@ struct EventLoop : CoroutineDispatcher {
 
     bool process_unconfined_event();
     /**
-     * Returns `true` if the invoking `runBlocking(context) { ... }` that was passed this event loop in its context
-     * parameter should call [processNextEvent] for this event loop (otherwise, it will process thread-local one).
+     * Returns `true` if the invoking `run_blocking(context, block)` that was passed this event loop in its context
+     * parameter should call \ref process_next_event for this event loop (otherwise, it will process thread-local one).
      * By default, event loop implementation is thread-local and should not processed in the context
      * (current thread's event loop should be processed instead).
      */
     // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:74-74
     virtual bool should_be_processed_from_context() const;
     /**
-     * Dispatches task whose dispatcher returned `false` from [CoroutineDispatcher.isDispatchNeeded]
+     * Dispatches task whose dispatcher returned `false` from \ref CoroutineDispatcher::is_dispatch_needed
      * into the current event loop.
      */
     // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:80-84
@@ -77,17 +77,17 @@ struct EventLoop : CoroutineDispatcher {
 
 private:
     /**
-     * Counts the number of nested `runBlocking` and [Dispatchers.Unconfined] that use this event loop.
+     * Counts the number of nested `run_blocking` and \ref Dispatchers::get_unconfined that use this event loop.
      */
     long long use_count_ = 0;
     /**
-     * Set to true on any use by `runBlocking`, because it potentially leaks this loop to other threads, so
+     * Set to true on any use by `run_blocking`, because it potentially leaks this loop to other threads, so
      * this instance must be properly shutdown. We don't need to shutdown event loop that was used solely
-     * by [Dispatchers.Unconfined] -- it can be left as [ThreadLocalEventLoop] and reused next time.
+     * by \ref Dispatchers::get_unconfined -- it can be left as \ref ThreadLocalEventLoop and reused next time.
      */
     bool shared_ = false;
     /**
-     * Queue used by [Dispatchers.Unconfined] tasks.
+     * Queue used by \ref Dispatchers::get_unconfined tasks.
      * These tasks are thread-local for performance and take precedence over the rest of the queue.
      */
     // NOTE(port): A nullable owned deque projects the source's lazily allocated queue.
@@ -116,7 +116,7 @@ long long delay_nanos_to_millis(long long time_nanos);
 
 /**
  * Event loop that blocks on `process_next_event`.
- * Used by `runBlocking`.
+ * Used by `run_blocking`.
  */
 struct BlockingEventLoop : public EventLoop {
     std::shared_ptr<std::thread> thread; // The thread running this loop

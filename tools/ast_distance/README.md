@@ -269,13 +269,16 @@ For Kotlin-to-C++ file comparisons, the primary score is literal cosine against
 an in-memory C++ buffer emitted from Kotlin AST-scoped replacement rules. Vector
 coordinates are `(token position, exact token spelling)`: the score is the number
 of exact tokens at the same position divided by `sqrt(emittedTokens * targetTokens)`.
-Whitespace and comments are excluded from implementation tokens; identifiers,
+Whitespace is excluded; ordered translated comment words contribute at their
+source positions alongside executable tokens. Identifiers,
 operators and complete string/character literals retain exact target spelling.
 Reordering calls or declarations lowers this score even with identical word counts.
 There is no alignment, identifier folding, weighted AST blend or logic multiplier.
 An insertion can shift every subsequent coordinate; this is literal closeness,
-not a proof of semantic equivalence. Documentation uses the same ordered cosine
-separately after C++ reference/markup replacement and never raises code similarity.
+not a proof of semantic equivalence. Documentation also has a separate ordered
+cosine after C++ reference/markup replacement, so documentation gaps can be located.
+Only comment delimiters, markup punctuation and anchored provenance metadata are
+ignored. Narrative, parameter descriptions, references and examples remain scored.
 
 `--translit-distance` reports this score with the complete emitted buffer.
 The default Kotlin-to-C++ file comparison shows it as the primary literal report;
@@ -288,8 +291,10 @@ statements cannot earn credit by matching their own generated placeholder.
 The emitted buffer comes from AST-scoped rules. Its report preserves source/emitted
 spans and explicit unsupported constructs. Ordered logic retains operations,
 constants, calls, branches and parameter evidence so invented or omitted logic
-lowers similarity. Documentation references lower separately to C++ names and
-markup; documentation never raises the implementation score. Numerical similarity
+lowers similarity. Documentation references lower to C++ names and markup;
+unsupported example translation remains visible and makes the result provisional.
+Executable AST and normalized logic are code-only diagnostics; prose does not
+establish algorithmic correspondence. Numerical similarity
 is accompanied by full differing sequences and parser/rule limitations.
 
 For Kotlin/C++ comparisons, provenance must identify the source path and declared
