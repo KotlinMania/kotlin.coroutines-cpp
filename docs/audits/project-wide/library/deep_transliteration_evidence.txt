@@ -4,10 +4,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.362042
+translated_ast_cosine: 0.364603
 function_name_parity: 0.208333
 normalized_logic: 0.000000
-documentation_correspondence: 0.009204
+documentation_correspondence: 0.009145
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -111,18 +111,18 @@ Diagnostic: 649: unsupported function_declaration
 Diagnostic: 655: unsupported function_declaration
 Diagnostic: 661: unsupported object_declaration
 Diagnostic: 685: unsupported class_declaration
-Function Job::cancelChildren:519 -> kotlinx::coroutines::cancel_children:469 | normalized logic: 0.000000
+Function Job::cancelChildren:519 -> kotlinx::coroutines::cancel_children:486 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:job type:job identifier:std type:exceptionptr identifier:cause operator:= node:2 identifier:child node:43 identifier:job identifier:getchildren node:43 identifier:child identifier:cancel identifier:cause
-Function Job::ensureActive:584 -> kotlinx::coroutines::ensure_active:480 | normalized logic: 0.000000
+Function Job::ensureActive:584 -> kotlinx::coroutines::ensure_active:497 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:job type:job node:1 operator:! node:43 identifier:job identifier:isactive identifier:ex identifier:std type:exceptionptr operator:= node:43 identifier:getcancellationexception identifier:job node:1 identifier:ex node:43 identifier:std identifier:rethrowexception identifier:ex node:10 node:43 identifier:std identifier:runtimeerror literal:52:"Job is not active"
-Function NonDisposableHandle::dispose:670 -> kotlinx::coroutines::NonDisposableHandle::dispose:434 | normalized logic: 0.000000
+Function NonDisposableHandle::dispose:670 -> kotlinx::coroutines::NonDisposableHandle::dispose:451 | normalized logic: 0.000000
   Ordered logic sequences are equal
-Function NonDisposableHandle::childCancelled:676 -> kotlinx::coroutines::NonDisposableHandle::child_cancelled:435 | normalized logic: 0.000000
+Function NonDisposableHandle::childCancelled:676 -> kotlinx::coroutines::NonDisposableHandle::child_cancelled:452 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:exceptionptr node:5 literal:53:false
-Function NonDisposableHandle::toString:682 -> kotlinx::coroutines::NonDisposableHandle::to_string:436 | normalized logic: 0.000000
+Function NonDisposableHandle::toString:682 -> kotlinx::coroutines::NonDisposableHandle::to_string:453 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:5 literal:52:"NonDisposableHandle"
 Missing source function: Job::cancel:212
@@ -144,20 +144,21 @@ Missing source function: CoroutineContext::cancelChildren:634
 Missing source function: CoroutineContext::cancelChildren:649
 Missing source function: orCancellation:655
 Missing source function: DisposeOnCompletion::invoke:690
-Extra target function: kotlinx::coroutines::make_job:26
-Extra target function: kotlinx::coroutines::operator+:71
-Extra target function: kotlinx::coroutines::Job::invoke_on_completion:346
-Extra target function: kotlinx::coroutines::Job::invoke_on_completion:352
-Extra target function: kotlinx::coroutines::Job::key:358
-Extra target function: kotlinx::coroutines::NonDisposableHandle::instance:428
-Extra target function: kotlinx::coroutines::NonDisposableHandle::get_parent:433
-Extra target function: kotlinx::coroutines::non_disposable_handle:443
-Extra target function: kotlinx::coroutines::cancel_and_join_blocking:459
-Extra target function: kotlinx::coroutines::context_is_active:507
-Extra target function: kotlinx::coroutines::context_cancel:519
-Extra target function: kotlinx::coroutines::context_job:533
-Extra target function: kotlinx::coroutines::context_ensure_active:549
-Extra target function: kotlinx::coroutines::context_cancel_children:561
+Extra target function: Job::join:22
+Extra target function: kotlinx::coroutines::make_job:31
+Extra target function: kotlinx::coroutines::operator+:77
+Extra target function: kotlinx::coroutines::Job::invoke_on_completion:363
+Extra target function: kotlinx::coroutines::Job::invoke_on_completion:369
+Extra target function: kotlinx::coroutines::Job::key:375
+Extra target function: kotlinx::coroutines::NonDisposableHandle::instance:445
+Extra target function: kotlinx::coroutines::NonDisposableHandle::get_parent:450
+Extra target function: kotlinx::coroutines::non_disposable_handle:460
+Extra target function: kotlinx::coroutines::cancel_and_join_blocking:476
+Extra target function: kotlinx::coroutines::context_is_active:524
+Extra target function: kotlinx::coroutines::context_cancel:536
+Extra target function: kotlinx::coroutines::context_job:550
+Extra target function: kotlinx::coroutines::context_ensure_active:566
+Extra target function: kotlinx::coroutines::context_cancel_children:578
 === Emitted target buffer ===
 __ast_distance_unmapped__("file_annotation", "@file:JvmMultifileClass")
 __ast_distance_unmapped__("file_annotation", "@file:JvmName(\"JobKt\")")
@@ -5714,7 +5715,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Symbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Symbol.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.572397
+translated_ast_cosine: 0.602050
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
@@ -5730,13 +5731,14 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 3	37:232	42:42	import_list	yes
 10	233:481	43:352	class_declaration	fallback
 Diagnostic: 10: unsupported class_declaration
-Function Symbol::toString:11 -> kotlinx::coroutines::internal::Symbol::to_string:45 | normalized logic: 0.000000
+Function Symbol::toString:11 -> Symbol::to_string:11 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:5 literal:52:"<" operator:+ identifier:symbol operator:+ literal:52:">"
-Function Symbol::unbox:13 -> kotlinx::coroutines::internal::Symbol::unbox:56 | normalized logic: 0.000000
+Function Symbol::unbox:13 -> Symbol::unbox:14 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:value type:void node:1 identifier:value operator:== node:5 type:t node:5 node:43 identifier:staticcast type:t node:43 identifier:constcast type:void operator:* identifier:value
-Extra target function: kotlinx::coroutines::internal::Symbol::Symbol:42
+  Target logic: node:66 identifier:std identifier:value type:any node:1 identifier:identity operator:= node:43 identifier:anycast identifier:std type:symbol operator:* operator:& identifier:value identifier:identity operator:&& operator:* identifier:identity operator:== node:5 identifier:std type:any node:1 identifier:identity operator:= node:43 identifier:anycast identifier:std type:symbol operator:* operator:& identifier:value identifier:identity operator:&& operator:* identifier:identity operator:== node:5 identifier:std type:any node:5 identifier:value
+Extra target function: Symbol::Symbol:8
+Extra target function: kotlinx::coroutines::internal::Symbol::unbox:53
 === Emitted target buffer ===
 namespace kotlinx::coroutines::internal {
 
@@ -8133,10 +8135,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.488646
+translated_ast_cosine: 0.490121
 function_name_parity: 1.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.011123
+documentation_correspondence: 0.000000
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -8191,19 +8193,16 @@ Extra target function: kotlinx::coroutines::flow::internal::ChannelFlowMerge::Me
 Extra target function: kotlinx::coroutines::flow::internal::ChannelFlowMerge::MergeCollector::emit:185
 Extra target function: kotlinx::coroutines::flow::internal::ChannelFlowMerge::MergeCollector::launch_inner:194
 Extra target function: kotlinx::coroutines::flow::internal::ChannelLimitedFlowMerge::ChannelLimitedFlowMerge:232
-Extra target function: kotlinx::coroutines::flow::internal::TransformLatestEmitContinuation::TransformLatestEmitContinuation:291
-Extra target function: kotlinx::coroutines::flow::internal::TransformLatestEmitContinuation::invoke_suspend:297
-Extra target function: kotlinx::coroutines::flow::internal::TransformLatestEmitContinuation::release_intercepted:309
-Extra target function: kotlinx::coroutines::flow::internal::MergeEmitContinuation::MergeEmitContinuation:324
-Extra target function: kotlinx::coroutines::flow::internal::MergeEmitContinuation::invoke_suspend:330
-Extra target function: kotlinx::coroutines::flow::internal::MergeEmitContinuation::release_intercepted:345
-Extra target function: kotlinx::coroutines::flow::internal::MergeChildContinuation::MergeChildContinuation:362
-Extra target function: kotlinx::coroutines::flow::internal::MergeChildContinuation::retain:368
-Extra target function: kotlinx::coroutines::flow::internal::MergeChildContinuation::invoke_suspend:371
-Extra target function: kotlinx::coroutines::flow::internal::MergeChildContinuation::release_intercepted:385
-Extra target function: kotlinx::coroutines::flow::internal::transform_latest_emit:400
-Extra target function: kotlinx::coroutines::flow::internal::acquire_and_launch_merge_inner:408
-Extra target function: kotlinx::coroutines::flow::internal::collect_merge_child:417
+Extra target function: kotlinx::coroutines::flow::internal::MergeEmitContinuation::MergeEmitContinuation:291
+Extra target function: kotlinx::coroutines::flow::internal::MergeEmitContinuation::invoke_suspend:297
+Extra target function: kotlinx::coroutines::flow::internal::MergeEmitContinuation::release_intercepted:312
+Extra target function: kotlinx::coroutines::flow::internal::MergeChildContinuation::MergeChildContinuation:329
+Extra target function: kotlinx::coroutines::flow::internal::MergeChildContinuation::retain:335
+Extra target function: kotlinx::coroutines::flow::internal::MergeChildContinuation::invoke_suspend:338
+Extra target function: kotlinx::coroutines::flow::internal::MergeChildContinuation::release_intercepted:352
+Extra target function: kotlinx::coroutines::flow::internal::transform_latest_emit:367
+Extra target function: kotlinx::coroutines::flow::internal::acquire_and_launch_merge_inner:379
+Extra target function: kotlinx::coroutines::flow::internal::collect_merge_child:388
 === Emitted target buffer ===
 namespace kotlinx::coroutines::flow::internal {
 
@@ -8470,10 +8469,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.523541
+translated_ast_cosine: 0.519952
 function_name_parity: 1.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.009873
+documentation_correspondence: 0.013488
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -8532,18 +8531,20 @@ Extra target function: kotlinx::coroutines::flow::internal::AdapterContinuation:
 Extra target function: kotlinx::coroutines::flow::internal::ZipEmitContinuation::ZipEmitContinuation:495
 Extra target function: kotlinx::coroutines::flow::internal::ZipEmitContinuation::retain:504
 Extra target function: kotlinx::coroutines::flow::internal::ZipEmitContinuation::invoke_suspend:506
-Extra target function: kotlinx::coroutines::flow::internal::ZipEmitContinuation::release_intercepted:523
-Extra target function: kotlinx::coroutines::flow::internal::ZipEmitContinuation::emit_result:538
-Extra target function: kotlinx::coroutines::flow::internal::ZipCollector::ZipCollector:556
-Extra target function: kotlinx::coroutines::flow::internal::ZipCollector::emit:565
-Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::ZipContinuation:588
-Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::retain:597
-Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::invoke_suspend:599
-Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::release_intercepted:634
-Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::collect_first:648
-Extra target function: kotlinx::coroutines::flow::internal::combine_internal_erased:668
-Extra target function: kotlinx::coroutines::flow::internal::collect_combine_adapter:682
-Extra target function: kotlinx::coroutines::flow::internal::zip_internal_erased:692
+Extra target function: kotlinx::coroutines::flow::internal::ZipEmitContinuation::release_intercepted:522
+Extra target function: kotlinx::coroutines::flow::internal::ZipEmitContinuation::emit_result:537
+Extra target function: kotlinx::coroutines::flow::internal::ZipCollector::ZipCollector:555
+Extra target function: kotlinx::coroutines::flow::internal::ZipCollector::emit:564
+Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::ZipContinuation:587
+Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::retain:596
+Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::invoke_suspend:598
+Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::SecondCollector::SecondCollector:610
+Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::SecondCollector::emit:612
+Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::release_intercepted:646
+Extra target function: kotlinx::coroutines::flow::internal::ZipContinuation::collect_first:660
+Extra target function: kotlinx::coroutines::flow::internal::combine_internal_erased:680
+Extra target function: kotlinx::coroutines::flow::internal::collect_combine_adapter:694
+Extra target function: kotlinx::coroutines::flow::internal::zip_internal_erased:704
 === Emitted target buffer ===
 __ast_distance_unmapped__("file_annotation", "@file:Suppress(\"UNCHECKED_CAST\") // KT-32203")
 namespace kotlinx::coroutines::flow::internal {
@@ -10810,14 +10811,14 @@ Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NullSurrogate.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NullSurrogate.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
-translated_ast_cosine: 0.224322
+translated_text_cosine: 0.025906
+translated_ast_cosine: 0.272606
 function_name_parity: 0.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.259779
+documentation_correspondence: 0.312470
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
+score: 0.025906
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no
@@ -10833,9 +10834,9 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 Diagnostic: 11: unsupported property_declaration
 Diagnostic: 18: unsupported property_declaration
 Diagnostic: 25: unsupported property_declaration
-Extra target function: kotlinx::coroutines::flow::internal::NULL_VALUE:19
-Extra target function: kotlinx::coroutines::flow::internal::UNINITIALIZED:28
-Extra target function: kotlinx::coroutines::flow::internal::DONE:37
+Extra target function: kotlinx::coroutines::flow::internal::NULL_VALUE:32
+Extra target function: kotlinx::coroutines::flow::internal::UNINITIALIZED:37
+Extra target function: kotlinx::coroutines::flow::internal::DONE:42
 === Emitted target buffer ===
 namespace kotlinx::coroutines::flow::internal {
 

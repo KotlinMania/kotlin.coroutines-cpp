@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 820/2918 matched (target 3038) — 28.1%
+- **Function parity:** 820/2918 matched (target 3039) — 28.1%
 - **Class/type parity:** 359/560 matched (target 522) — 64.1%
-- **Combined symbol parity:** 1179/3478 matched (target 3560) — 33.9%
+- **Combined symbol parity:** 1179/3478 matched (target 3561) — 33.9%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -158,11 +158,11 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.26
 - **Dependents:** 1
 - **Priority Score:** 1001207.4
-- **Functions:** 9/9 matched (target 33)
+- **Functions:** 9/9 matched (target 30)
 - **Missing functions:** _none_
-- **Types:** 3/3 matched (target 9)
+- **Types:** 3/3 matched (target 8)
 - **Missing types:** _none_
-- **Lint issues:** 5
+- **Lint issues:** 4
 
 ### 10. internal.Combine
 
@@ -170,19 +170,19 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.02
 - **Dependents:** 1
 - **Priority Score:** 1000309.8
-- **Functions:** 2/2 matched (target 48)
+- **Functions:** 2/2 matched (target 50)
 - **Missing functions:** _none_
-- **Types:** 1/1 matched (target 12)
+- **Types:** 1/1 matched (target 13)
 - **Missing types:** _none_
-- **Lint issues:** 8
+- **Lint issues:** 9
 
 ### 11. internal.Symbol
 
 - **Target:** `internal.Symbol`
-- **Similarity:** 0.11
+- **Similarity:** 0.04
 - **Dependents:** 1
-- **Priority Score:** 1000308.9
-- **Functions:** 2/2 matched (target 3)
+- **Priority Score:** 1000309.6
+- **Functions:** 2/2 matched (target 4)
 - **Missing functions:** _none_
 - **Types:** 1/1 matched
 - **Missing types:** _none_
@@ -321,7 +321,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.10
 - **Dependents:** 0
 - **Priority Score:** 213109.0
-- **Functions:** 5/24 matched (target 19)
+- **Functions:** 5/24 matched (target 20)
 - **Missing functions:** `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelAndJoin`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::ensureActive`, `Job::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke`
 - **Types:** 5/7 matched (target 8)
 - **Missing types:** `DisposableHandle`, `DisposeOnCompletion`

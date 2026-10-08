@@ -729,50 +729,50 @@ DECLARATION_ONLY function Job::cancel at /Volumes/stuff/Projects/kotlinmania/kot
 DECLARATION_ONLY function Job::cancel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:218 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:211
 DECLARATION_ONLY property Job::children at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:240 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:232
 DECLARATION_ONLY function Job::attachChild at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:262 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:249
-DECLARATION_ONLY function Job::join at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:288 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:271
+PRESENT function Job::join at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:288 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.cpp:22
 MISSING_SYMBOL property Job::onJoin at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:294
-PRESENT function Job::invokeOnCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:322 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:322
-PRESENT function Job::invokeOnCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:328 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:322
+PRESENT function Job::invokeOnCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:322 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:333
+PRESENT function Job::invokeOnCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:328 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:333
 MISSING_SYMBOL function Job::plus at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:341
 MISSING_SYMBOL function invokeOnCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:366
 MISSING_SYMBOL function Job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:390
 MISSING_SYMBOL function Job0 at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:394
 MISSING_SYMBOL type DisposableHandle at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:402
 MISSING_SYMBOL function DisposableHandle::dispose at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:407
-PRESENT type ChildJob at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:417 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:338
-DECLARATION_ONLY function ChildJob::parentCancelled at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:428 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:346
-PRESENT type ParentJob at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:437 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:354
-DECLARATION_ONLY function ParentJob::getChildJobCancellationCause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:450 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:365
-PRESENT type ChildHandle at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:459 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:373
-DECLARATION_ONLY property ChildHandle::parent at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:467 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:378
-DECLARATION_ONLY function ChildHandle::childCancelled at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:478 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:389
+PRESENT type ChildJob at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:417 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:349
+DECLARATION_ONLY function ChildJob::parentCancelled at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:428 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:357
+PRESENT type ParentJob at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:437 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:365
+DECLARATION_ONLY function ParentJob::getChildJobCancellationCause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:450 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:376
+PRESENT type ChildHandle at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:459 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:384
+DECLARATION_ONLY property ChildHandle::parent at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:467 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:389
+DECLARATION_ONLY function ChildHandle::childCancelled at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:478 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:400
 MISSING_SYMBOL function disposeOnCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:492
 MISSING_SYMBOL function cancelAndJoin at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:509
-PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:519 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:439
-PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:526 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:439
-PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:532 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:439
+PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:519 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:450
+PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:526 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:450
+PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:532 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:450
 MISSING_SYMBOL property isActive at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:555
 MISSING_SYMBOL function cancel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:562
 MISSING_SYMBOL function cancel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:569
-PRESENT function ensureActive at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:584 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:450
-PRESENT function ensureActive at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:602 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:450
+PRESENT function ensureActive at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:584 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:461
+PRESENT function ensureActive at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:602 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:461
 MISSING_SYMBOL function cancel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:610
 MISSING_SYMBOL function cancel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:615
-PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:627 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:439
-PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:634 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:439
+PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:627 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:450
+PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:634 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:450
 MISSING_SYMBOL property job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:644
-PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:649 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:439
+PRESENT function cancelChildren at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:649 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:450
 MISSING_SYMBOL function orCancellation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:655
-PRESENT type NonDisposableHandle at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:661 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:396
-PRESENT property NonDisposableHandle::parent at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:664 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:403
-PRESENT function NonDisposableHandle::dispose at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:670 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:404
-PRESENT function NonDisposableHandle::childCancelled at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:676 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:405
-PRESENT function NonDisposableHandle::toString at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:682 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:406
+PRESENT type NonDisposableHandle at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:661 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:407
+PRESENT property NonDisposableHandle::parent at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:664 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:414
+PRESENT function NonDisposableHandle::dispose at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:670 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:415
+PRESENT function NonDisposableHandle::childCancelled at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:676 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:416
+PRESENT function NonDisposableHandle::toString at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:682 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:417
 MISSING_SYMBOL type DisposeOnCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:685
 MISSING_SYMBOL property DisposeOnCompletion::handle at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:686
 MISSING_SYMBOL property DisposeOnCompletion::onCancelling at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:688
 MISSING_SYMBOL function DisposeOnCompletion::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:690
-EXTRA_TARGET_SYMBOL function make_job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.cpp:26
+EXTRA_TARGET_SYMBOL function make_job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.cpp:31
 EXTRA_TARGET_SYMBOL type CompletableJob at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:26
 EXTRA_TARGET_SYMBOL type JobSupport at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:27
 EXTRA_TARGET_SYMBOL type JobNode at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:28
@@ -780,17 +780,17 @@ EXTRA_TARGET_SYMBOL function operator+ at /Volumes/stuff/Projects/kotlinmania/ko
 EXTRA_TARGET_SYMBOL property Job::key_instance at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:134
 EXTRA_TARGET_SYMBOL property Job::type_key at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:135
 EXTRA_TARGET_SYMBOL function Job::~Job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:137
-EXTRA_TARGET_SYMBOL function Job::join_blocking at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:277
-EXTRA_TARGET_SYMBOL function Job::key at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:328
-EXTRA_TARGET_SYMBOL function NonDisposableHandle::NonDisposableHandle at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:409
-EXTRA_TARGET_SYMBOL function non_disposable_handle at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:413
-EXTRA_TARGET_SYMBOL function cancel_and_join_blocking at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:429
-EXTRA_TARGET_SYMBOL function context_is_active at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:477
-EXTRA_TARGET_SYMBOL function context_cancel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:489
-EXTRA_TARGET_SYMBOL function context_job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:503
-EXTRA_TARGET_SYMBOL function context_ensure_active at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:519
-EXTRA_TARGET_SYMBOL function context_cancel_children at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:531
-EXTRA_TARGET_SYMBOL function make_job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:557
+EXTRA_TARGET_SYMBOL function Job::join_blocking at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:288
+EXTRA_TARGET_SYMBOL function Job::key at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:339
+EXTRA_TARGET_SYMBOL function NonDisposableHandle::NonDisposableHandle at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:420
+EXTRA_TARGET_SYMBOL function non_disposable_handle at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:424
+EXTRA_TARGET_SYMBOL function cancel_and_join_blocking at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:440
+EXTRA_TARGET_SYMBOL function context_is_active at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:488
+EXTRA_TARGET_SYMBOL function context_cancel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:500
+EXTRA_TARGET_SYMBOL function context_job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:514
+EXTRA_TARGET_SYMBOL function context_ensure_active at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:530
+EXTRA_TARGET_SYMBOL function context_cancel_children at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:542
+EXTRA_TARGET_SYMBOL function make_job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp:568
 MISSING_FILE kotlinx-coroutines-core/common/src/JobSupport.kt
 MISSING_SYMBOL type JobSupport at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/JobSupport.kt:23
 MISSING_SYMBOL property JobSupport::key at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/JobSupport.kt:25
@@ -2122,7 +2122,7 @@ EXTRA_TARGET_SYMBOL function ChannelFlowOperatorImpl::ChannelFlowOperatorImpl at
 EXTRA_TARGET_SYMBOL function call_with_context_undispatched at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/ChannelFlow.hpp:414
 EXTRA_TARGET_SYMBOL function UndispatchedContextCollector::UndispatchedContextCollector at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/ChannelFlow.hpp:446
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp: parser errors; symbol inventory may be incomplete
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:421-421: ERROR ERROR
+PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:433-433: ERROR ERROR
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:50: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:54: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:102: offset-preserving coroutine statement-macro grammar adaptation
@@ -2132,9 +2132,9 @@ PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotl
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:247: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:249: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:279: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:292: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:373: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:403: offset-preserving coroutine statement-macro grammar adaptation
+PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:291: offset-preserving coroutine statement-macro grammar adaptation
+PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:372: offset-preserving coroutine statement-macro grammar adaptation
+PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:415: offset-preserving coroutine statement-macro grammar adaptation
 MISSING_SYMBOL type_alias Update at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/Combine.kt:9
 PRESENT function combineInternal at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/Combine.kt:11 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.hpp:104
 PRESENT function zipImpl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/Combine.kt:82 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.hpp:214
@@ -2212,50 +2212,50 @@ EXTRA_TARGET_SYMBOL type ZipEmitContinuation at /Volumes/stuff/Projects/kotlinma
 EXTRA_TARGET_SYMBOL function ZipEmitContinuation::ZipEmitContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:267
 EXTRA_TARGET_SYMBOL function ZipEmitContinuation::retain at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:276
 EXTRA_TARGET_SYMBOL function ZipEmitContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:278
-EXTRA_TARGET_SYMBOL function ZipEmitContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:295
-EXTRA_TARGET_SYMBOL function ZipEmitContinuation::emit_result at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:310
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:311
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::value_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:312
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::other_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:312
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::second_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:313
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::collect_job_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:314
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::transform_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:315
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::emit_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:316
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::delete_result_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:317
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::received_box_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:318
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::received_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:319
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::result_box_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:320
-EXTRA_TARGET_SYMBOL property ZipEmitContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:321
-EXTRA_TARGET_SYMBOL type ZipCollector at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:325
-EXTRA_TARGET_SYMBOL function ZipCollector::ZipCollector at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:328
-EXTRA_TARGET_SYMBOL function ZipCollector::emit at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:337
-EXTRA_TARGET_SYMBOL property ZipCollector::second_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:347
-EXTRA_TARGET_SYMBOL property ZipCollector::collect_job_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:348
-EXTRA_TARGET_SYMBOL property ZipCollector::scope_context_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:349
-EXTRA_TARGET_SYMBOL property ZipCollector::count_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:350
-EXTRA_TARGET_SYMBOL property ZipCollector::transform_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:351
-EXTRA_TARGET_SYMBOL property ZipCollector::emit_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:352
-EXTRA_TARGET_SYMBOL property ZipCollector::delete_result_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:353
-EXTRA_TARGET_SYMBOL type ZipContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:357
-EXTRA_TARGET_SYMBOL function ZipContinuation::ZipContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:360
-EXTRA_TARGET_SYMBOL function ZipContinuation::retain at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:369
-EXTRA_TARGET_SYMBOL function ZipContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:371
-EXTRA_TARGET_SYMBOL function ZipContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:406
-EXTRA_TARGET_SYMBOL function ZipContinuation::collect_first at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:420
-EXTRA_TARGET_SYMBOL property ZipContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:426
-EXTRA_TARGET_SYMBOL property ZipContinuation::scope_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:427
-EXTRA_TARGET_SYMBOL property ZipContinuation::first_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:428
-EXTRA_TARGET_SYMBOL property ZipContinuation::source_second_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:428
-EXTRA_TARGET_SYMBOL property ZipContinuation::second_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:429
-EXTRA_TARGET_SYMBOL property ZipContinuation::collect_job_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:430
-EXTRA_TARGET_SYMBOL property ZipContinuation::collector_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:431
-EXTRA_TARGET_SYMBOL property ZipContinuation::transform_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:432
-EXTRA_TARGET_SYMBOL property ZipContinuation::emit_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:433
-EXTRA_TARGET_SYMBOL property ZipContinuation::delete_result_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:434
-EXTRA_TARGET_SYMBOL property ZipContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:435
-EXTRA_TARGET_SYMBOL function combine_internal_erased at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:440
-EXTRA_TARGET_SYMBOL function collect_combine_adapter at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:454
-EXTRA_TARGET_SYMBOL function zip_internal_erased at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:464
+EXTRA_TARGET_SYMBOL function ZipEmitContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:294
+EXTRA_TARGET_SYMBOL function ZipEmitContinuation::emit_result at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:309
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:310
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::value_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:311
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::other_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:311
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::second_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:312
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::collect_job_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:313
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::transform_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:314
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::emit_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:315
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::delete_result_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:316
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::received_box_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:317
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::received_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:318
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::result_box_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:319
+EXTRA_TARGET_SYMBOL property ZipEmitContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:320
+EXTRA_TARGET_SYMBOL type ZipCollector at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:324
+EXTRA_TARGET_SYMBOL function ZipCollector::ZipCollector at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:327
+EXTRA_TARGET_SYMBOL function ZipCollector::emit at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:336
+EXTRA_TARGET_SYMBOL property ZipCollector::second_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:346
+EXTRA_TARGET_SYMBOL property ZipCollector::collect_job_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:347
+EXTRA_TARGET_SYMBOL property ZipCollector::scope_context_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:348
+EXTRA_TARGET_SYMBOL property ZipCollector::count_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:349
+EXTRA_TARGET_SYMBOL property ZipCollector::transform_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:350
+EXTRA_TARGET_SYMBOL property ZipCollector::emit_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:351
+EXTRA_TARGET_SYMBOL property ZipCollector::delete_result_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:352
+EXTRA_TARGET_SYMBOL type ZipContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:356
+EXTRA_TARGET_SYMBOL function ZipContinuation::ZipContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:359
+EXTRA_TARGET_SYMBOL function ZipContinuation::retain at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:368
+EXTRA_TARGET_SYMBOL function ZipContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:370
+EXTRA_TARGET_SYMBOL function ZipContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:418
+EXTRA_TARGET_SYMBOL function ZipContinuation::collect_first at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:432
+EXTRA_TARGET_SYMBOL property ZipContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:438
+EXTRA_TARGET_SYMBOL property ZipContinuation::scope_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:439
+EXTRA_TARGET_SYMBOL property ZipContinuation::first_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:440
+EXTRA_TARGET_SYMBOL property ZipContinuation::source_second_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:440
+EXTRA_TARGET_SYMBOL property ZipContinuation::second_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:441
+EXTRA_TARGET_SYMBOL property ZipContinuation::collect_job_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:442
+EXTRA_TARGET_SYMBOL property ZipContinuation::collector_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:443
+EXTRA_TARGET_SYMBOL property ZipContinuation::transform_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:444
+EXTRA_TARGET_SYMBOL property ZipContinuation::emit_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:445
+EXTRA_TARGET_SYMBOL property ZipContinuation::delete_result_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:446
+EXTRA_TARGET_SYMBOL property ZipContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:447
+EXTRA_TARGET_SYMBOL function combine_internal_erased at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:452
+EXTRA_TARGET_SYMBOL function collect_combine_adapter at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:466
+EXTRA_TARGET_SYMBOL function zip_internal_erased at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp:476
 PRESENT function flowScope at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/FlowCoroutine.kt:26 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.cpp:43
 PRESENT function scopedFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/FlowCoroutine.kt:45 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.hpp:49
 PRESENT type FlowCoroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/FlowCoroutine.kt:50 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.cpp:9
@@ -2273,11 +2273,9 @@ DECLARATION_ONLY type ChildCancelledException at /Volumes/stuff/Projects/kotlinm
 PRESENT function checkIndexOverflow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/FlowExceptions.common.kt:26 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowExceptions.common.cpp:32
 EXTRA_TARGET_SYMBOL function AbortFlowException::check_ownership at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowExceptions.common.cpp:29
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:21: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:27: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:54: offset-preserving coroutine statement-macro grammar adaptation
+PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:30: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:63: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:96: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:103: offset-preserving coroutine statement-macro grammar adaptation
+PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:70: offset-preserving coroutine statement-macro grammar adaptation
 PRESENT type ChannelFlowTransformLatest at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:9 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp:98
 PRESENT property ChannelFlowTransformLatest::transform at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:10 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp:132
 PRESENT function ChannelFlowTransformLatest::create at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:16 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp:114
@@ -2312,33 +2310,26 @@ EXTRA_TARGET_SYMBOL type_alias ChannelFlowTransformLatest::TransformType at /Vol
 EXTRA_TARGET_SYMBOL function ChannelFlowTransformLatest::ChannelFlowTransformLatest at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp:103
 EXTRA_TARGET_SYMBOL function ChannelFlowMerge::ChannelFlowMerge at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp:140
 EXTRA_TARGET_SYMBOL function ChannelLimitedFlowMerge::ChannelLimitedFlowMerge at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp:232
-EXTRA_TARGET_SYMBOL type TransformLatestEmitContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:11
-EXTRA_TARGET_SYMBOL function TransformLatestEmitContinuation::TransformLatestEmitContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:14
-EXTRA_TARGET_SYMBOL function TransformLatestEmitContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:20
-EXTRA_TARGET_SYMBOL function TransformLatestEmitContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:32
-EXTRA_TARGET_SYMBOL property TransformLatestEmitContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:38
-EXTRA_TARGET_SYMBOL property TransformLatestEmitContinuation::previous_flow_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:39
-EXTRA_TARGET_SYMBOL property TransformLatestEmitContinuation::launch_next_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:40
-EXTRA_TARGET_SYMBOL type MergeEmitContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:44
-EXTRA_TARGET_SYMBOL function MergeEmitContinuation::MergeEmitContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:47
-EXTRA_TARGET_SYMBOL function MergeEmitContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:53
-EXTRA_TARGET_SYMBOL function MergeEmitContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:68
-EXTRA_TARGET_SYMBOL property MergeEmitContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:75
-EXTRA_TARGET_SYMBOL property MergeEmitContinuation::job_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:76
-EXTRA_TARGET_SYMBOL property MergeEmitContinuation::semaphore_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:77
-EXTRA_TARGET_SYMBOL property MergeEmitContinuation::launch_inner_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:78
-EXTRA_TARGET_SYMBOL type MergeChildContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:82
-EXTRA_TARGET_SYMBOL function MergeChildContinuation::MergeChildContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:85
-EXTRA_TARGET_SYMBOL function MergeChildContinuation::retain at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:91
-EXTRA_TARGET_SYMBOL function MergeChildContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:94
-EXTRA_TARGET_SYMBOL function MergeChildContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:108
-EXTRA_TARGET_SYMBOL property MergeChildContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:115
-EXTRA_TARGET_SYMBOL property MergeChildContinuation::collect_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:116
-EXTRA_TARGET_SYMBOL property MergeChildContinuation::semaphore_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:117
-EXTRA_TARGET_SYMBOL property MergeChildContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:118
-EXTRA_TARGET_SYMBOL function transform_latest_emit at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:123
-EXTRA_TARGET_SYMBOL function acquire_and_launch_merge_inner at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:131
-EXTRA_TARGET_SYMBOL function collect_merge_child at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:140
+EXTRA_TARGET_SYMBOL type MergeEmitContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:11
+EXTRA_TARGET_SYMBOL function MergeEmitContinuation::MergeEmitContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:14
+EXTRA_TARGET_SYMBOL function MergeEmitContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:20
+EXTRA_TARGET_SYMBOL function MergeEmitContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:35
+EXTRA_TARGET_SYMBOL property MergeEmitContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:42
+EXTRA_TARGET_SYMBOL property MergeEmitContinuation::job_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:43
+EXTRA_TARGET_SYMBOL property MergeEmitContinuation::semaphore_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:44
+EXTRA_TARGET_SYMBOL property MergeEmitContinuation::launch_inner_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:45
+EXTRA_TARGET_SYMBOL type MergeChildContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:49
+EXTRA_TARGET_SYMBOL function MergeChildContinuation::MergeChildContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:52
+EXTRA_TARGET_SYMBOL function MergeChildContinuation::retain at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:58
+EXTRA_TARGET_SYMBOL function MergeChildContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:61
+EXTRA_TARGET_SYMBOL function MergeChildContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:75
+EXTRA_TARGET_SYMBOL property MergeChildContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:82
+EXTRA_TARGET_SYMBOL property MergeChildContinuation::collect_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:83
+EXTRA_TARGET_SYMBOL property MergeChildContinuation::semaphore_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:84
+EXTRA_TARGET_SYMBOL property MergeChildContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:85
+EXTRA_TARGET_SYMBOL function transform_latest_emit at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:90
+EXTRA_TARGET_SYMBOL function acquire_and_launch_merge_inner at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:102
+EXTRA_TARGET_SYMBOL function collect_merge_child at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp:111
 PRESENT type NopCollector at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/NopCollector.kt:5 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NopCollector.hpp:15
 PRESENT function NopCollector::emit at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/NopCollector.kt:6 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NopCollector.hpp:17
 MISSING_SYMBOL property NULL at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt:11
@@ -3265,10 +3256,10 @@ MISSING_SYMBOL type StackTraceElement at /Volumes/stuff/Projects/kotlinmania/kot
 MISSING_SYMBOL type CoroutineStackFrame at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.kt:44
 MISSING_SYMBOL property CoroutineStackFrame::callerFrame at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.kt:45
 MISSING_SYMBOL function CoroutineStackFrame::getStackTraceElement at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/StackTraceRecovery.common.kt:46
-PRESENT type Symbol at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Symbol.kt:10 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Symbol.hpp:26
-PRESENT property Symbol::symbol at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Symbol.kt:10 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Symbol.hpp:30
-PRESENT function Symbol::toString at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Symbol.kt:11 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Symbol.hpp:33
-PRESENT function Symbol::unbox at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Symbol.kt:13 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Symbol.hpp:44
+PRESENT type Symbol at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Symbol.kt:10 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Symbol.hpp:14
+PRESENT property Symbol::symbol at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Symbol.kt:10 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Symbol.hpp:16
+PRESENT function Symbol::toString at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Symbol.kt:11 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Symbol.cpp:11
+PRESENT function Symbol::unbox at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Symbol.kt:13 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Symbol.hpp:31
 PRESENT type SynchronizedObject at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Synchronized.common.kt:11 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/SynchronizedObject.hpp:22
 PRESENT function synchronizedImpl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Synchronized.common.kt:17 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/SynchronizedObject.hpp:57
 PRESENT function synchronized at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/Synchronized.common.kt:24 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/SynchronizedObject.hpp:51
@@ -6442,4 +6433,4 @@ MISSING_SYMBOL property isNative at /Volumes/stuff/Projects/kotlinmania/kotlin.c
 MISSING_SYMBOL property isBoundByJsTestTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:61
 MISSING_SYMBOL property isJavaAndWindows at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:63
 MISSING_SYMBOL property usesSharedEventLoop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:65
-Inventory totals: present=2479, declaration_only=116, missing=2002
+Inventory totals: present=2480, declaration_only=115, missing=2002
