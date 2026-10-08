@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 827/2918 matched (target 3040) — 28.3%
+- **Function parity:** 827/2918 matched (target 3037) — 28.3%
 - **Class/type parity:** 359/560 matched (target 519) — 64.1%
-- **Combined symbol parity:** 1186/3478 matched (target 3559) — 34.1%
+- **Combined symbol parity:** 1186/3478 matched (target 3556) — 34.1%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -679,14 +679,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 49. flow.Builders
 
 - **Target:** `flow.FlowBuilders`
-- **Similarity:** 0.05
+- **Similarity:** 0.04
 - **Dependents:** 0
-- **Priority Score:** 122709.5
-- **Functions:** 11/23 matched (target 42)
+- **Priority Score:** 122709.6
+- **Functions:** 11/23 matched (target 39)
 - **Missing functions:** `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::create`, `ChannelFlowBuilder::collectTo`, `ChannelFlowBuilder::toString`, `CallbackFlowBuilder::collectTo`, `CallbackFlowBuilder::create`
 - **Types:** 4/4 matched (target 8)
 - **Missing types:** _none_
-- **Lint issues:** 15
+- **Lint issues:** 12
 
 ### 50. channels.BasicOperationsTest
 

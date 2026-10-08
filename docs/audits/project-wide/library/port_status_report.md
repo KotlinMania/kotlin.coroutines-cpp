@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 827/2918 matched (target 3040) | 28.3% |
+| Function parity | 827/2918 matched (target 3037) | 28.3% |
 | Class/type parity | 359/560 matched (target 519) | 64.1% |
-| Combined symbol parity | 1186/3478 matched (target 3559) | 34.1% |
+| Combined symbol parity | 1186/3478 matched (target 3556) | 34.1% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -186,8 +186,8 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 142 | `channels.Channels.common` | `channels.Channels.common` | 0.04 | 4/6 matched (target 21) | `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull` | 0/0 matched (target 3) | _none_ | - | 2 | 20609.6 |
 | 143 | `operators.Limit` | `flow.Limit` | 0.04 | 7/8 matched (target 44) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | - | 1 | 10809.6 |
 | 144 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.6 |
-| 145 | `internal.Symbol` | `internal.Symbol` | 0.04 | 2/2 matched (target 4) | _none_ | 1/1 matched | _none_ | - | 0 | 1000309.6 |
-| 146 | `flow.Builders` | `flow.FlowBuilders` | 0.05 | 11/23 matched (target 42) | `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::create`, `ChannelFlowBuilder::collectTo`, `ChannelFlowBuilder::toString`, `CallbackFlowBuilder::collectTo`, `CallbackFlowBuilder::create` | 4/4 matched (target 8) | _none_ | - | 12 | 122709.5 |
+| 145 | `flow.Builders` | `flow.FlowBuilders` | 0.04 | 11/23 matched (target 39) | `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::create`, `ChannelFlowBuilder::collectTo`, `ChannelFlowBuilder::toString`, `CallbackFlowBuilder::collectTo`, `CallbackFlowBuilder::create` | 4/4 matched (target 8) | _none_ | - | 12 | 122709.6 |
+| 146 | `internal.Symbol` | `internal.Symbol` | 0.04 | 2/2 matched (target 4) | _none_ | 1/1 matched | _none_ | - | 0 | 1000309.6 |
 | 147 | `common.TestDispatcher` | `test.TestDispatcher` | 0.05 | 2/6 matched (target 8) | `TestDispatcher::processEvent`, `TestDispatcher::timeoutMessage`, `CancellableContinuationRunnable::run`, `cancellableRunnableIsCancelled` | 1/2 matched | `CancellableContinuationRunnable` | - | 5 | 50809.5 |
 | 148 | `operators.Errors` | `flow.Errors` | 0.05 | 3/6 matched (target 13) | `Flow<T>::catchImpl`, `Throwable::isCancellationCause`, `Throwable::isSameExceptionAs` | 0/0 matched (target 1) | _none_ | - | 3 | 30609.5 |
 | 149 | `test.CancellableResumeTest` | `tests.CancellableResumeTest` | 0.06 | 0/11 matched (target 1) | `CancellableResumeTest::testResumeImmediateNormally`, `CancellableResumeTest::testResumeImmediateAfterCancel`, `CancellableResumeTest::testResumeImmediateAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancel`, `CancellableResumeTest::testResumeImmediateAfterIndirectCancelWithHandlerFailure`, `CancellableResumeTest::testResumeLaterNormally`, `CancellableResumeTest::testResumeLaterAfterCancel`, `CancellableResumeTest::testResumeLaterAfterCancelWithHandlerFailure`, `CancellableResumeTest::testResumeCancelWhileDispatched`, `CancellableResumeTest::testResumeCancelWhileDispatchedWithHandlerFailure`, `CancellableResumeTest::testResumeUnconfined` | 1/1 matched | _none_ | 0/11 | 11 | 111209.4 |
@@ -568,8 +568,8 @@ These files need significant work:
 - `channels.Channels.common` -> `channels.Channels.common` (0.04)
 - `operators.Limit` -> `flow.Limit` (0.04)
 - `selects.WhileSelect` -> `selects.WhileSelect` (0.04)
+- `flow.Builders` -> `flow.FlowBuilders` (0.04)
 - `internal.Symbol` -> `internal.Symbol` (0.04, 1 deps)
-- `flow.Builders` -> `flow.FlowBuilders` (0.05)
 - `common.TestDispatcher` -> `test.TestDispatcher` (0.05)
 - `operators.Errors` -> `flow.Errors` (0.05)
 - `test.CancellableResumeTest` -> `tests.CancellableResumeTest` (0.06)
@@ -800,7 +800,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7315 / 7437 lines (98%)
+**Documentation line amount:** 7311 / 7437 lines (98%)
 
 Documentation gaps (>20%), complete list:
 
@@ -813,7 +813,7 @@ Documentation gaps (>20%), complete list:
 - `common.Job` - 22% gap (477 → 371 lines)
 - `flow.StateFlow` - 51% gap (196 → 96 lines)
 - `flow.SharedFlow` - 40% gap (245 → 148 lines)
-- `flow.Builders` - 41% gap (201 → 118 lines)
+- `flow.Builders` - 43% gap (201 → 114 lines)
 - `common.CancellableContinuationImpl` - 83% gap (83 → 14 lines)
 - `operators.Merge` - 46% gap (142 → 77 lines)
 - `common.CoroutineDispatcher` - 27% gap (213 → 155 lines)

@@ -1624,11 +1624,9 @@ PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotl
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:264: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:307: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:315: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:402: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:412: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:521: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:535: offset-preserving coroutine statement-macro grammar adaptation
-PRESENT function flow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:52 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:102
+PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:406: offset-preserving coroutine statement-macro grammar adaptation
+PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:416: offset-preserving coroutine statement-macro grammar adaptation
+PRESENT function flow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:52 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:106
 MISSING_SYMBOL type SafeFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:55
 MISSING_SYMBOL property SafeFlow::block at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:55
 MISSING_SYMBOL function SafeFlow::collectSafely at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:56
@@ -1639,7 +1637,7 @@ PRESENT function asFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines
 PRESENT function asFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:103 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:287
 PRESENT function flowOf at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:118 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:361
 PRESENT function flowOf at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:127 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:361
-PRESENT function emptyFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:138 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:374
+PRESENT function emptyFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:138 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:378
 MISSING_SYMBOL type EmptyFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:140
 MISSING_SYMBOL function EmptyFlow::collect at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:141
 PRESENT function asFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:149 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:287
@@ -1647,8 +1645,8 @@ PRESENT function asFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines
 PRESENT function asFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:171 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:287
 PRESENT function asFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:180 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:287
 PRESENT function asFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:189 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:287
-PRESENT function channelFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:239 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:576
-PRESENT function callbackFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:303 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:585
+PRESENT function channelFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:239 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:553
+PRESENT function callbackFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:303 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:562
 MISSING_SYMBOL type ChannelFlowBuilder at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:306
 MISSING_SYMBOL property ChannelFlowBuilder::block at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:307
 MISSING_SYMBOL function ChannelFlowBuilder::create at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Builders.kt:312
@@ -1667,28 +1665,28 @@ EXTRA_TARGET_SYMBOL property AsFlowContinuation::iterable_ at /Volumes/stuff/Pro
 EXTRA_TARGET_SYMBOL property AsFlowContinuation::collector_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:220
 EXTRA_TARGET_SYMBOL function AsFlowContinuation::index_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:221
 EXTRA_TARGET_SYMBOL property AsFlowContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:222
-EXTRA_TARGET_SYMBOL type RangeFlowContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:391
-EXTRA_TARGET_SYMBOL function RangeFlowContinuation::RangeFlowContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:393
-EXTRA_TARGET_SYMBOL function RangeFlowContinuation::retain at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:397
-EXTRA_TARGET_SYMBOL function RangeFlowContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:400
-EXTRA_TARGET_SYMBOL property RangeFlowContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:420
-EXTRA_TARGET_SYMBOL property RangeFlowContinuation::current_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:421
-EXTRA_TARGET_SYMBOL property RangeFlowContinuation::last_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:422
-EXTRA_TARGET_SYMBOL property RangeFlowContinuation::collector_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:423
-EXTRA_TARGET_SYMBOL property RangeFlowContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:424
-EXTRA_TARGET_SYMBOL function as_flow_range at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:431
-EXTRA_TARGET_SYMBOL function as_flow_range at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:441
-EXTRA_TARGET_SYMBOL function scoped_flow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:452
-EXTRA_TARGET_SYMBOL type ChannelFlowBuilder at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:465
-EXTRA_TARGET_SYMBOL property ChannelFlowBuilder::block_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:467
-EXTRA_TARGET_SYMBOL function ChannelFlowBuilder::ChannelFlowBuilder at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:471
-EXTRA_TARGET_SYMBOL function ChannelFlowBuilder::create at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:479
-EXTRA_TARGET_SYMBOL function ChannelFlowBuilder::collect_to at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:487
-EXTRA_TARGET_SYMBOL type CallbackFlowBuilder at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:496
-EXTRA_TARGET_SYMBOL function CallbackFlowBuilder::CallbackFlowBuilder at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:499
-EXTRA_TARGET_SYMBOL function CallbackFlowBuilder::collect_to at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:507
-EXTRA_TARGET_SYMBOL function CallbackFlowBuilder::create at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:554
-EXTRA_TARGET_SYMBOL property CallbackFlowBuilder::block_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:560
+EXTRA_TARGET_SYMBOL type RangeFlowContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:395
+EXTRA_TARGET_SYMBOL function RangeFlowContinuation::RangeFlowContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:397
+EXTRA_TARGET_SYMBOL function RangeFlowContinuation::retain at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:401
+EXTRA_TARGET_SYMBOL function RangeFlowContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:404
+EXTRA_TARGET_SYMBOL property RangeFlowContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:424
+EXTRA_TARGET_SYMBOL property RangeFlowContinuation::current_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:425
+EXTRA_TARGET_SYMBOL property RangeFlowContinuation::last_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:426
+EXTRA_TARGET_SYMBOL property RangeFlowContinuation::collector_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:427
+EXTRA_TARGET_SYMBOL property RangeFlowContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:428
+EXTRA_TARGET_SYMBOL function as_flow_range at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:435
+EXTRA_TARGET_SYMBOL function as_flow_range at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:445
+EXTRA_TARGET_SYMBOL function scoped_flow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:456
+EXTRA_TARGET_SYMBOL type ChannelFlowBuilder at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:470
+EXTRA_TARGET_SYMBOL property ChannelFlowBuilder::block_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:472
+EXTRA_TARGET_SYMBOL function ChannelFlowBuilder::ChannelFlowBuilder at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:476
+EXTRA_TARGET_SYMBOL function ChannelFlowBuilder::create at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:484
+EXTRA_TARGET_SYMBOL function ChannelFlowBuilder::collect_to at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:492
+EXTRA_TARGET_SYMBOL type CallbackFlowBuilder at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:501
+EXTRA_TARGET_SYMBOL function CallbackFlowBuilder::CallbackFlowBuilder at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:504
+EXTRA_TARGET_SYMBOL function CallbackFlowBuilder::collect_to at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:512
+EXTRA_TARGET_SYMBOL function CallbackFlowBuilder::create at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:531
+EXTRA_TARGET_SYMBOL property CallbackFlowBuilder::block_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:537
 PRESENT function emitAll at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:25 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:186
 PRESENT function emitAllImpl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:28 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:157
 PRESENT function receiveAsFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:65 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:311
