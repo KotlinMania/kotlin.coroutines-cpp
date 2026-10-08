@@ -158,8 +158,9 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
     if (!header && !isa<CXXRecordDecl>(function->getLexicalDeclContext())) {
         source.resize(begin + replacement_size);
         for (auto* scope = function->getLexicalDeclContext(); !scope->isTranslationUnit(); scope = scope->getParent()) {
-            if (!isa<NamespaceDecl>(scope)) return fail("main-file suspend definition requires a namespace scope");
-            source += "\n}";
+            const auto* namespace_scope = dyn_cast<NamespaceDecl>(scope);
+            if (!namespace_scope) return fail("main-file suspend definition requires a namespace scope");
+            if (!namespace_scope->isNested()) source += "\n}";
         }
     }
     std::string name = "__kxs_entry_" + function->getNameAsString() + "_" + std::to_string(begin);
