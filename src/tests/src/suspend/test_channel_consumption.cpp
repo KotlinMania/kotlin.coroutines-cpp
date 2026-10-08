@@ -940,6 +940,65 @@ void iteration_contract() {
 
 // ChannelFlow.kt:26-30,55-56,69-100,188: inherited defaults, public
 // operator removal and the shared producer lambda are callable on the real types.
+// Produce.kt:60-71: check the producer Job before waiting, then cleanup
+// only after the actual suspended wait completes, including exceptional finally.
+void producer_await_close_contract() {
+    class Caller final : public Continuation<void*> {
+    public:
+        explicit Caller(std::shared_ptr<CoroutineContext> context) : context_(std::move(context)) {}
+        int resumes = 0;
+        std::exception_ptr failure;
+        std::shared_ptr<CoroutineContext> get_context() const override { return context_; }
+        void resume_with(Result<void*> result) override {
+            ++resumes;
+            failure = result.exception_or_null();
+        }
+    private:
+        std::shared_ptr<CoroutineContext> context_;
+    };
+    for (bool already_closed : {false, true}) for (bool cleanup_fails : {false, true}) {
+        auto channel = create_channel<int>(0);
+        auto producer = std::make_shared<ProducerCoroutine<int>>(EmptyCoroutineContext::instance(), channel);
+        auto caller = std::make_shared<Caller>(producer->get_coroutine_context());
+        int cleanups = 0;
+        auto resource = std::make_shared<int>(83);
+        std::weak_ptr<int> lifetime = resource;
+        auto failure = std::make_exception_ptr(std::runtime_error("producer cleanup"));
+        if (already_closed) channel->close(nullptr);
+        void* result = nullptr;
+        std::exception_ptr observed;
+        try {
+            result = await_close<int>(producer.get(), [resource, &cleanups, cleanup_fails, failure] {
+                CHECK(*resource == 83);
+                ++cleanups;
+                if (cleanup_fails) std::rethrow_exception(failure);
+            }, caller.get());
+        } catch (...) { observed = std::current_exception(); }
+        resource.reset();
+        if (already_closed) {
+            CHECK(cleanups == 1 && lifetime.expired() && caller->resumes == 0);
+            CHECK(observed == (cleanup_fails ? failure : nullptr));
+            CHECK(result == nullptr);
+        } else {
+            CHECK(!observed && intrinsics::is_coroutine_suspended(result));
+            CHECK(cleanups == 0 && !lifetime.expired() && caller->resumes == 0);
+            channel->close(nullptr);
+            CHECK(cleanups == 1 && lifetime.expired() && caller->resumes == 1);
+            CHECK(caller->failure == (cleanup_fails ? failure : nullptr));
+        }
+    }
+    auto producer = std::make_shared<ProducerCoroutine<int>>(
+        EmptyCoroutineContext::instance(), create_channel<int>(0));
+    Completion outsider;
+    int cleanups = 0;
+    bool rejected = false;
+    try { await_close<int>(producer.get(), [&] { ++cleanups; }, &outsider); }
+    catch (const std::logic_error& error) {
+        rejected = std::string(error.what()) == "awaitClose() can only be invoked from the producer context";
+    }
+    CHECK(rejected && cleanups == 0 && outsider.resumes == 0);
+}
+
 void channel_flow_surface_contract() {
     auto upstream = flow::unsafe_flow<int>(std::function<void(flow::FlowCollector<int>*)>(
         [](flow::FlowCollector<int>*) {}));
@@ -1126,6 +1185,7 @@ int main() {
         safe_collector_ancestry_contract();
         safe_collector_checked_job_cast_contract();
         channel_scope_contract();
+        producer_await_close_contract();
         channel_flow_surface_contract();
         channel_flow_collect_lambda_contract();
         sending_collector_contract();
