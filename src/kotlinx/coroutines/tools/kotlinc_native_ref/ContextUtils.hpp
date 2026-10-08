@@ -1,9 +1,10 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130,300-365,411-441,445-504,573-579
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130,264-365,411-441,445-571,573-579
 #pragma once
 #include <llvm-c/Core.h>
 #include "LlvmCallable.hpp"
 #include "Runtime.hpp"
+#include "LlvmUtils.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -287,6 +288,125 @@ private:
     const std::shared_ptr<std::vector<int>> parameters_;
     const bool use_return_slot_;
 };
+class CodegenLlvmHelpers;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:264-266
+class ConstInt1 : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:264-265
+    ConstInt1(const CodegenLlvmHelpers& llvm, bool value);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:264-264
+    bool value() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:265-265
+    LLVMValueRef llvm() const override;
+private:
+    const bool value_;
+    const LLVMValueRef llvm_;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:268-270
+class ConstInt8 : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:268-269
+    ConstInt8(const CodegenLlvmHelpers& llvm, std::int8_t value);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:268-268
+    std::int8_t value() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:269-269
+    LLVMValueRef llvm() const override;
+private:
+    const std::int8_t value_;
+    const LLVMValueRef llvm_;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:272-274
+class ConstUInt8 : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:272-273
+    ConstUInt8(const CodegenLlvmHelpers& llvm, std::uint8_t value);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:272-272
+    std::uint8_t value() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:273-273
+    LLVMValueRef llvm() const override;
+private:
+    const std::uint8_t value_;
+    const LLVMValueRef llvm_;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:276-278
+class ConstInt16 : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:276-277
+    ConstInt16(const CodegenLlvmHelpers& llvm, std::int16_t value);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:276-276
+    std::int16_t value() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:277-277
+    LLVMValueRef llvm() const override;
+private:
+    const std::int16_t value_;
+    const LLVMValueRef llvm_;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:280-282
+class ConstChar16 : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:280-281
+    ConstChar16(const CodegenLlvmHelpers& llvm, char16_t value);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:280-280
+    char16_t value() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:281-281
+    LLVMValueRef llvm() const override;
+private:
+    const char16_t value_;
+    const LLVMValueRef llvm_;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:284-286
+class ConstInt32 : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:284-285
+    ConstInt32(const CodegenLlvmHelpers& llvm, std::int32_t value);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:284-284
+    std::int32_t value() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:285-285
+    LLVMValueRef llvm() const override;
+private:
+    const std::int32_t value_;
+    const LLVMValueRef llvm_;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:288-290
+class ConstInt64 : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:288-289
+    ConstInt64(const CodegenLlvmHelpers& llvm, std::int64_t value);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:288-288
+    std::int64_t value() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:289-289
+    LLVMValueRef llvm() const override;
+private:
+    const std::int64_t value_;
+    const LLVMValueRef llvm_;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:292-294
+class ConstFloat32 : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:292-293
+    ConstFloat32(const CodegenLlvmHelpers& llvm, float value);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:292-292
+    float value() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:293-293
+    LLVMValueRef llvm() const override;
+private:
+    const float value_;
+    const LLVMValueRef llvm_;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:296-298
+class ConstFloat64 : public ConstValue {
+public:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:296-297
+    ConstFloat64(const CodegenLlvmHelpers& llvm, double value);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:296-296
+    double value() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:297-297
+    LLVMValueRef llvm() const override;
+private:
+    const double value_;
+    const LLVMValueRef llvm_;
+};
+
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:300-326
 class BasicLlvmHelpers {
 public:
@@ -313,7 +433,7 @@ private:
     std::unique_ptr<LazyProperties> lazy_;
 };
 
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:329-363,411-441,445-504,573-579
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:329-363,411-441,445-571,573-579
 class CodegenLlvmHelpers : public BasicLlvmHelpers, public RuntimeAware {
 public:
     // NOTE(port): Bind actual compiler LLVM handles and Runtime metadata directly;
@@ -449,11 +569,89 @@ public:
     const LlvmFunction& kotlin_int_array_get_element_address() const;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:504-504
     const LlvmFunction& kotlin_long_array_get_element_address() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:514-514
+    LLVMTypeRef int1_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:515-515
+    LLVMTypeRef int8_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:516-516
+    LLVMTypeRef int16_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:517-517
+    LLVMTypeRef int32_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:518-518
+    LLVMTypeRef int64_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:519-519
+    LLVMTypeRef intptr_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:520-520
+    LLVMTypeRef float_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:521-521
+    LLVMTypeRef double_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:522-522
+    LLVMTypeRef vector128_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:523-523
+    LLVMTypeRef void_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:524-524
+    LLVMTypeRef pointer_type() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:526-526
+    LLVMTypeRef struct_type(const std::vector<LLVMTypeRef>& types = std::vector<LLVMTypeRef>{}) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:528-529
+    Struct struct_(const std::vector<std::shared_ptr<const ConstValue>>& elements = std::vector<std::shared_ptr<const ConstValue>>{}, bool packed = false) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:534-541
+    LLVMTypeRef struct_type_with_flexible_array(LLVMTypeRef original, int new_size) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:543-543
+    ConstInt1 const_int1(bool value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:553-553
+    LLVMValueRef int1(bool value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:544-544
+    ConstInt8 const_int8(std::int8_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:554-554
+    LLVMValueRef int8(std::int8_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:545-545
+    ConstUInt8 const_uint8(std::uint8_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:546-546
+    ConstInt16 const_int16(std::int16_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:555-555
+    LLVMValueRef int16(std::int16_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:547-547
+    ConstChar16 const_char16(char16_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:556-556
+    LLVMValueRef char16(char16_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:548-548
+    ConstInt32 const_int32(std::int32_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:557-557
+    LLVMValueRef int32(std::int32_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:549-549
+    ConstInt64 const_int64(std::int64_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:558-558
+    LLVMValueRef int64(std::int64_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:550-550
+    ConstFloat32 const_float32(float value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:560-560
+    LLVMValueRef float32(float value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:551-551
+    ConstFloat64 const_float64(double value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:561-561
+    LLVMValueRef float64(double value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:559-559
+    LLVMValueRef intptr(std::int32_t value) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:563-563
+    LLVMValueRef null_constant() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:564-564
+    LLVMValueRef imm_int32_zero() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:565-565
+    LLVMValueRef imm_int32_one() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:566-566
+    LLVMValueRef true_constant() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:567-567
+    LLVMValueRef false_constant() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:569-571
+    const std::shared_ptr<ConstPointer>& null_pointer() const;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:573-573
     const LlvmCallable& memset_function() const;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:575-579
     const LlvmFunction::Declaration& llvm_trap() const;
 private:
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:531-532
+    LLVMTypeRef struct_type(const std::vector<LLVMTypeRef>& types, bool packed) const;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:486-486
     const LlvmFunction& kotlin_obj_c_export_ns_integer_type_provider() const;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:487-487
@@ -465,7 +663,7 @@ private:
     std::unique_ptr<LlvmFunction::Declaration> import_memset() const;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:358-365
     std::unique_ptr<LlvmFunction::Declaration> llvm_intrinsic(const std::string& name,
-        LLVMTypeRef type, const std::vector<std::string>& attributes = {}) const;
+        LLVMTypeRef type, const std::vector<std::string>& attributes = std::vector<std::string>{}) const;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:416-416
     std::unique_ptr<LlvmFunction::Declaration> import_rt_function(const std::string& name, bool returns_object_type) const;
     struct LazyRuntimeFunctions;
@@ -497,6 +695,19 @@ private:
     const std::unique_ptr<LlvmFunction::Declaration> lookup_tls_;
     const std::unique_ptr<LlvmFunction::Declaration> init_runtime_if_needed_;
     const std::unique_ptr<LlvmFunction::Declaration> kotlin_get_exception_object_;
+    const LLVMTypeRef int1_type_;
+    const LLVMTypeRef int8_type_;
+    const LLVMTypeRef int16_type_;
+    const LLVMTypeRef int32_type_;
+    const LLVMTypeRef int64_type_;
+    const LLVMTypeRef intptr_type_;
+    const LLVMTypeRef float_type_;
+    const LLVMTypeRef double_type_;
+    const LLVMTypeRef vector128_type_;
+    const LLVMTypeRef void_type_;
+    const LLVMTypeRef pointer_type_;
+    const LLVMValueRef null_constant_;
+    const std::shared_ptr<ConstPointer> null_pointer_;
     const std::unique_ptr<LlvmFunction::Declaration> memset_function_;
     const std::unique_ptr<LlvmFunction::Declaration> llvm_trap_;
 };

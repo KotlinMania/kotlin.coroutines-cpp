@@ -1,12 +1,77 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130,300-365,411-441,445-504,573-579
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-130,264-365,411-441,445-571,573-579
 #include "ContextUtils.hpp"
 #include "LlvmUtils.hpp"
 #include <mutex>
+#include <cassert>
 #include <stdexcept>
 #include <utility>
 
 namespace org::jetbrains::kotlin::backend::konan::llvm {
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:264-265
+ConstInt1::ConstInt1(const CodegenLlvmHelpers& llvm, bool value)
+    : value_(value), llvm_(LLVMConstInt(llvm.int1_type(), value ? 1 : 0, 1)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:264-264
+bool ConstInt1::value() const { return value_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:265-265
+LLVMValueRef ConstInt1::llvm() const { return llvm_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:268-269
+ConstInt8::ConstInt8(const CodegenLlvmHelpers& llvm, std::int8_t value)
+    : value_(value), llvm_(LLVMConstInt(llvm.int8_type(), static_cast<std::uint64_t>(static_cast<std::int64_t>(value)), 1)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:268-268
+std::int8_t ConstInt8::value() const { return value_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:269-269
+LLVMValueRef ConstInt8::llvm() const { return llvm_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:272-273
+ConstUInt8::ConstUInt8(const CodegenLlvmHelpers& llvm, std::uint8_t value)
+    : value_(value), llvm_(LLVMConstInt(llvm.int8_type(), static_cast<std::uint64_t>(static_cast<std::int64_t>(value)), 1)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:272-272
+std::uint8_t ConstUInt8::value() const { return value_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:273-273
+LLVMValueRef ConstUInt8::llvm() const { return llvm_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:276-277
+ConstInt16::ConstInt16(const CodegenLlvmHelpers& llvm, std::int16_t value)
+    : value_(value), llvm_(LLVMConstInt(llvm.int16_type(), static_cast<std::uint64_t>(static_cast<std::int64_t>(value)), 1)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:276-276
+std::int16_t ConstInt16::value() const { return value_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:277-277
+LLVMValueRef ConstInt16::llvm() const { return llvm_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:280-281
+ConstChar16::ConstChar16(const CodegenLlvmHelpers& llvm, char16_t value)
+    : value_(value), llvm_(LLVMConstInt(llvm.int16_type(), static_cast<std::uint64_t>(static_cast<std::int64_t>(value)), 1)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:280-280
+char16_t ConstChar16::value() const { return value_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:281-281
+LLVMValueRef ConstChar16::llvm() const { return llvm_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:284-285
+ConstInt32::ConstInt32(const CodegenLlvmHelpers& llvm, std::int32_t value)
+    : value_(value), llvm_(LLVMConstInt(llvm.int32_type(), static_cast<std::uint64_t>(static_cast<std::int64_t>(value)), 1)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:284-284
+std::int32_t ConstInt32::value() const { return value_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:285-285
+LLVMValueRef ConstInt32::llvm() const { return llvm_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:288-289
+ConstInt64::ConstInt64(const CodegenLlvmHelpers& llvm, std::int64_t value)
+    : value_(value), llvm_(LLVMConstInt(llvm.int64_type(), static_cast<std::uint64_t>(static_cast<std::int64_t>(value)), 1)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:288-288
+std::int64_t ConstInt64::value() const { return value_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:289-289
+LLVMValueRef ConstInt64::llvm() const { return llvm_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:292-293
+ConstFloat32::ConstFloat32(const CodegenLlvmHelpers& llvm, float value)
+    : value_(value), llvm_(LLVMConstReal(llvm.float_type(), static_cast<double>(value))) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:292-292
+float ConstFloat32::value() const { return value_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:293-293
+LLVMValueRef ConstFloat32::llvm() const { return llvm_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:296-297
+ConstFloat64::ConstFloat64(const CodegenLlvmHelpers& llvm, double value)
+    : value_(value), llvm_(LLVMConstReal(llvm.double_type(), static_cast<double>(value))) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:296-296
+double ConstFloat64::value() const { return value_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:297-297
+LLVMValueRef ConstFloat64::llvm() const { return llvm_; }
+
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:21-21
 SlotType::SlotType() = default;
 // NOTE(port): Polymorphic C++ lifetime boundary.
@@ -191,6 +256,14 @@ const std::map<std::string, std::vector<LLVMValueRef>>& BasicLlvmHelpers::runtim
 
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:445-504
 struct CodegenLlvmHelpers::LazyRuntimeFunctions {
+    std::once_flag imm_int32_zero_once;
+    LLVMValueRef imm_int32_zero = nullptr;
+    std::once_flag imm_int32_one_once;
+    LLVMValueRef imm_int32_one = nullptr;
+    std::once_flag true_constant_once;
+    LLVMValueRef true_constant = nullptr;
+    std::once_flag false_constant_once;
+    LLVMValueRef false_constant = nullptr;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:445-445
     std::once_flag kotlin_mm_create_retained_external_rc_ref_once;
     std::unique_ptr<LlvmFunction::Declaration> kotlin_mm_create_retained_external_rc_ref;
@@ -344,6 +417,18 @@ CodegenLlvmHelpers::CodegenLlvmHelpers(LLVMContextRef llvm_context, LLVMModuleRe
       lookup_tls_(import_rt_function("LookupTLS", false)),
       init_runtime_if_needed_(import_rt_function("Kotlin_initRuntimeIfNeeded", false)),
       kotlin_get_exception_object_(import_rt_function("Kotlin_getExceptionObject", true)),
+      int1_type_(LLVMInt1TypeInContext(llvm_context)),
+      int8_type_(LLVMInt8TypeInContext(llvm_context)),
+      int16_type_(LLVMInt16TypeInContext(llvm_context)),
+      int32_type_(LLVMInt32TypeInContext(llvm_context)),
+      int64_type_(LLVMInt64TypeInContext(llvm_context)),
+      intptr_type_(LLVMIntPtrTypeInContext(llvm_context, runtime.target_data())),
+      float_type_(LLVMFloatTypeInContext(llvm_context)),
+      double_type_(LLVMDoubleTypeInContext(llvm_context)),
+      vector128_type_(LLVMVectorType(float_type_, 4)),
+      void_type_(LLVMVoidTypeInContext(llvm_context)),
+      pointer_type_(runtime.pointer_type()),
+      null_constant_(LLVMConstNull(pointer_type_)), null_pointer_(const_pointer(null_constant_)),
       memset_function_(import_memset()),
       llvm_trap_(llvm_intrinsic("llvm.trap", function_type(LLVMVoidTypeInContext(llvm_context)),
           {"cold", "noreturn", "nounwind"})) {}
@@ -679,6 +764,118 @@ const LlvmFunction& CodegenLlvmHelpers::kotlin_long_array_get_element_address() 
     });
     return *lazy_runtime_functions_->kotlin_long_array_get_element_address;
 }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:514-514
+LLVMTypeRef CodegenLlvmHelpers::int1_type() const { return int1_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:515-515
+LLVMTypeRef CodegenLlvmHelpers::int8_type() const { return int8_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:516-516
+LLVMTypeRef CodegenLlvmHelpers::int16_type() const { return int16_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:517-517
+LLVMTypeRef CodegenLlvmHelpers::int32_type() const { return int32_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:518-518
+LLVMTypeRef CodegenLlvmHelpers::int64_type() const { return int64_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:519-519
+LLVMTypeRef CodegenLlvmHelpers::intptr_type() const { return intptr_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:520-520
+LLVMTypeRef CodegenLlvmHelpers::float_type() const { return float_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:521-521
+LLVMTypeRef CodegenLlvmHelpers::double_type() const { return double_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:522-522
+LLVMTypeRef CodegenLlvmHelpers::vector128_type() const { return vector128_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:523-523
+LLVMTypeRef CodegenLlvmHelpers::void_type() const { return void_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:524-524
+LLVMTypeRef CodegenLlvmHelpers::pointer_type() const { return pointer_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:526-526
+LLVMTypeRef CodegenLlvmHelpers::struct_type(const std::vector<LLVMTypeRef>& types) const { return struct_type(types, false); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:531-532
+LLVMTypeRef CodegenLlvmHelpers::struct_type(const std::vector<LLVMTypeRef>& types, bool packed) const {
+    auto fields = types;
+    return LLVMStructTypeInContext(llvm_context(), fields.data(), static_cast<unsigned>(fields.size()), packed);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:528-529
+Struct CodegenLlvmHelpers::struct_(const std::vector<std::shared_ptr<const ConstValue>>& elements, bool packed) const {
+    std::vector<LLVMTypeRef> types;
+    types.reserve(elements.size());
+    for (const auto& element : elements) types.push_back(llvm_type(*element));
+    return Struct(struct_type(types, packed), elements);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:534-541
+LLVMTypeRef CodegenLlvmHelpers::struct_type_with_flexible_array(LLVMTypeRef original, int new_size) const {
+    // NOTE(port): Source assertions follow the C++ NDEBUG policy; failures become compiler exceptions.
+#ifndef NDEBUG
+    if (LLVMGetTypeKind(original) != LLVMStructTypeKind) throw std::logic_error("not a struct");
+#endif
+    std::vector<LLVMTypeRef> types(LLVMCountStructElementTypes(original));
+    LLVMGetStructElementTypes(original, types.data());
+    const auto array = types.at(types.size() - 1);
+#ifndef NDEBUG
+    if (LLVMGetTypeKind(array) != LLVMArrayTypeKind || LLVMGetArrayLength(array) != 0)
+        throw std::logic_error("not a flexible array");
+#endif
+    types.back() = LLVMArrayType(LLVMGetElementType(array), new_size);
+    return LLVMStructTypeInContext(llvm_context(), types.data(), static_cast<unsigned>(types.size()), LLVMIsPackedStruct(original));
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:543-543
+ConstInt1 CodegenLlvmHelpers::const_int1(bool value) const { return ConstInt1(*this, value); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:553-553
+LLVMValueRef CodegenLlvmHelpers::int1(bool value) const { return const_int1(value).llvm(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:544-544
+ConstInt8 CodegenLlvmHelpers::const_int8(std::int8_t value) const { return ConstInt8(*this, value); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:554-554
+LLVMValueRef CodegenLlvmHelpers::int8(std::int8_t value) const { return const_int8(value).llvm(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:545-545
+ConstUInt8 CodegenLlvmHelpers::const_uint8(std::uint8_t value) const { return ConstUInt8(*this, value); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:546-546
+ConstInt16 CodegenLlvmHelpers::const_int16(std::int16_t value) const { return ConstInt16(*this, value); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:555-555
+LLVMValueRef CodegenLlvmHelpers::int16(std::int16_t value) const { return const_int16(value).llvm(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:547-547
+ConstChar16 CodegenLlvmHelpers::const_char16(char16_t value) const { return ConstChar16(*this, value); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:556-556
+LLVMValueRef CodegenLlvmHelpers::char16(char16_t value) const { return const_char16(value).llvm(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:548-548
+ConstInt32 CodegenLlvmHelpers::const_int32(std::int32_t value) const { return ConstInt32(*this, value); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:557-557
+LLVMValueRef CodegenLlvmHelpers::int32(std::int32_t value) const { return const_int32(value).llvm(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:549-549
+ConstInt64 CodegenLlvmHelpers::const_int64(std::int64_t value) const { return ConstInt64(*this, value); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:558-558
+LLVMValueRef CodegenLlvmHelpers::int64(std::int64_t value) const { return const_int64(value).llvm(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:550-550
+ConstFloat32 CodegenLlvmHelpers::const_float32(float value) const { return ConstFloat32(*this, value); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:560-560
+LLVMValueRef CodegenLlvmHelpers::float32(float value) const { return const_float32(value).llvm(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:551-551
+ConstFloat64 CodegenLlvmHelpers::const_float64(double value) const { return ConstFloat64(*this, value); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:561-561
+LLVMValueRef CodegenLlvmHelpers::float64(double value) const { return const_float64(value).llvm(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:559-559
+LLVMValueRef CodegenLlvmHelpers::intptr(std::int32_t value) const { return LLVMConstInt(intptr_type_, static_cast<std::uint64_t>(static_cast<std::int64_t>(value)), 1); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:563-563
+LLVMValueRef CodegenLlvmHelpers::null_constant() const { return null_constant_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:564-564
+LLVMValueRef CodegenLlvmHelpers::imm_int32_zero() const {
+    std::call_once(lazy_runtime_functions_->imm_int32_zero_once, [this] { lazy_runtime_functions_->imm_int32_zero = int32(0); });
+    return lazy_runtime_functions_->imm_int32_zero;
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:565-565
+LLVMValueRef CodegenLlvmHelpers::imm_int32_one() const {
+    std::call_once(lazy_runtime_functions_->imm_int32_one_once, [this] { lazy_runtime_functions_->imm_int32_one = int32(1); });
+    return lazy_runtime_functions_->imm_int32_one;
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:566-566
+LLVMValueRef CodegenLlvmHelpers::true_constant() const {
+    std::call_once(lazy_runtime_functions_->true_constant_once, [this] { lazy_runtime_functions_->true_constant = int1(true); });
+    return lazy_runtime_functions_->true_constant;
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:567-567
+LLVMValueRef CodegenLlvmHelpers::false_constant() const {
+    std::call_once(lazy_runtime_functions_->false_constant_once, [this] { lazy_runtime_functions_->false_constant = int1(false); });
+    return lazy_runtime_functions_->false_constant;
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:569-571
+const std::shared_ptr<ConstPointer>& CodegenLlvmHelpers::null_pointer() const { return null_pointer_; }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:573-573
 const LlvmCallable& CodegenLlvmHelpers::memset_function() const { return *memset_function_; }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/ContextUtils.kt:575-579

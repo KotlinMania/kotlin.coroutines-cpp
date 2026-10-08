@@ -6,7 +6,25 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current lazy runtime-binding continuation — 2026-10-08:** From 63eeae2f,
+**Current LLVM type/constant continuation — 2026-10-08:** From 0ed4ddd4,
+nine concrete constant classes, eleven LLVM types, source factories/raw-value
+wrappers, literal/null properties, struct/packed/flexible-array helpers and
+LlvmUtils Struct/type-string dependencies are translated. Shared Struct element
+lists retain identity; emitted aggregates retain the source eager snapshot.
+Signed conversion, UTF-16 and target intptr widths follow the source. Source
+assertion diagnostics are preserved under the documented C++ NDEBUG mapping.
+Strict compile with/without NDEBUG, Native-OFF LLVM targets, existing LLVM fixture
+and bounded ASan/UBSan constant/import checks pass. Scoped deep ContextUtils:
+38/51 bodies,31/36 types,similarity0.47; LlvmUtils:19/49,5/10,0.19. Two existing
+empty-vector default spellings were made explicit after reproducing bundled
+C++ grammar failures in the previous headers; target parse errors are now absent.
+Generated source/class emission remains provisional. Continue actual frame and
+allocation/root consumers, VariableManager, public object-result slot handling
+and exception emission. Generation-state entry, Runtime loader/caches, full-root
+measurements and both complete runtime acceptance paths remain open. See
+RESUME_ADDRESS_SOURCE_REPAIR.md's first section. Goal active.
+
+**Lazy runtime-binding checkpoint 0ed4ddd4 — 2026-10-08:** From 63eeae2f,
 all forty ContextUtils.kt:445-504 lazy imports are translated, including volatile
 heap-reference, safepoint, mark traversal, RC/ObjC and continuation bindings.
 Thirty-eight getters are public; two type providers remain private. The explicit

@@ -1,7 +1,63 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
-## Lazy runtime bindings for frame/root consumers — 2026-10-08
+## LLVM type/constant and Struct source dependencies — 2026-10-08
+
+Continuation from 0ed4ddd4 translates ContextUtils.kt:264-298,514-571 and
+LlvmUtils.kt:56-82,251-254. Nine concrete ConstInt/ConstUInt/ConstChar/ConstFloat
+classes start at ContextUtils.hpp:293 and ContextUtils.cpp:12. They retain their
+source values and actual LLVM constants; signed integers convert through signed
+64-bit values before the LLVM C API, and Char uses char16_t. No runtime box or
+substitute object representation was introduced.
+
+CodegenLlvmHelpers at ContextUtils.hpp:437 and ContextUtils.cpp:390 initializes
+the eleven source LLVM types, including target-data-dependent intptr and vector128.
+Source constant factories and raw-value wrappers, intptr sign extension,
+null/boolean/integer singleton properties and the ConstPointer null descriptor
+are implemented. Struct type construction at ContextUtils.cpp:790,792,804 and
+constant struct construction at :798 retain packing, element order and flexible
+array replacement. Empty vararg forms remain available through explicit empty
+vector defaults. Computations and lazy storage remain in .cpp.
+
+Struct at LlvmUtils.hpp:20 and LlvmUtils.cpp:18,44 preserves the actual shared
+source element-list identity, retains element descriptors and emits the LLVM
+aggregate eagerly. Later mutation of a supplied list does not re-emit that
+aggregate, matching the source property initialization. Null elements use the
+expected field type's zero constant. Source mismatch/count diagnostics are
+translated. NOTE(port) records that source assertions follow C++ NDEBUG and
+throw compiler logic_error failures when enabled. to_type_string at
+LlvmUtils.cpp:11 retains the source null marker and explicitly owns the LLVM
+print buffer through string construction/failure.
+
+Strict -Wall -Wextra -Werror syntax compilation passed with and without NDEBUG.
+KotlinxCoroutinePass/kxs_codegen_test rebuilt with LLVM23.1.2 and Native runtime
+OFF; the existing LLVM fixture verified/emitted its module. The bounded
+constant_contract harness passed ASan/UBSan for integer extremes, unsigned byte,
+UTF-16, floating negative zero/infinity/NaN, 32/64-bit intptr conversion, literal
+identity, zero-argument forms, shared element-list mutation versus emitted
+snapshot, typed null fields, packed/flexible-array structure and invalid-type
+messages. It also retains the previous public lazy-import checks. These LLVM
+declaration/type fixtures prove neither complete Native runtime execution nor
+MLX/shared-state-machine acceptance.
+
+The fresh scoped deep comparison reports ContextUtils:38/51 matched explicit
+bodies,31/36 types,similarity0.47; LlvmUtils:19/49 bodies,5/10 types,0.19.
+Target parse errors were investigated with the tool's bundled C++ grammar.
+A bounded parser probe reports missing type identifiers on two pre-existing
+const-reference defaults spelled '= {}' in the previous committed headers.
+Equivalent explicitly typed empty-vector defaults parse successfully. Both
+updated targets now report no parse errors in the refreshed scan; source class
+emission/generated parse errors still keep normalized criteria provisional.
+Full-root compiler/library measurements remain required and open.
+
+The next consumers remain actual frame/prologue construction and allocation,
+root updates, VariableManager, public object-result call slots and exception
+emission. Generation-state entry, Runtime bitcode loading/IR-keyed caches and
+remaining ContextUtils/LlvmUtils algorithms are unfinished. Both complete
+acceptance paths remain open. Evidence is under
+build/source-continuation/llvm-source-distance (ignored build artifacts).
+
+## Lazy runtime bindings for frame/root consumers — 2026-10-08 (historical 0ed4ddd4 receipt)
 
 Continuation from 63eeae2f translates all forty source lazy runtime-function
 properties at ContextUtils.kt:445-504. ContextUtils.hpp:377-451 exposes the
