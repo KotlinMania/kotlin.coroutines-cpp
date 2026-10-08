@@ -9,6 +9,16 @@ namespace {
 // Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt:102-102
 // NOTE(port): Unsigned storage preserves Kotlin Int bit patterns without signed-shift overflow.
 constexpr std::uint32_t IS_CLOSED_MASK = std::uint32_t{1} << 31;
+
+// KT-25023
+// Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt:96-100
+// NOTE(port): Nonlocal returns in the source inline call sites expand to the
+// allocation/close loops in the header; this is the private helper's own body.
+[[noreturn]] void loop(std::function<void()> block) {
+    while (true) {
+        block();
+    }
+}
 }
 
 // Transliterated from: kotlinx-coroutines-core/concurrent/src/internal/OnDemandAllocatingPool.kt:37-37
