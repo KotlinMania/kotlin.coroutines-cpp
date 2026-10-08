@@ -1,68 +1,79 @@
-/**
- * @file EventLoop.common.cpp
- * @brief Implementation of EventLoop.
- *
- * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/EventLoop.hpp`.
- */
-
+// port-lint: source kotlinx-coroutines-core/common/src/EventLoop.common.kt
+/** Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt */
 #include "kotlinx/coroutines/EventLoop.hpp"
+#include <cassert>
+#include <utility>
 
 namespace kotlinx {
     namespace coroutines {
-        // EventLoop Implementation
-
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:49-52
         long long EventLoop::process_next_event() {
             if (!process_unconfined_event()) return LLONG_MAX;
             return 0;
         }
 
-        bool EventLoop::is_empty() const {
-            return is_unconfined_queue_empty();
-        }
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:54-54
+        bool EventLoop::is_empty() const { return is_unconfined_queue_empty(); }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:56-60
         long long EventLoop::next_time() const {
-            if (unconfined_queue.empty()) return LLONG_MAX;
-            return 0;
+            if (!unconfined_queue_) return LLONG_MAX;
+            return unconfined_queue_->empty() ? LLONG_MAX : 0;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:62-67
         bool EventLoop::process_unconfined_event() {
-            if (unconfined_queue.empty()) return false;
-            auto task = unconfined_queue.front();
-            unconfined_queue.pop_front();
+            if (!unconfined_queue_ || unconfined_queue_->empty()) return false;
+            auto task = std::move(unconfined_queue_->front());
+            unconfined_queue_->pop_front();
             task->run();
             return true;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:74-74
         bool EventLoop::should_be_processed_from_context() const { return false; }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:80-84
         void EventLoop::dispatch_unconfined(std::shared_ptr<SchedulerTask> task) {
-            unconfined_queue.push_back(task);
+            if (!unconfined_queue_) unconfined_queue_ =
+                std::make_unique<std::deque<std::shared_ptr<SchedulerTask>>>();
+            unconfined_queue_->push_back(std::move(task));
         }
 
-        bool EventLoop::is_active() const { return use_count > 0; }
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:86-87
+        bool EventLoop::is_active() const { return use_count_ > 0; }
 
-        bool EventLoop::is_unconfined_loop_active() const { return use_count >= delta(true); }
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:89-90
+        bool EventLoop::is_unconfined_loop_active() const { return use_count_ >= delta(true); }
 
-        bool EventLoop::is_unconfined_queue_empty() const { return unconfined_queue.empty(); }
+        // May only be used from the event loop's thread
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:92-94
+        bool EventLoop::is_unconfined_queue_empty() const {
+            return !unconfined_queue_ || unconfined_queue_->empty();
+        }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:96-97
         long long EventLoop::delta(bool unconfined) { return unconfined ? (1LL << 32) : 1LL; }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:99-102
         void EventLoop::increment_use_count(bool unconfined) {
-            use_count += delta(unconfined);
-            if (!unconfined) shared = true;
+            use_count_ += delta(unconfined);
+            if (!unconfined) shared_ = true;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:104-112
         void EventLoop::decrement_use_count(bool unconfined) {
-            use_count -= delta(unconfined);
-            if (use_count > 0) return;
-            if (shared) {
+            use_count_ -= delta(unconfined);
+            if (use_count_ > 0) return;
+            assert(use_count_ == 0); // "Extra decrementUseCount"
+            if (shared_) {
+                // shut it down and remove from ThreadLocalEventLoop
                 shutdown();
             }
         }
 
-        void EventLoop::shutdown() {
-        }
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:119-119
+        void EventLoop::shutdown() {}
 
         void EventLoop::dispatch(const CoroutineContext& /*context*/,
                                  std::shared_ptr<Runnable> /*block*/) const {
@@ -72,30 +83,44 @@ namespace kotlinx {
             // `internal expect open class EventLoop` actual on K/N is empty too.
         }
 
-        // ThreadLocalEventLoop Implementation
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:123-123
+        thread_local std::shared_ptr<EventLoop> ThreadLocalEventLoop::event_loop_;
 
-        thread_local EventLoop *ThreadLocalEventLoop::event_loop = nullptr;
-
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:125-126
         std::shared_ptr<EventLoop> ThreadLocalEventLoop::get_event_loop() {
-            thread_local auto loop = std::make_shared<EventLoop>(); // Simple default loop
-            if (event_loop) return std::shared_ptr<EventLoop>(std::shared_ptr<void>(), event_loop);
-            // Non-owning reference wrapper if raw pointer set?
-            return loop;
+            if (!event_loop_) event_loop_ = std::make_shared<EventLoop>();
+            return event_loop_;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:128-129
         std::shared_ptr<EventLoop> ThreadLocalEventLoop::current_or_null() {
-            return event_loop ? std::shared_ptr<EventLoop>(std::shared_ptr<void>(), event_loop) : nullptr;
+            return event_loop_;
         }
 
-        void ThreadLocalEventLoop::reset_event_loop() {
-            event_loop = nullptr;
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:131-133
+        void ThreadLocalEventLoop::reset_event_loop() { event_loop_.reset(); }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:135-137
+        void ThreadLocalEventLoop::set_event_loop(std::shared_ptr<EventLoop> event_loop) {
+            event_loop_ = std::move(event_loop);
         }
 
-        void ThreadLocalEventLoop::set_event_loop(std::shared_ptr<EventLoop> eventLoop) {
-            // We store raw pointer or handle ownership?
-            // thread_local storage of shared_ptr is tricky if we want to set it.
-            // For simplify, store raw pointer in thread_local for overriding (runBlocking).
-            event_loop = eventLoop.get();
+        namespace {
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:147-148
+        constexpr long long MS_TO_NS = 1'000'000;
+        constexpr long long MAX_MS = LLONG_MAX / MS_TO_NS;
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:156-160
+        long long delay_to_nanos(long long time_millis) {
+            if (time_millis <= 0) return 0;
+            if (time_millis >= MAX_MS) return LLONG_MAX;
+            return time_millis * MS_TO_NS;
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/EventLoop.common.kt:162-163
+        long long delay_nanos_to_millis(long long time_nanos) {
+            return time_nanos / MS_TO_NS;
         }
 
         // BlockingEventLoop Implementation
