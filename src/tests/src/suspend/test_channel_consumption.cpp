@@ -1208,6 +1208,73 @@ void merge_producer_lambda_contract() {
 // Merge.kt:23-33,55-70: real join/acquire suspension keeps source
 // captures alive, and child finally releases exactly one concurrency permit.
 void merge_private_suspension_contract() {
+    // The compiler lowers the production join() call, including immediate paths.
+    for (bool has_previous : {false, true}) for (bool fails : {false, true}) {
+        std::shared_ptr<Job> previous;
+        if (has_previous) {
+            auto completed = make_job();
+            completed->complete();
+            previous = completed;
+        }
+        auto completion = std::make_shared<Completion>();
+        auto resource = std::make_shared<int>(147);
+        std::weak_ptr<int> lifetime = resource;
+        auto failure = std::make_exception_ptr(std::runtime_error("next transform failed"));
+        int launches = 0;
+        std::exception_ptr observed;
+        try {
+            auto result = flow::internal::transform_latest_emit(previous,
+                [resource, &launches, fails, failure] {
+                    CHECK(*resource == 147);
+                    ++launches;
+                    if (fails) std::rethrow_exception(failure);
+                }, completion);
+            CHECK(!intrinsics::is_coroutine_suspended(result));
+        } catch (...) { observed = std::current_exception(); }
+        resource.reset();
+        CHECK(launches == 1 && lifetime.expired());
+        CHECK(observed == (fails ? failure : std::exception_ptr{}));
+        CHECK(completion->resumes == 0);
+    }
+    // Cancellation belongs to the invoking coroutine, not the joined Job.
+    for (bool cancel_before : {false, true}) {
+        class JobCompletion final : public Continuation<void*> {
+        public:
+            explicit JobCompletion(std::shared_ptr<Job> job) : job_(std::move(job)) {}
+            std::shared_ptr<CoroutineContext> get_context() const override { return job_; }
+            void resume_with(Result<void*> result) override {
+                ++resumes;
+                failure = result.exception_or_null();
+            }
+            int resumes = 0;
+            std::exception_ptr failure;
+        private:
+            std::shared_ptr<Job> job_;
+        };
+        auto caller = make_job();
+        auto completion = std::make_shared<JobCompletion>(caller);
+        auto previous = std::make_shared<ProducerCoroutine<int>>(
+            EmptyCoroutineContext::instance(), create_channel<int>(0));
+        int launches = 0;
+        auto resource = std::make_shared<int>(148);
+        std::weak_ptr<int> lifetime = resource;
+        if (cancel_before) caller->cancel();
+        std::exception_ptr observed;
+        try {
+            auto result = flow::internal::transform_latest_emit(previous,
+                [resource, &launches] { ++launches; }, completion);
+            CHECK(!cancel_before && intrinsics::is_coroutine_suspended(result));
+        } catch (...) { observed = std::current_exception(); }
+        resource.reset();
+        if (!cancel_before) caller->cancel();
+        auto failure = cancel_before ? observed : completion->failure;
+        CHECK(failure && launches == 0 && lifetime.expired());
+        try { std::rethrow_exception(failure); }
+        catch (const CancellationException&) {}
+        CHECK(completion->resumes == (cancel_before ? 0 : 1));
+        previous->resume_with(Result<Unit>::success(Unit{}));
+        CHECK(launches == 0 && completion->resumes == (cancel_before ? 0 : 1));
+    }
     {
         auto previous = std::make_shared<ProducerCoroutine<int>>(
             EmptyCoroutineContext::instance(), create_channel<int>(0));
