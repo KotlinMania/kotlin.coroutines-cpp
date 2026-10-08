@@ -1,6 +1,8 @@
 // Source cases: compiler/tests/org/jetbrains/kotlin/name/FqNameUnsafeTest.java
 // Additional cases exercise the class-ID/name API consumed by Native classification.
 #include "org/jetbrains/kotlin/name/ClassId.hpp"
+#include "org/jetbrains/kotlin/name/CallableId.hpp"
+#include "org/jetbrains/kotlin/name/SpecialNames.hpp"
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
@@ -8,9 +10,55 @@ using namespace org::jetbrains::kotlin::name;
 namespace {
 // Exercise the catalog-style initialization before main, across translation units.
 const ClassId INITIAL_ID = ClassId::top_level(FqName(u"Initial"));
+const CallableId INITIAL_LOCAL(Name::identifier(u"local"));
 }
 int main() {
     assert(INITIAL_ID.as_string() == u"Initial");
+    assert(INITIAL_LOCAL.is_local() && INITIAL_LOCAL.to_string() == u"<local>/local");
+    const auto callable_name = Name::identifier(u"bar");
+    const CallableId top(FqName(u"one.two"), callable_name);
+    const CallableId member(FqName(u"one.two"), FqName(u"A.B"), callable_name);
+    assert(!top.is_local() && !top.class_name() && !top.class_id());
+    assert(top.to_string() == u"one/two/bar" && top.as_single_fq_name().as_string() == u"one.two.bar");
+    assert(member.to_string() == u"one/two/A.B.bar");
+    assert(member.class_id()->as_string() == u"one/two/A.B");
+    assert(member.as_single_fq_name().as_string() == u"one.two.A.B.bar");
+    const CallableId local_class(ClassId(FqName(u"one.two"), FqName(u"A.B"), true), callable_name);
+    assert(local_class.is_local() && local_class.equals(member));
+    assert(local_class.hash_code() == member.hash_code());
+    const CallableId debug(Name::identifier(u"loc"), FqName(u"one.two.foo"));
+    assert(debug.is_local() && debug.as_fq_name_for_debug_info().as_string() == u"one.two.foo.loc");
+    assert(debug.as_single_fq_name().as_string() == u"<local>.loc");
+    const CallableId no_debug(Name::identifier(u"loc"));
+    assert(debug.equals(no_debug) && debug.hash_code() == no_debug.hash_code());
+    assert(!debug.equals(top) && !debug.equals(std::any{}) && !debug.equals(17));
+    const auto renamed = debug.copy(Name::identifier(u"renamed"));
+    assert(renamed.as_fq_name_for_debug_info().as_string() == u"one.two.foo.renamed");
+    assert(renamed.is_local() && !renamed.equals(debug));
+    const auto moved_class = with_class_id(debug, ClassId::top_level(FqName(u"pkg.C")));
+    assert(!moved_class.is_local() && moved_class.as_fq_name_for_debug_info().as_string() == u"pkg.C.loc");
+    assert(package_name(nullptr).as_string() == u"<local>" && is_local(nullptr));
+    assert(package_name(&top).as_string() == u"one.two" && !is_local(&top));
+    assert(CallableId(FqName::root(), callable_name).to_string() == u"/bar");
+    assert(&SpecialNames::local() == &SpecialNames::local());
+    assert(SpecialNames::anonymous_fq_name().as_string() == u"<anonymous>");
+    assert(SpecialNames::this_name().as_string() == u"<this>");
+    assert(SpecialNames::subscribe_operator_index(0).as_string() == u"<index_0>");
+    bool bad_index = false;
+    try { SpecialNames::subscribe_operator_index(-1); }
+    catch (const std::invalid_argument& error) { bad_index = std::string(error.what()) == "Index should be non-negative, but was -1"; }
+    assert(bad_index);
+    const auto anonymous_parameter = SpecialNames::anonymous_parameter_name(-1);
+    assert(anonymous_parameter.as_string() == u"<anonymous parameter -1>");
+    assert(SpecialNames::is_anonymous_parameter_name(anonymous_parameter));
+    assert(SpecialNames::is_anonymous_parameter_name(Name::special(u"<anonymous parameterSuffix>")));
+    assert(!SpecialNames::is_anonymous_parameter_name(Name::identifier(u"anonymous parameter 1")));
+    assert(SpecialNames::safe_identifier(static_cast<const Name*>(nullptr)).equals(SpecialNames::safe_identifier_for_no_name()));
+    assert(SpecialNames::safe_identifier(&callable_name).equals(callable_name));
+    const std::u16string empty_identifier;
+    assert(SpecialNames::safe_identifier(&empty_identifier).as_string().empty());
+    assert(!SpecialNames::is_safe_identifier(Name::identifier(u"")));
+    assert(SpecialNames::is_safe_identifier(callable_name));
     assert(FqNameUnsafe(u"abc.def").starts_with(Name::identifier(u"abc")));
     assert(FqNameUnsafe(u"abc").starts_with(Name::identifier(u"abc")));
     assert(FqNameUnsafe(u"abc.").starts_with(Name::identifier(u"abc")));

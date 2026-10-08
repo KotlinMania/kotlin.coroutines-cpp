@@ -6,6 +6,65 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Callable identity and special-name source contracts — 2026-10-08
+
+Continuation from `0c543eee` translates core/names CallableId.kt:45-141 and
+SpecialNames.kt:18-119. CallableId.hpp:9 exposes all six public constructors,
+package/class/callable/class-ID properties, locality, debug and single qualified
+names, copy, equals/hash/text and the three extension contracts. CallableId.cpp:11,
+13 keeps private companion name/class-ID calculations out of the header. The
+local package is built from the actual SpecialNames.LOCAL property. Nullable
+class/path values use optional and nullable extension receivers borrow pointers,
+following the existing compiler naming value boundary. Ordinary application
+objects gain no compiler superclass or Native runtime representation.
+
+Callable equality compares package/class/callable name and intentionally ignores
+class-ID locality and pathToLocal. Hash accumulation preserves source Int wrapping
+and null's zero contribution. Copy preserves the original class ID and debug
+path; with_class_id constructs a fresh ID and drops that path as the source does.
+Debug naming selects pathToLocal first; normal naming selects the actual ClassId
+qualified name when present. Text replaces package dots with slashes, preserving
+class dots and the leading slash for the root package. Compiler opt-in locality
+metadata and actual Native object identity are not supplied by these value APIs.
+
+SpecialNames.hpp:8 exposes the source anonymous string constant,18 retained
+Name/FqName object properties and all six function bodies. SpecialNames.cpp owns
+the private anonymous-parameter prefix and implementations. Properties use
+first-access retained storage to avoid cross-unit initialization hazards, marked
+NOTE(port). THIS maps to this_name to escape the C++ keyword. Index validation
+retains the source diagnostic, anonymous parameter recognition uses its exact
+prefix test, and nullable safeIdentifier overloads preserve the distinction
+between identifier construction and safe-identifier validation.
+
+CMakeLists.txt:46-47 registers both units on all three production LLVM targets;
+:125-131 adds them to the existing naming fixture. Native-OFF configure and
+kxs_fq_name_test/KotlinxCoroutinePass/kxs-inject/kxs_codegen_test builds pass.
+Strict debug -Wall/-Wextra/-Werror ASan/UBSan compile and execution, strict release
+syntax, six focused CTests and the existing actual LLVM module-generation fixture
+pass. The extended fixture exercises pre-main local-name construction, nullable
+and nested IDs, differing class locality/debug paths with equal hashes, copy and
+class replacement, root formatting, special-name errors and nullable overloads.
+No warnings are suppressed. These tests cover naming dependencies, not actual IR
+classifier execution or complete coroutine/Native/MLX acceptance.
+
+Both final-root deep scans completed. Compiler corpus remains695 sparse files:
+279/7163 bodies,127/1617 types,0.28 body similarity,10 scoring failures,192 paired
+units/283 target files. CallableId reports7/8 explicit bodies,1/1 type,0.34 score;
+its actual private calculate_class_id implementation is unmatched against the
+source companion owner. Companion property matching also leaves LOCAL_NAME and
+PACKAGE_FQ_NAME_FOR_LOCAL unrecognized despite their private/public implementations.
+SpecialNames reports6/6 explicit bodies,1/1 type,0.41 score. These body counts do
+not certify property/constructor/metadata parity. Source class/object emission
+falls back, generated source has parse errors and normalized logic0; target parse
+errors are absent. Full coroutine root remains663/2918 bodies,178/560 types,0.24,
+12 failures,411 paired units/612 target files. Generated reports remain the oracle.
+
+The production targets compile these dependencies but real callable/IR consumers
+remain to be translated and wired. HashMap and its collection/object dependencies,
+fresh-map Grouping/byFqNameParts, StandardClassIds/NativeRuntimeNames callables,
+InlineClassesSupport, classifier/cache/frame lowering and both complete executable
+paths remain open. The full translation/state-machine goal remains active.
+
 ## Numbers and Native HashMap sizing dependency — 2026-10-08
 
 Continuation from `490cb209` translates the26 public scalar operations in Native
