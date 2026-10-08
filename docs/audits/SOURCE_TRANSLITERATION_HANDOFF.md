@@ -6,6 +6,48 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Ordinary full-expression lowering repair — 2026-10-08
+
+Continuation from `eee1d016` closes the six retained-handler extraction conflicts
+described in the preceding checkpoint below. NativeSuspendLowering.cpp:611 now
+reports the actual source/replacement ranges. They reveal ordinary assert macros
+with exception_ptr temporaries being sliced despite containing no suspension;
+macro-body UnaryOperator operands then address a spelling range in assert.h rather
+than the caller expression. Compared with NativeSuspendFunctionLowering.kt:207-249,
+emit_statement at :2097-2105 keeps the whole nonsuspending expression together and
+uses existing declaration-to-frame rebinding. Native C++ owns its full-expression
+temporary lifetime. Operands before a suspending sibling still use the existing
+retained slicing. The Clang-only evaluated-expression inspection at :933 preserves
+callable capture/class lowering, including omitted initializers, without visiting
+unevaluated expressions or inventing compiler IR identities.
+
+The LLVM23.1.2 frontend rebuild succeeds; original retained fixture extraction
+exits zero for all six formerly failing handlers. The full authoring regression
+again passes the earlier direct/default/expression/qualified-local/restricted and
+CMake ordinary/nested callable stages. Retained input.cpp and main.cpp now compile
+through the production CMake frontend plus LLVM module pass, with twelve unsuppressed
+warnings. Linking fails: the actual nineteen-unit bounded archive lacks Yield,
+Delay and Duration definitions, and input.cpp.o contains unresolved libc++
+variant helper instantiations. CompilerFrameLowering.cpp:622-627 now instantiates
+missing actual template definitions before traversing their bodies, closing the
+dependency-walk ordering gap. A clean rebuild still exposes helper references for
+both variant alternatives; this change does not close the imported-definition/code
+generation gap. The final full driver reports only the exception_ptr alternative
+at the same link gate; investigate the clean-build/full-driver emission difference
+rather than treating either result as reliable helper closure.
+Continue actual source dependency closure and template/lambda
+instantiation/import repair. Keep the fixture, overlap checking and actual
+Result/variant ownership intact; do not supply substitute runtime definitions.
+No retained runtime or later forced-include/termination/rejection gates are claimed.
+
+All three deep scans complete with unchanged aggregate counts: compiler reference
+286/7163 bodies,132/1617 types,0.28 similarity,10 scoring failures; coroutine root
+665/2918 bodies,179/560 types,0.24 similarity,12 failures; frontend14/7163 bodies,
+6/1617 types,0.04 similarity,zero scoring failures. Existing source/pairing/scoring
+limitations remain recorded in their generated inventories. Neither complete
+standalone/Native MLX GPU path nor full compiler/library translation is established.
+See RESUME_ADDRESS_SOURCE_REPAIR.md for the detailed receipt and current evidence.
+
 ## Job initialization and retained field type identity — 2026-10-08
 
 Continuation from `4fc388b6` reads the actual JobImpl source contract at

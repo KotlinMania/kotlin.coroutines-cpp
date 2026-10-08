@@ -608,7 +608,11 @@ private:
         unsigned last = begin + text.size();
         for (const auto& replacement : replacements) {
             if (replacement.begin < begin || replacement.end > last || replacement.end < replacement.begin)
-                throw std::runtime_error("cannot lower overlapping or macro-expanded suspension regions");
+                throw std::runtime_error(std::string("cannot lower overlapping or macro-expanded suspension regions in ") +
+                    statement->getStmtClassName() + ": source [" + std::to_string(begin) + ", " +
+                    std::to_string(begin + source(statement).size()) + "), replacement [" +
+                    std::to_string(replacement.begin) + ", " + std::to_string(replacement.end) +
+                    ") -> " + replacement.text + ", preceding boundary " + std::to_string(last));
             text.replace(replacement.begin - begin, replacement.end - replacement.begin, replacement.text);
             last = replacement.begin;
         }
@@ -921,6 +925,26 @@ private:
             temporary && (temporary->getType()->isRecordType() || temporary->getType()->isScalarType())) return true;
         for (const auto* child : statement->children())
             if (has_materialized_temporaries(child)) return true;
+        return false;
+    }
+    // NOTE(port): Callable construction still needs the existing capture/class
+    // lowering even when its enclosing full expression never suspends. Inspect
+    // evaluated Clang expressions, not a callable's deferred body.
+    bool has_callable_construction(const Stmt* statement) const {
+        if (!statement || SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return false;
+        if (isa<LambdaExpr>(statement)) return true;
+        if (const auto* initializer = dyn_cast<InitListExpr>(statement)) {
+            const auto* selected = SuspendFunctionAnalyzer::evaluated_initializer_list(initializer);
+            for (const auto* value : selected->inits())
+                if (has_callable_construction(value)) return true;
+            return has_callable_construction(selected->getArrayFiller());
+        }
+        if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(statement))
+            return has_callable_construction(omitted->getExpr());
+        if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(statement))
+            return has_callable_construction(initialized->getExpr());
+        for (const auto* child : statement->children())
+            if (has_callable_construction(child)) return true;
         return false;
     }
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt:197-335
@@ -2070,6 +2094,15 @@ private:
             if (loop->next.empty()) body_ << attributes << "continue;\n";
             else body_ << attributes << "goto " << loop->next << ";\n";
         } else if (const auto* expression = dyn_cast<Expr>(statement)) {
+            // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt:207-249
+            // NOTE(port): A whole expression without suspension needs no operand
+            // spills. Keep its native C++ full-expression temporary lifetime and
+            // macro spelling, while rebinding references to actual frame fields.
+            // Callable construction retains its separate capture lowering.
+            if (!has_suspend_calls(expression) && !has_callable_construction(expression)) {
+                body_ << attributes << "static_cast<void>(" << rewrite(expression) << ");\n";
+                return;
+            }
             llvm::SaveAndRestore<bool> expression_scope(full_expression_, true);
             size_t first_comma = comma_temporaries_.size();
             auto value = emit_expression(expression);

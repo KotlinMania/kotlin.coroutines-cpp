@@ -619,14 +619,16 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
         auto pending = referenced.functions;
         for (auto* candidate : pending) {
             if (!expanded_references.insert(candidate).second) continue;
+            // NOTE(port): Instantiation can add ordinary C++ calls that did not
+            // exist in the imported prototype. Complete each actual definition
+            // before walking its body so the dependency closure includes them.
+            if (!candidate->hasBody() && candidate->getTemplateSpecializationInfo())
+                compiler.getSema().InstantiateFunctionDefinition(function->getLocation(), candidate, true);
             if (candidate->hasBody()) referenced.TraverseDecl(candidate);
         }
     }
     for (auto* referenced_function : referenced.functions) {
         if (!referenced_function->getTemplateSpecializationInfo()) continue;
-        if (!referenced_function->hasBody())
-            compiler.getSema().InstantiateFunctionDefinition(function->getLocation(),
-                referenced_function, true);
         if (referenced_function->hasBody() && !referenced_function->isDependentContext() &&
             !compiler.getASTConsumer().HandleTopLevelDecl(DeclGroupRef(referenced_function))) return false;
     }

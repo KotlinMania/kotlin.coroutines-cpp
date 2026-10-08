@@ -1,5 +1,61 @@
 # Compiler resume-address source repair — 2026-10-08
 
+## Preserve ordinary full expressions during suspend lowering — 2026-10-08
+
+Continuation from `eee1d016` repairs the six retained-handler extraction failures
+recorded below. Detailed source-range diagnostics in NativeSuspendLowering.cpp:611
+identify the actual conflict: an ordinary assert expression containing an
+exception_ptr temporary was sliced despite having no suspension. Its macro-created
+UnaryOperator then tried to replace a macro-definition spelling range [2845,2848)
+inside a caller expression thousands of bytes later. This was not evidence that
+the retained catch dispatch itself needed a replacement algorithm.
+
+Compared with NativeSuspendFunctionLowering.kt:207-249, which leaves operands
+direct when there is no suspension in the relevant tail, emit_statement now keeps
+a whole nonsuspending expression together at NativeSuspendLowering.cpp:2097-2105.
+The existing rewriter still binds actual declarations to their frame fields;
+Clang retains the native full-expression temporary lifetime and macro spelling.
+This does not remove temporary retention for operands before a suspending sibling.
+The Clang-only has_callable_construction inspection at :933 keeps evaluated lambda
+construction on the existing capture/class lowering path, including semantic
+initializer lists and omitted argument/member initializers. Unevaluated expressions
+are excluded. It introduces no compiler IR identity or replacement runtime.
+
+The selected LLVM23.1.2 frontend rebuilt successfully. Fresh extraction of the
+original retained fixture exits zero, including all six formerly failing functions
+at input.cpp:240,262,283,304,323,352. No fixture assertions, macro definitions or
+overlap checks were weakened. The production regression driver again passes its
+earlier direct/default/expression/qualified-local/restricted-receiver and CMake
+ordinary/nested callable gates. Retained extraction now passes and both retained
+input.cpp and main.cpp compile through the CMake frontend plus mandatory LLVM pass.
+The retained build reports twelve unsuppressed warnings and then fails at linking.
+Its bounded nineteen-unit dependency archive lacks actual Yield/Delay/Duration
+definitions; there are also unresolved libc++ variant helper instantiations in
+input.cpp.o. CompilerFrameLowering.cpp:622-627 now instantiates a missing actual
+template definition before traversing its body, so calls introduced by that
+instantiation enter the dependency closure. Previously instantiation occurred
+only after the body walk. This is Clang integration infrastructure, not a literal
+Kotlin IR function translation. A clean CMake rebuild still fails at linking and
+now exposes the helper references for both variant alternatives. The walk repair
+does not establish complete AST import/code generation; continue investigating
+the actual imported template and lambda declarations. The final full driver still
+fails at this same link gate but reports only the exception_ptr alternative; the
+clean-build versus full-driver difference is unresolved evidence for the import
+investigation, not proof that either helper definition is reliably emitted.
+Do not substitute a variant/result
+runtime, change fixture expectations, or link an earlier incompatible archive.
+No retained-handler runtime, forced-include build, termination gate or later
+rejection gate is claimed from this run. Full-core strict compilation and both
+complete standalone/Native MLX GPU acceptance paths remain unproved.
+
+All three required deep scans completed on the changed source. Compiler reference:
+286/7163 bodies,132/1617 types,0.28 similarity,10 scoring failures. Coroutine root:
+665/2918 bodies,179/560 types,0.24 similarity,12 failures. Frontend:14/7163 bodies,
+6/1617 types,0.04 similarity,zero scoring failures. Aggregate counts are unchanged;
+this repair does not establish literal Kotlin compiler IR/class/emitter parity.
+Existing sparse-source, namespace/provenance pairing and unsupported-source scoring
+limitations remain visible in the generated inventories under build/source-continuation.
+
 ## Job initialization and retained field type identity — 2026-10-08
 
 Continuation from `4fc388b6` reads the actual JobImpl source contract at
