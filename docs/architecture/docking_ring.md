@@ -429,7 +429,7 @@ Representation note:
 
 ———
 
-## 4. Current Implementation: Macros + Computed Goto + IR Markers
+## 4. Current Implementation: Resume Regions and LLVM Address Injection
 
 **Status:** Clang authoring macros supply frame-field and resume-block identities;
 the mandatory LLVM injector constructs Kotlin/Native address dispatch. The
@@ -450,15 +450,15 @@ for the verified handoff contracts and injection boundary.
                               v
 +-------------------------------------------------------------------+
 |  Clang Compilation                                                 |
-|  - Computed goto (&&label) -> blockaddress                         |
+|  - Ordinary conditional marker branches -> resume regions        |
 |  - begin marker -> persistent frame-field identity                                       |
-|  - point marker -> actual function-local block address           |
+|  - site marker -> exact persistent field                          |
 +-------------------------------------------------------------------+
                               |
                               v (required)
 +-------------------------------------------------------------------+
 |  KotlinxCoroutinePass (inside Clang, before optimization)          |
-|  - Finds __kxs_suspend_point() calls                               |
+|  - Pairs site/resume markers with actual CFG successors           |
 |  - Injects saved-address stores, entry branch and indirectbr     |
 |  - Consumes markers; verifies IR and result/spill accesses                                            |
 +-------------------------------------------------------------------+
@@ -467,9 +467,18 @@ for the verified handoff contracts and injection boundary.
 ### 4.2 Frontend contracts and LLVM values
 
 `__kxs_coroutine_begin(&(c)->_label)` supplies the persistent label field's actual
-address. `__kxs_suspend_point(id, &(c)->_label, &&resume)` supplies a function-local LLVM block
-address. The marker ID does not replace the address, field, suspension sentinel,
-resumed Result or live-state storage.
+address. `__kxs_suspend_site(id, &(c)->_label)` identifies an address store;
+`if (__kxs_resume_point(id)) goto resume;` supplies the true successor's actual
+LLVM block. The mandatory injector forms its blockaddress, erases the marker
+calls and replaces their condition with false before optimization. The marker ID
+does not replace the address, field, suspension sentinel, resumed Result or live
+storage. The earlier explicit-address marker remains accepted for LLVM consumers.
+
+The current branch adaptation removes GNU label-address syntax from authoring
+macros and generated frames. It has strict frontend emission evidence, but no
+fresh executable evidence: plugin builds stop in LLVM/Clang headers, and older
+installed passes do not consume the new markers. See
+[RESUME_ADDRESS_SOURCE_REPAIR.md](../audits/RESUME_ADDRESS_SOURCE_REPAIR.md).
 
 The injector constructs the saved-label load, null/start conditional branch,
 resume `indirectbr` and destination list, and each resume-address store. It never
@@ -481,7 +490,7 @@ the dispatch so argument and Result storage remain valid on resumed entry.
 
 `src/kotlinx/coroutines/dsl/Suspend.hpp` declares compiler markers without runtime
 implementations. The begin macro supplies the field, and yield macros supply
-resume addresses plus immediate/suspended/resumed result regions. Label stores
+resume regions plus immediate/suspended/resumed result regions. Label stores
 and resume dispatch are injected at LLVM level. Missing injection must fail to
 link. Live values currently require retained frame storage; automatic compiler
 spill generation remains unfinished.
@@ -506,9 +515,12 @@ class MyCoroutine : public ContinuationImpl {
 };
 ```
 
-### 4.5 Verified IR Output
+### 4.5 Recorded IR shape
 
-The injector produces these LLVM instructions from frontend marker contracts:
+The earlier explicit-address marker path produced the instructions below in
+recorded execution. The new branch path retains the same output contract but
+requires a fresh build and executable validation; historical results do not
+validate a4e0c319.
 
 ```llvm
 ; blockaddress storage

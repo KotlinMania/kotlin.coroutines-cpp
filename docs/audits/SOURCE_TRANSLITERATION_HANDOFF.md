@@ -6,6 +6,19 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** d7feb4fb repairs retained bindings in actual
+static initializers and extends qualified_locals. a4e0c319 adapts generated and
+macro suspension regions to ordinary C++ marker branches; mandatory LLVM
+injection creates their actual blockaddresses, stores the supplied field and
+erases pairing IDs/conditions. Strict standalone frontend emission and test-input
+IR verification pass; actual core syntax check still fails on dependency warnings.
+Fresh frontend/LLVM builds exit 2 in dependency headers. Older installed pass
+leaves the new markers unresolved, so neither repair has fresh runtime validation.
+Both final full-root scans exit 0 and leave reports unchanged. Read
+RESUME_ADDRESS_SOURCE_REPAIR.md and the updated IR specification. Local class and
+lambda lexical declaration integration remains incomplete; the full goal is active.
+
+
 **Latest source continuation:** 1bf6abd0, 050fca1f and 5570b19b translate Limit
 operators directly from Limit.kt:17-140. Limit.hpp:43,62,100,154,200,252,297 now
 contains no handwritten continuation frames or coroutine macros. Predicate boxes

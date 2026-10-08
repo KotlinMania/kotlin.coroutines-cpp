@@ -40,13 +40,23 @@ not establish either complete acceptance scenario.
 
 A switch state machine stores an integer selecting a resume case. Kotlin/Native
 instead stores a `NativePtr` identifying a block in the generated `invokeSuspend`
-function. The frontend supplies `void* _label` field storage and function-local
-`&&resume_label` addresses. The LLVM injector constructs the address dispatch;
-there is no runtime or text-rewrite substitute.
+function. The frontend supplies `void* _label` field storage and ordinary C++
+labelled branches. `__kxs_suspend_site(id, &field)` pairs with the conditional
+branch `if (__kxs_resume_point(id)) goto resume;` in that function. Mandatory LLVM
+injection creates the true successor's block address, stores it in the supplied
+field, replaces the marker condition with false and erases both marker calls.
+The integer pairs compile-time regions; it is never stored as coroutine state.
+The earlier explicit-blockaddress marker remains accepted for existing LLVM
+consumers. There is no runtime marker implementation or dispatch substitute.
+
+This branch adaptation is committed in a4e0c319 and is not yet executable
+validation: strict C++ frontend emission succeeds, but fresh plugin builds stop
+in dependency diagnostics. The older installed pass leaves the new markers
+unresolved. See [the source checkpoint](../audits/RESUME_ADDRESS_SOURCE_REPAIR.md).
 
 The resulting `blockaddress(@function, %resume)` and `indirectbr` destinations
-belong to that function. The integer passed as the first `__kxs_suspend_point` argument
-is a tooling ID, not the saved address and not the runtime suspension sentinel.
+belong to that function. The integer passed to the site/resume markers, or
+to the earlier `__kxs_suspend_point` marker, is a tooling ID, not the saved address and not the runtime suspension sentinel.
 Two coroutine functions may use the same tooling ID without sharing a label.
 Neither a code address nor a C++ object's layout can be inferred from that ID.
 In a polymorphic C++ frame the first field may be its vtable, not `_label`.
