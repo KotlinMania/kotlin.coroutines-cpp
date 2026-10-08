@@ -463,7 +463,8 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
                     target->setNumCtorInitializers(index);
                 }
             }
-            if (!installed->isDependentContext()) compiler.getASTConsumer().HandleTopLevelDecl(DeclGroupRef(installed));
+            if (!installed->isDependentContext() &&
+                !compiler.getASTConsumer().HandleTopLevelDecl(DeclGroupRef(installed))) return false;
             referenced.TraverseStmt(installed->getBody());
         }
     }
@@ -503,7 +504,7 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
             if (!imported_body) return fail(llvm::toString(imported_body.takeError()));
             installed->setBody(*imported_body);
         }
-        compiler.getASTConsumer().HandleTopLevelDecl(DeclGroupRef(installed));
+        if (!compiler.getASTConsumer().HandleTopLevelDecl(DeclGroupRef(installed))) return false;
     }
     referenced.TraverseDecl(function);
     std::set<FunctionDecl*> expanded_references;
@@ -519,8 +520,8 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
         if (!referenced_function->hasBody())
             compiler.getSema().InstantiateFunctionDefinition(function->getLocation(),
                 referenced_function, true);
-        if (referenced_function->hasBody() && !referenced_function->isDependentContext())
-            compiler.getASTConsumer().HandleTopLevelDecl(DeclGroupRef(referenced_function));
+        if (referenced_function->hasBody() && !referenced_function->isDependentContext() &&
+            !compiler.getASTConsumer().HandleTopLevelDecl(DeclGroupRef(referenced_function))) return false;
     }
     return true;
 }

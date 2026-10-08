@@ -1,5 +1,8 @@
+// NOTE(port): Clang driver for the Kotlin-derived suspend lowering passes.
+// Callback delivery and AST body identity are C++ compiler integration.
 #include <algorithm>
 #include <functional>
+#include <map>
 #include <set>
 #include <vector>
 #include "clang/AST/AST.h"
@@ -17,6 +20,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/SaveAndRestore.h"
+#include "llvm/ADT/ScopeExit.h"
 
 #include "SuspendFunctionAnalyzer.hpp"
 #include "NativeSuspendLowering.hpp"
@@ -258,16 +262,40 @@ public:
             if (!function->doesThisDeclarationHaveABody()) continue;
             if ((function->getDescribedFunctionTemplate() || function->isDependentContext()) &&
                 SuspendFunctionAnalyzer::requires_overload_resolution(function)) continue;
+            // NOTE(port): AST integration redelivers referenced instantiated
+            // definitions through the host consumer, including this function.
+            // Only the replaced body may reach CodeGen during that re-entry.
+            const auto* identity = function->getCanonicalDecl();
+            const auto* source_body = function->getBody();
+            auto completed = completed_bodies_.find(identity);
+            if (completed != completed_bodies_.end() && completed->second == source_body) continue;
+            auto active = active_bodies_.find(identity);
+            if (active != active_bodies_.end()) {
+                if (active->second != source_body) continue;
+                auto diagnostic = compiler_.getDiagnostics().getCustomDiagID(
+                    DiagnosticsEngine::Error,
+                    "kotlinx-suspend: recursive frame integration before body replacement for '%0'");
+                compiler_.getDiagnostics().Report(function->getLocation(), diagnostic)
+                    << function->getNameAsString();
+                return false;
+            }
+            active_bodies_.emplace(identity, source_body);
+            auto release_active = llvm::make_scope_exit([&] { active_bodies_.erase(identity); });
             auto& context = compiler_.getASTContext();
             SuspendFunctionAnalyzer analyzer(context, function);
             if (!analyzer.analyze()) return false;
-            if (analyzer.get_suspend_points().empty()) continue;
+            if (analyzer.get_suspend_points().empty()) {
+                completed_bodies_[identity] = function->getBody();
+                continue;
+            }
             if (is_direct_entry(context, function)) {
                 auto [body, changed] = add_tail_continuation(context, function);
                 if (changed && !install_native_frame(compiler_, function, tail_entry(context, function, body))) return false;
+                completed_bodies_[identity] = function->getBody();
                 continue;
             }
             if (!install_native_frame(compiler_, function, lower_native_suspend(context, function))) return false;
+            completed_bodies_[identity] = function->getBody();
         }
         return true;
     }
@@ -536,6 +564,8 @@ private:
     std::string outDir_;
     DispatchMode dispatchMode_;
     SpillMode spillMode_;
+    std::map<const FunctionDecl*, const Stmt*> active_bodies_;
+    std::map<const FunctionDecl*, const Stmt*> completed_bodies_;
 };
 
 // -----------------------------------------------------------------------------

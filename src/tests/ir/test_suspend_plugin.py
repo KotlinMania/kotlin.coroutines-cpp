@@ -250,7 +250,8 @@ int main() {
     run(ordinary_command, work, 'direct-in-process-compile')
     assert run([str(ordinary)], work, 'direct-in-process-run') == expected
     unit_executable = work / 'unit-tail'
-    run([args.compiler, '-std=c++20', '-I' + str(args.root / 'src'),
+    run([args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Wpedantic', '-Werror',
+         '-I' + str(args.root / 'src'),
          '-Xclang', '-load', '-Xclang', str(args.plugin), '-Xclang', '-add-plugin',
          '-Xclang', 'kotlinx-suspend', '-fpass-plugin=' + str(args.ir_plugin),
          '-O1', '-UNDEBUG', '-fsanitize=address,undefined', '-fno-sanitize-recover=all',
