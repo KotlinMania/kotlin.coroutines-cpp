@@ -5,8 +5,8 @@ read before editing. This is the first dependency-priority group, with 65
 reported dependents. The public signatures and ChannelAsFlow constructor,
 consumption, fusion and produce/collect selection retain their source contract.
 
-`flow/Channels.cpp:16` now holds the concrete private EmitAllContinuation.
-`Channels.cpp:35` mirrors source Channels.kt:28-41: create the iterator inside
+`flow/Channels.cpp:28` now holds the concrete private EmitAllContinuation.
+`Channels.cpp:47` mirrors source Channels.kt:28-41: create the iterator inside
 try; suspend at has_next; unbox/delete the transferred bool result; emit each
 next element; catch and preserve the failure; cancel_consumed in finally only
 when consume is true. A finally exception supersedes the body exception and
@@ -16,7 +16,7 @@ boundary at `Channels.hpp:95`.
 The old public header contained a generic continuation class and four repeated
 frame startup implementations. The public generic overloads now bind typed
 channel, collector, iterator and element storage at `Channels.hpp:88` to the
-single concrete entry at `Channels.cpp:90`. This type erasure carries the actual
+single concrete entry at `Channels.cpp:102`. This type erasure carries the actual
 C++ types through the existing erased Continuation ABI; the iteration algorithm
 and resume/failure branches remain in .cpp. The typed storage stays in a header
 because arbitrary public element types cannot be explicitly instantiated. Shared
@@ -26,7 +26,7 @@ borrowed. Both suspend points continue using the existing mandatory LLVM markers
 A regression exposed a real exception/resource retention bug. The old frame
 cleared its iterator and owners but retained cause_ after failure, so an externally
 owned completed frame kept an exception's captured C++ resource alive. At
-`Channels.cpp:62`, termination now clears all bindings and the exception as well
+`Channels.cpp:74`, termination now clears all bindings and the exception as well
 as the suspended self root. These resources are released before releasing frame
 interception, including when another owner keeps the completed frame alive.
 
@@ -64,3 +64,44 @@ groups and body similarity 0.22 despite 12/12 matched function names. These
 measurements do not establish complete source parity. Both deep commands
 returned zero; the compiler/prerequisite report was refreshed without content
 changes from this library slice.
+
+
+## Protected hooks and concrete consumption check
+
+The complete Kotlin Channels.kt and C++ header/source pair were reread before
+this change. ChannelAsFlow.create and collectTo inherit protected visibility
+from Kotlin ChannelFlow.kt:102-104. Their C++ overrides now preserve that
+visibility at Channels.hpp:223 and :238. drop_channel_operators, produce_impl
+and collect retain their existing interface accessibility.
+
+The source markConsumed algorithm at Channels.kt:104-108 now lives concretely
+in Channels.cpp:15. The generic receiver binds its actual consume flag and
+atomic consumed field at Channels.hpp:217. It still checks consume before the
+atomic get-and-set and throws the exact source IllegalStateException message
+on a second consumption attempt. No resource ownership or suspension behavior
+changes. The private generic class still requires a header definition for
+arbitrary C++ element types; its NOTE(port) documents that language adaptation.
+
+An initial relocation of the class into internal changed the source declaration
+namespace and caused seven missing-function reports. The namespace was restored
+to flow in commit 8f9547b2. Those reports were truthful; no analyzer matching rule
+was changed. The final inventory restores 12/12 Flow Channels function names.
+Its measured body similarity is 0.21, previously 0.22; moving a concrete body
+behind a typed binding does not establish full source parity.
+
+The final core and two focused executables build with exit zero. CTest runs
+both test_channel_as_flow_smoke and test_channel_consumption with zero failures
+in 0.70 seconds. A direct ordinary Clang syntax check verifies that create and
+collect_to cannot be called publicly, while conversion to Flow and the public
+produce_impl surface remain available. Thirty-one ranged source references
+across the pair resolve with valid bounds; no banned source markers occur.
+Receipts are build/ir-recovery/channel-private-final-{build,tests,access}.log.
+
+Both required complete-root deep scans finish with exit zero. Final library
+evidence is 820/2918 function names, 359/560 types, body similarity 0.26 and
+123 scoring failures. The compiler/prerequisite report remains 591/7657,
+174/1727, body similarity 0.36 and 24 failures. Logs are
+channel-private-final-library-deep.log and channel-private-compiler-deep.log.
+These bounded checks do not prove whole-library parity or either full MLX GPU
+acceptance path. Channel diagnostic interpolation at Channels.hpp:267 and the
+Native Throwable class-name contract remain incomplete source dependencies.
