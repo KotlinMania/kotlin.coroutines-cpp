@@ -24,12 +24,14 @@ bool fail_second = false;
 void sequence_event(int digit) { sequence = sequence * 10 + digit; }
 struct Done : Continuation<void*> {
     int calls=0, value=0; bool failed=false;
+    std::exception_ptr failure;
     std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance();
     std::shared_ptr<CoroutineContext> get_context() const override { return context; }
     void resume_with(Result<void*> result) override {
         ++calls;
         try { auto boxed=std::unique_ptr<int>(static_cast<int*>(result.get_or_throw())); value=*boxed; }
-        catch(const std::runtime_error&) {failed=true;}
+        catch(const CancellationException&) {failed=true; failure=std::current_exception();}
+        catch(const std::runtime_error&) {failed=true; failure=std::current_exception();}
     }
 };
 struct YieldDispatcher : CoroutineDispatcher {
@@ -821,6 +823,11 @@ int main(int argc, char** argv) {
             assert(dispatcher->schedules == 0);
         }
         assert(stages == (cancel ? 1 : 2) && done->calls == 1 && done->failed == cancel);
+        if (cancel) {
+            assert(done->failure);
+            try { std::rethrow_exception(done->failure); }
+            catch (const CancellationException&) {}
+        }
         assert(cancel || done->value == 42);
         assert(Tracked::alive == 0);
     }
