@@ -341,7 +341,7 @@ translated_text_cosine: 0.000000
 translated_ast_cosine: 0.513686
 function_name_parity: 0.333333
 normalized_logic: 0.000000
-documentation_correspondence: 0.029900
+documentation_correspondence: 0.005734
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -394,13 +394,13 @@ Diagnostic: 154: unsupported property_declaration
 Diagnostic: 158: unsupported getter
 Diagnostic: Source grammar errors; emitted source is provisional
 Diagnostic: 37: grammar treated hard keyword as identifier: class bytes 1287:1292
-Function Continuation<T>::resume:43 -> kotlin::coroutines::resume:48 | normalized logic: 0.000000
+Function Continuation<T>::resume:43 -> kotlin::coroutines::resume:57 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:continuation type:continuation type:t node:66 identifier:value type:t node:43 identifier:continuation identifier:resumewith node:43 type:result type:t identifier:success node:43 identifier:std identifier:move identifier:value
-Function Continuation<T>::resumeWithException:51 -> kotlin::coroutines::resume_with_exception:61 | normalized logic: 0.000000
+Function Continuation<T>::resumeWithException:51 -> kotlin::coroutines::resume_with_exception:73 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:continuation type:continuation type:t node:66 identifier:exception identifier:std type:exceptionptr node:43 identifier:continuation identifier:resumewith node:43 type:result type:t identifier:failure identifier:exception
-Function resumeWith:70 -> kotlin::coroutines::FunctionalContinuation::resume_with:77 | normalized logic: 0.000000
+Function resumeWith:70 -> kotlin::coroutines::FunctionalContinuation::resume_with:89 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:result type:result type:t node:43 identifier:resumewith node:43 identifier:std identifier:move identifier:result
 Missing source function: Continuation:60
@@ -409,19 +409,19 @@ Missing source function: createCoroutine:97
 Missing source function: startCoroutine:110
 Missing source function: startCoroutine:123
 Missing source function: suspendCoroutine:140
-Extra target function: kotlin::coroutines::resume:54
-Extra target function: kotlin::coroutines::FunctionalContinuation::FunctionalContinuation:71
-Extra target function: kotlin::coroutines::FunctionalContinuation::get_context:75
-Extra target function: kotlin::coroutines::make_continuation:86
-Extra target function: kotlin::coroutines::ContinuationVoidAdapter::ContinuationVoidAdapter:102
-Extra target function: kotlin::coroutines::ContinuationVoidAdapter::get_context:126
-Extra target function: kotlin::coroutines::ContinuationVoidAdapter::resume_with:131
-Extra target function: kotlin::coroutines::to_void_continuation:137
-Extra target function: kotlin::coroutines::internal::ResultBoxCompletion::ResultBoxCompletion:153
-Extra target function: kotlin::coroutines::internal::ResultBoxCompletion::get_context:156
-Extra target function: kotlin::coroutines::internal::ResultBoxCompletion::resume_with:158
-Extra target function: kotlin::coroutines::internal::ResultBoxCompletion::completion:164
-Extra target function: kotlin::coroutines::internal::result_box_completion:171
+Extra target function: kotlin::coroutines::resume:63
+Extra target function: kotlin::coroutines::FunctionalContinuation::FunctionalContinuation:83
+Extra target function: kotlin::coroutines::FunctionalContinuation::get_context:87
+Extra target function: kotlin::coroutines::make_continuation:100
+Extra target function: kotlin::coroutines::ContinuationVoidAdapter::ContinuationVoidAdapter:116
+Extra target function: kotlin::coroutines::ContinuationVoidAdapter::get_context:140
+Extra target function: kotlin::coroutines::ContinuationVoidAdapter::resume_with:145
+Extra target function: kotlin::coroutines::to_void_continuation:151
+Extra target function: kotlin::coroutines::internal::ResultBoxCompletion::ResultBoxCompletion:167
+Extra target function: kotlin::coroutines::internal::ResultBoxCompletion::get_context:170
+Extra target function: kotlin::coroutines::internal::ResultBoxCompletion::resume_with:172
+Extra target function: kotlin::coroutines::internal::ResultBoxCompletion::completion:178
+Extra target function: kotlin::coroutines::internal::result_box_completion:185
 === Emitted target buffer ===
 /*
  * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.

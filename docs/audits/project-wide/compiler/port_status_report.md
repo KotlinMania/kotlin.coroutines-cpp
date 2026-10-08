@@ -868,7 +868,7 @@ present in the Rust source file.
 
 Documentation correspondence is incomplete; it is reported separately from implementation scoring.
 
-**Documentation line amount:** 2076 / 5654 lines (37%)
+**Documentation line amount:** 2090 / 5654 lines (37%)
 
 Documentation gaps (>20%), complete list:
 
@@ -886,11 +886,11 @@ Documentation gaps (>20%), complete list:
 - `lower.AbstractFunctionReferenceLowering` - 100% gap (57 → 0 lines)
 - `model.TypeSystemContext` - 100% gap (56 → 0 lines)
 - `coroutines.DebugProbes` - 98% gap (49 → 1 lines)
-- `coroutines.Continuation` - 73% gap (62 → 17 lines)
 - `kotlin.ArrayIntrinsics` - 90% gap (50 → 5 lines)
 - `llvm.CodeGenerator` - 100% gap (42 → 0 lines)
 - `collections.Iterator` - 51% gap (69 → 34 lines)
 - `lower.UpgradeCallableReferences` - 100% gap (33 → 0 lines)
+- `coroutines.Continuation` - 50% gap (62 → 31 lines)
 - `native.Runtime` - 89% gap (35 → 4 lines)
 - `coroutines.ContinuationInterceptor` - 88% gap (34 → 4 lines)
 - `declarations.IrValueParameter` - 90% gap (30 → 3 lines)

@@ -108,7 +108,7 @@ Every matched file is listed below with function and type symbol parity.
 ### 5. native.CoroutineContext
 
 - **Target:** `coroutines.UndispatchedCoroutine`
-- **Similarity:** 0.22
+- **Similarity:** 0.21
 - **Dependents:** 6
 - **Priority Score:** 6011208.0
 - **Functions:** 9/10 matched (target 16)

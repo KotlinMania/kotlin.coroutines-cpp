@@ -17527,11 +17527,11 @@ MISSING_SYMBOL function updateAndFetch at /Volumes/stuff/Projects/kotlinmania/ko
 MISSING_FILE libraries/stdlib/src/kotlin/concurrent/atomics/ExperimentalAtomicApi.kt
 MISSING_SYMBOL type ExperimentalAtomicApi at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/concurrent/atomics/ExperimentalAtomicApi.kt:22
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:37: grammar treated hard keyword as identifier: class bytes 1287:1292
-PRESENT type Continuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:16 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:34
-DECLARATION_ONLY property Continuation::context at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:20 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:39
-DECLARATION_ONLY function Continuation::resumeWith at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:26 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:42
-PRESENT function resume at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:43 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:54
-PRESENT function resumeWithException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:51 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:61
+PRESENT type Continuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:16 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:36
+DECLARATION_ONLY property Continuation::context at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:20 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:43
+DECLARATION_ONLY function Continuation::resumeWith at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:26 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:49
+PRESENT function resume at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:43 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:63
+PRESENT function resumeWithException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:51 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:73
 MISSING_SYMBOL function Continuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:60
 MISSING_SYMBOL function createCoroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:82
 MISSING_SYMBOL function createCoroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:97
@@ -17541,27 +17541,27 @@ MISSING_SYMBOL function suspendCoroutine at /Volumes/stuff/Projects/kotlinmania/
 MISSING_SYMBOL property coroutineContext at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:154
 EXTRA_TARGET_SYMBOL type ContinuationBase at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:26
 EXTRA_TARGET_SYMBOL function ContinuationBase::~ContinuationBase at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:28
-EXTRA_TARGET_SYMBOL function Continuation::~Continuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:36
-EXTRA_TARGET_SYMBOL type FunctionalContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:68
-EXTRA_TARGET_SYMBOL function FunctionalContinuation::FunctionalContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:71
-EXTRA_TARGET_SYMBOL function FunctionalContinuation::get_context at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:75
-EXTRA_TARGET_SYMBOL function FunctionalContinuation::resume_with at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:77
-EXTRA_TARGET_SYMBOL property FunctionalContinuation::context_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:79
-EXTRA_TARGET_SYMBOL property FunctionalContinuation::resume_with_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:80
-EXTRA_TARGET_SYMBOL function make_continuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:86
-EXTRA_TARGET_SYMBOL type ContinuationVoidAdapter at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:96
-EXTRA_TARGET_SYMBOL property ContinuationVoidAdapter::get_context_fn_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:97
-EXTRA_TARGET_SYMBOL property ContinuationVoidAdapter::resume_fn_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:98
-EXTRA_TARGET_SYMBOL function ContinuationVoidAdapter::ContinuationVoidAdapter at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:102
-EXTRA_TARGET_SYMBOL function ContinuationVoidAdapter::get_context at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:126
-EXTRA_TARGET_SYMBOL function ContinuationVoidAdapter::resume_with at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:131
-EXTRA_TARGET_SYMBOL function to_void_continuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:137
-EXTRA_TARGET_SYMBOL type ResultBoxCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:150
-EXTRA_TARGET_SYMBOL function ResultBoxCompletion::ResultBoxCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:153
-EXTRA_TARGET_SYMBOL function ResultBoxCompletion::get_context at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:156
-EXTRA_TARGET_SYMBOL function ResultBoxCompletion::resume_with at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:158
-EXTRA_TARGET_SYMBOL property ResultBoxCompletion::completion_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:166
-EXTRA_TARGET_SYMBOL function result_box_completion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:171
+EXTRA_TARGET_SYMBOL function Continuation::~Continuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:38
+EXTRA_TARGET_SYMBOL type FunctionalContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:80
+EXTRA_TARGET_SYMBOL function FunctionalContinuation::FunctionalContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:83
+EXTRA_TARGET_SYMBOL function FunctionalContinuation::get_context at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:87
+EXTRA_TARGET_SYMBOL function FunctionalContinuation::resume_with at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:89
+EXTRA_TARGET_SYMBOL property FunctionalContinuation::context_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:91
+EXTRA_TARGET_SYMBOL property FunctionalContinuation::resume_with_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:92
+EXTRA_TARGET_SYMBOL function make_continuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:100
+EXTRA_TARGET_SYMBOL type ContinuationVoidAdapter at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:110
+EXTRA_TARGET_SYMBOL property ContinuationVoidAdapter::get_context_fn_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:111
+EXTRA_TARGET_SYMBOL property ContinuationVoidAdapter::resume_fn_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:112
+EXTRA_TARGET_SYMBOL function ContinuationVoidAdapter::ContinuationVoidAdapter at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:116
+EXTRA_TARGET_SYMBOL function ContinuationVoidAdapter::get_context at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:140
+EXTRA_TARGET_SYMBOL function ContinuationVoidAdapter::resume_with at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:145
+EXTRA_TARGET_SYMBOL function to_void_continuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:151
+EXTRA_TARGET_SYMBOL type ResultBoxCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:164
+EXTRA_TARGET_SYMBOL function ResultBoxCompletion::ResultBoxCompletion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:167
+EXTRA_TARGET_SYMBOL function ResultBoxCompletion::get_context at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:170
+EXTRA_TARGET_SYMBOL function ResultBoxCompletion::resume_with at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:172
+EXTRA_TARGET_SYMBOL property ResultBoxCompletion::completion_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:180
+EXTRA_TARGET_SYMBOL function result_box_completion at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp:185
 PRESENT type ContinuationInterceptor at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt:19 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationInterceptor.hpp:12
 DECLARATION_ONLY function ContinuationInterceptor::interceptContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt:37 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationInterceptor.hpp:22
 PRESENT function ContinuationInterceptor::releaseInterceptedContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt:48 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationInterceptor.cpp:10

@@ -8582,7 +8582,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/UndispatchedCoroutine.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/CoroutineContextUtils.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/CoroutineContext.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.547599
+translated_ast_cosine: 0.554403
 function_name_parity: 0.900000
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
@@ -8618,41 +8618,41 @@ Diagnostic: 44: unsupported function_declaration
 Diagnostic: 45: unsupported function_declaration
 Diagnostic: 46: unsupported property_declaration
 Diagnostic: 48: unsupported class_declaration
-Function DefaultExecutor::dispatch:10 -> kotlinx::coroutines::DefaultExecutor::dispatch:150 | normalized logic: 0.000000
+Function DefaultExecutor::dispatch:10 -> kotlinx::coroutines::DefaultExecutor::dispatch:148 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:context type:coroutinecontext node:66 identifier:block identifier:std type:runnable type:sharedptr node:43 node:43 identifier:dispatchers identifier:getdefault identifier:dispatch identifier:context node:43 identifier:std identifier:move identifier:block
-Function DefaultExecutor::scheduleResumeAfterDelay:14 -> kotlinx::coroutines::DefaultExecutor::schedule_resume_after_delay:155 | normalized logic: 0.000000
+Function DefaultExecutor::scheduleResumeAfterDelay:14 -> kotlinx::coroutines::DefaultExecutor::schedule_resume_after_delay:153 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:timemillis type:signed64 node:66 identifier:continuation type:cancellablecontinuation type:void node:1 identifier:timemillis operator:<= literal:51:0 node:43 identifier:continuation identifier:resume node:5 identifier:implptr operator:= node:43 identifier:dynamiccast type:cancellablecontinuationimpl type:void operator:* operator:& identifier:continuation node:1 operator:! identifier:implptr node:43 identifier:continuation identifier:resume node:5 identifier:sharedimpl operator:= node:43 identifier:implptr identifier:sharedfromthis identifier:cancelled operator:= node:43 identifier:makeshared identifier:std identifier:std type:atomic type:bool literal:53:false identifier:oncancel operator:= node:45 identifier:cancelled node:66 identifier:std type:exceptionptr node:43 identifier:cancelled identifier:store literal:53:true identifier:memoryorderrelaxed identifier:std node:43 identifier:continuation identifier:invokeoncancellation identifier:oncancel identifier:runner operator:= node:45 identifier:cancelled identifier:sharedimpl identifier:timemillis node:43 identifier:sleepfor identifier:std identifier:thisthread node:43 identifier:chrono identifier:milliseconds identifier:std identifier:timemillis node:1 operator:! node:43 identifier:cancelled identifier:load identifier:memoryorderrelaxed identifier:std operator:&& node:43 identifier:isactive identifier:sharedimpl node:43 identifier:resume identifier:sharedimpl node:43 node:43 identifier:std identifier:thread node:43 identifier:std identifier:move identifier:runner identifier:detach
-Function DefaultExecutor::invokeOnTimeout:18 -> kotlinx::coroutines::DefaultExecutor::invoke_on_timeout:190 | normalized logic: 0.000000
+Function DefaultExecutor::invokeOnTimeout:18 -> kotlinx::coroutines::DefaultExecutor::invoke_on_timeout:188 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:timemillis type:signed64 node:66 identifier:block identifier:std type:runnable type:sharedptr node:66 identifier:context type:coroutinecontext node:1 operator:! identifier:block node:5 node:43 identifier:std identifier:sharedptr type:disposablehandle node:43 identifier:noopdisposablehandle identifier:instance node:45 node:66 type:disposablehandle operator:* node:1 identifier:timemillis operator:<= literal:51:0 node:43 identifier:block identifier:run node:5 node:43 identifier:std identifier:sharedptr type:disposablehandle node:43 identifier:noopdisposablehandle identifier:instance node:45 node:66 type:disposablehandle operator:* type:timeouthandle type:disposablehandle identifier:cancelled identifier:std identifier:std type:atomic type:bool type:sharedptr identifier:timeouthandle node:66 identifier:c identifier:std identifier:std type:atomic type:bool type:sharedptr identifier:cancelled node:43 identifier:std identifier:move identifier:c type:void identifier:dispose node:43 identifier:cancelled identifier:store literal:53:true identifier:std identifier:memoryorderrelaxed identifier:cancelled operator:= node:43 identifier:makeshared identifier:std identifier:std type:atomic type:bool literal:53:false node:43 node:43 identifier:std identifier:thread node:45 identifier:timemillis identifier:block identifier:cancelled node:43 identifier:std identifier:thisthread identifier:sleepfor node:43 identifier:std identifier:chrono identifier:milliseconds identifier:timemillis node:1 operator:! node:43 identifier:cancelled identifier:load identifier:std identifier:memoryorderrelaxed node:43 identifier:block identifier:run identifier:detach node:5 node:43 identifier:std identifier:makeshared type:timeouthandle identifier:cancelled
-Function DefaultExecutor::enqueue:22 -> kotlinx::coroutines::DefaultExecutor::enqueue:221 | normalized logic: 0.000000
+Function DefaultExecutor::enqueue:22 -> kotlinx::coroutines::DefaultExecutor::enqueue:219 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std identifier:task type:runnable type:sharedptr node:43 identifier:dispatch operator:* node:43 identifier:emptycoroutinecontext identifier:instance node:43 identifier:std identifier:move identifier:task
-Function CoroutineScope::newCoroutineContext:32 -> kotlinx::coroutines::new_coroutine_context:117 | normalized logic: 0.000000
+Function CoroutineScope::newCoroutineContext:32 -> kotlinx::coroutines::new_coroutine_context:115 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:scope type:coroutinescope node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr identifier:combined operator:= node:43 node:43 identifier:getcoroutinecontext identifier:scope operator:+ node:43 identifier:context identifier:move identifier:std identifier:defaultdispatcher operator:= node:43 identifier:sharedptr identifier:std type:coroutinecontext operator:& node:43 identifier:dispatchers identifier:getdefault node:45 node:66 type:coroutinecontext operator:* node:5 identifier:combined operator:!= identifier:defaultdispatcher operator:&& operator:! node:43 identifier:combined identifier:get identifier:continuationinterceptor identifier:typekey node:43 identifier:combined operator:+ node:43 identifier:std identifier:move identifier:defaultdispatcher identifier:combined
-Function CoroutineContext::newCoroutineContext:38 -> kotlinx::coroutines::new_coroutine_context:127 | normalized logic: 0.000000
+Function CoroutineContext::newCoroutineContext:38 -> kotlinx::coroutines::new_coroutine_context:125 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:basecontext identifier:std type:coroutinecontext type:sharedptr node:66 identifier:addedcontext identifier:std type:coroutinecontext type:sharedptr node:5 node:43 identifier:basecontext operator:+ node:43 identifier:std identifier:move identifier:addedcontext
 Function withCoroutineContext:43 -> kotlinx::coroutines::with_coroutine_context:55 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr node:66 identifier:countorelement type:void node:66 identifier:block identifier:std type:function type:r node:5 node:43 identifier:block
-Function withContinuationContext:44 -> kotlinx::coroutines::with_continuation_context:69 | normalized logic: 0.000000
+  Target logic: node:66 identifier:std type:coroutinecontext type:sharedptr operator:& node:66 type:void operator:* node:66 identifier:block type:block node:5 node:43 identifier:block
+Function withContinuationContext:44 -> kotlinx::coroutines::with_continuation_context:67 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:continuation identifier:std type:continuation type:sharedptr type:t node:66 identifier:countorelement type:void node:66 identifier:block identifier:std type:function type:r node:5 node:43 identifier:block
+  Target logic: node:66 identifier:std type:continuation type:sharedptr type:t operator:& node:66 type:void operator:* node:66 identifier:block type:block node:5 node:43 identifier:block
 Function UndispatchedCoroutine::afterResume:52 -> kotlinx::coroutines::UndispatchedCoroutine::after_resume:19 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:state type:jobstate identifier:owner operator:= node:43 identifier:jobsupport identifier:sharedfromthis node:43 identifier:erasedcompletion identifier:reset node:43 identifier:ucont identifier:resumewith node:43 identifier:recoverresult type:t identifier:state node:43 identifier:ucont identifier:get
 Missing source function: Continuation<*>::toDebugString:45
 Extra target function: kotlinx::coroutines::UndispatchedCoroutine::UndispatchedCoroutine:14
-Extra target function: kotlinx::coroutines::to_debug_string:81
-Extra target function: kotlinx::coroutines::coroutine_name:135
-Extra target function: kotlinx::coroutines::DefaultExecutor::TimeoutHandle::TimeoutHandle:205
-Extra target function: kotlinx::coroutines::DefaultExecutor::TimeoutHandle::dispose:206
-Extra target function: kotlinx::coroutines::default_executor:227
-Extra target function: kotlinx::coroutines::get_default_delay:233
+Extra target function: kotlinx::coroutines::to_debug_string:79
+Extra target function: kotlinx::coroutines::coroutine_name:133
+Extra target function: kotlinx::coroutines::DefaultExecutor::TimeoutHandle::TimeoutHandle:203
+Extra target function: kotlinx::coroutines::DefaultExecutor::TimeoutHandle::dispose:204
+Extra target function: kotlinx::coroutines::default_executor:225
+Extra target function: kotlinx::coroutines::get_default_delay:231
 === Emitted target buffer ===
 namespace kotlinx::coroutines {
 

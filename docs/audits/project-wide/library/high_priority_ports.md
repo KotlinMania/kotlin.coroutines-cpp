@@ -14,7 +14,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 2 | `flow.Flow` | `flow.Flow` | 0.17 | 28 | 1/1 matched (target 2) | _none_ | 2/2 matched (target 4) | _none_ | 0 | 3 | 28000308.0 |
 | 3 | `internal.Concurrent` | `internal.Concurrent` | 0.32 | 14 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | 1 | 9 | 14010907.0 |
 | 4 | `native.Exceptions` | `native.Exceptions` | 0.15 | 6 | 3/4 matched (target 10) | `JobCancellationException::toString` | 1/2 matched | `CancellationException` | 2 | 6 | 6020608.5 |
-| 5 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 6 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | 1 | 12 | 6011208.0 |
+| 5 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.21 | 6 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | 1 | 12 | 6011208.0 |
 | 6 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.15 | 2 | 1/1 matched (target 9) | _none_ | 1/1 matched (target 3) | _none_ | 0 | 2 | 2000208.5 |
 | 7 | `channels.BufferOverflow` | `channels.BufferOverflow` | 1.00 | 2 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 2000100.0 |
 | 8 | `selects.Select` | `selects.Select` | 0.21 | 1 | 25/30 matched (target 73) | `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | 5 | 46 | 1054607.9 |
@@ -428,7 +428,7 @@ These files need immediate attention:
   - Lint issues: 1
 
 - **native.CoroutineContext** → `coroutines.UndispatchedCoroutine`
-  - Function similarity: 0.22
+  - Function similarity: 0.21
   - Dependencies: 6
   - Functions: 9/10 matched (target 16)
   - Missing functions: `Continuation<*>::toDebugString`
