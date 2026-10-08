@@ -19,6 +19,10 @@ Completion pending;
     condition ? unit_call(caller) : unit_call(caller);
     return nullptr;
 }
+[[suspend, clang::annotate("kotlin.ir.UnitReturn")]] void* comma_unit_tail(Completion caller) {
+    (static_cast<void>(mode), unit_call(caller));
+    return ((nullptr));
+}
 // NOTE(port): Exercise completed template body delivery through nested owning
 // frames. The primary body must wait for its constexpr condition to resolve.
 template<int Depth>
@@ -43,12 +47,12 @@ struct Done : Continuation<void*> {
     }
 };
 int main() {
-    for (int variant : {0, 1, 2}) for (mode = 0; mode < 4; ++mode) {
+    for (int variant : {0, 1, 2, 3}) for (mode = 0; mode < 4; ++mode) {
         auto done = std::make_shared<Done>();
         auto owner = std::make_shared<int>(42);
         std::weak_ptr<int> retained = owner;
         try {
-            auto result = variant == 2 ? recursive_unit<2>(owner, done) :
+            auto result = variant == 3 ? comma_unit_tail(done) : variant == 2 ? recursive_unit<2>(owner, done) :
                 variant == 1 ? conditional_unit_tail(mode % 2, done) : unit_tail(done);
             owner.reset();
             if (mode == 1 || mode == 2) {

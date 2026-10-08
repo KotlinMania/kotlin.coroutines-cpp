@@ -1,6 +1,7 @@
 // NOTE(port): Compiler regression for immutable reads, mutable snapshots,
 // observable loads and side-effect order around a nested suspension.
-#include "kotlinx/coroutines/dsl/Coroutines.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
 #include <cassert>
 #include <iostream>
@@ -64,6 +65,9 @@ struct TemporaryArgument {
         argument_destroy_order.push_back(value);
     }
 };
+[[suspend]] void* comma_temporary(int mode, std::shared_ptr<Continuation<void*>> caller) {
+    return (TemporaryArgument(7), external_call(mode, caller));
+}
 [[clang::annotate("suspend")]]
 void* borrowing_argument(const TemporaryArgument& value, int mode,
                         std::shared_ptr<Continuation<void*>> caller) {
@@ -122,6 +126,38 @@ void* default_constructed_result(const DefaultConstructed& item) { return new in
     return new int(item.value);
 }
 int main() {
+    for (int mode = 0; mode != 5; ++mode) {
+        argument_destroyed = 0;
+        argument_destroy_order.clear();
+        auto done = std::make_shared<Done>();
+        void* result = nullptr;
+        try { result = comma_temporary(mode, done); }
+        catch (const std::runtime_error&) {
+            assert(mode == 4);
+            done->resume_with(Result<void*>::failure(std::current_exception()));
+        }
+        if (mode == 4) {
+            assert(done->calls == 1 && done->failed);
+        } else if (!mode) {
+            std::unique_ptr<int> box(static_cast<int*>(result));
+            assert(*box == 41 && done->calls == 0);
+        } else {
+            assert(intrinsics::is_coroutine_suspended(result));
+            assert(pending != done && argument_alive == 1 && argument_destroyed == 0);
+            auto held = std::move(pending);
+            if (mode == 1) held->resume_with(Result<void*>::success(new int(41)));
+            else if (mode == 2) held->resume_with(Result<void*>::failure(
+                std::make_exception_ptr(std::runtime_error("comma-temporary"))));
+            else held->resume_with(Result<void*>::failure(
+                std::make_exception_ptr(CancellationException("comma-temporary"))));
+            held.reset();
+            assert(done->calls == 1 && done->failed == (mode >= 2));
+            assert(done->cancelled == (mode == 3));
+            if (mode == 1) assert(done->value == 41);
+        }
+        assert(argument_alive == 0 && argument_destroyed == 1 && !pending);
+        assert(argument_destroy_order == (std::vector<int>{7}));
+    }
     for (int mode = 0; mode != 5; ++mode) {
         argument_destroyed = 0;
         argument_destroy_order.clear();

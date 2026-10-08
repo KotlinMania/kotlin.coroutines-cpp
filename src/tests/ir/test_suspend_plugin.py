@@ -125,6 +125,7 @@ void* direct_value(int value, std::shared_ptr<Continuation<void*>> completion);
 void* tail_value(int value, std::shared_ptr<Continuation<void*>> completion);
 void* branch_tail_value(int value, std::shared_ptr<Continuation<void*>> completion);
 void* conditional_tail_value(int value, std::shared_ptr<Continuation<void*>> completion);
+void* comma_tail_value(int value, std::shared_ptr<Continuation<void*>> completion);
 [[clang::annotate("suspend"), clang::annotate("kxs_implicit_continuation")]]
 __attribute__((error("implicit_call requires suspend lowering"))) void* implicit_call(int value = 41);
 void* implicit_call(int value, std::shared_ptr<Continuation<void*>> completion);
@@ -148,13 +149,20 @@ void* buffer_value(const int (&values)[2], std::shared_ptr<Continuation<void*>> 
 [[suspend]] void* conditional_tail_value(int value, std::shared_ptr<Continuation<void*>> completion) {
     return value ? suspend(external_call(41, completion)) : suspend(external_call(41, completion));
 }
+[[suspend]] void* comma_tail_value(int value, std::shared_ptr<Continuation<void*>> completion) {
+    return (static_cast<void>(value), suspend(external_call(41, completion)));
+}
 [[suspend]] void* implicit_tail_value(int value, std::shared_ptr<Continuation<void*>> caller) {
+    (void)caller;
     return implicit_call(value);
 }
 [[suspend]] void* default_tail_value(int value, std::shared_ptr<Continuation<void*>> caller) {
+    (void)value;
+    (void)caller;
     return implicit_call();
 }
 [[suspend]] void* implicit_branch_value(int value, std::shared_ptr<Continuation<void*>> caller) {
+    (void)caller;
     if (value) return implicit_call(41);
     return implicit_call(41);
 }
@@ -171,7 +179,7 @@ void* buffer_value(const int (&values)[2], std::shared_ptr<Continuation<void*>> 
     run(extraction, work, 'extraction')
     generated = work / 'input.kx.cpp'
     emitted = generated.read_text()
-    assert emitted.count('Direct continuation ABI entry') == 8, emitted
+    assert emitted.count('Direct continuation ABI entry') == 9, emitted
     assert '__kxs_frame_' not in emitted, 'Tail-only branches must not allocate a retained frame'
     assert '__kxs_coroutine_' not in emitted, 'Tail/direct functions must not allocate a frame'
     (work / 'main.cpp').write_text('''#include "api.hpp"
@@ -214,7 +222,7 @@ int main() {
     const int buffer[2] = {41, 1};
     auto buffered = std::unique_ptr<int>(static_cast<int*>(buffer_value(buffer, direct_done)));
     assert(*buffered == 42 && buffer[0] == 41 && buffer[1] == 1 && direct_done->calls == 0);
-    for (auto entry : {&tail_value, &branch_tail_value, &conditional_tail_value, &implicit_tail_value, &implicit_branch_value, &default_tail_value}) {
+    for (auto entry : {&tail_value, &branch_tail_value, &conditional_tail_value, &comma_tail_value, &implicit_tail_value, &implicit_branch_value, &default_tail_value}) {
     for (mode = 0; mode != 4; ++mode) {
         auto done = std::make_shared<Done>();
         try {
@@ -236,7 +244,7 @@ int main() {
         assert(handed_off.expired() && !pending);
     }
     }
-    assert(external_calls == 24);
+    assert(external_calls == 28);
 }
 ''')
     executable = work / 'handoff'
@@ -246,7 +254,7 @@ int main() {
                        *shlex.split(args.library_link_options), '-o', str(executable)]
     run(compile_command, work, 'generated-compile')
     trace = run([str(executable)], work, 'handoff-run')
-    expected = 'direct:42\n' + 'tail:0:42\ntail:1:42\ntail:2:failure\ntail:3:failure\n' * 6
+    expected = 'direct:42\n' + 'tail:0:42\ntail:1:42\ntail:2:failure\ntail:3:failure\n' * 7
     assert trace == expected, trace
     (work / 'trace.txt').write_text(trace)
     ordinary = work / 'direct-in-process'

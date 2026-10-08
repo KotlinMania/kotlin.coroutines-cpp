@@ -1101,7 +1101,10 @@ private:
     // expression in its declaration context before retaining the argument value.
     std::string emit_default_argument(const CXXDefaultArgExpr* argument, QualType parameter_type) {
         llvm::SaveAndRestore<bool> default_scope(default_expression_, true);
-        llvm::SaveAndRestore<bool> canonical_types(policy_.PrintAsCanonical, true);
+        // NOTE(port): Clang stores this option as a bit-field, which cannot
+        // bind to SaveAndRestore's reference. Retain the actual printing policy.
+        llvm::SaveAndRestore<PrintingPolicy> canonical_types(policy_);
+        policy_.PrintAsCanonical = true;
         const auto* expression = argument->getExpr();
         const bool reference = expression->isGLValue() && spelled(expression)->isGLValue() &&
             parameter_type->isReferenceType();

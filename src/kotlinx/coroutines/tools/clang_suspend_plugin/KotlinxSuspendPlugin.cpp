@@ -496,23 +496,37 @@ private:
             if (const auto* member = dyn_cast<CXXMemberCallExpr>(call); member &&
                 member->getImplicitObjectArgument()->IgnoreUnlessSpelledInSource()->isPRValue()) needs_retained_storage = true;
         }
-        std::function<void(const Stmt*)> visit = [&](const Stmt* statement) {
+        std::function<void(const Stmt*, bool)> visit = [&](const Stmt* statement, bool in_comma_prefix) {
             if (!statement) return;
+            if (const auto* sequence = dyn_cast<BinaryOperator>(statement);
+                sequence && sequence->getOpcode() == BO_Comma) {
+                visit(sequence->getLHS(), true);
+                visit(sequence->getRHS(), in_comma_prefix);
+                return;
+            }
             if (const auto* branch = dyn_cast<IfStmt>(statement); branch && branch->isConstexpr()) {
                 if (auto selected = branch->getNondiscardedCase(ctx)) {
-                    visit(branch->getInit());
-                    visit(branch->getConditionVariableDeclStmt());
-                    visit(*selected);
+                    visit(branch->getInit(), in_comma_prefix);
+                    visit(branch->getConditionVariableDeclStmt(), in_comma_prefix);
+                    visit(*selected, in_comma_prefix);
                     return;
                 }
             }
             if (const auto* lambda = dyn_cast<LambdaExpr>(statement)) {
-                for (const auto* initializer : lambda->capture_inits()) visit(initializer);
+                for (const auto* initializer : lambda->capture_inits()) visit(initializer, in_comma_prefix);
                 return;
             }
             // NOTE(port): C++ catch regions own the caught exception's lifetime.
             // Keep that exception alive until a suspended handler finishes.
             if (isa<CXXCatchStmt>(statement)) needs_retained_storage = true;
+            // NOTE(port): C++ comma-prefix temporaries survive evaluation
+            // of the tail operand. Kotlin's GC-based tail decision cannot
+            // release a C++ destructor-bearing value while that call suspends.
+            if (const auto* temporary = dyn_cast<Expr>(statement);
+                in_comma_prefix && temporary && isa<MaterializeTemporaryExpr, CXXBindTemporaryExpr>(temporary)) {
+                const auto* record = ctx.getBaseElementType(temporary->getType())->getAsCXXRecordDecl();
+                if (record && !record->hasTrivialDestructor()) needs_retained_storage = true;
+            }
             if (const auto* declaration = dyn_cast<DeclStmt>(statement)) {
                 for (const auto* item : declaration->decls())
                     if (const auto* variable = dyn_cast<VarDecl>(item)) {
@@ -522,9 +536,9 @@ private:
                         if (variable->getType()->isReferenceType()) needs_retained_storage = true;
                     }
             }
-            for (const auto* child : statement->children()) visit(child);
+            for (const auto* child : statement->children()) visit(child, in_comma_prefix);
         };
-        visit(fd->getBody());
+        visit(fd->getBody(), false);
         return !needs_retained_storage && std::all_of(points.begin(), points.end(), [&](const auto& point) {
             return tail.call_sites.contains(dyn_cast<CallExpr>(point.suspend_stmt));
         });

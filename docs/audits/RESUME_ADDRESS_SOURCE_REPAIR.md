@@ -1,5 +1,84 @@
 # Compiler resume-address source repair — 2026-10-08
 
+## Tail expression containers and C++ temporary retention — 2026-10-08
+
+Continuation from `9cd3e1b3` returns to the production frontend's state-machine
+selection. TailSuspendCallsCollector.kt:64-79 gives an expression container's last
+statement its enclosing tail position. TailSuspendCallsCollector.cpp:45,78 now
+maps built-in C++ comma expressions to that rule: the left operand is non-tail
+and the right operand inherits the enclosing state. Nested containers, conditions,
+try regions and ordinary enclosing calls retain their source visitor state.
+Overloaded comma remains an ordinary call. is_unit_read at :160 additionally
+unwraps parentheses and Clang cleanup nodes, matching the existing transparent
+AST traversal; a parenthesized null Unit result no longer forces a needless frame.
+
+KotlinxSuspendPlugin.cpp:499 tracks actual comma-prefix evaluation when selecting
+a direct entry. Destructor-bearing materialized/bound temporaries in that prefix
+require retained frame storage across the tail operand. By-value arguments of the
+tail call do not acquire that prefix state. This is a NOTE(port) C++ lifetime
+adaptation to NativeSuspendFunctionLowering.kt:55-91, not a substitute state
+machine. Existing borrowed references and captured object ownership are unchanged.
+NativeSuspendLowering.cpp:1102 now saves the actual PrintingPolicy while enabling
+canonical default-argument types: Clang's PrintAsCanonical bit-field cannot bind
+to SaveAndRestore<bool>. This repairs a concrete production plugin build error.
+
+The Native-OFF LLVM23.1.2 frontend and collector targets build. All26 AST cases
+pass, including nested comma tails, non-tail prefixes, overloaded comma, try and
+conditional state, and parenthesized Unit returns. The existing driver now checks
+nine direct entries and seven suspending variants through28 immediate/resumed/
+immediate-failure/resumed-failure cases. Its direct portion was run separately
+from the broad driver's earlier failing gate. Both extracted diagnostic output
+and ordinary in-compiler compilation/execution pass with -Wall/-Wextra/-Wpedantic/
+-Werror. ASan/UBSan direct execution passes and confirms exact caller continuation
+forwarding, one completion and released continuation handles. No cancellation or
+retained resource-destruction claim follows from those direct cases.
+
+The direct executable links fresh actual context_impl.cpp and
+ContinuationInterceptor.cpp dependencies only. Their separate strict compile
+fails on four existing unused-parameter diagnostics; ordinary dependency
+compilation with -Wall/-Wextra/-Wpedantic succeeds and reports all four warnings.
+No warning was suppressed or source dependency replaced. This bounded executable
+is not a fresh full-core build. The available core archives still expose the older
+kotlinx::coroutines ABI; linking current frame fixtures against them fails on
+current kotlin::coroutines context/continuation definitions.
+
+unit_tail.cpp and expression_slicing.cpp compile to LLVM with strict warnings,
+mandatory frontend/pass injection and O1 ASan/UBSan instrumentation. The Unit
+comma entry has no generated frame; comma_temporary owns the actual immovable
+TemporaryArgument in its frame and emits its cleanup paths. Its O0 module has
+blockaddress stores and indirectbr dispatch with consumed marker calls. O1 folds
+its single-destination dispatch into a direct resume branch; the stored block
+address remains. Added destruction/failure/cancellation runtime assertions are
+not freshly executed. expression_slicing now includes the actual continuation
+and DSL headers it uses rather than the unrelated cancellable DSL umbrella.
+The full driver still fails earlier in suspend_default_callable.cpp:8 while
+parsing a generated default-lambda frame with a truncated/unbalanced enclosing
+source context. That lowering dependency remains a concrete next repair.
+
+All final deep scans completed. Compiler reference root:286/7163 bodies,
+132/1617 types,0.28 similarity,10 scoring failures,695 sparse source files,
+193 paired units/285 target files. Coroutine root:663/2918 bodies,178/560 types,
+0.24 similarity,12 failures,412 paired units/614 target files. A third scan pairs
+the full pinned compiler corpus with the actual frontend root:14/7163 bodies,
+6/1617 types,0.04 similarity,0 scoring failures,15 paired units/25 target files.
+TailSuspendCallsCollector reports8/14 bodies,2/2 types,0.13 similarity. Its reported
+missing receiver helpers must be compared with actual is_unit_read and
+is_return_if_suspended_call; IR returnable-block symbols and IR-specific body
+visitor contracts remain untranslated. The broad root metrics do not certify
+this frontend's full source parity. Reports are under build/source-continuation/
+{compiler,library,frontend}-source-distance; bounded execution/IR logs are in
+{tail-container-focused,tail-runtime-fixtures}, and the broad failure is in
+tail-container-regression.log.
+
+Continue the default-callable source-context repair and the remaining actual IR
+container/returnable-block, spilling and compiler dependency translations. Any
+identity/hash/text operations already exist in AnyIdentity.cpp, AnyToString.cpp
+and native/Runtime.cpp; the collection gap is arbitrary element operations at
+the actual std::any erasure boundary, not absence of those Any methods. Complete
+standalone C++/MLX and actual Native shared-frame GPU handoffs, retained resource
+identity/cleanup and full-library translation remain unproved. The original goal
+remains active.
+
 ## Standard and Native scalar identity catalogs — 2026-10-08
 
 Continuation from `437fc2e7` translates StandardClassIds.kt's178 scalar properties,

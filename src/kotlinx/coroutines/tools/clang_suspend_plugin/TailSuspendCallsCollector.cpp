@@ -42,6 +42,8 @@ public:
         if (const auto* temporary = dyn_cast<MaterializeTemporaryExpr>(element)) return accept(temporary->getSubExpr(), data);
         if (const auto* temporary = dyn_cast<CXXBindTemporaryExpr>(element)) return accept(temporary->getSubExpr(), data);
         if (const auto* cast = dyn_cast<CastExpr>(element)) return visit_type_operator(cast, data);
+        if (const auto* sequence = dyn_cast<BinaryOperator>(element);
+            sequence && sequence->getOpcode() == BO_Comma) return visit_statement_container(sequence, data);
         if (const auto* call = dyn_cast<CallExpr>(element)) return visit_call(call, data);
         // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
         // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt:35-37
@@ -69,6 +71,14 @@ public:
         visit_element(element, data);
     }
 private:
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt:64-79
+    // NOTE(port): A built-in C++ comma expression is an ordered expression
+    // container. Its right operand supplies the result; its left operand does
+    // not inherit tail position. Overloaded comma remains an ordinary call.
+    void visit_statement_container(const BinaryOperator* expression, VisitorState data) {
+        accept(expression->getLHS(), {data.inside_try_block, false});
+        accept(expression->getRHS(), data);
+    }
     // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt:35-37
     void visit_element(const Stmt* element, VisitorState data) {
         for (const auto* child : element->children()) accept(child, {data.inside_try_block, false});
@@ -148,6 +158,12 @@ private:
     }
     // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt:110-115
     bool is_unit_read(const Expr* expression) const {
+        // NOTE(port): Parentheses and Clang cleanup wrappers add no source
+        // operation to Kotlin's Unit read, just as in accept above.
+        if (const auto* parentheses = dyn_cast_or_null<ParenExpr>(expression))
+            return is_unit_read(parentheses->getSubExpr());
+        if (const auto* cleanup = dyn_cast_or_null<ExprWithCleanups>(expression))
+            return is_unit_read(cleanup->getSubExpr());
         if (const auto* operation = dyn_cast_or_null<CastExpr>(expression)) return is_unit_read(operation->getSubExpr());
         // NOTE(port): Unit-valued Continuation<void*> entries use a null result box.
         return expression && isa<CXXNullPtrLiteralExpr>(expression);
