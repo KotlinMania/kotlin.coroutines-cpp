@@ -132,7 +132,16 @@ public:
     virtual Flow<T>* drop_channel_operators() { return nullptr; }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:69-100
-    Flow<T>* fuse(std::shared_ptr<CoroutineContext> context, int capacity, BufferOverflow on_overflow) override;
+    // NOTE(port): C++ overrides must repeat the defaults inherited in Kotlin.
+    Flow<T>* fuse(
+        std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance(),
+        int capacity = Channel<T>::OPTIONAL_CHANNEL,
+        BufferOverflow on_overflow = BufferOverflow::SUSPEND) override;
+
+    // Shared code to create a suspend lambda from collect_to in one place.
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56
+    std::function<void*(ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)>
+    get_collect_to_fun();
 
     void* collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override;
 
@@ -241,20 +250,27 @@ inline int ChannelFlow<T>::produce_capacity() const {
 }
 
 template <typename T>
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56
+inline std::function<void*(ProducerScope<T>*, std::shared_ptr<Continuation<void*>>)>
+ChannelFlow<T>::get_collect_to_fun() {
+    // NOTE(port): The source lambda captures its actual receiver. Preserve an
+    // existing owner through queued start and suspension; raw receivers stay borrowed.
+    auto owner = this->weak_from_this().lock();
+    return [this, owner = std::move(owner)](ProducerScope<T>* scope,
+                                          std::shared_ptr<Continuation<void*>> completion) -> void* {
+        return collect_channel_flow(
+            [this, owner, scope](Continuation<void*>* frame) {
+                return collect_to(scope, kotlinx::coroutines::internal::retain_continuation(frame));
+            }, std::move(completion));
+    };
+}
+
+template <typename T>
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:114-115
 inline std::shared_ptr<ReceiveChannel<T>> ChannelFlow<T>::produce_impl(CoroutineScope* scope) {
-    // NOTE(port): Retain an existing flow owner across queued producer start.
-    // A stack/raw receiver remains borrowed and must outlive its producer.
-    auto owner = this->weak_from_this().lock();
     return channels::produce<T>(
         scope, context_, produce_capacity(), on_overflow_, CoroutineStart::ATOMIC,
-        [this, owner = std::move(owner)](ProducerScope<T>* scope,
-                                       std::shared_ptr<Continuation<void*>> completion) -> void* {
-            return collect_channel_flow(
-                [this, owner, scope](Continuation<void*>* frame) {
-                    return collect_to(scope, kotlinx::coroutines::internal::retain_continuation(frame));
-                }, std::move(completion));
-        });
+        get_collect_to_fun());
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:117-120
@@ -367,9 +383,11 @@ protected:
         return new ChannelFlowOperatorImpl<T>(this->upstream(), std::move(context), capacity, on_overflow);
     }
 
+public:
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:188-188
     Flow<T>* drop_channel_operators() override { return this->upstream().get(); }
 
+protected:
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:190-191
     void* flow_collect(FlowCollector<T>* collector, Continuation<void*>* continuation) override { return this->upstream()->collect(collector, continuation); }
 };
