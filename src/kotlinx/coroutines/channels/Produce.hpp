@@ -15,7 +15,6 @@
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
 #include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
-#include "kotlinx/coroutines/Dispatchers.hpp"
 #include <functional>
 #include <memory>
 
@@ -42,7 +41,7 @@ public:
         std::shared_ptr<Channel<E>> channel
     ) : ChannelCoroutine<E>(std::move(parent_context), std::move(channel), true, true) {}
 
-    virtual ~ProducerCoroutine() = default;
+    ~ProducerCoroutine() override = default;
 
     // Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:288-289
     bool is_active() const override { return ChannelCoroutine<E>::is_active(); }
@@ -75,16 +74,21 @@ public:
     }
 
     // ProducerScope overrides (delegating to ChannelCoroutine -> Channel)
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ChannelCoroutine.kt:6-11
     bool is_closed_for_send() const override { return ChannelCoroutine<E>::is_closed_for_send(); }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ChannelCoroutine.kt:6-11
     void* send(E element, Continuation<void*>* continuation) override {
         return ChannelCoroutine<E>::send(std::move(element), continuation);
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ChannelCoroutine.kt:6-11
     ChannelResult<void> try_send(E element) override { return ChannelCoroutine<E>::try_send(std::move(element)); }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ChannelCoroutine.kt:6-11
     bool close(std::exception_ptr cause = nullptr) override { return ChannelCoroutine<E>::close(cause); }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ChannelCoroutine.kt:6-11
     void invoke_on_close(std::function<void(std::exception_ptr)> handler) override {
         ChannelCoroutine<E>::invoke_on_close(handler);
     }
@@ -96,7 +100,9 @@ public:
      * All the SendChannel functions on this interface delegate to
      * the channel instance returned by this property.
      */
-    SendChannel<E>* get_channel() override { return ChannelCoroutine<E>::_channel.get(); }
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:10-19
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/ChannelCoroutine.kt:13-13
+    SendChannel<E>* get_channel() override { return ChannelCoroutine<E>::channel(); }
 };
 
 /**
@@ -198,6 +204,28 @@ std::shared_ptr<ReceiveChannel<E>> produce(
     int capacity = Channel<E>::RENDEZVOUS) {
     return produce<E>(scope, std::move(context), capacity, BufferOverflow::SUSPEND,
                       CoroutineStart::DEFAULT, nullptr, std::move(block));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:239-244
+template <typename E>
+std::shared_ptr<ReceiveChannel<E>> produce(
+    CoroutineScope* scope, std::shared_ptr<CoroutineContext> context, int capacity,
+    std::function<void*(ProducerScope<E>*, std::shared_ptr<Continuation<void*>>)> block) {
+    return produce<E>(scope, std::move(block), std::move(context), capacity);
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:259-266
+// NOTE(port): C++ block-first binding exposes the remaining source defaults.
+template <typename E>
+std::shared_ptr<ReceiveChannel<E>> produce(
+    CoroutineScope* scope,
+    std::function<void*(ProducerScope<E>*, std::shared_ptr<Continuation<void*>>)> block,
+    CoroutineStart start,
+    std::function<void(std::exception_ptr)> on_completion = nullptr,
+    std::shared_ptr<CoroutineContext> context = EmptyCoroutineContext::instance(),
+    int capacity = 0) {
+    return produce<E>(scope, std::move(context), capacity, start,
+                      std::move(on_completion), std::move(block));
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/channels/Produce.kt:269-283
