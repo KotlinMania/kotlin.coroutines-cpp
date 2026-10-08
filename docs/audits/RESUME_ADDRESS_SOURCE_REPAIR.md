@@ -1,5 +1,61 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Instantiated body delivery continuation
+
+Source checkpoints 077818e0 and 01b09e0d repair the Clang integration around
+the translated coroutine-body replacement after reading
+AbstractSuspendFunctionsLowering.kt:55-91. Kotlin replaces the original body
+with coroutine construction; Clang additionally delivers instantiated definitions
+through ASTConsumer callbacks. Its HandleCXXImplicitFunctionInstantiation contract
+states that the body is not yet available and completed bodies subsequently arrive
+through HandleTopLevelDecl. A translation-unit fallback would miss the required
+pre-CodeGen ordering and was not introduced.
+
+KotlinxSuspendPlugin.cpp:250-298 tracks actual canonical FunctionDecl/body pairs.
+Completed bodies are not lowered again. During recursive importer delivery, a
+replaced body can pass onward; re-entry with the original active body produces
+a diagnostic rather than allowing the unlowered definition into CodeGen. Scope
+exit removes the active entry on both success and failure. The initial deprecated
+LLVM make_scope_exit use was caught by strict checking and changed to the current
+scope_exit constructor. This is C++ compiler integration, not an additional
+Kotlin state machine or a claimed translation of a Kotlin callback.
+
+CompilerFrameLowering.cpp:467,507,524 now propagates failed host-consumer callbacks
+at each explicit referenced-definition delivery. Previously all three return
+values were ignored. Local class/lambda lexical contexts and broader dependent
+import remain incomplete; their nominal identity is not flattened into a namespace.
+
+unit_tail.cpp:22-36 adds recursive template specializations with constexpr branch
+selection and retained shared ownership through nested continuation frames. Its
+registered executable asserts immediate/resumed completion and failure, object
+identity after suspension, and owner expiration after cleanup. The existing
+test_suspend_plugin.py invocation now supplies strict warning flags for this
+fixture. These assertions have not passed with a freshly built frontend.
+
+Direct strict compiler-unit checks exit 1 in dependency headers. The first driver
+check additionally found the deprecated helper; the final driver check has no
+diagnostics located in the changed driver. The importer check likewise has no
+source-local diagnostic. Fresh CMake plugin build exits 2 in the metadata plugin's
+LLVM/Clang dependency headers. Strict fixture syntax without its attribute plugin
+fails on the unknown suspend attribute. The installed older frontend exits 1 on
+generated GNU address-of-label expressions when it reaches recursive_unit; it
+does not establish behavior of the current source. No warning was suppressed.
+Receipts are build/ir-recovery/body-delivery-{driver,driver-final,importer,
+plugin-build,fixture,installed-frontend}.log. Standalone MLX and actual Native/MLX
+shared-state-machine acceptance remain unproven.
+
+CMakeLists.txt:108-113 and KotlinxCoroutines.cmake:110-113 were reviewed: library
+and executable targets require both frontend construction and LLVM address
+injection. Disabling the in-tree frontend selects an external frontend. No CMake
+source change was needed for this callback repair, and the fresh build failure
+was retained rather than changing its warning policy.
+
+Both exact full-root deep scans completed with exit 0 after the source checkpoints
+and no concurrent source edits. Generated inventories and reports are unchanged:
+library 832/2918 bodies, 359/560 types, body similarity 0.26; compiler 592/7657
+bodies, 174/1727 types, body similarity 0.36. These measurements do not establish
+executable acceptance or completion of the translation.
+
 ## Compile-time branch selection continuation
 
 Source checkpoint 7d077d9a continues the Kotlin expression/control traversal

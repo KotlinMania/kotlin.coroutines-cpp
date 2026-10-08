@@ -6,6 +6,22 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** 077818e0 and 01b09e0d repair instantiated body
+delivery in KotlinxSuspendPlugin.cpp:250-298. Canonical declaration/body tracking
+prevents repeat lowering and rejects re-entry before body replacement.
+CompilerFrameLowering.cpp:467,507,524 propagates failed consumer callbacks.
+unit_tail adds recursive constexpr-selected template specializations and owning
+frame cleanup assertions; its registered compile now has strict warning flags.
+The first strict driver check caught a deprecated LLVM helper, corrected in the
+second checkpoint. Final direct checks exit 1 in dependency headers without
+source-local diagnostics; fresh plugin build exits 2. The older frontend reaches
+the recursive case but rejects generated GNU label code. No fresh runtime
+validates the repair. CMake's mandatory frontend/pass wiring was reviewed and
+needed no change. Lexical class/lambda and broader dependent import remain
+incomplete. Read RESUME_ADDRESS_SOURCE_REPAIR.md's new top section. The full
+transliteration/state-machine goal remains active. Both full-root deep scans
+completed with exit 0 and left generated reports unchanged.
+
 **Latest compiler continuation:** 7d077d9a preserves resolved constexpr branch
 selection in NativeSuspendLowering.cpp:495,1427, overload readiness, tail
 collection, continuation edits and storage eligibility. Discarded arms create no
