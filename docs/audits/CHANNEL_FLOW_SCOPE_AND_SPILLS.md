@@ -1,5 +1,23 @@
 # ChannelFlow source scope and private spill repair
 
+## Adapter removal after Merge migration — 2026-10-07
+
+Checkpoint 53c62d23 removes the four remaining Merge consumers and then removes
+collect_channel_flow's declaration/body. No references remain under src.
+ChannelFlow's actual scoped collection remains at ChannelFlow.hpp:300;
+collect_in_scope remains at ChannelFlow.cpp:76 and the undispatched context
+adaptations remain. Source compiler authoring and owned/borrowed boundaries are
+still unverified under strict compilation. See MERGE_SOURCE_REPAIR.md for all
+three fresh unsuccessful compile receipts and the exact diagnostic limits.
+The old runtime evidence below does not certify these source changes.
+
+Both full-root deep scans exit 0 after source commit 3194132a; reports are in
+b9d8d99a. ChannelFlow stays 18/19 matched bodies and 6/6 types, similarity 0.25;
+its target body inventory falls from 39 to 38 on adapter removal. The missing
+upstream-prefixed to_string, diagnostic representation and broader source gaps
+remain. Reference bounds are valid for 49 header and 11 implementation ranges.
+Receipts use the merge-direct- prefix under build/ir-recovery.
+
 ## Direct source calls checkpoint — 2026-10-07
 
 The complete source Channels.kt and ChannelFlow.kt were reread. ca037a93 removes

@@ -6,6 +6,35 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest checkpoint:** 53c62d23 preserves the four dirty source files found on
+entry; 3194132a completes immutable-capture/comment alignment. All four Merge
+consumers now use direct source operations, so collect_channel_flow is deleted
+from ChannelFlow.hpp/.cpp and has no remaining src references. Two handwritten
+Merge continuation classes are replaced by annotated suspend bodies. Existing
+typed callable/scope/context adaptations remain. Read the current top sections
+of MERGE_SOURCE_REPAIR.md and CHANNEL_FLOW_SCOPE_AND_SPILLS.md before continuing.
+
+Actual Merge.cpp, actual test_channel_consumption.cpp and explicit instantiations
+of all three Merge classes each exit 1 under strict compilation. There is no
+fresh executable evidence. The local MergeCollector declaration is rejected by
+lowering; an annotated member call inside the scope lambda is also rejected in
+the instantiation, alongside generated label/exception-context and dependency
+diagnostics. No warnings were suppressed or plugins rebuilt. Receipts use
+merge-direct- under build/ir-recovery; the instantiation probe is
+tmp/merge-direct-instantiation.cpp. Keep source translation ahead of compiler
+work; do not restore manual frames to obtain a successful check.
+
+Both full-root deep scans exit 0 with no simultaneous source edits. Refreshed
+library reports are in b9d8d99a: 831/2918 bodies, 359/560 types, similarity 0.26,
+123 scoring failures; Merge remains 9/9 bodies and 3/3 types at similarity 0.26;
+ChannelFlow remains 18/19 and 6/6 at 0.25. Compiler report is unchanged at
+592/7657 bodies and 174/1727 types, similarity 0.36, 24 failures. Continue real
+source repair from the current oracle, preserving its missing/provisional/error
+findings. The full translation objective is unfinished. The goal API returns
+no active app goal in this resumed session; no completion status was set.
+
+The following describes the preceding ChannelFlow checkpoint:
+
 Source commit e8581c99 follows the original handoff checkpoint ca037a93.
 The remaining ChannelFlow header collection adapter call is removed. A raw
 virtual collect entry forwards to an annotated owning overload that retains the

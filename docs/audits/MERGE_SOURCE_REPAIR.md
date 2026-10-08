@@ -1,5 +1,78 @@
 # Merge source translation and private suspension bodies
 
+## Current source-authoring checkpoint — 2026-10-07
+
+The tree was dirty on entry after the ChannelFlow handoff. Commit **53c62d23**
+preserves those unfinished changes before further editing; **3194132a** aligns
+the helper's immutable captures and the omitted source UNDISPATCHED comment.
+The complete pinned Merge.kt and ChannelFlow.kt and their C++ pairs were read.
+The historical executable evidence below predates this migration.
+
+All four Merge consumers now use their actual source operations. Transform
+children call transform directly at Merge.hpp:86; limited-merge children call
+flow.collect directly at :271. TransformLatestCollector::collect at :62 is an
+annotated owning entry that retains the actual collector through its upstream
+collection. ChannelFlowTransformLatest::flow_collect at :127 directly suspends
+the existing scoped collection; ChannelFlowMerge::collect_to at :174 directly
+suspends collection with its retained MergeCollector. These member entries retain
+an existing shared receiver owner; raw scopes and downstream collectors remain
+borrowed. Production src now contains no collect_channel_flow references.
+Its declaration and body were removed from ChannelFlow.hpp/.cpp only after the
+last consumers were translated.
+
+Merge.cpp:22,38 replace MergeEmitContinuation and MergeChildContinuation with
+annotated source bodies. The first checks the optional Job, suspends semaphore
+acquisition and launches the child. The second suspends actual collection and
+releases the permit on success or exception. The duplicated catch/success release
+expresses Kotlin's finally at source :64-68 in C++; compiler lowering must
+preserve it across resumption. No handwritten label, spill field or retention
+cycle remains in this pair. Existing typed callable adaptations
+transform_latest_emit, acquire_and_launch_merge_inner and collect_merge_child
+remain; removing one adapter does not establish complete body correspondence.
+All three source merge classes are final. Source val members and immutable
+lambda captures are const, while previous_flow remains mutable.
+
+Strict compilation of actual Merge.cpp, actual test_channel_consumption.cpp and
+explicit instantiations of ChannelFlowTransformLatest<int,int>,
+ChannelFlowMerge<int> and ChannelLimitedFlowMerge<int> each exits **1**. Commands
+use the existing LLVM/Clang plugins with -std=c++20 -Wall -Wextra -Wpedantic
+-Werror -ferror-limit=0; no warnings were suppressed and no plugin was rebuilt.
+Receipts under build/ir-recovery are merge-direct-source.log,
+merge-direct-consumer.log and merge-direct-instantiation.log. The concrete probe
+is tmp/merge-direct-instantiation.cpp. Include roots are include,
+src/kotlinx/coroutines and src; plugin flags are the exact flags recorded in
+SOURCE_TRANSLITERATION_HANDOFF.md.
+
+The frontend discovers the annotated entries. Actual consumer and instantiation
+diagnostics include "suspend local declaration is not a variable" for the local
+MergeCollector class in collect_to. The instantiation also reports "suspension
+functions can only be called within coroutine body" on its scoped lambda's
+annotated member call. Generated GNU address-of-label code, missing exception
+context previous initialization, generated-frame parsing failures, and dependency
+unused parameters also prevent compilation. transform_latest_emit's authoring
+continuation produces an unused-parameter diagnostic in the actual source check.
+These are recorded compiler/source integration gaps, not successful lowering.
+No fresh executable verifies owner/resource retention, destruction, repeated
+suspension, resumed failure/cancellation or permit release. Both complete
+standalone/Native MLX GPU acceptance paths remain unverified.
+
+merge-direct-source-references.json records valid bounds for 29 Merge.hpp,
+3 Merge.cpp, 49 ChannelFlow.hpp and 11 ChannelFlow.cpp ranged references, with
+no prohibited markers in those four files. This is reference evidence only.
+Both exact full-root ast_distance --deep commands complete with exit **0**,
+without source edits while scanning. Receipts are merge-direct-library-deep.log
+and merge-direct-compiler-deep.log; generated library evidence is committed in
+**b9d8d99a**. Merge remains 9/9 matched bodies and 3/3 source types with body
+similarity **0.26**; target inventory drops from 30 to 24 bodies and 8 to 6 types.
+ChannelFlow remains 18/19 bodies, 6/6 types and similarity **0.25**, with 38 target
+bodies. Library totals remain 831/2918 bodies, 359/560 types, similarity 0.26,
+documentation similarity 0.38 and 123 scoring failures. Compiler totals are
+592/7657 bodies, 174/1727 types, similarity 0.36 and 24 scoring failures; that
+report is unchanged by this batch. No analyzer criteria were changed. Missing,
+provisional and failed criteria remain authoritative for further source repair.
+
+## Historical source and executable evidence
+
 Date: 2026-10-07. Continuing the leading Flow/channel dependency closure under Kanban t_8700df29 and source umbrella t_1834dcec. The complete pinned flow/internal/Merge.kt and both existing C++ files were read before edits. Worktree checkpoint was clean 207f357f; every source/test/report batch was committed before the next edit.
 
 ## Implemented source correspondence
