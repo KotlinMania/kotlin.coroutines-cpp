@@ -4,6 +4,7 @@
 #include "kotlinx/coroutines/flow/Channels.hpp"
 #include "kotlinx/coroutines/flow/internal/Combine.hpp"
 #include "kotlinx/coroutines/flow/internal/Merge.hpp"
+#include "kotlinx/coroutines/flow/internal/NullSurrogate.hpp"
 #include "kotlinx/coroutines/native/Exceptions.hpp"
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/CompletableJob.hpp"
