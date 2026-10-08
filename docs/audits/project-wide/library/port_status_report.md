@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 832/2918 matched (target 2953) | 28.5% |
+| Function parity | 832/2918 matched (target 2954) | 28.5% |
 | Class/type parity | 359/560 matched (target 504) | 64.1% |
-| Combined symbol parity | 1191/3478 matched (target 3457) | 34.2% |
+| Combined symbol parity | 1191/3478 matched (target 3458) | 34.2% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -207,7 +207,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 163 | `operators.Merge` | `flow.Merge` | 0.10 | 8/9 matched (target 16) | `Iterable<Flow<T>>::merge` | 0/0 matched | _none_ | - | 1 | 10909.0 |
 | 164 | `internal.InlineList` | `internal.InlineList` | 0.10 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | - | 1 | 10309.0 |
 | 165 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
-| 166 | `flow.Builders` | `flow.FlowBuilders` | 0.11 | 15/23 matched (target 31) | `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::toString` | 4/4 matched (target 5) | _none_ | - | 8 | 82708.9 |
+| 166 | `flow.Builders` | `flow.FlowBuilders` | 0.11 | 15/23 matched (target 32) | `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::toString` | 4/4 matched (target 5) | _none_ | - | 8 | 82708.9 |
 | 167 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 4) | _none_ | - | 4 | 41608.8 |
 | 168 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
 | 169 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 26) | _none_ | 0/0 matched (target 4) | _none_ | - | 0 | 808.7 |
