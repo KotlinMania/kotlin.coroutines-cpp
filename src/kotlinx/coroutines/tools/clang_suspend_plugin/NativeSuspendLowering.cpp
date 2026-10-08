@@ -826,6 +826,12 @@ private:
         // Existing call/branch slicing keeps its actual evaluation path.
         if (!has_suspend_calls(expression) &&
             (!full_expression_ || !has_materialized_temporaries(expression))) return rewrite(original);
+        // NOTE(port): This Clang cast wraps the selected constructor without
+        // creating another object. Preserve direct prvalue construction instead
+        // of slicing its child into a second, potentially immovable value slot.
+        if (const auto* conversion = dyn_cast<CXXFunctionalCastExpr>(expression);
+            conversion && conversion->getCastKind() == CK_ConstructorConversion)
+            return emit_expression(conversion->getSubExpr());
         if (const auto* construction = dyn_cast<CXXConstructExpr>(expression)) {
             auto values = slice_constructor_arguments(construction);
             std::vector<Replacement> replacements;
@@ -979,11 +985,15 @@ private:
                 continue;
             }
             auto value = emit_expression(argument);
-            if (!is_pure(argument) && (has_suspend_call_in_tail[index] ||
-                has_impure_child_in_tail[index + 1] || argument->getType()->isRecordType())) {
-                const auto* constructor = construction->getConstructor();
-                const auto parameter_type = index < constructor->getNumParams() ?
-                    constructor->getParamDecl(index)->getType() : QualType();
+            const auto* constructor = construction->getConstructor();
+            const auto parameter_type = index < constructor->getNumParams() ?
+                constructor->getParamDecl(index)->getType() : QualType();
+            // NOTE(port): Constructor reference parameters can borrow even a
+            // pure materialized literal through the enclosing full expression.
+            const bool owns_temporary = argument->isGLValue() && spelled(argument)->isPRValue() &&
+                !parameter_type.isNull() && parameter_type->isReferenceType();
+            if (owns_temporary || (!is_pure(argument) && (has_suspend_call_in_tail[index] ||
+                has_impure_child_in_tail[index + 1] || argument->getType()->isRecordType()))) {
                 const bool reference = argument->isGLValue() && spelled(argument)->isGLValue() &&
                     !parameter_type.isNull() && parameter_type->isReferenceType();
                 value = capture(argument, value, reference);

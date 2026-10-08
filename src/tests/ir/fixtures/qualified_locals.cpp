@@ -281,6 +281,21 @@ void* condition_wait(std::shared_ptr<Continuation<void*>> completion) {
 }
 const int* borrowed_integer = nullptr;
 bool read_integer(const int& value) { borrowed_integer = std::addressof(value); return value == 17; }
+struct ConstructorCondition {
+    const int& value;
+    explicit ConstructorCondition(const int& value) : value(value) {
+        ++condition_alive;
+        borrowed_integer = std::addressof(value);
+    }
+    ConstructorCondition(const ConstructorCondition&) = delete;
+    ConstructorCondition(ConstructorCondition&&) = delete;
+    ~ConstructorCondition() {
+        assert(value == 17 && borrowed_integer == std::addressof(value));
+        --condition_alive;
+        ++condition_destroyed;
+    }
+    bool read() const & { assert(condition_alive == 1); return value == 17; }
+};
 [[clang::annotate("suspend")]]
 void* scalar_condition_wait(std::shared_ptr<Continuation<void*>> completion) {
     void* raw = await_value(completion);
@@ -298,6 +313,7 @@ void* condition_flow(int operation, std::shared_ptr<Continuation<void*>> complet
     if (operation == 4) selected = ConditionTemporary(true).read() ? condition_wait(completion) == nullptr : false;
     if (operation == 5) selected = ConditionTemporary(false).read() ? false : condition_wait(completion) == nullptr;
     if (operation == 6) selected = read_integer(17) && scalar_condition_wait(completion) == nullptr;
+    if (operation == 7) selected = ConstructorCondition(17).read() && scalar_condition_wait(completion) == nullptr;
     assert(condition_alive == 0 && condition_destroyed == (operation == 6 ? 0 : 1));
     return new int(selected ? 1 : 0);
 }
@@ -341,7 +357,7 @@ int main() {
         assert(*started_identity == mode + 1);
         assert(*finished_identity == (mode == 0 ? 1 : 2));
     }
-    for (int operation = 0; operation != 7; ++operation) for (mode = 0; mode != 5; ++mode) {
+    for (int operation = 0; operation != 8; ++operation) for (mode = 0; mode != 5; ++mode) {
         calls = condition_destroyed = 0;
         auto done = std::make_shared<Done>();
         try {
