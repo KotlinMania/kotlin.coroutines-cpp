@@ -80,6 +80,11 @@ foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
         ../kotlinc_native_ref/org/jetbrains/kotlin/descriptors/annotations/AnnotatedImpl.cpp)
 endforeach()
 
+add_executable(kxs_grouping_test ../kotlinc_native_ref/GroupingContractTest.cpp)
+target_compile_features(kxs_grouping_test PRIVATE cxx_std_20)
+target_compile_options(kxs_grouping_test PRIVATE -UNDEBUG)
+add_test(NAME kxs_grouping_contract COMMAND kxs_grouping_test)
+
 add_executable(kxs_konan_primitive_test ../kotlinc_native_ref/KonanPrimitiveContractTest.cpp
     ../kotlinc_native_ref/InlineClasses.cpp
     ../kotlinc_native_ref/KonanFqNames.cpp

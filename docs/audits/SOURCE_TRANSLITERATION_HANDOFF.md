@@ -6,6 +6,67 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Grouping destination operations — 2026-10-08
+
+Continuation from `e5392502` translates Grouping.kt's public interface and all
+five destination-taking bodies: aggregateTo, both foldTo overloads, reduceTo and
+eachCountTo. Grouping.hpp:71,93,119,132,143,156 exposes those contracts. Public
+Kotlin generics remain header templates; private boxing/projection helpers are
+necessary for the public generic variance and reuse existing collection codecs.
+The key out-type exposes genuine supertypes while the source element type remains
+invariant. MutableMap<in K,R> destinations accept real key supertypes and preserve
+R's invariant type. Mutation goes through the public typed put method, decoding
+the projected key through its existing codec; protected map mutation dispatch
+was not made public. The original destination is returned by reference.
+
+The aggregation loop follows source order: iterate, select key, look up current
+accumulator, distinguish missing key from present-null, call operation, store
+result. Fold selects an initial value only for a new key; reduce uses the first
+element only for a new key. NullableMapValue's existing nullable representation
+preserves pointer/shared/optional/Any nulls without an extra nullable layer.
+Non-null accumulator casts use bad_any_cast in the private C++ codec boundary.
+Count uses uint32 addition/bit_cast to preserve Kotlin Int wrapping without C++
+signed overflow; Primitives.kt:975-976 declares PLUS and IntrinsicGenerator.kt:
+560-567 selects ordinary LLVM add for integer inputs. This does not translate the
+whole intrinsic generator or establish source Native exception representation.
+
+The four fresh-map operations aggregate/fold/fold/reduce remain absent until
+mutableMapOf's concrete dependency is translated. Source Maps.kt:85 constructs
+LinkedHashMap; Native/Wasm HashMap.kt:917 aliases LinkedHashMap to the actual
+insertion-ordered HashMap implementation. That917-line source, its array/hash/view
+and iterator contracts, groupingBy adapters and actual enum values input remain
+required for byFqNameParts. No std::map substitute, fake map implementation or
+placeholder was introduced. InlineClassesSupport/classifier/cache/frame work
+continues after these source dependencies.
+
+Native-OFF CMake configure and kxs_grouping_test build pass. Strict debug
+-Wall/-Wextra/-Werror ASan/UBSan compile and execution pass. Strict release header
+syntax passes when included from a translation unit; compiling the header as
+main initially triggered pragma-once-outside-header, corrected by checking its
+actual include form without suppressing the warning. Five focused CTests pass.
+The new fixture executes source iterator/key covariance and nullable/non-null
+accumulator conversions. Eight explicit instantiations compile the destination
+algorithms against actual abstract MutableMap interfaces: int, borrowed pointer,
+shared owner, Any, optional, projected Any keys, reduce and count. Those map
+algorithms are NOT executed because concrete source maps are still untranslated.
+The covariance provider is an ordinary fixture, not an IR descriptor/classifier.
+This is bounded source/type evidence, not complete coroutine/Native/MLX acceptance.
+
+Both final-root deep scans completed. Compiler source remains673 sparse files:
+253/6847 bodies,111/1575 types,0.31 average,5 scoring failures. Grouping:5/9 explicit
+bodies,1/1 type,0.08 reported body score. Target has9 bodies/5 types including
+representation bridges. Kotlin emission falls back on interface/function/annotation
+nodes, has generated parse errors and normalized logic/text0; target parse errors
+are absent. Thus the score is provisional. Full coroutine root:663/2918 bodies,
+178/560 types,0.24,12 failures,406 paired units/603 target files. The reports,
+missing inventories and priorities in build/source-continuation/{compiler-source-distance,
+library-source-distance} remain the current oracle; neither root is complete.
+
+CMakeLists.txt:83 registers the header-only dependency's focused target. The
+production catalog does not yet call Grouping or its destination algorithms;
+this checkpoint does not claim that wiring. API rows and continuation evidence
+are updated. The full translation/state-machine goal remains active.
+
 ## Native primitive catalog and runtime-name dependency — 2026-10-08
 
 Continuation from `6f9875bf` translates InlineClasses.kt:50-70 into
