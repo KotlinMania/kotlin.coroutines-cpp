@@ -283,16 +283,40 @@ private:
         Expr::EvalResult evaluated;
         if (!reference->EvaluateAsInt(evaluated, context_) || !evaluated.Val.isInt()) return {};
         const auto& value = evaluated.Val.getInt();
-        // NOTE(port): Standard C++ integer types fit the compiler's 64-bit
-        // literal forms; wider extension types require separate literal lowering.
-        if (value.getBitWidth() > 64) return {};
+        auto type = reference->getType().getCanonicalType().getUnqualifiedType();
+        auto type_name = TypeName::getFullyQualifiedName(type, context_, policy_);
+        if (value.getBitWidth() > 64) {
+            // NOTE(port): Preserve wider Clang integer constants without a
+            // truncated literal or runtime frame read. Each unsigned limb fits
+            // a ULL literal; shifts occur in the actual destination type.
+            // Negative values use -1 - complement, including the signed minimum,
+            // so no intermediate positive value exceeds that type's maximum.
+            llvm::APInt bits = value;
+            const bool negative = value.isNegative();
+            if (negative) bits.flipAllBits();
+            auto arithmetic_type = type;
+            if (const auto* enumeration = type->getAs<EnumType>())
+                arithmetic_type = enumeration->getDecl()->getIntegerType().getCanonicalType();
+            const auto arithmetic_name = TypeName::getFullyQualifiedName(arithmetic_type, context_, policy_);
+            std::string expression;
+            for (unsigned word = 0; word < bits.getNumWords(); ++word) {
+                const auto limb = bits.getRawData()[word];
+                if (!limb) continue;
+                if (!expression.empty()) expression += " | ";
+                expression += "(static_cast<" + arithmetic_name + ">(" + std::to_string(limb) + "ULL)";
+                if (word) expression += " << " + std::to_string(word * 64);
+                expression += ")";
+            }
+            if (expression.empty()) expression = "static_cast<" + arithmetic_name + ">(0)";
+            if (negative) expression = "-static_cast<" + arithmetic_name + ">(1) - (" + expression + ")";
+            return "static_cast<" + type_name + ">(" + expression + ")";
+        }
         llvm::SmallString<32> digits;
         value.toString(digits, 10);
         std::string literal = digits.str().str();
         if (literal == "-9223372036854775808") literal = "(-9223372036854775807LL - 1LL)";
         else literal += value.isUnsigned() ? "ULL" : "LL";
-        auto type = reference->getType().getCanonicalType().getUnqualifiedType();
-        return "static_cast<" + TypeName::getFullyQualifiedName(type, context_, policy_) + ">(" + literal + ")";
+        return "static_cast<" + type_name + ">(" + literal + ")";
     }
     void collect_references(const Stmt* statement, std::vector<Replacement>& replacements, bool type_only = false) const {
         if (!statement) return;

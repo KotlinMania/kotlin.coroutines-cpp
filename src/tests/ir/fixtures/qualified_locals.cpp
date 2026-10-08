@@ -15,6 +15,10 @@
 #include <limits>
 using namespace kotlinx::coroutines;
 enum class ConstantKind { VALUE = 3 };
+enum class WideKind : __uint128_t {
+    VALUE = (static_cast<__uint128_t>(1) << 100) + 37,
+    MAXIMUM = ~static_cast<__uint128_t>(0)
+};
 
 int alive = 0;
 int mode = 0;
@@ -124,12 +128,27 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
     constexpr ConstantKind kind = ConstantKind::VALUE;
     constexpr std::uint64_t high = std::numeric_limits<std::uint64_t>::max();
     constexpr std::int64_t low = std::numeric_limits<std::int64_t>::min();
+    constexpr __int128_t wide = (static_cast<__int128_t>(1) << 100) + 37;
+    constexpr __int128_t wide_low = -(static_cast<__int128_t>(1) << 126) -
+        (static_cast<__int128_t>(1) << 126);
+    constexpr __uint128_t wide_high = ~static_cast<__uint128_t>(0);
+    constexpr WideKind wide_kind = WideKind::VALUE;
+    constexpr WideKind wide_kind_maximum = WideKind::MAXIMUM;
+    const __int128_t* wide_identity = std::addressof(wide);
     std::array<int, count> constants{count, multiplier};
     const int* count_identity = std::addressof(count);
     static_assert(count == 2 && multiplier == 3);
     static_assert(std::integral_constant<int, count>::value == 2);
     static_assert(std::integral_constant<ConstantKind, kind>::value == ConstantKind::VALUE);
     static_assert(high == UINT64_MAX && low == INT64_MIN);
+    static_assert(std::integral_constant<__int128_t, wide>::value ==
+        (static_cast<__int128_t>(1) << 100) + 37);
+    static_assert(std::integral_constant<__int128_t, wide_low>::value < -wide);
+    static_assert(std::integral_constant<__uint128_t, wide_high>::value ==
+        ~static_cast<__uint128_t>(0));
+    static_assert(std::is_same_v<decltype(wide), const __int128_t>);
+    static_assert(std::integral_constant<WideKind, wide_kind>::value == WideKind::VALUE);
+    static_assert(std::integral_constant<WideKind, wide_kind_maximum>::value == WideKind::MAXIMUM);
     static_assert(std::is_same_v<decltype(count), const int>);
     const int initial = seed + 5;
     static int started = seed - 37, finished = initial - 42;
@@ -209,6 +228,10 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
             assert(std::addressof(first_copy) == copy_identity && copy_identity != &originals[0]);
             assert(array_copies == 2 && array_sources == 1);
             assert(std::addressof(count) == count_identity && *count_identity == 2);
+            assert(std::addressof(wide) == wide_identity && *wide_identity == wide);
+            assert(wide_low < -wide && wide_high == ~static_cast<__uint128_t>(0));
+            assert(static_cast<__uint128_t>(wide_kind) == static_cast<__uint128_t>(wide));
+            assert(static_cast<__uint128_t>(wide_kind_maximum) == wide_high);
             assert(constants[0] == count && constants[1] == multiplier);
             assert(member_first == 3 && member_second == 5);
             assert(from_get == 3 && from_get_second == 4 && binding_evaluations == 2);
