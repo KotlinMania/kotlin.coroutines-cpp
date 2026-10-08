@@ -6,7 +6,7 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current binary-result continuation — 2026-10-08:** From 6cf05519,
+**Current binary-result checkpoint 43eb5c38 — 2026-10-08:** From 6cf05519,
 BinaryType.hpp/.cpp translate native/base/.../BinaryType.kt:8-20: all nine
 primitive kinds, the sealed Primitive/Reference family, typed lazy reference
 sequences, nullability and primitive extraction. The internal common family

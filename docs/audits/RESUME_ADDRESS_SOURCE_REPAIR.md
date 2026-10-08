@@ -11,7 +11,7 @@ Reference<T> variants, allowing Primitive to participate without a fabricated
 Nothing type/object. Source ownership is retained with supplied shared sequence
 handles. Element pointers remain borrowed. These adaptations are marked in source.
 
-kotlin/sequences/Sequence.hpp:29,35 translates stdlib Sequence.kt:21-28.
+kotlin/sequences/Sequence.hpp:40,49 translates stdlib Sequence.kt:21-28.
 The abstract factory and typed iterator bridge follow this port's existing
 Iterable/Iterator covariance boundary and transfer each created iterator to the
 caller. The sequence remains potentially infinite and lazy; no vector replacement,
