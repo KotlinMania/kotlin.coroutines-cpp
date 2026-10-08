@@ -336,6 +336,57 @@ public:
         failure = exception;
     }
 };
+class ReceiveFrame final : public ContinuationImpl {
+public:
+    using ContinuationImpl::ContinuationImpl;
+    void* invoke_suspend(Result<void*> result) override { return result.get_or_throw(); }
+};
+// Source contracts: BufferedChannel.kt:652-671,708-733,762-776,1649-1672,1707-1720,2767-2793.
+void direct_receive_prompt_cancellation(int kind, bool throwing) {
+    using namespace kotlinx::coroutines::channels;
+    auto dispatcher = std::make_shared<Dispatcher>();
+    auto job = JobImpl::create(nullptr);
+    auto exception_handler = std::make_shared<ExceptionHandler>();
+    auto completion = std::make_shared<Completion>();
+    completion->context = dispatcher->operator+(job)->operator+(exception_handler);
+    auto frame = std::make_shared<ReceiveFrame>(completion);
+    auto failure = std::make_exception_ptr(std::runtime_error("direct undelivered original"));
+    int deliveries = 0;
+    auto resource = std::make_shared<int>(103);
+    auto* identity = resource.get();
+    std::weak_ptr<int> lifetime = resource;
+    BufferedChannel<std::shared_ptr<int>> channel(0, [&](auto element) {
+        CHECK(element.get() == identity && *element == 103);
+        ++deliveries;
+        if (throwing) std::rethrow_exception(failure);
+    });
+    std::shared_ptr<ChannelIterator<std::shared_ptr<int>>> iterator;
+    void* result;
+    if (kind == 0) result = channel.receive(frame.get());
+    else if (kind == 1) result = channel.receive_catching(frame.get());
+    else {
+        iterator = channel.iterator();
+        result = iterator->has_next(frame.get());
+    }
+    CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(result));
+    CHECK(channel.try_send(resource).is_success());
+    resource.reset();
+    CHECK(!lifetime.expired() && !completion->resumes && !dispatcher->queue.empty());
+    job->cancel(nullptr);
+    dispatcher->drain();
+    CHECK(completion->resumes == 1 && completion->failure && deliveries == 1);
+    CHECK(exception_handler->calls == (throwing ? 1 : 0));
+    if (throwing) {
+        CHECK(exception_handler->context == completion->context.get());
+        try { std::rethrow_exception(exception_handler->failure); }
+        catch (const kotlinx::coroutines::internal::UndeliveredElementException& exception) {
+            CHECK(exception.cause() == failure);
+        }
+    }
+    iterator.reset();
+    frame.reset();
+    CHECK(lifetime.expired());
+}
 void channel_receive_prompt_cancellation(bool catching, bool handler, bool throwing = false) {
     using namespace kotlinx::coroutines::channels;
     int deliveries = 0, calls = 0;
@@ -537,6 +588,8 @@ int main() {
         }
         channel_receive_borrowed_pointer(false);
         channel_receive_borrowed_pointer(true);
+        for (int kind = 0; kind < 3; ++kind)
+            for (bool throwing : {false, true}) direct_receive_prompt_cancellation(kind, throwing);
         undelivered_exception_contract();
         conflated_channel_contract();
         channel_without_handler_contract();
