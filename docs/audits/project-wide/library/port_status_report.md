@@ -235,9 +235,9 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 191 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
 | 192 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | - | 0 | 1007.8 |
 | 193 | `sync.Mutex` | `sync.Mutex` | 0.23 | 11/16 matched (target 20) | `Mutex`, `MutexImpl::CancellableContinuationWithOwner::tryResume`, `MutexImpl::CancellableContinuationWithOwner::resume`, `MutexImpl::SelectInstanceWithOwner::trySelect`, `MutexImpl::SelectInstanceWithOwner::selectInRegistrationPhase` | 2/4 matched (target 2) | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` | - | 7 | 72007.7 |
-| 194 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | - | 0 | 207.6 |
-| 195 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
-| 196 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.25 | 18/19 matched (target 42) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | - | 1 | 12507.5 |
+| 194 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 18/19 matched (target 42) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | - | 1 | 12507.6 |
+| 195 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | - | 0 | 207.6 |
+| 196 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
 | 197 | `internal.Merge` | `internal.Merge` | 0.26 | 9/9 matched (target 30) | _none_ | 3/3 matched (target 8) | _none_ | - | 0 | 1001207.4 |
 | 198 | `sync.Semaphore` | `sync.Semaphore` | 0.26 | 18/21 matched (target 45) | `Semaphore`, `SemaphoreAndMutexImpl::acquire`, `SemaphoreAndMutexImpl::acquire` | 4/4 matched (target 9) | _none_ | - | 3 | 32507.4 |
 | 199 | `internal.LimitedDispatcher` | `internal.LimitedDispatcher` | 0.27 | 9/10 matched (target 12) | `CoroutineDispatcher::namedOrThis` | 2/2 matched (target 3) | _none_ | - | 1 | 11207.3 |
@@ -617,9 +617,9 @@ These files need significant work:
 - `native.CoroutineContext` -> `coroutines.UndispatchedCoroutine` (0.22, 6 deps)
 - `selects.SelectOld` -> `selects.SelectOld` (0.22)
 - `sync.Mutex` -> `sync.Mutex` (0.23)
+- `internal.ChannelFlow` -> `internal.ChannelFlow` (0.24)
 - `internal.Synchronized.common` -> `internal.SynchronizedObject` (0.24)
 - `common.CancellableContinuationImpl` -> `coroutines.ContinuationState` (0.25)
-- `internal.ChannelFlow` -> `internal.ChannelFlow` (0.25)
 - `internal.Merge` -> `internal.Merge` (0.26, 1 deps)
 - `sync.Semaphore` -> `sync.Semaphore` (0.26)
 - `internal.LimitedDispatcher` -> `internal.LimitedDispatcher` (0.27)

@@ -2297,9 +2297,9 @@ Every matched file is listed below with function and type symbol parity.
 ### 173. internal.ChannelFlow
 
 - **Target:** `internal.ChannelFlow`
-- **Similarity:** 0.25
+- **Similarity:** 0.24
 - **Dependents:** 0
-- **Priority Score:** 12507.5
+- **Priority Score:** 12507.6
 - **Functions:** 18/19 matched (target 42)
 - **Missing functions:** `ChannelFlowOperator::toString`
 - **Types:** 6/6 matched (target 7)
