@@ -800,7 +800,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7310 / 7437 lines (98%)
+**Documentation line amount:** 7315 / 7437 lines (98%)
 
 Documentation gaps (>20%), complete list:
 
