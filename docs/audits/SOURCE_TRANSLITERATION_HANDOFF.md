@@ -6,6 +6,19 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** c57aa777 implements local alias binding in
+NativeSuspendLowering.cpp:335,462,1002. Each actual alias declaration receives a
+unique frame name; type uses follow declaration identity and spill types retain
+canonical cv-qualified identity. qualified_locals adds chained/typedef aliases
+and nested shadowing across suspension. Ordinary strict source syntax exits 0;
+strict lowering syntax exits 1 in dependency headers, with no source-local
+diagnostics. Fresh plugin build exits 2 in dependency headers. The older plugin
+rejects the fixture's local alias. No fresh runtime validation exists. Root
+CMake frontend/LLVM integration was reviewed again. Full local class and nested
+invoke lexical binding remain incomplete. Read RESUME_ADDRESS_SOURCE_REPAIR.md's
+new top section. Both full-root scans exit 0 and leave generated reports unchanged.
+The full transliteration/state-machine goal remains active.
+
 **Latest builder continuation:** 776cc877 replaces all remaining FlowBuilders
 manual frames/macros with source collection bodies. Concrete ranges now live in
 Builders.cpp; function/container/iterator generic bodies remain in the header.

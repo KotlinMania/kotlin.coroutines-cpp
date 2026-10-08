@@ -1,5 +1,47 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Local alias binding continuation
+
+Source checkpoint c57aa777 extends the same Native-derived frame lowering.
+LocalDeclarationPopupLowering.kt:39-117 was reread with CompilerFrameLowering.cpp
+and NativeSuspendLowering.cpp. Kotlin preserves declaration bindings when moving
+local declarations; C++ type aliases additionally introduce no nominal type or
+runtime object. This adaptation does not implement Kotlin's entire popup phase.
+
+NativeSuspendLowering.cpp:1002 now accepts actual TypedefNameDecl declarations,
+assigns each a unique frame alias and emits its canonical underlying type.
+The type-location visitor at :335 rewrites alias uses by declaration identity,
+including nested shadowing. Spill storage at :462 canonicalizes local alias
+spellings while retaining the actual type and cv-qualification. Lambda capture
+initializers retain their existing traversal boundary; separate invoke bodies
+remain part of the incomplete lexical declaration integration.
+
+qualified_locals.cpp:51-86 uses chained aliases, a typedef, const/volatile types
+and a nested same-named int alias before and after actual suspension. It retains
+the existing immovable object identity, repeated suspension, static initialization,
+completion, immediate/resumed failure and cancellation checks.
+
+Strict ordinary C++ source syntax exits 0. Strict direct compiler translation-unit
+syntax with unlimited errors exits 1 on LLVM/Clang dependency headers, with no
+diagnostics located in NativeSuspendLowering.cpp. Fresh CMake frontend build exits
+2 in dependency headers. The installed older frontend exits 1 at the original
+non-variable declaration rejection. No fresh executable validates this change.
+Receipts under build/ir-recovery: local-alias-source-syntax.log,
+local-alias-lowering-syntax.log, local-alias-plugin-build.log and
+local-alias-fixture.log. No warning suppression or system-header workaround was
+added. Local nominal classes, inherited alias scope in separately lowered invokes
+and local-class/lambda template namespace integration remain unresolved.
+
+Root CMakeLists.txt:108-115 and cmake/Modules/KotlinxCoroutines.cmake:110-113 were
+reviewed again: core/tests retain frontend plus LLVM injection when an external
+frontend is selected. No CMake source change was needed for this binding repair.
+Both exact required full-root scans exit 0 with no concurrent source edits;
+receipts are local-alias-library-deep.log and local-alias-compiler-deep.log.
+Generated reports remain unchanged. Library: 832/2918 matched bodies, 359/560
+types, body similarity 0.26, 123 scoring failures. Compiler: 592/7657 matched
+bodies, 174/1727 types, body similarity 0.36, 24 failures. Those measurements do
+not establish execution or completion of the local declaration pipeline.
+
 Source commits d7feb4fb and a4e0c319 continue the active compiler state-machine
 translation. The pinned LocalDeclarationPopupLowering.kt, CoroutinesVarSpillingLowering.kt
 and consumed IrToBitcode.kt:2281-2337 were read with the frontend/frame importer,
