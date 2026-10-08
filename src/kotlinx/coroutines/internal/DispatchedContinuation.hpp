@@ -348,7 +348,7 @@ public:
  * [doYield] indicates whether current continuation is yielding (to provide fast-path if event-loop is empty).
  * Returns `true` if execution of continuation was queued (trampolined) or `false` otherwise.
  */
-    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedContinuation.kt:296-318
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedContinuation.kt:293-312
     // NOTE(port): Source private generic extension remains in the template header.
     template<typename Block>
     bool execute_unconfined(const Result<T>& cont_state, int mode, bool do_yield, Block&& block) {
