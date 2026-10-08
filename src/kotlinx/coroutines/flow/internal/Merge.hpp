@@ -9,6 +9,7 @@
  */
 
 #include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
+#include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/sync/Semaphore.hpp"
 #include "kotlinx/coroutines/Job.hpp"
@@ -43,8 +44,8 @@ void* collect_merge_child(std::function<void*(Continuation<void*>*)> collect,
     std::shared_ptr<Semaphore> semaphore, std::shared_ptr<Continuation<void*>> completion);
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:21-33
-// NOTE(port): The source collector lambda needs public element bindings here;
-// cancel/join and all concrete suspended algorithms live in Merge.cpp.
+// NOTE(port): The source collector lambda implements the typed FlowCollector ABI;
+// its generic definition must remain available to each element instantiation.
 template <typename T, typename R>
 class TransformLatestCollector final : public FlowCollector<T>,
     public std::enable_shared_from_this<TransformLatestCollector<T, R>> {
@@ -67,16 +68,19 @@ public:
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
     void* emit(T value, Continuation<void*>* completion) override {
-        auto owner = this->shared_from_this();
-        auto argument = std::make_shared<T>(std::move(value));
-        return transform_latest_emit(previous_flow_,
-            [owner, argument] { owner->launch_next(std::move(*argument)); },
-            kotlinx::coroutines::internal::retain_continuation(completion));
+        return emit(std::move(value), kotlinx::coroutines::internal::retain_continuation(completion));
     }
 
-private:
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:29-31
-    void launch_next(T value) {
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
+    [[clang::annotate("suspend")]]
+    void* emit(T value, std::shared_ptr<Continuation<void*>> completion) {
+        auto owner = this->shared_from_this();
+        if (previous_flow_) {
+            previous_flow_->cancel(std::make_exception_ptr(ChildCancelledException()));
+            dsl::suspend(previous_flow_->join(completion.get()));
+        }
+        // NOTE(port): std::function copies its closure; this owner retains the
+        // actual moved element without requiring that the element be copyable.
         auto argument = std::make_shared<T>(std::move(value));
         // Do not pay for dispatch here, it's never necessary.
         previous_flow_ = kotlinx::coroutines::launch(
@@ -86,8 +90,10 @@ private:
                     CoroutineScope*, std::shared_ptr<Continuation<void*>> completion) -> void* {
                     return transform(collector, std::move(*argument), completion.get());
                 }));
+        return nullptr;
     }
 
+private:
     const std::shared_ptr<Flow<T>> flow_;
     const TransformType transform_;
     FlowCollector<R>* const collector_;
@@ -130,7 +136,8 @@ protected:
         assert((dynamic_cast<SendingCollector<R>*>(collector) != nullptr));
         auto owner = this->weak_from_this().lock();
         dsl::suspend(collect_in_scope([flow = this->upstream(), transform = transform_, collector](
-            CoroutineScope* scope, std::shared_ptr<Continuation<void*>> continuation) -> void* {
+            CoroutineScope* scope, std::shared_ptr<Continuation<void*>> continuation)
+            __attribute__((annotate("suspend"))) -> void* {
             auto receiver = std::make_shared<TransformLatestCollector<T, R>>(flow, transform, collector, scope);
             return receiver->collect(std::move(continuation));
         }, completion.get()));
@@ -173,51 +180,6 @@ public:
     [[clang::annotate("suspend")]]
     void* collect_to(ProducerScope<T>* scope,
                      std::shared_ptr<Continuation<void*>> completion) override {
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:51-71
-        // NOTE(port): Only the typed collector bindings stay in this header.
-        class MergeCollector final : public FlowCollector<std::shared_ptr<Flow<T>>>,
-                                     public std::enable_shared_from_this<MergeCollector> {
-        public:
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:51-54
-            MergeCollector(std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> flow,
-                           int concurrency, ProducerScope<T>* scope,
-                           const std::shared_ptr<Continuation<void*>>& completion)
-                : flow_(std::move(flow)), scope_(scope), semaphore_(create_semaphore(concurrency)),
-                  collector_(std::make_shared<SendingCollector<T>>(scope)),
-                  job_(std::dynamic_pointer_cast<Job>(completion->get_context()->get(Job::type_key))) {}
-
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:55-70
-            void* collect(Continuation<void*>* continuation) {
-                return flow_->collect(this, continuation);
-            }
-
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:55-70
-            void* emit(std::shared_ptr<Flow<T>> inner, Continuation<void*>* completion) override {
-                auto owner = this->shared_from_this();
-                return acquire_and_launch_merge_inner(job_, semaphore_,
-                    [owner, inner = std::move(inner)] { owner->launch_inner(inner); },
-                    kotlinx::coroutines::internal::retain_continuation(completion));
-            }
-
-        private:
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:63-69
-            void launch_inner(std::shared_ptr<Flow<T>> inner) {
-                kotlinx::coroutines::launch(scope_, EmptyCoroutineContext::instance(), CoroutineStart::DEFAULT,
-                    std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)>(
-                        [inner = std::move(inner), collector = collector_, semaphore = semaphore_](
-                            CoroutineScope*, std::shared_ptr<Continuation<void*>> completion) -> void* {
-                            return collect_merge_child([inner, collector](Continuation<void*>* frame) {
-                                return inner->collect(collector.get(), frame);
-                            }, semaphore, std::move(completion));
-                        }));
-            }
-
-            const std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> flow_;
-            ProducerScope<T>* const scope_;
-            const std::shared_ptr<Semaphore> semaphore_;
-            const std::shared_ptr<SendingCollector<T>> collector_;
-            const std::shared_ptr<Job> job_;
-        };
         auto owner = this->weak_from_this().lock();
         auto receiver = std::make_shared<MergeCollector>(flow_, concurrency_, scope, completion);
         dsl::suspend(receiver->collect(completion.get()));
@@ -230,6 +192,66 @@ public:
     }
 
 private:
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:51-71
+    // NOTE(port): The generic FlowCollector binding is lifted out of the
+    // suspend body, as Native lowering requires local declaration lifting.
+    class MergeCollector final : public FlowCollector<std::shared_ptr<Flow<T>>>,
+                                 public std::enable_shared_from_this<MergeCollector> {
+    public:
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:51-54
+        MergeCollector(std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> flow,
+                       int concurrency, ProducerScope<T>* scope,
+                       const std::shared_ptr<Continuation<void*>>& completion)
+            : flow_(std::move(flow)), scope_(scope), semaphore_(create_semaphore(concurrency)),
+              collector_(std::make_shared<SendingCollector<T>>(scope)),
+              job_(std::dynamic_pointer_cast<Job>(completion->get_context()->get(Job::type_key))) {}
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:55-70
+        void* collect(Continuation<void*>* continuation) {
+            return flow_->collect(this, continuation);
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:55-70
+        void* emit(std::shared_ptr<Flow<T>> inner, Continuation<void*>* completion) override {
+            return emit(std::move(inner), kotlinx::coroutines::internal::retain_continuation(completion));
+        }
+
+        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:55-70
+        [[clang::annotate("suspend")]]
+        void* emit(std::shared_ptr<Flow<T>> inner, std::shared_ptr<Continuation<void*>> completion) {
+            auto owner = this->shared_from_this();
+            /*
+             * We launch a coroutine on each emitted element and the only potential
+             * suspension point in this collector is semaphore.acquire that rarely suspends,
+             * so we manually check for cancellation to propagate it to the upstream in time.
+             */
+            if (job_) ensure_active(*job_);
+            dsl::suspend(semaphore_->acquire(completion.get()));
+            kotlinx::coroutines::launch(scope_, EmptyCoroutineContext::instance(), CoroutineStart::DEFAULT,
+                std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)>(
+                    [inner = std::move(inner), collector = collector_, semaphore = semaphore_](
+                        CoroutineScope*, std::shared_ptr<Continuation<void*>> completion)
+                        __attribute__((annotate("suspend"))) -> void* {
+                        try {
+                            dsl::suspend(inner->collect(collector.get(), completion.get()));
+                        } catch (...) {
+                            semaphore->release(); // Release concurrency permit
+                            throw;
+                        }
+                        semaphore->release(); // Release concurrency permit
+                        return nullptr;
+                    }));
+            return nullptr;
+        }
+
+    private:
+        const std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> flow_;
+        ProducerScope<T>* const scope_;
+        const std::shared_ptr<Semaphore> semaphore_;
+        const std::shared_ptr<SendingCollector<T>> collector_;
+        const std::shared_ptr<Job> job_;
+    };
+
     const std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> flow_;
     const int concurrency_;
 };
