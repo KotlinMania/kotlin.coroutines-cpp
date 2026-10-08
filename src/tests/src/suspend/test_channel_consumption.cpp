@@ -945,6 +945,11 @@ void channel_flow_surface_contract() {
         [](flow::FlowCollector<int>*) {}));
     auto operation = std::make_shared<flow::internal::ChannelFlowOperatorImpl<int>>(upstream);
     CHECK(operation->fuse() == operation.get());
+    CHECK(operation->fuse(EmptyCoroutineContext::instance()) == operation.get());
+    std::unique_ptr<flow::Flow<int>> buffered(operation->fuse(EmptyCoroutineContext::instance(), 3));
+    auto* buffered_channel_flow = dynamic_cast<flow::internal::ChannelFlow<int>*>(buffered.get());
+    CHECK(buffered_channel_flow && buffered_channel_flow->capacity() == 3);
+    CHECK(buffered_channel_flow->on_buffer_overflow() == BufferOverflow::SUSPEND);
     CHECK(operation->drop_channel_operators() == upstream.get());
     auto collect = operation->get_collect_to_fun();
     CHECK(static_cast<bool>(collect));
@@ -953,6 +958,50 @@ void channel_flow_surface_contract() {
     CHECK(!lifetime.expired());
     collect = {};
     CHECK(lifetime.expired());
+}
+
+// ChannelFlow.kt:54-56,151-152,190-191: the source lambda forwards to
+// the real producer scope, retains its receiver across send suspension, and
+// releases its captures on success, failure and cancellation.
+void channel_flow_collect_lambda_contract() {
+    for (int outcome : {0, 1, 2}) {
+        auto resource = std::make_shared<int>(117);
+        std::weak_ptr<int> resource_lifetime = resource;
+        int calls = 0;
+        auto upstream = flow::unsafe_flow<int>(
+            std::function<void*(flow::FlowCollector<int>*, Continuation<void*>*)>(
+                [resource, &calls](flow::FlowCollector<int>* collector, Continuation<void*>* continuation) -> void* {
+                    CHECK(*resource == 117);
+                    ++calls;
+                    return collector->emit(*resource, continuation);
+                }));
+        auto operation = std::make_shared<flow::internal::ChannelFlowOperatorImpl<int>>(upstream);
+        std::weak_ptr<flow::Flow<int>> lifetime = operation;
+        auto collect = operation->get_collect_to_fun();
+        auto channel = create_channel<int>(0);
+        auto producer = std::make_shared<ProducerCoroutine<int>>(EmptyCoroutineContext::instance(), channel);
+        auto completion = std::make_shared<Completion>();
+        CHECK(intrinsics::is_coroutine_suspended(collect(producer.get(), completion)));
+        CHECK(calls == 1 && !completion->resumes && channel->is_empty());
+        operation.reset();
+        upstream.reset();
+        resource.reset();
+        collect = {};
+        CHECK(!lifetime.expired() && !resource_lifetime.expired());
+        std::exception_ptr failure;
+        if (outcome == 0) {
+            auto value = channel->try_receive();
+            CHECK(value.is_success() && value.get_or_throw() == 117);
+        } else {
+            failure = outcome == 1
+                ? std::make_exception_ptr(std::runtime_error("collect lambda send failed"))
+                : std::make_exception_ptr(CancellationException("collect lambda cancelled"));
+            if (outcome == 1) channel->close(failure);
+            else channel->cancel(failure);
+        }
+        CHECK(completion->resumes == 1 && completion->failure == failure && calls == 1);
+        CHECK(lifetime.expired() && resource_lifetime.expired());
+    }
 }
 
 void list_contract() {
@@ -1066,6 +1115,7 @@ int main() {
         safe_collector_checked_job_cast_contract();
         channel_scope_contract();
         channel_flow_surface_contract();
+        channel_flow_collect_lambda_contract();
         sending_collector_contract();
         combine_contract();
         zip_contract();
