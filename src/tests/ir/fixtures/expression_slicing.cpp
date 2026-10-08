@@ -11,6 +11,7 @@ const volatile int volatile_value = 7;
 int effects = 0;
 int change(int& value) { value = 99; ++effects; return 3; }
 [[clang::annotate("suspend")]] void* external_call(int mode, std::shared_ptr<Continuation<void*>> caller) {
+    if (mode == 4) throw std::runtime_error("immediate-argument");
     if (!mode) return new int(41);
     pending = std::move(caller);
     return intrinsics::get_COROUTINE_SUSPENDED();
@@ -121,12 +122,19 @@ void* default_constructed_result(const DefaultConstructed& item) { return new in
     return new int(item.value);
 }
 int main() {
-    for (int mode = 0; mode != 4; ++mode) {
+    for (int mode = 0; mode != 5; ++mode) {
         argument_destroyed = 0;
         argument_destroy_order.clear();
         auto done = std::make_shared<Done>();
-        auto result = owning_arguments(mode, done);
-        if (!mode) {
+        void* result = nullptr;
+        try { result = owning_arguments(mode, done); }
+        catch (const std::runtime_error&) {
+            assert(mode == 4);
+            done->resume_with(Result<void*>::failure(std::current_exception()));
+        }
+        if (mode == 4) {
+            assert(done->calls == 1 && done->failed && !done->cancelled);
+        } else if (!mode) {
             std::unique_ptr<int> box(static_cast<int*>(result));
             assert(*box == 85 && done->calls == 0);
         } else {
