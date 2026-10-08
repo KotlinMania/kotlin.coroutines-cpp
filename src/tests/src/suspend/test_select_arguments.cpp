@@ -417,6 +417,31 @@ void conflated_channel_contract() {
         CHECK(exception.cause() == failure && undelivered == "closed original value");
         CHECK(exception.suppressed_exceptions().size() == 1 && exception.suppressed_exceptions()[0] == closing);
     }
+    ConflatedBufferedChannel<std::shared_ptr<int>> oldest(1, BufferOverflow::DROP_OLDEST,
+        [&](auto element) { CHECK(*element == 99); std::rethrow_exception(failure); });
+    auto dropped = std::make_shared<int>(99);
+    std::weak_ptr<int> dropped_lifetime = dropped;
+    CHECK(oldest.try_send(dropped).is_success());
+    dropped.reset();
+    try { oldest.try_send(std::make_shared<int>(100)); CHECK(false); }
+    catch (const internal::UndeliveredElementException& exception) { CHECK(exception.cause() == failure); }
+    CHECK(dropped_lifetime.expired());
+    CHECK(*oldest.try_receive().get_or_throw() == 100);
+    for (bool repeated : {false, true}) {
+        std::vector<int> called;
+        BufferedChannel<int> cancelled(2, [&](int element) {
+            called.push_back(element);
+            std::rethrow_exception(element == 2 || repeated ? failure : closing);
+        });
+        CHECK(cancelled.try_send(1).is_success() && cancelled.try_send(2).is_success());
+        try { cancelled.cancel(); CHECK(false); }
+        catch (const internal::UndeliveredElementException& exception) {
+            CHECK(exception.cause() == failure);
+            CHECK(exception.suppressed_exceptions().size() == (repeated ? 0 : 1));
+            if (!repeated) CHECK(exception.suppressed_exceptions()[0] == closing);
+        }
+        CHECK(called == std::vector<int>({2, 1}));
+    }
     for (auto overflow : {BufferOverflow::DROP_OLDEST, BufferOverflow::DROP_LATEST}) {
         ConflatedBufferedChannel<std::shared_ptr<int>> channel(1, overflow);
         auto resource = std::make_shared<int>(97);
