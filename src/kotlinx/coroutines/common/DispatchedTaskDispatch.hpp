@@ -32,7 +32,7 @@ inline void resume_with_stack_trace(Continuation<T>& continuation, std::exceptio
     continuation.resume_with(Result<T>::failure(internal::recover_stack_trace(exception, &continuation)));
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:131-135
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:129-133
 template<typename T>
 void DispatchedTask<T>::handle_fatal_exception(std::exception_ptr exception) {
     CoroutinesInternalError reason(
@@ -43,10 +43,10 @@ void DispatchedTask<T>::handle_fatal_exception(std::exception_ptr exception) {
     handle_coroutine_exception(*delegate->get_context(), std::make_exception_ptr(reason));
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:77-116
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:77-109
 template<typename T>
 void DispatchedTask<T>::run() {
-    assert(resume_mode != MODE_UNINITIALIZED);
+    assert(resume_mode != MODE_UNINITIALIZED); // should have been set before dispatching
     try {
         auto dispatched_delegate = std::dynamic_pointer_cast<internal::DispatchedContinuation<T>>(get_delegate());
         // NOTE(port): Kotlin's checked cast fails; a plain delegate is not a fallback.
@@ -124,7 +124,7 @@ inline void run_unconfined_event_loop(DispatchedTask<T>* task, EventLoop& event_
     event_loop.decrement_use_count(true);
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:166-178
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:167-178
 template<typename T>
 static void resume_unconfined(DispatchedTask<T>* task) {
     auto event_loop = ThreadLocalEventLoop::get_event_loop();
@@ -140,7 +140,7 @@ static void resume_unconfined(DispatchedTask<T>* task) {
     }
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:138-159
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:136-154
 template<typename T>
 void dispatch(DispatchedTask<T>* task, int mode) {
     assert(mode != MODE_UNINITIALIZED);
@@ -153,18 +153,22 @@ void dispatch(DispatchedTask<T>* task, int mode) {
         auto dispatcher = dispatched->dispatcher;
         auto context = dispatched->get_context();
         if (internal::safe_is_dispatch_needed(*dispatcher, *context)) {
+            // dispatch directly using this instance's Runnable implementation
             internal::safe_dispatch(*dispatcher, *context, task->shared_task());
         } else {
             resume_unconfined(task);
         }
     } else {
+        // delegate is coming from 3rd-party interceptor implementation (and does not support cancellation)
+        // or undispatched mode was requested
         resume(task, delegate, undispatched);
     }
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:161-170
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:156-165
 template<typename T>
 void resume(DispatchedTask<T>* task, std::shared_ptr<Continuation<T>> delegate, bool undispatched) {
+    // This resume is never cancellable. The result is always delivered to delegate continuation.
     auto state = task->take_state();
     auto exception = task->get_exceptional_result(state);
 

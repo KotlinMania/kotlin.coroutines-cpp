@@ -33,7 +33,7 @@ static constexpr int MODE_ATOMIC = 0;
  *
  * **DO NOT CHANGE THE CONSTANT VALUE**. It is being into the user code from [suspendCancellableCoroutine].
  */
-// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:23-23
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:22-22
 static constexpr int MODE_CANCELLABLE = 1;
 
 /**
@@ -41,21 +41,21 @@ static constexpr int MODE_CANCELLABLE = 1;
  * Note, that implementation of cancellability checks mode via [Int.isCancellableMode] extension;
  * implementation of reuse checks mode via [Int.isReusableMode] extension.
  */
-// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:30-30
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:29-29
 static constexpr int MODE_CANCELLABLE_REUSABLE = 2;
 
 /**
  * Undispatched mode for [CancellableContinuation.resumeUndispatched].
  * It is used when the thread is right, but it needs to be marked with the current coroutine.
  */
-// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:36-36
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:35-35
 static constexpr int MODE_UNDISPATCHED = 4;
 
 /**
  * Initial mode for [DispatchedContinuation] implementation, should never be used for dispatch, because it is always
  * overwritten when continuation is resumed with the actual resume mode.
  */
-// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:42-42
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:41-41
 static constexpr int MODE_UNINITIALIZED = -1;
 
 inline bool is_cancellable_mode(int mode) {
@@ -129,8 +129,8 @@ public:
         return state.exception_or_null();
     }
 
-    // Kotlin: final override fun run()
-    void run() override;
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:77-109
+    void run() override final;
 
     /**
      * Machinery that handles fatal exceptions in kotlinx.coroutines.
@@ -150,7 +150,7 @@ public:
      * Fatal exception handling can be intercepted with [CoroutineExceptionHandler] element in the context of
      * a failed coroutine, but such exceptions should be reported anyway.
      */
-    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:131-135
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:129-133
     void handle_fatal_exception(std::exception_ptr exception);
 };
 
@@ -161,6 +161,11 @@ void dispatch(DispatchedTask<T>* task, int mode);
 // Kotlin: internal fun <T> DispatchedTask<T>.resume(delegate: Continuation<T>, undispatched: Boolean)
 template<typename T>
 void resume(DispatchedTask<T>* task, std::shared_ptr<Continuation<T>> delegate, bool undispatched);
+
+class EventLoop;
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:180-200
+template<typename T, typename Block>
+inline void run_unconfined_event_loop(DispatchedTask<T>* task, EventLoop& event_loop, Block&& block);
 
 namespace internal {
 

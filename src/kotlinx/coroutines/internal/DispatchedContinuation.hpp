@@ -341,46 +341,34 @@ public:
             "]";
     }
 
-    void run() override {
-        DispatchedTask<T>::run();
-    }
-
 public:
-    bool execute_unconfined(
-        const Result<T>& cont_state,
-        int mode,
-        bool do_yield,
-        std::function<void()> block
-    ) {
-        assert(mode != MODE_UNINITIALIZED);
+    /**
+ * Executes given [block] as part of current event loop, updating current continuation
+ * mode and state if continuation is not resumed immediately.
+ * [doYield] indicates whether current continuation is yielding (to provide fast-path if event-loop is empty).
+ * Returns `true` if execution of continuation was queued (trampolined) or `false` otherwise.
+ */
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedContinuation.kt:295-315
+    // NOTE(port): Source private generic extension remains in the template header.
+    template<typename Block>
+    bool execute_unconfined(const Result<T>& cont_state, int mode, bool do_yield, Block&& block) {
+        assert(mode != MODE_UNINITIALIZED); // invalid execution mode
         auto event_loop = ThreadLocalEventLoop::get_event_loop();
-        if (!event_loop) {
-            block();
-            return false;
-        }
+        // If we are yielding and unconfined queue is empty, we can bail out as part of fast path
         if (do_yield && event_loop->is_unconfined_queue_empty()) return false;
         if (event_loop->is_unconfined_loop_active()) {
+            // When unconfined loop is active -- dispatch continuation for execution to avoid stack overflow
             state_ = cont_state;
             this->resume_mode = mode;
-            auto self = this->shared_from_this();
-            event_loop->dispatch_unconfined(
-                std::shared_ptr<SchedulerTask>(self, static_cast<SchedulerTask*>(self.get())));
-            return true;
+            event_loop->dispatch_unconfined(this->shared_task());
+            return true; // queued into the active loop
+        } else {
+            // Was not active -- run event loop until all unconfined tasks are executed
+            run_unconfined_event_loop(this, *event_loop, std::forward<Block>(block));
+            return false;
         }
-
-        event_loop->increment_use_count(true);
-        try {
-            block();
-            while (true) {
-                if (!event_loop->process_unconfined_event()) break;
-            }
-            event_loop->decrement_use_count(true);
-        } catch (...) {
-            this->handle_fatal_exception(std::current_exception());
-            event_loop->decrement_use_count(true);
-        }
-        return false;
     }
+
 };
 
 // Kotlin: internal fun CoroutineDispatcher.safeDispatch(...)
