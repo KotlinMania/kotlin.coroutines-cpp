@@ -6,6 +6,21 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Current callable/attribute continuation — 2026-10-08:** From d63d98ba,
+LlvmCallable, function/pointer/declaration/definition operations and their actual
+attribute providers are translated. Calls and invokes preserve provider attributes;
+external declaration copying retains all attributes while call sites retain the
+source enum/integer subset. Lazy LLVM properties preserve source snapshots.
+ConstValue/ConstPointer and GEP/extract operations supply further storage
+prerequisites. Typed FunctionGenerationContext borrows the actual definition;
+conditional blocks now retain source location ranges. CMake registers the three
+new implementations in the existing LLVM targets. No configure/build/test/scan
+was run. Continue signatures/attributes, exception handlers and CodeGenerator's
+actual call/frame/root-update operations, then VariableManager and the connected
+expression driver. Signature-based constructors and bridge debug metadata are
+still absent. See RESUME_ADDRESS_SOURCE_REPAIR.md's first section. The full
+goal remains active; acceptance stays deferred until the translation is ready.
+
 **Current LLVM memory/location continuation — 2026-10-08:** The continuation
 from 1da27774 translates parameter reads, loads/stores with optional ordering
 and alignment, location descriptors/ranges, recursive inline debug metadata,

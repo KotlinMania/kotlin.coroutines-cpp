@@ -1,7 +1,50 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## LLVM callable and attribute dependency translation — 2026-10-08
+
+The continuation after d63d98ba translates the callable dependency used by
+CodeGenerator.call and Native reference updates. LlvmCallable.hpp/.cpp mirror
+LlvmCallable.kt:11-103: actual function types/values, object-return metadata,
+synchronized lazy properties, call/invoke emission with provider attributes,
+constant/callback conversion, function/pointer/declaration/definition classes,
+nounwind lookup, parameter range checks, landingpads, basic blocks, block
+addresses and subprogram attachment. LLVM operands remain compilation-owned;
+the explicitly shared provider retains its policy. No runtime function or
+object-return convention is inferred from pointer shape.
+
+LlvmFunctionPrototype.cpp:10,23,94,99 ports the actual empty provider and lazy
+external copier from LlvmFunctionPrototype.kt:24-92. Function, return and
+parameter indices preserve the signed -1..parameter-count walk. Declaration
+attributes are copied in full; call-site lists filter through LLVMIsEnumAttribute,
+as upstream does. The two empty provider methods are the exact source defaults.
+LlvmUtils.hpp/.cpp translates ConstValue, ConstPointer and constant indexed
+pointers from LlvmUtils.kt:18-43, using actual LLVM constants. The owning LLVM
+context supplies int32 operands at the existing LLVM boundary.
+
+CodeGenerator.cpp:77 binds a borrowed actual LlvmFunction.Definition. Typed
+parameter and block-address operations use it. basic_block_in_function at :156
+ports source block creation and location registration. gep/struct_gep/
+extract_value at :300,304,308 port CodeGenerator.kt:1035-1042. Conditional blocks
+at :312,334 now carry the current start/end locations from source position(),
+closing the preceding source-location dependency at those consumers.
+The production injector still enters through its LLVM operand adapter; the
+normalized typed compiler driver remains untranslated.
+
+The three new implementations are registered in the existing shared-LLVM
+kxs-inject, KotlinxCoroutinePass and kxs_codegen_test targets. Their synchronized
+lazy snapshots use the explicit Threads::Threads dependency. No configure,
+build, test, AST emission or deep scan was run. Signature-based constructors,
+LlvmFunctionSignature/attribute kinds/prototypes and bridge-function debug
+metadata still need their source dependencies. These are recorded gaps, with
+no substitute bodies or declarations presented as finished implementations.
+Next work remains CodeGenerator.call/callRaw, exception handlers, actual frame
+allocation and Native root-update bindings, VariableManager and the connected
+typed expression/initializer emitter. The full translation goal remains active.
+
 ## LLVM memory and source-location translation — 2026-10-08
+
+References in this section describe checkpoint d63d98ba.
 
 The continuation after 1da27774 translates CodeGenerator.kt's param, load,
 store, optional ordering/alignment, source-location map and builder debug

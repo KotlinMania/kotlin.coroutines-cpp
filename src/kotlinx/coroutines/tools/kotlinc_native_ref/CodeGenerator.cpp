@@ -1,5 +1,5 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:74-78,390-393,616-621,673-678,720-732,754-758,890-907,948-964,1001-1011,1208-1262,1264-1276,1342-1347,1461-1463,1505-1558,1566-1599
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:74-78,390-393,616-621,667-678,720-732,754-758,890-907,948-964,1001-1011,1035-1042,1208-1262,1264-1276,1342-1347,1461-1463,1505-1558,1566-1599
 #include "CodeGenerator.hpp"
 #include <llvm-c/DebugInfo.h>
 #include <map>
@@ -73,6 +73,11 @@ FunctionGenerationContext::FunctionGenerationContext(LLVMValueRef function, bool
     : function_(function), context_(LLVMGetModuleContext(LLVMGetGlobalParent(function))),
       contain_location_debug_info_(contain_location_debug_info), debug_locations_(std::make_unique<DebugLocationState>()),
       current_position_holder_(std::make_unique<PositionHolder>(*this)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:591-600
+FunctionGenerationContext::FunctionGenerationContext(const LlvmFunction::Definition& function, bool contain_location_debug_info)
+    : FunctionGenerationContext(function.as_callback(), contain_location_debug_info) {
+    definition_ = &function;
+}
 // NOTE(port): Supplied compiler policy, rather than inferred LLVM metadata.
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/ConfigChecks.kt:30-30
 bool FunctionGenerationContext::should_contain_location_debug_info() const { return contain_location_debug_info_; }
@@ -147,6 +152,13 @@ void FunctionGenerationContext::update(LLVMBasicBlockRef block, LocationInfo* st
     if (!start_location) return;
     debug_locations_->locations[block] = std::make_shared<LocationInfoRange>(LocationInfoRange{start_location, end_location});
 }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:667-671
+LLVMBasicBlockRef FunctionGenerationContext::basic_block_in_function(const std::string& name, LocationInfo* location_info) {
+    const auto block = definition_ ? definition_->add_basic_block(context_, name)
+        : LLVMAppendBasicBlockInContext(context_, function_, name.c_str());
+    update(block, location_info, location_info);
+    return block;
+}
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:673-678
 LLVMBasicBlockRef FunctionGenerationContext::basic_block(const std::string& name) {
     return basic_block(name, nullptr, nullptr);
@@ -182,6 +194,7 @@ std::shared_ptr<LocationInfoRange> FunctionGenerationContext::position() const {
 }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:720-720
 LLVMValueRef FunctionGenerationContext::param(int index) const {
+    if (definition_) return definition_->param(index);
     return LLVMGetParam(function_, index);
 }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:722-726
@@ -234,11 +247,12 @@ LLVMValueRef FunctionGenerationContext::cond_br(LLVMValueRef condition, LLVMBasi
     current_position_holder_->set_after_terminator();
     return result;
 }
-// NOTE(port): Inline LlvmFunction.Definition's LLVM value operation at this
-// boundary; preserve the function binding instead of deriving it from the label.
+// NOTE(port): The LLVM operand adapter retains its existing function binding;
+// typed compiler callers bind the actual translated LlvmFunction.Definition.
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:962-964
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:98-99
 LLVMValueRef FunctionGenerationContext::block_address(LLVMBasicBlockRef block) {
+    if (definition_) return definition_->block_address(block);
     return LLVMBlockAddress(function_, block);
 }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1001
@@ -282,17 +296,30 @@ LLVMValueRef FunctionGenerationContext::icmp_u_gt(LLVMValueRef arg0, LLVMValueRe
 LLVMValueRef FunctionGenerationContext::icmp_u_ge(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
     return LLVMBuildICmp(builder(), LLVMIntUGE, arg0, arg1, name.c_str());
 }
-// NOTE(port): Source LocationInfo maps remain unported at this LLVM boundary.
-// Block creation retains the bound function and Kotlin's default block name.
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1035-1036
+LLVMValueRef FunctionGenerationContext::gep(LLVMTypeRef type, LLVMValueRef base, LLVMValueRef index, const std::string& name) {
+    return LLVMBuildGEP2(builder(), type, base, &index, 1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1038-1039
+LLVMValueRef FunctionGenerationContext::struct_gep(LLVMTypeRef type, LLVMValueRef base, int index, const std::string& name) {
+    return LLVMBuildStructGEP2(builder(), type, base, index, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1041-1042
+LLVMValueRef FunctionGenerationContext::extract_value(LLVMValueRef aggregate, int index, const std::string& name) {
+    return LLVMBuildExtractValue(builder(), aggregate, index, name.c_str());
+}
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1208-1235
 LLVMValueRef FunctionGenerationContext::if_then_else(LLVMValueRef condition, LLVMValueRef then_value,
     const std::function<LLVMValueRef()>& else_block) {
     const auto result_type = LLVMTypeOf(then_value);
-    const auto bb_exit = basic_block();
+    const auto source_position = position();
+    const auto current_position = position();
+    const auto end_position = current_position ? current_position->end : nullptr;
+    const auto bb_exit = basic_block("label_", end_position);
     const auto result_phi = appending_to<LLVMValueRef>(bb_exit, [&](FunctionGenerationContext& context) {
         return context.phi(result_type);
     });
-    const auto bb_else = basic_block();
+    const auto bb_else = basic_block("label_", source_position ? source_position->start : nullptr, end_position);
     cond_br(condition, bb_exit, bb_else);
     assign_phis({{result_phi, then_value}});
     appending_to<void>(bb_else, [&](FunctionGenerationContext&) {
@@ -303,11 +330,12 @@ LLVMValueRef FunctionGenerationContext::if_then_else(LLVMValueRef condition, LLV
     position_at_end(bb_exit);
     return result_phi;
 }
-// NOTE(port): LocationInfo maps are not supplied by this LLVM operand boundary.
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1237-1250
 void FunctionGenerationContext::if_then(LLVMValueRef condition, const std::function<void()>& then_block) {
-    const auto bb_exit = basic_block();
-    const auto bb_then = basic_block();
+    const auto source_position = position();
+    const auto end_position = source_position ? source_position->end : nullptr;
+    const auto bb_exit = basic_block("label_", end_position);
+    const auto bb_then = basic_block("label_", end_position);
     cond_br(condition, bb_then, bb_exit);
     appending_to<void>(bb_then, [&](FunctionGenerationContext&) {
         then_block();

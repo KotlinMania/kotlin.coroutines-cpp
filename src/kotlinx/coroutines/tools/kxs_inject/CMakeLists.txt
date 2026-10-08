@@ -4,6 +4,7 @@ project(kxs_inject LANGUAGES CXX C)
 # The plugin uses the selected compiler's LLVM development package.
 # An unrelated source build cannot supply its runtime or registry.
 find_package(LLVM CONFIG REQUIRED)
+find_package(Threads REQUIRED)
 message(STATUS "Building kxs-inject with LLVM ${LLVM_PACKAGE_VERSION}")
 
 # Plugins must share the compiler's LLVM runtime and registry.
@@ -34,9 +35,13 @@ target_compile_features(kxs_codegen_test PRIVATE cxx_std_20)
 target_compile_options(kxs_codegen_test PRIVATE -UNDEBUG)
 target_link_libraries(kxs_codegen_test PRIVATE LLVM)
 
-# Actual descriptor contracts and annotation storage used by source IR symbols.
+# Translated LLVM callables and actual descriptor contracts used by source IR.
 foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
+    target_link_libraries(${KXS_IR_TARGET} PRIVATE Threads::Threads)
     target_sources(${KXS_IR_TARGET} PRIVATE
+        ../kotlinc_native_ref/LlvmFunctionPrototype.cpp
+        ../kotlinc_native_ref/LlvmCallable.cpp
+        ../kotlinc_native_ref/LlvmUtils.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrVisitorDispatch.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.cpp
@@ -123,7 +128,6 @@ target_compile_options(kxs_int_array_test PRIVATE -UNDEBUG)
 add_test(NAME kxs_int_array_contract COMMAND kxs_int_array_test)
 
 # Native primitive atomic algorithms required by the compiler's lazy lock.
-find_package(Threads REQUIRED)
 add_executable(kxs_atomic_int_test ../kotlinc_native_ref/AtomicIntContractTest.cpp
     ../kotlinc_native_ref/kotlin/concurrent/atomics/Atomics.cpp)
 target_compile_features(kxs_atomic_int_test PRIVATE cxx_std_20)
