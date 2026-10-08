@@ -17,6 +17,7 @@
 #include "kotlinx/coroutines/channels/BufferOverflow.hpp"
 #include "kotlinx/coroutines/internal/Symbol.hpp"
 #include "kotlinx/coroutines/internal/SystemProps.hpp"
+#include "kotlinx/coroutines/internal/OnUndeliveredElement.hpp"
 #include <memory>
 #include <exception>
 #include <functional>
@@ -158,13 +159,8 @@ constexpr int CHANNEL_BUFFERED = -2;
  */
 constexpr int CHANNEL_OPTIONAL = -3;
 
-/**
- * Line 20-22: Handler for elements that were sent to a channel but were not
- * delivered to the consumer. This can happen when elements are dropped due to
- * buffer overflow or when operations are cancelled.
- */
-template <typename E>
-using OnUndeliveredElement = std::function<void(E)>;
+// Transliterated from: kotlinx-coroutines-core/common/src/channels/Channel.kt:12-12
+using kotlinx::coroutines::internal::OnUndeliveredElement;
 
 // =============================================================================
 // =============================================================================

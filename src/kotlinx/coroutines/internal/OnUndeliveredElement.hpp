@@ -11,14 +11,52 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace kotlinx::coroutines::internal {
 
+// NOTE(port): The C++ callable binding retains the element-text operation only
+// when a handler is installed. A null Kotlin callback needs no such operation.
+template<typename E>
+class UndeliveredElementHandlerBinding {
+public:
+    UndeliveredElementHandlerBinding() noexcept = default;
+    UndeliveredElementHandlerBinding(std::nullptr_t) noexcept {}
+
+    template<typename F>
+        requires (!std::is_same_v<std::remove_cvref_t<F>, UndeliveredElementHandlerBinding> &&
+                  std::is_invocable_r_v<void, F&, E>)
+    UndeliveredElementHandlerBinding(F&& handler)
+        : handler_(std::forward<F>(handler)), element_text_(&format_element) {}
+
+    explicit operator bool() const noexcept { return static_cast<bool>(handler_); }
+    void operator()(E element) const { handler_(std::move(element)); }
+    std::string element_to_string(const E& element) const {
+        if (!handler_) throw std::bad_function_call();
+        return element_text_(element);
+    }
+
+private:
+    static std::string format_element(const E& element) {
+        std::ostringstream text;
+        text << std::boolalpha;
+        if constexpr (requires { text << element.to_string(); }) text << element.to_string();
+        else if constexpr (requires { text << to_string(element); }) text << to_string(element);
+        else if constexpr (requires { text << element; }) text << element;
+        else static_assert(sizeof(E) == 0,
+            "An undelivered-element handler requires an element string operation");
+        return text.str();
+    }
+
+    std::function<void(E)> handler_;
+    std::string (*element_text_)(const E&) = nullptr;
+};
+
 // Transliterated from: kotlinx-coroutines-core/common/src/internal/OnUndeliveredElement.kt:6-6
 template<typename E>
-using OnUndeliveredElement = std::function<void(E)>;
+using OnUndeliveredElement = UndeliveredElementHandlerBinding<E>;
 
 /** Internal exception thrown when an undelivered-element handler throws. */
 // Transliterated from: kotlinx-coroutines-core/common/src/internal/OnUndeliveredElement.kt:32-36
@@ -48,13 +86,8 @@ UndeliveredElementException* call_undelivered_element_catching_exception(
         if (undelivered_element_exception && undelivered_element_exception->cause() != exception) {
             undelivered_element_exception->add_suppressed(exception);
         } else {
-            // NOTE(port): Standalone value carriers supply their C++ string representation.
-            std::ostringstream message;
-            message << std::boolalpha << "Exception in undelivered element handler for ";
-            if constexpr (requires { element.to_string(); }) message << element.to_string();
-            else if constexpr (requires { to_string(element); }) message << to_string(element);
-            else message << element;
-            return new UndeliveredElementException(message.str(), exception);
+            return new UndeliveredElementException(
+                "Exception in undelivered element handler for " + handler.element_to_string(element), exception);
         }
     }
     return undelivered_element_exception;
