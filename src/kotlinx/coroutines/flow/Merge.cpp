@@ -1,17 +1,6 @@
-/**
- * @file Merge.cpp
- * @brief Implementation of Merge operators.
- *
- * NOTE: The detailed API documentation, KDocs, and class definitions are located
- * in the companion header file: `include/kotlinx/coroutines/flow/operators/Merge.hpp`.
- */
-
+// port-lint: source kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
+/** Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt */
 #include "kotlinx/coroutines/flow/Merge.hpp"
 
-namespace kotlinx {
-    namespace coroutines {
-        namespace flow {
-            // Template implementations are in the header.
-        } // namespace flow
-    } // namespace coroutines
-} // namespace kotlinx
+// NOTE(port): Public generic definitions remain in the co-located Merge.hpp
+// so every consumer can instantiate its actual flow element types.

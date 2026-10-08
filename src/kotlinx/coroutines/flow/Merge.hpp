@@ -1,5 +1,5 @@
 #pragma once
-// port-lint: source flow/operators/Merge.kt
+// port-lint: source kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
 /**
  * @file Merge.hpp
  * @brief Flow merge operators: merge, flatten_merge, transform_latest, map_latest
@@ -9,6 +9,7 @@
 
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowBuilders.hpp"
+#include "kotlinx/coroutines/flow/Transform.hpp"
 #include "kotlinx/coroutines/flow/internal/Merge.hpp"
 #include "kotlinx/coroutines/internal/SystemProps.hpp"
 #include <stdexcept>
@@ -25,13 +26,23 @@ using kotlinx::coroutines::flow::internal::ChannelFlowMerge;
 using kotlinx::coroutines::flow::internal::ChannelLimitedFlowMerge;
 using kotlinx::coroutines::flow::internal::ChannelFlowTransformLatest;
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:110-113
+template <typename T>
+void* collect(std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(T, Continuation<void*>*)> action, Continuation<void*>* completion);
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:103-106
+template <typename T>
+void* emit_all(FlowCollector<T>* collector, std::shared_ptr<Flow<T>> upstream,
+    Continuation<void*>* completion);
+
 /**
  * Name of the property that defines the value of DEFAULT_CONCURRENCY.
  *
  * Kotlin source: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
  *   public const val DEFAULT_CONCURRENCY_PROPERTY_NAME: String = "kotlinx.coroutines.flow.defaultConcurrency"
  */
-constexpr const char* DEFAULT_CONCURRENCY_PROPERTY_NAME = "kotlinx.coroutines.flow.defaultConcurrency";
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:19
+inline constexpr const char* DEFAULT_CONCURRENCY_PROPERTY_NAME = "kotlinx.coroutines.flow.defaultConcurrency";
 
 /**
  * Default concurrency limit used by flatten_merge and flat_map_merge.
@@ -39,7 +50,8 @@ constexpr const char* DEFAULT_CONCURRENCY_PROPERTY_NAME = "kotlinx.coroutines.fl
  * Kotlin source: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
  *   public val DEFAULT_CONCURRENCY: Int = systemProp(DEFAULT_CONCURRENCY_PROPERTY_NAME, 16, 1, Int.MAX_VALUE)
  */
-inline int DEFAULT_CONCURRENCY = kotlinx::coroutines::internal::system_prop_int(
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:26-30
+inline const int DEFAULT_CONCURRENCY = kotlinx::coroutines::internal::system_prop_int(
     DEFAULT_CONCURRENCY_PROPERTY_NAME,
     16,
     1,
@@ -51,65 +63,17 @@ inline int DEFAULT_CONCURRENCY = kotlinx::coroutines::internal::system_prop_int(
  *
  * Inner flows are collected by this operator *sequentially*.
  *
- * The collection frame retains the upstream and its collector through suspension.
- * Each inner collection retains its flow until completion, then collection proceeds to the next flow.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:78-80
 template <typename T>
 std::shared_ptr<Flow<T>> flatten_concat(std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> upstream) {
-    return internal::unsafe_flow<T>([upstream](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
-        class CollectFrame final : public ContinuationImpl,
-                                   public FlowCollector<std::shared_ptr<Flow<T>>> {
-            std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> upstream_;
-            FlowCollector<T>* downstream_;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
-            void* _label = nullptr;
-        public:
-            CollectFrame(std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> upstream,
-                         FlowCollector<T>* downstream, Continuation<void*>* completion)
-                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                  upstream_(std::move(upstream)), downstream_(downstream) {}
-            void retain() { self_ref_ = shared_from_this(); }
-            void* invoke_suspend(Result<void*> result) override {
-                coroutine_begin(this)
-                coroutine_yield(this, upstream_->collect(this, this));
-                coroutine_end(this)
-            }
-            void* emit(std::shared_ptr<Flow<T>> inner, Continuation<void*>* completion) override {
-                class EmitFrame final : public ContinuationImpl {
-                    std::shared_ptr<Flow<T>> inner_;
-                    FlowCollector<T>* downstream_;
-                    std::shared_ptr<BaseContinuationImpl> self_ref_;
-                    void* _label = nullptr;
-                public:
-                    EmitFrame(std::shared_ptr<Flow<T>> inner, FlowCollector<T>* downstream,
-                              Continuation<void*>* completion)
-                        : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                          inner_(std::move(inner)), downstream_(downstream) {}
-                    void retain() { self_ref_ = shared_from_this(); }
-                    void* invoke_suspend(Result<void*> result) override {
-                        coroutine_begin(this)
-                        coroutine_yield(this, inner_->collect(downstream_, this));
-                        coroutine_end(this)
-                    }
-                protected:
-                    void release_intercepted() override {
-                        ContinuationImpl::release_intercepted();
-                        self_ref_.reset();
-                    }
-                };
-                auto frame = std::make_shared<EmitFrame>(std::move(inner), downstream_, completion);
-                frame->retain();
-                return frame->start(Result<void*>::success(nullptr));
-            }
-        protected:
-            void release_intercepted() override {
-                ContinuationImpl::release_intercepted();
-                self_ref_.reset();
-            }
-        };
-        auto frame = std::make_shared<CollectFrame>(upstream, collector, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+    return internal::unsafe_flow<T>([upstream = std::move(upstream)](
+        FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
+        return collect<std::shared_ptr<Flow<T>>>(upstream,
+            std::function<void*(std::shared_ptr<Flow<T>>, Continuation<void*>*)>(
+                [collector](std::shared_ptr<Flow<T>> value, Continuation<void*>* continuation) -> void* {
+                    return emit_all<T>(collector, std::move(value), continuation);
+                }), completion);
     });
 }
 
@@ -117,6 +81,7 @@ std::shared_ptr<Flow<T>> flatten_concat(std::shared_ptr<Flow<std::shared_ptr<Flo
  * Merges the given flows into a single flow without preserving an order of elements.
  * All flows are merged concurrently, without limit on the number of simultaneously collected flows.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:91-103
 template <typename T>
 std::shared_ptr<Flow<T>> merge(std::vector<std::shared_ptr<Flow<T>>> flows) {
     return std::make_shared<ChannelLimitedFlowMerge<T>>(flows);
@@ -128,6 +93,7 @@ std::shared_ptr<Flow<T>> merge(std::vector<std::shared_ptr<Flow<T>>> flows) {
  * Kotlin source: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
  *   public fun <T> merge(vararg flows: Flow<T>): Flow<T> = flows.asIterable().merge()
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:122
 template <typename T>
 std::shared_ptr<Flow<T>> merge(std::initializer_list<std::shared_ptr<Flow<T>>> flows) {
     return merge<T>(std::vector<std::shared_ptr<Flow<T>>>(flows));
@@ -136,6 +102,7 @@ std::shared_ptr<Flow<T>> merge(std::initializer_list<std::shared_ptr<Flow<T>>> f
 /**
  * Flattens the given flow of flows into a single flow with a [concurrency] limit.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:154-157
 template <typename T>
 std::shared_ptr<Flow<T>> flatten_merge(std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> upstream, int concurrency = DEFAULT_CONCURRENCY) {
     // Kotlin: require(concurrency > 0) { "Expected positive concurrency level, but had $concurrency" }
@@ -159,92 +126,62 @@ std::shared_ptr<Flow<T>> flatten_merge(std::shared_ptr<Flow<std::shared_ptr<Flow
  *   public fun <T, R> Flow<T>.flatMapConcat(transform: suspend (value: T) -> Flow<R>): Flow<R> =
  *       map(transform).flattenConcat()
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:42-43
 template <typename T, typename R>
 std::shared_ptr<Flow<R>> flat_map_concat(
     std::shared_ptr<Flow<T>> upstream,
-    std::function<std::shared_ptr<Flow<R>>(T)> transform
-) {
-    // Upstream:
-    //   public fun <T, R> Flow<T>.flatMapConcat(
-    //       transform: suspend (value: T) -> Flow<R>): Flow<R> =
-    //       map(transform).flattenConcat()
-    //
-    // The `transform` callable's suspension is carried through the Continuation ABI by the
-    // inner MapCollector.emit chain; downstream collectors receive each transformed Flow
-    // and concat-collect in order via flatten_concat.
-    auto mapped = flow<std::shared_ptr<Flow<R>>>([upstream, transform](FlowCollector<std::shared_ptr<Flow<R>>>* collector, Continuation<void*>* cont) -> void* {
-        class MapCollector : public FlowCollector<T> {
-        public:
-            MapCollector(FlowCollector<std::shared_ptr<Flow<R>>>* downstream, std::function<std::shared_ptr<Flow<R>>(T)> fn)
-                : downstream_(downstream), fn_(std::move(fn)) {}
+    std::function<std::shared_ptr<Flow<R>>(T)> transform) {
+    return flatten_concat<R>(map<T, std::shared_ptr<Flow<R>>>(std::move(upstream), std::move(transform)));
+}
 
-            void* emit(T value, Continuation<void*>* continuation) override {
-                return downstream_->emit(fn_(value), continuation);
-            }
-
-        private:
-            FlowCollector<std::shared_ptr<Flow<R>>>* downstream_;
-            std::function<std::shared_ptr<Flow<R>>(T)> fn_;
-        };
-
-        MapCollector mapper(collector, transform);
-        return upstream->collect(&mapper, cont);
-    });
-
-    return flatten_concat<R>(mapped);
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:42-43
+// NOTE(port): The transform returns an owned std::shared_ptr<Flow<R>> result box;
+// map unboxes and deletes it through its existing Continuation ABI projection.
+template <typename T, typename R>
+std::shared_ptr<Flow<R>> flat_map_concat(
+    std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(T, Continuation<void*>*)> transform) {
+    return flatten_concat<R>(map<T, std::shared_ptr<Flow<R>>>(std::move(upstream), std::move(transform)));
 }
 
 /**
- * Transforms elements emitted by the original flow by applying transform, that returns another flow,
- * and then merging and flattening these flows.
+ * Transforms elements by applying transform sequentially, then merges the returned
+ * flows with a concurrency limit. It is a shortcut for map(transform).flatten_merge(concurrency).
  *
- * Kotlin source: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt
- *   public fun <T, R> Flow<T>.flatMapMerge(concurrency: Int = DEFAULT_CONCURRENCY, transform: suspend (value: T) -> Flow<R>): Flow<R> =
- *       map(transform).flattenMerge(concurrency)
+ * Applications of flow_on, buffer and produce_in after this operator fuse with
+ * its concurrent merging so that one configured channel executes the merge.
+ * At most concurrency flows are collected at the same time.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:66-70
 template <typename T, typename R>
 std::shared_ptr<Flow<R>> flat_map_merge(
-    std::shared_ptr<Flow<T>> upstream,
-    int concurrency,
-    std::function<std::shared_ptr<Flow<R>>(T)> transform
-) {
-    // Upstream:
-    //   public fun <T, R> Flow<T>.flatMapMerge(
-    //       concurrency: Int = DEFAULT_CONCURRENCY,
-    //       transform: suspend (value: T) -> Flow<R>): Flow<R> =
-    //       map(transform).flattenMerge(concurrency)
-    //
-    // The transform callable's suspension is carried through the Continuation ABI by the
-    // inner MapCollector.emit chain; flatten_merge consumes the resulting Flow-of-Flows
-    // with the given concurrency budget.
-    auto mapped = flow<std::shared_ptr<Flow<R>>>([upstream, transform](FlowCollector<std::shared_ptr<Flow<R>>>* collector, Continuation<void*>* cont) -> void* {
-        class MapCollector : public FlowCollector<T> {
-        public:
-            MapCollector(FlowCollector<std::shared_ptr<Flow<R>>>* downstream, std::function<std::shared_ptr<Flow<R>>(T)> fn)
-                : downstream_(downstream), fn_(std::move(fn)) {}
-
-            void* emit(T value, Continuation<void*>* continuation) override {
-                return downstream_->emit(fn_(value), continuation);
-            }
-
-        private:
-            FlowCollector<std::shared_ptr<Flow<R>>>* downstream_;
-            std::function<std::shared_ptr<Flow<R>>(T)> fn_;
-        };
-
-        MapCollector mapper(collector, transform);
-        return upstream->collect(&mapper, cont);
-    });
-
-    return flatten_merge<R>(mapped, concurrency);
+    std::shared_ptr<Flow<T>> upstream, int concurrency,
+    std::function<std::shared_ptr<Flow<R>>(T)> transform) {
+    return flatten_merge<R>(map<T, std::shared_ptr<Flow<R>>>(std::move(upstream), std::move(transform)), concurrency);
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:66-70
+template <typename T, typename R>
+std::shared_ptr<Flow<R>> flat_map_merge(
+    std::shared_ptr<Flow<T>> upstream, int concurrency,
+    std::function<void*(T, Continuation<void*>*)> transform) {
+    return flatten_merge<R>(map<T, std::shared_ptr<Flow<R>>>(std::move(upstream), std::move(transform)), concurrency);
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:66-70
 template <typename T, typename R>
 std::shared_ptr<Flow<R>> flat_map_merge(
     std::shared_ptr<Flow<T>> upstream,
-    std::function<std::shared_ptr<Flow<R>>(T)> transform
-) {
-    return flat_map_merge<T, R>(upstream, DEFAULT_CONCURRENCY, std::move(transform));
+    std::function<std::shared_ptr<Flow<R>>(T)> transform) {
+    return flat_map_merge<T, R>(std::move(upstream), DEFAULT_CONCURRENCY, std::move(transform));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Merge.kt:66-70
+template <typename T, typename R>
+std::shared_ptr<Flow<R>> flat_map_merge(
+    std::shared_ptr<Flow<T>> upstream,
+    std::function<void*(T, Continuation<void*>*)> transform) {
+    return flat_map_merge<T, R>(std::move(upstream), DEFAULT_CONCURRENCY, std::move(transform));
 }
 
 /**
@@ -301,3 +238,7 @@ std::shared_ptr<Flow<R>> flat_map_latest(
 } // namespace flow
 } // namespace coroutines
 } // namespace kotlinx
+
+// NOTE(port): Definitions for the source collect/emit_all extensions follow the
+// merge declarations because Collect.hpp also consumes transform_latest.
+#include "kotlinx/coroutines/flow/Collect.hpp"
