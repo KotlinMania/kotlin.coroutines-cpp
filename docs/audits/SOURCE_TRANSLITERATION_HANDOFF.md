@@ -1,94 +1,342 @@
 # Source transliteration handoff — 2026-10-07
 
-Sydney changed the immediate focus: finish faithful Kotlin-to-C++ source
-translation first. This supersedes IR identity/scopes as the current first
-priority. Docking-ring/compiler/MLX integration resumes after this source phase;
-its required behavior and completed evidence are preserved.
+This is the current continuation handoff, updated at Sydney's explicit request
+following an interrupted ChannelFlow source-edit turn. Read this document and
+inspect the current worktree before continuing. Older versions remain in Git.
 
-## Current assignment
+## Objective and authority
 
-Port the actual kotlinx.coroutines sources under tmp/kotlinx.coroutines to
-src/kotlinx/coroutines, including complete functions/classes, parameters/defaults,
-algorithms and comments. Read each matching Kotlin and C++ source in full before
-editing. Preserve line order and naming rules wherever possible. Public generic
-APIs may require templates; keep non-public logic in .cpp when that is possible
-without inventing replacement abstractions. Suspend signatures retain the current
-Continuation ABI. No stubs, placeholders, cheap aliases or fallback behavior.
+Workspace: `/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp`.
+Branch: `solace/sharing-transliteration`.
+Source checkpoint: `ca037a93` (work in progress, described below).
+The app goal was verified active while preparing this handoff. It has no token
+budget. Do not mark it complete or blocked: meaningful source work remains.
+The preceding implementation turn made concrete progress; this handoff turn
+preserves the interrupted state rather than completing the implementation.
 
-A compile failure is evidence of unfinished integration, not justification for
-simplifying an upstream algorithm. Source transliteration is the primary work;
-build repairs, compiler/stdlib dependency expansion and MLX demos come later.
-Translate genuine dependencies that belong to the library source without turning
-them into an independent compiler or collection project. Existing normal C++ and
-Native compatibility requirements remain constraints.
+**Read the active objective file before doing more work:**
+`/Users/sydney/.codex/attachments/c6cc8eb3-eae6-4392-8ed6-5beb312b1205/goal-objective.md`.
+The older objective file is
+`/Users/sydney/.codex/attachments/053db042-23fc-41ff-a092-3d43960bcaca/goal-objective.md`.
+The active file's historical HEAD, dirty counts and measurements are stale;
+its source-first assignment and product requirements remain binding.
 
-## Starting evidence and repair order
+The immediate assignment is faithful Kotlin-to-C++ translation of the whole
+kotlinx.coroutines library. Library source translation takes priority over
+compiler infrastructure, interoperability development, measurement enhancements
+and administrative work. Ground truth is `tmp/kotlinx.coroutines`; use
+`tmp/kotlin` only for an actual consumed compiler/stdlib dependency. Preserve
+classes, functions, algorithms, signatures, defaults, branch order and meaningful
+comments/KDoc. The user wants the two files to look like the same thing in
+different languages. Similar-purpose implementations do not satisfy the goal.
 
-Use project-wide/library/high_priority_ports.md and NEXT_ACTIONS.md for live
-priorities, with deep_symbol_inventory.txt and deep_transliteration_evidence.txt
-for function/type gaps and measurement limitations. The latest library scan
-covers 354 source files against 587 paired units/763 physical C++ files. These
-counts identify the inventory; they are not completion estimates. Both full-root
---deep scans are required after relevant source changes.
+Read repository `AGENTS.md` and workspace
+`/Volumes/stuff/Projects/kotlinmania/AGENTS.md`. User instructions override
+historical skill recipes. The applied skill is
+`/Users/sydney/.codex/skills/kotlinmania-porting/SKILL.md`; it keeps source
+translation in the main agent loop. No subagents are authorized for this task.
 
-The highest current production fanout groups are flow.Channels, flow.Flow and
-internal.Concurrent. Start by reading the full Channels.kt and its current
-Channels.hpp/.cpp, then reconcile actual function bodies rather than treating
-12/12 name matches as completion. The required function similarity is currently
-0.23; the corresponding Flow and Concurrent groups are 0.04 and 0.31. Preserve
-these findings and verify differences directly against source. Adjust order when
-the refreshed oracle or actual source evidence warrants it. Tests remain below
-production source in the translation order; Ren owns the separate JobTest card.
+Persistent user constraints:
 
-## Evidence and completion discipline
+- Always commit before changing; preserve unrelated work and Ren's JobTest.
+  Snapshot unfinished changes honestly. Do not stash, reset, clean, create a
+  linked worktree, push or open a PR without the relevant task authorization.
+- No stubs, placeholders, invented helpers/state machines, substitute aliases,
+  fallback algorithms, or TODO/FIXME/XXX/HACK source comments. Genuine empty or
+  identity functions are acceptable only when the matching source has them.
+- Replace manual frames/helpers with compiler lowering and Kotlin-shaped source.
+  Use existing Continuation ABI during source translation. Do not remove real
+  Kotlin continuation classes just because they are continuation classes.
+- No warning suppression. Strict checks retain
+  `-Wall -Wextra -Wpedantic -Werror`.
+- Translate comments and examples as well as code; do not ignore docstrings in
+  ast_distance. Add canonical port-lint file provenance and per-function/class
+  Transliterated from paths and line ranges.
+- Methods/variables snake_case; classes CamelCase; constants uppercase. Public
+  interfaces in headers, concrete private implementations in .cpp; required
+  generic definitions stay available to every instantiation.
+- Preserve C++ ownership. Retaining a borrowed pointer/reference does not adopt
+  it. Erased result boxes need actual owning unbox/free adapters.
+- No question tool; ask ordinary chat only if ambiguity prevents useful work.
+  Give meaningful commentary at least every 60 seconds during ongoing work.
+- Do not call git diff a test, use “pass” as a verdict, or claim symbol presence
+  proves completed source translation.
 
-Every translated class/function retains exact source provenance and copied
-comments. Update API audit/source gap records with actual file:line references.
-Remove banned source comments by implementing the missing behavior. Keep real
-unresolved dependencies explicit in audit evidence; do not present incomplete
-files as complete. Source drafts may remain uncompiled when they faithfully
-translate upstream and consistently follow the repo's conventions.
+Existing Kanban scope: source card `t_8700df29`, umbrella `t_1834dcec`;
+compiler card `t_16bf1579`, tracking audit `t_0dd3c2ad`. Existing source card was
+updated in the preceding turn. Do not create duplicates or dispatch workers.
+The available local command for authorized card updates is:
+`hermes kanban --board kotlinmania comment t_8700df29 --author codex 'message'`.
 
-Use existing source-repair card t_1834dcec as priority 100. Preserve the compiler
-card t_16bf1579 at priority 99 for later integration and the tracking audit
-t_0dd3c2ad at 98. Blocked is a dispatch reservation for this owning Codex chat,
-not a technical decision request. Do not dispatch another worker or overwrite
-Ren's separate workspace.
+## Current interrupted work: resume here
 
-## Preserved compiler stopping point
+Only ChannelFlow.hpp was dirty when Sydney interrupted the implementation to
+request this handoff. It is now safely committed as **ca037a93**, titled
+“Checkpoint direct ChannelFlow suspend calls for handoff”. Its changes are
+unfinished and not covered by refreshed audits/deep measurements yet.
 
-DOCKING_RING_HANDOFF.md retains all twelve completed compiler prerequisites.
-The latest consumed Any? collection conversion bodies are compiled, with ten
-matching Native/C++ allocation observations, but actual collection copying and
-Native ArrayList/ancestry remain unfinished. The later compiler continuation is
-real collection ancestry/ArrayList, followed by actual IR parameter descriptors,
-symbol-owner binding and suspension scopes. Neither full MLX demonstration is
-complete. Do not reopen completed work merely because the larger goal is open.
+Full matching Kotlin `flow/internal/ChannelFlow.kt` and the current C++
+ChannelFlow.hpp/.cpp were read before editing. The pending source change removes
+three uses of the existing collect_channel_flow callable adapter:
 
-Receipt for the source-priority transition:
-build/ir-recovery/source-first-2026-10-07/.
+1. `ChannelFlow<T>::get_collect_to_fun` now returns a lambda that directly calls
+   `collect_to(scope, std::move(completion))`, matching source :54-56. The lambda
+   still captures the actual receiver and an existing shared receiver owner.
+2. `ChannelFlowOperator<S,T>::collect_to` is annotated suspend. It retains an
+   existing receiver owner and the source SendingCollector, directly executes
+   `dsl::suspend(flow_collect(collector.get(), completion.get()))`, and returns
+   erased Unit. The old nested callable/adapter call is removed (source :151-152).
+3. `collect_with_context_undispatched` is annotated suspend, with a trailing
+   owning shared Continuation parameter. It obtains the original-context
+   collector, directly suspends the source with_context_undispatched call and
+   returns erased Unit (source :144-148). Its caller retains the supplied
+   continuation through the existing retain_continuation boundary.
 
-## First Channels source edit
+These edits use existing compiler authoring rather than adding another frame.
+Local owners are intended to survive through generated-frame storage. This has
+NOT been verified at runtime. Inspect actual generated frame lifetime behavior;
+source-authored locals alone do not establish retained ownership or cleanup.
 
-The full 157-line Kotlin source, 371-line C++ header and 16-line C++ source
-were read before edits. markConsumed now uses atomic exchange(true), directly
-matching Kotlin getAndSet(true), and is private as in the source. Five complete
-KDoc blocks are copied verbatim; source ranges include the actual produceIn
-154-157 ending. Redundant constructor casts and an inaccurate translation-unit
-linkage-anchor claim are removed. This is partial source reconciliation, not
-whole-file completion.
+The adapter still exists in ChannelFlow.cpp:58 and in its header declaration.
+One header consumer remains in ChannelFlow<T>::collect. Four further uses are in
+flow/internal/Merge.hpp. Do not delete the adapter until its real consumers are
+translated. Search afresh with `rg -n collect_channel_flow src`.
 
-Next source work: reconcile all twelve actual Kotlin functions and ChannelAsFlow
-against the C++ bodies. additionalToStringProps currently substitutes a numeric
-pointer for actual channel text. The raw collect_to overload discards suspension
-results; compare it with actual ChannelFlow/ProducerScope source before changing
-that boundary. Classify extra ownership/lowering helpers against real source
-contracts rather than treating name inventory matches as complete translation.
+The last investigation was tracing producer-lambda owner retention through
+CoroutineStart/intrinsics before claiming that direct tail forwarding preserves
+captures. Evidence inspected:
 
-A strict syntax-only Clang invocation exits 1 with existing included-header
-unused-parameter errors (first CoroutineContext.hpp:78, then ContinuationImpl).
-The record is a compilation diagnostic, not a test, and no compilation success
-is claimed. Do not divert into warning suppression or compiler repairs. Complete
-source behavior against upstream and keep its uncompiled status visible.
-Evidence: build/ir-recovery/source-first-2026-10-07/channels-source-start.json
-and channels-syntax.log.
+- `intrinsics/Cancellable.cpp:58`: start_coroutine creates the actual continuation
+  and starts its intercepted entry.
+- `intrinsics/IntrinsicsNative.cpp:16-77`: CreatedContinuation and
+  RestrictedCreatedContinuation retain block_ while suspended and clear it in
+  release_intercepted. A local copy keeps captures during inline completion.
+- `internal/ScopeCoroutine.hpp:99-107,149+`: start_undispatched_or_return invokes
+  its supplied block; this needs separate lifetime tracing before replacing the
+  remaining scoped lambda adapter. Do not assume arbitrary temporary closure
+  ownership is implemented by the frontend.
+
+For annotated lambdas, the existing compiler README and fixtures use
+`[] [[suspend]] (...)`, which requires C++23 for front attributes. The library
+uses C++20. A scratch Clang syntax probe of trailing GNU
+`__attribute__((annotate("suspend")))` did not report an attribute syntax error,
+but exited 1 for the unused probe variable; it establishes neither plugin
+lowering nor runtime behavior. No production lambda annotation was added in
+this checkpoint. Read `src/tests/ir/fixtures/suspend_lambda.cpp`,
+`nested_suspend_lambda.cpp` and the frontend README before choosing syntax.
+
+## Current compilation evidence
+
+Fresh strict actual consumer check after ca037a93's source edits:
+`build/ir-recovery/channel-flow-direct-source-consumer.log`, exit **1**.
+The completed tool session was 51560; no process needs polling/restarting.
+No known build, scan or test process remains live from these turns.
+
+Exact command from repository root:
+
+```bash
+/opt/homebrew/opt/llvm/bin/clang++ -std=c++20 \
+  -Wall -Wextra -Wpedantic -Werror -ferror-limit=0 \
+  -I include -I src/kotlinx/coroutines -I src \
+  -fpass-plugin=build/ir-recovery/lib/KotlinxCoroutinePass.so \
+  -Xclang -load -Xclang build/ir-recovery/lib/KotlinxSuspendPlugin.so \
+  -Xclang -add-plugin -Xclang kotlinx-suspend \
+  -fsyntax-only src/tests/src/suspend/test_channel_as_flow_smoke.cpp
+```
+
+The check reused existing frontend/LLVM modules, not freshly rebuilt plugins.
+Diagnostics include unused parameters in JobSupport,
+CancellableContinuationImpl, Select, BufferedChannel and Builders; GNU
+address-of-label errors in source/manual and generated frames; missing
+exception-context `previous` initialization; unresolved generated `T`; and
+“generated frame could not be parsed” at AbstractFlow::collect. A frontend
+remark is discovery evidence, not a completed lowering test. No fresh
+executable/runtime result verifies this checkpoint. Do not rerun old binaries
+and attribute their results to the changed source.
+
+The source-first objective allows faithful uncompiled drafts. Keep compiler
+limitations explicit; do not suppress warnings, restore handwritten frames,
+introduce fallback behavior or drift into a compiler project to get a green
+result. Broader source and lifetime repairs remain possible.
+
+## Last committed and measured ChannelFlow work
+
+Before ca037a93, worktree was clean at 88cb3c0a. Commits:
+
+- **c659aa94**: removed handwritten CollectContinuation from ChannelFlow.cpp,
+  including label, macro yield and self-retention cycle. The existing
+  collect_channel_flow entry is now annotated suspend, calls
+  `dsl::suspend(collect(completion.get()))` and returns nullptr.
+- **ad3cf58f**: intermediate full-root deep refresh after frame removal.
+- **b330b6ee**: restored source val const fields in ChannelFlow, upstream flow
+  in ChannelFlowOperator and retained fields in UndispatchedContextCollector;
+  made ChannelFlowOperatorImpl, UndispatchedContextCollector and ChannelAsFlow
+  final; restored omitted drop-channel-operators and ATOMIC producer KDoc.
+- **1512bda2**: audit/API checkpoint with strict compilation limitations.
+- **88fc085c**, **88cb3c0a**: final reports and corrected reference count.
+
+Receipts:
+`channel-flow-source-authoring-syntax.log` (actual ChannelFlow.cpp, exit 1),
+`channel-flow-authoring-final-consumer.log` (actual consumer, exit 1),
+`channel-flow-authoring-final-{library,compiler}-deep.log` (both exit 0), and
+`channel-flow-authoring-final-source-references.json`, all in build/ir-recovery.
+Reference check: ChannelFlow.hpp 47, ChannelFlow.cpp 12, Channels.hpp 22 ranges
+resolve with valid bounds; no prohibited markers in these files. These are
+reference checks, not fidelity or runtime tests.
+
+Audit: `docs/audits/CHANNEL_FLOW_SCOPE_AND_SPILLS.md`, current checkpoint at top;
+`docs/audits/API_AUDIT.md` has its current row. Historical runtime evidence in
+those documents predates source-authoring migration and cannot certify it.
+
+## Latest measured source state
+
+Reports under `docs/audits/project-wide/{library,compiler}` are authoritative for
+**88cb3c0a**, and stale for ca037a93 until refreshed. Library measurements:
+831/2918 matched bodies, 359/560 types, average body similarity 0.26,
+documentation similarity 0.38, 123 scoring failures. ChannelFlow: 18/19 bodies,
+6/6 types, body similarity 0.24; missing ChannelFlowOperator::toString.
+The target ChannelFlow body inventory fell from 42 to 38 after manual class
+removal. Names matched do not certify source correspondence.
+
+Leading production priorities by fanout remain Flow Channels (65), Flow (28),
+internal Concurrent (14), Native Exceptions (6), Native CoroutineContext (6),
+CoroutineStart (2). Read current high_priority_ports.md, port_status_report.md,
+deep_symbol_inventory.txt and deep_transliteration_evidence.txt. Investigate
+false reports against actual source; do not waive or hide genuine findings.
+
+After relevant source changes, run BOTH exact full-root CLI scans from separate
+report directories, with no source edits while either scan runs:
+
+```bash
+root=/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp
+(cd "$root/docs/audits/project-wide/library" && \
+ "$root/tools/ast_distance/ast_distance" --deep \
+ "$root/tmp/kotlinx.coroutines" kotlin "$root/src" cpp)
+(cd "$root/docs/audits/project-wide/compiler" && \
+ "$root/tools/ast_distance/ast_distance" --deep \
+ "$root/tmp/kotlin" kotlin "$root/src" cpp)
+```
+
+Commit generated evidence before further source changes. Scan completion does
+not certify compiled or executed behavior. Preserve raw missing/zero/provisional
+criteria and errors. Successful name matching is not whole-function translation.
+
+## Earlier changes to preserve
+
+These are partial source repairs, not completed subsystems. Detailed audits are
+the source of exact before-controls, receipts and remaining gaps:
+
+- **FlowBuilders** (fa88e983, 6c79f751, cdb29f5e; final audit bae6bfee): eight
+  imported-flow factory paths use internal::unsafe_flow; public flow constructs
+  SafeFlow. Source final/val declarations restored. CallbackFlowBuilder's
+  handwritten frame removed; source parent suspension then closed-channel check
+  uses IllegalStateException and original diagnostic. Builder classes moved to
+  source flow namespace with inherited protected hooks. Remote-call example
+  moved to the matching suspend overload. Strict consumers/instantiation exit 1.
+  Latest measured Builders 15/23 bodies, 4/4 types, similarity .12. Sequence,
+  array/range types, vector capture identity, other manual as_flow frames,
+  block text and broader examples remain. See FLOW_BUILDERS_SOURCE_REPAIR.md.
+- **Collect/scoped flow** (4ba36029, d532ba30): invented FlowImpl/FlowCollectorImpl
+  removed, scoped_flow uses actual unsafe_flow, CollectFrame replaced with
+  annotated source collection. Channels emit_all_impl owning continuation moved
+  to final argument for frontend recognition. Strict checks remain unsuccessful.
+  See COLLECT_SOURCE_AUTHORING_REPAIR.md and ABSTRACT_FLOW_SOURCE_REPAIR.md.
+- **EventLoop**: source base queue/use-count, thread-local ownership and delay
+  conversions; seven selected base KDocs. Bounded syntax/resource evidence
+  exists. Native factory, base dispatch, custom BlockingEventLoop and broader
+  timers/workers remain incomplete. See EVENT_LOOP_SOURCE_REPAIR.md.
+- **DispatchedTask**: checked casts, original failure precedence, source
+  unconfined-loop/finally, actual Native recovery, final run and 10/10 KDocs.
+  Concrete syntax evidence is bounded. See DISPATCHED_TASK_SOURCE_REPAIR.md.
+- **Native context**: inline callable wrappers preserve move-only captures;
+  genuine Native identity/empty hooks retain source behavior. See
+  NATIVE_CONTEXT_INLINE_SOURCE_REPAIR.md.
+- **Exceptions/context**: actual CancellationException namespace imported from
+  kotlin::coroutines::cancellation; cause/null message retained; source equality
+  and UTF-16 hash; source context namespaces, polymorphic keys, ordering and
+  structural equality. Throwable metadata/text and JobCancellationException
+  to_string remain required. Do not replace them with what()/RTTI/pointer text.
+  See NATIVE_EXCEPTIONS_CONSTRUCTORS.md, NATIVE_JOB_CANCELLATION_EQUALITY.md,
+  STDLIB_COROUTINE_NAMESPACES.md and COROUTINE_CONTEXT_POLYMORPHIC_KEYS.md.
+- **ast_distance documentation scoring**: primary token_cosine includes comment
+  words in source order; documentation is NOT ignored. Separate code-only/body
+  and documentation diagnostics remain distinct. Provenance/markup normalization
+  is bounded; unsupported examples retain findings. Analyzer builds under
+  build/ast-identity; its native/CLI checks succeeded in the recorded repair.
+  Do not claim it cannot rebuild because compiler plugins fail strict checks.
+  See AST_DOCUMENTATION_SCORING_REPAIR.md and tools/ast_distance/README.md.
+
+Other existing source/audit work includes producer cancellation/finally,
+channel receive/select, owned select arguments, timeout, actual Unit/enum text,
+CoroutineStart typed forwarding, builders/scopes and continuation resume/unroll.
+Read their current files and relevant API audit rows before touching them.
+No complete JobSupport/dispatcher/worker/stdlib parity is claimed.
+
+## Designs fully read and product requirements
+
+The user explicitly requested reading these; they were read fully in manageable
+chunks before the most recent source work:
+
+- docs/architecture/docking_ring.md (688 lines)
+- docs/suspension/IR_SUSPEND_LOWERING_SPEC.md (648 lines)
+- docs/architecture/ir_identity_and_scopes.md (835 lines)
+- docs/suspension/CLANG_SUSPEND_EXTRACTION.md
+- docs/suspension/SUSPEND_IMPLEMENTATION.md and README.md
+
+Their compiler priority is subordinate to the newer active source-first objective;
+their eventual product requirements remain binding:
+
+- Ordinary C++ library, plugins and applications build/run with no installed
+  Kotlin compiler/JVM/Native runtime. Normal C++ classes, stdlib values and MLX
+  calls retain actual types and ownership; no Kotlin Any inheritance requirement.
+- Explicit Native boundary uses the actual matching runtime/continuation/result/
+  GC contracts. Only real Kotlin GC objects acquire roots. Borrowed C++ pointers
+  are not owned, rooted Native objects or alternate runtime state.
+- CMake frontend and mandatory LLVM module injection run inside selected Clang,
+  before optimization, using its matching LLVM package. No Python compile
+  launcher, production serialized/reparsed IR or marker runtime fallback.
+- Real IR declaration/symbol-owner identity and CodeContext scope delegation;
+  reads of exact suspension ID declarations resolve actual owning block addresses.
+  Captured fields and return rewrites use actual declarations, not names/indices.
+- Tail calls avoid unnecessary frames; non-tail calls use source state-machine
+  construction, liveness and spill save/restore. Frame label, marker, decision
+  and completion outcome are distinct. Resumed failures are checked before work.
+- Mandatory plugin owns address stores and indirectbr dispatch. Authors do not
+  manually construct frames or save locals. Preserve C++ lifetime/cleanup on
+  repeated suspension, completion, failure and cancellation.
+- Full completion requires BOTH standalone ordinary C++/real MLX GPU execution
+  without Kotlin transitive dependencies and direct Native↔C++ shared-state-machine
+  handoffs with real MLX GPU execution, both directions, identity and cleanup.
+  Scalar, array, callback/StableRef and isolated dispatch tests establish neither.
+
+Later compiler continuation is preserved in DOCKING_RING_HANDOFF.md,
+IR_IDENTITY_DEPENDENCIES.md and IR_HANDOFF_REVIEW.md. Do not translate the entire
+compiler now. Required prerequisites must name their source consumer and return
+back to that consumer. Existing plugin strict rebuild failures remain separate
+from source drafts and analyzer build success.
+
+## Concrete continuation sequence
+
+1. Read active objective and this handoff, inspect status/log and ca037a93 diff.
+   Preserve checkpoint; do not claim its audits/reports/runtime are current.
+2. Complete review of direct producer-lambda capture/continuation ownership and
+   source function correspondence. Inspect IntrinsicsNative/Cancellable/
+   CoroutineStart actual consumers. Fix discovered source differences without
+   adding a manual frame or changing borrowed ownership.
+3. Continue the remaining ChannelFlow::collect source lambda/scoped entry and
+   Merge consumers only after fully reading matching sources and lifetime paths.
+   Remove callable adapter only when no production consumer remains. Keep source
+   declaration/protected hook, diagnostics and KDoc parity visible.
+4. Strictly compile actual changed implementation/instantiations and consumer;
+   record exact failure or execution. Do not suppress warnings or substitute
+   old executable results. Ownership regression fixtures already exist in
+   test_channel_as_flow_smoke and test_channel_consumption; runtime evidence
+   must be rebuilt from the changed source before using it.
+5. Validate provenance bounds/source comments, update API_AUDIT and current
+   CHANNEL_FLOW_SCOPE_AND_SPILLS checkpoint with actual locations and limitations.
+   Refresh both full-root deep reports for ca037a93/final source, inspect outcomes,
+   commit results and update existing source card accurately.
+6. Continue real library source repairs in refreshed oracle order. Keep the
+   whole-library and both eventual product acceptance requirements open.
+
+No user answer, external approval or new agent is needed to continue this work.
