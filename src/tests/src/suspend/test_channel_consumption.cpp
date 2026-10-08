@@ -1244,7 +1244,7 @@ void merge_private_suspension_contract() {
         }
         CHECK(calls == 1 && semaphore->available_permits() == 1 && lifetime.expired());
         // Keeping a terminated continuation alive must not retain its source captures.
-        CHECK(held_frame);
+        CHECK(static_cast<bool>(held_frame));
         held_frame.reset();
     }
 }
