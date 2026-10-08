@@ -29,8 +29,9 @@ void with_lock(ReentrantLock& lock, std::function<void()> action);
 
 // Transliterated from: kotlinx-coroutines-core/native/src/internal/Concurrent.kt:11-11
 template <typename E>
-std::unordered_set<E> identity_set(int expected_size) {
-    // Native HashSet() does not use the expected size.
+std::unordered_set<E> identity_set(int /* expected_size */) {
+    // NOTE(port): Native HashSet() does not read expectedSize. Preserve the
+    // parameter type without introducing an unused C++ local binding.
     return std::unordered_set<E>();
 }
 
