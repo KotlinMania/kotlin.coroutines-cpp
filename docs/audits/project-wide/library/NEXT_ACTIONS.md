@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 820/2918 matched (target 3040) — 28.1%
+- **Function parity:** 825/2918 matched (target 3048) — 28.3%
 - **Class/type parity:** 359/560 matched (target 522) — 64.1%
-- **Combined symbol parity:** 1179/3478 matched (target 3562) — 33.9%
+- **Combined symbol parity:** 1184/3478 matched (target 3570) — 34.0%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -315,19 +315,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 0/3 matched (target 0)
 - **Missing types:** `WorkerDispatcher`, `DisposableBlock`, `MultiWorkerDispatcher`
 
-### 22. common.Job
-
-- **Target:** `coroutines.Job`
-- **Similarity:** 0.10
-- **Dependents:** 0
-- **Priority Score:** 213109.0
-- **Functions:** 5/24 matched (target 20)
-- **Missing functions:** `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelAndJoin`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::ensureActive`, `Job::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke`
-- **Types:** 5/7 matched (target 8)
-- **Missing types:** `DisposableHandle`, `DisposeOnCompletion`
-- **Lint issues:** 1
-
-### 23. flow.FlowInvariantsTest
+### 22. flow.FlowInvariantsTest
 
 - **Target:** `flow.FlowInvariantsTest [STUB]`
 - **Similarity:** 0.00
@@ -341,7 +329,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 14
 - **Lint issues:** 7
 
-### 24. operators.CombineParametersTest
+### 23. operators.CombineParametersTest
 
 - **Target:** `operators.CombineParametersTest [STUB]`
 - **Similarity:** 0.00
@@ -355,7 +343,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 70
 - **Lint issues:** 4
 
-### 25. operators.OnCompletionTest
+### 24. operators.OnCompletionTest
 
 - **Target:** `operators.OnCompletionTest [STUB]`
 - **Similarity:** 0.00
@@ -369,7 +357,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 7
 - **Lint issues:** 3
 
-### 26. operators.DebounceTest
+### 25. operators.DebounceTest
 
 - **Target:** `operators.DebounceTest [STUB]`
 - **Similarity:** 0.00
@@ -382,7 +370,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/19 matched
 - **TODOs:** 16
 
-### 27. operators.SampleTest
+### 26. operators.SampleTest
 
 - **Target:** `operators.SampleTest [STUB]`
 - **Similarity:** 0.00
@@ -395,7 +383,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/19 matched
 - **TODOs:** 6
 
-### 28. sharing.ShareInConflationTest
+### 27. sharing.ShareInConflationTest
 
 - **Target:** `sharing.ShareInConflationTest [STUB]`
 - **Similarity:** 0.00
@@ -409,7 +397,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 6
 - **Lint issues:** 11
 
-### 29. test.CoroutinesTest
+### 28. test.CoroutinesTest
 
 - **Target:** `tests.CoroutinesTest`
 - **Similarity:** 0.32
@@ -423,7 +411,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 6
 - **Lint issues:** 1
 
-### 30. operators.FlowOnTest
+### 29. operators.FlowOnTest
 
 - **Target:** `operators.FlowOnTest [STUB]`
 - **Similarity:** 0.00
@@ -437,7 +425,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 6
 - **Lint issues:** 6
 
-### 31. test.WithContextTest
+### 30. test.WithContextTest
 
 - **Target:** `tests.WithContextTest [STUB]`
 - **Similarity:** 0.00
@@ -451,7 +439,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 43
 - **Lint issues:** 13
 
-### 32. test.WithTimeoutOrNullDurationTest
+### 31. test.WithTimeoutOrNullDurationTest
 
 - **Target:** `tests.WithTimeoutOrNullDurationTest`
 - **Similarity:** 0.00
@@ -465,7 +453,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 22
 - **Lint issues:** 14
 
-### 33. operators.TimeoutTest
+### 32. operators.TimeoutTest
 
 - **Target:** `operators.TimeoutTest [STUB]`
 - **Similarity:** 0.00
@@ -479,7 +467,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 8
 - **Lint issues:** 2
 
-### 34. channels.ProduceTest
+### 33. channels.ProduceTest
 
 - **Target:** `channels.ProduceTest [STUB]`
 - **Similarity:** 0.00
@@ -493,7 +481,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 43
 - **Lint issues:** 1
 
-### 35. operators.BufferConflationTest
+### 34. operators.BufferConflationTest
 
 - **Target:** `operators.BufferConflationTest [STUB]`
 - **Similarity:** 0.00
@@ -506,6 +494,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/17 matched
 - **TODOs:** 27
 - **Lint issues:** 17
+
+### 35. common.Job
+
+- **Target:** `coroutines.Job`
+- **Similarity:** 0.14
+- **Dependents:** 0
+- **Priority Score:** 163108.6
+- **Functions:** 10/24 matched (target 28)
+- **Missing functions:** `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke`
+- **Types:** 5/7 matched (target 8)
+- **Missing types:** `DisposableHandle`, `DisposeOnCompletion`
+- **Lint issues:** 2
 
 ### 36. test.TestCoroutineSchedulerTest
 

@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 820/2918 matched (target 3040) | 28.1% |
+| Function parity | 825/2918 matched (target 3048) | 28.3% |
 | Class/type parity | 359/560 matched (target 522) | 64.1% |
-| Combined symbol parity | 1179/3478 matched (target 3562) | 33.9% |
+| Combined symbol parity | 1184/3478 matched (target 3570) | 34.0% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -205,13 +205,13 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 161 | `operators.Merge` | `flow.Merge` | 0.08 | 8/9 matched (target 23) | `Iterable<Flow<T>>::merge` | 0/0 matched (target 3) | _none_ | - | 1 | 10909.2 |
 | 162 | `flow.StateFlow` | `flow.StateFlow` | 0.09 | 4/19 matched (target 47) | `MutableStateFlow`, `StateFlowSlot::allocateLocked`, `StateFlowSlot::freeLocked`, `StateFlowSlot::makePending`, `StateFlowSlot::takePending`, `StateFlowSlot::awaitPending`, `StateFlowImpl::compareAndSet`, `StateFlowImpl::updateState`, `StateFlowImpl::tryEmit`, `StateFlowImpl::emit`, `StateFlowImpl::resetReplayCache`, `StateFlowImpl::collect`, `StateFlowImpl::createSlot`, `StateFlowImpl::createSlotArray`, `StateFlowImpl::fuse` | 4/4 matched (target 7) | _none_ | - | 15 | 152309.1 |
 | 163 | `operators.Delay` | `flow.Delay` | 0.09 | 6/10 matched (target 9) | `Flow<T>::debounce`, `Flow<T>::debounce`, `Flow<T>::sample`, `Flow<T>::timeoutInternal` | 0/0 matched (target 1) | _none_ | - | 4 | 41009.1 |
-| 164 | `common.Job` | `coroutines.Job` | 0.10 | 5/24 matched (target 20) | `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelAndJoin`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::ensureActive`, `Job::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke` | 5/7 matched (target 8) | `DisposableHandle`, `DisposeOnCompletion` | - | 21 | 213109.0 |
-| 165 | `internal.InlineList` | `internal.InlineList` | 0.10 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | - | 1 | 10309.0 |
-| 166 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
-| 167 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 4) | _none_ | - | 4 | 41608.8 |
-| 168 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
-| 169 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | - | 0 | 808.7 |
-| 170 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.13 | 1/1 matched (target 8) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 2000208.6 |
+| 164 | `internal.InlineList` | `internal.InlineList` | 0.10 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | - | 1 | 10309.0 |
+| 165 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
+| 166 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 4) | _none_ | - | 4 | 41608.8 |
+| 167 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
+| 168 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | - | 0 | 808.7 |
+| 169 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.13 | 1/1 matched (target 8) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 2000208.6 |
+| 170 | `common.Job` | `coroutines.Job` | 0.14 | 10/24 matched (target 28) | `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke` | 5/7 matched (target 8) | `DisposableHandle`, `DisposeOnCompletion` | - | 16 | 163108.6 |
 | 171 | `common.EventLoop.common` | `coroutines.EventLoop.common` | 0.14 | 11/38 matched (target 24) | `EventLoop::limitedParallelism`, `delayToNanos`, `delayNanosToMillis`, `EventLoopImplBase::shutdown`, `EventLoopImplBase::scheduleResumeAfterDelay`, `EventLoopImplBase::scheduleInvokeOnTimeout`, `EventLoopImplBase::processNextEvent`, `EventLoopImplBase::dispatch`, `EventLoopImplBase::enqueue`, `EventLoopImplBase::enqueueImpl`, `EventLoopImplBase::dequeue`, `EventLoopImplBase::enqueueDelayedTasks`, `EventLoopImplBase::closeQueue`, `EventLoopImplBase::schedule`, `EventLoopImplBase::shouldUnpark`, `EventLoopImplBase::scheduleImpl`, `EventLoopImplBase::resetAll`, `EventLoopImplBase::rescheduleAllDelayed`, `EventLoopImplBase::DelayedTask::compareTo`, `EventLoopImplBase::DelayedTask::timeToExecute`, `EventLoopImplBase::DelayedTask::scheduleTask`, `EventLoopImplBase::DelayedTask::dispose`, `EventLoopImplBase::DelayedTask::toString`, `EventLoopImplBase::DelayedResumeTask::run`, `EventLoopImplBase::DelayedResumeTask::toString`, `EventLoopImplBase::DelayedRunnableTask::run`, `EventLoopImplBase::DelayedRunnableTask::toString` | 2/10 matched (target 3) | `Queue`, `EventLoopImplPlatform`, `EventLoopImplBase`, `DelayedTask`, `DelayedResumeTask`, `DelayedRunnableTask`, `DelayedTaskQueue`, `DefaultExecutor` | - | 35 | 354808.6 |
 | 172 | `channels.Broadcast` | `channels.Broadcast` | 0.14 | 3/10 matched (target 11) | `ReceiveChannel<E>::broadcast`, `CoroutineScope::broadcast`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancel`, `BroadcastCoroutine::cancelInternal`, `LazyBroadcastCoroutine::openSubscription`, `LazyBroadcastCoroutine::onStart` | 2/2 matched | _none_ | - | 7 | 71208.6 |
 | 173 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | - | 1 | 11608.5 |
@@ -587,13 +587,13 @@ These files need significant work:
 - `operators.Merge` -> `flow.Merge` (0.08)
 - `flow.StateFlow` -> `flow.StateFlow` (0.09)
 - `operators.Delay` -> `flow.Delay` (0.09)
-- `common.Job` -> `coroutines.Job` (0.10)
 - `internal.InlineList` -> `internal.InlineList` (0.10)
 - `terminal.Collection` -> `flow.Collection` (0.11)
 - `internal.ConcurrentLinkedList` -> `internal.ConcurrentLinkedList` (0.12)
 - `internal.SafeCollector.common` -> `internal.SafeCollector.common` (0.12)
 - `terminal.Collect` -> `flow.Collect` (0.13)
 - `common.CoroutineStart` -> `coroutines.CoroutineStart` (0.13, 2 deps)
+- `common.Job` -> `coroutines.Job` (0.14)
 - `common.EventLoop.common` -> `coroutines.EventLoop.common` (0.14)
 - `channels.Broadcast` -> `channels.Broadcast` (0.14)
 - `channels.BroadcastChannel` -> `channels.BroadcastChannel` (0.15)
@@ -800,7 +800,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7236 / 7437 lines (97%)
+**Documentation line amount:** 7235 / 7437 lines (97%)
 
 Documentation gaps (>20%), complete list:
 
@@ -810,7 +810,7 @@ Documentation gaps (>20%), complete list:
 - `flow.Migration` - 52% gap (216 → 103 lines)
 - `selects.Select` - 28% gap (402 → 291 lines)
 - `operators.Delay` - 45% gap (236 → 130 lines)
-- `common.Job` - 22% gap (477 → 372 lines)
+- `common.Job` - 22% gap (477 → 371 lines)
 - `flow.StateFlow` - 51% gap (196 → 96 lines)
 - `flow.SharedFlow` - 40% gap (245 → 148 lines)
 - `common.EventLoop.common` - 85% gap (99 → 15 lines)

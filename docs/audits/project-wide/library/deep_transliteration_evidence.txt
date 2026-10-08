@@ -4,10 +4,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.364603
-function_name_parity: 0.208333
+translated_ast_cosine: 0.297613
+function_name_parity: 0.416667
 normalized_logic: 0.000000
-documentation_correspondence: 0.009145
+documentation_correspondence: 0.017181
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -111,18 +111,33 @@ Diagnostic: 649: unsupported function_declaration
 Diagnostic: 655: unsupported function_declaration
 Diagnostic: 661: unsupported object_declaration
 Diagnostic: 685: unsupported class_declaration
-Function Job::cancelChildren:519 -> kotlinx::coroutines::cancel_children:486 | normalized logic: 0.000000
+Function Job::cancelAndJoin:509 -> kotlinx::coroutines::cancel_and_join:29 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:job type:job identifier:std type:exceptionptr identifier:cause operator:= node:2 identifier:child node:43 identifier:job identifier:getchildren node:43 identifier:child identifier:cancel identifier:cause
-Function Job::ensureActive:584 -> kotlinx::coroutines::ensure_active:497 | normalized logic: 0.000000
+  Target logic: node:66 identifier:job type:job node:66 type:continuation type:void operator:* identifier:continuation node:5 node:43 identifier:cancelandjoin identifier:job node:43 identifier:internal identifier:retaincontinuation identifier:continuation
+Function Job::cancelChildren:519 -> kotlinx::coroutines::cancel_children:48 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:job type:job node:1 operator:! node:43 identifier:job identifier:isactive identifier:ex identifier:std type:exceptionptr operator:= node:43 identifier:getcancellationexception identifier:job node:1 identifier:ex node:43 identifier:std identifier:rethrowexception identifier:ex node:10 node:43 identifier:std identifier:runtimeerror literal:52:"Job is not active"
-Function NonDisposableHandle::dispose:670 -> kotlinx::coroutines::NonDisposableHandle::dispose:451 | normalized logic: 0.000000
+  Target logic: node:66 identifier:job type:job node:66 identifier:cause identifier:std type:exceptionptr node:2 identifier:child node:43 identifier:job identifier:getchildren node:43 identifier:child identifier:cancel identifier:cause
+Function CoroutineContext::cancel:562 -> kotlinx::coroutines::cancel:69 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:context type:coroutinecontext node:66 identifier:cause identifier:std type:exceptionptr node:1 identifier:job operator:= node:43 identifier:dynamicpointercast identifier:std type:job node:43 identifier:context identifier:get identifier:job identifier:typekey node:43 identifier:job identifier:cancel identifier:cause
+Function Job::ensureActive:584 -> kotlinx::coroutines::ensure_active:53 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:job type:job node:1 operator:! node:43 identifier:job identifier:isactive node:43 identifier:std identifier:rethrowexception node:43 identifier:job identifier:getcancellationexception
+Function CoroutineContext::ensureActive:602 -> kotlinx::coroutines::ensure_active:74 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:context type:coroutinecontext node:1 identifier:job operator:= node:43 identifier:dynamicpointercast identifier:std type:job node:43 identifier:context identifier:get identifier:job identifier:typekey node:43 identifier:ensureactive operator:* identifier:job
+Function Job::cancel:610 -> kotlinx::coroutines::cancel:58 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:job type:job node:66 identifier:message identifier:std type:string node:66 identifier:cause identifier:std type:exceptionptr node:43 identifier:job identifier:cancel node:43 identifier:std identifier:makeexceptionptr node:43 identifier:cancellationexception identifier:message identifier:cause
+Function CoroutineContext::cancelChildren:627 -> kotlinx::coroutines::cancel_children:79 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:context type:coroutinecontext node:66 identifier:cause identifier:std type:exceptionptr node:1 identifier:job operator:= node:43 identifier:dynamicpointercast identifier:std type:job node:43 identifier:context identifier:get identifier:job identifier:typekey node:2 identifier:child node:43 identifier:job identifier:getchildren node:43 identifier:child identifier:cancel identifier:cause
+Function NonDisposableHandle::dispose:670 -> kotlinx::coroutines::NonDisposableHandle::dispose:528 | normalized logic: 0.000000
   Ordered logic sequences are equal
-Function NonDisposableHandle::childCancelled:676 -> kotlinx::coroutines::NonDisposableHandle::child_cancelled:452 | normalized logic: 0.000000
+Function NonDisposableHandle::childCancelled:676 -> kotlinx::coroutines::NonDisposableHandle::child_cancelled:529 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:exceptionptr node:5 literal:53:false
-Function NonDisposableHandle::toString:682 -> kotlinx::coroutines::NonDisposableHandle::to_string:453 | normalized logic: 0.000000
+Function NonDisposableHandle::toString:682 -> kotlinx::coroutines::NonDisposableHandle::to_string:530 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:5 literal:52:"NonDisposableHandle"
 Missing source function: Job::cancel:212
@@ -131,34 +146,32 @@ Missing source function: Job::invokeOnCompletion:366
 Missing source function: Job:390
 Missing source function: Job0:394
 Missing source function: Job::disposeOnCompletion:492
-Missing source function: Job::cancelAndJoin:509
 Missing source function: Job::cancelChildren:526
 Missing source function: Job::cancelChildren:532
-Missing source function: CoroutineContext::cancel:562
 Missing source function: CoroutineContext::cancel:569
-Missing source function: CoroutineContext::ensureActive:602
-Missing source function: Job::cancel:610
 Missing source function: CoroutineContext::cancel:615
-Missing source function: CoroutineContext::cancelChildren:627
 Missing source function: CoroutineContext::cancelChildren:634
 Missing source function: CoroutineContext::cancelChildren:649
 Missing source function: orCancellation:655
 Missing source function: DisposeOnCompletion::invoke:690
-Extra target function: Job::join:22
-Extra target function: kotlinx::coroutines::make_job:31
-Extra target function: kotlinx::coroutines::operator+:77
-Extra target function: kotlinx::coroutines::Job::invoke_on_completion:363
-Extra target function: kotlinx::coroutines::Job::invoke_on_completion:369
-Extra target function: kotlinx::coroutines::Job::key:375
-Extra target function: kotlinx::coroutines::NonDisposableHandle::instance:445
-Extra target function: kotlinx::coroutines::NonDisposableHandle::get_parent:450
-Extra target function: kotlinx::coroutines::non_disposable_handle:460
-Extra target function: kotlinx::coroutines::cancel_and_join_blocking:476
-Extra target function: kotlinx::coroutines::context_is_active:524
-Extra target function: kotlinx::coroutines::context_cancel:536
-Extra target function: kotlinx::coroutines::context_job:550
-Extra target function: kotlinx::coroutines::context_ensure_active:566
-Extra target function: kotlinx::coroutines::context_cancel_children:578
+Extra target function: kotlinx::coroutines::operator+:23
+Extra target function: kotlinx::coroutines::cancel_and_join:34
+Extra target function: kotlinx::coroutines::cancel_and_join_blocking:42
+Extra target function: kotlinx::coroutines::is_active:63
+Extra target function: kotlinx::coroutines::get_job:86
+Extra target function: kotlinx::coroutines::context_is_active:92
+Extra target function: kotlinx::coroutines::context_cancel:93
+Extra target function: kotlinx::coroutines::context_ensure_active:94
+Extra target function: kotlinx::coroutines::context_cancel_children:95
+Extra target function: kotlinx::coroutines::context_job:96
+Extra target function: Job::join:100
+Extra target function: kotlinx::coroutines::make_job:110
+Extra target function: kotlinx::coroutines::Job::invoke_on_completion:440
+Extra target function: kotlinx::coroutines::Job::invoke_on_completion:446
+Extra target function: kotlinx::coroutines::Job::key:452
+Extra target function: kotlinx::coroutines::NonDisposableHandle::instance:522
+Extra target function: kotlinx::coroutines::NonDisposableHandle::get_parent:527
+Extra target function: kotlinx::coroutines::non_disposable_handle:537
 === Emitted target buffer ===
 __ast_distance_unmapped__("file_annotation", "@file:JvmMultifileClass")
 __ast_distance_unmapped__("file_annotation", "@file:JvmName(\"JobKt\")")
@@ -366,7 +379,10 @@ __ast_distance_unmapped__("class_declaration", "private class DisposeOnCompletio
 Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
-MISSING_TARGET_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:509	-	Job::cancelAndJoin
+TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:509	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.cpp:29	Job::cancelAndJoin -> kotlinx::coroutines::cancel_and_join
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
+NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Job.kt:509	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.cpp:34	Job::cancelAndJoin -> kotlinx::coroutines::cancel_and_join
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
 Explicit suspension contracts reviewed: 1
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlinx-coroutines-core/common/src/Delay.kt -> kotlinx/coroutines/Delay.hpp ===
