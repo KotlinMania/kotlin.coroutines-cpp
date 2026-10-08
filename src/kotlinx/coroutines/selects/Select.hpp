@@ -405,8 +405,18 @@ public:
      * Transliterated from:
      * public operator fun <Q> SelectClause1<Q>.invoke(block: suspend (Q) -> R)
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:466-467
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:824-848
     template<typename Q>
-    void invoke(SelectClause1<Q>& clause, std::function<void*(Q, Continuation<void*>*)> block);
+    void invoke(SelectClause1<Q>& clause, std::function<void*(Q, Continuation<void*>*)> block) {
+        auto wrapped = [block = std::move(block)](void* argument, Continuation<void*>* completion) {
+            std::unique_ptr<Q> value(static_cast<Q*>(argument));
+            return block(std::move(*value), completion);
+        };
+        register_clause(clause.get_clause_object(), clause.get_reg_func(),
+            clause.get_process_res_func(), nullptr, std::move(wrapped),
+            clause.get_on_cancellation_constructor());
+    }
 
     /**
      * Registers clause in this select expression with additional parameter of type P that selects value of type Q.
@@ -414,11 +424,50 @@ public:
      * Transliterated from:
      * public operator fun <P, Q> SelectClause2<P, Q>.invoke(param: P, block: suspend (Q) -> R)
      */
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:469-470
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:824-848
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:860-862
     template<typename P, typename Q>
-    void invoke(SelectClause2<P, Q>& clause, P param, std::function<void*(Q, Continuation<void*>*)> block);
+    void invoke(SelectClause2<P, Q>& clause, P param, std::function<void*(Q, Continuation<void*>*)> block) {
+        // NOTE(port): Value parameters are owning P boxes at the erased boundary.
+        // Keep their actual storage through registration, re-registration and completion.
+        auto parameter = std::make_shared<P>(std::move(param));
+        auto wrapped = [block = std::move(block), parameter](void* argument, Continuation<void*>* completion) {
+            // NOTE(port): Reference results remain borrowed. Value results transfer
+            // an owning Q box from processResFunc to this receiving adapter.
+            if constexpr (std::is_pointer_v<Q>) {
+                return block(static_cast<Q>(argument), completion);
+            } else {
+                std::unique_ptr<Q> value(static_cast<Q*>(argument));
+                return block(std::move(*value), completion);
+            }
+        };
+        auto constructor = clause.get_on_cancellation_constructor();
+        if (constructor) {
+            constructor = [constructor = std::move(constructor), parameter](void* select, void* param, void* result) {
+                auto action = constructor(select, param, result);
+                if (!action) return OnCancellationAction{};
+                return OnCancellationAction([action = std::move(action), parameter](
+                    std::exception_ptr cause, void* value, std::shared_ptr<CoroutineContext> context) {
+                    action(cause, value, std::move(context));
+                });
+            };
+        }
+        register_clause(clause.get_clause_object(), clause.get_reg_func(),
+            clause.get_process_res_func(), parameter.get(), std::move(wrapped), std::move(constructor));
+    }
 
     template<typename Callback>
     void on_timeout(std::int64_t time_millis, Callback&& block);
+
+protected:
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:463-470
+    // NOTE(port): Member templates cannot be virtual. This erased binding sends
+    // their actual arguments to the source SelectImplementation registration algorithm.
+    virtual void register_clause(void* clause_object, RegistrationFunction reg_func,
+        ProcessResultFunction process_res_func, void* param,
+        std::function<void*(void*, Continuation<void*>*)> block,
+        OnCancellationConstructor on_cancellation_constructor) = 0;
 };
 
 /**
@@ -906,43 +955,23 @@ public:
         );
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:466-467
     template<typename Q>
     void invoke(SelectClause1<Q>& clause, std::function<void*(Q, Continuation<void*>*)> block) {
-        auto wrapped = [block](void* arg, Continuation<void*>* c) {
-            std::unique_ptr<Q> argument(static_cast<Q*>(arg));
-            return block(*argument, c);
-        };
-        register_clause(
-            clause.get_clause_object(),
-            clause.get_reg_func(),
-            clause.get_process_res_func(),
-            nullptr,
-            std::move(wrapped),
-            clause.get_on_cancellation_constructor()
-        );
+        SelectBuilder<R>::template invoke<Q>(clause, std::move(block));
     }
 
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:469-470
     template<typename P, typename Q>
     void invoke(SelectClause2<P, Q>& clause, P param, std::function<void*(Q, Continuation<void*>*)> block) {
-        auto wrapped = [block](void* arg, Continuation<void*>* c) {
-            return block(static_cast<Q>(reinterpret_cast<std::uintptr_t>(arg)), c);
-        };
-        register_clause(
-            clause.get_clause_object(),
-            clause.get_reg_func(),
-            clause.get_process_res_func(),
-            reinterpret_cast<void*>(param),
-            std::move(wrapped),
-            clause.get_on_cancellation_constructor()
-        );
+        SelectBuilder<R>::template invoke<P, Q>(clause, std::move(param), std::move(block));
     }
-
-
 
 
 private:
     // ==========================================================================
     // ==========================================================================
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/Select.kt:463-470
     void register_clause(
         void* clause_object,
         RegistrationFunction reg_func,
@@ -950,7 +979,7 @@ private:
         void* param,
         std::function<void*(void*, Continuation<void*>*)> block,
         OnCancellationConstructor on_cancellation_constructor
-    ) {
+    ) override {
         if (is_selected()) return;
         auto clause = std::make_shared<ClauseData>(
             clause_object,

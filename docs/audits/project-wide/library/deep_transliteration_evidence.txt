@@ -4566,10 +4566,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.432446
-function_name_parity: 0.800000
+translated_ast_cosine: 0.435548
+function_name_parity: 0.833333
 normalized_logic: 0.000000
-documentation_correspondence: 0.006772
+documentation_correspondence: 0.007408
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -4656,79 +4656,81 @@ Diagnostic: 894: unsupported property_declaration
 Diagnostic: 895: unsupported property_declaration
 Diagnostic: 899: unsupported property_declaration
 Diagnostic: 903: unsupported property_declaration
-Function select:50 -> kotlinx::coroutines::selects::select:1020 | normalized logic: 0.000000
+Function select:50 -> kotlinx::coroutines::selects::select:1049 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:builder type:builderfunc node:66 type:continuation type:void operator:* identifier:continuation identifier:context operator:= node:43 identifier:continuation identifier:getcontext identifier:impl operator:= node:43 identifier:context identifier:sharedptr identifier:std type:r type:r type:selectimplementation type:selectimplementation node:43 identifier:builder operator:* identifier:impl node:5 node:43 identifier:impl identifier:doselect identifier:continuation
-Function SelectImplementation::doSelect:442 -> kotlinx::coroutines::selects::SelectImplementation::do_select:699 | normalized logic: 0.000000
+Function SelectBuilder::invoke:93 -> kotlinx::coroutines::selects::SelectBuilder::invoke:430 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:clause type:q type:selectclause1 node:66 identifier:std type:function type:void operator:* node:66 type:q node:66 type:continuation type:void operator:* operator:* identifier:block identifier:wrapped operator:= node:45 identifier:block operator:= node:43 identifier:block identifier:move identifier:std node:66 identifier:argument type:void node:66 type:continuation type:void operator:* identifier:completion identifier:std identifier:value type:q type:uniqueptr node:66 type:q type:staticcast operator:* node:66 type:argument node:5 node:43 identifier:block node:43 identifier:move identifier:std operator:* identifier:completion identifier:value node:43 identifier:registerclause node:43 identifier:clause identifier:getclauseobject node:43 identifier:clause identifier:getregfunc node:43 identifier:clause identifier:getprocessresfunc node:43 identifier:std identifier:move identifier:wrapped node:43 identifier:clause identifier:getoncancellationconstructor
+Function SelectImplementation::doSelect:442 -> kotlinx::coroutines::selects::SelectImplementation::do_select:748 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 type:continuation type:void operator:* identifier:completion node:1 node:43 identifier:isselected node:5 node:43 identifier:complete identifier:completion node:5 node:43 identifier:doselectsuspend identifier:completion
-Function SelectImplementation::doSelectSuspend:450 -> kotlinx::coroutines::selects::SelectImplementation::do_select_suspend:730 | normalized logic: 0.000000
+Function SelectImplementation::doSelectSuspend:450 -> kotlinx::coroutines::selects::SelectImplementation::do_select_suspend:779 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 type:continuation type:void operator:* identifier:completion identifier:frame operator:= node:43 identifier:makeshared identifier:std type:doselectframe node:43 identifier:completion identifier:sharedfromthis node:5 node:43 identifier:frame identifier:start node:43 type:result type:void operator:* identifier:success
-Function SelectImplementation::invoke:463 -> kotlinx::coroutines::selects::SelectImplementation::invoke:873 | normalized logic: 0.000000
+Function SelectImplementation::invoke:463 -> kotlinx::coroutines::selects::SelectImplementation::invoke:922 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:cause identifier:std type:exceptionptr identifier:cur operator:= node:43 identifier:loadstate node:3 literal:53:true node:1 identifier:cur identifier:marker operator:== node:43 identifier:statecompleted node:5 node:1 node:43 identifier:casstate identifier:cur node:43 identifier:std identifier:makeshared type:state node:43 identifier:statecancelled node:8 identifier:clauses operator:= node:43 identifier:loadclauses node:1 operator:! identifier:clauses node:5 node:2 identifier:clause operator:* identifier:clauses node:43 identifier:clause identifier:dispose identifier:context identifier:internalresult operator:= node:43 identifier:noresult node:43 identifier:clearclauses
-Function SelectImplementation::invoke:466 -> kotlinx::coroutines::selects::SelectImplementation::invoke:916 | normalized logic: 0.000000
+Function SelectImplementation::invoke:466 -> kotlinx::coroutines::selects::SelectImplementation::invoke:965 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:clause type:selectclause0 node:66 identifier:std type:function type:void operator:* node:66 type:continuation type:void operator:* operator:* identifier:block identifier:wrapped operator:= node:45 identifier:block node:66 type:void operator:* node:66 type:continuation type:void operator:* identifier:c node:5 node:43 identifier:block identifier:c node:43 identifier:registerclause node:43 identifier:clause identifier:getclauseobject node:43 identifier:clause identifier:getregfunc node:43 identifier:clause identifier:getprocessresfunc node:43 identifier:paramclause0 node:43 identifier:std identifier:move identifier:wrapped node:43 identifier:clause identifier:getoncancellationconstructor
-Function SelectImplementation::invoke:469 -> kotlinx::coroutines::selects::SelectImplementation::invoke:929 | normalized logic: 0.000000
+Function SelectImplementation::invoke:469 -> kotlinx::coroutines::selects::SelectImplementation::invoke:979 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:clause type:q type:selectclause1 node:66 identifier:std type:function type:void operator:* node:66 type:q node:66 type:continuation type:void operator:* operator:* identifier:block identifier:wrapped operator:= node:45 identifier:block node:66 identifier:arg type:void node:66 type:continuation type:void operator:* identifier:argument identifier:c identifier:std type:q type:uniqueptr node:66 type:q type:staticcast operator:* node:66 type:arg node:5 node:43 identifier:block operator:* identifier:argument identifier:c node:43 identifier:registerclause node:43 identifier:clause identifier:getclauseobject node:43 identifier:clause identifier:getregfunc node:43 identifier:clause identifier:getprocessresfunc node:43 identifier:std identifier:move identifier:wrapped node:43 identifier:clause identifier:getoncancellationconstructor
-Function SelectImplementation::checkClauseObject:523 -> kotlinx::coroutines::selects::SelectImplementation::check_clause_object:1003 | normalized logic: 0.000000
+  Target logic: node:66 identifier:clause type:q type:selectclause1 node:66 identifier:std type:function type:void operator:* node:66 type:q node:66 type:continuation type:void operator:* operator:* identifier:block node:43 type:selectbuilder type:r identifier:invoke type:q identifier:clause node:43 identifier:std identifier:move identifier:block
+Function SelectImplementation::checkClauseObject:523 -> kotlinx::coroutines::selects::SelectImplementation::check_clause_object:1032 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:clauseobject type:void identifier:clauses operator:= node:43 identifier:loadclauses node:1 operator:! identifier:clauses node:5 node:2 identifier:clause operator:* identifier:clauses node:1 identifier:clause identifier:clauseobject operator:== identifier:clauseobject node:10 node:43 identifier:std identifier:runtimeerror literal:52:"Cannot use select clauses on the same object"
-Function SelectImplementation::disposeOnCompletion:534 -> kotlinx::coroutines::selects::SelectImplementation::dispose_on_completion:893 | normalized logic: 0.000000
+Function SelectImplementation::disposeOnCompletion:534 -> kotlinx::coroutines::selects::SelectImplementation::dispose_on_completion:942 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:handle identifier:std type:disposablehandle type:sharedptr identifier:disposablehandleorsegment operator:= node:43 identifier:handle identifier:get identifier:disposablehandle operator:= node:43 identifier:std identifier:move identifier:handle
-Function SelectImplementation::invokeOnCancellation:549 -> kotlinx::coroutines::selects::SelectImplementation::invoke_on_cancellation:900 | normalized logic: 0.000000
+Function SelectImplementation::invokeOnCancellation:549 -> kotlinx::coroutines::selects::SelectImplementation::invoke_on_cancellation:949 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:internal identifier:segment type:segmentbase node:66 identifier:index type:signed32 identifier:disposablehandleorsegment operator:= identifier:segment node:43 identifier:disposablehandle identifier:reset identifier:indexinsegment operator:= identifier:index
-Function SelectImplementation::selectInRegistrationPhase:554 -> kotlinx::coroutines::selects::SelectImplementation::select_in_registration_phase:908 | normalized logic: 0.000000
+Function SelectImplementation::selectInRegistrationPhase:554 -> kotlinx::coroutines::selects::SelectImplementation::select_in_registration_phase:957 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:internalresult type:void identifier:internalresult operator:= identifier:internalresult
-Function SelectImplementation::waitUntilSelected:569 -> kotlinx::coroutines::selects::SelectImplementation::wait_until_selected:737 | normalized logic: 0.000000
+Function SelectImplementation::waitUntilSelected:569 -> kotlinx::coroutines::selects::SelectImplementation::wait_until_selected:786 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 type:continuation type:void operator:* identifier:completion node:5 node:43 identifier:suspendcancellablecoroutine type:void node:45 node:66 identifier:cont type:cancellablecontinuation type:void node:3 literal:53:true identifier:state operator:= node:43 identifier:loadstate node:1 identifier:state identifier:marker operator:== node:43 identifier:statereg identifier:owner operator:= node:43 node:43 identifier:dynamiccast type:cancellablecontinuationimpl type:void operator:& identifier:cont identifier:sharedfromthis node:1 node:43 identifier:casstate identifier:state node:43 identifier:std identifier:makeshared type:state node:43 identifier:std identifier:move identifier:owner identifier:select identifier:std type:r type:selectimplementation type:weakptr operator:= node:43 identifier:sharedfromthis node:43 identifier:cont identifier:invokeoncancellation node:45 identifier:select node:66 identifier:cause identifier:std type:exceptionptr node:1 identifier:owner operator:= node:43 identifier:lock identifier:select node:43 identifier:owner identifier:invoke identifier:cause node:5 node:1 operator:! node:43 identifier:state identifier:reregister identifier:empty identifier:list operator:= identifier:reregister identifier:state node:1 node:43 identifier:casstate identifier:state node:43 identifier:std identifier:makeshared type:state node:43 identifier:statereg node:2 type:void identifier:object identifier:list node:43 identifier:reregisterclause identifier:object node:1 identifier:state identifier:clause identifier:oncancel operator:= node:43 identifier:clause identifier:createoncancellationaction identifier:state node:43 identifier:internalresult identifier:load node:1 identifier:oncancel identifier:context operator:= node:43 identifier:getcontext identifier:value operator:= node:43 identifier:internalresult identifier:load node:43 identifier:cont identifier:resume node:45 identifier:oncancel identifier:value identifier:context node:66 identifier:cause identifier:std type:exceptionptr node:43 identifier:oncancel identifier:cause identifier:value identifier:context node:43 identifier:cont identifier:resume node:5 node:10 node:43 identifier:std identifier:runtimeerror literal:52:"unexpected state in waitUntilSelected" identifier:completion
-Function SelectImplementation::reregisterClause:612 -> kotlinx::coroutines::selects::SelectImplementation::reregister_clause:773 | normalized logic: 0.000000
+Function SelectImplementation::reregisterClause:612 -> kotlinx::coroutines::selects::SelectImplementation::reregister_clause:822 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:clauseobject type:void identifier:clause operator:= node:43 identifier:clauseobject identifier:findclause node:1 operator:! identifier:clause node:10 node:43 identifier:std identifier:logicerror literal:52:"reregisterClause: clause must exist" identifier:clause identifier:disposablehandleorsegment operator:= node:43 identifier:clause identifier:disposablehandle identifier:reset identifier:clause identifier:indexinsegment operator:= literal:51:-1 node:43 identifier:registerclauseimpl identifier:clause literal:53:true
-Function SelectImplementation::trySelect:623 -> kotlinx::coroutines::selects::SelectImplementation::try_select:785 | normalized logic: 0.000000
+Function SelectImplementation::trySelect:623 -> kotlinx::coroutines::selects::SelectImplementation::try_select:834 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:clauseobject type:void node:66 identifier:result type:void node:5 node:43 identifier:tryselectinternal identifier:clauseobject identifier:result operator:== identifier:tryselectsuccessful
-Function SelectImplementation::trySelectDetailed:631 -> kotlinx::coroutines::selects::SelectImplementation::try_select_detailed:791 | normalized logic: 0.000000
+Function SelectImplementation::trySelectDetailed:631 -> kotlinx::coroutines::selects::SelectImplementation::try_select_detailed:840 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:clauseobject type:void node:66 identifier:result type:void node:5 node:43 identifier:totryselectdetailedresult node:43 identifier:tryselectinternal identifier:clauseobject identifier:result
-Function SelectImplementation::trySelectInternal:634 -> kotlinx::coroutines::selects::SelectImplementation::try_select_internal:798 | normalized logic: 0.000000
+Function SelectImplementation::trySelectInternal:634 -> kotlinx::coroutines::selects::SelectImplementation::try_select_internal:847 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:clauseobject type:void node:66 identifier:internalresult type:void node:3 literal:53:true identifier:state operator:= node:43 identifier:loadstate node:1 identifier:state identifier:continuation identifier:clause operator:= node:43 identifier:clauseobject identifier:findclause node:1 operator:! identifier:clause node:7 identifier:oncancel operator:= node:43 identifier:clause identifier:createoncancellationaction identifier:internalresult identifier:cont operator:= identifier:continuation identifier:state node:1 node:43 identifier:casstate identifier:state node:43 identifier:std identifier:makeshared type:state identifier:clause node:43 identifier:internalresult identifier:store identifier:internalresult node:1 node:43 identifier:tryresumewithoncancellation node:43 identifier:cont identifier:get identifier:oncancel node:5 identifier:tryselectsuccessful node:43 identifier:internalresult identifier:store node:43 identifier:noresult node:5 identifier:tryselectcancelled node:1 identifier:state identifier:marker operator:== node:43 identifier:statecompleted operator:|| identifier:state identifier:clause node:5 identifier:tryselectalreadyselected node:1 identifier:state identifier:marker operator:== node:43 identifier:statecancelled node:5 identifier:tryselectcancelled node:1 identifier:state identifier:marker operator:== node:43 identifier:statereg operator:|| operator:! node:43 identifier:state identifier:reregister identifier:empty identifier:list operator:= identifier:reregister identifier:state node:43 identifier:list identifier:pushback identifier:clauseobject node:1 node:43 identifier:casstate identifier:state node:43 identifier:std identifier:makeshared type:state node:43 identifier:std identifier:move identifier:list node:5 identifier:tryselectreregister node:10 node:43 identifier:std identifier:runtimeerror literal:52:"Unexpected state in trySelectInternal"
-Function SelectImplementation::findClause:676 -> kotlinx::coroutines::selects::SelectImplementation::find_clause:826 | normalized logic: 0.000000
+Function SelectImplementation::findClause:676 -> kotlinx::coroutines::selects::SelectImplementation::find_clause:875 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:clauseobject type:void identifier:clauses operator:= node:43 identifier:loadclauses node:1 operator:! identifier:clauses node:5 node:2 identifier:clause operator:* identifier:clauses node:1 identifier:clause identifier:clauseobject operator:== identifier:clauseobject node:5 identifier:clause node:10 node:43 identifier:std identifier:runtimeerror literal:52:"Clause with object is not found"
-Function SelectImplementation::complete:700 -> kotlinx::coroutines::selects::SelectImplementation::complete:837 | normalized logic: 0.000000
+Function SelectImplementation::complete:700 -> kotlinx::coroutines::selects::SelectImplementation::complete:886 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 type:continuation type:void operator:* identifier:completion node:43 identifier:assert node:43 identifier:isselected identifier:selected operator:= node:43 identifier:clause identifier:loadstate node:43 identifier:assert identifier:selected identifier:result type:void operator:= identifier:internalresult node:43 identifier:cleanup node:43 identifier:selected identifier:get identifier:blockargument type:void operator:= node:43 identifier:processresult identifier:result identifier:selected node:5 node:43 identifier:selected identifier:invokeblock identifier:blockargument identifier:completion
-Function SelectImplementation::cleanup:742 -> kotlinx::coroutines::selects::SelectImplementation::cleanup:853 | normalized logic: 0.000000
+Function SelectImplementation::cleanup:742 -> kotlinx::coroutines::selects::SelectImplementation::cleanup:902 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:selectedclause type:clausedata node:43 identifier:assert node:43 identifier:isselected identifier:clauses operator:= node:43 identifier:loadclauses node:1 operator:! identifier:clauses node:5 node:2 identifier:clause operator:* identifier:clauses node:1 node:43 identifier:clause identifier:get operator:!= identifier:selectedclause node:43 identifier:clause identifier:dispose identifier:context node:43 identifier:storestate node:43 identifier:std identifier:makeshared type:state node:43 identifier:statecompleted identifier:internalresult operator:= node:43 identifier:noresult node:43 identifier:clearclauses
-Function SelectImplementation::invoke:759 -> kotlinx::coroutines::selects::SelectImplementation::invoke:945 | normalized logic: 0.000000
+Function SelectImplementation::invoke:759 -> kotlinx::coroutines::selects::SelectImplementation::invoke:985 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:clause type:p type:q type:selectclause2 node:66 identifier:param type:p node:66 identifier:std type:function type:void operator:* node:66 type:q node:66 type:continuation type:void operator:* operator:* identifier:block identifier:wrapped operator:= node:45 identifier:block node:66 identifier:arg type:void node:66 type:continuation type:void operator:* identifier:c node:5 node:43 identifier:block node:43 identifier:staticcast type:q node:43 identifier:arg identifier:c identifier:reinterpretcast identifier:std type:uintptrt node:43 identifier:registerclause node:43 identifier:clause identifier:getclauseobject node:43 identifier:clause identifier:getregfunc node:43 identifier:clause identifier:getprocessresfunc node:43 identifier:reinterpretcast type:void operator:* identifier:param node:43 identifier:std identifier:move identifier:wrapped node:43 identifier:clause identifier:getoncancellationconstructor
-Function SelectImplementation::ClauseData::tryRegisterAsWaiter:807 -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::try_register_as_waiter:589 | normalized logic: 0.000000
+  Target logic: node:66 identifier:clause type:p type:q type:selectclause2 node:66 identifier:param type:p node:66 identifier:std type:function type:void operator:* node:66 type:q node:66 type:continuation type:void operator:* operator:* identifier:block node:43 type:selectbuilder type:r identifier:invoke type:p type:q identifier:clause node:43 identifier:std identifier:move identifier:param node:43 identifier:std identifier:move identifier:block
+Function SelectImplementation::ClauseData::tryRegisterAsWaiter:807 -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::try_register_as_waiter:638 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:select type:r type:selectimplementation node:43 identifier:assert node:43 identifier:select identifier:inregistrationphase operator:|| node:43 identifier:select identifier:iscancelled node:43 identifier:assert identifier:select identifier:internalresult operator:== node:43 identifier:noresult node:43 identifier:regfunc identifier:clauseobject node:43 identifier:staticcast type:void operator:* node:43 identifier:staticcast type:selectinstance type:r operator:* identifier:select identifier:param node:5 identifier:select identifier:internalresult operator:== node:43 identifier:noresult
-Function SelectImplementation::ClauseData::processResult:824 -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::process_result:596 | normalized logic: 0.000000
+Function SelectImplementation::ClauseData::processResult:824 -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::process_result:645 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:result type:void node:5 node:43 identifier:processresfunc identifier:clauseobject identifier:param identifier:result
-Function SelectImplementation::ClauseData::invokeBlock:830 -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::invoke_block:600 | normalized logic: 0.000000
+Function SelectImplementation::ClauseData::invokeBlock:830 -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::invoke_block:649 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:argument type:void node:66 type:continuation type:void operator:* identifier:completion node:5 node:43 identifier:block identifier:argument identifier:completion
-Function SelectImplementation::ClauseData::dispose:850 -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::dispose:604 | normalized logic: 0.000000
+Function SelectImplementation::ClauseData::dispose:850 -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::dispose:653 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr node:1 identifier:indexinsegment operator:>= literal:51:0 node:43 node:43 identifier:staticcast identifier:internal type:segmentbase operator:* identifier:disposablehandleorsegment identifier:oncancellation identifier:indexinsegment node:43 identifier:std identifier:move identifier:context node:1 identifier:disposablehandle node:43 identifier:disposablehandle identifier:dispose
-Function SelectImplementation::ClauseData::createOnCancellationAction:860 -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::create_on_cancellation_action:613 | normalized logic: 0.000000
+Function SelectImplementation::ClauseData::createOnCancellationAction:860 -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::create_on_cancellation_action:662 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:select type:r type:selectinstance node:66 identifier:internalresult type:void node:1 operator:! identifier:hasoncancellation node:5 node:5 node:43 identifier:oncancellationconstructor node:43 identifier:staticcast type:void operator:* identifier:select identifier:param identifier:internalresult
-Missing source function: SelectBuilder::invoke:93
 Missing source function: SelectBuilder::onTimeout:103
 Missing source function: SelectImplementation::register:487
 Missing source function: SelectImplementation::processResultAndInvokeBlockRecoveringException:726
@@ -4759,28 +4761,29 @@ Extra target function: kotlinx::coroutines::selects::SelectClause2Impl::get_reg_
 Extra target function: kotlinx::coroutines::selects::SelectClause2Impl::get_process_res_func:313
 Extra target function: kotlinx::coroutines::selects::SelectClause2Impl::get_on_cancellation_constructor:314
 Extra target function: kotlinx::coroutines::selects::SelectClause2Impl::has_on_cancellation_constructor:315
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::ClauseData::ClauseData:574
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::ClauseData::get_param:620
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::State::State:631
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::State::State:632
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::State::State:634
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::State::State:635
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::load_state:645
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::store_state:648
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::cas_state:651
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::load_clauses:655
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::clear_clauses:658
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::SelectImplementation:663
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::shared_from_this_waiter:666
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::get_context:670
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::to_string:674
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::in_registration_phase:680
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::is_selected:687
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::is_cancelled:693
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::DoSelectFrame::DoSelectFrame:714
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::DoSelectFrame::invoke_suspend:716
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::register_clause:965
-Extra target function: kotlinx::coroutines::selects::SelectImplementation::register_clause_impl:986
+Extra target function: kotlinx::coroutines::selects::SelectBuilder::invoke:450
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::ClauseData::ClauseData:623
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::ClauseData::get_param:669
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::State::State:680
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::State::State:681
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::State::State:683
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::State::State:684
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::load_state:694
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::store_state:697
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::cas_state:700
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::load_clauses:704
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::clear_clauses:707
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::SelectImplementation:712
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::shared_from_this_waiter:715
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::get_context:719
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::to_string:723
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::in_registration_phase:729
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::is_selected:736
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::is_cancelled:742
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::DoSelectFrame::DoSelectFrame:763
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::DoSelectFrame::invoke_suspend:765
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::register_clause:994
+Extra target function: kotlinx::coroutines::selects::SelectImplementation::register_clause_impl:1015
 === Emitted target buffer ===
 namespace kotlinx::coroutines::selects {
 
@@ -4891,28 +4894,28 @@ __ast_distance_unmapped__("property_declaration", "internal val PARAM_CLAUSE_0 =
 Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
-NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:50	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:1001	select -> kotlinx::coroutines::selects::select
+NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:50	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:1030	select -> kotlinx::coroutines::selects::select
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:93	-	SelectBuilder::invoke
 MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:103	-	SelectBuilder::onTimeout
-NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:442	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:680	SelectImplementation::doSelect -> kotlinx::coroutines::selects::SelectImplementation::do_select
+NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:442	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:729	SelectImplementation::doSelect -> kotlinx::coroutines::selects::SelectImplementation::do_select
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
-NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:450	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:711	SelectImplementation::doSelectSuspend -> kotlinx::coroutines::selects::SelectImplementation::do_select_suspend
+NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:450	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:760	SelectImplementation::doSelectSuspend -> kotlinx::coroutines::selects::SelectImplementation::do_select_suspend
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:463	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:854	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:463	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:903	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:466	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:854	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:466	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:903	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:469	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:897	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:469	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:946	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:469	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:910	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:469	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:960	SelectImplementation::invoke -> kotlinx::coroutines::selects::SelectImplementation::invoke
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
-TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:569	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:718	SelectImplementation::waitUntilSelected -> kotlinx::coroutines::selects::SelectImplementation::wait_until_selected
+TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:569	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:767	SelectImplementation::waitUntilSelected -> kotlinx::coroutines::selects::SelectImplementation::wait_until_selected
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
-NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:700	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:818	SelectImplementation::complete -> kotlinx::coroutines::selects::SelectImplementation::complete
+NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:700	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:867	SelectImplementation::complete -> kotlinx::coroutines::selects::SelectImplementation::complete
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 MISSING_TARGET_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:726	-	SelectImplementation::processResultAndInvokeBlockRecoveringException
-TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:830	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:581	SelectImplementation::ClauseData::invokeBlock -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::invoke_block
+TAIL_OR_HELPER_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/selects/Select.kt:830	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp:630	SelectImplementation::ClauseData::invokeBlock -> kotlinx::coroutines::selects::SelectImplementation::ClauseData::invoke_block
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 12
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.

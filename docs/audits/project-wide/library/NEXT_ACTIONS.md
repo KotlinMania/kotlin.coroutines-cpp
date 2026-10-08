@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 811/2918 matched (target 3029) — 27.8%
+- **Function parity:** 812/2918 matched (target 3031) — 27.8%
 - **Class/type parity:** 359/560 matched (target 521) — 64.1%
-- **Combined symbol parity:** 1170/3478 matched (target 3550) — 33.6%
+- **Combined symbol parity:** 1171/3478 matched (target 3552) — 33.7%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -145,9 +145,9 @@ Every matched file is listed below with function and type symbol parity.
 - **Target:** `selects.Select`
 - **Similarity:** 0.21
 - **Dependents:** 1
-- **Priority Score:** 1064608.0
-- **Functions:** 24/30 matched (target 71)
-- **Missing functions:** `SelectBuilder::invoke`, `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult`
+- **Priority Score:** 1054607.9
+- **Functions:** 25/30 matched (target 73)
+- **Missing functions:** `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult`
 - **Types:** 16/16 matched (target 22)
 - **Missing types:** _none_
 - **Lint issues:** 6

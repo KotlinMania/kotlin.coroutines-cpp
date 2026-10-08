@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 811/2918 matched (target 3029) | 27.8% |
+| Function parity | 812/2918 matched (target 3031) | 27.8% |
 | Class/type parity | 359/560 matched (target 521) | 64.1% |
-| Combined symbol parity | 1170/3478 matched (target 3550) | 33.6% |
+| Combined symbol parity | 1171/3478 matched (target 3552) | 33.7% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -20,8 +20,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Missing source symbol files | 99 | 833 symbols |
 | Cheat/scoring failures | 123 | forced to 0% |
 | Total source files | 354 | 100% |
-| Target units (paired) | 599 | - |
-| Target files (total) | 780 | - |
+| Target units (paired) | 600 | - |
+| Target files (total) | 781 | - |
 | Porting progress | 251 | 70.9% (matched) |
 | Missing files | 103 | 29.1% |
 
@@ -229,7 +229,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 185 | `common.Supervisor` | `coroutines.Supervisor` | 0.19 | 4/5 matched (target 8) | `SupervisorCoroutine::childCancelled` | 2/2 matched (target 3) | _none_ | - | 1 | 10708.1 |
 | 186 | `common.Builders.common` | `coroutines.Builders.common` | 0.19 | 14/14 matched (target 55) | _none_ | 5/6 matched (target 9) | `UndispatchedCoroutine` | - | 1 | 12008.1 |
 | 187 | `internal.Merge` | `internal.Merge` | 0.20 | 9/9 matched (target 37) | _none_ | 3/3 matched (target 8) | _none_ | - | 0 | 1001207.9 |
-| 188 | `selects.Select` | `selects.Select` | 0.21 | 24/30 matched (target 71) | `SelectBuilder::invoke`, `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | - | 6 | 1064608.0 |
+| 188 | `selects.Select` | `selects.Select` | 0.21 | 25/30 matched (target 73) | `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | - | 5 | 1054607.9 |
 | 189 | `test.CoroutineDispatcherOperatorFunInvokeTest` | `tests.CoroutineDispatcherOperatorFunInvokeTest` | 0.22 | 3/8 matched (target 12) | `CoroutineDispatcherOperatorFunInvokeTest::testThrowException`, `CoroutineDispatcherOperatorFunInvokeTest::testWithContextChildWaitSameContext`, `CoroutineDispatcherOperatorFunInvokeTest::dispatch`, `CoroutineDispatcherOperatorFunInvokeTest::isDispatchNeeded`, `CoroutineDispatcherOperatorFunInvokeTest::dispatchYield` | 2/2 matched (target 3) | _none_ | 0/2 | 5 | 51007.8 |
 | 190 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.22 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
 | 191 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 23) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 65001308.0 |
