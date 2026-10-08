@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 817/2918 matched (target 3030) — 28.0%
+- **Function parity:** 817/2918 matched (target 3032) — 28.0%
 - **Class/type parity:** 358/560 matched (target 520) — 63.9%
-- **Combined symbol parity:** 1175/3478 matched (target 3550) — 33.8%
+- **Combined symbol parity:** 1175/3478 matched (target 3552) — 33.8%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -2507,14 +2507,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 190. selects.OnTimeout
 
 - **Target:** `selects.OnTimeout`
-- **Similarity:** 0.03
+- **Similarity:** 0.02
 - **Dependents:** 0
-- **Priority Score:** 10409.7
-- **Functions:** 2/3 matched (target 6)
+- **Priority Score:** 10409.8
+- **Functions:** 2/3 matched (target 8)
 - **Missing functions:** `OnTimeout::register`
 - **Types:** 1/1 matched
 - **Missing types:** _none_
-- **Lint issues:** 6
+- **Lint issues:** 1
 
 ### 191. flow.SafeFlowTest
 

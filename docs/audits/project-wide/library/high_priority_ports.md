@@ -199,7 +199,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 187 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 0 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | 1 | 5 | 10508.8 |
 | 188 | `channels.ChannelCancelUndeliveredElementStressTest` | `channels.ChannelCancelUndeliveredElementStressTest [STUB]` | 0.00 | 0 | 2/3 matched | `ChannelCancelUndeliveredElementStressTest::testStress` | 1/1 matched | _none_ | 1 | 4 | 10410.0 |
 | 189 | `common.Exceptions.common` | `coroutines.Exceptions [ZERO]` | 0.00 | 0 | 0/0 matched (target 7) | _none_ | 3/4 matched | `CancellationException` | 1 | 4 | 10410.0 |
-| 190 | `selects.OnTimeout` | `selects.OnTimeout` | 0.03 | 0 | 2/3 matched (target 6) | `OnTimeout::register` | 1/1 matched | _none_ | 1 | 4 | 10409.7 |
+| 190 | `selects.OnTimeout` | `selects.OnTimeout` | 0.02 | 0 | 2/3 matched (target 8) | `OnTimeout::register` | 1/1 matched | _none_ | 1 | 4 | 10409.8 |
 | 191 | `flow.SafeFlowTest` | `flow.SafeFlowTest` | 0.28 | 0 | 2/3 matched | `SafeFlowTest::testEmissionsFromDifferentStateMachine` | 1/1 matched | _none_ | 1 | 4 | 10407.2 |
 | 192 | `test.MainDispatcherTest` | `test.MainDispatcherTest` | 0.66 | 0 | 2/3 matched (target 2) | `MainDispatcherTest::scheduleOnMainQueue` | 1/1 matched | _none_ | 1 | 4 | 10403.4 |
 | 193 | `channels.ConflatedBroadcastChannelNotifyStressTest` | `channels.ConflatedBroadcastChannelNotifyStressTest [STUB]` | 0.00 | 0 | 1/2 matched | `ConflatedBroadcastChannelNotifyStressTest::testStressNotify` | 1/1 matched | _none_ | 1 | 3 | 10310.0 |

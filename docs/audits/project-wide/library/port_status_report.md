@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 817/2918 matched (target 3030) | 28.0% |
+| Function parity | 817/2918 matched (target 3032) | 28.0% |
 | Class/type parity | 358/560 matched (target 520) | 63.9% |
-| Combined symbol parity | 1175/3478 matched (target 3550) | 33.8% |
+| Combined symbol parity | 1175/3478 matched (target 3552) | 33.8% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -178,11 +178,11 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 134 | `intrinsics.Undispatched` | `intrinsics.Undispatched` | 0.02 | 1/6 matched (target 1) | `ScopeCoroutine<T>::startUndispatchedOrReturn`, `ScopeCoroutine<T>::startUndispatchedOrReturnIgnoreTimeout`, `ScopeCoroutine<T>::startUndspatched`, `ScopeCoroutine<*>::notOwnTimeout`, `ScopeCoroutine<*>::dispatchExceptionAndMakeCompleting` | 0/0 matched | _none_ | - | 5 | 50609.8 |
 | 135 | `internal.Combine` | `internal.Combine` | 0.02 | 2/2 matched (target 48) | _none_ | 1/1 matched (target 12) | _none_ | - | 0 | 1000309.8 |
 | 136 | `internal.SystemProps.common` | `internal.SystemProps.common` | 0.02 | 1/4 matched (target 5) | `systemProp`, `systemProp`, `systemProp` | 0/0 matched | _none_ | - | 3 | 30409.8 |
-| 137 | `terminal.Count` | `flow.Count` | 0.03 | 2/2 matched (target 26) | _none_ | 0/0 matched (target 2) | _none_ | - | 0 | 209.7 |
-| 138 | `operators.Distinct` | `flow.Distinct` | 0.03 | 3/5 matched (target 12) | `Flow<T>::distinctUntilChangedBy`, `DistinctFlowImpl::collect` | 1/1 matched (target 5) | _none_ | - | 2 | 20609.7 |
-| 139 | `terminal.Reduce` | `flow.Reduce` | 0.03 | 10/10 matched (target 64) | _none_ | 0/0 matched (target 6) | _none_ | - | 0 | 1009.7 |
-| 140 | `channels.Channels` | `channels.Channels` | 0.03 | 1/2 matched (target 1) | `SendChannel<E>::sendBlocking` | 0/0 matched | _none_ | - | 1 | 10209.7 |
-| 141 | `selects.OnTimeout` | `selects.OnTimeout` | 0.03 | 2/3 matched (target 6) | `OnTimeout::register` | 1/1 matched | _none_ | - | 1 | 10409.7 |
+| 137 | `selects.OnTimeout` | `selects.OnTimeout` | 0.02 | 2/3 matched (target 8) | `OnTimeout::register` | 1/1 matched | _none_ | - | 1 | 10409.8 |
+| 138 | `terminal.Count` | `flow.Count` | 0.03 | 2/2 matched (target 26) | _none_ | 0/0 matched (target 2) | _none_ | - | 0 | 209.7 |
+| 139 | `operators.Distinct` | `flow.Distinct` | 0.03 | 3/5 matched (target 12) | `Flow<T>::distinctUntilChangedBy`, `DistinctFlowImpl::collect` | 1/1 matched (target 5) | _none_ | - | 2 | 20609.7 |
+| 140 | `terminal.Reduce` | `flow.Reduce` | 0.03 | 10/10 matched (target 64) | _none_ | 0/0 matched (target 6) | _none_ | - | 0 | 1009.7 |
+| 141 | `channels.Channels` | `channels.Channels` | 0.03 | 1/2 matched (target 1) | `SendChannel<E>::sendBlocking` | 0/0 matched | _none_ | - | 1 | 10209.7 |
 | 142 | `channels.Channels.common` | `channels.Channels.common` | 0.04 | 4/6 matched (target 21) | `ReceiveChannel<E>::receiveOrNull`, `ReceiveChannel<E>::onReceiveOrNull` | 0/0 matched (target 3) | _none_ | - | 2 | 20609.6 |
 | 143 | `operators.Limit` | `flow.Limit` | 0.04 | 7/8 matched (target 44) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | - | 1 | 10809.6 |
 | 144 | `selects.WhileSelect` | `selects.WhileSelect` | 0.04 | 1/1 matched | _none_ | 0/0 matched | _none_ | - | 0 | 109.6 |
@@ -560,11 +560,11 @@ These files need significant work:
 - `intrinsics.Undispatched` -> `intrinsics.Undispatched` (0.02)
 - `internal.Combine` -> `internal.Combine` (0.02, 1 deps)
 - `internal.SystemProps.common` -> `internal.SystemProps.common` (0.02)
+- `selects.OnTimeout` -> `selects.OnTimeout` (0.02)
 - `terminal.Count` -> `flow.Count` (0.03)
 - `operators.Distinct` -> `flow.Distinct` (0.03)
 - `terminal.Reduce` -> `flow.Reduce` (0.03)
 - `channels.Channels` -> `channels.Channels` (0.03)
-- `selects.OnTimeout` -> `selects.OnTimeout` (0.03)
 - `channels.Channels.common` -> `channels.Channels.common` (0.04)
 - `operators.Limit` -> `flow.Limit` (0.04)
 - `selects.WhileSelect` -> `selects.WhileSelect` (0.04)
@@ -801,7 +801,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7361 / 7437 lines (99%)
+**Documentation line amount:** 7306 / 7437 lines (98%)
 
 Documentation gaps (>20%), complete list:
 
@@ -833,12 +833,13 @@ Documentation gaps (>20%), complete list:
 - `common.Deferred` - 25% gap (84 → 63 lines)
 - `common.MainDispatcherTestBase` - 100% gap (19 → 0 lines)
 - `common.TestDispatcher` - 100% gap (17 → 0 lines)
-- `test.WithTimeoutTest` - 100% gap (15 → 0 lines)
 - `test.WithTimeoutDurationTest` - 100% gap (15 → 0 lines)
+- `test.WithTimeoutTest` - 100% gap (15 → 0 lines)
 - `internal.OnDemandAllocatingPool` - 38% gap (37 → 23 lines)
 - `concurrent.Builders.concurrent` - 63% gap (19 → 7 lines)
 - `test.WithTimeoutOrNullTest` - 100% gap (12 → 0 lines)
 - `test.WithTimeoutOrNullDurationTest` - 100% gap (12 → 0 lines)
+- `selects.OnTimeout` - 47% gap (19 → 10 lines)
 - `intrinsics.Cancellable` - 40% gap (20 → 12 lines)
 - `operators.OnCompletionTest` - 100% gap (7 → 0 lines)
 - `channels.Broadcast` - 100% gap (6 → 0 lines)
