@@ -33,11 +33,11 @@ template <typename T>
 struct Collector : FlowCollector<T> {
     std::vector<T> values;
     bool pause = false;
-    Continuation<void*>* pending = nullptr;
+    std::shared_ptr<Continuation<void*>> pending;
     void* emit(T value, Continuation<void*>* continuation) override {
         values.push_back(std::move(value));
         if (!pause) return nullptr;
-        pending = continuation;
+        pending = kotlinx::coroutines::internal::retain_continuation(continuation);
         return intrinsics::get_COROUTINE_SUSPENDED();
     }
     void resume(Result<void*> result = Result<void*>::success(nullptr)) {
@@ -116,10 +116,10 @@ void test_range_and_array_suspension() {
 
 void test_two_suspensions_and_resumed_failure() {
     for (bool fail : {false, true}) {
-        Continuation<void*>* pending = nullptr;
+        std::shared_ptr<Continuation<void*>> pending;
         auto flow = as_flow<int>(std::function<void*(Continuation<void*>*)>(
             [&](Continuation<void*>* continuation) -> void* {
-                pending = continuation;
+                pending = kotlinx::coroutines::internal::retain_continuation(continuation);
                 return intrinsics::get_COROUTINE_SUSPENDED();
             }));
         Completion completion;
@@ -137,6 +137,46 @@ void test_two_suspensions_and_resumed_failure() {
             collector.resume();
             require(completion.resumes == 1 && completion.result.is_success());
         }
+    }
+}
+
+// NOTE(port): Execute the actual public function builder and retain the supplied
+// continuation in its asynchronous callee. Check owner identity and cleanup when
+// the flow is destroyed while suspended, including failure/cancellation results.
+void test_function_builder_owner_after_flow_destruction() {
+    for (int outcome : {0, 1, 2}) {
+        std::shared_ptr<Continuation<void*>> pending;
+        auto payload = std::make_shared<int>(42);
+        std::weak_ptr<int> observed = payload;
+        auto function = std::function<void*(Continuation<void*>*)>(
+            [payload, &pending](Continuation<void*>* continuation) -> void* {
+                require(*payload == 42);
+                pending = kotlinx::coroutines::internal::retain_continuation(continuation);
+                return intrinsics::get_COROUTINE_SUSPENDED();
+            });
+        auto instance = as_flow<int>(std::move(function));
+        payload.reset();
+        Completion completion;
+        Collector<int> collector;
+        collector.pause = true;
+        require(intrinsics::is_coroutine_suspended(instance->collect(&collector, &completion)));
+        instance.reset();
+        require(!observed.expired() && collector.values.empty());
+        auto active = std::move(pending);
+        auto failure = outcome == 2
+            ? std::make_exception_ptr(CancellationException("builder cancelled"))
+            : std::make_exception_ptr(std::runtime_error("builder failed"));
+        active->resume_with(outcome == 0 ? Result<void*>::success(new int(42)) : Result<void*>::failure(failure));
+        active.reset();
+        if (outcome == 0) {
+            require(!observed.expired() && completion.resumes == 0);
+            require(collector.values == std::vector<int>{42});
+            collector.resume();
+            require(completion.result.is_success());
+        } else {
+            require(collector.values.empty() && completion.result.exception_or_null() == failure);
+        }
+        require(completion.resumes == 1 && observed.expired());
     }
 }
 
@@ -652,6 +692,7 @@ int main() {
         test_sequence();
         test_range_and_array_suspension();
         test_two_suspensions_and_resumed_failure();
+        test_function_builder_owner_after_flow_destruction();
         test_undispatched_context_and_resume();
         test_callback_checks_after_suspension();
         test_merge_permit_remains_held_during_suspension();

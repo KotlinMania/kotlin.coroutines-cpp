@@ -44,34 +44,30 @@ namespace flow {
  *
  * ```cpp
  * auto fibonacci() {
- *     return flow<long long>([](FlowCollector<long long>* emit, Continuation<void*>* cont) -> void* {
+ *     return flow<long long>([](FlowCollector<long long>* emit,
+ *                               std::shared_ptr<Continuation<void*>> completion)
+ *         __attribute__((annotate("suspend"))) -> void* {
  *         long long x = 0, y = 1;
  *         while (true) {
- *             emit->emit(x, cont);
- *             std::tie(x, y) = std::make_tuple(y, x + y);
+ *             dsl::suspend(emit->emit(x, completion.get()));
+ *             auto next = x + y;
+ *             x = y;
+ *             y = next;
  *         }
  *         return nullptr;
  *     });
  * }
  *
- * fibonacci() | take(100) | collect([](long long v) { std::cout << v << "\n"; });
+ * auto first_twenty = take(fibonacci(), 20);
+ * // NOTE(port): Bound the example to the C++ fixed-width integer representation.
  * ```
  *
  * Emissions from flow builder are cancellable by default &mdash; each call to emit
  * also calls ensure_active.
  *
  * emit should happen strictly in the dispatchers of the block in order to preserve the flow context.
- * For example, the following code will result in an exception:
- *
- * ```cpp
- * flow<int>([](FlowCollector<int>* emit, Continuation<void*>* cont) -> void* {
- *     emit->emit(1, cont); // Ok
- *     with_context(Dispatchers::IO, [&]() {
- *         emit->emit(2, cont); // Will fail with ISE
- *     });
- *     return nullptr;
- * });
- * ```
+ * Emitting after changing context inside the block violates this constraint
+ * and throws IllegalStateException, as in the upstream withContext example.
  *
  * If you want to switch the context of execution of a flow, use the flow_on operator.
  *
@@ -94,6 +90,17 @@ std::shared_ptr<Flow<T>> flow(std::function<void*(FlowCollector<T>*, Continuatio
         }
     };
     return std::make_shared<SafeFlow>(std::move(block));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:52-59
+// NOTE(port): Owning Continuation authoring projection of the same source block;
+// AbstractFlow collection retains the actual SafeFlow and its callable owner.
+template <typename T>
+std::shared_ptr<Flow<T>> flow(
+    std::function<void*(FlowCollector<T>*, std::shared_ptr<Continuation<void*>>)> block) {
+    return flow<T>([block = std::move(block)](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
+        return block(collector, kotlinx::coroutines::internal::retain_continuation(completion));
+    });
 }
 
 /**
@@ -120,16 +127,6 @@ std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
     });
 }
 
-/**
- * Creates a _cold_ flow that produces a single value from the given functional type.
- *
- * Example of usage:
- *
- * ```cpp
- * void* remote_call(Continuation<void*>* completion);
- * auto remote_call_flow() { return as_flow<R>(remote_call); }
- * ```
- */
 namespace detail {
 
 // NOTE(port): These generic collection bodies must remain in the header for
@@ -150,7 +147,7 @@ void* collect_function(std::function<void*(Continuation<void*>*)> function,
     return nullptr;
 }
 
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:85-90
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:85-90,118-122
 template <typename T>
 [[clang::annotate("suspend")]]
 void* collect_iterable(std::vector<T> iterable, FlowCollector<T>* collector,
@@ -189,6 +186,16 @@ void* collect_iterator(std::shared_ptr<Iterator> cursor, Iterator last,
 
 } // namespace detail
 
+/**
+ * Creates a _cold_ flow that produces a single value from the given functional type.
+ *
+ * Example of usage:
+ *
+ * ```cpp
+ * void* remote_call(Continuation<void*>* completion);
+ * auto remote_call_flow() { return as_flow<R>(remote_call); }
+ * ```
+ */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:78-80
 template <typename T>
 std::shared_ptr<Flow<T>> as_flow(std::function<void*(Continuation<void*>*)> function) {
@@ -248,8 +255,14 @@ auto as_flow(Iterator first, Iterator last)
 template <typename T>
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:118-122
 std::shared_ptr<Flow<T>> flow_of(std::initializer_list<T> elements) {
-    std::vector<T> vec = elements;
-    return as_flow(vec);
+    // NOTE(port): An initializer_list borrows storage, so keep the existing
+    // owning vector representation for the captured vararg values.
+    std::vector<T> values(elements);
+    return internal::unsafe_flow<T>([values = std::move(values)](FlowCollector<T>* collector,
+                                                               Continuation<void*>* completion) -> void* {
+        return detail::collect_iterable<T>(values, collector,
+            kotlinx::coroutines::internal::retain_continuation(completion));
+    });
 }
 
 /**
