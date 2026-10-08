@@ -403,8 +403,39 @@ float token_cosine(const std::string& a, const std::string& b) {
         auto tree = ts_parser_parse_string(parser, nullptr, source.data(), source.size());
         std::function<void(TSNode)> visit = [&](TSNode node) {
             const std::string kind = ts_node_type(node);
-            if (kind == "comment") return;
             const auto text = source.substr(ts_node_start_byte(node), ts_node_end_byte(node) - ts_node_start_byte(node));
+            if (kind == "comment") {
+                // Documentation is part of literal transliteration fidelity. Keep
+                // ordered narrative words; only delimiters and port metadata differ.
+                std::istringstream lines(text);
+                std::string narrative;
+                for (std::string line; std::getline(lines, line);) {
+                    auto first = line.find_first_not_of(" \t");
+                    if (first != std::string::npos) line.erase(0, first);
+                    if (line.starts_with("//")) line.erase(0, 2);
+                    else if (line.starts_with("/**")) line.erase(0, 3);
+                    else if (line.starts_with("/*")) line.erase(0, 2);
+                    else if (line.starts_with("*")) line.erase(0, 1);
+                    first = line.find_first_not_of(" \t");
+                    if (first != std::string::npos) line.erase(0, first);
+                    if (line.starts_with("Transliterated from:") || line.starts_with("port-lint:")) continue;
+                    narrative += line + '\n';
+                }
+                auto documentation = render_documentation(narrative, {}).text;
+                std::string word;
+                for (size_t index = 0; index < documentation.size(); ++index) {
+                    if (documentation.compare(index, 5, "\\ref ") == 0 || documentation.compare(index, 3, "\\c ") == 0) {
+                        if (!word.empty()) { result.push_back("doc:" + word); word.clear(); }
+                        index += documentation.compare(index, 5, "\\ref ") == 0 ? 4 : 2;
+                        continue;
+                    }
+                    auto character = static_cast<unsigned char>(documentation[index]);
+                    if (std::isalnum(character) || character == '_') word += static_cast<char>(character);
+                    else if (!word.empty()) { result.push_back("doc:" + word); word.clear(); }
+                }
+                if (!word.empty()) result.push_back("doc:" + word);
+                return;
+            }
             // Fallback statements are evidence of absent replacement rules,
             // never a literal implementation to reward for matching itself.
             if (generated && (kind == "expression_statement" || kind == "call_expression") &&
@@ -417,7 +448,8 @@ float token_cosine(const std::string& a, const std::string& b) {
         visit(ts_tree_root_node(tree)); ts_tree_delete(tree); ts_parser_delete(parser); return result;
     };
     auto left = tokens(a, true), right = tokens(b, false);
-    // No executable evidence is not a successful comparison.
+    // Empty source/target evidence is not a successful comparison. Documentation
+    // stays in its actual source position alongside code tokens.
     return left.empty() || right.empty() ? 0.0f : positional_cosine(left, right);
 }
 float documentation_similarity(const std::string& source, Language source_language,
@@ -570,7 +602,8 @@ TransliterationDistance transliteration_distance(const std::string& source, Lang
     result.translated_text_cosine = token_cosine(result.translation.buffer, target);
     result.documentation_parity = documentation_similarity(source, source_language, target, target_language);
     result.fallback_penalty = 1 - result.translation.rule_coverage;
-    // The literal text cosine is the score. AST, logic, symbol and coverage
+    // The literal text cosine, including comments and KDoc, is the score.
+    // AST, logic, symbol and coverage
     // evidence are independent diagnostics, not weighted score substitutes.
     result.score = result.translated_text_cosine;
     return result;

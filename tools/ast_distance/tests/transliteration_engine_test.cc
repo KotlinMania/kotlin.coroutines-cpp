@@ -50,12 +50,12 @@ int main() {
     assert(string_changed.score < 1); // Literal contents stay intact as one token.
     auto doc_order = transliteration_distance(source, Language::KOTLIN,
         changed(output.buffer, "after the limit", "the after limit"), Language::CPP);
-    assert(doc_order.documentation_parity < 1 && doc_order.score == baseline.score);
+    assert(doc_order.documentation_parity < 1 && doc_order.score < baseline.score);
     auto documentation_removed = output.buffer.substr(output.buffer.find("int compare_value"));
     auto missing_docs = transliteration_distance(source, Language::KOTLIN, documentation_removed, Language::CPP);
-    assert(missing_docs.score == baseline.score && missing_docs.documentation_parity == 0);
+    assert(missing_docs.score < baseline.score && missing_docs.documentation_parity == 0);
     auto extra_docs = transliteration_distance(source, Language::KOTLIN, output.buffer + "\n// inputValue limitValue if return else add remove", Language::CPP);
-    assert(extra_docs.score == baseline.score && extra_docs.documentation_parity < 1);
+    assert(extra_docs.score < baseline.score && extra_docs.documentation_parity < 1);
     const std::string fake = "/** Returns inputValue after the limit check. */\nint compare_value(int input_value, int limit_value) { const char* words = \"inputValue limitValue compareValue if return else 50 1\"; return 0; }";
     auto stuffed = transliteration_distance(source, Language::KOTLIN, fake, Language::CPP);
     assert(stuffed.score < .6f && stuffed.score < baseline.score - .25f);
@@ -71,7 +71,7 @@ int main() {
     auto doc_faithful = transliteration_distance(documented_source, Language::KOTLIN, documented_output.buffer, Language::CPP);
     assert(doc_faithful.documentation_parity == 1 && doc_faithful.score > .99f);
     auto doc_changed = transliteration_distance(documented_source, Language::KOTLIN, changed(documented_output.buffer, "the input", "the unrelated output"), Language::CPP);
-    assert(doc_changed.documentation_parity < 1 && doc_changed.score == doc_faithful.score);
+    assert(doc_changed.documentation_parity < 1 && doc_changed.score < doc_faithful.score);
     const std::string primitive_docs = "/** Accepts [Int], returns [kotlin.String], and sees [Helper]. @see kotlin.Int Also [a wide value][Long]. */\nfun primitiveValue(inputValue: kotlin.Int): kotlin.String = \"ready\"";
     auto primitive_output = transliterate(primitive_docs, Language::KOTLIN, Language::CPP);
     assert(primitive_output.rule_misses == 0);
@@ -86,7 +86,7 @@ int main() {
     auto primitive_markup = transliteration_distance(primitive_docs, Language::KOTLIN, changed(primitive_output.buffer, "\\c int", "`int`"), Language::CPP);
     assert(primitive_markup.documentation_parity == 1 && primitive_markup.score == primitive_faithful.score);
     auto primitive_wrong = transliteration_distance(primitive_docs, Language::KOTLIN, changed(primitive_output.buffer, "\\c int", "\\c double"), Language::CPP);
-    assert(primitive_wrong.documentation_parity < 1 && primitive_wrong.score == primitive_faithful.score);
+    assert(primitive_wrong.documentation_parity < 1 && primitive_wrong.score < primitive_faithful.score);
     auto capital_parameter = transliterate("/** @param String the value */\nfun capitalValue(String: Int): Int = String", Language::KOTLIN, Language::CPP);
     assert(capital_parameter.buffer.find("@param string the value") != std::string::npos);
     auto fenced = transliterate("/** Example:\n * ```kotlin\n * fun example() = 1\n * ```\n */\nfun exampleValue(): Int = 1", Language::KOTLIN, Language::CPP);

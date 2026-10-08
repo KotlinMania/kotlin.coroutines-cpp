@@ -30,7 +30,7 @@ struct TransliterationDistance {
     std::vector<std::string> missing_functions, extra_functions;
     TransliterationOutput translation;
     float translated_text_cosine = 0, translated_ast_cosine = 0;
-    // Documentation correspondence is diagnostic and never boosts implementation score.
+    // Ordered documentation correspondence is also included in the primary text score.
     float documentation_parity = 0;
     float symbol_parity = 0, normalized_logic = 0, fallback_penalty = 0, score = 0;
     bool translated_parse_errors = false, target_parse_errors = false;
