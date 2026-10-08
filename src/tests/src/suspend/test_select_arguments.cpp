@@ -149,7 +149,7 @@ public:
         while (!queue.empty()) { auto task = std::move(queue.front()); queue.pop_front(); task->run(); }
     }
 };
-// Source contracts: selects/OnTimeout.kt:15-16,25-26,45-61; Delay.kt:149,155-158.
+// Source contracts: selects/OnTimeout.kt:16-17,26-27,45-60; Delay.kt:149,155-158.
 void timeout_context_contract() {
     auto dispatcher = std::make_shared<TimeoutDispatcher>();
     Completion completion;
@@ -165,7 +165,7 @@ void timeout_context_contract() {
     dispatcher->drain();
     CHECK(calls == 1 && completion.resumes == 1 && !completion.failure);
 }
-// Source contracts: selects/OnTimeout.kt:25-26,45-63; Delay.kt:155-158.
+// Source contracts: selects/OnTimeout.kt:26-27,45-60; Delay.kt:155-158.
 template <typename Duration>
 void timeout_duration_contract(Duration duration, long long expected) {
     auto dispatcher = std::make_shared<TimeoutDispatcher>();
@@ -187,7 +187,7 @@ void timeout_duration_contract(Duration duration, long long expected) {
     }
     CHECK(calls == 1);
 }
-// Source contracts: selects/Select.kt:111-113,824-848; selects/OnTimeout.kt:45-61.
+// Source contracts: selects/Select.kt:111-113,824-848; selects/OnTimeout.kt:45-60.
 void timeout_value_contract(bool wait) {
     class IntCompletion final : public Continuation<void*> {
     public:
@@ -218,7 +218,7 @@ void timeout_value_contract(bool wait) {
     }
     CHECK(calls == 1);
 }
-// Source contracts: selects/OnTimeout.kt:51-63; selects/Select.kt:742-778,850-858.
+// Source contracts: selects/OnTimeout.kt:51-60; selects/Select.kt:742-778,850-858.
 void timeout_cleanup_contract(bool cancel) {
     auto dispatcher = std::make_shared<TimeoutDispatcher>();
     auto job = JobImpl::create(nullptr);
@@ -242,7 +242,7 @@ void timeout_cleanup_contract(bool cancel) {
     dispatcher->drain();
     CHECK(timed_calls == 0);
 }
-// Source contracts: selects/OnTimeout.kt:51-61. The Runnable retains the actual select owner.
+// Source contracts: selects/OnTimeout.kt:51-60. The Runnable retains the actual select owner.
 void timeout_owner_contract() {
     auto dispatcher = std::make_shared<TimeoutDispatcher>();
     Completion completion;

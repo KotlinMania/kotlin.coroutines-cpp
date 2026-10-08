@@ -8,10 +8,10 @@
 
 namespace kotlinx::coroutines::selects {
 
-// Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:33-64
+// Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:34-61
 class OnTimeout : public std::enable_shared_from_this<OnTimeout> {
 public:
-    // Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:33-35
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:34-36
     explicit OnTimeout(std::int64_t time_millis) : time_millis_(time_millis) {}
 
     // Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:38-42
@@ -24,7 +24,7 @@ public:
     }
 
 private:
-    // Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:45-63
+    // Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:45-60
     // NOTE(port): register is a C++ keyword; the suffix preserves the source name.
     void register_(SelectInstanceBase& select, void*) {
         if (time_millis_ <= 0) {
@@ -51,7 +51,7 @@ private:
 };
 
 namespace detail {
-// Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:16,33-42
+// Transliterated from: kotlinx-coroutines-core/common/src/selects/OnTimeout.kt:16-17,34-42
 std::unique_ptr<SelectClause0> make_on_timeout_clause(std::int64_t time_millis) {
     return std::make_shared<OnTimeout>(time_millis)->select_clause();
 }
