@@ -98,3 +98,53 @@ The fresh complete core and seven focused targets build, and all seven CTest exe
 Both final full-root deep scans exit zero. Library evidence records 818/2918 matched functions, 358/560 types, body similarity 0.26 and 123 scoring failures. ChannelFlow retains 18/19 function names and 6/6 types, with body similarity 0.25; ChannelFlowOperator.toString remains missing. Compiler/prerequisite evidence remains 591/7657 functions, 174/1727 types, body similarity 0.36 and 24 scoring failures. Generated evidence is unchanged by the final test-only corrections and remains committed in 4c2bb297. Receipts: channel-flow-surface-{library,compiler}-deep.log. No analyzer criteria were modified.
 
 The docking-ring, IR lowering and declaration/scope designs were reread together with the full pinned NativeSuspendFunctionLowering.kt and CoroutinesVarSpillingLowering.kt, source IrToBitcode suspension scopes and the actual module injector. Existing library frames use the persistent-label/current-frame/Result contract and mandatory LLVM injection. Complete IR declaration identity/scopes, automatic spill lowering and direct shared Native/C++ frames remain unfinished compiler work. This repair does not establish either complete standalone or Native/MLX GPU acceptance path. Kanban t_8700df29 and source umbrella t_1834dcec remain open for their remaining source requirements.
+
+
+## Structural interceptor equality — 2026-10-07
+
+The complete pinned ChannelFlow.kt and existing C++ header/source pair were read
+before editing. Kotlin's second fast-path comparison at :164 uses structural
+`==`. The previous C++ body compared two shared_ptr values, substituting pointer
+identity for virtual equality. The translated expression at ChannelFlow.hpp:482
+now obtains the new and collecting interceptors in source order, invokes
+new_interceptor.equals(collect_interceptor) for a non-null left operand, and
+compares the right operand to null when the left operand is null. It adds no
+new dispatcher, frame, runtime or ownership abstraction.
+
+The committed regression eb8b22fb builds against the preceding production
+header and exits one at test_channel_as_flow_smoke.cpp:211. Equal but distinct
+interceptors incorrectly create a producer and present a SendingCollector to
+upstream. The repaired production commit is 6d308d3b. The final regression at
+fixture :161 forces the first full-context comparison to differ by adding an
+upstream CoroutineName; it then distinguishes the actual undispatched collector
+from the actual channel-backed producer, rather than checking a helper alone.
+It checks source upstream interceptor identity and one invocation. Eight cases
+cover equal and unequal interceptors, immediate completion, suspended success,
+resumed failure, and resumed CancellationException. Suspended cases discard
+external flow and resource owners and require retention through suspension,
+exact failure identity, and release after termination. Cancellation here is an
+actual CancellationException delivered on resumption; this fixture does not
+establish the complete prompt-cancellation race guarantee.
+
+Final core/focused builds finish with exit zero. Three CTest executables finish
+with zero failures in 0.34 seconds: test_channel_as_flow_smoke,
+test_channel_consumption and test_continuation_dispatch. The expanded fixture,
+ChannelFlow.cpp, Flow.cpp and Channels.cpp also compile and execute under
+AddressSanitizer/UndefinedBehaviorSanitizer with detect_stack_use_after_return=1,
+exit zero and no diagnostics. The linked fresh dependency archive is not wholly
+instrumented. Receipts under build/ir-recovery are
+channel-interceptor-before-{build,test}.log, channel-interceptor-build.log,
+channel-interceptor-final-{build,tests}.log and
+channel-interceptor-sanitizer-{build,tests}.log.
+
+Sixty-four ranged source references across the ChannelFlow pair resolve with
+valid bounds; neither file has prohibited source markers. Both complete-root
+deep scans finish with exit zero. Library evidence remains 820/2918 function
+names, 359/560 types, average body similarity 0.26 and 123 scoring failures.
+ChannelFlow is 18/19 function names and 6/6 types, with body similarity 0.24;
+its upstream-prefixed toString remains missing. Compiler/prerequisite evidence
+remains 591/7657 functions, 174/1727 types, body similarity 0.36 and 24 failures.
+Receipts are channel-interceptor-{library,compiler}-deep.log. No analyzer
+criteria were changed. These checks do not establish whole-file correspondence
+or either complete MLX GPU acceptance path; the full translation goal remains
+active.
