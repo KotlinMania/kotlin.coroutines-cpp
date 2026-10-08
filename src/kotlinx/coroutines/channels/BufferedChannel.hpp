@@ -40,7 +40,6 @@
 #include <cstdint>
 #include <cstring>
 #include <array>
-#include <type_traits>
 
 namespace kotlinx {
 namespace coroutines {
@@ -1842,14 +1841,7 @@ public:
                         static_cast<selects::SelectInstance<void*>*>(select), ignored);
                 },
                 /*processResFunc=*/[this](void* /*clause*/, void* ignored, void* result) {
-                    auto* box = static_cast<E*>(this->process_result_select_receive(ignored, result));
-                    if constexpr (std::is_pointer_v<E>) {
-                        // NOTE(port): Unbox the pointer value without adopting its borrowed pointee.
-                        std::unique_ptr<E> owner(box);
-                        return const_cast<void*>(static_cast<const void*>(*owner));
-                    } else {
-                        return static_cast<void*>(box);
-                    }
+                    return this->process_result_select_receive(ignored, result);
                 },
                 select_receive_cancellation_constructor());
         }
