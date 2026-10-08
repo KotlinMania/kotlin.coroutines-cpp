@@ -26,9 +26,12 @@ class HeaderDeclarations : public clang::RecursiveASTVisitor<HeaderDeclarations>
 public:
     explicit HeaderDeclarations(clang::ASTContext& context, std::string edited_file = {},
                                 unsigned edited_begin = 0, unsigned edited_end = 0,
-                                long replacement_size = 0)
+                                long replacement_size = 0, std::string original_main_file = {},
+                                unsigned main_prefix_size = 0, unsigned main_original_limit = 0)
         : context_(context), edited_file_(std::move(edited_file)), edited_begin_(edited_begin),
-          edited_end_(edited_end), replacement_size_(replacement_size) {}
+          edited_end_(edited_end), replacement_size_(replacement_size),
+          original_main_file_(std::move(original_main_file)), main_prefix_size_(main_prefix_size),
+          main_original_limit_(main_original_limit) {}
     bool shouldVisitTemplateInstantiations() const { return true; }
     // Lambda invoke declarations are implicit but their written bodies are
     // compiler entry contexts. Include their records in declaration reuse/import.
@@ -45,9 +48,17 @@ public:
     bool VisitNamedDecl(clang::NamedDecl* declaration) {
         auto& manager = context_.getSourceManager();
         auto location = manager.getExpansionLoc(declaration->getLocation());
-        if (location.isInvalid() || manager.isWrittenInMainFile(location)) return true;
+        if (location.isInvalid()) return true;
         auto filename = manager.getFilename(location).str();
         long source_offset = manager.getFileOffset(location);
+        if (manager.isWrittenInMainFile(location)) {
+            if (original_main_file_.empty()) return true;
+            source_offset -= main_prefix_size_;
+            // Only original declarations preceding the rewritten body can
+            // reuse host nodes. Generated frame declarations have no host twin.
+            if (source_offset < 0 || source_offset >= main_original_limit_) return true;
+            filename = original_main_file_;
+        }
         if (filename == edited_file_ && source_offset >= edited_begin_) {
             if (source_offset < edited_begin_ + replacement_size_) return true;
             source_offset -= replacement_size_ - (edited_end_ - edited_begin_);
@@ -76,6 +87,9 @@ private:
     unsigned edited_begin_;
     unsigned edited_end_;
     long replacement_size_;
+    std::string original_main_file_;
+    unsigned main_prefix_size_;
+    unsigned main_original_limit_;
 };
 class ReferencedFunctions : public clang::RecursiveASTVisitor<ReferencedFunctions> {
 public:
@@ -280,7 +294,8 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
             if (newline != std::string::npos) source.resize(newline + 1);
         }
     }
-    source.insert(0, "#include <optional>\n#include <functional>\n");
+    const std::string parser_includes = "#include <optional>\n#include <functional>\n";
+    source.insert(0, parser_includes);
     if (instantiated) source += "\n" + instantiated_entry;
     auto invocation = std::make_shared<CompilerInvocation>(compiler.getInvocation());
     // The prefix will be imported immediately. Instantiate its referenced
@@ -318,7 +333,8 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
     context.AddDeallocation([](void* storage) { delete static_cast<ASTUnit*>(storage); }, unit);
     FunctionDecl* wrapper = nullptr;
     HeaderDeclarations generated(unit->getASTContext(), header ? file->getName().str() : "",
-                                 begin, end, replacement_size);
+                                 begin, end, replacement_size,
+                                 header ? "" : main_file->getName().str(), parser_includes.size(), begin);
     generated.TraverseDecl(unit->getASTContext().getTranslationUnitDecl());
     for (auto* candidate : generated.functions)
         if (((!local_frame || (instantiated && !member)) && candidate->getNameAsString() == name) ||
@@ -330,7 +346,8 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
                          unit->getFileManager(), false);
     helper_diagnostics->getClient()->BeginSourceFile(unit->getASTContext().getLangOpts(), nullptr);
     auto diagnostic_scope = llvm::scope_exit([&] { helper_diagnostics->getClient()->EndSourceFile(); });
-    HeaderDeclarations existing(context);
+    HeaderDeclarations existing(context, {}, 0, 0, 0,
+                                header ? "" : main_file->getName().str(), 0, begin);
     existing.TraverseDecl(context.getTranslationUnitDecl());
     for (const auto& [key, declaration] : generated.declarations) {
         auto found = existing.declarations.find(key);
