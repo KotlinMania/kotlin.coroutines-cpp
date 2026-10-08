@@ -999,6 +999,14 @@ void channel_flow_collect_lambda_contract() {
             if (outcome == 1) channel->close(failure);
             else channel->cancel(failure);
         }
+        if (completion->resumes != 1 || completion->failure != failure || calls != 1) {
+            std::cerr << "collect lambda outcome=" << outcome << " resumes=" << completion->resumes
+                      << " calls=" << calls << " failure=" << static_cast<bool>(completion->failure) << '\n';
+            if (completion->failure) {
+                try { std::rethrow_exception(completion->failure); }
+                catch (const std::exception& exception) { std::cerr << exception.what() << '\n'; }
+            }
+        }
         CHECK(completion->resumes == 1 && completion->failure == failure && calls == 1);
         CHECK(lifetime.expired() && resource_lifetime.expired());
     }
