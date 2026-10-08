@@ -43,7 +43,10 @@ void* authored(Job& job, std::shared_ptr<Continuation<void*>> completion) {
     return nullptr;
 }
 }
-int main() { require(&authored != nullptr); }
+void call(Job& job, std::shared_ptr<Continuation<void*>> completion) {
+    require(true);
+    authored(job, std::move(completion));
+}
 '''
     warning_command = [args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Werror',
         '-Wno-unused-parameter', '-I' + str(args.root / 'src'),
