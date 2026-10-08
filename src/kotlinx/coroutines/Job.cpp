@@ -12,6 +12,7 @@
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/CompletableJob.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
+#include "kotlinx/coroutines/ContinuationImpl.hpp"
 // kotlinx.coroutines.selects.* (from Kotlin)
 #include "kotlinx/coroutines/selects/Select.hpp"
 #include <stdexcept>
@@ -23,15 +24,18 @@ namespace kotlinx {
             return other;
         }
 
-        // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:506-509
+        // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:509-512
+        // NOTE(port): The raw entry binds the caller to the compiler-lowered body.
         void* cancel_and_join(Job& job, Continuation<void*>* continuation) {
-            job.cancel();
-            return job.join(continuation);
+            return cancel_and_join(job, internal::retain_continuation(continuation));
         }
 
-        // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:506-509
+        // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:509-512
+        [[clang::annotate("suspend")]]
         void* cancel_and_join(Job& job, std::shared_ptr<Continuation<void*>> continuation) {
-            return cancel_and_join(job, continuation.get());
+            job.cancel();
+            job.join();
+            return nullptr;
         }
 
         // NOTE(port): This explicitly blocking C++ convenience is not a suspend translation.
@@ -40,7 +44,7 @@ namespace kotlinx {
             job.join_blocking();
         }
 
-        // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:517-519
+        // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:519-521
         void cancel_children(Job& job, std::exception_ptr cause) {
             for (auto& child : job.get_children()) child->cancel(cause);
         }

@@ -435,10 +435,15 @@ inline std::shared_ptr<DisposableHandle> non_disposable_handle() {
  *
  * This is a shortcut for the invocation of cancel() followed by join().
  */
-// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:506-509
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:509-512
+[[clang::annotate("suspend"), clang::annotate("kxs_implicit_continuation")]]
+__attribute__((error("cancel_and_join() requires suspend lowering; use its continuation ABI at an explicit boundary")))
+void cancel_and_join(Job& job);
+
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:509-512
 void* cancel_and_join(Job& job, Continuation<void*>* continuation);
-// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:506-509
-// NOTE(port): The existing owned-continuation binding forwards to the virtual ABI.
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:509-512
+// NOTE(port): CMake's Clang plugin lowers the source body and owns its continuation.
 void* cancel_and_join(Job& job, std::shared_ptr<Continuation<void*>> continuation);
 
 // NOTE(port): Explicit blocking C++ convenience retained for ordinary callers;
@@ -450,7 +455,7 @@ void cancel_and_join_blocking(Job& job);
  * with an optional cancellation cause.
  * Unlike Job::cancel() on this job as a whole, the state of this job itself is not affected.
  */
-// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:517-519
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:519-521
 void cancel_children(Job& job, std::exception_ptr cause = nullptr);
 
 /**
