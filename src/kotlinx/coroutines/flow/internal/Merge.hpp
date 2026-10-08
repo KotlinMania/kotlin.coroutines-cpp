@@ -1,5 +1,5 @@
 #pragma once
-// port-lint: source flow/internal/Merge.kt
+// port-lint: source kotlinx-coroutines-core/common/src/flow/internal/Merge.kt
 /**
  * @file Merge.hpp
  * @brief Internal flow merge operators (ChannelFlowMerge, ChannelLimitedFlowMerge, ChannelFlowTransformLatest).
@@ -58,8 +58,11 @@ public:
           collector_(collector), scope_(scope) {}
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
-    void* collect(Continuation<void*>* continuation) {
-        return flow_->collect(this, continuation);
+    [[clang::annotate("suspend")]]
+    void* collect(std::shared_ptr<Continuation<void*>> completion) {
+        auto owner = this->shared_from_this();
+        dsl::suspend(flow_->collect(this, completion.get()));
+        return nullptr;
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
@@ -80,14 +83,12 @@ private:
             std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)>(
                 [transform = transform_, collector = collector_, argument](
                     CoroutineScope*, std::shared_ptr<Continuation<void*>> completion) -> void* {
-                    return collect_channel_flow([transform, collector, argument](Continuation<void*>* frame) {
-                        return transform(collector, std::move(*argument), frame);
-                    }, std::move(completion));
+                    return transform(collector, std::move(*argument), completion.get());
                 }));
     }
 
     std::shared_ptr<Flow<T>> flow_;
-    TransformType transform_;
+    const TransformType transform_;
     FlowCollector<R>* collector_;
     CoroutineScope* scope_;
     std::shared_ptr<Job> previous_flow_;
@@ -95,7 +96,7 @@ private:
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:9-35
 template <typename T, typename R>
-class ChannelFlowTransformLatest : public ChannelFlowOperator<T, R> {
+class ChannelFlowTransformLatest final : public ChannelFlowOperator<T, R> {
 public:
     using TransformType = std::function<void*(FlowCollector<R>*, T, Continuation<void*>*)>;
 
@@ -118,23 +119,31 @@ protected:
 protected:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:19-34
     void* flow_collect(FlowCollector<R>* collector, Continuation<void*>* continuation) override {
+        return flow_collect(collector, kotlinx::coroutines::internal::retain_continuation(continuation));
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:19-34
+    [[clang::annotate("suspend")]]
+    void* flow_collect(FlowCollector<R>* collector,
+        std::shared_ptr<Continuation<void*>> completion) {
+        // So cancellation behaviour is not leaking into the downstream.
         assert((dynamic_cast<SendingCollector<R>*>(collector) != nullptr));
-        return collect_in_scope([flow = this->upstream(), transform = transform_, collector](
-            CoroutineScope* scope, std::shared_ptr<Continuation<void*>> completion) -> void* {
+        auto owner = this->weak_from_this().lock();
+        dsl::suspend(collect_in_scope([flow = this->upstream(), transform = transform_, collector](
+            CoroutineScope* scope, std::shared_ptr<Continuation<void*>> continuation) -> void* {
             auto receiver = std::make_shared<TransformLatestCollector<T, R>>(flow, transform, collector, scope);
-            return collect_channel_flow([receiver](Continuation<void*>* frame) {
-                return receiver->collect(frame);
-            }, std::move(completion));
-        }, continuation);
+            return receiver->collect(std::move(continuation));
+        }, completion.get()));
+        return nullptr;
     }
 
 private:
-    TransformType transform_;
+    const TransformType transform_;
 };
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:37-74
 template <typename T>
-class ChannelFlowMerge : public ChannelFlow<T> {
+class ChannelFlowMerge final : public ChannelFlow<T> {
 public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:37-43
     ChannelFlowMerge(
@@ -161,6 +170,7 @@ public:
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:51-71
+    [[clang::annotate("suspend")]]
     void* collect_to(ProducerScope<T>* scope,
                      std::shared_ptr<Continuation<void*>> completion) override {
         // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:51-71
@@ -208,10 +218,10 @@ public:
             std::shared_ptr<SendingCollector<T>> collector_;
             std::shared_ptr<Job> job_;
         };
+        auto owner = this->weak_from_this().lock();
         auto receiver = std::make_shared<MergeCollector>(flow_, concurrency_, scope, completion);
-        return collect_channel_flow([receiver](Continuation<void*>* frame) {
-            return receiver->collect(frame);
-        }, std::move(completion));
+        dsl::suspend(receiver->collect(completion.get()));
+        return nullptr;
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:73-73
@@ -220,13 +230,13 @@ public:
     }
 
 private:
-    std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> flow_;
-    int concurrency_;
+    const std::shared_ptr<Flow<std::shared_ptr<Flow<T>>>> flow_;
+    const int concurrency_;
 };
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:76-95
 template <typename T>
-class ChannelLimitedFlowMerge : public ChannelFlow<T> {
+class ChannelLimitedFlowMerge final : public ChannelFlow<T> {
 public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:76-81
     ChannelLimitedFlowMerge(
@@ -258,16 +268,14 @@ public:
             kotlinx::coroutines::launch(scope, EmptyCoroutineContext::instance(), CoroutineStart::DEFAULT,
                 std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)>(
                     [flow, collector](CoroutineScope*, std::shared_ptr<Continuation<void*>> completion) -> void* {
-                        return collect_channel_flow([flow, collector](Continuation<void*>* frame) {
-                            return flow->collect(collector.get(), frame);
-                        }, std::move(completion));
+                        return flow->collect(collector.get(), completion.get());
                     }));
         }
         return nullptr;
     }
 
 private:
-    std::vector<std::shared_ptr<Flow<T>>> flows_;
+    const std::vector<std::shared_ptr<Flow<T>>> flows_;
 };
 
 } // namespace internal

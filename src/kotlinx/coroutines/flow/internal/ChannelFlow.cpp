@@ -53,15 +53,6 @@ private:
 
 } // namespace
 
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
-[[clang::annotate("suspend")]]
-void* collect_channel_flow(
-    std::function<void*(Continuation<void*>*)> collect,
-    std::shared_ptr<Continuation<void*>> completion) {
-    dsl::suspend(collect(completion.get()));
-    return nullptr;
-}
-
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:215-225
 void* call_with_context_undispatched(
     std::shared_ptr<CoroutineContext> new_context, void* count_or_element,

@@ -51,13 +51,6 @@ void* collect_in_scope(
     std::function<void*(CoroutineScope*, std::shared_ptr<Continuation<void*>>)> block,
     Continuation<void*>* completion);
 
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
-// NOTE(port): Typed bindings carry the source arguments into the owning
-// suspend entry. The Clang frontend generates its frame and lifetime cleanup.
-void* collect_channel_flow(
-    std::function<void*(Continuation<void*>*)> collect,
-    std::shared_ptr<Continuation<void*>> completion);
-
 // Forward declarations and using statements
 using kotlinx::coroutines::channels::Channel;
 using kotlinx::coroutines::channels::BufferOverflow;
