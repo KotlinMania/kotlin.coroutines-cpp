@@ -290,7 +290,8 @@ void channel_receive_contract(bool catching, bool wait, bool closed, bool cancel
             }
         } else CHECK(result == nullptr && !completion.resumes && calls == 1);
     } catch (...) {
-        CHECK(closed && !catching && std::current_exception() == cause && calls == 0);
+        if (!closed || catching) throw;
+        CHECK(std::current_exception() == cause && calls == 0);
     }
     resource.reset();
     CHECK(lifetime.expired());
