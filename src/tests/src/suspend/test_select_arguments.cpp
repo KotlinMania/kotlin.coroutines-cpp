@@ -237,6 +237,102 @@ void buffered_channel_resource_contract() {
         CHECK(lifetime.expired());
     }
 }
+// Source contracts: channels/BufferedChannel.kt:875-961,1504-1567.
+void channel_receive_contract(bool catching, bool wait, bool closed, bool cancel) {
+    using namespace kotlinx::coroutines::channels;
+    BufferedChannel<std::shared_ptr<int>> channel(wait ? 0 : 1);
+    Completion completion;
+    auto job = JobImpl::create(nullptr);
+    completion.context = job;
+    auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+    SelectBuilder<void*>& builder = *selection;
+    auto resource = std::make_shared<int>(93);
+    auto* identity = resource.get();
+    std::weak_ptr<int> lifetime = resource;
+    int calls = 0;
+    auto cause = std::make_exception_ptr(std::runtime_error("receive close cause"));
+    if (closed) channel.close(cause);
+    else if (!wait) CHECK(channel.try_send(resource).is_success());
+    auto receive = [&](std::shared_ptr<int> result) -> void* {
+        CHECK(result.get() == identity && *result == 93);
+        ++calls;
+        return nullptr;
+    };
+    if (catching) {
+        builder.invoke<ChannelResult<std::shared_ptr<int>>>(channel.on_receive_catching(),
+            std::function<void*(ChannelResult<std::shared_ptr<int>>, Continuation<void*>*)>(
+                [&](auto result, auto) -> void* {
+                    if (closed) {
+                        CHECK(result.is_closed() && result.exception_or_null() == cause);
+                        ++calls;
+                        return nullptr;
+                    }
+                    return receive(result.get_or_throw());
+                }));
+    } else {
+        builder.invoke<std::shared_ptr<int>>(channel.on_receive(),
+            std::function<void*(std::shared_ptr<int>, Continuation<void*>*)>(
+                [&](auto result, auto) { return receive(std::move(result)); }));
+    }
+    try {
+        auto result = selection->do_select(&completion);
+        CHECK(!closed || catching);
+        if (wait && !closed) {
+            CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(result));
+            CHECK(!completion.resumes && calls == 0);
+            if (cancel) {
+                job->cancel(nullptr);
+                CHECK(completion.resumes == 1 && completion.failure && calls == 0);
+                CHECK(channel.try_send(resource).is_failure());
+            } else {
+                CHECK(channel.try_send(resource).is_success());
+                CHECK(completion.resumes == 1 && !completion.failure && calls == 1);
+            }
+        } else CHECK(result == nullptr && !completion.resumes && calls == 1);
+    } catch (...) {
+        CHECK(closed && !catching && std::current_exception() == cause && calls == 0);
+    }
+    resource.reset();
+    CHECK(lifetime.expired());
+}
+// Source contract: channels/BufferedChannel.kt:1561-1567.
+void channel_receive_prompt_cancellation(bool catching, bool handler) {
+    using namespace kotlinx::coroutines::channels;
+    int deliveries = 0, calls = 0;
+    int* identity = nullptr;
+    OnUndeliveredElement<std::shared_ptr<int>> on_undelivered;
+    if (handler) on_undelivered = [&](auto element) {
+        CHECK(element.get() == identity && *element == 94);
+        ++deliveries;
+    };
+    BufferedChannel<std::shared_ptr<int>> channel(1, on_undelivered);
+    auto dispatcher = std::make_shared<Dispatcher>();
+    auto job = JobImpl::create(nullptr);
+    Completion completion;
+    completion.context = dispatcher->operator+(job);
+    auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+    SelectBuilder<void*>& builder = *selection;
+    if (catching) {
+        builder.invoke<ChannelResult<std::shared_ptr<int>>>(channel.on_receive_catching(),
+            std::function<void*(ChannelResult<std::shared_ptr<int>>, Continuation<void*>*)>(
+                [&](auto, auto) -> void* { ++calls; return nullptr; }));
+    } else {
+        builder.invoke<std::shared_ptr<int>>(channel.on_receive(),
+            std::function<void*(std::shared_ptr<int>, Continuation<void*>*)>(
+                [&](auto, auto) -> void* { ++calls; return nullptr; }));
+    }
+    CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(selection->do_select(&completion)));
+    auto resource = std::make_shared<int>(94);
+    identity = resource.get();
+    std::weak_ptr<int> lifetime = resource;
+    CHECK(channel.try_send(resource).is_success());
+    resource.reset();
+    CHECK(!lifetime.expired() && !completion.resumes && !dispatcher->queue.empty());
+    job->cancel(nullptr);
+    dispatcher->drain();
+    CHECK(completion.resumes == 1 && completion.failure && calls == 0);
+    CHECK(deliveries == (handler ? 1 : 0) && lifetime.expired());
+}
 }
 int main() {
     try {
@@ -253,6 +349,14 @@ int main() {
         channel_send_contract(true, true, false);
         channel_send_contract(false, false, true);
         buffered_channel_resource_contract();
+        for (bool catching : {false, true}) {
+            channel_receive_contract(catching, false, false, false);
+            channel_receive_contract(catching, true, false, false);
+            channel_receive_contract(catching, true, false, true);
+            channel_receive_contract(catching, false, true, false);
+            channel_receive_prompt_cancellation(catching, false);
+            channel_receive_prompt_cancellation(catching, true);
+        }
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n'; return 1;
     }
