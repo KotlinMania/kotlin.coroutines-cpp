@@ -1,5 +1,76 @@
 # Merge source translation and private suspension bodies
 
+## Continued transliteration and compiler integration — 2026-10-07
+
+Source commits d573b064, c9f3038b and 2cbadce9 follow the checkpoint below.
+Internal Merge.hpp:76 now directly cancels/joins before starting the next
+UNDISPATCHED transform. Its private typed MergeCollector at :200 directly checks
+Job cancellation, acquires the semaphore and launches a child whose annotated
+lambda at :232 contains collection and permit cleanup. The generic binding is
+outside the suspend body, reflecting Native lowering's local-declaration
+prerequisite; no handwritten frame/label/spill logic is added. Existing .cpp
+callable entries remain consumed by older helper regressions, but the production
+collectors no longer call them. The scoped collection lambda is annotated with
+C++20-compatible GNU function-attribute syntax.
+
+Public flow/Merge.hpp:66 replaces flatten_concat's two handwritten frames with
+the source unsafe_flow/collect/emit_all body. :122,132,148,156 call the real map
+then flatten_concat/flatten_merge, replacing duplicated stack MapCollectors.
+Suspending flat-map overloads and both default-concurrency projections exist.
+:184,193 expose raw/owned transform_latest continuation bindings. :213,251
+translate map_latest and flat_map_latest with suspending transforms followed by
+actual emit/emit_all. Their receiving lambda owns and deletes the result box
+before the next suspension. Ordinary C++ transforms remain supported by boxing
+their actual result. DEFAULT_CONCURRENCY is immutable as the source val is.
+Public Merge.cpp now has canonical source provenance and its actual header path.
+
+The IR/CMake review read NativeSuspendFunctionLowering.kt,
+CoroutinesVarSpillingLowering.kt, AbstractSuspendFunctionsLowering.kt, the local
+declaration prerequisite and IrToBitcode.kt:2281-2340 alongside the consumed
+frontend, frame importer, LLVM injector and CMake modules. The pipeline remains
+Clang frontend plus mandatory in-compiler LLVM address injection, with persistent
+label, blockaddress/indirectbr and separate normal/resumed Result handling.
+Generic lambda/frame declaration integration and C++ closure lifetime coverage
+are incomplete; source annotations do not establish capture retention.
+
+CMake commit 4bc60d81 links the public package interface to the translated core,
+exports the advertised coroutines/coroutines_headers names, imports the core and
+Threads dependency in the installed config, and registers the real Native
+handoff only when KOTLIN_NATIVE_RUNTIME_AVAILABLE is explicitly enabled.
+build/source-continuation configures with that option OFF and the selected LLVM
+23.1.2 compiler/package. Generated export metadata links kotlinx::coroutines to
+kotlinx::kotlinx-coroutines-core. Its test inventory retains kxs_plugin_handoff
+and excludes the real Native handoff and GC boundary suites. Configuration is
+not an executable build or complete installed-package execution check.
+
+Fresh builds of KotlinxSuspendPlugin and KotlinxCoroutinePass both exit 2 on
+LLVM/Clang dependency unused-parameter diagnostics under the existing strict
+warning policy. No warning suppression or alternate compiler/runtime was added.
+Receipts: source-continuation-plugins-build.log and source-continuation-ir-build.log
+under build/ir-recovery. Configuration receipts use source-continuation-.
+
+Strict checks using the existing plugins of the actual channel consumer, actual
+test_transform_suspension.cpp and the concrete internal/public operator probes
+each exit 1. The earlier local-declaration and non-coroutine scoped-lambda
+diagnostics are absent from the current internal probe; generated template T,
+frame parsing, GNU label diagnostics and instantiated lambda namespace-context
+failures remain. Receipts: merge-source-bodies-{consumer,instantiation}.log and
+merge-operator-source-{consumer,instantiation}.log. The public probe exercises
+ordinary/suspending concat, merge with default/explicit concurrency, map_latest
+and flat_map_latest. No fresh runtime or either full MLX acceptance path is
+established, including retained identities/cleanup under resumed cancellation.
+
+Both exact full-root deep scans exit 0 without simultaneous source edits.
+Reports are committed in 26378eb2; receipts are
+merge-operator-source-{library,compiler}-deep.log. Internal Merge remains 9/9
+bodies, 3/3 types, with similarity 0.27. Public Merge is 8/9 bodies with similarity
+0.10; the Iterable.merge contract is still reported missing against its vector
+projection. Broader iterable identity, docs/examples and map dependency source
+translation remain incomplete. Library totals remain 831/2918 bodies,
+359/560 types, similarity 0.26 and 123 scoring failures. No analyzer criteria
+were modified. All 29 internal and 20 public ranged source references resolve;
+these three changed source files contain no prohibited markers.
+
 ## Current source-authoring checkpoint — 2026-10-07
 
 The tree was dirty on entry after the ChannelFlow handoff. Commit **53c62d23**

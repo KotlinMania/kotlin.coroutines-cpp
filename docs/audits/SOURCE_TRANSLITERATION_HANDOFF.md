@@ -6,6 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Continued transliteration:** d573b064 directly translates internal collector
+cancel/join/acquire/child cleanup bodies. c9f3038b and 2cbadce9 replace public
+Merge manual frames and duplicated stack mappers with the source operations and
+add suspending flat-map/latest transforms with explicit result-box ownership.
+4bc60d81 wires the installed C++ runtime package and gates Native tests explicitly.
+IR lowering and CMake integration were reviewed against pinned compiler source;
+the standalone OFF configuration succeeds, but strict fresh plugin builds fail
+on LLVM/Clang dependency diagnostics. Existing-plugin source consumers also fail
+on generated frames/template/lambda-context diagnostics. Read the current top
+section of MERGE_SOURCE_REPAIR.md for exact source locations and receipts.
+Both full-root deep scans finish with exit 0; reports are in 26378eb2. Internal
+Merge similarity is 0.27; public Merge remains incomplete at 8/9 bodies and 0.10.
+Continue source translation; neither runtime acceptance path is complete.
+
 **Latest checkpoint:** 53c62d23 preserves the four dirty source files found on
 entry; 3194132a completes immutable-capture/comment alignment. All four Merge
 consumers now use direct source operations, so collect_channel_flow is deleted
