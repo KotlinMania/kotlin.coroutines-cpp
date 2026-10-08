@@ -341,6 +341,31 @@ public:
     using ContinuationImpl::ContinuationImpl;
     void* invoke_suspend(Result<void*> result) override { return result.get_or_throw(); }
 };
+// Source contract: BufferedChannel.kt:131-139.
+void direct_closed_send_contract() {
+    using namespace kotlinx::coroutines::channels;
+    auto closing = std::make_exception_ptr(std::runtime_error("closed direct send"));
+    auto failure = std::make_exception_ptr(std::runtime_error("closed direct handler"));
+    for (bool handler : {false, true}) {
+        int deliveries = 0;
+        OnUndeliveredElement<std::string> callback;
+        if (handler) callback = [&](auto element) {
+            CHECK(element == "original direct element");
+            ++deliveries;
+            std::rethrow_exception(failure);
+        };
+        BufferedChannel<std::string> channel(1, callback);
+        CHECK(channel.close(closing));
+        Completion completion;
+        try { channel.send("original direct element", &completion); CHECK(false); }
+        catch (const kotlinx::coroutines::internal::UndeliveredElementException& exception) {
+            CHECK(handler && exception.cause() == failure);
+            CHECK(exception.suppressed_exceptions().size() == 1 && exception.suppressed_exceptions()[0] == closing);
+        }
+        catch (...) { CHECK(!handler && std::current_exception() == closing); }
+        CHECK(deliveries == (handler ? 1 : 0) && !completion.resumes);
+    }
+}
 // Source contract: BufferedChannel.kt:1493-1501.
 void closed_select_send_handler_context() {
     using namespace kotlinx::coroutines::channels;
@@ -617,6 +642,7 @@ int main() {
         }
         channel_receive_borrowed_pointer(false);
         channel_receive_borrowed_pointer(true);
+        direct_closed_send_contract();
         closed_select_send_handler_context();
         for (int kind = 0; kind < 3; ++kind)
             for (bool throwing : {false, true}) direct_receive_prompt_cancellation(kind, throwing);
