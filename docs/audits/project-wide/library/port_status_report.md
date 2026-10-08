@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 831/2918 matched (target 3028) | 28.5% |
-| Class/type parity | 359/560 matched (target 516) | 64.1% |
-| Combined symbol parity | 1190/3478 matched (target 3544) | 34.2% |
+| Function parity | 831/2918 matched (target 3021) | 28.5% |
+| Class/type parity | 359/560 matched (target 513) | 64.1% |
+| Combined symbol parity | 1190/3478 matched (target 3534) | 34.2% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -202,9 +202,9 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 158 | `operators.Zip` | `flow.Zip` | 0.08 | 13/18 matched (target 27) | `combineTransform`, `combineUnsafe`, `combineTransformUnsafe`, `nullArrayFactory`, `combineTransform` | 0/0 matched (target 1) | _none_ | - | 5 | 51809.2 |
 | 159 | `common.MainCoroutineDispatcher` | `coroutines.MainCoroutineDispatcher` | 0.08 | 3/3 matched | _none_ | 1/1 matched | _none_ | - | 0 | 409.2 |
 | 160 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.08 | 6/7 matched (target 10) | `loop` | 1/1 matched | _none_ | - | 1 | 10809.2 |
-| 161 | `operators.Merge` | `flow.Merge` | 0.08 | 8/9 matched (target 23) | `Iterable<Flow<T>>::merge` | 0/0 matched (target 3) | _none_ | - | 1 | 10909.2 |
-| 162 | `flow.StateFlow` | `flow.StateFlow` | 0.09 | 4/19 matched (target 47) | `MutableStateFlow`, `StateFlowSlot::allocateLocked`, `StateFlowSlot::freeLocked`, `StateFlowSlot::makePending`, `StateFlowSlot::takePending`, `StateFlowSlot::awaitPending`, `StateFlowImpl::compareAndSet`, `StateFlowImpl::updateState`, `StateFlowImpl::tryEmit`, `StateFlowImpl::emit`, `StateFlowImpl::resetReplayCache`, `StateFlowImpl::collect`, `StateFlowImpl::createSlot`, `StateFlowImpl::createSlotArray`, `StateFlowImpl::fuse` | 4/4 matched (target 7) | _none_ | - | 15 | 152309.1 |
-| 163 | `operators.Delay` | `flow.Delay` | 0.09 | 6/10 matched (target 9) | `Flow<T>::debounce`, `Flow<T>::debounce`, `Flow<T>::sample`, `Flow<T>::timeoutInternal` | 0/0 matched (target 1) | _none_ | - | 4 | 41009.1 |
+| 161 | `flow.StateFlow` | `flow.StateFlow` | 0.09 | 4/19 matched (target 47) | `MutableStateFlow`, `StateFlowSlot::allocateLocked`, `StateFlowSlot::freeLocked`, `StateFlowSlot::makePending`, `StateFlowSlot::takePending`, `StateFlowSlot::awaitPending`, `StateFlowImpl::compareAndSet`, `StateFlowImpl::updateState`, `StateFlowImpl::tryEmit`, `StateFlowImpl::emit`, `StateFlowImpl::resetReplayCache`, `StateFlowImpl::collect`, `StateFlowImpl::createSlot`, `StateFlowImpl::createSlotArray`, `StateFlowImpl::fuse` | 4/4 matched (target 7) | _none_ | - | 15 | 152309.1 |
+| 162 | `operators.Delay` | `flow.Delay` | 0.09 | 6/10 matched (target 9) | `Flow<T>::debounce`, `Flow<T>::debounce`, `Flow<T>::sample`, `Flow<T>::timeoutInternal` | 0/0 matched (target 1) | _none_ | - | 4 | 41009.1 |
+| 163 | `operators.Merge` | `flow.Merge` | 0.10 | 8/9 matched (target 16) | `Iterable<Flow<T>>::merge` | 0/0 matched | _none_ | - | 1 | 10909.0 |
 | 164 | `internal.InlineList` | `internal.InlineList` | 0.10 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | - | 1 | 10309.0 |
 | 165 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
 | 166 | `flow.Builders` | `flow.FlowBuilders` | 0.12 | 15/23 matched (target 39) | `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::toString` | 4/4 matched (target 8) | _none_ | - | 8 | 82708.9 |
@@ -238,8 +238,8 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 194 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
 | 195 | `internal.DispatchedTask` | `internal.DispatchedTask` | 0.25 | 10/10 matched (target 15) | _none_ | 2/2 matched (target 4) | _none_ | - | 0 | 1207.5 |
 | 196 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.25 | 18/19 matched (target 38) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | - | 1 | 12507.5 |
-| 197 | `internal.Merge` | `internal.Merge` | 0.26 | 9/9 matched (target 24) | _none_ | 3/3 matched (target 6) | _none_ | - | 0 | 1001207.4 |
-| 198 | `sync.Semaphore` | `sync.Semaphore` | 0.26 | 18/21 matched (target 45) | `Semaphore`, `SemaphoreAndMutexImpl::acquire`, `SemaphoreAndMutexImpl::acquire` | 4/4 matched (target 9) | _none_ | - | 3 | 32507.4 |
+| 197 | `sync.Semaphore` | `sync.Semaphore` | 0.26 | 18/21 matched (target 45) | `Semaphore`, `SemaphoreAndMutexImpl::acquire`, `SemaphoreAndMutexImpl::acquire` | 4/4 matched (target 9) | _none_ | - | 3 | 32507.4 |
+| 198 | `internal.Merge` | `internal.Merge` | 0.27 | 9/9 matched (target 24) | _none_ | 3/3 matched (target 6) | _none_ | - | 0 | 1001207.3 |
 | 199 | `internal.LimitedDispatcher` | `internal.LimitedDispatcher` | 0.27 | 9/10 matched (target 12) | `CoroutineDispatcher::namedOrThis` | 2/2 matched (target 3) | _none_ | - | 1 | 11207.3 |
 | 200 | `channels.BufferedChannel` | `channels.BufferedChannel` | 0.27 | 104/111 matched (target 179) | `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0` | 6/6 matched (target 7) | _none_ | - | 7 | 81707.3 |
 | 201 | `channels.Produce` | `channels.Produce` | 0.27 | 6/6 matched (target 23) | _none_ | 2/2 matched (target 3) | _none_ | - | 0 | 807.3 |
@@ -584,9 +584,9 @@ These files need significant work:
 - `operators.Zip` -> `flow.Zip` (0.08)
 - `common.MainCoroutineDispatcher` -> `coroutines.MainCoroutineDispatcher` (0.08)
 - `internal.OnDemandAllocatingPool` -> `internal.OnDemandAllocatingPool` (0.08)
-- `operators.Merge` -> `flow.Merge` (0.08)
 - `flow.StateFlow` -> `flow.StateFlow` (0.09)
 - `operators.Delay` -> `flow.Delay` (0.09)
+- `operators.Merge` -> `flow.Merge` (0.10)
 - `internal.InlineList` -> `internal.InlineList` (0.10)
 - `terminal.Collection` -> `flow.Collection` (0.11)
 - `flow.Builders` -> `flow.FlowBuilders` (0.12)
@@ -620,8 +620,8 @@ These files need significant work:
 - `common.CancellableContinuationImpl` -> `coroutines.ContinuationState` (0.25)
 - `internal.DispatchedTask` -> `internal.DispatchedTask` (0.25)
 - `internal.ChannelFlow` -> `internal.ChannelFlow` (0.25)
-- `internal.Merge` -> `internal.Merge` (0.26, 1 deps)
 - `sync.Semaphore` -> `sync.Semaphore` (0.26)
+- `internal.Merge` -> `internal.Merge` (0.27, 1 deps)
 - `internal.LimitedDispatcher` -> `internal.LimitedDispatcher` (0.27)
 - `channels.BufferedChannel` -> `channels.BufferedChannel` (0.27)
 - `channels.Produce` -> `channels.Produce` (0.27)
@@ -800,7 +800,7 @@ present in the Rust source file.
 
 ## Documentation Gaps
 
-**Documentation line amount:** 7327 / 7437 lines (99%)
+**Documentation line amount:** 7311 / 7437 lines (98%)
 
 Documentation gaps (>20%), complete list:
 
@@ -814,8 +814,8 @@ Documentation gaps (>20%), complete list:
 - `flow.StateFlow` - 51% gap (196 → 96 lines)
 - `flow.SharedFlow` - 40% gap (245 → 148 lines)
 - `flow.Builders` - 43% gap (201 → 114 lines)
+- `operators.Merge` - 57% gap (142 → 61 lines)
 - `common.CancellableContinuationImpl` - 83% gap (83 → 14 lines)
-- `operators.Merge` - 46% gap (142 → 77 lines)
 - `common.CoroutineDispatcher` - 27% gap (213 → 155 lines)
 - `operators.Emitters` - 54% gap (105 → 48 lines)
 - `operators.Zip` - 43% gap (133 → 76 lines)

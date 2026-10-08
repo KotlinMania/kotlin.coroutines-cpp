@@ -18,7 +18,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 6 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.15 | 2 | 1/1 matched (target 9) | _none_ | 1/1 matched (target 3) | _none_ | 0 | 2 | 2000208.5 |
 | 7 | `channels.BufferOverflow` | `channels.BufferOverflow` | 1.00 | 2 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 2000100.0 |
 | 8 | `selects.Select` | `selects.Select` | 0.21 | 1 | 25/30 matched (target 73) | `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | 5 | 46 | 1054607.9 |
-| 9 | `internal.Merge` | `internal.Merge` | 0.26 | 1 | 9/9 matched (target 24) | _none_ | 3/3 matched (target 6) | _none_ | 0 | 12 | 1001207.4 |
+| 9 | `internal.Merge` | `internal.Merge` | 0.27 | 1 | 9/9 matched (target 24) | _none_ | 3/3 matched (target 6) | _none_ | 0 | 12 | 1001207.3 |
 | 10 | `internal.Combine` | `internal.Combine` | 0.02 | 1 | 2/2 matched (target 50) | _none_ | 1/1 matched (target 13) | _none_ | 0 | 3 | 1000309.8 |
 | 11 | `internal.Symbol` | `internal.Symbol` | 0.04 | 1 | 2/2 matched (target 4) | _none_ | 1/1 matched | _none_ | 0 | 3 | 1000309.6 |
 | 12 | `channels.Deprecated` | `channels.Deprecated [ZERO]` | 0.00 | 0 | 0/47 matched (target 0) | `BroadcastChannel<E>::consume`, `BroadcastChannel<E>::consumeEach`, `consumesAll`, `ReceiveChannel<E>::elementAt`, `ReceiveChannel<E>::elementAtOrNull`, `ReceiveChannel<E>::first`, `ReceiveChannel<E>::firstOrNull`, `ReceiveChannel<E>::indexOf`, `ReceiveChannel<E>::last`, `ReceiveChannel<E>::lastIndexOf`, `ReceiveChannel<E>::lastOrNull`, `ReceiveChannel<E>::single`, `ReceiveChannel<E>::singleOrNull`, `ReceiveChannel<E>::drop`, `ReceiveChannel<E>::dropWhile`, `ReceiveChannel<E>::filter`, `ReceiveChannel<E>::filterIndexed`, `ReceiveChannel<E>::filterNot`, `ReceiveChannel<E?>::filterNotNull`, `ReceiveChannel<E?>::filterNotNullTo`, `ReceiveChannel<E?>::filterNotNullTo`, `ReceiveChannel<E>::take`, `ReceiveChannel<E>::takeWhile`, `ReceiveChannel<E>::toChannel`, `ReceiveChannel<E>::toCollection`, `ReceiveChannel<Pair<K, V>>::toMap`, `ReceiveChannel<Pair<K, V>>::toMap`, `ReceiveChannel<E>::toMutableList`, `ReceiveChannel<E>::toSet`, `ReceiveChannel<E>::flatMap`, `ReceiveChannel<E>::map`, `ReceiveChannel<E>::mapIndexed`, `ReceiveChannel<E>::mapIndexedNotNull`, `ReceiveChannel<E>::mapNotNull`, `ReceiveChannel<E>::withIndex`, `ReceiveChannel<E>::distinct`, `ReceiveChannel<E>::distinctBy`, `ReceiveChannel<E>::toMutableSet`, `ReceiveChannel<E>::any`, `ReceiveChannel<E>::count`, `ReceiveChannel<E>::maxWith`, `ReceiveChannel<E>::minWith`, `ReceiveChannel<E>::none`, `ReceiveChannel<E?>::requireNoNulls`, `ReceiveChannel<E>::zip`, `ReceiveChannel<E>::zip`, `ReceiveChannel<*>::consumes` | 0/0 matched | _none_ | 47 | 47 | 474710.0 |
@@ -189,7 +189,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 177 | `operators.Transform` | `flow.Transform` | 0.07 | 0 | 12/13 matched (target 100) | `Flow<*>::filterIsInstance` | 0/0 matched (target 13) | _none_ | 1 | 13 | 11309.3 |
 | 178 | `internal.LimitedDispatcher` | `internal.LimitedDispatcher` | 0.27 | 0 | 9/10 matched (target 12) | `CoroutineDispatcher::namedOrThis` | 2/2 matched (target 3) | _none_ | 1 | 12 | 11207.3 |
 | 179 | `common.LaunchFlow` | `tests.LaunchFlow [STUB]` | 0.00 | 0 | 5/6 matched (target 7) | `LaunchFlowBuilder::catch` | 3/3 matched | _none_ | 1 | 9 | 10910.0 |
-| 180 | `operators.Merge` | `flow.Merge` | 0.08 | 0 | 8/9 matched (target 23) | `Iterable<Flow<T>>::merge` | 0/0 matched (target 3) | _none_ | 1 | 9 | 10909.2 |
+| 180 | `operators.Merge` | `flow.Merge` | 0.10 | 0 | 8/9 matched (target 16) | `Iterable<Flow<T>>::merge` | 0/0 matched | _none_ | 1 | 9 | 10909.0 |
 | 181 | `common.CoroutineDispatcher` | `coroutines.CoroutineDispatcher` | 0.39 | 0 | 7/8 matched (target 10) | `CoroutineDispatcher::limitedParallelism` | 1/1 matched (target 2) | _none_ | 1 | 9 | 10906.1 |
 | 182 | `operators.Limit` | `flow.Limit` | 0.04 | 0 | 7/8 matched (target 44) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | 1 | 8 | 10809.6 |
 | 183 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.08 | 0 | 6/7 matched (target 10) | `loop` | 1/1 matched | _none_ | 1 | 8 | 10809.2 |
@@ -454,7 +454,7 @@ These files need immediate attention:
   - Lint issues: 6
 
 - **internal.Merge** → `internal.Merge`
-  - Function similarity: 0.26
+  - Function similarity: 0.27
   - Dependencies: 1
   - Functions: 9/9 matched (target 24)
   - Missing functions: _none_

@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 831/2918 matched (target 3028) — 28.5%
-- **Class/type parity:** 359/560 matched (target 516) — 64.1%
-- **Combined symbol parity:** 1190/3478 matched (target 3544) — 34.2%
+- **Function parity:** 831/2918 matched (target 3021) — 28.5%
+- **Class/type parity:** 359/560 matched (target 513) — 64.1%
+- **Combined symbol parity:** 1190/3478 matched (target 3534) — 34.2%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -154,9 +154,9 @@ Every matched file is listed below with function and type symbol parity.
 ### 9. internal.Merge
 
 - **Target:** `internal.Merge`
-- **Similarity:** 0.26
+- **Similarity:** 0.27
 - **Dependents:** 1
-- **Priority Score:** 1001207.4
+- **Priority Score:** 1001207.3
 - **Functions:** 9/9 matched (target 24)
 - **Missing functions:** _none_
 - **Types:** 3/3 matched (target 6)
@@ -2382,14 +2382,13 @@ Every matched file is listed below with function and type symbol parity.
 ### 180. operators.Merge
 
 - **Target:** `flow.Merge`
-- **Similarity:** 0.08
+- **Similarity:** 0.10
 - **Dependents:** 0
-- **Priority Score:** 10909.2
-- **Functions:** 8/9 matched (target 23)
+- **Priority Score:** 10909.0
+- **Functions:** 8/9 matched (target 16)
 - **Missing functions:** `Iterable<Flow<T>>::merge`
-- **Types:** 0/0 matched (target 3)
+- **Types:** 0/0 matched
 - **Missing types:** _none_
-- **Lint issues:** 4
 
 ### 181. common.CoroutineDispatcher
 
