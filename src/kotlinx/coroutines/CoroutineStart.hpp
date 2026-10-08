@@ -356,16 +356,48 @@ enum class CoroutineStart {
 };
 
 /**
- * Starts the block with this coroutine start strategy.
- * DEFAULT uses start_coroutine_cancellable; ATOMIC uses start_coroutine;
- * UNDISPATCHED uses start_coroutine_undispatched; LAZY does nothing.
+ * Starts the corresponding block with receiver as a coroutine with this coroutine start strategy.
+ *
+ * - [DEFAULT] uses [startCoroutineCancellable].
+ * - [ATOMIC] uses [startCoroutine].
+ * - [UNDISPATCHED] uses [startCoroutineUndispatched].
+ * - [LAZY] does nothing.
+ *
+ * @suppress **This an internal API and should not be used from general code.**
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
 void invoke(CoroutineStart start, intrinsics::ErasedSuspendFunction block,
             std::shared_ptr<Continuation<void*>> completion);
-/** Returns true when LAZY. */
+/**
+ * Returns `true` when [LAZY].
+ *
+ * @suppress **This an internal API and should not be used from general code.**
+ */
 // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:370-370
 bool is_lazy(CoroutineStart start);
+
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
+// NOTE(port): The source suspend receiver function uses the existing typed ABI.
+template <typename R, typename T>
+void invoke(CoroutineStart start, std::function<void*(R, Continuation<T>*)> block,
+            R receiver, std::shared_ptr<Continuation<T>> completion) {
+    switch (start) {
+        case CoroutineStart::DEFAULT:
+            intrinsics::start_coroutine_cancellable<R, T>(
+                std::move(block), std::move(receiver), std::move(completion));
+            break;
+        case CoroutineStart::ATOMIC:
+            intrinsics::start_coroutine<R, T>(
+                std::move(block), std::move(receiver), std::move(completion));
+            break;
+        case CoroutineStart::UNDISPATCHED:
+            intrinsics::start_coroutine_undispatched<R, T>(
+                std::move(block), std::move(receiver), std::move(completion));
+            break;
+        case CoroutineStart::LAZY:
+            break; // will start lazily
+    }
+}
 
 namespace internal {
 // NOTE(port): C++ callable/receiver storage is ABI adaptation. Owning arguments
