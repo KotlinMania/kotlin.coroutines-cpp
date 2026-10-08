@@ -1,6 +1,53 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## Escape-analysis lifetime and slot classes — 2026-10-08
+
+Continuation from 7e9d2aec translates ContextUtils.kt:21-130 into
+ContextUtils.hpp:9,108 and ContextUtils.cpp:8-142. All eight SlotType variants
+and twelve Lifetime variants retain source classification, constructor properties,
+singleton identities and diagnostic strings. Concrete nested classes preserve
+parameter and array-lifetime types rather than reducing them to an enum.
+Singleton slots remain borrowed. Each parameter-dependent lifetime owns the
+slot object created by its source constructor. ParametersField and ParamsIfArena
+share the same mutable parameter-index array; mutation through either view
+remains visible to the other. Compiler-side storage adds no Native runtime or
+Kotlin compiler dependency.
+
+The private implementations stay in ContextUtils.cpp; the header contains the
+actual type/API surface. kxs_inject/CMakeLists.txt:42 registers this dependency
+in kxs-inject, KotlinxCoroutinePass and kxs_codegen_test. This supplies the
+lifetime input needed by CodeGenerator.call but does not yet connect that public
+call algorithm, VariableManager or Native frame/root emission.
+
+Checks completed:
+
+- ContextUtils.cpp strict C++20 syntax compilation with -Wall -Wextra -Werror
+  exited zero.
+- Root CMake regenerated and rebuilt KotlinxCoroutinePass and kxs_codegen_test
+  in build/source-continuation with LLVM 23.1.2, Native runtime OFF. No
+  kotlinc/konanc invocation or Native runtime link was introduced.
+- The bounded C++ lifetime_contract harness compiled with AddressSanitizer and
+  UndefinedBehaviorSanitizer and exited zero. It checks shared array identity,
+  mutation through the slot view, retention after the external handle is reset,
+  release after lifetime destruction and distinct allocated parameter slots.
+  Its source/executable are under build/source-continuation/llvm-source-distance.
+- The existing code-generation helper exited zero and verified/emitted its LLVM
+  module. It does not exercise the unconnected public object-result call path.
+- The scoped LLVM deep scan exited zero. ContextUtils now measures 12/51 bodies,
+  20/36 types and function similarity 0.17. The twelve explicit Lifetime string
+  bodies are matched; other ContextUtils/CodegenLlvmHelpers/import/initializer
+  functions and types remain absent. Source-emission criteria remain provisional:
+  translated text cosine 0.003401, AST cosine 0.221225, normalized logic 0,
+  supported span coverage 0, unsupported fraction 1, generated parse errors yes,
+  target parse errors no. These limitations do not establish full source parity.
+
+The scan uses the same scoped command recorded below. Full-root compiler/library
+measurements and both complete executable acceptance paths remain open. Next
+source work is actual allocation/root operations and VariableManager, then public
+object-result call selection and genThrow, with real LLVM/runtime imports from
+ContextUtils and the Native compiler dependencies. The full goal remains active.
+
 ## Call/invoke selection and bit operations — 2026-10-08
 
 Continuation from f98313b8 translates CodeGenerator.kt:87-92,850-886,966-998.

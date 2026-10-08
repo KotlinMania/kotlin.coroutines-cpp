@@ -6,7 +6,22 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current call/invoke and bit-operation continuation — 2026-10-08:** From
+**Current lifetime/slot dependency continuation — 2026-10-08:** From
+7e9d2aec, ContextUtils.hpp/.cpp translate every SlotType and Lifetime variant
+from ContextUtils.kt:21-130. Static slot identities remain borrowed; dynamically
+created parameter slots are owned by their creating lifetime. The same mutable
+parameter-index array is retained by ParametersField and ParamsIfArena. Actual
+source diagnostics and constructor properties are preserved. CMake registers
+the implementation in existing LLVM targets. Strict compilation, plugin/helper
+builds and an ASan/UBSan array identity/retention/release harness pass. The scoped
+LLVM deep scan measures ContextUtils 12/51 bodies,20/36 types,similarity0.17;
+source-emission criteria remain provisional. Continue actual allocation/root
+operations and VariableManager, public object-result call selection, genThrow
+and LLVM/runtime imports. The public call path is still unwired; full-root
+comparison and both complete acceptance paths remain open. See
+RESUME_ADDRESS_SOURCE_REPAIR.md's first section. The full goal remains active.
+
+**Call/invoke checkpoint 7e9d2aec — 2026-10-08:** From
 f98313b8, private call_raw and None/Caller/Local handler variants now mirror
 CodeGenerator.kt's nounwind, caller-cleanup and local-unwind decisions. The LLVM
 boundary borrows the actual supplied cleanup block. Public call/result slots,
