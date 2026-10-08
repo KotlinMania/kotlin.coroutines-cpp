@@ -10,7 +10,7 @@ This list is complete and includes function/type detail for every matched file. 
 
 | Rank | Source | Target | Function similarity | Deps | Functions | Missing functions | Types | Missing types | SymDeficit | SrcSymbols | Priority |
 |------|--------|--------|------------|------|-----------|-------------------|-------|---------------|-----------|------------|----------|
-| 1 | `flow.Channels` | `flow.Channels` | 0.22 | 65 | 12/12 matched (target 19) | _none_ | 1/1 matched (target 2) | _none_ | 0 | 13 | 65001308.0 |
+| 1 | `flow.Channels` | `flow.Channels` | 0.22 | 65 | 12/12 matched (target 18) | _none_ | 1/1 matched | _none_ | 0 | 13 | 65001308.0 |
 | 2 | `flow.Flow` | `flow.Flow` | 0.17 | 28 | 1/1 matched (target 2) | _none_ | 2/2 matched (target 4) | _none_ | 0 | 3 | 28000308.0 |
 | 3 | `internal.Concurrent` | `internal.Concurrent` | 0.32 | 14 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | 1 | 9 | 14010907.0 |
 | 4 | `native.Exceptions` | `native.Exceptions` | 0.15 | 6 | 3/4 matched (target 10) | `JobCancellationException::toString` | 1/2 matched | `CancellationException` | 2 | 6 | 6020608.5 |
@@ -193,38 +193,38 @@ This list is complete and includes function/type detail for every matched file. 
 | 181 | `operators.Merge` | `flow.Merge` | 0.08 | 0 | 8/9 matched (target 23) | `Iterable<Flow<T>>::merge` | 0/0 matched (target 3) | _none_ | 1 | 9 | 10909.2 |
 | 182 | `common.CoroutineDispatcher` | `coroutines.CoroutineDispatcher` | 0.39 | 0 | 7/8 matched (target 10) | `CoroutineDispatcher::limitedParallelism` | 1/1 matched (target 2) | _none_ | 1 | 9 | 10906.1 |
 | 183 | `operators.Limit` | `flow.Limit` | 0.04 | 0 | 7/8 matched (target 44) | `FlowCollector<T>::emitAbort` | 0/0 matched (target 4) | _none_ | 1 | 8 | 10809.6 |
-| 184 | `common.Supervisor` | `coroutines.Supervisor` | 0.19 | 0 | 4/5 matched (target 8) | `SupervisorCoroutine::childCancelled` | 2/2 matched (target 3) | _none_ | 1 | 7 | 10708.1 |
-| 185 | `test.ConcurrentExceptionsStressTest` | `concurrent.ConcurrentExceptionsStressTest [STUB]` | 0.00 | 0 | 3/4 matched (target 5) | `ConcurrentExceptionsStressTest::testStress` | 2/2 matched | _none_ | 1 | 6 | 10610.0 |
-| 186 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 0 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | 1 | 5 | 10508.8 |
-| 187 | `common.Exceptions.common` | `coroutines.Exceptions [ZERO]` | 0.00 | 0 | 0/0 matched (target 7) | _none_ | 3/4 matched | `CancellationException` | 1 | 4 | 10410.0 |
+| 184 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.08 | 0 | 6/7 matched (target 10) | `loop` | 1/1 matched | _none_ | 1 | 8 | 10809.2 |
+| 185 | `common.Supervisor` | `coroutines.Supervisor` | 0.19 | 0 | 4/5 matched (target 8) | `SupervisorCoroutine::childCancelled` | 2/2 matched (target 3) | _none_ | 1 | 7 | 10708.1 |
+| 186 | `test.ConcurrentExceptionsStressTest` | `concurrent.ConcurrentExceptionsStressTest [STUB]` | 0.00 | 0 | 3/4 matched (target 5) | `ConcurrentExceptionsStressTest::testStress` | 2/2 matched | _none_ | 1 | 6 | 10610.0 |
+| 187 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 0 | 3/4 matched (target 13) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | 1 | 5 | 10508.8 |
 | 188 | `channels.ChannelCancelUndeliveredElementStressTest` | `channels.ChannelCancelUndeliveredElementStressTest [STUB]` | 0.00 | 0 | 2/3 matched | `ChannelCancelUndeliveredElementStressTest::testStress` | 1/1 matched | _none_ | 1 | 4 | 10410.0 |
-| 189 | `flow.SafeFlowTest` | `flow.SafeFlowTest` | 0.28 | 0 | 2/3 matched | `SafeFlowTest::testEmissionsFromDifferentStateMachine` | 1/1 matched | _none_ | 1 | 4 | 10407.2 |
-| 190 | `test.MainDispatcherTest` | `test.MainDispatcherTest` | 0.66 | 0 | 2/3 matched (target 2) | `MainDispatcherTest::scheduleOnMainQueue` | 1/1 matched | _none_ | 1 | 4 | 10403.4 |
-| 191 | `channels.ConflatedBroadcastChannelNotifyStressTest` | `channels.ConflatedBroadcastChannelNotifyStressTest [STUB]` | 0.00 | 0 | 1/2 matched | `ConflatedBroadcastChannelNotifyStressTest::testStressNotify` | 1/1 matched | _none_ | 1 | 3 | 10310.0 |
+| 189 | `common.Exceptions.common` | `coroutines.Exceptions [ZERO]` | 0.00 | 0 | 0/0 matched (target 7) | _none_ | 3/4 matched | `CancellationException` | 1 | 4 | 10410.0 |
+| 190 | `flow.SafeFlowTest` | `flow.SafeFlowTest` | 0.28 | 0 | 2/3 matched | `SafeFlowTest::testEmissionsFromDifferentStateMachine` | 1/1 matched | _none_ | 1 | 4 | 10407.2 |
+| 191 | `test.MainDispatcherTest` | `test.MainDispatcherTest` | 0.66 | 0 | 2/3 matched (target 2) | `MainDispatcherTest::scheduleOnMainQueue` | 1/1 matched | _none_ | 1 | 4 | 10403.4 |
 | 192 | `operators.FlatMapConcatTest` | `operators.FlatMapConcatTest [STUB]` | 0.00 | 0 | 1/2 matched | `FlatMapConcatTest::testFlatMapConcurrency` | 1/1 matched | _none_ | 1 | 3 | 10310.0 |
-| 193 | `internal.InlineList` | `internal.InlineList` | 0.10 | 0 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | 1 | 3 | 10309.0 |
-| 194 | `test.BuilderContractsTest` | `tests.BuilderContractsTest` | 0.61 | 0 | 1/2 matched | `BuilderContractsTest::testContracts` | 1/1 matched | _none_ | 1 | 3 | 10303.9 |
-| 195 | `operators.TransformTest` | `operators.TransformTest [STUB]` | 0.00 | 0 | 0/1 matched | `TransformTest::testDoubleEmit` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
-| 196 | `operators.ConflateTest` | `operators.ConflateTest [STUB]` | 0.00 | 0 | 0/1 matched | `ConflateTest::testExample` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
-| 197 | `selects.SelectMutexStressTest` | `selects.SelectMutexStressTest [STUB]` | 0.00 | 0 | 0/1 matched | `SelectMutexStressTest::testSelectCancelledResourceRelease` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
-| 198 | `flow.StateFlowCommonStressTest` | `flow.StateFlowCommonStressTest [STUB]` | 0.00 | 0 | 0/1 matched | `StateFlowCommonStressTest::testSingleEmitterAndCollector` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
-| 199 | `operators.LintTest` | `operators.LintTest [STUB]` | 0.00 | 0 | 0/1 matched | `LintTest::testSharedFlowToCollection` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
-| 200 | `channels.BroadcastChannelSubStressTest` | `channels.BroadcastChannelSubStressTest [STUB]` | 0.00 | 0 | 0/1 matched | `BroadcastChannelSubStressTest::testStress` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
-| 201 | `channels.Channels` | `channels.Channels` | 0.03 | 0 | 1/2 matched (target 1) | `SendChannel<E>::sendBlocking` | 0/0 matched | _none_ | 1 | 2 | 10209.7 |
-| 202 | `test.MultithreadedDispatcherStressTest` | `concurrent.MultithreadedDispatcherStressTest` | 0.33 | 0 | 0/1 matched | `MultithreadedDispatcherStressTest::testClosingNotDroppingTasks` | 1/1 matched | _none_ | 1 | 2 | 10206.7 |
-| 203 | `test.AwaitCancellationTest` | `tests.AwaitCancellationTest` | 0.53 | 0 | 0/1 matched | `AwaitCancellationTest::testCancellation` | 1/1 matched | _none_ | 1 | 2 | 10204.7 |
-| 204 | `test.DelayExceptionTest` | `test.DelayExceptionTest` | 0.70 | 0 | 0/1 matched | `DelayExceptionTest::testMaxDelay` | 1/1 matched | _none_ | 1 | 2 | 10203.0 |
-| 205 | `native.Debug` | `native.Debug` | 0.00 | 0 | 0/1 matched (target 3) | `assert` | 0/0 matched | _none_ | 1 | 1 | 10110.0 |
-| 206 | `native.SchedulerTask` | `native.SchedulerTask` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `SchedulerTask` | 1 | 1 | 10100.0 |
-| 207 | `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `LocalAtomicInt` | 1 | 1 | 10100.0 |
-| 208 | `native.CloseableCoroutineDispatcher` | `native.CloseableCoroutineDispatcher` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `CloseableCoroutineDispatcher` | 1 | 1 | 10100.0 |
-| 209 | `internal.ThreadSafeHeap` | `internal.ThreadSafeHeap` | 0.38 | 0 | 14/14 matched (target 20) | _none_ | 2/2 matched | _none_ | 0 | 16 | 1606.2 |
-| 210 | `terminal.Reduce` | `flow.Reduce` | 0.03 | 0 | 10/10 matched (target 64) | _none_ | 0/0 matched (target 6) | _none_ | 0 | 10 | 1009.7 |
-| 211 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 0 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | 0 | 10 | 1007.8 |
-| 212 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.39 | 0 | 9/9 matched (target 16) | _none_ | 1/1 matched | _none_ | 0 | 10 | 1006.1 |
-| 213 | `flow.VirtualTime` | `flow.VirtualTime` | 0.51 | 0 | 7/7 matched (target 11) | _none_ | 2/2 matched | _none_ | 0 | 9 | 904.9 |
-| 214 | `terminal.Collect` | `flow.Collect` | 0.13 | 0 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | 0 | 8 | 808.7 |
-| 215 | `internal.OnDemandAllocatingPool` | `internal.OnDemandAllocatingPool` | 0.17 | 0 | 7/7 matched (target 11) | _none_ | 1/1 matched | _none_ | 0 | 8 | 808.3 |
+| 193 | `channels.ConflatedBroadcastChannelNotifyStressTest` | `channels.ConflatedBroadcastChannelNotifyStressTest [STUB]` | 0.00 | 0 | 1/2 matched | `ConflatedBroadcastChannelNotifyStressTest::testStressNotify` | 1/1 matched | _none_ | 1 | 3 | 10310.0 |
+| 194 | `internal.InlineList` | `internal.InlineList` | 0.10 | 0 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | 1 | 3 | 10309.0 |
+| 195 | `test.BuilderContractsTest` | `tests.BuilderContractsTest` | 0.61 | 0 | 1/2 matched | `BuilderContractsTest::testContracts` | 1/1 matched | _none_ | 1 | 3 | 10303.9 |
+| 196 | `channels.BroadcastChannelSubStressTest` | `channels.BroadcastChannelSubStressTest [STUB]` | 0.00 | 0 | 0/1 matched | `BroadcastChannelSubStressTest::testStress` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
+| 197 | `operators.ConflateTest` | `operators.ConflateTest [STUB]` | 0.00 | 0 | 0/1 matched | `ConflateTest::testExample` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
+| 198 | `operators.LintTest` | `operators.LintTest [STUB]` | 0.00 | 0 | 0/1 matched | `LintTest::testSharedFlowToCollection` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
+| 199 | `selects.SelectMutexStressTest` | `selects.SelectMutexStressTest [STUB]` | 0.00 | 0 | 0/1 matched | `SelectMutexStressTest::testSelectCancelledResourceRelease` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
+| 200 | `operators.TransformTest` | `operators.TransformTest [STUB]` | 0.00 | 0 | 0/1 matched | `TransformTest::testDoubleEmit` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
+| 201 | `flow.StateFlowCommonStressTest` | `flow.StateFlowCommonStressTest [STUB]` | 0.00 | 0 | 0/1 matched | `StateFlowCommonStressTest::testSingleEmitterAndCollector` | 1/1 matched | _none_ | 1 | 2 | 10210.0 |
+| 202 | `channels.Channels` | `channels.Channels` | 0.03 | 0 | 1/2 matched (target 1) | `SendChannel<E>::sendBlocking` | 0/0 matched | _none_ | 1 | 2 | 10209.7 |
+| 203 | `test.MultithreadedDispatcherStressTest` | `concurrent.MultithreadedDispatcherStressTest` | 0.33 | 0 | 0/1 matched | `MultithreadedDispatcherStressTest::testClosingNotDroppingTasks` | 1/1 matched | _none_ | 1 | 2 | 10206.7 |
+| 204 | `test.AwaitCancellationTest` | `tests.AwaitCancellationTest` | 0.53 | 0 | 0/1 matched | `AwaitCancellationTest::testCancellation` | 1/1 matched | _none_ | 1 | 2 | 10204.7 |
+| 205 | `test.DelayExceptionTest` | `test.DelayExceptionTest` | 0.70 | 0 | 0/1 matched | `DelayExceptionTest::testMaxDelay` | 1/1 matched | _none_ | 1 | 2 | 10203.0 |
+| 206 | `native.Debug` | `native.Debug` | 0.00 | 0 | 0/1 matched (target 3) | `assert` | 0/0 matched | _none_ | 1 | 1 | 10110.0 |
+| 207 | `native.CloseableCoroutineDispatcher` | `native.CloseableCoroutineDispatcher` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `CloseableCoroutineDispatcher` | 1 | 1 | 10100.0 |
+| 208 | `internal.LocalAtomics.common` | `internal.LocalAtomics.common` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `LocalAtomicInt` | 1 | 1 | 10100.0 |
+| 209 | `native.SchedulerTask` | `native.SchedulerTask` | 1.00 | 0 | 0/0 matched | _none_ | 0/1 matched (target 0) | `SchedulerTask` | 1 | 1 | 10100.0 |
+| 210 | `internal.ThreadSafeHeap` | `internal.ThreadSafeHeap` | 0.38 | 0 | 14/14 matched (target 20) | _none_ | 2/2 matched | _none_ | 0 | 16 | 1606.2 |
+| 211 | `terminal.Reduce` | `flow.Reduce` | 0.03 | 0 | 10/10 matched (target 64) | _none_ | 0/0 matched (target 6) | _none_ | 0 | 10 | 1009.7 |
+| 212 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 0 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | 0 | 10 | 1007.8 |
+| 213 | `common.AbstractCoroutine` | `coroutines.AbstractCoroutine` | 0.39 | 0 | 9/9 matched (target 16) | _none_ | 1/1 matched | _none_ | 0 | 10 | 1006.1 |
+| 214 | `flow.VirtualTime` | `flow.VirtualTime` | 0.51 | 0 | 7/7 matched (target 11) | _none_ | 2/2 matched | _none_ | 0 | 9 | 904.9 |
+| 215 | `terminal.Collect` | `flow.Collect` | 0.13 | 0 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | 0 | 8 | 808.7 |
 | 216 | `channels.Produce` | `channels.Produce` | 0.27 | 0 | 6/6 matched (target 23) | _none_ | 2/2 matched (target 3) | _none_ | 0 | 8 | 807.3 |
 | 217 | `common.Delay` | `coroutines.Delay` | 0.28 | 0 | 6/6 matched (target 11) | _none_ | 2/2 matched | _none_ | 0 | 8 | 807.2 |
 | 218 | `channels.ConflatedBufferedChannel` | `channels.ConflatedBufferedChannel` | 0.40 | 0 | 7/7 matched (target 9) | _none_ | 1/1 matched | _none_ | 0 | 8 | 806.0 |
@@ -370,16 +370,16 @@ This list is complete and includes function/type detail for every matched file. 
 - `common.TestCoroutineScheduler` -> `tests.TestCoroutineScheduler [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `common.LaunchFlow` -> `tests.LaunchFlow [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `test.ConcurrentExceptionsStressTest` -> `concurrent.ConcurrentExceptionsStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `common.Exceptions.common` -> `coroutines.Exceptions [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
 - `channels.ChannelCancelUndeliveredElementStressTest` -> `channels.ChannelCancelUndeliveredElementStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `channels.ConflatedBroadcastChannelNotifyStressTest` -> `channels.ConflatedBroadcastChannelNotifyStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `common.Exceptions.common` -> `coroutines.Exceptions [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
 - `operators.FlatMapConcatTest` -> `operators.FlatMapConcatTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `operators.TransformTest` -> `operators.TransformTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `operators.ConflateTest` -> `operators.ConflateTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `selects.SelectMutexStressTest` -> `selects.SelectMutexStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `flow.StateFlowCommonStressTest` -> `flow.StateFlowCommonStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
-- `operators.LintTest` -> `operators.LintTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `channels.ConflatedBroadcastChannelNotifyStressTest` -> `channels.ConflatedBroadcastChannelNotifyStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `channels.BroadcastChannelSubStressTest` -> `channels.BroadcastChannelSubStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `operators.ConflateTest` -> `operators.ConflateTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `operators.LintTest` -> `operators.LintTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `selects.SelectMutexStressTest` -> `selects.SelectMutexStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `operators.TransformTest` -> `operators.TransformTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
+- `flow.StateFlowCommonStressTest` -> `flow.StateFlowCommonStressTest [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `test.DefaultDispatchersConcurrencyTest` -> `concurrent.DefaultDispatchersConcurrencyTest [ZERO]`: function-by-function score forced to 0. no source functions found; target defines functions; report scoring is function-by-function only
 - `test.EmptyContext` -> `tests.EmptyContext [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
 - `common.TestDispatchers` -> `tests.TestDispatchers [STUB]`: function-by-function score forced to 0. target contains TODO/stub/placeholder markers in function bodies
@@ -395,9 +395,9 @@ These files need immediate attention:
 - **flow.Channels** → `flow.Channels`
   - Function similarity: 0.22
   - Dependencies: 65
-  - Functions: 12/12 matched (target 19)
+  - Functions: 12/12 matched (target 18)
   - Missing functions: _none_
-  - Types: 1/1 matched (target 2)
+  - Types: 1/1 matched
   - Missing types: _none_
 
 - **flow.Flow** → `flow.Flow`
