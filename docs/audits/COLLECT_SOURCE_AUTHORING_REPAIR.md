@@ -49,6 +49,13 @@ Verification:
 - Both complete-root deep inventories are refreshed after source edits under
   docs/audits/project-wide/library and compiler.
 
+Final measured library evidence: 827/2918 functions, 359/560 types, average body
+similarity 0.26 and documentation similarity 0.38, with 123 scoring failures.
+Collect retains 8/8 function matches and body similarity 0.13; FlowCoroutine
+retains 3/3 functions and 1/1 type with body similarity 0.19. Flow Channels remains
+12/12 functions, 1/1 type and body similarity 0.22. Extra target declarations
+decrease, but these measurements still show substantial body gaps.
+
 Existing comments remain visible. Collect and FlowCoroutine still contain Kotlin
 notation in KDoc examples; their complete example translation remains unfinished.
 Channel diagnostic text, broader flow algorithm correspondence, strict plugin
