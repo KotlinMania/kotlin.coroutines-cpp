@@ -343,9 +343,16 @@ class LivenessAnalysisVisitor {
 public:
     explicit LivenessAnalysisVisitor(const ASTContext& context) : context_(context) {}
 
-    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:58-64
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:58-64,263-277
     std::map<const Stmt*, LiveVariables> run(const Stmt* body) {
-        accept(body, {});
+        // NOTE(port): Kotlin returnable-block and loop symbols have structured
+        // targets. C++ labels can form cycles outside loops; saturate their
+        // actual declaration targets with the same backwards fixed-point rule.
+        for (;;) {
+            auto previous_targets = label_starts_;
+            accept(body, {});
+            if (previous_targets == label_starts_) break;
+        }
         return filtered_element_ends_;
     }
 
@@ -504,6 +511,22 @@ private:
             return accept(omitted->getExpr(), std::move(data));
         if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(element))
             return accept(initialized->getExpr(), std::move(data));
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:141-159,263-277
+        // NOTE(port): Retain Clang's declaration-bound jump targets. Values on
+        // the unreachable lexical suffix do not flow through an unconditional jump.
+        if (const auto* jump = dyn_cast<GotoStmt>(element)) return label_starts_[jump->getLabel()];
+        if (const auto* label = dyn_cast<LabelStmt>(element)) {
+            auto before = accept(label->getSubStmt(), std::move(data));
+            auto& target = label_starts_[label->getDecl()];
+            target.insert(before.begin(), before.end());
+            return before;
+        }
+        if (const auto* jump = dyn_cast<IndirectGotoStmt>(element)) {
+            LiveVariables targets;
+            for (const auto& target : label_starts_)
+                targets.insert(target.second.begin(), target.second.end());
+            return accept(jump->getTarget(), std::move(targets));
+        }
         if (const auto* returned = dyn_cast<ReturnStmt>(element))
             return accept(returned->getRetValue(), {});
         if (const auto* thrown = dyn_cast<CXXThrowExpr>(element))
@@ -565,6 +588,7 @@ private:
 
     const ASTContext& context_;
     std::map<const Stmt*, LiveVariables> filtered_element_ends_;
+    std::map<const LabelDecl*, LiveVariables> label_starts_;
     std::vector<LiveVariables> break_targets_;
     std::vector<LiveVariables> continue_targets_;
     std::vector<LiveVariables> switch_entries_;

@@ -1,6 +1,42 @@
 # Compiler resume-address source repair — 2026-10-07
 
 
+## Declaration-bound source jumps and retained scope cleanup
+
+The continuation after efde2c6c extends the translated target bookkeeping in
+LivenessAnalysis.kt:141-159,263-277 and lexical visibility walk in
+CoroutinesLivenessAnalysis.kt:64-106. C++ labels are an explicit Clang adaptation;
+they do not introduce another coroutine frame or resume dispatch representation.
+
+SuspendFunctionAnalyzer.cpp:347 saturates declaration-bound label live sets over
+the whole body, retaining suspension snapshots across iterations. At :517-529,
+a direct goto reads its actual target set, a label records the live values before
+its statement, and indirect-goto analysis unions potential label targets before
+reading the computed address. Lexically following statements are not successors
+of an unconditional jump.
+
+NativeSuspendLowering.cpp:1370 records the declarations and catch handlers active
+at each source label before emitting the state-machine body. It follows compound,
+branch, loop, range-for and catch scopes; switch labels and attributes are
+transparent. Tuple holding variables retain the containing declaration's scope.
+At :1248 and :1295, retained locals and lifetime-extended reference owners record
+their source declaration. Catch exception, variable and context storage record
+the owning handler at :1538-1560.
+
+emit_goto at NativeSuspendLowering.cpp:1466 destroys currently scoped objects
+absent from the target, in reverse construction order. It keeps objects active
+at that label and uses existing catch-context transitions when exiting a handler.
+A backwards jump before a declaration therefore releases its old construction
+before the declaration executes again. Source labels at :1607 now lower their
+statements, including suspension, instead of passing through the raw statement
+path or failing when the labelled body contains a suspend call.
+
+These are unvalidated source changes. No compilation, runtime check or deep scan
+was run, following the user's source-first direction. Indirect-goto ownership
+cleanup, attributed control-statement emission, shared default-expression
+identity, optimized spill allocation and prior aggregate/local integration gaps
+remain incomplete. Actual Native/MLX and standalone MLX acceptance remain open.
+
 ## Connected suspend-call and liveness translation
 
 The user directed source translation to continue before compilation, runtime

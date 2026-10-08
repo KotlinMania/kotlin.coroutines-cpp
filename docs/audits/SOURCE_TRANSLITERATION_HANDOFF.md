@@ -6,6 +6,17 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Current jump continuation:** The liveness visitor now saturates actual Clang
+label targets and propagates direct/indirect jump successors. NativeSuspendLowering
+records each label's lexical declarations and catch handlers before emission;
+direct goto releases objects absent from that target and preserves active
+objects, including retained reference owners. Labelled statements now enter the
+normal suspension lowering. Source locations and remaining gaps are recorded in
+RESUME_ADDRESS_SOURCE_REPAIR.md's new first section. Indirect-goto cleanup and
+attributed control-statement emission remain unfinished. Builds, runtime checks
+and deep scans remain deferred; this is source progress, not acceptance evidence.
+
+
 
 **Current source direction:** Compilation, runtime checks and deep scans are
 now deferred at the user's direction until the connected translation is ready.

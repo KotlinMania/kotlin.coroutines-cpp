@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <map>
 #include <sstream>
+#include <set>
 #include <stdexcept>
 #include <vector>
 
@@ -28,6 +29,12 @@ using kotlinx::suspend::SuspendFunctionAnalyzer;
 namespace {
 struct Replacement { unsigned begin; unsigned end; std::string text; };
 struct Slot { std::string name; std::string access; std::string type; bool reference; bool array = false; bool object = false; bool handler_exception = false; bool dynamic = false; };
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:64-106
+// NOTE(port): C++ jumps additionally need the target's object and catch lifetimes.
+struct LabelScope {
+    std::set<const VarDecl*> variables;
+    std::set<const CXXCatchStmt*> handlers;
+};
 struct Loop { std::string next; size_t scope; bool iteration = true; bool retain_condition = false; bool continued = false; };
 
 // NOTE(port): Concrete fields retain C++ construction/destruction state;
@@ -208,6 +215,7 @@ private:
     // same normal/resume regions; these have no direct Kotlin GC counterpart.
     std::string build_state_machine() {
         // Extract all suspend calls to temporaries in order to make correct jumps to them.
+        collect_label_scopes(function_->getBody(), {});
         emit_statement(function_->getBody());
         body_ << "clear_locals(); return nullptr;\n";
         std::string execute = body_.str();
@@ -1237,6 +1245,7 @@ private:
         Slot owner;
         if (variable->getType()->isReferenceType() && temporary && temporary->getExtendingDecl() == variable) {
             owner = new_slot(temporary->getSubExpr()->getType(), false, true);
+            slot_variables_[owner.name] = variable;
             if (!scopes_.empty()) scopes_.back().push_back(owner);
             construct(owner, generated ? generated_expression(temporary->getSubExpr()) :
                                          emit_expression(temporary->getSubExpr()));
@@ -1283,6 +1292,7 @@ private:
             isa<InitListExpr>(spelled(initializer));
         auto slot = new_slot(variable->getType(), reference, aggregate, deduced_type);
         variables_[variable] = slot;
+        slot_variables_[slot.name] = variable;
         if (!scopes_.empty()) scopes_.back().push_back(slot);
         if (!owner.name.empty()) construct(slot, owner.access);
         else if (aggregate) {
@@ -1353,6 +1363,124 @@ private:
         clear_comma_temporaries(first_comma);
         return result.access;
     }
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:64-106
+    // NOTE(port): Adapt the lexical scope stack to actual Clang declaration
+    // identities. A label records only objects declared before its target;
+    // a backwards jump must destroy later objects before constructing them again.
+    LabelScope collect_label_scopes(const Stmt* statement, LabelScope scope) {
+        if (!statement) return scope;
+        if (const auto* declaration = dyn_cast<DeclStmt>(statement)) {
+            for (const auto* child : declaration->decls()) {
+                if (const auto* variable = dyn_cast<VarDecl>(child)) {
+                    collect_label_scopes(variable->getInit(), scope);
+                    scope.variables.insert(variable);
+                    if (const auto* decomposition = dyn_cast<DecompositionDecl>(variable))
+                        for (const auto* binding : decomposition->flat_bindings())
+                            if (const auto* holding = binding->getHoldingVar()) scope.variables.insert(holding);
+                }
+            }
+            return scope;
+        }
+        if (const auto* label = dyn_cast<LabelStmt>(statement)) {
+            label_scopes_[label->getDecl()] = scope;
+            return collect_label_scopes(label->getSubStmt(), std::move(scope));
+        }
+        // NOTE(port): Labels and attributes do not introduce a C++ scope.
+        if (const auto* label = dyn_cast<SwitchCase>(statement))
+            return collect_label_scopes(label->getSubStmt(), std::move(scope));
+        if (const auto* attributed = dyn_cast<AttributedStmt>(statement))
+            return collect_label_scopes(attributed->getSubStmt(), std::move(scope));
+        if (const auto* compound = dyn_cast<CompoundStmt>(statement)) {
+            auto inner = scope;
+            for (const auto* child : compound->body()) inner = collect_label_scopes(child, std::move(inner));
+            return scope;
+        }
+        if (const auto* branch = dyn_cast<IfStmt>(statement)) {
+            auto inner = collect_label_scopes(branch->getInit(), scope);
+            inner = collect_label_scopes(branch->getConditionVariableDeclStmt(), std::move(inner));
+            collect_label_scopes(branch->getCond(), inner);
+            if (branch->isConstexpr()) {
+                auto selected = branch->getNondiscardedCase(context_);
+                if (!selected) throw std::runtime_error("label scopes require resolved constexpr branch");
+                collect_label_scopes(*selected, inner);
+            } else {
+                collect_label_scopes(branch->getThen(), inner);
+                collect_label_scopes(branch->getElse(), inner);
+            }
+            return scope;
+        }
+        if (const auto* loop = dyn_cast<ForStmt>(statement)) {
+            auto inner = collect_label_scopes(loop->getInit(), scope);
+            inner = collect_label_scopes(loop->getConditionVariableDeclStmt(), std::move(inner));
+            collect_label_scopes(loop->getCond(), inner);
+            collect_label_scopes(loop->getBody(), inner);
+            collect_label_scopes(loop->getInc(), inner);
+            return scope;
+        }
+        if (const auto* loop = dyn_cast<CXXForRangeStmt>(statement)) {
+            auto inner = collect_label_scopes(loop->getInit(), scope);
+            inner = collect_label_scopes(loop->getRangeStmt(), std::move(inner));
+            inner = collect_label_scopes(loop->getBeginStmt(), std::move(inner));
+            inner = collect_label_scopes(loop->getEndStmt(), std::move(inner));
+            inner = collect_label_scopes(loop->getLoopVarStmt(), std::move(inner));
+            collect_label_scopes(loop->getBody(), inner);
+            return scope;
+        }
+        if (const auto* loop = dyn_cast<WhileStmt>(statement)) {
+            auto inner = collect_label_scopes(loop->getConditionVariableDeclStmt(), scope);
+            collect_label_scopes(loop->getCond(), inner);
+            collect_label_scopes(loop->getBody(), inner);
+            return scope;
+        }
+        if (const auto* branch = dyn_cast<SwitchStmt>(statement)) {
+            auto inner = collect_label_scopes(branch->getInit(), scope);
+            inner = collect_label_scopes(branch->getConditionVariableDeclStmt(), std::move(inner));
+            collect_label_scopes(branch->getCond(), inner);
+            collect_label_scopes(branch->getBody(), inner);
+            return scope;
+        }
+        if (const auto* region = dyn_cast<CXXTryStmt>(statement)) {
+            collect_label_scopes(region->getTryBlock(), scope);
+            for (unsigned index = 0; index < region->getNumHandlers(); ++index) {
+                const auto* handler = region->getHandler(index);
+                auto inner = scope;
+                inner.handlers.insert(handler);
+                if (const auto* caught = handler->getExceptionDecl()) inner.variables.insert(caught);
+                collect_label_scopes(handler->getHandlerBlock(), std::move(inner));
+            }
+            return scope;
+        }
+        if (const auto* lambda = dyn_cast<LambdaExpr>(statement)) {
+            for (const auto* initializer : lambda->capture_inits()) collect_label_scopes(initializer, scope);
+            return scope;
+        }
+        for (const auto* child : statement->children()) collect_label_scopes(child, scope);
+        return scope;
+    }
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:141-159
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:64-106
+    // NOTE(port): Kotlin structured targets do not have native C++ destructors.
+    // Retain declarations active at the actual target; destroy exited objects
+    // in reverse construction order, including lifetime-extended referents.
+    void emit_goto(const GotoStmt* statement) {
+        auto target = label_scopes_.find(statement->getLabel());
+        if (target == label_scopes_.end()) throw std::runtime_error("goto has no lowered source label");
+        for (auto scope = scopes_.rbegin(); scope != scopes_.rend(); ++scope) {
+            bool handler = false;
+            for (auto slot = scope->rbegin(); slot != scope->rend(); ++slot) {
+                auto variable = slot_variables_.find(slot->name);
+                if (variable != slot_variables_.end() && target->second.variables.contains(variable->second)) continue;
+                auto caught = slot_handlers_.find(slot->name);
+                if (caught != slot_handlers_.end() && target->second.handlers.contains(caught->second)) continue;
+                body_ << slot->name << ".reset();\n";
+                handler = handler || slot->handler_exception;
+            }
+            if (handler) emit_context_transition();
+        }
+        body_ << "goto " << statement->getLabel()->getNameAsString() << ";\n";
+    }
+
     // NOTE(port): Restore C++ handler context between nested scope exits.
     void clear_scope(size_t first) {
         for (size_t i = scopes_.size(); i > first; --i) {
@@ -1407,6 +1535,7 @@ private:
                               "void reset() { value = {}; } }; " + name + "_storage " + name + ";");
             Slot exception{name, name + ".value", "std::exception_ptr", false, false, false, true};
             slots_.push_back(exception);
+            slot_handlers_[exception.name] = handler;
             Slot variable;
             Slot source_value;
             auto* caught = handler->getExceptionDecl();
@@ -1416,6 +1545,7 @@ private:
                 if (!type->isReferenceType() && !type->isPointerType())
                     source_value = new_slot(type.getUnqualifiedType(), true);
                 variables_[caught] = variable;
+                slot_handlers_[variable.name] = handler;
             }
             std::string context_name = name + "_context";
             fields_.push_back("struct " + context_name + "_storage { std::exception_ptr* active; std::exception_ptr* retired; bool* reenter; "
@@ -1427,6 +1557,7 @@ private:
                 "}; " + context_name + "_storage " + context_name + "{&_kxs_active_exception, &_kxs_retired_exception, &_kxs_reenter};");
             Slot handler_context{context_name, context_name, "", false};
             slots_.push_back(handler_context);
+            slot_handlers_[handler_context.name] = handler;
             std::string label = "_kxs_handler_" + std::to_string(id) + "_" + std::to_string(index);
             auto native_type = caught ? caught->getType() : QualType();
             if (caught && !native_type->isReferenceType())
@@ -1473,7 +1604,11 @@ private:
             clear_scope(scopes_.size() - 1);
             scopes_.pop_back();
             body_ << "}\n";
-        } else if (const auto* protected_region = dyn_cast<CXXTryStmt>(statement)) emit_try(protected_region);
+        } else if (const auto* label = dyn_cast<LabelStmt>(statement)) {
+            body_ << label->getDecl()->getNameAsString() << ":;\n";
+            emit_statement(label->getSubStmt());
+        } else if (const auto* jump = dyn_cast<GotoStmt>(statement)) emit_goto(jump);
+        else if (const auto* protected_region = dyn_cast<CXXTryStmt>(statement)) emit_try(protected_region);
         else if (const auto* declaration = dyn_cast<DeclStmt>(statement)) emit_declaration(declaration);
         else if (const auto* returned = dyn_cast<ReturnStmt>(statement)) {
             llvm::SaveAndRestore<bool> expression_scope(full_expression_, true);
@@ -1644,6 +1779,9 @@ private:
     PrintingPolicy policy_;
     SourceManager& manager_;
     std::map<const ValueDecl*, Slot> variables_;
+    std::map<const LabelDecl*, LabelScope> label_scopes_;
+    std::map<std::string, const VarDecl*> slot_variables_;
+    std::map<std::string, const CXXCatchStmt*> slot_handlers_;
     std::map<const TypedefNameDecl*, std::string> local_aliases_;
     std::map<const CXXRecordDecl*, std::string> reference_types_;
     std::vector<std::string> reference_classes_;
