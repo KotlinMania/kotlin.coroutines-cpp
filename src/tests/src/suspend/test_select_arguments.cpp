@@ -156,7 +156,7 @@ void value_result_contract(bool concrete) {
 // Source contracts: channels/BufferedChannel.kt:241-349,1475-1501.
 void channel_send_contract(bool wait, bool cancel, bool closed) {
     using namespace kotlinx::coroutines::channels;
-    struct Prefix { virtual ~Prefix() = default; int value = 7; };
+    struct Prefix : virtual SendChannel<std::string> { virtual ~Prefix() = default; int value = 7; };
     struct DerivedChannel final : Prefix, BufferedChannel<std::string> {
         explicit DerivedChannel(int capacity) : BufferedChannel<std::string>(capacity) {}
     };

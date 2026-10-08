@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 812/2918 matched (target 3033) — 27.8%
+- **Function parity:** 813/2918 matched (target 3033) — 27.9%
 - **Class/type parity:** 359/560 matched (target 521) — 64.1%
-- **Combined symbol parity:** 1171/3478 matched (target 3554) — 33.7%
+- **Combined symbol parity:** 1172/3478 matched (target 3554) — 33.7%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -703,19 +703,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 80
 - **Lint issues:** 3
 
-### 51. channels.BufferedChannel
-
-- **Target:** `channels.BufferedChannel`
-- **Similarity:** 0.26
-- **Dependents:** 0
-- **Priority Score:** 121707.4
-- **Functions:** 100/111 matched (target 179)
-- **Missing functions:** `BufferedChannel::sendImpl`, `BufferedChannel::receiveImpl`, `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `BufferedChannel::onCancellationChannelResultImplDoNotCall`, `BufferedChannel::onCancellationImplDoNotCall`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0`
-- **Types:** 6/6 matched (target 7)
-- **Missing types:** _none_
-- **Lint issues:** 33
-
-### 52. test.RunBlockingTest
+### 51. test.RunBlockingTest
 
 - **Target:** `concurrent.RunBlockingTest [STUB]`
 - **Similarity:** 0.00
@@ -729,7 +717,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 52
 - **Lint issues:** 7
 
-### 53. channels.ConsumeTest
+### 52. channels.ConsumeTest
 
 - **Target:** `channels.ConsumeTest [STUB]`
 - **Similarity:** 0.00
@@ -742,7 +730,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/10 matched
 - **TODOs:** 29
 
-### 54. test.WithTimeoutTest
+### 53. test.WithTimeoutTest
 
 - **Target:** `tests.WithTimeoutTest`
 - **Similarity:** 0.00
@@ -756,7 +744,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 16
 - **Lint issues:** 14
 
-### 55. operators.BooleanTerminationTest
+### 54. operators.BooleanTerminationTest
 
 - **Target:** `operators.BooleanTerminationTest [STUB]`
 - **Similarity:** 0.00
@@ -769,7 +757,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/12 matched
 - **TODOs:** 39
 
-### 56. test.SupervisorTest
+### 55. test.SupervisorTest
 
 - **Target:** `tests.SupervisorTest [STUB]`
 - **Similarity:** 0.00
@@ -782,7 +770,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/12 matched
 - **TODOs:** 46
 
-### 57. operators.TransformLatestTest
+### 56. operators.TransformLatestTest
 
 - **Target:** `operators.TransformLatestTest [STUB]`
 - **Similarity:** 0.00
@@ -795,7 +783,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/12 matched
 - **TODOs:** 5
 
-### 58. common.CancellableContinuationImpl
+### 57. common.CancellableContinuationImpl
 
 - **Target:** `coroutines.ContinuationState`
 - **Similarity:** 0.25
@@ -806,7 +794,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 5/7 matched (target 15)
 - **Missing types:** `UserSupplied`, `CompletedContinuation`
 
-### 59. channels.ChannelUndeliveredElementTest
+### 58. channels.ChannelUndeliveredElementTest
 
 - **Target:** `channels.ChannelUndeliveredElementTest [STUB]`
 - **Similarity:** 0.00
@@ -819,6 +807,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/11 matched
 - **TODOs:** 37
 - **Lint issues:** 4
+
+### 59. channels.BufferedChannel
+
+- **Target:** `channels.BufferedChannel`
+- **Similarity:** 0.26
+- **Dependents:** 0
+- **Priority Score:** 111707.4
+- **Functions:** 101/111 matched (target 179)
+- **Missing functions:** `BufferedChannel::receiveImpl`, `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `BufferedChannel::onCancellationChannelResultImplDoNotCall`, `BufferedChannel::onCancellationImplDoNotCall`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0`
+- **Types:** 6/6 matched (target 7)
+- **Missing types:** _none_
+- **Lint issues:** 33
 
 ### 60. channels.BufferedChannelTest
 

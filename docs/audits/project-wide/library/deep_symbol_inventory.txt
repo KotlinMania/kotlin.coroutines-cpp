@@ -1206,7 +1206,7 @@ PRESENT function BufferedChannel::trySend at /Volumes/stuff/Projects/kotlinmania
 PRESENT function BufferedChannel::sendBroadcast at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:218 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:1040
 MISSING_SYMBOL type BufferedChannel::SendBroadcast at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:234
 MISSING_SYMBOL property BufferedChannel::SendBroadcast::cont at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:235
-MISSING_SYMBOL function BufferedChannel::sendImpl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:241
+PRESENT function BufferedChannel::sendImpl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:241 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:2369
 PRESENT function BufferedChannel::trySendDropOldest at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:352 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:1902
 PRESENT function BufferedChannel::sendImplOnNoWaiter at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:373 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:2304
 PRESENT function BufferedChannel::updateCellSend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:423 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:2664
@@ -1413,7 +1413,6 @@ EXTRA_TARGET_SYMBOL property BufferedChannel::on_receive_clause_ at /Volumes/stu
 EXTRA_TARGET_SYMBOL property BufferedChannel::on_receive_catching_clause_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:1955
 EXTRA_TARGET_SYMBOL function BufferedChannel::receive_impl_with_waiter at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:2157
 EXTRA_TARGET_SYMBOL function BufferedChannel::send_impl_with_waiter at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:2346
-EXTRA_TARGET_SYMBOL function BufferedChannel::send_impl_with_select at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:2369
 EXTRA_TARGET_SYMBOL function BufferedChannel::receive_impl_with_select at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:2429
 EXTRA_TARGET_SYMBOL function BufferedChannel::send_impl_try_send at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:2579
 EXTRA_TARGET_SYMBOL function BufferedChannel::receive_impl_try_receive at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp:2629
@@ -6426,4 +6425,4 @@ MISSING_SYMBOL property isNative at /Volumes/stuff/Projects/kotlinmania/kotlin.c
 MISSING_SYMBOL property isBoundByJsTestTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:61
 MISSING_SYMBOL property isJavaAndWindows at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:63
 MISSING_SYMBOL property usesSharedEventLoop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:65
-Inventory totals: present=2473, declaration_only=115, missing=2009
+Inventory totals: present=2474, declaration_only=115, missing=2008
