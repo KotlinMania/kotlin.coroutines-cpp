@@ -53,10 +53,10 @@ void* emit_all_impl(
 
 namespace kotlinx::coroutines::flow {
 
-template <typename T>
-class ChannelAsFlow;
-
 namespace internal {
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:104-108
+void mark_channel_consumed(bool consume, std::atomic<bool>& consumed);
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
 // NOTE(port): Type erasure keeps the private loop and lowered suspension frame
@@ -188,6 +188,8 @@ inline void* emit_all(
     return emit_all_impl(receiver, channel, /*consume=*/true, completion);
 }
 
+namespace internal {
+
 /**
  * Represents an existing [channel] as [ChannelFlow] implementation.
  * It fuses with subsequent [flowOn] operators, but for the most part ignores the specified context.
@@ -195,6 +197,8 @@ inline void* emit_all(
  * the context might play a role, because it is used by the producing coroutine.
  */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:95-137
+// NOTE(port): The source-private generic class requires a header definition for
+// arbitrary C++ element types. It belongs to the implementation namespace.
 template <typename T>
 class ChannelAsFlow : public internal::ChannelFlow<T> {
 public:
@@ -213,15 +217,10 @@ public:
 private:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:104-108
     void mark_consumed() {
-        if (consume_) {
-            if (consumed_.exchange(true)) {
-                throw IllegalStateException(
-                    "ReceiveChannel.consumeAsFlow can be collected just once");
-            }
-        }
+        mark_channel_consumed(consume_, consumed_);
     }
 
-public:
+protected:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:110-111
     internal::ChannelFlow<T>* create(
         std::shared_ptr<CoroutineContext> context,
@@ -230,11 +229,13 @@ public:
         return new ChannelAsFlow(channel_, consume_, context, capacity, on_buffer_overflow);
     }
 
+public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:113-114
     Flow<T>* drop_channel_operators() override {
         return new ChannelAsFlow(channel_, consume_);
     }
 
+protected:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:116-117
     void* collect_to(channels::ProducerScope<T>* scope,
                      std::shared_ptr<Continuation<void*>> completion) override {
@@ -242,6 +243,7 @@ public:
         return emit_all_impl(std::move(collector), channel_, consume_, std::move(completion));
     }
 
+public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:119-125
     std::shared_ptr<channels::ReceiveChannel<T>> produce_impl(CoroutineScope* scope) override {
         mark_consumed();
@@ -275,6 +277,8 @@ private:
     std::atomic<bool> consumed_;
 };
 
+} // namespace internal
+
 /**
  * Represents the given receive channel as a hot flow and [receives][ReceiveChannel.receive] from the channel
  * in fan-out fashion every time this flow is collected. One element will be emitted to one collector only.
@@ -301,7 +305,7 @@ private:
 template <typename T>
 inline std::shared_ptr<Flow<T>> receive_as_flow(
     std::shared_ptr<channels::ReceiveChannel<T>> channel) {
-    return std::make_shared<ChannelAsFlow<T>>(std::move(channel), /*consume=*/false);
+    return std::make_shared<internal::ChannelAsFlow<T>>(std::move(channel), /*consume=*/false);
 }
 
 /**
@@ -328,7 +332,7 @@ inline std::shared_ptr<Flow<T>> receive_as_flow(
 template <typename T>
 inline std::shared_ptr<Flow<T>> consume_as_flow(
     std::shared_ptr<channels::ReceiveChannel<T>> channel) {
-    return std::make_shared<ChannelAsFlow<T>>(std::move(channel), /*consume=*/true);
+    return std::make_shared<internal::ChannelAsFlow<T>>(std::move(channel), /*consume=*/true);
 }
 
 /**
