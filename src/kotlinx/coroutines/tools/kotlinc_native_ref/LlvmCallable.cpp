@@ -85,6 +85,10 @@ LLVMValueRef LlvmCallable::as_callback() const { return llvm_value_; }
 LlvmFunctionPointer::LlvmFunctionPointer(LLVMTypeRef function_type, bool returns_object_type, LLVMValueRef llvm_value,
     std::shared_ptr<LlvmFunctionAttributeProvider> attribute_provider)
     : LlvmCallable(function_type, returns_object_type, llvm_value, std::move(attribute_provider)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:44-45
+LlvmFunctionPointer::LlvmFunctionPointer(LLVMValueRef llvm_value, std::shared_ptr<LlvmFunctionSignature> signature)
+    : LlvmFunctionPointer(signature->llvm_function_type(), signature->returns_object_type(), llvm_value, signature) {}
+
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:48-53
 LlvmFunction::LlvmFunction(LLVMTypeRef function_type, bool returns_object_type, LLVMValueRef llvm_value,
     std::shared_ptr<LlvmFunctionAttributeProvider> attribute_provider)
@@ -101,11 +105,7 @@ bool LlvmFunction::is_no_unwind() const {
             throw std::invalid_argument("The LLVM value '" + std::string(value_name ? value_name : "null") +
                 "' is not a function. Supposed to be a function named '" + name().value_or("null") + "'.");
         }
-        // NOTE(port): The source's NoUnwind attribute resolves to this actual
-        // LLVM kind ID; retain its required failure when the kind is absent.
-        const auto kind = LLVMGetEnumAttributeKindForName("nounwind", 8);
-        if (kind == 0) throw std::runtime_error("Unable to find 'nounwind' attribute kind id");
-        lazy_->is_no_unwind = LLVMGetEnumAttributeAtIndex(llvm_value_, LLVMAttributeFunctionIndex, kind) != nullptr;
+        lazy_->is_no_unwind = is_function_no_unwind(llvm_value_);
     });
     return lazy_->is_no_unwind;
 }
@@ -126,10 +126,18 @@ LLVMValueRef LlvmFunction::build_landingpad(LLVMBuilderRef builder, LLVMTypeRef 
 LlvmFunction::Declaration::Declaration(LLVMTypeRef function_type, bool returns_object_type, LLVMValueRef llvm_value,
     std::shared_ptr<LlvmFunctionAttributeProvider> attribute_provider)
     : LlvmFunction(function_type, returns_object_type, llvm_value, std::move(attribute_provider)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:81-82
+LlvmFunction::Declaration::Declaration(LLVMValueRef llvm_value, std::shared_ptr<LlvmFunctionSignature> signature)
+    : Declaration(signature->llvm_function_type(), signature->returns_object_type(), llvm_value, signature) {}
+
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:85-90
 LlvmFunction::Definition::Definition(LLVMTypeRef function_type, bool returns_object_type, LLVMValueRef llvm_value,
     std::shared_ptr<LlvmFunctionAttributeProvider> attribute_provider)
     : LlvmFunction(function_type, returns_object_type, llvm_value, std::move(attribute_provider)) {}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:92-93
+LlvmFunction::Definition::Definition(LLVMValueRef llvm_value, std::shared_ptr<LlvmFunctionSignature> signature)
+    : Definition(signature->llvm_function_type(), signature->returns_object_type(), llvm_value, signature) {}
+
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:95-96
 LLVMBasicBlockRef LlvmFunction::Definition::add_basic_block(LLVMContextRef context, const std::string& name) const {
     return LLVMAppendBasicBlockInContext(context, llvm_value_, name.c_str());

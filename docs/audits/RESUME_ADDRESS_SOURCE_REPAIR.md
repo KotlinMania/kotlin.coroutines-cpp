@@ -1,7 +1,43 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## Typed LLVM signatures and attribute kinds — 2026-10-08
+
+The continuation after f542b371 translates LlvmAttributes.kt:67-105,
+LlvmParamType.kt:10-18, LlvmFunctionPrototype.kt:94-106,140-174 and
+LlvmUtils.kt:235-243,307-351. LlvmAttributes.hpp/.cpp keeps the source attribute
+classes and static singleton identities, with separate kind-ID caches for
+parameter and function attributes. The actual LLVM lookup retains its missing-kind
+error. A NOTE(port) explains serialized cache access by compiler threads.
+
+LlvmParamType and LlvmRetType preserve actual LLVM types, attribute lists and
+explicit object-return metadata. Attribute lists borrow the static singletons.
+LlvmFunctionSignature at LlvmFunctionPrototype.cpp:123 owns its immutable
+containers and synchronized lazy LLVM function type (:142). Calls (:151) and
+declarations (:164) receive function, return and ordered one-based parameter
+attributes. Concrete helpers adapt Kotlin's covariant list traversal without
+introducing generic internal templates.
+
+The signature-based pointer/declaration/definition constructors at
+LlvmCallable.cpp:89,130,138 now retain the actual signature as their provider.
+Nounwind lookup uses the source attribute helpers. Function type construction,
+kind IDs, enum-attribute creation and function-attribute setters are implemented
+in LlvmUtils.cpp:43-95. CMake adds LlvmAttributes.cpp and LlvmParamType.cpp to
+the existing LLVM targets; the existing LLVM/Threads linkage supplies their
+host dependencies. No Kotlin compiler or runtime dependency was added.
+
+No configure, build, test, AST emission or deep scan was run. The IR-derived
+signature factory at LlvmFunctionPrototype.kt:108-137, including type conversion,
+ABI parameter attributes and the object-return slot parameter, remains untranslated.
+Target/default attributes, function origins/prototypes, bridge debug metadata,
+exception/call/frame/root-update lowering, VariableManager and the normalized
+expression/initializer driver remain connected work. These supplied-LLVM
+signature bodies do not establish either executable acceptance path. The full
+translation goal remains active.
+
 ## LLVM callable and attribute dependency translation — 2026-10-08
+
+References in this section describe checkpoint f542b371.
 
 The continuation after d63d98ba translates the callable dependency used by
 CodeGenerator.call and Native reference updates. LlvmCallable.hpp/.cpp mirror

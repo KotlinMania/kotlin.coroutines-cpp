@@ -1,4 +1,4 @@
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:21-92
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:21-106,140-174
 #include "LlvmFunctionPrototype.hpp"
 #include <mutex>
 #include <vector>
@@ -98,5 +98,78 @@ std::shared_ptr<LlvmFunctionAttributeProvider> LlvmFunctionAttributeProvider::ma
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:33-34
 std::shared_ptr<LlvmFunctionAttributeProvider> LlvmFunctionAttributeProvider::copy_from_external(LLVMValueRef external_function) {
     return std::make_shared<LlvmFunctionAttributesCopier>(external_function);
+}
+namespace {
+// NOTE(port): The owning signature traverses Kotlin's covariant List<LlvmAttribute>
+// using concrete attribute lists. These helpers emit each selected attribute.
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:94-99
+void add_call_site_attribute_at_index(LLVMContextRef context, LLVMValueRef call_site, int index, const LlvmAttribute& attribute) {
+    const auto ref = create_llvm_enum_attribute(context, attribute.as_attribute_kind_id());
+    LLVMAddCallSiteAttribute(call_site, index, ref);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:101-106
+void add_declaration_attribute_at_index(LLVMContextRef context, LLVMValueRef function, int index, const LlvmAttribute& attribute) {
+    const auto ref = create_llvm_enum_attribute(context, attribute.as_attribute_kind_id());
+    LLVMAddAttributeAtIndex(function, index, ref);
+}
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:152-154
+class LlvmFunctionSignature::LazyFunctionType {
+public:
+    std::once_flag once;
+    LLVMTypeRef type = nullptr;
+};
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:143-148
+LlvmFunctionSignature::LlvmFunctionSignature(LlvmRetType return_type, std::vector<LlvmParamType> parameter_types,
+    bool is_vararg, std::vector<std::reference_wrapper<const LlvmFunctionAttribute>> function_attributes)
+    : return_type_(std::move(return_type)), parameter_types_(std::move(parameter_types)), is_vararg_(is_vararg),
+      function_attributes_(std::move(function_attributes)), lazy_function_type_(std::make_unique<LazyFunctionType>()) {}
+// NOTE(port): Dispose only the signature's owned lazy record and list containers.
+LlvmFunctionSignature::~LlvmFunctionSignature() = default;
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:144-144
+const LlvmRetType& LlvmFunctionSignature::return_type() const { return return_type_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:145-145
+const std::vector<LlvmParamType>& LlvmFunctionSignature::parameter_types() const { return parameter_types_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:146-146
+bool LlvmFunctionSignature::is_vararg() const { return is_vararg_; }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:147-147
+const std::vector<std::reference_wrapper<const LlvmFunctionAttribute>>& LlvmFunctionSignature::function_attributes() const {
+    return function_attributes_;
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:150-150
+bool LlvmFunctionSignature::returns_object_type() const { return return_type_.is_object_type(); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:152-154
+LLVMTypeRef LlvmFunctionSignature::llvm_function_type() const {
+    std::call_once(lazy_function_type_->once, [&] {
+        std::vector<LLVMTypeRef> types;
+        for (const auto& parameter : parameter_types_) types.push_back(parameter.llvm_type());
+        lazy_function_type_->type = function_type(return_type_.llvm_type(), is_vararg_, types);
+    });
+    return lazy_function_type_->type;
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:156-164
+void LlvmFunctionSignature::add_call_site_attributes(LLVMValueRef call_site) {
+    const auto caller = LLVMGetBasicBlockParent(LLVMGetInstructionParent(call_site));
+    const auto context = LLVMGetModuleContext(LLVMGetGlobalParent(caller));
+    for (const auto& attribute : function_attributes_)
+        add_call_site_attribute_at_index(context, call_site, LLVMAttributeFunctionIndex, attribute.get());
+    for (const auto& attribute : return_type_.attributes())
+        add_call_site_attribute_at_index(context, call_site, LLVMAttributeReturnIndex, attribute.get());
+    for (std::size_t index = 0; index < parameter_types_.size(); ++index) {
+        for (const auto& attribute : parameter_types_[index].attributes())
+            add_call_site_attribute_at_index(context, call_site, index + 1, attribute.get());
+    }
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmFunctionPrototype.kt:166-173
+void LlvmFunctionSignature::add_function_attributes(LLVMValueRef function) {
+    const auto context = LLVMGetModuleContext(LLVMGetGlobalParent(function));
+    for (const auto& attribute : function_attributes_)
+        add_declaration_attribute_at_index(context, function, LLVMAttributeFunctionIndex, attribute.get());
+    for (const auto& attribute : return_type_.attributes())
+        add_declaration_attribute_at_index(context, function, LLVMAttributeReturnIndex, attribute.get());
+    for (std::size_t index = 0; index < parameter_types_.size(); ++index) {
+        for (const auto& attribute : parameter_types_[index].attributes())
+            add_declaration_attribute_at_index(context, function, index + 1, attribute.get());
+    }
 }
 }

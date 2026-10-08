@@ -6,6 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Current typed-signature continuation — 2026-10-08:** From f542b371,
+parameter/return type descriptors, singleton attribute kinds and supplied-LLVM
+function signatures are translated. Signatures preserve separate function,
+return and parameter attributes, vararg state and explicit object-return metadata.
+Pointer/declaration/definition secondary constructors retain the actual signature
+as their provider; nounwind checks now use the source kind cache. The two new
+implementation files are registered in the existing LLVM targets. No configure,
+build, test, AST emission or scan was run. Continue the IR-derived signature
+factory (type conversion, ABI attributes and object-return slot parameter),
+function prototypes/target attributes and exception/call/frame/root operations,
+then VariableManager and the connected expression driver. Bridge debug metadata
+remains absent. See RESUME_ADDRESS_SOURCE_REPAIR.md's first section. The full
+goal remains active; executable acceptance remains deferred.
+
 **Current callable/attribute continuation — 2026-10-08:** From d63d98ba,
 LlvmCallable, function/pointer/declaration/definition operations and their actual
 attribute providers are translated. Calls and invokes preserve provider attributes;

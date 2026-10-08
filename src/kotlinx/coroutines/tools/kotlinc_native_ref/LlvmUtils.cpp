@@ -1,6 +1,8 @@
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-43
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:18-43,235-243,307-351
 #include "LlvmUtils.hpp"
 #include <cassert>
+#include <stdexcept>
+#include "LlvmAttributes.hpp"
 
 namespace org::jetbrains::kotlin::backend::konan::llvm {
 namespace {
@@ -37,4 +39,58 @@ std::shared_ptr<ConstPointer> ConstPointer::get_element_ptr(LLVMContextRef conte
 }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:32-38
 std::shared_ptr<ConstPointer> const_pointer(LLVMValueRef value) { return std::make_shared<ConstantPointer>(value); }
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:311-317
+LLVMAttributeKindId get_llvm_attribute_kind_id(const std::string& attribute_name) {
+    const auto kind = LLVMGetEnumAttributeKindForName(attribute_name.c_str(), attribute_name.size());
+    if (kind == 0) throw std::runtime_error("Unable to find '" + attribute_name + "' attribute kind id");
+    return LLVMAttributeKindId{static_cast<int>(kind)};
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:346-347
+LLVMAttributeRef create_llvm_enum_attribute(LLVMContextRef context, LLVMAttributeKindId attribute_kind_id, std::int64_t value) {
+    return LLVMCreateEnumAttribute(context, attribute_kind_id.value, static_cast<std::uint64_t>(value));
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:349-351
+void add_llvm_function_attribute(LLVMValueRef function, LLVMAttributeRef attribute) {
+    LLVMAddAttributeAtIndex(function, LLVMAttributeFunctionIndex, attribute);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:338-341
+void add_llvm_function_enum_attribute(LLVMValueRef function, LLVMAttributeKindId attribute_kind_id, std::int64_t value) {
+    const auto attribute = create_llvm_enum_attribute(LLVMGetTypeContext(LLVMTypeOf(function)), attribute_kind_id, value);
+    add_llvm_function_attribute(function, attribute);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:307-309
+bool is_function_no_unwind(LLVMValueRef function) {
+    return LLVMGetEnumAttributeAtIndex(function, LLVMAttributeFunctionIndex,
+        LlvmFunctionAttribute::NO_UNWIND.as_attribute_kind_id().value) != nullptr;
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:235-243
+LLVMTypeRef function_type(LLVMTypeRef return_type, bool is_vararg, const std::vector<LLVMTypeRef>& param_types) {
+    // NOTE(port): Copy the borrowed operand handles for LLVM-C's mutable array.
+    auto params = param_types;
+    return LLVMFunctionType(return_type, params.data(), params.size(), is_vararg ? 1 : 0);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:321-323
+void set_function_no_unwind(LLVMValueRef function) {
+    add_llvm_function_enum_attribute(function, LlvmFunctionAttribute::NO_UNWIND);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:325-327
+void set_function_no_return(LLVMValueRef function) {
+    add_llvm_function_enum_attribute(function, LlvmFunctionAttribute::NO_RETURN);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:329-331
+void set_function_no_inline(LLVMValueRef function) {
+    add_llvm_function_enum_attribute(function, LlvmFunctionAttribute::NO_INLINE);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:333-335
+void set_function_always_inline(LLVMValueRef function) {
+    add_llvm_function_enum_attribute(function, LlvmFunctionAttribute::ALWAYS_INLINE);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:343-344
+void add_llvm_function_enum_attribute(LLVMValueRef function, const LlvmAttribute& attribute, std::int64_t value) {
+    add_llvm_function_enum_attribute(function, attribute.as_attribute_kind_id(), value);
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmUtils.kt:235-243
+LLVMTypeRef function_type(LLVMTypeRef return_type, const std::vector<LLVMTypeRef>& param_types) {
+    return function_type(return_type, false, param_types);
+}
 }

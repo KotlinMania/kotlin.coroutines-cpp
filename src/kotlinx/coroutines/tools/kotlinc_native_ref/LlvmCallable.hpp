@@ -53,6 +53,8 @@ public:
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:38-43
     LlvmFunctionPointer(LLVMTypeRef function_type, bool returns_object_type, LLVMValueRef llvm_value,
         std::shared_ptr<LlvmFunctionAttributeProvider> attribute_provider);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:44-45
+    LlvmFunctionPointer(LLVMValueRef llvm_value, std::shared_ptr<LlvmFunctionSignature> signature);
 };
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:48-103
 class LlvmFunction : public LlvmCallable {
@@ -82,6 +84,8 @@ public:
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:75-80
     Declaration(LLVMTypeRef function_type, bool returns_object_type, LLVMValueRef llvm_value,
         std::shared_ptr<LlvmFunctionAttributeProvider> attribute_provider);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:81-82
+    Declaration(LLVMValueRef llvm_value, std::shared_ptr<LlvmFunctionSignature> signature);
 };
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:85-103
 class LlvmFunction::Definition final : public LlvmFunction {
@@ -89,6 +93,8 @@ public:
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:85-90
     Definition(LLVMTypeRef function_type, bool returns_object_type, LLVMValueRef llvm_value,
         std::shared_ptr<LlvmFunctionAttributeProvider> attribute_provider);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:92-93
+    Definition(LLVMValueRef llvm_value, std::shared_ptr<LlvmFunctionSignature> signature);
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:95-96
     LLVMBasicBlockRef add_basic_block(LLVMContextRef context, const std::string& name = "") const;
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/LlvmCallable.kt:98-99
