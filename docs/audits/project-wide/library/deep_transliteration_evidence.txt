@@ -4,10 +4,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.362991
+translated_ast_cosine: 0.362042
 function_name_parity: 0.208333
 normalized_logic: 0.000000
-documentation_correspondence: 0.009929
+documentation_correspondence: 0.009204
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -8846,7 +8846,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ScopeCoroutine.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.594156
+translated_ast_cosine: 0.590865
 function_name_parity: 0.800000
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
@@ -8864,27 +8864,27 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 39	1299:1604	1181:1542	class_declaration	fallback
 Diagnostic: 11: unsupported class_declaration
 Diagnostic: 39: unsupported class_declaration
-Function ScopeCoroutine::getStackTraceElement:17 -> kotlinx::coroutines::internal::ScopeCoroutine::get_stack_trace_element:56 | normalized logic: 0.000000
+Function ScopeCoroutine::getStackTraceElement:17 -> kotlinx::coroutines::internal::ScopeCoroutine::get_stack_trace_element:68 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:5
-Function ScopeCoroutine::afterCompletion:21 -> kotlinx::coroutines::internal::ScopeCoroutine::after_completion:62 | normalized logic: 0.000000
+Function ScopeCoroutine::afterCompletion:21 -> kotlinx::coroutines::internal::ScopeCoroutine::after_completion:74 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:state type:jobstate identifier:lifetime operator:= node:43 identifier:jobsupport identifier:sharedfromthis node:43 identifier:erasedcompletion identifier:reset identifier:result operator:= node:43 identifier:coroutines identifier:kotlinx identifier:recoverresult identifier:state type:t node:43 identifier:get identifier:ucont node:43 identifier:resumecancellablewith node:43 identifier:intercepteducont node:43 identifier:std identifier:move identifier:result
-Function ScopeCoroutine::afterCompletionUndispatched:30 -> kotlinx::coroutines::internal::ScopeCoroutine::after_completion_undispatched:74 | normalized logic: 0.000000
+Function ScopeCoroutine::afterCompletionUndispatched:30 -> kotlinx::coroutines::internal::ScopeCoroutine::after_completion_undispatched:86 | normalized logic: 0.000000
   Ordered logic sequences are equal
-Function ScopeCoroutine::afterResume:33 -> kotlinx::coroutines::internal::ScopeCoroutine::after_resume:78 | normalized logic: 0.000000
+Function ScopeCoroutine::afterResume:33 -> kotlinx::coroutines::internal::ScopeCoroutine::after_resume:90 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:state type:jobstate identifier:lifetime operator:= node:43 identifier:jobsupport identifier:sharedfromthis node:43 identifier:erasedcompletion identifier:reset node:43 identifier:ucont identifier:resumewith node:43 identifier:kotlinx identifier:coroutines identifier:recoverresult type:t identifier:state node:43 identifier:ucont identifier:get
 Missing source function: ContextScope::toString:42
-Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::ScopeCoroutine:46
-Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::get_caller_frame:50
-Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::is_scoped_coroutine:59
-Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::start_undispatched_or_return:87
-Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::start_undispatched_or_return:95
-Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::start_undispatched_or_return_ignore_timeout:100
-Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::start_undispatched_or_return_ignore_timeout:107
-Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::intercepted_u_cont:119
-Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::start_undspatched:138
+Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::ScopeCoroutine:58
+Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::get_caller_frame:62
+Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::is_scoped_coroutine:71
+Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::start_undispatched_or_return:99
+Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::start_undispatched_or_return:107
+Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::start_undispatched_or_return_ignore_timeout:112
+Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::start_undispatched_or_return_ignore_timeout:119
+Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::intercepted_u_cont:131
+Extra target function: kotlinx::coroutines::internal::ScopeCoroutine::start_undspatched:150
 === Emitted target buffer ===
 namespace kotlinx::coroutines::internal {
 
@@ -10793,7 +10793,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.common.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.587055
+translated_ast_cosine: 0.584220
 function_name_parity: 0.750000
 normalized_logic: 0.000000
 documentation_correspondence: 0.005292
@@ -10816,9 +10816,9 @@ Diagnostic: 11: unsupported class_declaration
 Diagnostic: 22: unsupported function_declaration
 Diagnostic: 92: unsupported function_declaration
 Diagnostic: 103: unsupported function_declaration
-Function transitiveCoroutineParent:92 -> kotlinx::coroutines::flow::internal::transitive_coroutine_parent:40 | normalized logic: 0.000000
+Function transitiveCoroutineParent:92 -> kotlinx::coroutines::flow::internal::transitive_coroutine_parent:41 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:currentjob identifier:std type:job type:sharedptr node:66 identifier:collectjob identifier:std type:job type:sharedptr identifier:cur operator:= identifier:currentjob node:3 identifier:cur operator:!= node:1 node:43 identifier:cur identifier:get operator:== node:43 identifier:collectjob identifier:get node:5 identifier:cur identifier:js operator:= node:43 identifier:dynamiccast type:jobsupport operator:* node:43 identifier:cur identifier:get node:1 operator:! identifier:js operator:|| operator:! node:43 identifier:js identifier:getisscopedcoroutine node:5 identifier:cur identifier:cur operator:= node:43 identifier:cur identifier:getparent node:5
+  Target logic: node:66 identifier:currentjob identifier:std type:job type:sharedptr node:66 identifier:collectjob identifier:std type:job type:sharedptr identifier:cur operator:= identifier:currentjob node:3 identifier:cur operator:!= node:1 node:43 identifier:cur identifier:get operator:== node:43 identifier:collectjob identifier:get node:5 identifier:cur node:1 operator:! node:43 identifier:dynamiccast identifier:kotlinx identifier:coroutines identifier:internal type:scopecoroutinebase operator:* node:43 identifier:cur identifier:get node:5 identifier:cur identifier:cur operator:= node:43 identifier:cur identifier:getparent node:5
 Function unsafeFlow:103 -> kotlinx::coroutines::flow::internal::unsafe_flow:237 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:std type:function type:void operator:* node:66 type:flowcollector type:t operator:* node:66 type:continuation type:void operator:* operator:* identifier:block type:unsafeflowimpl type:flow type:t identifier:std type:function type:void operator:* node:66 type:flowcollector type:t operator:* node:66 type:continuation type:void operator:* operator:* identifier:block identifier:unsafeflowimpl node:66 identifier:std type:function type:void operator:* node:66 type:flowcollector type:t operator:* node:66 type:continuation type:void operator:* operator:* identifier:b identifier:block node:43 identifier:std identifier:move identifier:b type:void identifier:collect node:66 identifier:collector type:flowcollector type:t node:66 type:continuation type:void operator:* identifier:continuation node:5 node:43 identifier:block identifier:collector identifier:continuation node:5 node:43 identifier:std identifier:makeshared type:unsafeflowimpl node:43 identifier:std identifier:move identifier:block
@@ -11096,10 +11096,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ConcurrentLinkedList.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/ConcurrentLinkedList.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.421612
+translated_ast_cosine: 0.423435
 function_name_parity: 0.692308
 normalized_logic: 0.000000
-documentation_correspondence: 0.005678
+documentation_correspondence: 0.008503
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -13743,14 +13743,14 @@ Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/internal/ProbesSupport.common.kt
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/ProbesSupport.common.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.324967
-translated_ast_cosine: 0.329967
+translated_text_cosine: 0.049029
+translated_ast_cosine: 0.363498
 function_name_parity: 0.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.000000
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
-score: 0.324967
+score: 0.049029
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
 Target parse errors: no

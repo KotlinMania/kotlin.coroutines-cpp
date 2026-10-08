@@ -6,7 +6,44 @@
 #include <type_traits>
 #include <utility>
 
-namespace kotlinx::coroutines {
+namespace kotlin::coroutines {
+
+/**
+ * AbstractCoroutineContextElement - convenience base class for context elements.
+ *
+ * This class provides a simple implementation for elements that store their key.
+ * Most concrete context elements will inherit from this class.
+ *
+ * Usage example:
+ * ```cpp
+ * class MyElement : public AbstractCoroutineContextElement {
+ * public:
+ *     static KeyTyped<MyElement> KEY;
+ *     MyElement() : AbstractCoroutineContextElement(&KEY) {}
+ * };
+ * ```
+ */
+// Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:17-17
+class AbstractCoroutineContextElement : public virtual CoroutineContext::Element {
+public:
+    Key* key_;
+
+    /**
+     * Constructor with key.
+     *
+     * @param key The key that identifies this element type
+     */
+    // Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:17-17
+    explicit AbstractCoroutineContextElement(Key* key) : key_(key) {}
+
+    /**
+     * Returns the key of this element.
+     *
+     * @return The key provided during construction
+     */
+    // Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:17-17
+    Key* key() const override { return key_; }
+};
 
 namespace internal {
 // Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:56-65
@@ -95,4 +132,6 @@ public:
 
 };
 
-} // namespace kotlinx::coroutines
+} // namespace kotlin::coroutines
+
+#include "kotlinx/coroutines/ContextImports.hpp"

@@ -4,15 +4,9 @@
 #include "kotlinx/coroutines/ContinuationImpl.hpp"
 #include <functional>
 
-namespace kotlin::coroutines::native::internal {
-// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/DebugProbes.kt:44-46
-inline std::shared_ptr<kotlinx::coroutines::Continuation<void*>> probe_coroutine_created(
-    std::shared_ptr<kotlinx::coroutines::Continuation<void*>> completion) { return completion; }
-// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/DebugProbes.kt:58-60
-void probe_coroutine_resumed(kotlinx::coroutines::Continuation<void*>* frame);
-}
+#include "kotlinx/coroutines/DebugProbes.hpp"
 
-namespace kotlinx::coroutines::intrinsics {
+namespace kotlin::coroutines::intrinsics {
 // NOTE(port): A lowered C++ callable receives the actual Native-style frame owner.
 using ErasedSuspendFunction = std::function<void*(std::shared_ptr<Continuation<void*>>)>;
 // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:221-263
@@ -66,4 +60,4 @@ std::shared_ptr<Continuation<void*>> create_coroutine_unintercepted(
         };
     return create_coroutine_unintercepted<T>(std::move(bound), std::move(completion));
 }
-} // namespace kotlinx::coroutines::intrinsics
+} // namespace kotlin::coroutines::intrinsics

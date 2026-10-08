@@ -146,3 +146,9 @@ consumed bodies under the library's kotlinx::coroutines namespace; namespace/fil
 projection requires further investigation. No score is overridden and no source
 provenance is changed to conceal this report. Deep receipts are
 native-exception-hash-{library,compiler}-deep.log.
+
+Namespace follow-up (2026-10-07): the earlier context namespace rejection is now
+resolved by actual kotlin::coroutines definitions, with C++ library imports kept
+separate. The refreshed compiler report recognizes CoroutineContextImpl and
+ContinuationInterceptor without a scoring-rule change. Remaining body gaps are
+still measured. See STDLIB_COROUTINE_NAMESPACES.md.

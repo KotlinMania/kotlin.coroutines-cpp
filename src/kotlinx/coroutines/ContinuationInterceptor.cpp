@@ -5,7 +5,7 @@
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 #include "kotlinx/coroutines/context_impl.hpp"
 
-namespace kotlinx::coroutines {
+namespace kotlin::coroutines {
 // Transliterated from: libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt:48-50
 void ContinuationInterceptor::release_intercepted_continuation(
     std::shared_ptr<Continuation<void*>> continuation) {}
@@ -34,4 +34,4 @@ std::shared_ptr<CoroutineContext> ContinuationInterceptor::minus_key(CoroutineCo
     return type_key == key
         ? std::static_pointer_cast<CoroutineContext>(EmptyCoroutineContext::instance()) : element;
 }
-} // namespace kotlinx::coroutines
+} // namespace kotlin::coroutines

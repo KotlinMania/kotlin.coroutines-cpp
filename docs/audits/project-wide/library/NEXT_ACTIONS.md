@@ -6,8 +6,8 @@ Based on AST analysis, here are the concrete next steps.
 
 - **Files Present:** 251/354 (70.9%)
 - **Function parity:** 811/2918 matched (target 3028) — 27.8%
-- **Class/type parity:** 359/560 matched (target 523) — 64.1%
-- **Combined symbol parity:** 1170/3478 matched (target 3551) — 33.6%
+- **Class/type parity:** 359/560 matched (target 521) — 64.1%
+- **Combined symbol parity:** 1170/3478 matched (target 3549) — 33.6%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -323,7 +323,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Priority Score:** 213109.0
 - **Functions:** 5/24 matched (target 19)
 - **Missing functions:** `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelAndJoin`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::ensureActive`, `Job::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke`
-- **Types:** 5/7 matched (target 9)
+- **Types:** 5/7 matched (target 8)
 - **Missing types:** `DisposableHandle`, `DisposeOnCompletion`
 - **Lint issues:** 1
 
@@ -1516,7 +1516,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Priority Score:** 41608.8
 - **Functions:** 9/13 matched (target 28)
 - **Missing functions:** `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally`
-- **Types:** 3/3 matched (target 5)
+- **Types:** 3/3 matched (target 4)
 - **Missing types:** _none_
 - **Lint issues:** 3
 
@@ -2122,7 +2122,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Priority Score:** 20705.3
 - **Functions:** 4/5 matched (target 13)
 - **Missing functions:** `ContextScope::toString`
-- **Types:** 1/2 matched
+- **Types:** 1/2 matched (target 3)
 - **Missing types:** `ContextScope`
 - **Lint issues:** 1
 
@@ -3208,7 +3208,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Priority Score:** 10.0
 - **Functions:** 0/0 matched (target 2)
 - **Missing functions:** _none_
-- **Types:** 0/0 matched (target 1)
+- **Types:** 0/0 matched
 - **Missing types:** _none_
 - **Lint issues:** 1
 

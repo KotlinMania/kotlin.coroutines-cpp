@@ -29,7 +29,7 @@ namespace kotlinx {
 namespace coroutines {
 namespace channels {
 
-using kotlinx::coroutines::Continuation;
+using kotlin::coroutines::Continuation;
 using kotlinx::coroutines::CancellationException;
 using kotlinx::coroutines::CoroutineScope;
 namespace selects = kotlinx::coroutines::selects;

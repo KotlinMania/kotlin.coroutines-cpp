@@ -64,10 +64,10 @@ using kotlinx::coroutines::channels::BufferOverflow;
 using kotlinx::coroutines::channels::ProducerScope;
 using kotlinx::coroutines::channels::ReceiveChannel;
 namespace channels = ::kotlinx::coroutines::channels;
-using kotlinx::coroutines::Continuation;
+using kotlin::coroutines::Continuation;
 using kotlinx::coroutines::CoroutineScope;
-using kotlinx::coroutines::CoroutineContext;
-using kotlinx::coroutines::EmptyCoroutineContext;
+using kotlin::coroutines::CoroutineContext;
+using kotlin::coroutines::EmptyCoroutineContext;
 
 // Forward declaration moved specific to flow namespace
 

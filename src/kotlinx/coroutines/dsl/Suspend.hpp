@@ -100,7 +100,7 @@ inline T suspend(T&& value) {
         ::__kxs_suspend_point(__LINE__, &(c)->_label, &&_KXS_LABEL(_kxs_resume_, __LINE__)); \
         { \
             auto _kxs_tmp = (expr); \
-            if (::kotlinx::coroutines::intrinsics::is_coroutine_suspended(_kxs_tmp)) \
+            if (::kotlin::coroutines::intrinsics::is_coroutine_suspended(_kxs_tmp)) \
                 return _kxs_tmp; \
         } \
         goto _KXS_LABEL(_kxs_cont_, __LINE__); \
@@ -122,7 +122,7 @@ inline T suspend(T&& value) {
         ::__kxs_suspend_point(__LINE__, &(c)->_label, &&_KXS_LABEL(_kxs_resume_, __LINE__)); \
         { \
             auto _kxs_tmp = (expr); \
-            if (::kotlinx::coroutines::intrinsics::is_coroutine_suspended(_kxs_tmp)) \
+            if (::kotlin::coroutines::intrinsics::is_coroutine_suspended(_kxs_tmp)) \
                 return _kxs_tmp; \
             (out_lvalue) = _kxs_tmp; \
         } \

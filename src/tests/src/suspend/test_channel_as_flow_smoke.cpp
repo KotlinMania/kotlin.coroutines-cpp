@@ -23,7 +23,7 @@ class QueueDispatcher final : public kotlinx::coroutines::CoroutineDispatcher {
 public:
     mutable std::deque<std::shared_ptr<kotlinx::coroutines::Runnable>> queue;
 
-    void dispatch(const kotlinx::coroutines::CoroutineContext&,
+    void dispatch(const kotlin::coroutines::CoroutineContext&,
                   std::shared_ptr<kotlinx::coroutines::Runnable> block) const override {
         queue.push_back(std::move(block));
     }
@@ -37,18 +37,18 @@ public:
     }
 };
 
-class NoopContinuation : public kotlinx::coroutines::Continuation<void*> {
+class NoopContinuation : public kotlin::coroutines::Continuation<void*> {
 public:
-    NoopContinuation() : ctx_(kotlinx::coroutines::EmptyCoroutineContext::instance()) {}
+    NoopContinuation() : ctx_(kotlin::coroutines::EmptyCoroutineContext::instance()) {}
 
-    std::shared_ptr<kotlinx::coroutines::CoroutineContext> get_context() const override { return ctx_; }
+    std::shared_ptr<kotlin::coroutines::CoroutineContext> get_context() const override { return ctx_; }
     void resume_with(kotlinx::coroutines::Result<void*> result) override {
         // No-op continuation - result indicates completion status
         // Could check result.is_success() to verify expected behavior
     }
 
 private:
-    std::shared_ptr<kotlinx::coroutines::CoroutineContext> ctx_;
+    std::shared_ptr<kotlin::coroutines::CoroutineContext> ctx_;
 };
 
 template <typename T>
@@ -56,7 +56,7 @@ class VectorCollector : public kotlinx::coroutines::flow::FlowCollector<T> {
 public:
     explicit VectorCollector(std::vector<T>* out) : out_(out) {}
 
-    void* emit(T value, kotlinx::coroutines::Continuation<void*>* continuation) override {
+    void* emit(T value, kotlin::coroutines::Continuation<void*>* continuation) override {
         (void)continuation;
         out_->push_back(std::move(value));
         return nullptr;
@@ -66,13 +66,13 @@ private:
     std::vector<T>* out_;
 };
 
-class RecordingContinuation : public kotlinx::coroutines::Continuation<void*> {
+class RecordingContinuation : public kotlin::coroutines::Continuation<void*> {
 public:
     bool completed = false;
     std::exception_ptr failure;
-    std::shared_ptr<kotlinx::coroutines::CoroutineContext> ctx_ = kotlinx::coroutines::EmptyCoroutineContext::instance();
+    std::shared_ptr<kotlin::coroutines::CoroutineContext> ctx_ = kotlin::coroutines::EmptyCoroutineContext::instance();
 
-    std::shared_ptr<kotlinx::coroutines::CoroutineContext> get_context() const override { return ctx_; }
+    std::shared_ptr<kotlin::coroutines::CoroutineContext> get_context() const override { return ctx_; }
     void resume_with(kotlinx::coroutines::Result<void*> result) override {
         try { (void)result.get_or_throw(); }
         catch (...) { failure = std::current_exception(); }
@@ -83,13 +83,13 @@ public:
 class MockSuspendingIterator : public kotlinx::coroutines::channels::ChannelIterator<int> {
 public:
     int step = 0;
-    kotlinx::coroutines::Continuation<void*>* saved_cont = nullptr;
+    kotlin::coroutines::Continuation<void*>* saved_cont = nullptr;
 
-    void* has_next(kotlinx::coroutines::Continuation<void*>* cont) override {
+    void* has_next(kotlin::coroutines::Continuation<void*>* cont) override {
         if (step == 0) {
             step = 1;
             saved_cont = cont;
-            return kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
+            return kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
         }
         return new bool(false);
     }
@@ -127,8 +127,8 @@ public:
     kotlinx::coroutines::channels::ChannelResult<int> try_receive() override {
         return kotlinx::coroutines::channels::ChannelResult<int>::failure();
     }
-    void* receive(kotlinx::coroutines::Continuation<void*>* cont) override { (void)cont; return nullptr; }
-    void* receive_catching(kotlinx::coroutines::Continuation<void*>* cont) override { (void)cont; return nullptr; }
+    void* receive(kotlin::coroutines::Continuation<void*>* cont) override { (void)cont; return nullptr; }
+    void* receive_catching(kotlin::coroutines::Continuation<void*>* cont) override { (void)cont; return nullptr; }
     kotlinx::coroutines::selects::SelectClause1<int>& on_receive() override { throw std::logic_error("not implemented"); }
     kotlinx::coroutines::selects::SelectClause1<kotlinx::coroutines::channels::ChannelResult<int>>& on_receive_catching() override {
         throw std::logic_error("not implemented");
@@ -138,14 +138,14 @@ public:
 class SuspendingCollector : public kotlinx::coroutines::flow::FlowCollector<int> {
 public:
     std::vector<int>* out_;
-    kotlinx::coroutines::Continuation<void*>* saved_emit_cont = nullptr;
+    kotlin::coroutines::Continuation<void*>* saved_emit_cont = nullptr;
 
     explicit SuspendingCollector(std::vector<int>* out) : out_(out) {}
 
-    void* emit(int value, kotlinx::coroutines::Continuation<void*>* continuation) override {
+    void* emit(int value, kotlin::coroutines::Continuation<void*>* continuation) override {
         out_->push_back(value);
         saved_emit_cont = continuation;
-        return kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
+        return kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
     }
 };
 
@@ -222,7 +222,7 @@ int main() {
 
         class ThrowingCollector : public kotlinx::coroutines::flow::FlowCollector<int> {
         public:
-            void* emit(int value, kotlinx::coroutines::Continuation<void*>* continuation) override {
+            void* emit(int value, kotlin::coroutines::Continuation<void*>* continuation) override {
                 (void)value;
                 (void)continuation;
                 throw std::runtime_error("emission failure");
@@ -278,7 +278,7 @@ int main() {
         bool source_collected = false;
         auto source = kotlinx::coroutines::flow::flow<int>(
             [&source_collected](kotlinx::coroutines::flow::FlowCollector<int>*,
-                               kotlinx::coroutines::Continuation<void*>*) -> void* {
+                               kotlin::coroutines::Continuation<void*>*) -> void* {
                 source_collected = true;
                 return nullptr;
             });
@@ -306,7 +306,7 @@ int main() {
         RecordingContinuation completion;
 
         void* r = kotlinx::coroutines::flow::emit_all(&collector, &mock_ch, &completion);
-        if (r != kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return 1;
+        if (r != kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return 1;
         if (completion.completed) return 1;
         if (mock_ch.it_ptr == nullptr || mock_ch.it_ptr->saved_cont == nullptr) return 1;
 
@@ -330,7 +330,7 @@ int main() {
         RecordingContinuation completion;
 
         void* r = kotlinx::coroutines::flow::emit_all(&collector, ch3.get(), &completion);
-        if (r != kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return 1;
+        if (r != kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return 1;
         if (completion.completed) return 1;
         if (collector.saved_emit_cont == nullptr) return 1;
         if (out != std::vector<int>{999}) return 1;
@@ -355,7 +355,7 @@ int main() {
         SuspendingCollector collector(&values);
         RecordingContinuation completion;
         if (flow->collect(&collector, &completion) !=
-            kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return 1;
+            kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return 1;
         flow.reset();
         receiver.reset();
         channel.reset();
@@ -379,7 +379,7 @@ int main() {
         class FailingIterator final : public kotlinx::coroutines::channels::ChannelIterator<int> {
         public:
             FailingIterator(int phase, std::exception_ptr failure) : phase_(phase), failure_(failure) {}
-            void* has_next(kotlinx::coroutines::Continuation<void*>*) override {
+            void* has_next(kotlin::coroutines::Continuation<void*>*) override {
                 if (phase_ == 1) std::rethrow_exception(failure_);
                 return new bool(true);
             }
@@ -433,8 +433,8 @@ int main() {
         std::shared_ptr<kotlinx::coroutines::flow::FlowCollector<int>> collector_owner = collector;
         auto completion = std::make_shared<RecordingContinuation>();
         if (kotlinx::coroutines::flow::emit_all_impl<int>(collector_owner, receiver, true, completion) !=
-            kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return ownership_failure(__LINE__);
-        auto frame = dynamic_cast<kotlinx::coroutines::BaseContinuationImpl*>(collector_ptr->saved_emit_cont)->shared_from_this();
+            kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return ownership_failure(__LINE__);
+        auto frame = dynamic_cast<kotlin::coroutines::native::internal::BaseContinuationImpl*>(collector_ptr->saved_emit_cont)->shared_from_this();
         collector.reset();
         collector_owner.reset();
         receiver.reset();
@@ -467,26 +467,26 @@ int main() {
     // Emitters.kt:70-81: the start action must finish before upstream starts,
     // including when both the action and upstream collection suspend.
     {
-        kotlinx::coroutines::Continuation<void*>* action_continuation = nullptr;
-        kotlinx::coroutines::Continuation<void*>* upstream_continuation = nullptr;
+        kotlin::coroutines::Continuation<void*>* action_continuation = nullptr;
+        kotlin::coroutines::Continuation<void*>* upstream_continuation = nullptr;
         int upstream_starts = 0;
         auto source = kotlinx::coroutines::flow::unsafe_flow<int>(
-            [&](kotlinx::coroutines::flow::FlowCollector<int>*, kotlinx::coroutines::Continuation<void*>* continuation) -> void* {
+            [&](kotlinx::coroutines::flow::FlowCollector<int>*, kotlin::coroutines::Continuation<void*>* continuation) -> void* {
                 ++upstream_starts;
                 upstream_continuation = continuation;
-                return kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
+                return kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
             });
         auto started = kotlinx::coroutines::flow::on_start<int>(source,
-            [&](kotlinx::coroutines::flow::FlowCollector<int>* collector, kotlinx::coroutines::Continuation<void*>* continuation) -> void* {
+            [&](kotlinx::coroutines::flow::FlowCollector<int>* collector, kotlin::coroutines::Continuation<void*>* continuation) -> void* {
                 if (!dynamic_cast<kotlinx::coroutines::flow::internal::SafeCollector<int>*>(collector))
                     throw std::logic_error("start action lacks SafeCollector");
                 action_continuation = continuation;
-                return kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
+                return kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
             });
         std::vector<int> out;
         VectorCollector<int> collector(&out);
         RecordingContinuation completion;
-        if (started->collect(&collector, &completion) != kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return 1;
+        if (started->collect(&collector, &completion) != kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return 1;
         if (upstream_starts || completion.completed || !action_continuation) return 1;
         started.reset();
         source.reset();
@@ -499,26 +499,26 @@ int main() {
     // Failure when the start action resumes must reach the caller without
     // starting upstream collection.
     {
-        kotlinx::coroutines::Continuation<void*>* action_continuation = nullptr;
+        kotlin::coroutines::Continuation<void*>* action_continuation = nullptr;
         bool upstream_started = false;
         auto source = kotlinx::coroutines::flow::unsafe_flow<int>(
             [&](kotlinx::coroutines::flow::FlowCollector<int>*,
-                kotlinx::coroutines::Continuation<void*>*) -> void* {
+                kotlin::coroutines::Continuation<void*>*) -> void* {
                 upstream_started = true;
                 return nullptr;
             });
         auto started = kotlinx::coroutines::flow::on_start<int>(source,
             [&](kotlinx::coroutines::flow::FlowCollector<int>*,
-                kotlinx::coroutines::Continuation<void*>* continuation) -> void* {
+                kotlin::coroutines::Continuation<void*>* continuation) -> void* {
                 action_continuation = continuation;
-                return kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
+                return kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
             });
         std::vector<int> out;
         VectorCollector<int> collector(&out);
         RecordingContinuation completion;
         auto failure = std::make_exception_ptr(std::runtime_error("start action failure"));
         if (started->collect(&collector, &completion) !=
-            kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return 1;
+            kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return 1;
         action_continuation->resume_with(kotlinx::coroutines::Result<void*>::failure(failure));
         if (upstream_started || !completion.completed || completion.failure != failure) return 1;
     }
@@ -528,7 +528,7 @@ int main() {
     for (bool channel_backed : {false, true}) for (bool fail : {false, true}) {
         auto dispatcher = std::make_shared<QueueDispatcher>();
         auto scope = kotlinx::coroutines::create_coroutine_scope(dispatcher);
-        kotlinx::coroutines::Continuation<void*>* paused = nullptr;
+        kotlin::coroutines::Continuation<void*>* paused = nullptr;
         auto resource = std::make_shared<int>(71);
         auto identity = resource.get();
         std::weak_ptr<int> resource_lifetime = resource;
@@ -536,20 +536,20 @@ int main() {
         if (channel_backed) source = kotlinx::coroutines::flow::channel_flow<int>(
             [resource, identity, &paused](
                 kotlinx::coroutines::channels::ProducerScope<int>*,
-                std::shared_ptr<kotlinx::coroutines::Continuation<void*>> continuation) -> void* {
+                std::shared_ptr<kotlin::coroutines::Continuation<void*>> continuation) -> void* {
                 if (resource.get() != identity || *resource != 71)
                     throw std::logic_error("producer resource identity changed");
                 paused = continuation.get();
-                return kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
+                return kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
             });
         else source = kotlinx::coroutines::flow::unsafe_flow<int>(
             [resource, identity, &paused](
                 kotlinx::coroutines::flow::FlowCollector<int>*,
-                kotlinx::coroutines::Continuation<void*>* continuation) -> void* {
+                kotlin::coroutines::Continuation<void*>* continuation) -> void* {
                 if (resource.get() != identity || *resource != 71)
                     throw std::logic_error("producer resource identity changed");
                 paused = continuation;
-                return kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
+                return kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
             });
         std::weak_ptr<kotlinx::coroutines::flow::Flow<int>> lifetime = source;
         auto produced = kotlinx::coroutines::flow::produce_in<int>(source, scope.get());
@@ -559,7 +559,7 @@ int main() {
         dispatcher->drain();
         if (!paused || lifetime.expired() || resource_lifetime.expired()) return ownership_failure(__LINE__);
         // A retained completed frame must release its actual source/captures.
-        auto retained_frame = dynamic_cast<kotlinx::coroutines::BaseContinuationImpl*>(paused)->shared_from_this();
+        auto retained_frame = dynamic_cast<kotlin::coroutines::native::internal::BaseContinuationImpl*>(paused)->shared_from_this();
         auto failure = std::make_exception_ptr(std::runtime_error("producer resumed failure"));
         paused->resume_with(fail ? kotlinx::coroutines::Result<void*>::failure(failure) :
             kotlinx::coroutines::Result<void*>::success(nullptr));
@@ -582,7 +582,7 @@ int main() {
         auto channel_flow = std::dynamic_pointer_cast<
             kotlinx::coroutines::flow::internal::ChannelFlow<int>>(source);
         std::shared_ptr<kotlinx::coroutines::flow::Flow<int>> buffered(
-            channel_flow->fuse(kotlinx::coroutines::EmptyCoroutineContext::instance(), 2,
+            channel_flow->fuse(kotlin::coroutines::EmptyCoroutineContext::instance(), 2,
                               kotlinx::coroutines::channels::BufferOverflow::SUSPEND));
         std::weak_ptr<kotlinx::coroutines::flow::Flow<int>> lifetime = buffered;
         std::vector<int> values;
@@ -590,7 +590,7 @@ int main() {
         RecordingContinuation completion;
         completion.ctx_ = dispatcher;
         if (buffered->collect(&collector, &completion) !=
-            kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return ownership_failure(__LINE__);
+            kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return ownership_failure(__LINE__);
         buffered.reset();
         source.reset();
         channel_flow.reset();
@@ -622,7 +622,7 @@ int main() {
         auto channel_flow = std::dynamic_pointer_cast<
             kotlinx::coroutines::flow::internal::ChannelFlow<int>>(source);
         std::shared_ptr<kotlinx::coroutines::flow::Flow<int>> buffered(
-            channel_flow->fuse(kotlinx::coroutines::EmptyCoroutineContext::instance(), 2,
+            channel_flow->fuse(kotlin::coroutines::EmptyCoroutineContext::instance(), 2,
                               kotlinx::coroutines::channels::BufferOverflow::SUSPEND));
         std::weak_ptr<kotlinx::coroutines::flow::Flow<int>> lifetime = buffered;
         std::weak_ptr<kotlinx::coroutines::channels::Channel<int>> channel_lifetime = channel;
@@ -645,28 +645,28 @@ int main() {
     // Flow.kt:223-230: SafeCollector collection retains its receiver and block
     // captures until the suspended collectSafely returns or throws.
     for (int outcome : {0, 1, 2}) {
-        kotlinx::coroutines::Continuation<void*>* paused = nullptr;
+        kotlin::coroutines::Continuation<void*>* paused = nullptr;
         auto resource = std::make_shared<int>(81);
         std::weak_ptr<int> resource_lifetime = resource;
         auto source = kotlinx::coroutines::flow::flow<int>(
             [resource, &paused](kotlinx::coroutines::flow::FlowCollector<int>*,
-                                kotlinx::coroutines::Continuation<void*>* continuation) -> void* {
+                                kotlin::coroutines::Continuation<void*>* continuation) -> void* {
                 if (*resource != 81) throw std::logic_error("flow resource changed");
                 paused = continuation;
-                return kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
+                return kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
             });
         std::weak_ptr<kotlinx::coroutines::flow::Flow<int>> lifetime = source;
         std::vector<int> values;
         VectorCollector<int> collector(&values);
         RecordingContinuation completion;
         if (source->collect(&collector, &completion) !=
-            kotlinx::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return ownership_failure(__LINE__);
+            kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED()) return ownership_failure(__LINE__);
         source.reset();
         resource.reset();
         if (lifetime.expired() || resource_lifetime.expired() || !paused) return ownership_failure(__LINE__);
         // Keep the terminated continuation alive independently: its spills must
         // stop owning the flow and captures when collection finishes.
-        auto retained_frame = dynamic_cast<kotlinx::coroutines::BaseContinuationImpl*>(paused)->shared_from_this();
+        auto retained_frame = dynamic_cast<kotlin::coroutines::native::internal::BaseContinuationImpl*>(paused)->shared_from_this();
         auto failure = outcome == 2 ?
             std::make_exception_ptr(kotlinx::coroutines::CancellationException("safe flow cancelled")) :
             std::make_exception_ptr(std::runtime_error("safe flow resumed failure"));
@@ -687,7 +687,7 @@ int main() {
             std::exception_ptr failure;
             int collections = 0;
             void* collect_safely(kotlinx::coroutines::flow::FlowCollector<int>* collector,
-                                kotlinx::coroutines::Continuation<void*>* completion) override {
+                                kotlin::coroutines::Continuation<void*>* completion) override {
                 ++collections;
                 collector->emit(91, completion);
                 if (failure) std::rethrow_exception(failure);

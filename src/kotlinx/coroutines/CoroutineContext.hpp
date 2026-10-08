@@ -1,13 +1,14 @@
 // port-lint: source libraries/stdlib/src/kotlin/coroutines/CoroutineContext.kt
 #pragma once
 /** Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContext.kt */
+#include "kotlinx/coroutines/CoroutineImports.hpp"
 #include <memory>
 #include <functional>
 #include <string>
 #include <optional>
 #include <cstdint>
 
-namespace kotlinx {
+namespace kotlin {
 namespace coroutines {
 
 /**
@@ -220,43 +221,8 @@ inline std::string CoroutineContext::to_string() const {
     return result;
 }
 
-/**
- * AbstractCoroutineContextElement - convenience base class for context elements.
- * 
- * This class provides a simple implementation for elements that store their key.
- * Most concrete context elements will inherit from this class.
- * 
- * Usage example:
- * ```cpp
- * class MyElement : public AbstractCoroutineContextElement {
- * public:
- *     static KeyTyped<MyElement> KEY;
- *     MyElement() : AbstractCoroutineContextElement(&KEY) {}
- * };
- * ```
- */
-class AbstractCoroutineContextElement : public virtual CoroutineContext::Element {
-public:
-    Key* key_;
-    
-    /**
-     * Constructor with key.
-     * 
-     * @param key The key that identifies this element type
-     */
-    explicit AbstractCoroutineContextElement(Key* key) : key_(key) {}
-
-    /**
-     * Returns the key of this element.
-     * 
-     * @return The key provided during construction
-     */
-    Key* key() const override { return key_; }
-};
-
-// No debugging facilities on Native.
-// Transliterated from: kotlinx-coroutines-core/native/src/CoroutineContext.kt:46-46
-std::optional<std::string> coroutine_name(const std::shared_ptr<CoroutineContext>& context);
 
 } // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlin
+
+#include "kotlinx/coroutines/context_impl.hpp"

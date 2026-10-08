@@ -119,7 +119,7 @@ const ParmVarDecl* SuspendFunctionAnalyzer::continuation_parameter(const Functio
     const auto& arguments = handle->getTemplateArgs();
     if (arguments.size() != 1 || arguments[0].getKind() != TemplateArgument::Type) return nullptr;
     const auto* continuation = dyn_cast_or_null<ClassTemplateSpecializationDecl>(arguments[0].getAsType().getCanonicalType()->getAsCXXRecordDecl());
-    if (!continuation || continuation->getSpecializedTemplate()->getQualifiedNameAsString() != "kotlinx::coroutines::Continuation") return nullptr;
+    if (!continuation || continuation->getSpecializedTemplate()->getQualifiedNameAsString() != "kotlin::coroutines::Continuation") return nullptr;
     const auto& result = continuation->getTemplateArgs();
     if (result.size() != 1 || result[0].getKind() != TemplateArgument::Type) return nullptr;
     auto type = result[0].getAsType().getCanonicalType();

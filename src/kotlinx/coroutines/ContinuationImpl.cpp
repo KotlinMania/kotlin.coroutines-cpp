@@ -1,3 +1,4 @@
+// port-lint: source kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt
 /**
  * Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt
  * Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt
@@ -11,10 +12,10 @@ namespace kotlin::coroutines::native::internal {
 // This probe is invoked when a coroutine is resumed using Continuation.resume_with.
 // The coroutine machinery guarantees that frame extends BaseContinuationImpl.
 // NOTE(port): This overload specializes the Native Continuation<*> parameter for the erased ABI.
-void probe_coroutine_resumed(kotlinx::coroutines::Continuation<void*>* frame) {}
+void probe_coroutine_resumed(kotlin::coroutines::Continuation<void*>* frame) {}
 } // namespace kotlin::coroutines::native::internal
 
-namespace kotlinx::coroutines {
+namespace kotlin::coroutines::native::internal {
 
 // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt:21-45
 void BaseContinuationImpl::resume_with(Result<void*> result) {
@@ -153,32 +154,4 @@ void* BaseContinuationImpl::start(Result<void*> result) {
     }
 }
 
-namespace intrinsics {
-// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:201-202
-std::shared_ptr<Continuation<void*>> intercepted(std::shared_ptr<Continuation<void*>> continuation) {
-    auto frame = std::dynamic_pointer_cast<ContinuationImpl>(continuation);
-    return frame ? frame->intercepted() : continuation;
-}
-} // namespace intrinsics
-
-namespace internal {
-// NOTE(port): Kotlin GC owns a continuation passed through the raw entry ABI.
-std::shared_ptr<Continuation<void*>> retain_continuation(Continuation<void*>* continuation) {
-    if (auto* frame = dynamic_cast<BaseContinuationImpl*>(continuation)) {
-        if (auto owner = frame->weak_from_this().lock()) return owner;
-    }
-    return std::shared_ptr<Continuation<void*>>(continuation, [](Continuation<void*>*) {});
-}
-
-// Transliterated from: kotlinx-coroutines-core/common/src/CancellableContinuation.kt:423-435
-// NOTE(port): Typed adapters preserve on-cancellation values until dispatch has
-// checked the Job, then box the value once for the lowered continuation ABI.
-InterceptedDelegate intercepted_delegate(std::shared_ptr<Continuation<void*>> continuation) {
-    auto intercepted = intrinsics::intercepted(std::move(continuation));
-    if (auto dispatched = std::dynamic_pointer_cast<DispatchedContinuation<void*>>(intercepted)) {
-        return {dispatched->continuation, dispatched->dispatcher};
-    }
-    return {std::move(intercepted), nullptr};
-}
-} // namespace internal
-} // namespace kotlinx::coroutines
+} // namespace kotlin::coroutines::native::internal

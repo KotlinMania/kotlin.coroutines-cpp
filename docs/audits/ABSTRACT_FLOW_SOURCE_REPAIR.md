@@ -42,3 +42,18 @@ A reproduced measurement defect introduced by the valid private helper split was
 fixed in ast_distance; see AST_DISTANCE_PRIVATE_COMPANION_REPAIR.md. Both complete
 root deep reports are refreshed after source/tool changes. Name coverage does not
 establish body parity; outstanding source gaps remain represented by the oracle.
+
+SafeCollector ancestry follow-up (2026-10-07): common SafeCollector.kt:92-97
+checks the actual ScopeCoroutine<*> type before following its parent. The old
+C++ JobSupport/is_scoped_coroutine flag test allowed an unrelated job to bypass
+this check. SafeCollector.cpp:21,30 now checks the erased identity of actual
+ScopeCoroutine specializations. ScopeCoroutine.hpp:40 can only be constructed
+by ScopeCoroutine<T>; it supplies no algorithm or alternate state machine.
+The source's final scoped property is preserved. The regression at
+test_channel_consumption.cpp:375 failed at :388 before the fix and now exercises
+real void*/int scope chains, unrelated flag-bearing jobs, null/identical parents,
+Native context rejection, downstream exception identity and real relationship
+cleanup. Ten focused executables finished with zero failures before checkpoint
+e42543fc. Receipts: safe-collector-ancestry-focused-{build,tests}.log and
+safe-collector-ancestry-before-tests.log. This source fix is included in that
+full-tree recovery commit; it does not close every SafeCollector mismatch.

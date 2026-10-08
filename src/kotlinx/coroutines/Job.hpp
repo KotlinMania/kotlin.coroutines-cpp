@@ -26,7 +26,7 @@ struct ChildHandle;
 struct CompletableJob;
 class JobSupport;
 class JobNode;
-template<typename T> class Continuation;
+// Continuation is imported from kotlin.coroutines by CoroutineContext.hpp.
 
 // --------------- core job interfaces ---------------
 

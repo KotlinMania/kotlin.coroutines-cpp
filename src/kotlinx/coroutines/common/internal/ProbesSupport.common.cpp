@@ -13,10 +13,10 @@
  * The C++ port matches the K/N behavior — debug probes are a JVM-only feature.
  */
 
-namespace kotlinx::coroutines::internal {
+// Kotlin imports the actual standard-library continuation.
+#include "kotlinx/coroutines/Continuation.hpp"
 
-template <typename T>
-class Continuation;
+namespace kotlinx::coroutines::internal {
 
 template <typename T>
 inline Continuation<T>* probe_coroutine_created(Continuation<T>* completion) {

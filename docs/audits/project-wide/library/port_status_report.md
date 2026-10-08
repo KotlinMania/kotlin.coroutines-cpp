@@ -11,8 +11,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Metric | Count | Percentage |
 |--------|-------|------------|
 | Function parity | 811/2918 matched (target 3028) | 27.8% |
-| Class/type parity | 359/560 matched (target 523) | 64.1% |
-| Combined symbol parity | 1170/3478 matched (target 3551) | 33.6% |
+| Class/type parity | 359/560 matched (target 521) | 64.1% |
+| Combined symbol parity | 1170/3478 matched (target 3549) | 33.6% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -20,8 +20,8 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 | Missing source symbol files | 99 | 833 symbols |
 | Cheat/scoring failures | 123 | forced to 0% |
 | Total source files | 354 | 100% |
-| Target units (paired) | 594 | - |
-| Target files (total) | 774 | - |
+| Target units (paired) | 599 | - |
+| Target files (total) | 780 | - |
 | Porting progress | 251 | 70.9% (matched) |
 | Missing files | 103 | 29.1% |
 
@@ -162,7 +162,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 118 | `common.TestDispatchers` | `tests.TestDispatchers [STUB]` | 0.00 | 2/2 matched | _none_ | 0/0 matched | _none_ | - | 0 | 210.0 |
 | 119 | `internal.FlowExceptions` | `kotlinx.coroutines.native.flow.internal.FlowExceptions [ZERO]` | 0.00 | 0/0 matched (target 2) | _none_ | 2/2 matched | _none_ | - | 0 | 210.0 |
 | 120 | `internal.NullSurrogate` | `internal.NullSurrogate [ZERO]` | 0.00 | 0/0 matched (target 3) | _none_ | 0/0 matched | _none_ | - | 0 | 10.0 |
-| 121 | `internal.ProbesSupport.common` | `internal.ProbesSupport.common [ZERO]` | 0.00 | 0/0 matched (target 2) | _none_ | 0/0 matched (target 1) | _none_ | - | 0 | 10.0 |
+| 121 | `internal.ProbesSupport.common` | `internal.ProbesSupport.common [ZERO]` | 0.00 | 0/0 matched (target 2) | _none_ | 0/0 matched | _none_ | - | 0 | 10.0 |
 | 122 | `test.DefaultDispatchersConcurrencyTest` | `concurrent.DefaultDispatchersConcurrencyTest [ZERO]` | 0.00 | 0/0 matched (target 2) | _none_ | 2/2 matched | _none_ | - | 0 | 210.0 |
 | 123 | `test.EmptyContext` | `tests.EmptyContext [STUB]` | 0.00 | 2/2 matched | _none_ | 0/0 matched | _none_ | - | 0 | 210.0 |
 | 124 | `test.WithTimeoutOrNullDurationTest` | `tests.WithTimeoutOrNullDurationTest` | 0.00 | 0/18 matched (target 15) | `WithTimeoutOrNullDurationTest::testBasicNoSuspend`, `WithTimeoutOrNullDurationTest::testBasicSuspend`, `WithTimeoutOrNullDurationTest::testDispatch`, `WithTimeoutOrNullDurationTest::testYieldBlockingWithTimeout`, `WithTimeoutOrNullDurationTest::testSmallTimeout`, `WithTimeoutOrNullDurationTest::testThrowException`, `WithTimeoutOrNullDurationTest::testInnerTimeout`, `WithTimeoutOrNullDurationTest::testNestedTimeout`, `WithTimeoutOrNullDurationTest::testOuterTimeout`, `WithTimeoutOrNullDurationTest::testBadClass`, `WithTimeoutOrNullDurationTest::BadClass::equals`, `WithTimeoutOrNullDurationTest::BadClass::hashCode`, `WithTimeoutOrNullDurationTest::BadClass::toString`, `WithTimeoutOrNullDurationTest::testNullOnTimeout`, `WithTimeoutOrNullDurationTest::testSuppressExceptionWithResult`, `WithTimeoutOrNullDurationTest::testSuppressExceptionWithAnotherException`, `WithTimeoutOrNullDurationTest::testNegativeTimeout`, `WithTimeoutOrNullDurationTest::testExceptionFromWithinTimeout` | 2/2 matched | _none_ | 0/15 | 18 | 182010.0 |
@@ -204,11 +204,11 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 160 | `operators.Merge` | `flow.Merge` | 0.08 | 8/9 matched (target 23) | `Iterable<Flow<T>>::merge` | 0/0 matched (target 3) | _none_ | - | 1 | 10909.2 |
 | 161 | `flow.StateFlow` | `flow.StateFlow` | 0.09 | 4/19 matched (target 47) | `MutableStateFlow`, `StateFlowSlot::allocateLocked`, `StateFlowSlot::freeLocked`, `StateFlowSlot::makePending`, `StateFlowSlot::takePending`, `StateFlowSlot::awaitPending`, `StateFlowImpl::compareAndSet`, `StateFlowImpl::updateState`, `StateFlowImpl::tryEmit`, `StateFlowImpl::emit`, `StateFlowImpl::resetReplayCache`, `StateFlowImpl::collect`, `StateFlowImpl::createSlot`, `StateFlowImpl::createSlotArray`, `StateFlowImpl::fuse` | 4/4 matched (target 7) | _none_ | - | 15 | 152309.1 |
 | 162 | `operators.Delay` | `flow.Delay` | 0.09 | 6/10 matched (target 9) | `Flow<T>::debounce`, `Flow<T>::debounce`, `Flow<T>::sample`, `Flow<T>::timeoutInternal` | 0/0 matched (target 1) | _none_ | - | 4 | 41009.1 |
-| 163 | `common.Job` | `coroutines.Job` | 0.10 | 5/24 matched (target 19) | `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelAndJoin`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::ensureActive`, `Job::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke` | 5/7 matched (target 9) | `DisposableHandle`, `DisposeOnCompletion` | - | 21 | 213109.0 |
+| 163 | `common.Job` | `coroutines.Job` | 0.10 | 5/24 matched (target 19) | `Job::cancel`, `Job::plus`, `Job::invokeOnCompletion`, `Job`, `Job0`, `Job::disposeOnCompletion`, `Job::cancelAndJoin`, `Job::cancelChildren`, `Job::cancelChildren`, `CoroutineContext::cancel`, `CoroutineContext::cancel`, `CoroutineContext::ensureActive`, `Job::cancel`, `CoroutineContext::cancel`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `CoroutineContext::cancelChildren`, `orCancellation`, `DisposeOnCompletion::invoke` | 5/7 matched (target 8) | `DisposableHandle`, `DisposeOnCompletion` | - | 21 | 213109.0 |
 | 164 | `internal.InlineList` | `internal.InlineList` | 0.10 | 1/2 matched (target 5) | `InlineList::plus` | 1/1 matched | _none_ | - | 1 | 10309.0 |
 | 165 | `internal.Symbol` | `internal.Symbol` | 0.11 | 2/2 matched (target 3) | _none_ | 1/1 matched | _none_ | - | 0 | 1000308.9 |
 | 166 | `terminal.Collection` | `flow.Collection` | 0.11 | 3/3 matched (target 53) | _none_ | 0/0 matched (target 9) | _none_ | - | 0 | 308.9 |
-| 167 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 5) | _none_ | - | 4 | 41608.8 |
+| 167 | `internal.ConcurrentLinkedList` | `internal.ConcurrentLinkedList` | 0.12 | 9/13 matched (target 28) | `AtomicRef<S>::moveForward`, `AtomicRef<S>::findSegmentAndMoveForward`, `N::close`, `AtomicInt::addConditionally` | 3/3 matched (target 4) | _none_ | - | 4 | 41608.8 |
 | 168 | `internal.SafeCollector.common` | `internal.SafeCollector.common` | 0.12 | 3/4 matched (target 12) | `SafeCollector<*>::checkContext` | 1/1 matched (target 3) | _none_ | - | 1 | 10508.8 |
 | 169 | `terminal.Collect` | `flow.Collect` | 0.13 | 8/8 matched (target 29) | _none_ | 0/0 matched (target 5) | _none_ | - | 0 | 808.7 |
 | 170 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.13 | 1/1 matched (target 8) | _none_ | 1/1 matched (target 3) | _none_ | - | 0 | 2000208.6 |
@@ -266,7 +266,7 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 222 | `test.DelayTest` | `tests.DelayTest` | 0.41 | 1/5 matched | `DelayTest::testCancellation`, `DelayTest::testMaxLongValue`, `DelayTest::testMaxIntValue`, `DelayTest::testRegularDelay` | 1/1 matched | _none_ | 0/4 | 4 | 40605.9 |
 | 223 | `channels.ChannelFlowTest` | `channels.ChannelFlowTest` | 0.41 | 2/16 matched (target 15) | `ChannelFlowTest::testRegular`, `ChannelFlowTest::testBuffer`, `ChannelFlowTest::testConflated`, `ChannelFlowTest::testFailureCancelsChannel`, `ChannelFlowTest::testFailureInSourceCancelsConsumer`, `ChannelFlowTest::testScopedCancellation`, `ChannelFlowTest::testMergeOneCoroutineWithCancellation`, `ChannelFlowTest::testMergeTwoCoroutinesWithCancellation`, `ChannelFlowTest::testBufferWithTimeout`, `ChannelFlowTest::bufferWithTimeout`, `ChannelFlowTest::testChildCancellation`, `ChannelFlowTest::testClosedPrematurely`, `ChannelFlowTest::testNotClosedPrematurely`, `ChannelFlowTest::testCancelledOnCompletion` | 1/1 matched | _none_ | 0/13 | 14 | 141705.9 |
 | 224 | `test.DurationToMillisTest` | `tests.DurationToMillisTest` | 0.41 | 0/11 matched (target 13) | `DurationToMillisTest::testNegativeDurationCoercedToZeroMillis`, `DurationToMillisTest::testZeroDurationCoercedToZeroMillis`, `DurationToMillisTest::testOneNanosecondCoercedToOneMillisecond`, `DurationToMillisTest::testOneSecondCoercedTo1000Milliseconds`, `DurationToMillisTest::testMixedComponentDurationRoundedUpToNextMillisecond`, `DurationToMillisTest::testOneExtraNanosecondRoundedUpToNextMillisecond`, `DurationToMillisTest::testInfiniteDurationCoercedToLongMaxValue`, `DurationToMillisTest::testNegativeInfiniteDurationCoercedToZero`, `DurationToMillisTest::testNanosecondOffByOneInfinityDoesNotOverflow`, `DurationToMillisTest::testMillisecondOffByOneInfinityDoesNotIncrement`, `DurationToMillisTest::testOutOfBoundsNanosecondsButFiniteDoesNotIncrement` | 1/1 matched | _none_ | 0/11 | 11 | 111205.9 |
-| 225 | `internal.Scopes` | `internal.ScopeCoroutine` | 0.47 | 4/5 matched (target 13) | `ContextScope::toString` | 1/2 matched | `ContextScope` | - | 2 | 20705.3 |
+| 225 | `internal.Scopes` | `internal.ScopeCoroutine` | 0.47 | 4/5 matched (target 13) | `ContextScope::toString` | 1/2 matched (target 3) | `ContextScope` | - | 2 | 20705.3 |
 | 226 | `common.Unconfined` | `coroutines.Unconfined` | 0.47 | 4/4 matched (target 7) | _none_ | 2/2 matched (target 3) | _none_ | - | 0 | 605.3 |
 | 227 | `test.CancelledParentAttachTest` | `tests.CancelledParentAttachTest` | 0.48 | 4/9 matched | `CancelledParentAttachTest::testAsync`, `CancelledParentAttachTest::testLaunch`, `CancelledParentAttachTest::testProduce`, `CancelledParentAttachTest::testBroadcast`, `CancelledParentAttachTest::testScopes` | 1/1 matched | _none_ | 0/5 | 5 | 51005.2 |
 | 228 | `internal.FlowExceptions.common` | `internal.FlowExceptions` | 0.50 | 2/2 matched (target 3) | _none_ | 2/2 matched | _none_ | - | 0 | 405.0 |

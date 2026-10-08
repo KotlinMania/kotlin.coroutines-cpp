@@ -1,10 +1,11 @@
 #pragma once
 // port-lint: source libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt
 /** Transliterated from: libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt */
+#include "kotlinx/coroutines/CoroutineImports.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 
-namespace kotlinx {
+namespace kotlin {
 namespace coroutines {
 
 // Transliterated from: libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt:20-72
@@ -33,4 +34,4 @@ struct ContinuationInterceptor : public virtual CoroutineContext::Element {
 };
 
 } // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlin

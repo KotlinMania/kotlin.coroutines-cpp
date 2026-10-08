@@ -1,3 +1,4 @@
+// port-lint: source kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt
 /*
  * Copyright 2010-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license
  * that can be found in the LICENSE file.
@@ -18,14 +19,13 @@
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 
-namespace kotlinx {
-namespace coroutines {
+namespace kotlin::coroutines::native::internal {
+using namespace kotlin::coroutines;
 
 // Forward declarations
 class BaseContinuationImpl;
 class ContinuationImpl;
 class RestrictedContinuationImpl;
-class CoroutineDispatcher;
 
 // Type alias for Any? equivalent - we use void* for type-erased values
 using AnyResult = Result<void*>;
@@ -117,14 +117,14 @@ private:
     std::shared_ptr<Continuation<void*>> intercepted_;
 };
 
-class CompletedContinuation : public kotlinx::coroutines::Continuation<void*> {
+class CompletedContinuation : public kotlin::coroutines::Continuation<void*> {
 public:
     static std::shared_ptr<CompletedContinuation> instance() {
         static auto instance_ = std::make_shared<CompletedContinuation>();
         return instance_;
     }
 
-    std::shared_ptr<kotlinx::coroutines::CoroutineContext> get_context() const override {
+    std::shared_ptr<kotlin::coroutines::CoroutineContext> get_context() const override {
         throw std::runtime_error("This continuation is already complete");
     }
 
@@ -133,21 +133,6 @@ public:
     }
 };
 
-namespace internal {
-// NOTE(port): Keep typed cancellable results until dispatch cancellation checks
-// have run, then box them at the Continuation<void*> ABI boundary.
-struct InterceptedDelegate {
-    std::shared_ptr<Continuation<void*>> continuation;
-    std::shared_ptr<CoroutineDispatcher> dispatcher;
-};
-std::shared_ptr<Continuation<void*>> retain_continuation(Continuation<void*>* continuation);
-InterceptedDelegate intercepted_delegate(std::shared_ptr<Continuation<void*>> continuation);
-} // namespace internal
+} // namespace kotlin::coroutines::native::internal
 
-namespace intrinsics {
-// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:201-202
-std::shared_ptr<Continuation<void*>> intercepted(std::shared_ptr<Continuation<void*>> continuation);
-} // namespace intrinsics
-
-} // namespace coroutines
-} // namespace kotlinx
+#include "kotlinx/coroutines/ContinuationBindings.hpp"

@@ -7,7 +7,7 @@ their C++ counterparts. The interceptor source was absent from the extracted
 working snapshot; its exact blob was restored from the existing upstream Kotlin
 checkout's HEAD, without fetching another revision or inventing a source contract.
 
-`src/kotlinx/coroutines/context_impl.hpp:39` exposes the source generic
+`src/kotlinx/coroutines/context_impl.hpp:76` exposes the source generic
 AbstractCoroutineContextKey<B, E>. Kotlin's abstract construction and element
 subtype bound are preserved through a protected constructor and compile-time
 checks. The check occurs when the constructor is instantiated, because the
@@ -15,7 +15,7 @@ CoroutineDispatcher nested companion refers to its still-incomplete enclosing
 class in C++. An initial check at class instantiation failed to compile; the
 final constructor check enforces the same constraint after the class is complete.
 
-The concrete wildcard-key representation at `context_impl.hpp:15` is the C++
+The concrete wildcard-key representation at `context_impl.hpp:52` is the C++
 binding for Kotlin's AbstractCoroutineContextKey<*, *> runtime type test.
 It does not add another key subobject. The constructor at `context_impl.cpp:12`
 follows the source topmostKey expression, including nested polymorphic keys.
@@ -28,7 +28,7 @@ The source extension branches live at `context_impl.cpp:32,41`:
 get_polymorphic_element calls safeCast only when is_sub_key matches, otherwise
 returns null. minus_polymorphic_key returns the canonical EmptyCoroutineContext
 only on the matching non-null cast; rejected casts and unrelated keys preserve
-the original element. The typed public get binding at `context_impl.hpp:66`
+the original element. The typed public get binding at `context_impl.hpp:103`
 projects the source E cast. Concrete algorithms remain in .cpp; only generic
 public bindings and the erased ABI layout are in the header.
 
@@ -80,15 +80,12 @@ names, 359/560 types, average body similarity 0.26 and 123 scoring failures.
 The previous report recorded 804 functions and 358 types. These counts do not
 certify whole-body correspondence or completed files.
 
-The compiler/prerequisite report still rejects CoroutineContextImpl and
-ContinuationInterceptor. A direct comparison identifies the exact reason:
-Kotlin package kotlin.coroutines versus the existing C++ kotlinx::coroutines
-namespace. namespace_identity_matches in tools/ast_distance/include/codebase.hpp
-requires identical declared namespace parts. This is an actual namespace
-projection gap, not evidence that the inspected bodies are absent and not a
-verified tool bug. The tool is not weakened to treat different namespaces as
-identical. Existing generated findings remain visible. Receipts:
-polymorphic-context-{library,compiler}-deep.log and
-polymorphic-context-interceptor-identity.log. Source-first library repairs remain
-the priority; these are consumed context dependencies rather than an unrelated
-compiler translation project.
+The original compiler/prerequisite scan rejected CoroutineContextImpl and
+ContinuationInterceptor because kotlin.coroutines differed from the C++
+kotlinx::coroutines declaration. The namespace repair now places these definitions
+in kotlin::coroutines and keeps library imports in separate binding headers.
+The refreshed strict inventory recognizes CoroutineContextImpl (15/23 function
+body names and 4/5 types) and ContinuationInterceptor (3/3 bodies and 1/1 type).
+Its remaining body and serialization gaps stay visible. No namespace equivalence
+rule or score was weakened. See STDLIB_COROUTINE_NAMESPACES.md for this repair's
+verification and its separate commit after the full-tree checkpoint.

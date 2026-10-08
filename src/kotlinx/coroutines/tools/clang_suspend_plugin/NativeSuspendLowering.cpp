@@ -108,7 +108,7 @@ public:
             if (!parameters.empty()) parameters += ", ";
             parameters += declaration(transfer_type, name);
             if (parameter == completion_) {
-                variables_[parameter] = {"", "static_cast<kotlinx::coroutines::BaseContinuationImpl*>(this)->shared_from_this()", "", false};
+                variables_[parameter] = {"", "static_cast<kotlin::coroutines::native::internal::BaseContinuationImpl*>(this)->shared_from_this()", "", false};
                 continue;
             }
             std::string field = "_kxs_argument_" + std::to_string(variables_.size());
@@ -137,13 +137,13 @@ public:
         // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/AbstractSuspendFunctionsLowering.kt:35-38,94-109
         // NOTE(port): Preserve the generated coroutine declaration origin in Clang.
         output << "[[clang::annotate(\"kotlin.ir.origin.COROUTINE_IMPL\")]] " << frame
-               << " final : kotlinx::coroutines::" << base_class << " {\n"
+               << " final : kotlin::coroutines::native::internal::" << base_class << " {\n"
                << "void* _label = nullptr;\n";
         for (const auto& reference : reference_classes_) output << reference << '\n';
         if (exception_region_) output << "std::exception_ptr _kxs_active_exception, _kxs_pending_failure, _kxs_retired_exception; bool _kxs_reenter = false;\n";
         for (const auto& field : fields_) output << field << '\n';
         output << "explicit " << frame
-               << "(std::shared_ptr<kotlinx::coroutines::Continuation<void*>> " << completion_->getNameAsString()
+               << "(std::shared_ptr<kotlin::coroutines::Continuation<void*>> " << completion_->getNameAsString()
                << constructor << ") : " << base_class << "(std::move(" << completion_->getNameAsString() << "))" << initializers << " {}\n"
                << frame << "(const " << frame << "&) = delete;\n"
                << frame << "& operator=(const " << frame << "&) = delete;\n"
@@ -958,7 +958,7 @@ private:
                             [&](const Slot& retained) { return retained.name == slot.name; })) continue;
             body_ << slot.name << ".reset();\n";
         }
-        body_ << "if (kotlinx::coroutines::intrinsics::is_coroutine_suspended(" << result.access
+        body_ << "if (kotlin::coroutines::intrinsics::is_coroutine_suspended(" << result.access
               << ")) return " << result.access << ";\n"
               << "goto _kxs_continue_" << id << ";\n_kxs_resume_" << id << ":\n"
               << result.name << ".emplace(_kxs_result.get_or_throw());\n_kxs_continue_" << id << ":;\n";

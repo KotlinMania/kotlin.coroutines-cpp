@@ -9,14 +9,18 @@
  * kotlin.coroutines.Continuation interface.
  */
 
+#include "kotlinx/coroutines/CoroutineImports.hpp"
 #include "kotlinx/coroutines/CoroutineContext.hpp"
 #include "kotlinx/coroutines/Result.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
 #include <memory>
 #include <functional>
 
-namespace kotlinx {
+namespace kotlin {
 namespace coroutines {
+// NOTE(port): Existing C++ Result/Unit carriers remain explicit dependencies.
+using kotlinx::coroutines::Result;
+using kotlinx::coroutines::Unit;
 
 // Legacy compatibility - ContinuationBase for older code
 class ContinuationBase {
@@ -171,5 +175,7 @@ std::shared_ptr<Continuation<T>> result_box_completion(std::shared_ptr<Continuat
 } // namespace internal
 
 } // namespace coroutines
-} // namespace kotlinx
+} // namespace kotlin
 
+
+#include "kotlinx/coroutines/ContinuationImports.hpp"

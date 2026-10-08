@@ -239,7 +239,7 @@ void test_with_permit_suspend_and_finally() {
         }
     }
     auto semaphore = create_semaphore(1);
-    FunctionalContinuation<void*> completion(kotlinx::coroutines::EmptyCoroutineContext::instance(),
+    FunctionalContinuation<void*> completion(kotlin::coroutines::EmptyCoroutineContext::instance(),
         [](kotlinx::coroutines::Result<void*>) { throw std::runtime_error("direct completion resumed"); });
     assert_true(with_permit(*semaphore, [] {}, &completion) == nullptr);
     assert_equals(1, semaphore->available_permits());
@@ -250,8 +250,8 @@ void test_with_permit_suspend_and_finally() {
 class PermitQueueDispatcher final : public kotlinx::coroutines::CoroutineDispatcher {
 public:
     mutable std::deque<std::shared_ptr<kotlinx::coroutines::Runnable>> queue;
-    bool is_dispatch_needed(const kotlinx::coroutines::CoroutineContext&) const override { return true; }
-    void dispatch(const kotlinx::coroutines::CoroutineContext&,
+    bool is_dispatch_needed(const kotlin::coroutines::CoroutineContext&) const override { return true; }
+    void dispatch(const kotlin::coroutines::CoroutineContext&,
                   std::shared_ptr<kotlinx::coroutines::Runnable> runnable) const override {
         queue.push_back(std::move(runnable));
     }

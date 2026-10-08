@@ -7,7 +7,7 @@
 #include "kotlinx/coroutines/ContinuationInterceptor.hpp"
 #include <bit>
 
-namespace kotlinx::coroutines {
+namespace kotlin::coroutines {
 // Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:56-61
 internal::AbstractCoroutineContextKeyBase::AbstractCoroutineContextKeyBase(
     CoroutineContext::Key* base_key,
@@ -203,9 +203,9 @@ std::shared_ptr<CoroutineContext> EmptyCoroutineContext::minus_key(Key* key) con
 // Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:127-127
 std::string EmptyCoroutineContext::to_string() const { return "EmptyCoroutineContext"; }
 
-} // namespace kotlinx::coroutines
+} // namespace kotlin::coroutines
 
-namespace kotlinx::coroutines {
+namespace kotlin::coroutines {
 // Transliterated from: libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt:126-126
 std::int32_t EmptyCoroutineContext::hash_code() const { return 0; }
-} // namespace kotlinx::coroutines
+} // namespace kotlin::coroutines

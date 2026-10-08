@@ -3,7 +3,14 @@
 #include "kotlinx/coroutines/intrinsics/IntrinsicsNative.hpp"
 #include <mutex>
 
-namespace kotlinx::coroutines::intrinsics {
+namespace kotlin::coroutines::intrinsics {
+// Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:201-202
+std::shared_ptr<Continuation<void*>> intercepted(std::shared_ptr<Continuation<void*>> continuation) {
+    auto frame = std::dynamic_pointer_cast<ContinuationImpl>(continuation);
+    return frame ? frame->intercepted() : continuation;
+}
+
+
 namespace {
 // Transliterated from: kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:228-244
 class RestrictedCreatedContinuation final : public RestrictedContinuationImpl {
@@ -225,4 +232,4 @@ void* start_coroutine_unintercepted_or_return(
         return restricted->invoke(std::move(block));
     return std::static_pointer_cast<SimpleContinuation>(wrapped_completion)->invoke(std::move(block));
 }
-} // namespace kotlinx::coroutines::intrinsics
+} // namespace kotlin::coroutines::intrinsics
