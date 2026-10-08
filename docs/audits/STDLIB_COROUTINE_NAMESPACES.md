@@ -19,6 +19,9 @@ fetched or source contract invented.
 | kotlin.coroutines.native.internal, Native ContinuationImpl.kt | ContinuationImpl.hpp:22; ContinuationImpl.cpp:18 |
 | kotlin.coroutines.intrinsics, Intrinsics.kt and Native IntrinsicsNative.kt | intrinsics/Intrinsics.hpp:16; intrinsics/IntrinsicsNative.hpp:9; intrinsics/IntrinsicsNative.cpp:6 |
 | kotlin.coroutines.native.internal, Native DebugProbes.kt | DebugProbes.hpp:6; ContinuationImpl.cpp:10 |
+| kotlin.coroutines.cancellation, common-non-jvm CancellationException.kt | src/kotlin/coroutines/cancellation/CancellationException.hpp:22; CancellationException.cpp:11 |
+
+The cancellation follow-up imports the actual stdlib class at Exceptions.hpp:57. Its current standalone component verification and complete-build failure are recorded in [NATIVE_CANCELLATION_NAMESPACE.md](NATIVE_CANCELLATION_NAMESPACE.md). Earlier whole-core results below predate that repair.
 
 AbstractCoroutineContextElement now resides in the ContextImpl header, matching
 its Kotlin source. Existing concrete algorithms and object layouts are retained.

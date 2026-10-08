@@ -1,5 +1,7 @@
 # Native JobCancellationException equality repair
 
+Current source locations: native/Exceptions.cpp:87,92,95 hold the constructor, borrowed Job getter and equality body; the private cause adapter is at :68. Inherited cancellation identity methods now reside in src/kotlin/coroutines/cancellation/CancellationException.cpp:46,52 under the actual stdlib namespace. [NATIVE_CANCELLATION_NAMESPACE.md](NATIVE_CANCELLATION_NAMESPACE.md) records current verification and the complete-build failure; the receipts and locations below are historical.
+
 Date: 2026-10-07. Native Exceptions remains fourth in the dependency-impact
 priority report, with six dependents. Read the complete common and Native
 coroutine Exceptions sources and the consumed Native Any, Throwable and stdlib

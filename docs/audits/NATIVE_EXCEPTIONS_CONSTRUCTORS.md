@@ -1,5 +1,7 @@
 # Native cancellation constructor repair
 
+Current namespace/source ownership is recorded in [NATIVE_CANCELLATION_NAMESPACE.md](NATIVE_CANCELLATION_NAMESPACE.md). The stdlib class and bodies now live under src/kotlin/coroutines/cancellation; the library imports that same definition. Constructor locations and whole-core verification below are historical. The latest core build fails on the erased channel element-string binding.
+
 Date: 2026-10-07. Read the complete Native and common coroutine Exceptions sources,
 the stdlib CancellationException constructors, and Native Throwable before changing
 the C++ pair. Native Exceptions remains fourth in the dependency priority report,
