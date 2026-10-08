@@ -752,6 +752,22 @@ private:
         reference_types_[record] = name;
         return name;
     }
+    // NOTE(port): C++ materialized objects in an evaluated operand belong to
+    // its enclosing full expression, including a sibling that suspends. Lambda
+    // bodies and unevaluated queries have separate/no execution lifetimes.
+    bool has_materialized_temporaries(const Stmt* statement) const {
+        if (!statement || SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return false;
+        if (const auto* lambda = dyn_cast<LambdaExpr>(statement)) {
+            for (const auto* initializer : lambda->capture_inits())
+                if (has_materialized_temporaries(initializer)) return true;
+            return false;
+        }
+        if (const auto* temporary = dyn_cast<MaterializeTemporaryExpr>(statement);
+            temporary && temporary->getType()->isRecordType()) return true;
+        for (const auto* child : statement->children())
+            if (has_materialized_temporaries(child)) return true;
+        return false;
+    }
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt:197-335
     std::string emit_expression(const Expr* original) {
         if (!original) return "";
@@ -805,7 +821,11 @@ private:
             body_ << "static_cast<void>(" << left << ");\n";
             return emit_expression(binary->getRHS());
         }
-        if (!has_suspend_calls(expression)) return rewrite(original);
+        // NOTE(port): Do not finish a non-suspending operand's temporary
+        // lifetime in a generated statement before a sibling can suspend.
+        // Existing call/branch slicing keeps its actual evaluation path.
+        if (!has_suspend_calls(expression) &&
+            (!full_expression_ || !has_materialized_temporaries(expression))) return rewrite(original);
         if (const auto* construction = dyn_cast<CXXConstructExpr>(expression)) {
             auto values = slice_constructor_arguments(construction);
             std::vector<Replacement> replacements;
@@ -1290,7 +1310,7 @@ private:
             }
         }
     }
-    // NOTE(port): Destroy C++ discarded comma operands at their enclosing
+    // NOTE(port): Destroy retained C++ expression temporaries at their enclosing
     // full-expression boundary, in reverse construction order.
     void clear_comma_temporaries(size_t first) {
         for (size_t i = comma_temporaries_.size(); i > first; --i)

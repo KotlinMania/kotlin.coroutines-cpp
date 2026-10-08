@@ -262,6 +262,35 @@ struct Done final : Continuation<void*> {
         catch (const std::runtime_error&) { failed = true; }
     }
 };
+int condition_alive = 0;
+int condition_destroyed = 0;
+struct ConditionTemporary {
+    bool value;
+    explicit ConditionTemporary(bool value) : value(value) { ++condition_alive; }
+    ConditionTemporary(const ConditionTemporary&) = delete;
+    ConditionTemporary(ConditionTemporary&&) = delete;
+    ~ConditionTemporary() { --condition_alive; ++condition_destroyed; }
+    bool read() const & { assert(condition_alive == 1); return value; }
+};
+[[clang::annotate("suspend")]]
+void* condition_wait(std::shared_ptr<Continuation<void*>> completion) {
+    void* raw = await_value(completion);
+    std::unique_ptr<int> box(static_cast<int*>(raw));
+    assert(condition_alive == 1 && condition_destroyed == 0 && *box == 7);
+    return nullptr;
+}
+[[clang::annotate("suspend")]]
+void* condition_flow(int operation, std::shared_ptr<Continuation<void*>> completion) {
+    bool selected = false;
+    if (operation == 0) selected = ConditionTemporary(false).read() && condition_wait(completion) == nullptr;
+    if (operation == 1) selected = ConditionTemporary(true).read() || condition_wait(completion) == nullptr;
+    if (operation == 2) selected = ConditionTemporary(true).read() && condition_wait(completion) == nullptr;
+    if (operation == 3) selected = ConditionTemporary(false).read() || condition_wait(completion) == nullptr;
+    if (operation == 4) selected = ConditionTemporary(true).read() ? condition_wait(completion) == nullptr : false;
+    if (operation == 5) selected = ConditionTemporary(false).read() ? false : condition_wait(completion) == nullptr;
+    assert(condition_alive == 0 && condition_destroyed == 1);
+    return new int(selected ? 1 : 0);
+}
 int main() {
     for (mode = 0; mode < 6; ++mode) {
         calls = 0;
@@ -301,5 +330,24 @@ int main() {
         if (mode != 5) assert(array_destroyed[3] == 99);
         assert(*started_identity == mode + 1);
         assert(*finished_identity == (mode == 0 ? 1 : 2));
+    }
+    for (int operation = 0; operation != 6; ++operation) for (mode = 0; mode != 5; ++mode) {
+        calls = condition_destroyed = 0;
+        auto done = std::make_shared<Done>();
+        try {
+            auto result = condition_flow(operation, done);
+            if (intrinsics::is_coroutine_suspended(result)) {
+                assert(condition_alive == 1 && condition_destroyed == 0 && pending);
+                auto held = std::move(pending);
+                if (mode == 2) held->resume_with(Result<void*>::failure(std::make_exception_ptr(std::runtime_error("condition"))));
+                else if (mode == 3) held->resume_with(Result<void*>::failure(std::make_exception_ptr(CancellationException("condition"))));
+                else held->resume_with(Result<void*>::success(new int(7)));
+            } else done->resume_with(Result<void*>::success(result));
+        } catch (...) { done->resume_with(Result<void*>::failure(std::current_exception())); }
+        assert(done->resumes == 1 && done->failed == (operation >= 2 && mode >= 2));
+        assert(done->cancelled == (operation >= 2 && mode == 3));
+        assert(done->failed || done->value == (operation == 0 ? 0 : 1));
+        assert(calls == (operation >= 2 ? 1 : 0));
+        assert(condition_alive == 0 && condition_destroyed == 1 && !pending && frame.expired());
     }
 }
