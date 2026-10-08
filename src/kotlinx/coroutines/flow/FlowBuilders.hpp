@@ -112,19 +112,6 @@ inline std::shared_ptr<Flow<T>> flow(std::function<void(FlowCollector<T>*)> bloc
 
 /**
  * Creates a _cold_ flow that produces a single value from the given functional type.
- *
- * The function is invoked each time the flow is collected, making this
- * useful for wrapping lazy computations as flows.
- *
- * Example of usage:
- *
- * ```cpp
- * auto remote_call() -> Data { ... }
- * auto remote_call_flow() { return as_flow<Data>(remote_call); }
- * ```
- *
- * Transliterated from:
- * public fun <T> (() -> T).asFlow(): Flow<T>
  */
 template <typename T>
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:64-66
@@ -134,7 +121,16 @@ std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
     });
 }
 
-/** Creates a _cold_ flow that produces a single value from the given suspend function. */
+/**
+ * Creates a _cold_ flow that produces a single value from the given functional type.
+ *
+ * Example of usage:
+ *
+ * ```cpp
+ * void* remote_call(Continuation<void*>* completion);
+ * auto remote_call_flow() { return as_flow<R>(remote_call); }
+ * ```
+ */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:78-80
 template <typename T>
 std::shared_ptr<Flow<T>> as_flow(std::function<void*(Continuation<void*>*)> function) {
@@ -381,7 +377,7 @@ template <typename T>
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:138-142
 std::shared_ptr<Flow<T>> empty_flow() {
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:140-142
-    class EmptyFlow : public Flow<T> {
+    class EmptyFlow final : public Flow<T> {
     public:
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:141-141
         void* collect(FlowCollector<T>*, Continuation<void*>*) override {
