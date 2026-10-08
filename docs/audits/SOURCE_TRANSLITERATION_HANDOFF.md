@@ -6,6 +6,29 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Native monotonic arithmetic dependency — 2026-10-08
+
+Continuation from `39965bab` adds the actual eight longSaturatedMath.kt operations
+in src/kotlin/time/LongSaturatedMath.hpp/.cpp, including half-duration addition,
+infinity checks and overflowing finite differences. Private helpers live in .cpp;
+unsigned wrapping preserves Kotlin Long behavior without C++ signed overflow.
+The actual library source and assertion-enabled test are registered in CMake.
+Strict O0/O1 ASan/UBSan compilation and boundary execution both exit0.
+
+The three pinned time references were restored unchanged from tmp/kotlin fee29910.
+Fresh deep scans exit0: time root7/44 bodies,0/13 types,0.64 similarity; selected
+math pair7/8, with isSaturated PRESENT in symbol inventory but missing in body
+pairing because of its primitive extension receiver. Unsupported Kotlin infix/if
+emission remains in evidence. Compiler286/7207 bodies,132/1630 types,0.28 with10
+scoring failures; frontend14/7207 bodies,6/1630 types,0.04 with zero failures.
+The denominator grows because three genuine sparse references are now visible.
+
+Continue the actual TimeSource/TimeMark and Native monotonic source translation,
+then Worker/Future/runtime dependencies; none is supplied by the arithmetic test.
+Reconcile WorkerDispatcher's provisional ValueTimeMark authoring expression with
+that actual translated API. Complete standalone/Native MLX and shared-frame
+acceptance remains unverified. See NATIVE_WORKER_DISPATCHER_SOURCE_REPAIR.md.
+
 ## Native WorkerDispatcher source body — 2026-10-08
 
 Continuation from `c5c168f3` replaces the empty native/MultithreadedDispatchers.cpp

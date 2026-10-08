@@ -30,6 +30,8 @@ endfunction()
 
 # Core coroutine tests
 add_coroutine_test(test_timeout)
+add_coroutine_test(test_long_saturated_math)
+target_compile_options(test_long_saturated_math PRIVATE -UNDEBUG)
 add_coroutine_test(test_native_exception_namespace)
 add_coroutine_test(test_job_impl_initialization)
 target_sources(test_job_impl_initialization PRIVATE src/test_job_impl_initialization_main.cpp)
