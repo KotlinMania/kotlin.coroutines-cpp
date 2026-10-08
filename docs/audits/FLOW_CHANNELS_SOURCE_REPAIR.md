@@ -1,3 +1,12 @@
+# Continuation argument ordering — 2026-10-07
+
+The annotated typed emit_all_impl at Channels.hpp:59 now has its shared
+Continuation as the final parameter, after the two explicit supplied-owner
+arguments. Existing four-argument raw and shared completion overloads forward
+to this body. Fresh actual consumer compiler checks no longer report the
+trailing-continuation defect and instead reach the still-unresolved generated
+frame parse. Details and current receipts: COLLECT_SOURCE_AUTHORING_REPAIR.md.
+
 # Translated documentation and immutable source fields — 2026-10-07
 
 The complete common Flow Channels.kt and Channels.hpp were read before editing.
