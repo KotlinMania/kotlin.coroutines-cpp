@@ -1137,7 +1137,7 @@ private:
             }
             std::string context_name = name + "_context";
             fields_.push_back("struct " + context_name + "_storage { std::exception_ptr* active; std::exception_ptr* retired; bool* reenter; "
-                "std::exception_ptr previous; bool engaged = false; "
+                "std::exception_ptr previous{}; bool engaged = false; "
                 "void enter(std::exception_ptr exception) { previous = *active; *active = std::move(exception); "
                 "engaged = true; *reenter = true; } "
                 "void reset() { if (engaged) { engaged = false; *retired = std::move(*active); "
