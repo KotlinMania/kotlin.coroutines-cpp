@@ -3,6 +3,8 @@
 #include "org/jetbrains/kotlin/name/ClassId.hpp"
 #include "org/jetbrains/kotlin/name/CallableId.hpp"
 #include "org/jetbrains/kotlin/name/SpecialNames.hpp"
+#include "org/jetbrains/kotlin/name/StandardClassIds.hpp"
+#include "org/jetbrains/kotlin/name/NativeRuntimeNames.hpp"
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
@@ -14,6 +16,35 @@ const CallableId INITIAL_LOCAL(Name::identifier(u"local"));
 }
 int main() {
     assert(INITIAL_ID.as_string() == u"Initial");
+    assert(StandardClassIds::u_int().as_string() == u"kotlin/UInt");
+    assert(StandardClassIds::map_entry().as_string() == u"kotlin/collections/Map.Entry");
+    assert(StandardClassIds::mutable_map_entry().as_string() == u"kotlin/collections/MutableMap.MutableEntry");
+    assert(StandardClassIds::function_n(23).as_string() == u"kotlin/Function23");
+    assert(StandardClassIds::suspend_function_n(2).as_string() == u"kotlin/coroutines/SuspendFunction2");
+    assert(StandardClassIds::k_function_n(-1).as_string() == u"kotlin/reflect/KFunction-1");
+    assert(StandardClassIds::k_suspend_function_n(0).as_string() == u"kotlin/reflect/KSuspendFunction0");
+    assert(StandardClassIds::by_name(u"Int").equals(StandardClassIds::int_name()));
+    assert(StandardClassIds::reflect_by_name(u"KClass").equals(StandardClassIds::k_class()));
+    assert(StandardClassIds::continuation().as_string() == u"kotlin/coroutines/Continuation");
+    assert(StandardClassIds::Callables::coroutine_context().to_string() == u"kotlin/coroutines/coroutineContext");
+    assert(StandardClassIds::Annotations::restricts_suspension().as_string() == u"kotlin/coroutines/RestrictsSuspension");
+    assert(&StandardClassIds::Annotations::ParameterNames::value() == &StandardClassIds::Annotations::ParameterNames::retention_value());
+    assert(StandardClassIds::Annotations::js_export_ignore().as_string() == u"kotlin/js/JsExport.Ignore");
+    assert(StandardClassIds::Annotations::volatile_name().as_string() == u"kotlin/concurrent/Volatile");
+    assert(StandardClassIds::atomic_int().as_string() == u"kotlin/concurrent/atomics/AtomicInt");
+    assert(NativeRuntimeNames::atomic_int().as_string() == u"kotlin/concurrent/AtomicInt");
+    assert(!StandardClassIds::atomic_reference().equals(NativeRuntimeNames::atomic_reference()));
+    assert(NativeRuntimeNames::Callables::atomic_array().to_string() == u"kotlin/concurrent/AtomicArray");
+    assert(!NativeRuntimeNames::Callables::atomic_array().class_id());
+    assert(NativeRuntimeNames::Callables::atomic_array_compare_and_set().to_string() == u"kotlin/concurrent/AtomicArray.compareAndSet");
+    assert(StandardClassIds::Callables::atomic_array_compare_and_set_at().to_string() == u"kotlin/concurrent/atomics/AtomicArray.compareAndSetAt");
+    assert(NativeRuntimeNames::Callables::atomic_reference_compare_and_exchange().class_id()->equals(NativeRuntimeNames::atomic_reference()));
+    assert(NativeRuntimeNames::Annotations::escapes_nothing().as_string() == u"kotlin/native/internal/escapeAnalysis/Escapes.Nothing");
+    assert(NativeRuntimeNames::Annotations::throws().as_string() == u"kotlin/Throws");
+    assert(NativeRuntimeNames::Annotations::throws_alias().as_string() == u"kotlin/native/Throws");
+    assert(NativeRuntimeNames::Annotations::thread_local_name().as_string() == u"kotlin/native/concurrent/ThreadLocal");
+    assert(NativeRuntimeNames::Annotations::thread_local_alias().as_string() == u"kotlin/native/ThreadLocal");
+    assert(NativeRuntimeNames::Annotations::gc_unsafe_call_class_id().as_string() == u"kotlin/native/internal/GCUnsafeCall");
     assert(INITIAL_LOCAL.is_local() && INITIAL_LOCAL.to_string() == u"<local>/local");
     const auto callable_name = Name::identifier(u"bar");
     const CallableId top(FqName(u"one.two"), callable_name);

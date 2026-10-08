@@ -45,6 +45,7 @@ foreach(KXS_IR_TARGET kxs-inject KotlinxCoroutinePass kxs_codegen_test)
         ../kotlinc_native_ref/org/jetbrains/kotlin/name/ClassId.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/name/CallableId.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/name/SpecialNames.cpp
+        ../kotlinc_native_ref/org/jetbrains/kotlin/name/StandardClassIds.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/builtins/PrimitiveType.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/builtins/StandardNames.cpp
         ../kotlinc_native_ref/org/jetbrains/kotlin/name/NativeRuntimeNames.cpp
@@ -101,6 +102,9 @@ add_executable(kxs_konan_primitive_test ../kotlinc_native_ref/KonanPrimitiveCont
     ../kotlinc_native_ref/KonanFqNames.cpp
     ../kotlinc_native_ref/BinaryType.cpp
     ../kotlinc_native_ref/org/jetbrains/kotlin/name/NativeRuntimeNames.cpp
+    ../kotlinc_native_ref/org/jetbrains/kotlin/name/StandardClassIds.cpp
+    ../kotlinc_native_ref/org/jetbrains/kotlin/name/CallableId.cpp
+    ../kotlinc_native_ref/org/jetbrains/kotlin/name/SpecialNames.cpp
     ../kotlinc_native_ref/org/jetbrains/kotlin/name/Name.cpp
     ../kotlinc_native_ref/org/jetbrains/kotlin/name/FqName.cpp
     ../kotlinc_native_ref/org/jetbrains/kotlin/name/FqNameUnsafe.cpp
@@ -128,7 +132,9 @@ add_executable(kxs_fq_name_test ../kotlinc_native_ref/FqNameContractTest.cpp
     ../kotlinc_native_ref/org/jetbrains/kotlin/name/FqNameUnsafe.cpp
     ../kotlinc_native_ref/org/jetbrains/kotlin/name/ClassId.cpp
     ../kotlinc_native_ref/org/jetbrains/kotlin/name/CallableId.cpp
-    ../kotlinc_native_ref/org/jetbrains/kotlin/name/SpecialNames.cpp)
+    ../kotlinc_native_ref/org/jetbrains/kotlin/name/SpecialNames.cpp
+    ../kotlinc_native_ref/org/jetbrains/kotlin/name/StandardClassIds.cpp
+    ../kotlinc_native_ref/org/jetbrains/kotlin/name/NativeRuntimeNames.cpp)
 target_compile_features(kxs_fq_name_test PRIVATE cxx_std_20)
 target_compile_options(kxs_fq_name_test PRIVATE -UNDEBUG)
 add_test(NAME kxs_fq_name_contract COMMAND kxs_fq_name_test)

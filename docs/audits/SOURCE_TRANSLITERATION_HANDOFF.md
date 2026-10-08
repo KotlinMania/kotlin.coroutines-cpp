@@ -6,6 +6,71 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Standard and Native scalar identity catalogs — 2026-10-08
+
+Continuation from `437fc2e7` translates StandardClassIds.kt's178 scalar properties,
+six public naming/arity bodies and22 private concrete naming helpers into
+StandardClassIds.hpp:9 and StandardClassIds.cpp. Package/class, annotation,
+annotation-parameter and callable catalogs preserve source nesting. FunctionN,
+SuspendFunctionN, KFunctionN and KSuspendFunctionN build their exact source names,
+including negative inputs without introducing validation. Unsigned IDs derive
+from the actual signed ID's short name. Nested Map entries and JsExport annotation
+IDs derive from their actual parent IDs. ParameterNames.retentionValue returns
+the same retained Name reference as value, preserving the source alias.
+
+NativeRuntimeNames.hpp:9/.cpp now translate all31 public scalar properties:
+six atomic class IDs, five callable IDs and20 annotation IDs, plus the two private
+package properties and two private String.callableId helper bodies. Callables:24
+and Annotations:38 reuse the actual StandardClassIds and CallableId contracts.
+The source standard atomic package is kotlin.concurrent.atomics; Native runtime
+atomics are in kotlin.concurrent. CompareAndSetAt versus compareAndSet names and
+the top-level AtomicArray factory versus member methods remain distinct. Native
+annotation aliases retain their separate qualified names; Escapes.Nothing is a
+nested ID from the actual Escapes class. These identities do not install annotation
+effects or provide actual IR declarations, JVM metadata or Native object layout.
+
+All algorithms and private helpers stay in .cpp; headers contain declarations and
+public nested types. Source provenance accompanies each translated function and
+class. Object properties use retained first-access getters, marked NOTE(port),
+and C++ keyword collisions use _name suffixes. No replacement set/map/container,
+IR descriptor, coroutine state machine or Kotlin runtime dependency was introduced.
+StandardClassIds still lacks17 set/map/derived collection properties, its Collections
+object, primitiveArrayId and inverseMap. NativeRuntimeNames still lacks its two
+primitive-to-atomic maps. Their actual collection dependency remains untranslated;
+these absent contracts are not represented by stubs or stand-in algorithms.
+
+CMakeLists.txt:48 registers StandardClassIds on the three production LLVM targets;
+:104-107 connects the Native catalog's actual dependencies to the Konan fixture;
+:129-137 connects both catalogs to the existing naming fixture. An initial link
+exposed an incorrectly edited source-list occurrence; the CMake registration was
+corrected and all five affected targets then built with Native runtime OFF on
+LLVM23.1.2. Strict -Wall/-Wextra/-Werror debug ASan/UBSan compile and execution,
+strict release syntax, six focused CTests and the existing LLVM module-generation
+fixture pass. Added cases exercise source package distinctions, nested IDs, arity
+names, alias identity, top-level/member callables and annotation aliases. No
+warnings are suppressed. This is bounded catalog/LLVM dependency evidence, not
+actual IR classification or complete coroutine/Native/MLX executable acceptance.
+
+Both final-root deep scans completed. Compiler corpus remains695 sparse files:
+286/7163 bodies,132/1617 types,0.28 similarity,10 scoring failures,193 paired units/
+285 target files. StandardClassIds reports7/30 explicit bodies,4/5 types,0.04 body
+score,206 target bodies. Its Collections type and two private collection-dependent
+helpers are genuinely absent; most translated String receiver helpers remain
+unmatched against C++ free-function forms. NativeRuntimeNames reports0/2 bodies,
+3/3 types,0.00,35 target bodies: both actual private callable_id overloads remain
+unmatched. Object-property inventories also report present getters as missing.
+Source object/function emission falls back, generated source has parse errors and
+normalized logic0; target parse errors are absent. Counts therefore do not certify
+property/constructor/metadata parity. Full coroutine root remains663/2918 bodies,
+178/560 types,0.24,12 failures,412 paired units/614 target files. Reports in
+build/source-continuation/{compiler-source-distance,library-source-distance}
+remain the oracle. The full transliteration/state-machine goal remains active.
+
+The next missing dependency chain is the real collection/object and HashMap
+implementation, the catalog sets/maps and Grouping/byFqNameParts. Actual callable,
+InlineClassesSupport/classifier/cache/frame consumers and complete executable
+acceptance still require translation and wiring.
+
 ## Callable identity and special-name source contracts — 2026-10-08
 
 Continuation from `0c543eee` translates core/names CallableId.kt:45-141 and
