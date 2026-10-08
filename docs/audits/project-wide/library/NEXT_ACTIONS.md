@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 832/2918 matched (target 2961) — 28.5%
-- **Class/type parity:** 359/560 matched (target 507) — 64.1%
-- **Combined symbol parity:** 1191/3478 matched (target 3468) — 34.2%
+- **Function parity:** 832/2918 matched (target 2953) — 28.5%
+- **Class/type parity:** 359/560 matched (target 504) — 64.1%
+- **Combined symbol parity:** 1191/3478 matched (target 3457) — 34.2%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -989,14 +989,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 72. flow.Builders
 
 - **Target:** `flow.FlowBuilders`
-- **Similarity:** 0.12
+- **Similarity:** 0.11
 - **Dependents:** 0
 - **Priority Score:** 82708.9
-- **Functions:** 15/23 matched (target 39)
+- **Functions:** 15/23 matched (target 31)
 - **Missing functions:** `Iterable<T>::asFlow`, `Iterator<T>::asFlow`, `Sequence<T>::asFlow`, `IntArray::asFlow`, `LongArray::asFlow`, `IntRange::asFlow`, `LongRange::asFlow`, `ChannelFlowBuilder::toString`
-- **Types:** 4/4 matched (target 8)
+- **Types:** 4/4 matched (target 5)
 - **Missing types:** _none_
-- **Lint issues:** 12
+- **Lint issues:** 2
 
 ### 73. channels.BufferedChannel
 
