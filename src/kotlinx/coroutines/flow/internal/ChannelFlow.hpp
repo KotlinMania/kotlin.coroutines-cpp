@@ -52,8 +52,8 @@ void* collect_in_scope(
     Continuation<void*>* completion);
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
-// NOTE(port): Typed bindings carry the source arguments; the concrete private
-// suspend frame and termination cleanup live in ChannelFlow.cpp.
+// NOTE(port): Typed bindings carry the source arguments into the owning
+// suspend entry. The Clang frontend generates its frame and lifetime cleanup.
 void* collect_channel_flow(
     std::function<void*(Continuation<void*>*)> collect,
     std::shared_ptr<Continuation<void*>> completion);

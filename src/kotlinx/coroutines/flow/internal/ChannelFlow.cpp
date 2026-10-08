@@ -12,42 +12,6 @@
 namespace kotlinx::coroutines::flow::internal {
 namespace {
 
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
-// NOTE(port): Concrete lowered frame for these single suspend-call bodies. Only
-// their typed argument/call bindings require header instantiation.
-class CollectContinuation final : public ContinuationImpl {
-public:
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
-    CollectContinuation(std::function<void*(Continuation<void*>*)> collect,
-                        std::shared_ptr<Continuation<void*>> completion)
-        : ContinuationImpl(std::move(completion)), collect_(std::move(collect)) {}
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
-    // NOTE(port): Retain the actual C++ frame while its source call is suspended.
-    void retain() { self_ref_ = shared_from_this(); }
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
-    void* invoke_suspend(Result<void*> result) override {
-        coroutine_begin(this)
-        coroutine_yield(this, std::function(collect_)(this));
-        coroutine_end(this)
-    }
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
-    // NOTE(port): Terminated spills release flow/channel/collector owners even
-    // when the completed frame remains independently retained by its caller.
-    void release_intercepted() override {
-        auto self = std::move(self_ref_);
-        collect_ = {};
-        ContinuationImpl::release_intercepted();
-    }
-
-private:
-    void* _label = nullptr;
-    std::function<void*(Continuation<void*>*)> collect_;
-    std::shared_ptr<BaseContinuationImpl> self_ref_;
-};
-
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:228-240
 class StackFrameContinuation final : public Continuation<void*>,
                                      public kotlinx::coroutines::internal::CoroutineStackFrame,
@@ -90,12 +54,12 @@ private:
 } // namespace
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:54-56,118-121,144-148,151-152
+[[clang::annotate("suspend")]]
 void* collect_channel_flow(
     std::function<void*(Continuation<void*>*)> collect,
     std::shared_ptr<Continuation<void*>> completion) {
-    auto frame = std::make_shared<CollectContinuation>(std::move(collect), std::move(completion));
-    frame->retain();
-    return frame->start(Result<void*>::success(nullptr));
+    dsl::suspend(collect(completion.get()));
+    return nullptr;
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/ChannelFlow.kt:215-225
