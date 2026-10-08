@@ -1,5 +1,4 @@
 @file:OptIn(kotlin.experimental.ExperimentalNativeApi::class, kotlin.native.internal.InternalForKotlinNative::class)
-@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 // Execute the actual Native standard library. macOS execution is a host proof;
 // it does not establish the pinned compiler/runtime or bare-metal target ABI.
 import kotlin.collections.arrayCopy

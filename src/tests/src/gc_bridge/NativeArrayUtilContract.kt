@@ -1,5 +1,4 @@
 @file:OptIn(kotlin.experimental.ExperimentalNativeApi::class, kotlin.native.runtime.NativeRuntimeApi::class, kotlin.native.internal.InternalForKotlinNative::class)
-@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 // Actual Native standard-library execution. Function bodies are checked against
 // the pinned source; installed Native 2.4.10 is a host verification toolchain.
 import kotlin.collections.arrayOfUninitializedElements

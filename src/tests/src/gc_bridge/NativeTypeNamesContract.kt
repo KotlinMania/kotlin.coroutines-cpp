@@ -1,5 +1,4 @@
 @file:OptIn(kotlin.experimental.ExperimentalNativeApi::class, kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.native.internal.InternalForKotlinNative::class, kotlin.native.runtime.NativeRuntimeApi::class)
-@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 package docking.metadata
 
 // Test fixture: objects and metadata come from the actual Native compiler.

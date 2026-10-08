@@ -1,5 +1,4 @@
 @file:OptIn(kotlin.experimental.ExperimentalNativeApi::class, kotlin.native.internal.InternalForKotlinNative::class, kotlin.native.runtime.NativeRuntimeApi::class)
-@file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 // Test fixture for the internal Native runtime ABI; not a library implementation.
 import kotlin.native.internal.ExportForCppRuntime
 import kotlin.native.internal.GCUnsafeCall
