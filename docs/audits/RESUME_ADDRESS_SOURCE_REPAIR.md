@@ -1,5 +1,53 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Wider constant-value spilling continuation
+
+Source checkpoint 1e50f64a continues the typed local/property contract after
+reading CoroutinesVarSpillingLowering.kt:49-105 and
+AbstractSuspendFunctionsLowering.kt:55-91. Original C++ declared types and
+address/reference uses retain their frame objects; compiler-proven constant
+reads must also remain usable in constant-expression/type contexts.
+
+NativeSuspendLowering.cpp:277-330 previously abandoned constant rewriting for
+values wider than 64 bits. That left a runtime frame access where a template
+argument or static assertion requires a constant expression. It now assembles
+the actual Clang-evaluated bits from unsigned 64-bit literal limbs with shifts
+in the destination integer type. Signed negative values use -1 - complement;
+this includes the signed minimum without an unrepresentable positive
+intermediate or negation overflow. Enum values use their declared underlying
+integer type for arithmetic and cast back to the original enum type. This is
+C++ constant-expression preservation around Kotlin-derived spill storage,
+not a new Kotlin integer API or alternate coroutine runtime.
+
+qualified_locals.cpp adds signed/unsigned 128-bit constants, a signed minimum,
+the unsigned maximum, and a scoped enum with that wider underlying type.
+Template arguments and static assertions check their value/type use; the
+existing repeated-suspension fixture additionally checks the retained wide
+object's address and value, plus enum/integer reads after suspension. Its
+completion, immediate/resumed failure and cancellation modes remain registered.
+These executable assertions have not passed with a freshly built frontend.
+
+Strict fixture syntax checking exits 0, including the final enum cases.
+Direct strict lowering checking exits 1 in LLVM/Clang dependency headers,
+with no diagnostic located in NativeSuspendLowering.cpp. Fresh plugin build
+exits 2 in the metadata plugin's dependency headers. The installed older
+frontend exits 1 at the existing alias declaration; it does not exercise the
+new lowering. No warning was suppressed. Receipts are
+build/ir-recovery/wide-constants-{fixture,fixture-final,lowering,plugin-build,
+installed-frontend}.log. No fresh runtime establishes object identity or cleanup.
+
+Local enum declarations remain rejected by emit_declaration. Copying such an
+enum into the frame would change its nominal identity without explicit importer
+mapping to the original declaration. That lexical/nominal integration, local
+class/lambda dependencies, non-integral constants and full executable acceptance
+remain unfinished; this constant-value repair does not reclassify those gaps.
+
+Both exact full-root deep scans completed with exit 0 after the source checkpoint
+without concurrent source edits. Generated inventories/reports are unchanged:
+library 832/2918 bodies and 359/560 types, body similarity 0.26; compiler
+592/7657 bodies and 174/1727 types, body similarity 0.36. Neither scan establishes
+standalone MLX or actual Native/MLX shared-state-machine execution acceptance.
+
 ## Complete lexical-container parsing continuation
 
 Source checkpoint 0f47180e repairs helper parsing and declaration reuse in

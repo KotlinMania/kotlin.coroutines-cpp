@@ -6,6 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** 1e50f64a removes the 64-bit cutoff in retained
+constant-value rewriting at NativeSuspendLowering.cpp:277-330. Wider values are
+assembled in their actual integer type; negative values use -1 - complement,
+including the signed minimum. Enum arithmetic uses its declared underlying
+type before casting back. qualified_locals adds 128-bit positive/minimum/maximum
+values, wider scoped enum constants, template/type assertions and retained
+address checks across suspension. Final strict fixture syntax exits 0; direct
+strict lowering checking has only external dependency diagnostics. Fresh plugin
+build exits 2; the older frontend rejects the existing alias. No fresh runtime
+validates this repair. Local enum nominal/lexical identity, broader local and
+dependent import, and non-integral constants remain unfinished. Read
+RESUME_ADDRESS_SOURCE_REPAIR.md's new top section. Both full-root deep scans
+exit 0 and leave generated reports unchanged. The full goal remains active.
+
 **Latest compiler continuation:** 0f47180e bounds helper parsing for in-class and
 local method bodies to their complete enclosing lexical declaration in
 CompilerFrameLowering.cpp:181-211. Declaration reuse at :48-68 maps offsets back
