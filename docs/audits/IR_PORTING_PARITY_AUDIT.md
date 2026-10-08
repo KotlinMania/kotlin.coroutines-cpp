@@ -7,6 +7,19 @@
 
 ---
 
+## Current applicability — 2026-10-07
+
+The sections below preserve an earlier compiler-launcher/manual-frame review.
+They do not describe the current production pipeline or prove present executable
+acceptance. Production compilation uses the Clang frontend plus mandatory
+KotlinxCoroutinePass module plugin, without a Python compile launcher or
+serialized/reparsed LLVM modules. Current source-authoring changes remove manual
+frames rather than treating those frames as the desired transliteration.
+See docking_ring.md and the current top section of MERGE_SOURCE_REPAIR.md.
+Fresh strict plugin/consumer compilation still fails; neither complete required
+MLX execution path is established. Native interoperability is explicitly enabled
+and linked; ordinary C++ library/plugin builds must remain independent of it.
+
 ## 1. Executive Summary & Purpose
 
 The recent fixes to LLVM IR lowering in `kotlinx.coroutines-cpp` resolved critical flaws in compiler settings, text cleanup, and frame assumptions:

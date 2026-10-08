@@ -6,6 +6,18 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Current source continuation:** 825918fa and 07e682b0 replace filter,
+filter_not and optional map_not_null manual frames with annotated source bodies
+in Transform.hpp:170,220,452. 10da6bc6 initializes generated saved exception state
+at NativeSuspendLowering.cpp:1140. Strict actual consumer exits 1; fresh plugin
+build exits 2 in its LLVM/Clang dependency. The existing plugin does not contain
+the new exception-state fix. Native-disabled CMake configuration exits 0 and
+retains only the standalone handoff test. Both full-root scans exit 0; reports
+are in 11232702. Transform remains 12/13 at 0.07 (target 82 bodies,9 types).
+Read the new top section of MERGE_SOURCE_REPAIR.md for receipts and limitations.
+Continue source transliteration and consumed lowering; the full goal is active.
+
+
 **Latest source continuation:** 06da4bbf translates the actual map dependency in
 Transform.hpp:124,140,472, replacing unsafe_transform CollectFrame and MapFrame
 with typed source bodies and owning result unboxing. The complete Transform.kt

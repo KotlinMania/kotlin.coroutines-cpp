@@ -1,5 +1,54 @@
 # Merge source translation and private suspension bodies
 
+## Predicate and nullable-map source continuation — 2026-10-07
+
+825918fa and 07e682b0 continue the actual Transform.kt translation after reading
+the complete source and existing C++ file. Transform.hpp:170,220,452 now express
+filter, filter_not and optional map_not_null as annotated predicate/transform,
+owning result unboxing and conditional downstream emission. Their handwritten
+FilterFrame, FilterNotFrame and MapNotNullFrame classes, labels and self-retention
+cycles are removed. Supplied callables have owned storage, completion uses the
+existing retaining boundary, and collectors remain borrowed. Nullable results
+use move construction rather than imposing a new move-assignment requirement.
+Source KDoc and overload provenance replace stale manual-frame explanations.
+Other Transform handwritten frames and source/API gaps remain.
+
+The consumed lowering review compared declaration context handling with
+LocalDeclarationPopupLowering.kt and exception/spill handling with the Native
+lowering prerequisites. CompilerFrameLowering.cpp still rejects instantiated
+local classes/lambdas because its typed helper requires namespace context.
+C++ local classes and closure types cannot be repaired merely by dropping that
+check. Commit 10da6bc6 initializes the generated handler's saved previous
+exception explicitly at NativeSuspendLowering.cpp:1140. This source fix has not
+been exercised by a freshly built plugin.
+
+The fresh actual test_transform_suspension.cpp check exits 1 with strict warning
+flags and the existing plugins. New lambdas at Transform.hpp:173,223,456 are
+recognized, but namespace-context integration, generated GNU labels and
+source/dependency diagnostics remain. The old plugin still emits the missing
+previous-field initializer diagnostic. A fresh plugin build exits 2 in
+KotlinxClassMetadataPlugin on LLVM/Clang unused-parameter diagnostics. No warning
+policy is relaxed and no successful runtime/lifetime evidence is asserted.
+Receipts: transform-filter-source-consumer.log and
+transform-filter-source-plugins.log under build/ir-recovery.
+
+CMake's Native-disabled configuration exits 0; its 49-test inventory retains
+kxs_plugin_handoff and excludes kxs_kotlin_native_handoff. The public interface
+still links the actual translated core; production authoring remains in the
+Clang frontend and LLVM module plugin. Receipts use
+transform-filter-source-{configure,test-inventory}.log. Neither full ordinary
+C++/MLX execution nor the real Native shared-state-machine GPU boundary is
+established.
+
+Both exact full-root scans exit 0 after source commits, without concurrent source
+edits. Reports are committed in 11232702; receipts use
+transform-filter-source-{library,compiler}-deep.log. Transform stays 12/13
+matched bodies and similarity 0.07, with target 82 bodies and 9 types (previously
+94 and 12). Library totals remain 831/2918 bodies,359/560 types, similarity 0.26
+and 123 scoring failures. Compiler totals remain 592/7657 bodies,174/1727 types,
+similarity 0.36 and 24 failures. Both edited source files have no prohibited
+markers. The full transliteration goal remains active.
+
 ## Consumed map dependency continuation — 2026-10-07
 
 06da4bbf continues the source repair into the actual map dependency after reading
