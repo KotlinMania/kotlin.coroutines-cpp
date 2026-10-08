@@ -6,6 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** e522dd8c lowers copied-array decomposition in
+NativeSuspendLowering.cpp:594,1156. The actual array source is evaluated once;
+Clang's element AST emits native array construction, including nested copies
+and native partial-construction cleanup. Array storage at :486 now destroys
+elements in reverse order at every dimension. qualified_locals adds copy
+independence/identity, source/copy counts and a throwing second copy with cleanup
+order assertions. Strict source syntax/AST dump exit 0. Direct strict lowering
+syntax exits 1 in dependency headers with no source-local diagnostics; fresh
+plugin build exits 2. The older frontend rejects the alias declaration. No fresh
+runtime validates this repair. Dependent decomposition, local classes and nested
+invoke lexical integration remain incomplete. Read RESUME_ADDRESS_SOURCE_REPAIR.md's
+new top section. Both full-root scans exit 0 and leave generated reports unchanged.
+The full transliteration/state-machine goal remains active.
+
 **Latest compiler continuation:** 90204a13 implements actual structured binding
 registration in NativeSuspendLowering.cpp:1042,1123. Compiler-provided tuple
 holding variables use the same variable lifetime path; member/array bindings

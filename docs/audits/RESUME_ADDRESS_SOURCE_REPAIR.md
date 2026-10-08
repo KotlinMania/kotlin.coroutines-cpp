@@ -1,5 +1,58 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Copied array construction and cleanup continuation
+
+Source checkpoint e522dd8c continues the original-variable-to-field contract
+after rereading CoroutinesVarSpillingLowering.kt:49-105 and the source expression
+slicing in NativeSuspendFunctionLowering.kt:210-252. C++ arrays require actual
+element construction and destruction; Kotlin variable spilling itself does not
+define those C++ lifetimes.
+
+NativeSuspendLowering.cpp:1156 handles Clang's ArrayInitLoopExpr with the actual
+OpaqueValueExpr source captured once by reference. The source expression is
+evaluated before its component initializers. At :594, implicit element indices
+and nested copy loops print native brace initializers with their actual AST
+element expressions. Native array construction owns partial-construction cleanup
+when an element constructor throws. Engagement is recorded only after success.
+This path also applies to compiler-generated decomposition declarations.
+
+At :486, array storage emits reverse loops for every constant array dimension
+before destroying the actual element. Previously, std::destroy_at on the array
+visited elements forward, unlike ordinary C++ array destruction. Borrowed array
+references keep their existing pointer binding and acquire no cleanup ownership.
+No substitute array type, coroutine frame or runtime was added.
+
+qualified_locals adds independent scalar-array copies, nested-array copies,
+source evaluation counts and class-array copy identity across repeated suspension.
+The sixth mode throws from the second element copy: the completed first copy
+must be destroyed before the two originals. All other success/failure/cancellation
+modes check four class-array destructions in reverse native order, alongside
+the existing owning tuple, cv-qualified object and static initialization checks.
+These assertions are pending fresh compiler execution.
+
+Strict source syntax and the actual Clang AST dump exit 0. The dump contains the
+expected implicit loops, opaque source expressions and class copy constructor.
+Direct strict compiler translation-unit syntax exits 1 in dependency headers,
+with no diagnostics located in NativeSuspendLowering.cpp. Fresh CMake frontend
+build exits 2 in dependency headers. The installed older plugin exits 1 at the
+earlier alias declaration. Receipts under build/ir-recovery:
+array-decomposition-source-final.log, array-decomposition-lowering.log,
+array-decomposition-plugin-build.log and array-decomposition-fixture.log.
+No warnings were suppressed, and no fresh runtime result proves construction,
+destruction order, resumed failure or cancellation for these source changes.
+
+Dependent decomposition, local nominal classes and nested invoke lexical binding
+remain incomplete. Both complete executable acceptance paths remain unproven.
+The historical sections below describe their earlier source checkpoints.
+
+Both exact full-root deep scans exit 0 without concurrent source changes.
+Receipts: array-decomposition-library-deep.log and
+array-decomposition-compiler-deep.log. Generated reports remain unchanged:
+library 832/2918 matched bodies, 359/560 types, body similarity 0.26 with 123
+scoring failures; compiler 592/7657 matched bodies, 174/1727 types, body
+similarity 0.36 with 24 failures. These metrics do not validate C++ lifetime
+behavior or the new compiler AST adaptation.
+
 ## Structured binding continuation
 
 Source checkpoint 90204a13 grows the same declaration/storage lowering after
