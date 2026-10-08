@@ -43,68 +43,57 @@ void* emit_all_impl(
 #include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
 #include "kotlinx/coroutines/flow/internal/SendingCollector.hpp"
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 
 #include <atomic>
 #include <exception>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 
 namespace kotlinx::coroutines::flow {
 
-namespace internal {
-
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
-// NOTE(port): Type erasure keeps the source loop concrete in Channels.cpp.
-// The Clang frontend generates its suspension frame and retained local storage.
-void* emit_all_erased(
-    std::function<void()> make_iterator,
-    std::function<void*(Continuation<void*>*)> has_next,
-    std::function<void*(Continuation<void*>*)> emit_next,
-    std::function<void()> finish_emit,
-    std::function<void(std::exception_ptr)> cancel_consumed,
-    bool consume,
-    std::shared_ptr<Continuation<void*>> completion);
-
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
-// NOTE(port): Typed bindings carry the actual iterator and element through the
-// concrete loop. Shared owners stay owned; raw arguments stay borrowed.
+// NOTE(port): Arbitrary public element types require a header definition. The
+// owning arguments retain only supplied owners; raw arguments remain borrowed.
 template <typename T>
-struct EmitAllArguments {
-    FlowCollector<T>* receiver;
-    channels::ReceiveChannel<T>* channel;
-    std::shared_ptr<FlowCollector<T>> receiver_owner;
-    std::shared_ptr<channels::ReceiveChannel<T>> channel_owner;
-    std::unique_ptr<channels::ChannelIterator<T>> iterator;
-    std::optional<T> element;
-};
-
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
-template <typename T>
-inline void* bind_emit_all(
+[[clang::annotate("suspend")]]
+inline void* emit_all_impl(
     FlowCollector<T>* receiver,
     channels::ReceiveChannel<T>* channel,
     bool consume,
     std::shared_ptr<Continuation<void*>> completion,
     std::shared_ptr<FlowCollector<T>> receiver_owner = nullptr,
     std::shared_ptr<channels::ReceiveChannel<T>> channel_owner = nullptr) {
+    // NOTE(port): Bind each actual supplied owner to its original receiver.
+    if (receiver_owner) receiver = receiver_owner.get();
+    if (channel_owner) channel = channel_owner.get();
     ensure_active(receiver);
-    auto args = std::make_shared<EmitAllArguments<T>>(EmitAllArguments<T>{
-        receiver, channel, std::move(receiver_owner), std::move(channel_owner), {}, {}});
-    return emit_all_erased(
-        [args] { args->iterator = args->channel->iterator(); },
-        [args](Continuation<void*>* frame) { return args->iterator->has_next(frame); },
-        [args](Continuation<void*>* frame) {
-            args->element.emplace(args->iterator->next());
-            return args->receiver->emit(std::move(*args->element), frame);
-        },
-        [args] { args->element.reset(); },
-        [args](std::exception_ptr cause) { channels::cancel_consumed(args->channel, cause); },
-        consume, std::move(completion));
+    std::exception_ptr cause;
+    try {
+        auto iterator = channel->iterator();
+        while (true) {
+            bool more;
+            {
+                // NOTE(port): The iterator transfers an owning bool result box;
+                // release it before emitting, on immediate and resumed returns.
+                auto has_next_box = std::unique_ptr<bool>(static_cast<bool*>(
+                    dsl::suspend(iterator->has_next(completion.get()))));
+                more = *has_next_box;
+            }
+            if (!more) break;
+            auto element = iterator->next();
+            dsl::suspend(receiver->emit(std::move(element), completion.get()));
+        }
+    } catch (...) {
+        cause = std::current_exception();
+        if (consume) channels::cancel_consumed(channel, cause);
+        throw;
+    }
+    if (consume) channels::cancel_consumed(channel, cause);
+    return nullptr;
 }
 
-} // namespace internal
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
 template <typename T>
@@ -113,7 +102,7 @@ inline void* emit_all_impl(
     channels::ReceiveChannel<T>* channel,
     bool consume,
     Continuation<void*>* completion) {
-    return internal::bind_emit_all(receiver, channel, consume,
+    return emit_all_impl<T>(receiver, channel, consume,
         kotlinx::coroutines::internal::retain_continuation(completion));
 }
 
@@ -125,7 +114,7 @@ inline void* emit_all_impl(
     bool consume,
     std::shared_ptr<Continuation<void*>> completion) {
     auto* channel_ptr = channel.get();
-    return internal::bind_emit_all<T>(receiver, channel_ptr, consume,
+    return emit_all_impl<T>(receiver, channel_ptr, consume,
         std::move(completion), nullptr, std::move(channel));
 }
 
@@ -138,7 +127,7 @@ inline void* emit_all_impl(
     std::shared_ptr<Continuation<void*>> completion) {
     auto* receiver_ptr = receiver.get();
     auto* channel_ptr = channel.get();
-    return internal::bind_emit_all(receiver_ptr, channel_ptr, consume,
+    return emit_all_impl<T>(receiver_ptr, channel_ptr, consume,
         std::move(completion), std::move(receiver), std::move(channel));
 }
 
@@ -150,7 +139,7 @@ inline void* emit_all_impl(
     bool consume,
     std::shared_ptr<Continuation<void*>> completion) {
     auto* receiver_ptr = receiver.get();
-    return internal::bind_emit_all(receiver_ptr, channel, consume,
+    return emit_all_impl<T>(receiver_ptr, channel, consume,
         std::move(completion), std::move(receiver));
 }
 
