@@ -5,6 +5,7 @@
 #include <atomic>
 #include <memory>
 #include <string>
+#include <string_view>
 
 namespace org::jetbrains::kotlin::builtins {
 // NOTE(port): Enum instances with source properties are concrete immutable
@@ -23,7 +24,7 @@ public:
     static const PrimitiveType DOUBLE;
     PrimitiveType(const PrimitiveType&) = delete;
     PrimitiveType& operator=(const PrimitiveType&) = delete;
-    // NOTE(port): Each instance owns its two published name boxes.
+    // NOTE(port): Each instance owns its published properties and name boxes.
     // Transliterated from: core/compiler.common/src/org/jetbrains/kotlin/builtins/PrimitiveType.kt:26-28
     ~PrimitiveType();
     // Transliterated from: core/compiler.common/src/org/jetbrains/kotlin/builtins/PrimitiveType.kt:22-22
@@ -39,13 +40,15 @@ public:
     // Transliterated from: core/compiler.common/src/org/jetbrains/kotlin/builtins/PrimitiveType.kt:47-58
     static const PrimitiveType* get_by_short_array_name(const std::u16string& name);
 private:
+    struct Properties;
+    // NOTE(port): Constant initialization makes canonical enum instances safe
+    // for compiler catalogs used before main. Owned properties are constructed
+    // on their first access; their implementation remains in the .cpp file.
     // Transliterated from: core/compiler.common/src/org/jetbrains/kotlin/builtins/PrimitiveType.kt:11-24
-    explicit PrimitiveType(std::u16string type_name);
-    const name::Name type_name_;
-    const name::Name array_type_name_;
-    // NOTE(port): Atomic owned storage implements PUBLICATION: callers may
-    // compute concurrently, but only the winning FqName is published/returned.
-    mutable std::atomic<const name::FqName*> type_fq_name_{nullptr};
-    mutable std::atomic<const name::FqName*> array_type_fq_name_{nullptr};
+    constexpr explicit PrimitiveType(std::u16string_view type_name) : type_name_string_(type_name) {}
+    // Transliterated from: core/compiler.common/src/org/jetbrains/kotlin/builtins/PrimitiveType.kt:22-28
+    const Properties& properties() const;
+    const std::u16string_view type_name_string_;
+    mutable std::atomic<const Properties*> properties_{nullptr};
 };
 }

@@ -6,6 +6,69 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Native primitive catalog and runtime-name dependency — 2026-10-08
+
+Continuation from `6f9875bf` translates InlineClasses.kt:50-70 into
+InlineClasses.hpp:8-18 and InlineClasses.cpp. The ten KonanPrimitiveType values
+retain their source ClassId and BinaryType.Primitive constructor properties.
+Enum property getters follow the existing Variance convention; their references
+borrow private, retained catalog values. CHAR maps to SHORT while remaining a
+distinct ClassId and Primitive box. NonNullNativePtr maps to POINTER and Vector128
+to VECTOR128 through the actual KonanFqNames operations. No LLVM shape-based
+classification or fabricated IR declaration was introduced.
+
+KonanFqNames.hpp:14/.cpp translate all26 scalar object properties and the three
+source constants. Local-static getters preserve retained name values; C++ keyword
+collisions use thread_local_name/volatile_name. gcUnsafeCall is computed through
+NativeRuntimeNames::Annotations::gc_unsafe_call_class_id(), not an independently
+guessed string. NativeRuntimeNames.hpp:7,10/.cpp translate only the two private
+package properties and GCUnsafeCall annotation ClassId (source:11-12,49); the
+other atomic/annotation/callable/map APIs remain absent. InternalKotlinNativeApi
+metadata and compiler opt-in behavior remain untranslated.
+
+The new pre-main catalog test exposed a real cross-unit initialization defect
+in the preceding PrimitiveType implementation: the executable aborted with
+"Class name must not be root: kotlin" because the catalog read unconstructed
+builtin names. konan_global_before.log records that failure. PrimitiveType.hpp
+now has a minimal constexpr literal/atomic constructor; the eight instances are
+constinit. Their owned properties are constructed/published on first access in
+PrimitiveType.cpp, with losing candidates destroyed and winning storage freed
+by the instance destructor. This deliberate C++ initialization adaptation is
+marked NOTE(port); it changes eager name-property construction timing. It retains
+canonical instance/name references and the source FqName PUBLICATION behavior.
+No alternate state machine/runtime is involved. Source NUMBER_TYPES and generated
+enum APIs still require translation.
+
+CMakeLists.txt:48-50 registers the new units on all three production LLVM targets;
+:83 registers kxs_konan_primitive_test. Native-OFF Release configure and all five
+affected target builds pass using LLVM23.1.2. Strict release syntax and strict
+ASan/UBSan debug compiles pass. Four focused CTests pass. Fresh sanitizer runs for
+both primitive fixtures pass, including pre-main catalog construction and the
+separate fixture's16-reader first-publication race. Existing actual LLVM module
+codegen/verification also passes. Compiler metadata tests establish neither
+actual IR classifier execution nor the two complete Native/MLX acceptance paths.
+
+Both final-root deep scans completed after the initialization repair. Restoring
+core/compiler.common.native/name expands the sparse source corpus669→673 files.
+Compiler:248/6847 bodies,110/1575 types,0.31 average,5 scoring failures.
+InlineClasses:0/30 explicit bodies,1/3 types,0.00; eight target bodies implement
+only enum properties/constructors. KonanFqNames:0/0 explicit source bodies versus
+26 target getters,1/1 type; scorer forces0 because it inventories properties
+without getter bodies. This is the added scoring failure, not a completed-body
+claim. NativeRuntimeNames:0/2 bodies,2/3 types,0.00. Generated emission falls back
+on enum/object/property nodes and reports parse errors; target parse errors are
+absent. Normalized logic/text remain0 and provisional. Full library:663/2918
+bodies,178/560 types,0.24,12 failures,404 paired units/601 target files. Evidence
+and priority inventories are under build/source-continuation/{compiler-source-distance,
+library-source-distance}; these measured criteria do not certify completion.
+
+Next: actual byFqNameParts grouping and its concrete collection dependencies
+(Map interface exists; Grouping.kt, Maps.kt and HashMap/LinkedHashMap bodies are
+not translated), then InlineClassesSupport and actual IR classifier hooks/cache
+keys consumed by frame/call lowering. All30 InlineClasses explicit algorithms,
+the two missing support types, remaining name/enum APIs and complete executable
+acceptance remain required. The full translation/state-machine goal stays active.
+
 ## Primitive-name catalog dependency — 2026-10-08
 
 Continuation from `50c511a2` translates `PrimitiveType.kt:11-28,34-58` into
