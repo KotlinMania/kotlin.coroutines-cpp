@@ -71,7 +71,16 @@ void call(Job& job, std::shared_ptr<Continuation<void*>> completion) {
 using namespace kotlinx::coroutines;
 [[clang::annotate("suspend")]] void* external(std::shared_ptr<Continuation<void*>>);
 namespace authoring::nested {
-[[suspend]] void* lowered(std::shared_ptr<Continuation<void*>> completion) {
+struct Member {
+    [[clang::annotate("suspend")]] void* lowered(std::shared_ptr<Continuation<void*>> completion) {
+        auto result = external(completion);
+        ++visits;
+        return result;
+    }
+    int visits = 0;
+    int read() const { return visits; }
+};
+[[clang::annotate("suspend")]] void* lowered(std::shared_ptr<Continuation<void*>> completion) {
     auto result = external(completion);
     return result;
 }

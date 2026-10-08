@@ -51,18 +51,21 @@ public:
         if (location.isInvalid()) return true;
         auto filename = manager.getFilename(location).str();
         long source_offset = manager.getFileOffset(location);
-        if (manager.isWrittenInMainFile(location)) {
+        const bool main_file = manager.isWrittenInMainFile(location);
+        if (main_file) {
             if (original_main_file_.empty()) return true;
             source_offset -= main_prefix_size_;
-            // Only original declarations preceding the rewritten body can
-            // reuse host nodes. Generated frame declarations have no host twin.
-            if (source_offset < 0 || source_offset >= main_original_limit_) return true;
             filename = original_main_file_;
         }
         if (filename == edited_file_ && source_offset >= edited_begin_) {
             if (source_offset < edited_begin_ + replacement_size_) return true;
             source_offset -= replacement_size_ - (edited_end_ - edited_begin_);
         }
+        // NOTE(port): A complete lexical class can contain members after the
+        // replaced body. Compare original offsets after undoing the rewrite;
+        // frame declarations and definitions beyond the parser boundary have
+        // no host twin.
+        if (main_file && (source_offset < 0 || source_offset >= main_original_limit_)) return true;
         std::string key = filename + ":" +
             std::to_string(source_offset) + ":" + declaration->getDeclKindName() +
             ":" + declaration->getQualifiedNameAsString();
@@ -173,13 +176,34 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
     // prematurely and can overwrite the host's still-pending deduction state.
     // An in-class body needs its complete class scope; header handling below
     // already restricts the including main file to its include directive.
-    if (!header && !isa<CXXRecordDecl>(function->getLexicalDeclContext())) {
-        source.resize(begin + replacement_size);
+    unsigned main_original_limit = begin;
+    if (!header) {
+        const Decl* lexical_container = nullptr;
+        std::vector<const NamespaceDecl*> namespace_scopes;
         for (auto* scope = function->getLexicalDeclContext(); !scope->isTranslationUnit(); scope = scope->getParent()) {
-            const auto* namespace_scope = dyn_cast<NamespaceDecl>(scope);
-            if (!namespace_scope) return fail("main-file suspend definition requires a namespace scope");
-            if (!namespace_scope->isNested()) source += "\n}";
+            if (auto* namespace_scope = dyn_cast<NamespaceDecl>(scope)) {
+                namespace_scopes.push_back(namespace_scope);
+            } else if (isa<CXXRecordDecl, FunctionDecl>(scope)) {
+                lexical_container = Decl::castFromDeclContext(scope);
+            } else {
+                return fail("suspend definition has an unsupported lexical container");
+            }
         }
+        if (lexical_container) {
+            auto container_end = manager.getSpellingLoc(lexical_container->getEndLoc());
+            if (container_end.isInvalid() || manager.getFileID(container_end) != body_file_id)
+                return fail("suspend lexical container requires a concrete source-file boundary");
+            main_original_limit = manager.getFileOffset(Lexer::getLocForEndOfToken(
+                container_end, 0, manager, context.getLangOpts()));
+            source.resize(main_original_limit + replacement_size - (end - begin));
+            // Record source ranges end at the closing brace; its declaration
+            // semicolon is outside the range. Function definitions need none.
+            if (isa<CXXRecordDecl>(lexical_container)) source += ";";
+        } else {
+            source.resize(begin + replacement_size);
+        }
+        for (const auto* scope : namespace_scopes)
+            if (!scope->isNested()) source += "\n}";
     }
     std::string name = "__kxs_entry_" + function->getNameAsString() + "_" + std::to_string(begin);
     std::string instantiated_entry;
@@ -332,9 +356,9 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
     // AST. Keep that AST alive for the complete owning compilation.
     context.AddDeallocation([](void* storage) { delete static_cast<ASTUnit*>(storage); }, unit);
     FunctionDecl* wrapper = nullptr;
-    HeaderDeclarations generated(unit->getASTContext(), header ? file->getName().str() : "",
+    HeaderDeclarations generated(unit->getASTContext(), file->getName().str(),
                                  begin, end, replacement_size,
-                                 header ? "" : main_file->getName().str(), parser_includes.size(), begin);
+                                 header ? "" : main_file->getName().str(), parser_includes.size(), main_original_limit);
     generated.TraverseDecl(unit->getASTContext().getTranslationUnitDecl());
     for (auto* candidate : generated.functions)
         if (((!local_frame || (instantiated && !member)) && candidate->getNameAsString() == name) ||
@@ -346,8 +370,8 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
                          unit->getFileManager(), false);
     helper_diagnostics->getClient()->BeginSourceFile(unit->getASTContext().getLangOpts(), nullptr);
     auto diagnostic_scope = llvm::scope_exit([&] { helper_diagnostics->getClient()->EndSourceFile(); });
-    HeaderDeclarations existing(context, {}, 0, 0, 0,
-                                header ? "" : main_file->getName().str(), 0, begin);
+    HeaderDeclarations existing(context, header ? "" : file->getName().str(), begin, end, end - begin,
+                                header ? "" : main_file->getName().str(), 0, main_original_limit);
     existing.TraverseDecl(context.getTranslationUnitDecl());
     for (const auto& [key, declaration] : generated.declarations) {
         auto found = existing.declarations.find(key);
