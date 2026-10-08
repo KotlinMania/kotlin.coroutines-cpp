@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt
 /**
  * @file DispatchedTaskDispatch.hpp
  *
@@ -13,6 +14,7 @@
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/CoroutineExceptionHandler.hpp"
 #include "kotlinx/coroutines/Exceptions.hpp"
+#include "kotlinx/coroutines/internal/StackTraceRecovery.hpp"
 #include "kotlinx/coroutines/EventLoop.hpp"
 #include "kotlinx/coroutines/internal/DispatchedContinuation.hpp"
 
@@ -24,11 +26,13 @@
 namespace kotlinx {
 namespace coroutines {
 
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:203-205
 template<typename T>
 inline void resume_with_stack_trace(Continuation<T>& continuation, std::exception_ptr exception) {
-    continuation.resume_with(Result<T>::failure(exception));
+    continuation.resume_with(Result<T>::failure(internal::recover_stack_trace(exception, &continuation)));
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:131-135
 template<typename T>
 void DispatchedTask<T>::handle_fatal_exception(std::exception_ptr exception) {
     CoroutinesInternalError reason(
@@ -36,36 +40,38 @@ void DispatchedTask<T>::handle_fatal_exception(std::exception_ptr exception) {
             "Please read KDoc to 'handleFatalException' method and report this incident to maintainers",
         exception);
     auto delegate = get_delegate();
-    if (delegate) {
-        auto ctx = delegate->get_context();
-        if (ctx) {
-            handle_coroutine_exception(*ctx, std::make_exception_ptr(reason));
-        }
-    }
+    handle_coroutine_exception(*delegate->get_context(), std::make_exception_ptr(reason));
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:77-116
 template<typename T>
 void DispatchedTask<T>::run() {
     assert(resume_mode != MODE_UNINITIALIZED);
-    auto delegate = get_delegate();
     try {
-        // Kotlin: val delegate = delegate as DispatchedContinuation<T>
-        auto dispatched_delegate = std::dynamic_pointer_cast<internal::DispatchedContinuation<T>>(delegate);
-        auto continuation = dispatched_delegate ? dispatched_delegate->continuation : delegate;
-        void* count_or_element = dispatched_delegate ? dispatched_delegate->count_or_element : nullptr;
+        auto dispatched_delegate = std::dynamic_pointer_cast<internal::DispatchedContinuation<T>>(get_delegate());
+        // NOTE(port): Kotlin's checked cast fails; a plain delegate is not a fallback.
+        if (!dispatched_delegate) throw std::bad_cast();
+        auto continuation = dispatched_delegate->continuation;
+        void* count_or_element = dispatched_delegate->count_or_element;
 
         with_continuation_context<void, T>(
             continuation,
             count_or_element,
-            [this, continuation, dispatched_delegate]() {
+            [this, continuation]() {
                 auto context = continuation->get_context();
-                auto state = take_state(); // must take state even if cancelled
+                auto state = take_state(); // NOTE: Must take state in any case, even if cancelled
                 auto exception = get_exceptional_result(state);
 
+                /*
+                 * Check whether continuation was originally resumed with an exception.
+                 * If so, it dominates cancellation, otherwise the original exception
+                 * will be silently lost.
+                 */
                 std::shared_ptr<Job> job = nullptr;
-                if (!exception && is_cancellable_mode(resume_mode) && context) {
+                if (!exception && is_cancellable_mode(resume_mode)) {
                     auto job_element = context->get(Job::type_key);
                     job = std::dynamic_pointer_cast<Job>(job_element);
+                    if (job_element && !job) throw std::bad_cast();
                 }
 
                 if (job && !job->is_active()) {
@@ -86,45 +92,55 @@ void DispatchedTask<T>::run() {
                 return;
             });
     } catch (const internal::DispatchException& e) {
-        if (delegate) {
-            auto ctx = delegate->get_context();
-            if (ctx) {
-                handle_coroutine_exception(*ctx, e.cause);
-            }
-        }
+        handle_coroutine_exception(*get_delegate()->get_context(), e.cause);
     } catch (...) {
         handle_fatal_exception(std::current_exception());
     }
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:180-200
+template<typename T, typename Block>
+inline void run_unconfined_event_loop(DispatchedTask<T>* task, EventLoop& event_loop, Block&& block) {
+    event_loop.increment_use_count(true);
+    // NOTE(port): An outer catch implements Kotlin finally even when fatal reporting throws.
+    try {
+        try {
+            block();
+            while (true) {
+                // break when all unconfined continuations where executed
+                if (!event_loop.process_unconfined_event()) break;
+            }
+        } catch (...) {
+            /*
+             * This exception doesn't happen normally, only if we have a bug in implementation.
+             * Report it as a fatal exception.
+             */
+            task->handle_fatal_exception(std::current_exception());
+        }
+    } catch (...) {
+        event_loop.decrement_use_count(true);
+        throw;
+    }
+    event_loop.decrement_use_count(true);
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:166-178
 template<typename T>
 static void resume_unconfined(DispatchedTask<T>* task) {
     auto event_loop = ThreadLocalEventLoop::get_event_loop();
-    if (!event_loop) {
-        resume(task, task->get_delegate(), true);
-        return;
-    }
-
     if (event_loop->is_unconfined_loop_active()) {
+        // When unconfined loop is active -- dispatch continuation for execution to avoid stack overflow
         // NOTE(port): The event loop retains the same task instance as Kotlin GC.
         event_loop->dispatch_unconfined(task->shared_task());
-        return;
-    }
-
-    // Kotlin: runUnconfinedEventLoop(eventLoop) { resume(delegate, undispatched = true) }
-    event_loop->increment_use_count(true);
-    try {
-        resume(task, task->get_delegate(), true);
-        while (true) {
-            if (!event_loop->process_unconfined_event()) break;
-        }
-        event_loop->decrement_use_count(true);
-    } catch (...) {
-        task->handle_fatal_exception(std::current_exception());
-        event_loop->decrement_use_count(true);
+    } else {
+        // Was not active -- run event loop until all unconfined tasks are executed
+        run_unconfined_event_loop(task, *event_loop, [task] {
+            resume(task, task->get_delegate(), true);
+        });
     }
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:138-159
 template<typename T>
 void dispatch(DispatchedTask<T>* task, int mode) {
     assert(mode != MODE_UNINITIALIZED);
@@ -136,7 +152,7 @@ void dispatch(DispatchedTask<T>* task, int mode) {
     if (!undispatched && dispatched && is_cancellable_mode(mode) == is_cancellable_mode(task->resume_mode)) {
         auto dispatcher = dispatched->dispatcher;
         auto context = dispatched->get_context();
-        if (dispatcher && context && internal::safe_is_dispatch_needed(*dispatcher, *context)) {
+        if (internal::safe_is_dispatch_needed(*dispatcher, *context)) {
             internal::safe_dispatch(*dispatcher, *context, task->shared_task());
         } else {
             resume_unconfined(task);
@@ -146,6 +162,7 @@ void dispatch(DispatchedTask<T>* task, int mode) {
     }
 }
 
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:161-170
 template<typename T>
 void resume(DispatchedTask<T>* task, std::shared_ptr<Continuation<T>> delegate, bool undispatched) {
     auto state = task->take_state();
@@ -163,16 +180,10 @@ void resume(DispatchedTask<T>* task, std::shared_ptr<Continuation<T>> delegate, 
     }
 
     if (undispatched) {
-        if (auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<T>>(delegate)) {
-            with_continuation_context<void, T>(
-                dispatched->continuation,
-                dispatched->count_or_element,
-                [dispatched, result]() mutable {
-                    dispatched->continuation->resume_with(result);
-                    return;
-                });
-            return;
-        }
+        auto dispatched = std::dynamic_pointer_cast<internal::DispatchedContinuation<T>>(delegate);
+        if (!dispatched) throw std::bad_cast();
+        dispatched->resume_undispatched_with(std::move(result));
+        return;
     }
 
     delegate->resume_with(std::move(result));

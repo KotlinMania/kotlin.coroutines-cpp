@@ -1,5 +1,5 @@
 #pragma once
-// port-lint: source internal/DispatchedTask.kt
+// port-lint: source kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt
 /**
  * @file DispatchedTask.hpp
  *
@@ -9,7 +9,6 @@
 #include <exception>
 #include <memory>
 #include <string>
-#include <typeinfo>
 #include "kotlinx/coroutines/Runnable.hpp"
 #include "kotlinx/coroutines/Continuation.hpp"
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
@@ -22,24 +21,41 @@ namespace coroutines {
 /**
  * Non-cancellable dispatch mode.
  *
- * **DO NOT CHANGE THE CONSTANT VALUE** — matches Kotlin's MODE_ATOMIC.
+ * **DO NOT CHANGE THE CONSTANT VALUE**. It might be inlined into legacy user code that was calling
+ * inline `suspendAtomicCancellableCoroutine` function and did not support reuse.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:13-13
 static constexpr int MODE_ATOMIC = 0;
 
 /**
- * Cancellable dispatch mode for suspend_cancellable_coroutine.
+ * Cancellable dispatch mode. It is used by user-facing [suspendCancellableCoroutine].
+ * Note, that implementation of cancellability checks mode via [Int.isCancellableMode] extension.
  *
- * **DO NOT CHANGE THE CONSTANT VALUE** — matches Kotlin's MODE_CANCELLABLE.
+ * **DO NOT CHANGE THE CONSTANT VALUE**. It is being into the user code from [suspendCancellableCoroutine].
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:23-23
 static constexpr int MODE_CANCELLABLE = 1;
 
-/** Cancellable + reusable mode. */
+/**
+ * Cancellable dispatch mode for [suspendCancellableCoroutineReusable].
+ * Note, that implementation of cancellability checks mode via [Int.isCancellableMode] extension;
+ * implementation of reuse checks mode via [Int.isReusableMode] extension.
+ */
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:30-30
 static constexpr int MODE_CANCELLABLE_REUSABLE = 2;
 
-/** Undispatched mode. */
+/**
+ * Undispatched mode for [CancellableContinuation.resumeUndispatched].
+ * It is used when the thread is right, but it needs to be marked with the current coroutine.
+ */
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:36-36
 static constexpr int MODE_UNDISPATCHED = 4;
 
-/** Initial mode for DispatchedContinuation, should never be dispatched. */
+/**
+ * Initial mode for [DispatchedContinuation] implementation, should never be used for dispatch, because it is always
+ * overwritten when continuation is resumed with the actual resume mode.
+ */
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:42-42
 static constexpr int MODE_UNINITIALIZED = -1;
 
 inline bool is_cancellable_mode(int mode) {
@@ -83,24 +99,58 @@ public:
     // Kotlin: internal abstract fun takeState(): Any?
     virtual Result<T> take_state() = 0;
 
-    // Kotlin: internal open fun cancelCompletedResult(...)
-    virtual void cancel_completed_result(Result<T> taken_state, std::exception_ptr cause) {}
+    /**
+     * Called when this task was cancelled while it was being dispatched.
+     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:56-56
+    // NOTE(port): The source default is empty; preserve unused names as comments.
+    virtual void cancel_completed_result(Result<T> /* taken_state */, std::exception_ptr /* cause */) {}
 
-    // Kotlin: internal open fun <T> getSuccessfulResult(state: Any?): T
+    /**
+     * There are two implementations of `DispatchedTask`:
+     * - [DispatchedContinuation] keeps only simple values as successfully results.
+     * - [CancellableContinuationImpl] keeps additional data with values and overrides this method to unwrap it.
+     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:64-65
     template<typename R>
     R get_successful_result(const Result<T>& state) {
         return static_cast<R>(state.get_or_throw());
     }
 
-    // Kotlin: internal open fun getExceptionalResult(state: Any?): Throwable?
-    std::exception_ptr get_exceptional_result(const Result<T>& state) {
+    /**
+     * There are two implementations of `DispatchedTask`:
+     * - [DispatchedContinuation] is just an intermediate storage that stores the exception that has its stack-trace
+     *   properly recovered and is ready to pass to the [delegate] continuation directly.
+     * - [CancellableContinuationImpl] stores raw cause of the failure in its state; when it needs to be dispatched
+     *   its stack-trace has to be recovered, so it overrides this method for that purpose.
+     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:74-75
+    virtual std::exception_ptr get_exceptional_result(const Result<T>& state) {
         return state.exception_or_null();
     }
 
     // Kotlin: final override fun run()
     void run() override;
 
-    // Kotlin: internal fun handleFatalException(exception: Throwable)
+    /**
+     * Machinery that handles fatal exceptions in kotlinx.coroutines.
+     * There are two kinds of fatal exceptions:
+     *
+     * 1) Exceptions from kotlinx.coroutines code. Such exceptions indicate that either
+     *    the library or the compiler has a bug that breaks internal invariants.
+     *    They usually have specific workarounds, but require careful study of the cause and should
+     *    be reported to the maintainers and fixed on the library's side anyway.
+     *
+     * 2) Exceptions from [ThreadContextElement.updateThreadContext] and [ThreadContextElement.restoreThreadContext].
+     *    While a user code can trigger such exception by providing an improper implementation of [ThreadContextElement],
+     *    we can't ignore it because it may leave coroutine in the inconsistent state.
+     *    If you encounter such exception, you can either disable this context element or wrap it into
+     *    another context element that catches all exceptions and handles it in the application specific manner.
+     *
+     * Fatal exception handling can be intercepted with [CoroutineExceptionHandler] element in the context of
+     * a failed coroutine, but such exceptions should be reported anyway.
+     */
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:131-135
     void handle_fatal_exception(std::exception_ptr exception);
 };
 
@@ -115,21 +165,23 @@ void resume(DispatchedTask<T>* task, std::shared_ptr<Continuation<T>> delegate, 
 namespace internal {
 
 /**
- * Kotlin: internal class DispatchException(...)
+ * This exception holds an exception raised in [CoroutineDispatcher.dispatch] method.
+ * When dispatcher methods fail unexpectedly, it is likely a user-induced programmatic bug,
+ * such as calling `executor.close()` prematurely. To avoid reporting such exceptions as fatal errors,
+ * we handle them with a separate code path. See also #4091.
+ *
+ * @see safeDispatch
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:215-219
 class DispatchException : public std::exception {
 public:
     std::exception_ptr cause;
 
-    DispatchException(std::exception_ptr cause_, const CoroutineDispatcher* dispatcher, const CoroutineContext* context)
-        : cause(cause_) {
-        message_ = std::string("Coroutine dispatcher ") +
-            (dispatcher ? dispatcher->to_string() : "<null>") +
-            " threw an exception, context = " +
-            (context ? typeid(*context).name() : "<null>");
-    }
+    // Transliterated from: kotlinx-coroutines-core/common/src/internal/DispatchedTask.kt:215-219
+    DispatchException(std::exception_ptr cause, const CoroutineDispatcher* dispatcher, const CoroutineContext* context);
 
-    const char* what() const noexcept override { return message_.c_str(); }
+    // NOTE(port): std::exception transport exposes the constructed source message.
+    const char* what() const noexcept override;
 
 private:
     std::string message_;
