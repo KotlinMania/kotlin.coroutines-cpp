@@ -199,6 +199,39 @@ void channel_send_contract(bool wait, bool cancel, bool closed) {
     CHECK(calls == 1);
     CHECK(completion.resumes == (wait ? 1 : 0) && !completion.failure);
 }
+// Source contracts: channels/BufferedChannel.kt:241-349,1166-1183,1475-1501.
+void buffered_channel_resource_contract() {
+    using namespace kotlinx::coroutines::channels;
+    BufferedChannel<std::shared_ptr<int>> channel(1);
+    for (int iteration = 0; iteration < SEGMENT_SIZE + 3; ++iteration) {
+        CHECK(channel.try_send(std::make_shared<int>(-1)).is_success());
+        Completion completion;
+        auto selection = std::make_shared<SelectImplementation<void*>>(completion.context);
+        SelectBuilder<void*>& builder = *selection;
+        auto resource = std::make_shared<int>(iteration);
+        auto* identity = resource.get();
+        std::weak_ptr<int> lifetime = resource;
+        int calls = 0;
+        builder.invoke<std::shared_ptr<int>, SendChannel<std::shared_ptr<int>>*>(channel.on_send(), resource,
+            std::function<void*(SendChannel<std::shared_ptr<int>>*, Continuation<void*>*)>(
+                [&](auto* result, auto) -> void* {
+                    CHECK(result == static_cast<SendChannel<std::shared_ptr<int>>*>(&channel));
+                    CHECK(!lifetime.expired());
+                    ++calls;
+                    return nullptr;
+                }));
+        resource.reset();
+        CHECK(kotlin::coroutines::intrinsics::is_coroutine_suspended(selection->do_select(&completion)));
+        CHECK(!completion.resumes && !lifetime.expired());
+        CHECK(*channel.try_receive().get_or_throw() == -1);
+        CHECK(completion.resumes == 1 && !completion.failure && calls == 1);
+        {
+            auto received = channel.try_receive().get_or_throw();
+            CHECK(received.get() == identity && *received == iteration);
+        }
+        CHECK(lifetime.expired());
+    }
+}
 }
 int main() {
     try {
@@ -214,6 +247,7 @@ int main() {
         channel_send_contract(true, false, false);
         channel_send_contract(true, true, false);
         channel_send_contract(false, false, true);
+        buffered_channel_resource_contract();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n'; return 1;
     }
