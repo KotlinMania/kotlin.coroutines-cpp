@@ -5971,16 +5971,16 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.598333
-function_name_parity: 0.666667
+translated_ast_cosine: 0.575543
+function_name_parity: 1.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.006031
+documentation_correspondence: 0.008121
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
 Score evidence: provisional (unsupported rules or parse errors)
 Generated parse errors: yes (provisional)
-Target parse errors: yes (provisional)
+Target parse errors: no
 Rule hits: 7 | misses: 6 | documentation misses: 3 | supported code-byte coverage: 0.000000
 Source line	Source bytes	Emitted bytes	Node	Supported
 1	0:35	0:41	package_header	yes
@@ -6004,30 +6004,41 @@ Diagnostic: 246: documentation example retains unsupported Kotlin syntax
 Diagnostic: 258: unsupported function_declaration
 Diagnostic: 269: unsupported function_declaration
 Diagnostic: 285: unsupported class_declaration
-Function ProducerScope<*>::awaitClose:60 -> kotlinx::coroutines::channels::await_close:267 | normalized logic: 0.000000
+Function ProducerScope<*>::awaitClose:60 -> kotlinx::coroutines::channels::await_close:359 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:scope type:e type:producerscope node:66 identifier:block identifier:std type:function type:void node:66 type:continuation type:void operator:* identifier:continuation identifier:action identifier:std type:finallyguard type:function type:void operator:~ identifier:finallyguard node:1 identifier:action node:43 identifier:action identifier:guard node:43 identifier:block identifier:move identifier:std node:5 node:43 identifier:suspendcancellablecoroutine type:void node:45 identifier:scope node:66 identifier:cont type:cancellablecontinuation type:void node:43 identifier:scope identifier:invokeonclose node:45 operator:& identifier:cont node:66 identifier:std type:exceptionptr node:43 identifier:cont identifier:resume identifier:continuation
-Function CoroutineScope::produce:258 -> kotlinx::coroutines::channels::produce:169 | normalized logic: 0.000000
+  Target logic: node:66 identifier:scope type:e type:producerscope node:66 identifier:block identifier:std type:function type:void node:66 type:continuation type:void operator:* identifier:continuation identifier:job operator:= node:43 identifier:dynamiccast type:jobsupport operator:* identifier:scope identifier:owner operator:= identifier:job node:43 node:43 identifier:job identifier:lock identifier:weakfromthis node:5 node:43 identifier:internal identifier:awaitcloseerased node:43 identifier:dynamiccast type:job operator:* identifier:scope node:45 identifier:scope identifier:owner operator:= node:43 identifier:std identifier:move identifier:owner node:66 identifier:std type:function type:void node:66 identifier:handler identifier:std type:exceptionptr node:43 identifier:scope identifier:invokeonclose node:43 identifier:std identifier:move identifier:handler node:43 identifier:std identifier:move identifier:block node:43 identifier:kotlinx identifier:coroutines identifier:internal identifier:retaincontinuation identifier:continuation
+Function CoroutineScope::produce:238 -> kotlinx::coroutines::channels::produce:270 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:scope type:coroutinescope node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr type:signed32 identifier:capacity operator:= literal:51:0 type:bufferoverflow identifier:onbufferoverflow operator:= identifier:bufferoverflow identifier:suspend type:coroutinestart identifier:start operator:= identifier:coroutinestart identifier:default identifier:std type:function type:void node:66 type:e type:producerscope operator:* identifier:block operator:= identifier:channel operator:= node:43 identifier:capacity identifier:createchannel identifier:onbufferoverflow type:e node:1 operator:! identifier:context identifier:context operator:= node:43 identifier:emptycoroutinecontext identifier:instance identifier:newcontext operator:= node:43 node:43 identifier:getcoroutinecontext identifier:scope operator:+ identifier:context identifier:coroutine operator:= node:43 identifier:channel identifier:makeshared identifier:newcontext identifier:std type:e type:producercoroutine node:1 identifier:block identifier:std type:function node:43 identifier:sharedptr identifier:std identifier:unit identifier:wrappedblock type:e type:producercoroutine operator:= node:45 identifier:block node:66 identifier:receiver identifier:std type:e type:producercoroutine type:sharedptr node:43 identifier:block node:43 identifier:get identifier:receiver node:5 node:43 identifier:unit node:43 identifier:coroutine identifier:start identifier:start identifier:coroutine node:43 identifier:std identifier:move identifier:wrappedblock node:5 identifier:coroutine
-Function ProducerCoroutine::onCompleted:291 -> kotlinx::coroutines::channels::ProducerCoroutine::on_completed:67 | normalized logic: 0.000000
+  Target logic: node:66 identifier:scope type:coroutinescope node:66 identifier:std type:function type:void operator:* node:66 type:e type:producerscope operator:* node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:block identifier:std type:sharedptr type:coroutinecontext identifier:context operator:= node:43 identifier:emptycoroutinecontext identifier:instance type:signed32 identifier:capacity operator:= type:channel type:e identifier:rendezvous node:5 node:43 identifier:produce type:e identifier:scope node:43 identifier:std identifier:move identifier:context identifier:capacity identifier:bufferoverflow identifier:suspend identifier:coroutinestart identifier:default node:43 identifier:std identifier:move identifier:block
+Function CoroutineScope::produce:258 -> kotlinx::coroutines::channels::produce:247 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:scope type:coroutinescope node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr node:66 identifier:capacity type:signed32 node:66 identifier:onbufferoverflow type:bufferoverflow node:66 identifier:start type:coroutinestart node:66 identifier:std type:function type:void operator:* node:66 type:e type:producerscope operator:* node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:block node:5 node:43 identifier:produce type:e identifier:scope node:43 identifier:std identifier:move identifier:context identifier:capacity identifier:onbufferoverflow identifier:start node:43 identifier:std identifier:move identifier:block
+Function CoroutineScope::produce:269 -> kotlinx::coroutines::channels::produce:229 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:scope type:coroutinescope node:66 identifier:context identifier:std type:coroutinecontext type:sharedptr node:66 identifier:capacity type:signed32 node:66 identifier:onbufferoverflow type:bufferoverflow node:66 identifier:start type:coroutinestart node:66 identifier:std type:function type:void node:66 identifier:oncompletion identifier:std type:exceptionptr node:66 identifier:std type:function type:void operator:* node:66 type:e type:producerscope operator:* node:66 identifier:std type:continuation type:sharedptr type:void operator:* identifier:block identifier:channel operator:= node:43 identifier:capacity identifier:createchannel identifier:onbufferoverflow type:e identifier:newcontext operator:= node:43 identifier:context identifier:newcoroutinecontext identifier:scope node:43 identifier:context identifier:move identifier:std node:43 identifier:emptycoroutinecontext identifier:instance identifier:coroutine operator:= node:43 identifier:channel identifier:makeshared identifier:newcontext identifier:std type:e type:producercoroutine node:1 identifier:oncompletion node:43 identifier:coroutine identifier:invokeoncompletion node:43 identifier:std identifier:move identifier:oncompletion node:43 identifier:coroutine identifier:start identifier:start node:43 identifier:staticcast type:producerscope type:e operator:* node:43 identifier:coroutine identifier:get node:43 identifier:std identifier:move identifier:block node:5 identifier:coroutine
+Function ProducerCoroutine::onCompleted:291 -> kotlinx::coroutines::channels::ProducerCoroutine::on_completed:124 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:value type:void type:void identifier:value node:43 type:channelcoroutine type:e identifier:channel identifier:close
-Function ProducerCoroutine::onCancelled:295 -> kotlinx::coroutines::channels::ProducerCoroutine::on_cancelled:78 | normalized logic: 0.000000
+Function ProducerCoroutine::onCancelled:295 -> kotlinx::coroutines::channels::ProducerCoroutine::on_cancelled:136 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:cause identifier:std type:exceptionptr node:66 identifier:handled type:bool identifier:processed type:bool operator:= node:43 identifier:cause identifier:channel identifier:close type:channelcoroutine type:e node:1 operator:! identifier:processed operator:&& operator:! identifier:handled operator:&& identifier:cause node:43 identifier:handlecoroutineexception operator:* node:43 identifier:getcontext identifier:cause
-Missing source function: CoroutineScope::produce:238
-Missing source function: CoroutineScope::produce:269
-Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::ProducerCoroutine:54
-Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::is_active:61
-Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::is_closed_for_send:89
-Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::send:91
-Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::try_send:95
-Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::close:97
-Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::invoke_on_close:99
-Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::get_channel:110
-Extra target function: kotlinx::coroutines::channels::produce:204
-Extra target function: kotlinx::coroutines::channels::FinallyGuard::~FinallyGuard:271
+  Target logic: node:66 identifier:cause identifier:std type:exceptionptr node:66 identifier:handled type:bool identifier:processed type:bool operator:= node:43 identifier:cause identifier:channel identifier:close type:channelcoroutine type:e node:1 operator:! identifier:processed operator:&& operator:! identifier:handled node:43 identifier:handlecoroutineexception operator:* node:43 identifier:getcontext identifier:cause
+Extra target function: kotlinx::coroutines::channels::internal::AwaitCloseContinuation::AwaitCloseContinuation:15
+Extra target function: kotlinx::coroutines::channels::internal::AwaitCloseContinuation::invoke_suspend:22
+Extra target function: kotlinx::coroutines::channels::internal::AwaitCloseContinuation::release_intercepted:45
+Extra target function: kotlinx::coroutines::channels::internal::await_close_erased:58
+Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::ProducerCoroutine:109
+Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::is_active:117
+Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::is_closed_for_send:148
+Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::send:151
+Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::try_send:156
+Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::close:159
+Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::invoke_on_close:162
+Extra target function: kotlinx::coroutines::channels::ProducerCoroutine::get_channel:175
+Extra target function: kotlinx::coroutines::channels::produce:257
+Extra target function: kotlinx::coroutines::channels::produce:281
+Extra target function: kotlinx::coroutines::channels::produce:290
+Extra target function: kotlinx::coroutines::channels::produce:304
+Extra target function: kotlinx::coroutines::channels::await_close:371
 === Emitted target buffer ===
 namespace kotlinx::coroutines::channels {
 
@@ -6260,14 +6271,22 @@ __ast_distance_unmapped__("class_declaration", "private class ProducerCoroutine<
 Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
-NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:60	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:250	ProducerScope<*>::awaitClose -> kotlinx::coroutines::channels::await_close
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=provisional
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:238	-	CoroutineScope::produce
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:258	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:152	CoroutineScope::produce -> kotlinx::coroutines::channels::produce
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:258	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:187	CoroutineScope::produce -> kotlinx::coroutines::channels::produce
-  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:269	-	CoroutineScope::produce
+NO_LOCAL_LOWERING_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:60	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:289	ProducerScope<*>::awaitClose -> kotlinx::coroutines::channels::await_close
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
+TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:238	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:200	CoroutineScope::produce -> kotlinx::coroutines::channels::produce
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
+TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:238	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:211	CoroutineScope::produce -> kotlinx::coroutines::channels::produce
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=clean
+TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:258	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:177	CoroutineScope::produce -> kotlinx::coroutines::channels::produce
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=4 parse=clean
+TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:258	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:187	CoroutineScope::produce -> kotlinx::coroutines::channels::produce
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=4 parse=clean
+TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:258	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:220	CoroutineScope::produce -> kotlinx::coroutines::channels::produce
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=4 parse=clean
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:258	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:234	CoroutineScope::produce -> kotlinx::coroutines::channels::produce
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=4 parse=clean
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/channels/Produce.kt:269	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp:159	CoroutineScope::produce -> kotlinx::coroutines::channels::produce
+  Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
 Explicit suspension contracts reviewed: 4
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === test-utils/common/src/TestBase.common.kt -> kotlinx/coroutines/testing/TestBase.hpp ===
