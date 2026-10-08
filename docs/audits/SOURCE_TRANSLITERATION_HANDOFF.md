@@ -6,6 +6,43 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+## Native WorkerDispatcher source body — 2026-10-08
+
+Continuation from `c5c168f3` replaces the empty native/MultithreadedDispatchers.cpp
+with WorkerDispatcher's source constructor, dispatch, delay, timeout, schedule and
+close operations from MultithreadedDispatchers.kt:20-76. The new Native header holds
+the interface and opaque private field; private implementation stays in .cpp.
+DisposableBlock drops its atomic runnable owner on disposal. The recursive delay
+operation preserves the source monotonic mark,100ms quantum, microsecond conversion,
+disposal check and final nonnegative executeAfter wait. Cancellation owns the actual
+handle; resumption uses resume_undispatched. Existing owning continuations retain
+their owner; raw receivers remain borrowed. The scheduled once-only callback moves
+its lease into invocation to avoid a completed callback/cancellation-handle cycle.
+No lifetime result is established yet.
+
+native/CoroutineContext.cpp now delegates DefaultExecutor to this source class.
+Its detached timers and non-source early-resume/synchronous branches are removed.
+Delay.hpp no longer pulls private continuation implementation and intrinsic headers
+into its declaration-only interface. Strict Clang syntax passes the actual new
+header and rewritten Native context. The WorkerDispatcher implementation fails on
+the missing Worker.hpp and two existing CancellableContinuationImpl unused-parameter
+diagnostics. Worker/Future and TimeSource/TimeMark production dependencies remain
+untranslated; no fake Worker, clock, runtime or helper test replaces them.
+
+Worker/Future sources were read in tmp/kotlin. TimeSource.kt is tracked in its pinned
+fee29910 Git tree but absent from the sparse working tree; git show supplied the actual
+contract. Continue those dependency translations, including actual runtime consumers.
+MultiWorkerDispatcher and the Native fixed-pool factory remain incomplete; the common
+thread-pool implementation is not a source replacement. Do not claim complete Native
+dispatcher or retained-fixture execution. Both complete Native/standalone MLX paths
+and full compiler/library translation remain open.
+
+The refreshed library deep scan records670/2918 bodies,181/560 types,0.24 similarity,
+11 scoring failures. Native MultithreadedDispatchers:5/19 bodies,2/3 types,0.09;
+local helpers still have lexical-scope matching gaps. Native CoroutineContext pairs
+with UndispatchedCoroutine, so its9/10 bodies,2/2 types,0.39 do not certify DefaultExecutor.
+See NATIVE_WORKER_DISPATCHER_SOURCE_REPAIR.md for source references and verification.
+
 ## Function-address dependency closure — 2026-10-08
 
 Continuation from `b28cd6d6` repairs the missing libc++ variant helper dependency

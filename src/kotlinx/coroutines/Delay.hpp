@@ -16,8 +16,6 @@
 #include <memory>
 #include "kotlin/time/Duration.hpp"
 
-#include "kotlinx/coroutines/CancellableContinuationImpl.hpp"
-#include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include <string>
 
 namespace kotlinx {
