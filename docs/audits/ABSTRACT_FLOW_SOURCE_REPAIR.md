@@ -30,6 +30,19 @@ receipts below predate the removal and do not prove current execution, retention
 cleanup or cancellation behavior. Both required MLX acceptance paths remain
 unverified; complete source parity remains unfinished.
 
+Both absolute full-root deep scans finished with exit zero after the final source
+edits, using the previous analyzer executable; the strict analyzer rebuild remains
+unsuccessful. Flow retains 1/1 source body and 2/2 types, while target function
+count decreases from 6 to 2 and target types from 5 to 4. Measured body similarity
+is 0.17, previously 0.16; this small movement does not establish parity. Library
+totals remain 825/2918 functions, 359/560 types, body similarity 0.26 and 123
+scoring failures. Compiler totals remain 592/7657 functions, 174/1727 types,
+body similarity 0.36 and 24 failures. Native Concurrent's measured body similarity
+decreases from 0.36 to 0.32 after the deliberately ignored parameter binding
+change; that measurement is retained without weakening the analyzer. Deep logs:
+abstract-flow-authored-{library,compiler}-deep.log under build/ir-recovery.
+Neither edited source header contains prohibited comments or warning controls.
+
 The historical checkpoints below describe earlier implementations.
 
 # AbstractFlow collection source repair
