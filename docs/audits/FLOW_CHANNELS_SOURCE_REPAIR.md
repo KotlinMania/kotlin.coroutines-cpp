@@ -27,6 +27,20 @@ Receipt: build/ir-recovery/flow-channels-typed-fixture-build.log. Historical
 execution evidence below does not verify the current body. Complete source parity,
 channel diagnostic text and both MLX acceptance paths remain unfinished.
 
+Both absolute full-root deep scans finish with exit zero after these edits,
+using the previous analyzer executable; strict analyzer rebuilding remains
+unsuccessful. Channels retains 12/12 functions, 1/1 types and 65 dependents,
+body similarity 0.22. Target function count is 18 (previously 19), target types
+one (previously two). Whole-library totals are 824/2918 functions, 359/560 types,
+body similarity 0.26 and 123 scoring failures. The one-function coverage decrease
+comes from removal of the pool's unused private loop duplicate; its expanded
+source call sites remain in allocate/close. The report is retained unchanged.
+Compiler totals remain 592/7657 functions, 174/1727 types, similarity 0.36 and
+24 failures. Deep receipts: flow-channels-typed-{library,compiler}-deep.log.
+Root CMake regeneration also exits zero and removes both deleted Flow.cpp and
+Channels.cpp from the core build commands. Receipt: flow-channels-typed-configure.log.
+These checks do not establish execution of the new typed suspension body.
+
 # Current source authoring migration — warning-visible build
 
 The complete common Flow Channels.kt and C++ pair were reread. The first oracle
