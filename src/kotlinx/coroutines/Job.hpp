@@ -1,4 +1,5 @@
 #pragma once
+// port-lint: source kotlinx-coroutines-core/common/src/Job.kt
 /**
  * @file Job.hpp
  * @brief Core job interfaces for kotlinx.coroutines
@@ -36,12 +37,9 @@ class JobNode;
 /**
  * Combines two jobs.
  * This operator preserves the right-most job as per CoroutineContext composition rules.
- * If right is null, returns left.
  */
-inline std::shared_ptr<Job> operator+(std::shared_ptr<Job> left, std::shared_ptr<Job> right) {
-    if (!right) return left;
-    return right;
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:346-346
+std::shared_ptr<Job> operator+(std::shared_ptr<Job> left, std::shared_ptr<Job> right);
 
 /**
  * A background job.
@@ -437,36 +435,35 @@ inline std::shared_ptr<DisposableHandle> non_disposable_handle() {
  *
  * This is a shortcut for the invocation of cancel() followed by join().
  */
-inline void cancel_and_join_blocking(Job& job) {
-    job.cancel();
-    job.join_blocking();
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:506-509
+void* cancel_and_join(Job& job, Continuation<void*>* continuation);
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:506-509
+// NOTE(port): The existing owned-continuation binding forwards to the virtual ABI.
+void* cancel_and_join(Job& job, std::shared_ptr<Continuation<void*>> continuation);
+
+// NOTE(port): Explicit blocking C++ convenience retained for ordinary callers;
+// the source suspending extension is cancel_and_join above.
+void cancel_and_join_blocking(Job& job);
 
 /**
  * Cancels all children jobs of this coroutine using Job::cancel() for all of them
  * with an optional cancellation cause.
  * Unlike Job::cancel() on this job as a whole, the state of this job itself is not affected.
  */
-inline void cancel_children(Job& job, std::exception_ptr cause = nullptr) {
-    for (auto& child : job.get_children()) {
-        child->cancel(cause);
-    }
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:517-519
+void cancel_children(Job& job, std::exception_ptr cause = nullptr);
 
 /**
  * Ensures that current job is active.
  * If the job is no longer active, throws CancellationException.
  * If the job was cancelled, thrown exception contains the original cancellation cause.
  */
-inline void ensure_active(Job& job) {
-    if (!job.is_active()) {
-        std::exception_ptr ex = job.get_cancellation_exception();
-        if (ex) {
-            std::rethrow_exception(ex);
-        }
-        throw std::runtime_error("Job is not active");
-    }
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:584-586
+void ensure_active(Job& job);
+
+// Cancels this job with the diagnostic message and original cause.
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:610-610
+void cancel(Job& job, const std::string& message, std::exception_ptr cause = nullptr);
 
 // -------------------- CoroutineContext extensions --------------------
 
@@ -485,24 +482,19 @@ inline void ensure_active(Job& job) {
  * The context_is_active(ctx) expression is a shortcut for `ctx.get(Job::type_key)->is_active()`.
  * See Job::is_active().
  */
-inline bool context_is_active(const CoroutineContext& ctx) {
-    auto job_element = ctx.get(Job::type_key);
-    if (auto job = std::dynamic_pointer_cast<Job>(job_element)) {
-        return job->is_active();
-    }
-    return true; // No job in context means "active" by default
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:555-556
+bool is_active(const CoroutineContext& context);
+// NOTE(port): Retain the existing C++ prefixed spelling as a forwarding binding.
+bool context_is_active(const CoroutineContext& context);
 
 /**
  * Cancels Job of this context with an optional cancellation cause.
  * See Job::cancel() for details.
  */
-inline void context_cancel(const CoroutineContext& ctx, std::exception_ptr cause = nullptr) {
-    auto job_element = ctx.get(Job::type_key);
-    if (auto job = std::dynamic_pointer_cast<Job>(job_element)) {
-        job->cancel(cause);
-    }
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:562-564
+void cancel(const CoroutineContext& context, std::exception_ptr cause = nullptr);
+// NOTE(port): Retain the existing C++ prefixed spelling as a forwarding binding.
+void context_cancel(const CoroutineContext& context, std::exception_ptr cause = nullptr);
 
 /**
  * Retrieves the current Job instance from the given CoroutineContext or
@@ -511,13 +503,10 @@ inline void context_cancel(const CoroutineContext& ctx, std::exception_ptr cause
  * This method is a short-cut for ctx.get(Job::type_key) and should be used only when it is
  * known in advance that the context does have instance of the job in it.
  */
-inline std::shared_ptr<Job> context_job(const CoroutineContext& ctx) {
-    auto job_element = ctx.get(Job::type_key);
-    if (auto job = std::dynamic_pointer_cast<Job>(job_element)) {
-        return job;
-    }
-    throw std::logic_error("Current context doesn't contain Job in it");
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:644-644
+std::shared_ptr<Job> get_job(const CoroutineContext& context);
+// NOTE(port): Retain the existing C++ prefixed spelling as a forwarding binding.
+std::shared_ptr<Job> context_job(const CoroutineContext& context);
 
 /**
  * Ensures that job in the context is active.
@@ -527,24 +516,20 @@ inline std::shared_ptr<Job> context_job(const CoroutineContext& ctx) {
  * This function does not do anything if there is no Job in the context, since such a coroutine
  * cannot be cancelled.
  */
-inline void context_ensure_active(const CoroutineContext& ctx) {
-    auto job_element = ctx.get(Job::type_key);
-    if (auto job = std::dynamic_pointer_cast<Job>(job_element)) {
-        ensure_active(*job);
-    }
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:602-604
+void ensure_active(const CoroutineContext& context);
+// NOTE(port): Retain the existing C++ prefixed spelling as a forwarding binding.
+void context_ensure_active(const CoroutineContext& context);
 
 /**
  * Cancels all children of the Job in this context, without touching the state of this job itself
  * with an optional cancellation cause. See Job::cancel().
  * It does not do anything if there is no job in the context or it has no children.
  */
-inline void context_cancel_children(const CoroutineContext& ctx, std::exception_ptr cause = nullptr) {
-    auto job_element = ctx.get(Job::type_key);
-    if (auto job = std::dynamic_pointer_cast<Job>(job_element)) {
-        cancel_children(*job, cause);
-    }
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:627-629
+void cancel_children(const CoroutineContext& context, std::exception_ptr cause = nullptr);
+// NOTE(port): Retain the existing C++ prefixed spelling as a forwarding binding.
+void context_cancel_children(const CoroutineContext& context, std::exception_ptr cause = nullptr);
 
 // -------------------- Factory function --------------------
 
@@ -565,6 +550,7 @@ inline void context_cancel_children(const CoroutineContext& ctx, std::exception_
  *
  * @param parent an optional parent job.
  */
+// Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:390-390
 std::shared_ptr<CompletableJob> make_job(std::shared_ptr<struct Job> parent = nullptr);
 
 // NOTE: Cannot use Job() as function name because it shadows the Job struct.
