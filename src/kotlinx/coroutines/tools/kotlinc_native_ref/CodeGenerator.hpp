@@ -1,5 +1,5 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:390-393,616-621,667-678,720-732,754-758,890-907,948-964,1001-1011,1035-1042,1208-1262,1264-1276,1342-1347,1461-1463,1505-1558,1566-1599
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:390-393,616-621,667-678,720-732,754-758,890-907,948-964,1001-1042,1208-1262,1264-1276,1342-1347,1461-1463,1505-1558,1566-1599
 #pragma once
 #include "LocationInfo.hpp"
 #include "LlvmCallable.hpp"
@@ -104,6 +104,34 @@ public:
     LLVMValueRef icmp_u_gt(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1011
     LLVMValueRef icmp_u_ge(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1014-1014
+    LLVMValueRef fcmp_eq(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1015-1015
+    LLVMValueRef fcmp_gt(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1016-1016
+    LLVMValueRef fcmp_ge(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1017-1017
+    LLVMValueRef fcmp_lt(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1018-1018
+    LLVMValueRef fcmp_le(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1020-1020
+    LLVMValueRef sub(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1021-1021
+    LLVMValueRef add(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1023-1023
+    LLVMValueRef fsub(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1024-1024
+    LLVMValueRef fadd(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1025-1025
+    LLVMValueRef fneg(LLVMValueRef arg, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1027-1028
+    LLVMValueRef select(LLVMValueRef if_value, LLVMValueRef then_value, LLVMValueRef else_value, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1030-1030
+    LLVMValueRef bitcast(LLVMTypeRef type, LLVMValueRef value, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1032-1032
+    LLVMValueRef int_to_ptr(LLVMValueRef value, LLVMTypeRef dest_type, const std::string& name = "");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1033-1033
+    LLVMValueRef ptr_to_int(LLVMValueRef value, LLVMTypeRef dest_type, const std::string& name = "");
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1035-1036
     LLVMValueRef gep(LLVMTypeRef type, LLVMValueRef base, LLVMValueRef index, const std::string& name = "");
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1038-1039

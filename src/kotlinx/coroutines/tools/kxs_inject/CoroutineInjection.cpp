@@ -14,6 +14,7 @@
 #include "../kotlinc_native_ref/IrToBitcode_coroutines.hpp"
 #include "../kotlinc_native_ref/CodeGenerator.hpp"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/Config/llvm-config.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -128,8 +129,15 @@ static bool inject_function(Function& function, Function* entry, Function* point
             if (site && call->getCalledFunction() == site) points.push_back(call);
             if (resume && call->getCalledFunction() == resume) {
                 auto* id = dyn_cast<ConstantInt>(call->getArgOperand(0));
+                // NOTE(port): LLVM 23 splits conditional and unconditional
+                // branch classes; preserve the same direct condition/target contract.
+#if LLVM_VERSION_MAJOR >= 23
+                auto* branch = call->hasOneUse() ? dyn_cast<CondBrInst>(*call->user_begin()) : nullptr;
+                if (!id || !branch || branch->getCondition() != call) {
+#else
                 auto* branch = call->hasOneUse() ? dyn_cast<BranchInst>(*call->user_begin()) : nullptr;
                 if (!id || !branch || !branch->isConditional() || branch->getCondition() != call) {
+#endif
                     diagnostics << "Resume marker needs a constant ID and direct conditional branch in @"
                                 << function.getName() << "\n";
                     return false;

@@ -1,6 +1,72 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## LLVM value operations and focused build repair — 2026-10-08
+
+Continuation from bc4c1b51 translates CodeGenerator.kt:1014-1033 into
+CodeGenerator.cpp:300-352 and the public header: ordered floating comparisons,
+integer/floating addition and subtraction, floating negation, select, bitcast,
+integer-to-pointer and pointer-to-integer conversions. All 14 bodies use the
+actual LLVM builder and preserve source operand order and instruction names.
+LlvmAttributes.hpp/.cpp now preserve the ten distinct nested object types from
+LlvmAttributes.kt:83-84,97-104, with private construction and existing static
+singleton identity. The kind caches still borrow those static objects.
+
+Focused checks support translation. The earlier blanket deferral applied the
+user's instruction too broadly: full runtime acceptance requires the connected
+implementation, while source comparisons and focused compilation remain useful
+and required. Historical receipts below describe their own checkpoints only.
+
+The six connected implementations (CodeGenerator, LlvmAttributes, LlvmParamType,
+LlvmUtils, LlvmFunctionPrototype and LlvmCallable) pass clang++ -std=c++20
+-Wall -Wextra -Werror -fsyntax-only with the actual LLVM include directory.
+The root CMake build in build/source-continuation reconfigured and built
+KotlinxCoroutinePass and kxs_codegen_test successfully with LLVM 23.1.2 and
+KOTLIN_NATIVE_RUNTIME_AVAILABLE=OFF. Neither command invoked kotlinc/konanc.
+The code-generation executable exited zero and emitted
+build/source-continuation/llvm-source-distance/coroutine_codegen.ll; its existing
+checks include LLVMVerifyModule, suspension-block joins and insertion/scope
+restoration. It does not directly exercise every new floating operation or
+establish retained ownership, cancellation or either complete MLX acceptance path.
+
+The build exposed two integration issues. LLVM/Clang SDK include directories
+are now SYSTEM in the plugin/injector CMake targets; project warning policy
+remains strict, with no added -Wno options. CoroutineInjection.cpp:134 uses
+LLVM 23's CondBrInst while older LLVM retains BranchInst. Both preserve the
+single direct condition consumer and true-successor resume target; only the
+LLVM 23 branch was freshly compiled here.
+
+Two scoped deep scans completed; the second follows the nested-type repair.
+From build/source-continuation/llvm-source-distance, the command was:
+
+```sh
+../../../tools/ast_distance/ast_distance --deep ../../../tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm kotlin ../../../src/kotlinx/coroutines/tools/kotlinc_native_ref cpp
+```
+
+| Source | Function similarity | Matched bodies | Matched types |
+|---|---|---|---|
+| CodeGenerator | 0.19 | 61/145 | 2/15 |
+| IrToBitcode | 0.01 | 3/184 | 6/26 |
+| LlvmCallable | 0.54 | 9/10 | 5/5 |
+| LlvmAttributes | 0.01 | 2/6 | 13/13 |
+| VariableManager | 0.00 | 0/27 | 1/6 |
+| LlvmParamType | 0.00 | 0/0 | 2/2 |
+
+Generated inventories, criteria and repair priorities remain in that build
+directory. LlvmParamType's forced-zero score explicitly reports no source
+function bodies despite eight target constructor/accessor bodies. The inventory
+also reports LlvmFunctionPrototype.kt as MISSING_FILE although supplied-signature
+and attribute-provider bodies exist and compile. This is a demonstrated matching
+discrepancy; its root cause remains to be investigated. The actual IR signature
+factory, FunctionOrigin and LlvmFunctionProto are still missing. Generated Kotlin
+emission limitations keep affected deep criteria provisional. This scoped scan
+does not refresh full-root library/compiler measurements or waive those checks.
+
+Continue source translation of actual call/exception/frame/root operations,
+VariableManager, IR-derived signatures and the connected expression/initializer
+driver. Target/default attributes and bridge debug metadata remain incomplete.
+The full translation goal remains active.
+
 ## Typed LLVM signatures and attribute kinds — 2026-10-08
 
 The continuation after f542b371 translates LlvmAttributes.kt:67-105,

@@ -1,5 +1,5 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:74-78,390-393,616-621,667-678,720-732,754-758,890-907,948-964,1001-1011,1035-1042,1208-1262,1264-1276,1342-1347,1461-1463,1505-1558,1566-1599
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:74-78,390-393,616-621,667-678,720-732,754-758,890-907,948-964,1001-1042,1208-1262,1264-1276,1342-1347,1461-1463,1505-1558,1566-1599
 #include "CodeGenerator.hpp"
 #include <llvm-c/DebugInfo.h>
 #include <map>
@@ -295,6 +295,62 @@ LLVMValueRef FunctionGenerationContext::icmp_u_gt(LLVMValueRef arg0, LLVMValueRe
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1011
 LLVMValueRef FunctionGenerationContext::icmp_u_ge(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
     return LLVMBuildICmp(builder(), LLVMIntUGE, arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1014-1014
+LLVMValueRef FunctionGenerationContext::fcmp_eq(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildFCmp(builder(), LLVMRealOEQ, arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1015-1015
+LLVMValueRef FunctionGenerationContext::fcmp_gt(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildFCmp(builder(), LLVMRealOGT, arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1016-1016
+LLVMValueRef FunctionGenerationContext::fcmp_ge(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildFCmp(builder(), LLVMRealOGE, arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1017-1017
+LLVMValueRef FunctionGenerationContext::fcmp_lt(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildFCmp(builder(), LLVMRealOLT, arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1018-1018
+LLVMValueRef FunctionGenerationContext::fcmp_le(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildFCmp(builder(), LLVMRealOLE, arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1020-1020
+LLVMValueRef FunctionGenerationContext::sub(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildSub(builder(), arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1021-1021
+LLVMValueRef FunctionGenerationContext::add(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildAdd(builder(), arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1023-1023
+LLVMValueRef FunctionGenerationContext::fsub(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildFSub(builder(), arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1024-1024
+LLVMValueRef FunctionGenerationContext::fadd(LLVMValueRef arg0, LLVMValueRef arg1, const std::string& name) {
+    return LLVMBuildFAdd(builder(), arg0, arg1, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1025-1025
+LLVMValueRef FunctionGenerationContext::fneg(LLVMValueRef arg, const std::string& name) {
+    return LLVMBuildFNeg(builder(), arg, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1027-1028
+LLVMValueRef FunctionGenerationContext::select(LLVMValueRef if_value, LLVMValueRef then_value, LLVMValueRef else_value, const std::string& name) {
+    return LLVMBuildSelect(builder(), if_value, then_value, else_value, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1030-1030
+LLVMValueRef FunctionGenerationContext::bitcast(LLVMTypeRef type, LLVMValueRef value, const std::string& name) {
+    return LLVMBuildBitCast(builder(), value, type, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1032-1032
+LLVMValueRef FunctionGenerationContext::int_to_ptr(LLVMValueRef value, LLVMTypeRef dest_type, const std::string& name) {
+    return LLVMBuildIntToPtr(builder(), value, dest_type, name.c_str());
+}
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1033-1033
+LLVMValueRef FunctionGenerationContext::ptr_to_int(LLVMValueRef value, LLVMTypeRef dest_type, const std::string& name) {
+    return LLVMBuildPtrToInt(builder(), value, dest_type, name.c_str());
 }
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1035-1036
 LLVMValueRef FunctionGenerationContext::gep(LLVMTypeRef type, LLVMValueRef base, LLVMValueRef index, const std::string& name) {

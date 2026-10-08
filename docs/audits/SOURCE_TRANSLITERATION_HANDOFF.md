@@ -6,7 +6,24 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current typed-signature continuation — 2026-10-08:** From f542b371,
+**Current LLVM value/build continuation — 2026-10-08:** From bc4c1b51,
+14 LLVM value operations and the ten distinct nested attribute object types are
+translated against the actual Kotlin source. Six connected implementations pass
+strict syntax compilation. The root CMake build reconfigured and built
+KotlinxCoroutinePass and kxs_codegen_test with LLVM 23.1.2, Native runtime OFF.
+The code-generation fixture exited zero and verified/emitted its LLVM module.
+SDK includes now use SYSTEM classification without weakening project warning
+options; the injector handles LLVM 23 CondBrInst and preserves the older branch
+API. Only LLVM 23 was freshly built. Scoped deep comparison records CodeGenerator
+61/145 bodies, LlvmAttributes 2/6 bodies and 13/13 types; matching/emission
+limitations and remaining source gaps are recorded in
+RESUME_ADDRESS_SOURCE_REPAIR.md's first section. Focused checks support ongoing
+translation; the earlier blanket check deferral is superseded. Continue actual
+call/exception/frame/root operations, VariableManager, IR-derived signatures and
+the connected expression/initializer emitter. Full-root measurements and both
+complete runtime acceptance paths remain open; the full goal remains active.
+
+**Typed-signature checkpoint bc4c1b51 — 2026-10-08:** From f542b371,
 parameter/return type descriptors, singleton attribute kinds and supplied-LLVM
 function signatures are translated. Signatures preserve separate function,
 return and parameter attributes, vararg state and explicit object-return metadata.
