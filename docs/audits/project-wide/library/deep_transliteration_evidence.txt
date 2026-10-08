@@ -4916,10 +4916,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.585082
+translated_ast_cosine: 0.567129
 function_name_parity: 1.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.025503
+documentation_correspondence: 0.016227
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -4932,16 +4932,17 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 3	28:1079	32:32	import_list	yes
 23	1080:16639	33:16066	class_declaration	fallback
 Diagnostic: 23: unsupported class_declaration
-Function CoroutineStart::invoke:355 -> kotlinx::coroutines::invoke:454 | normalized logic: 0.000000
+Function CoroutineStart::invoke:355 -> kotlinx::coroutines::invoke:410 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:start type:coroutinestart node:66 identifier:block type:block node:66 identifier:receiver type:r node:66 identifier:completion identifier:std type:continuation type:sharedptr type:t node:1 node:43 identifier:islazy identifier:start node:5 node:43 identifier:invoke identifier:start node:43 identifier:internal identifier:erasestartblock type:t node:43 identifier:std identifier:forward type:block identifier:block node:43 identifier:std identifier:forward type:r identifier:receiver node:43 identifier:tovoidcontinuation node:43 identifier:std identifier:move identifier:completion
+  Target logic: node:66 identifier:start type:coroutinestart node:66 identifier:std type:function type:void operator:* node:66 type:r node:66 type:continuation type:t operator:* identifier:block node:66 identifier:receiver type:r node:66 identifier:completion identifier:std type:continuation type:sharedptr type:t node:4 identifier:start identifier:coroutinestart identifier:default node:43 identifier:intrinsics identifier:startcoroutinecancellable type:r type:t node:43 identifier:std identifier:move identifier:block node:43 identifier:std identifier:move identifier:receiver node:43 identifier:std identifier:move identifier:completion node:8 identifier:coroutinestart identifier:atomic node:43 identifier:intrinsics identifier:startcoroutine type:r type:t node:43 identifier:std identifier:move identifier:block node:43 identifier:std identifier:move identifier:receiver node:43 identifier:std identifier:move identifier:completion node:8 identifier:coroutinestart identifier:undispatched node:43 identifier:intrinsics identifier:startcoroutineundispatched type:r type:t node:43 identifier:std identifier:move identifier:block node:43 identifier:std identifier:move identifier:receiver node:43 identifier:std identifier:move identifier:completion node:8 identifier:coroutinestart identifier:lazy node:8
 Extra target function: kotlinx::coroutines::invoke:7
 Extra target function: kotlinx::coroutines::is_lazy:24
-Extra target function: kotlinx::coroutines::internal::retain_start_argument:401
-Extra target function: kotlinx::coroutines::internal::erase_start_block:414
-Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:466
-Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:472
-Extra target function: kotlinx::coroutines::CoroutineStartExtensions::is_lazy:476
+Extra target function: kotlinx::coroutines::internal::retain_start_argument:435
+Extra target function: kotlinx::coroutines::internal::erase_start_block:448
+Extra target function: kotlinx::coroutines::invoke:488
+Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:500
+Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:506
+Extra target function: kotlinx::coroutines::CoroutineStartExtensions::is_lazy:510
 === Emitted target buffer ===
 namespace kotlinx::coroutines {
 

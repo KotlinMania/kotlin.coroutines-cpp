@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 824/2918 matched (target 3037) — 28.2%
+- **Function parity:** 824/2918 matched (target 3038) — 28.2%
 - **Class/type parity:** 359/560 matched (target 519) — 64.1%
-- **Combined symbol parity:** 1183/3478 matched (target 3556) — 34.0%
+- **Combined symbol parity:** 1183/3478 matched (target 3557) — 34.0%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -119,10 +119,10 @@ Every matched file is listed below with function and type symbol parity.
 ### 6. common.CoroutineStart
 
 - **Target:** `coroutines.CoroutineStart`
-- **Similarity:** 0.13
+- **Similarity:** 0.15
 - **Dependents:** 2
-- **Priority Score:** 2000208.6
-- **Functions:** 1/1 matched (target 8)
+- **Priority Score:** 2000208.5
+- **Functions:** 1/1 matched (target 9)
 - **Missing functions:** _none_
 - **Types:** 1/1 matched (target 3)
 - **Missing types:** _none_
