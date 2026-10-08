@@ -26,6 +26,39 @@ def main():
     args = parser.parse_args()
     work = args.work_dir.resolve()
     work.mkdir(parents=True, exist_ok=True)
+    # Prefix frame parsing must retain the full compiler's warning policy.
+    # These internal functions are used after the authored suspend definition;
+    # the negative variant adds a genuinely unused function before that point.
+    warning_source = work / 'prefix_warnings.cpp'
+    warning_text = '''#include <kotlinx/coroutines/ContinuationImpl.hpp>
+#include <kotlinx/coroutines/dsl/Suspend.hpp>
+using namespace kotlinx::coroutines;
+namespace {
+void require(bool value) { if (!value) throw 1; }
+[[clang::annotate("suspend")]]
+void* authored(Job& job, std::shared_ptr<Continuation<void*>> completion) {
+    job.join();
+    require(true);
+    return nullptr;
+}
+}
+int main() { require(&authored != nullptr); }
+'''
+    warning_command = [args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Werror',
+        '-Wno-unused-parameter', '-I' + str(args.root / 'src'),
+        '-Xclang', '-load', '-Xclang', str(args.plugin), '-Xclang', '-add-plugin',
+        '-Xclang', 'kotlinx-suspend', '-fsyntax-only', str(warning_source)]
+    warning_source.write_text(warning_text)
+    run(warning_command, work, 'prefix-warnings-used')
+    warning_source.write_text(warning_text.replace('void require(bool value)',
+        'void genuinely_unused() {}\nvoid require(bool value)'))
+    rejected_warning = subprocess.run(warning_command, capture_output=True, text=True)
+    (work / 'prefix-warnings-unused.log').write_text(
+        rejected_warning.stdout + rejected_warning.stderr)
+    assert rejected_warning.returncode, 'Unused function must fail with -Werror'
+    assert "unused function 'genuinely_unused'" in rejected_warning.stderr, rejected_warning.stderr
+    assert '-Wunused-function' in rejected_warning.stderr, rejected_warning.stderr
+    assert '.kxs.frontend.cpp:' not in rejected_warning.stderr, rejected_warning.stderr
     # Lowering must not import definitions or includes ahead of the host parser.
     late_include = work / 'late_include.cpp'
     late_include.write_text('''#include <kotlinx/coroutines/ContinuationImpl.hpp>
