@@ -18,7 +18,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 6 | `common.CoroutineStart` | `coroutines.CoroutineStart` | 0.15 | 2 | 1/1 matched (target 9) | _none_ | 1/1 matched (target 3) | _none_ | 0 | 2 | 2000208.5 |
 | 7 | `channels.BufferOverflow` | `channels.BufferOverflow` | 1.00 | 2 | 0/0 matched | _none_ | 1/1 matched | _none_ | 0 | 1 | 2000100.0 |
 | 8 | `selects.Select` | `selects.Select` | 0.21 | 1 | 25/30 matched (target 73) | `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | 5 | 46 | 1054607.9 |
-| 9 | `internal.Merge` | `internal.Merge` | 0.26 | 1 | 9/9 matched (target 30) | _none_ | 3/3 matched (target 8) | _none_ | 0 | 12 | 1001207.4 |
+| 9 | `internal.Merge` | `internal.Merge` | 0.26 | 1 | 9/9 matched (target 24) | _none_ | 3/3 matched (target 6) | _none_ | 0 | 12 | 1001207.4 |
 | 10 | `internal.Combine` | `internal.Combine` | 0.02 | 1 | 2/2 matched (target 50) | _none_ | 1/1 matched (target 13) | _none_ | 0 | 3 | 1000309.8 |
 | 11 | `internal.Symbol` | `internal.Symbol` | 0.04 | 1 | 2/2 matched (target 4) | _none_ | 1/1 matched | _none_ | 0 | 3 | 1000309.6 |
 | 12 | `channels.Deprecated` | `channels.Deprecated [ZERO]` | 0.00 | 0 | 0/47 matched (target 0) | `BroadcastChannel<E>::consume`, `BroadcastChannel<E>::consumeEach`, `consumesAll`, `ReceiveChannel<E>::elementAt`, `ReceiveChannel<E>::elementAtOrNull`, `ReceiveChannel<E>::first`, `ReceiveChannel<E>::firstOrNull`, `ReceiveChannel<E>::indexOf`, `ReceiveChannel<E>::last`, `ReceiveChannel<E>::lastIndexOf`, `ReceiveChannel<E>::lastOrNull`, `ReceiveChannel<E>::single`, `ReceiveChannel<E>::singleOrNull`, `ReceiveChannel<E>::drop`, `ReceiveChannel<E>::dropWhile`, `ReceiveChannel<E>::filter`, `ReceiveChannel<E>::filterIndexed`, `ReceiveChannel<E>::filterNot`, `ReceiveChannel<E?>::filterNotNull`, `ReceiveChannel<E?>::filterNotNullTo`, `ReceiveChannel<E?>::filterNotNullTo`, `ReceiveChannel<E>::take`, `ReceiveChannel<E>::takeWhile`, `ReceiveChannel<E>::toChannel`, `ReceiveChannel<E>::toCollection`, `ReceiveChannel<Pair<K, V>>::toMap`, `ReceiveChannel<Pair<K, V>>::toMap`, `ReceiveChannel<E>::toMutableList`, `ReceiveChannel<E>::toSet`, `ReceiveChannel<E>::flatMap`, `ReceiveChannel<E>::map`, `ReceiveChannel<E>::mapIndexed`, `ReceiveChannel<E>::mapIndexedNotNull`, `ReceiveChannel<E>::mapNotNull`, `ReceiveChannel<E>::withIndex`, `ReceiveChannel<E>::distinct`, `ReceiveChannel<E>::distinctBy`, `ReceiveChannel<E>::toMutableSet`, `ReceiveChannel<E>::any`, `ReceiveChannel<E>::count`, `ReceiveChannel<E>::maxWith`, `ReceiveChannel<E>::minWith`, `ReceiveChannel<E>::none`, `ReceiveChannel<E?>::requireNoNulls`, `ReceiveChannel<E>::zip`, `ReceiveChannel<E>::zip`, `ReceiveChannel<*>::consumes` | 0/0 matched | _none_ | 47 | 47 | 474710.0 |
@@ -182,7 +182,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 170 | `flow.CombineStressTest` | `flow.CombineStressTest [STUB]` | 0.00 | 0 | 0/2 matched | `CombineStressTest::testCancellation`, `CombineStressTest::testFailure` | 1/1 matched | _none_ | 2 | 3 | 20310.0 |
 | 171 | `channels.FlowCallbackTest` | `channels.FlowCallbackTest` | 0.38 | 0 | 0/2 matched | `FlowCallbackTest::testClosedPrematurely`, `FlowCallbackTest::testNotClosedPrematurely` | 1/1 matched | _none_ | 2 | 3 | 20306.2 |
 | 172 | `test.CoroutineExceptionHandlerTest` | `tests.CoroutineExceptionHandlerTest` | 0.73 | 0 | 0/2 matched | `CoroutineExceptionHandlerTest::testJob`, `CoroutineExceptionHandlerTest::testCompletableDeferred` | 1/1 matched | _none_ | 2 | 3 | 20302.7 |
-| 173 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.25 | 0 | 18/19 matched (target 39) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | 1 | 25 | 12507.5 |
+| 173 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.25 | 0 | 18/19 matched (target 38) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | 1 | 25 | 12507.5 |
 | 174 | `common.TestCoroutineScheduler` | `tests.TestCoroutineScheduler [STUB]` | 0.00 | 0 | 18/19 matched (target 26) | `TestCoroutineScheduler::read` | 3/3 matched (target 4) | _none_ | 1 | 22 | 12210.0 |
 | 175 | `common.Builders.common` | `coroutines.Builders.common` | 0.19 | 0 | 14/14 matched (target 55) | _none_ | 5/6 matched (target 9) | `UndispatchedCoroutine` | 1 | 20 | 12008.1 |
 | 176 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 0 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | 1 | 16 | 11608.5 |
@@ -456,11 +456,11 @@ These files need immediate attention:
 - **internal.Merge** → `internal.Merge`
   - Function similarity: 0.26
   - Dependencies: 1
-  - Functions: 9/9 matched (target 30)
+  - Functions: 9/9 matched (target 24)
   - Missing functions: _none_
-  - Types: 3/3 matched (target 8)
+  - Types: 3/3 matched (target 6)
   - Missing types: _none_
-  - Lint issues: 4
+  - Lint issues: 2
 
 - **internal.Combine** → `internal.Combine`
   - Function similarity: 0.02

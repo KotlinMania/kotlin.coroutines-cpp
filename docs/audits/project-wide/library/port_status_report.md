@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 831/2918 matched (target 3035) | 28.5% |
-| Class/type parity | 359/560 matched (target 518) | 64.1% |
-| Combined symbol parity | 1190/3478 matched (target 3553) | 34.2% |
+| Function parity | 831/2918 matched (target 3028) | 28.5% |
+| Class/type parity | 359/560 matched (target 516) | 64.1% |
+| Combined symbol parity | 1190/3478 matched (target 3544) | 34.2% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -237,8 +237,8 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 193 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | - | 0 | 207.6 |
 | 194 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
 | 195 | `internal.DispatchedTask` | `internal.DispatchedTask` | 0.25 | 10/10 matched (target 15) | _none_ | 2/2 matched (target 4) | _none_ | - | 0 | 1207.5 |
-| 196 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.25 | 18/19 matched (target 39) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | - | 1 | 12507.5 |
-| 197 | `internal.Merge` | `internal.Merge` | 0.26 | 9/9 matched (target 30) | _none_ | 3/3 matched (target 8) | _none_ | - | 0 | 1001207.4 |
+| 196 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.25 | 18/19 matched (target 38) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | - | 1 | 12507.5 |
+| 197 | `internal.Merge` | `internal.Merge` | 0.26 | 9/9 matched (target 24) | _none_ | 3/3 matched (target 6) | _none_ | - | 0 | 1001207.4 |
 | 198 | `sync.Semaphore` | `sync.Semaphore` | 0.26 | 18/21 matched (target 45) | `Semaphore`, `SemaphoreAndMutexImpl::acquire`, `SemaphoreAndMutexImpl::acquire` | 4/4 matched (target 9) | _none_ | - | 3 | 32507.4 |
 | 199 | `internal.LimitedDispatcher` | `internal.LimitedDispatcher` | 0.27 | 9/10 matched (target 12) | `CoroutineDispatcher::namedOrThis` | 2/2 matched (target 3) | _none_ | - | 1 | 11207.3 |
 | 200 | `channels.BufferedChannel` | `channels.BufferedChannel` | 0.27 | 104/111 matched (target 179) | `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0` | 6/6 matched (target 7) | _none_ | - | 7 | 81707.3 |

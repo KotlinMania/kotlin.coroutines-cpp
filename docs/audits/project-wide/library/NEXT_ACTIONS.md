@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 831/2918 matched (target 3035) — 28.5%
-- **Class/type parity:** 359/560 matched (target 518) — 64.1%
-- **Combined symbol parity:** 1190/3478 matched (target 3553) — 34.2%
+- **Function parity:** 831/2918 matched (target 3028) — 28.5%
+- **Class/type parity:** 359/560 matched (target 516) — 64.1%
+- **Combined symbol parity:** 1190/3478 matched (target 3544) — 34.2%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -157,11 +157,11 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.26
 - **Dependents:** 1
 - **Priority Score:** 1001207.4
-- **Functions:** 9/9 matched (target 30)
+- **Functions:** 9/9 matched (target 24)
 - **Missing functions:** _none_
-- **Types:** 3/3 matched (target 8)
+- **Types:** 3/3 matched (target 6)
 - **Missing types:** _none_
-- **Lint issues:** 4
+- **Lint issues:** 2
 
 ### 10. internal.Combine
 
@@ -2299,7 +2299,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.25
 - **Dependents:** 0
 - **Priority Score:** 12507.5
-- **Functions:** 18/19 matched (target 39)
+- **Functions:** 18/19 matched (target 38)
 - **Missing functions:** `ChannelFlowOperator::toString`
 - **Types:** 6/6 matched
 - **Missing types:** _none_
