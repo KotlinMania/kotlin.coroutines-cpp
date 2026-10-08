@@ -78,6 +78,9 @@ public:
     static std::string continuation_arguments(const clang::CallExpr* call, const std::string& continuation,
                                              const clang::PrintingPolicy& policy,
                                              const std::vector<std::string>& defaults = {});
+    // NOTE(port): Shared Clang printing adapter for retained non-local symbols.
+    static bool print_declaration_reference(const clang::DeclRefExpr* reference, clang::ASTContext& context,
+                                            const clang::PrintingPolicy& policy, llvm::raw_ostream& output);
     static std::string default_argument(const clang::CXXDefaultArgExpr* argument, const clang::PrintingPolicy& policy);
 
 private:

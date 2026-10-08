@@ -1,6 +1,7 @@
 // port-lint: source compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/AbstractFunctionReferenceLowering.kt
 // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/AbstractFunctionReferenceLowering.kt:135-295
 #include "AbstractFunctionReferenceLowering.hpp"
+#include "SuspendFunctionAnalyzer.hpp"
 #include "clang/AST/AST.h"
 #include "clang/AST/QualTypeNames.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -128,9 +129,9 @@ std::string AbstractFunctionReferenceLowering::build_invoke_method(
     // LowerUtils.kt:40-59. Reparsed member accesses bind to actual field symbols.
     class BoundValues : public PrinterHelper {
     public:
-        BoundValues(QualType type, std::string receiver,
+        BoundValues(ASTContext& context, QualType type, std::string receiver,
                     const llvm::DenseMap<const ValueDecl*, std::string>& mapping, PrintingPolicy policy)
-            : type_(type), receiver_(std::move(receiver)), mapping_(mapping), policy_(policy) {}
+            : context_(context), type_(type), receiver_(std::move(receiver)), mapping_(mapping), policy_(policy) {}
         bool handledStmt(Stmt* statement, llvm::raw_ostream& output) override {
             // NOTE(port): Clang's declaration printer does not propagate the
             // expression helper. Print an affected initializer with this same
@@ -138,21 +139,28 @@ std::string AbstractFunctionReferenceLowering::build_invoke_method(
             if (auto* declarations = dyn_cast<DeclStmt>(statement)) {
                 class BoundUses : public RecursiveASTVisitor<BoundUses> {
                 public:
-                    BoundUses(QualType type, const llvm::DenseMap<const ValueDecl*, std::string>& mapping)
-                        : type_(type), mapping_(mapping) {}
+                    BoundUses(ASTContext& context, QualType type,
+                              const llvm::DenseMap<const ValueDecl*, std::string>& mapping,
+                              const PrintingPolicy& policy)
+                        : context_(context), type_(type), mapping_(mapping), policy_(policy) {}
                     bool VisitCXXThisExpr(CXXThisExpr* expression) {
                         found |= !type_.isNull() && expression->getType().getCanonicalType() == type_.getCanonicalType();
                         return true;
                     }
                     bool VisitDeclRefExpr(DeclRefExpr* expression) {
-                        found |= mapping_.contains(expression->getDecl());
+                        llvm::raw_null_ostream ignored;
+                        found |= mapping_.contains(expression->getDecl()) ||
+                            kotlinx::suspend::SuspendFunctionAnalyzer::print_declaration_reference(
+                                expression, context_, policy_, ignored);
                         return true;
                     }
                     bool found = false;
                 private:
+                    ASTContext& context_;
                     QualType type_;
                     const llvm::DenseMap<const ValueDecl*, std::string>& mapping_;
-                } uses(type_, mapping_);
+                    const PrintingPolicy& policy_;
+                } uses(context_, type_, mapping_, policy_);
                 for (auto* declaration : declarations->decls()) {
                     auto* variable = dyn_cast<VarDecl>(declaration);
                     if (!variable) return false;
@@ -182,6 +190,8 @@ std::string AbstractFunctionReferenceLowering::build_invoke_method(
                     output << replacement->second;
                     return true;
                 }
+                return kotlinx::suspend::SuspendFunctionAnalyzer::print_declaration_reference(
+                    reference, context_, policy_, output);
             }
             if (const auto* receiver = dyn_cast<CXXThisExpr>(statement);
                 receiver && !type_.isNull() && receiver->getType().getCanonicalType() == type_.getCanonicalType()) {
@@ -191,12 +201,13 @@ std::string AbstractFunctionReferenceLowering::build_invoke_method(
             return false;
         }
     private:
+        ASTContext& context_;
         QualType type_;
         std::string receiver_;
         const llvm::DenseMap<const ValueDecl*, std::string>& mapping_;
         PrintingPolicy policy_;
     };
-    BoundValues bound_values(receiver_type, receiver_field, variables_mapping, policy);
+    BoundValues bound_values(context, receiver_type, receiver_field, variables_mapping, policy);
     stream << " ";
     invoke->getBody()->printPretty(stream, &bound_values, policy);
     return method;

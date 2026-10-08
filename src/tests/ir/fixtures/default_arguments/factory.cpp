@@ -10,9 +10,9 @@ std::shared_ptr<Continuation<void*>> pending_frame;
  return intrinsics::get_COROUTINE_SUSPENDED();
 }
 namespace defaults {
-int calls=0; int make(){++calls;return 41;}
+int calls=0; int make(){++calls;return 41;} int identity(int value){return value;}
 [[clang::annotate("suspend"), clang::annotate("kxs_implicit_continuation")]]
-__attribute__((error("implicit_value requires suspend lowering"))) void* implicit_value(int value = [] { const int local=41; return make()+local-41; }());
+__attribute__((error("implicit_value requires suspend lowering"))) void* implicit_value(int value = [] { const int local=41; const int made=make(); return identity(made)+local-41; }());
 void* implicit_value(int value, std::shared_ptr<Continuation<void*>> completion) {
  static int retained_value;
  retained_value=value; pending_value=&retained_value;

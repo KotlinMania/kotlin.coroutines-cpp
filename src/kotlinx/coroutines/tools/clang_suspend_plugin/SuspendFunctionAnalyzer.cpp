@@ -146,54 +146,65 @@ public:
     bool handledStmt(Stmt* statement, llvm::raw_ostream& output) override {
         const auto* reference = dyn_cast<DeclRefExpr>(statement);
         if (!reference) return false;
-        const auto* declaration = reference->getDecl();
-        if (const auto* variable = dyn_cast<VarDecl>(declaration); variable && variable->isLocalVarDeclOrParm()) return false;
-        if (isa<NonTypeTemplateParmDecl>(declaration)) return false;
-        const auto* parent = declaration->getDeclContext();
-        if (const auto* record = dyn_cast<CXXRecordDecl>(parent)) {
-            for (const auto* owner = record->getDeclContext(); !owner->isTranslationUnit(); owner = owner->getParent())
-                if (owner->isFunctionOrMethod()) return false;
-            auto type = TypeName::getFullyQualifiedName(context_.getCanonicalTypeDeclType(record), context_, policy_);
-            if (!type.starts_with("::")) output << "::";
-            output << type << "::";
-        } else {
-            std::vector<const NamedDecl*> scopes;
-            std::string prefix = "::";
-            for (; !parent->isTranslationUnit(); parent = parent->getParent()) {
-                if (const auto* scope = dyn_cast<NamespaceDecl>(parent)) {
-                    if (!scope->isAnonymousNamespace()) scopes.push_back(scope);
-                } else if (const auto* scope = dyn_cast<EnumDecl>(parent)) {
-                    if (scope->getIdentifier()) scopes.push_back(scope);
-                } else if (const auto* scope = dyn_cast<CXXRecordDecl>(parent)) {
-                    for (const auto* owner = scope->getDeclContext(); !owner->isTranslationUnit(); owner = owner->getParent())
-                        if (owner->isFunctionOrMethod()) return false;
-                    prefix = TypeName::getFullyQualifiedName(context_.getCanonicalTypeDeclType(scope), context_, policy_);
-                    if (!prefix.starts_with("::")) prefix = "::" + prefix;
-                    prefix += "::";
-                    break;
-                } else return false;
-            }
-            output << prefix;
-            for (auto scope = scopes.rbegin(); scope != scopes.rend(); ++scope)
-                output << (*scope)->getNameAsString() << "::";
-        }
-        output << declaration->getNameAsString();
-        if (reference->hasExplicitTemplateArgs()) {
-            output << "<";
-            bool preceding = false;
-            for (const auto& argument : reference->template_arguments()) {
-                if (preceding) output << ", ";
-                argument.getArgument().print(policy_, output, true);
-                preceding = true;
-            }
-            output << ">";
-        }
-        return true;
+        return SuspendFunctionAnalyzer::print_declaration_reference(reference, context_, policy_, output);
     }
 private:
     ASTContext& context_;
     const PrintingPolicy& policy_;
 };
+}
+
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-108
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/AbstractFunctionReferenceLowering.kt:261-288
+// NOTE(port): Preserve resolved non-local Clang declaration identity when a
+// default expression or callable body moves into another lexical context.
+// Kotlin IR retains these symbols while remapping locals and declaration parents.
+bool SuspendFunctionAnalyzer::print_declaration_reference(
+    const DeclRefExpr* reference, ASTContext& context, const PrintingPolicy& policy,
+    llvm::raw_ostream& output) {
+    const auto* declaration = reference->getDecl();
+    if (const auto* variable = dyn_cast<VarDecl>(declaration); variable && variable->isLocalVarDeclOrParm()) return false;
+    if (isa<NonTypeTemplateParmDecl>(declaration)) return false;
+    const auto* parent = declaration->getDeclContext();
+    if (const auto* record = dyn_cast<CXXRecordDecl>(parent)) {
+        for (const auto* owner = record->getDeclContext(); !owner->isTranslationUnit(); owner = owner->getParent())
+            if (owner->isFunctionOrMethod()) return false;
+        auto type = TypeName::getFullyQualifiedName(context.getCanonicalTypeDeclType(record), context, policy);
+        if (!type.starts_with("::")) output << "::";
+        output << type << "::";
+    } else {
+        std::vector<const NamedDecl*> scopes;
+        std::string prefix = "::";
+        for (; !parent->isTranslationUnit(); parent = parent->getParent()) {
+            if (const auto* scope = dyn_cast<NamespaceDecl>(parent)) {
+                if (!scope->isAnonymousNamespace()) scopes.push_back(scope);
+            } else if (const auto* scope = dyn_cast<EnumDecl>(parent)) {
+                if (scope->getIdentifier()) scopes.push_back(scope);
+            } else if (const auto* scope = dyn_cast<CXXRecordDecl>(parent)) {
+                for (const auto* owner = scope->getDeclContext(); !owner->isTranslationUnit(); owner = owner->getParent())
+                    if (owner->isFunctionOrMethod()) return false;
+                prefix = TypeName::getFullyQualifiedName(context.getCanonicalTypeDeclType(scope), context, policy);
+                if (!prefix.starts_with("::")) prefix = "::" + prefix;
+                prefix += "::";
+                break;
+            } else return false;
+        }
+        output << prefix;
+        for (auto scope = scopes.rbegin(); scope != scopes.rend(); ++scope)
+            output << (*scope)->getNameAsString() << "::";
+    }
+    output << declaration->getNameAsString();
+    if (reference->hasExplicitTemplateArgs()) {
+        output << "<";
+        bool preceding = false;
+        for (const auto& argument : reference->template_arguments()) {
+            if (preceding) output << ", ";
+            argument.getArgument().print(policy, output, true);
+            preceding = true;
+        }
+        output << ">";
+    }
+    return true;
 }
 
 // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-130

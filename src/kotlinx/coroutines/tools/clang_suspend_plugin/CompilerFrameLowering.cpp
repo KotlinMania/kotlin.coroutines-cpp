@@ -2,6 +2,7 @@
 // This file is C++ compiler infrastructure, not a Kotlin function transliteration.
 #include "CompilerFrameLowering.hpp"
 #include "NativeSuspendLowering.hpp"
+#include "SuspendFunctionAnalyzer.hpp"
 #include "clang/AST/ASTImporter.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/SourceManager.h"
@@ -99,6 +100,14 @@ public:
     // Default member initializers and implicit constructor calls are real
     // dependencies of the retained frame even without spelled source tokens.
     bool shouldVisitImplicitCode() const { return true; }
+    // NOTE(port): Type queries need resolved declarations, not executable
+    // definitions. Instantiating their callees would evaluate dependencies such
+    // as std::declval that are valid only in unevaluated operands.
+    bool TraverseStmt(clang::Stmt* statement) {
+        if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return true;
+        return RecursiveASTVisitor<ReferencedFunctions>::TraverseStmt(statement);
+    }
+    bool TraverseDecltypeTypeLoc(clang::DecltypeTypeLoc, bool = true) { return true; }
     bool VisitCXXConstructExpr(clang::CXXConstructExpr* construction) {
         functions.insert(construction->getConstructor()->getCanonicalDecl());
         if (auto* record = construction->getType()->getAsCXXRecordDecl())

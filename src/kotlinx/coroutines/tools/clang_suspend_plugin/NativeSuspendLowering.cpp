@@ -367,9 +367,28 @@ private:
 
     void collect_references(const Stmt* statement, std::vector<Replacement>& replacements, bool type_only = false) const {
         if (!statement) return;
+        // NOTE(port): noexcept is already resolved by the owning Clang AST.
+        // Preserve that result rather than querying imported frame getters or
+        // helper declarations whose exception specification can differ.
+        if (const auto* query = dyn_cast<CXXNoexceptExpr>(statement); query && !query->isValueDependent()) {
+            replacements.push_back({offset(query->getBeginLoc()), end_offset(query->getEndLoc()),
+                                    query->getValue() ? "true" : "false"});
+            return;
+        }
         // NOTE(port): Query the original operand category. A frame getter can
         // have a different exception specification from a source variable.
         if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) type_only = true;
+        // NOTE(port): Assertion operands are held by Clang declarations, not
+        // DeclStmt children. Remap their original bindings without reading a
+        // retained frame slot; noexcept must query the source operand category.
+        if (const auto* declarations = dyn_cast<DeclStmt>(statement)) {
+            for (const auto* declaration : declarations->decls()) {
+                if (const auto* assertion = dyn_cast<StaticAssertDecl>(declaration)) {
+                    collect_references(assertion->getAssertExpr(), replacements, true);
+                    collect_references(assertion->getMessage(), replacements, true);
+                }
+            }
+        }
         // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesVarSpillingLowering.kt:49-105
         // NOTE(port): An aggregate's reference-member temporary belongs to the
         // source variable. Construct it at this operand, rather than creating a

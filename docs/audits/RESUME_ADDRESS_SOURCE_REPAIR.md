@@ -1,5 +1,75 @@
 # Compiler resume-address source repair — 2026-10-08
 
+## Resolved callable references and unevaluated queries — 2026-10-08
+
+Continuation from `9c28cca4` closes the moved default-expression callable's lost
+namespace binding. Compared against AbstractFunctionReferenceLowering.kt:261-288
+and DefaultArgumentStubGenerator.kt:91-108, Kotlin retains non-local declaration
+symbols while moving bodies and remapping locals. The Clang printing adapter now
+shares SuspendFunctionAnalyzer.cpp:162's actual resolved declaration-reference
+printer with AbstractFunctionReferenceLowering.cpp:130. Capture mappings take
+precedence; local variables, parameters and non-type template parameters keep
+their original binding. Non-local namespace/class/enum references retain their
+qualification and explicit template arguments. Declaration initializer detection
+also recognizes these references, because Clang's declaration printer otherwise
+bypasses expression helpers. No source classifier, replacement IR object or
+alternate coroutine frame was introduced.
+
+The factory regression keeps unqualified source calls in their original namespace
+and exercises both a local initializer and a return expression after relocation.
+Its existing assertions verify one factory evaluation, the retained current frame
+and the resumed result 42. Factory, owned and borrowed default cases now execute
+under ASan/UBSan. The driver initially reached a missing Symbol constructor at
+link time; compiling the actual internal/Symbol.cpp strictly and adding its object
+to the bounded actual-source dependency archive resolved that dependency. It does
+not establish a fresh full-core build. The previously documented eight dependency
+warnings remain unsuppressed; no strict full-dependency build is claimed.
+
+The next source defect was StaticAssertDecl's operands: Clang does not expose them
+as DeclStmt children. NativeSuspendLowering.cpp:386 now visits those declaration
+operands with the original type-query binding rules. That revealed two further
+integration mismatches. CompilerFrameLowering.cpp:106 now excludes unevaluated
+query/decltype callees from executable dependency expansion; querying std::declval
+must not instantiate its intentionally invalid executable definition. Finally,
+NativeSuspendLowering.cpp:373 preserves the owning AST's resolved nondependent
+noexcept value rather than recomputing it against imported helper declarations.
+This is explicit C++ adaptation for source type/ownership preservation, not a
+claim that Kotlin has StaticAssertDecl or std::declval nodes.
+
+The unchanged qualified_locals.cpp fixture now passes -Wall/-Wextra/-Wpedantic/
+-Werror compilation with the Clang frontend and mandatory LLVM module pass, then
+ASan/UBSan execution. All six qualified-local outcome cases and forty conditional
+expression cases run. They assert retained object/resource identity, repeated
+suspension, resumed failure/cancellation, immediate and partial-construction
+failure, static identity, structured-binding behavior and ordered cleanup. This
+supersedes the previous receipt's unexecuted qualified-local checks. The full
+Native shared-frame and real MLX GPU acceptance paths remain unproved.
+
+The final authoring driver passes its warning/rejection controls, direct-entry
+extraction and in-process checks, all35 default-callable outcomes, the Unit-tail
+fixture, factory/owned/borrowed defaults, expression slicing, and all46 qualified
+local/conditional outcomes. It then stops at restricted_receiver.cpp link time:
+actual JobImpl::create is absent from the bounded dependency archive. No later
+restricted-receiver runtime or CMake lambda/retained-local gates are claimed.
+Continue by reading the actual JobImpl/JobSupport source and matching upstream
+Kotlin, then resolve the current production dependency build. Do not link a stale
+core archive with the earlier continuation namespace, substitute a job/runtime,
+or weaken the receiver fixture. The qualified-local executable links only libc++,
+libSystem and Clang's ASan runtime; this is bounded standalone evidence, not the
+complete ordinary C++/MLX GPU path.
+
+All three required deep scans completed, with library/frontend scans refreshed
+after the final source changes. Compiler reference:286/7163 bodies,132/1617 types,
+0.28 similarity,10 scoring failures. Coroutine root:663/2918 bodies,178/560 types,
+0.24 similarity,12 failures. Clang frontend:14/7163 bodies,6/1617 types,0.04
+similarity,zero scoring failures. These counts remain substantially incomplete.
+The sparse Kotlin compiler checkout, source-emission/receiver-helper matching
+limitations and existing scoring failures remain unresolved; Clang integration
+has no literal Kotlin file twin, so successful concrete fixes cannot be counted
+as completion of the actual full Kotlin IR emitter or source-class dependencies.
+The complete translation goal remains active.
+
+
 ## Callable declaration ownership and invoke identity — 2026-10-08
 
 Continuation from `827b1c9c` repairs the production Clang integration of
