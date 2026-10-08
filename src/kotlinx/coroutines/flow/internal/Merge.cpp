@@ -7,39 +7,6 @@
 
 namespace kotlinx::coroutines::flow::internal {
 namespace {
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
-class TransformLatestEmitContinuation final : public ContinuationImpl {
-public:
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
-    TransformLatestEmitContinuation(std::shared_ptr<Job> previous_flow,
-        std::function<void()> launch_next, std::shared_ptr<Continuation<void*>> completion)
-        : ContinuationImpl(std::move(completion)), previous_flow_(std::move(previous_flow)),
-          launch_next_(std::move(launch_next)) {}
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
-    void* invoke_suspend(Result<void*> result) override {
-        coroutine_begin(this)
-        if (previous_flow_) {
-            previous_flow_->cancel(std::make_exception_ptr(ChildCancelledException()));
-            coroutine_yield(this, previous_flow_->join(this));
-        }
-        launch_next_();
-        coroutine_end(this)
-    }
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
-    // NOTE(port): Release terminated source captures, even if a caller retains the frame.
-    void release_intercepted() override {
-        previous_flow_.reset();
-        launch_next_ = {};
-        ContinuationImpl::release_intercepted();
-    }
-private:
-    void* _label = nullptr;
-    std::shared_ptr<Job> previous_flow_;
-    std::function<void()> launch_next_;
-};
-
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:55-70
 class MergeEmitContinuation final : public ContinuationImpl {
 public:
@@ -120,11 +87,15 @@ private:
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:23-33
+[[clang::annotate("suspend")]]
 void* transform_latest_emit(std::shared_ptr<Job> previous_flow,
     std::function<void()> launch_next, std::shared_ptr<Continuation<void*>> completion) {
-    auto frame = std::make_shared<TransformLatestEmitContinuation>(
-        std::move(previous_flow), std::move(launch_next), std::move(completion));
-    return frame->start(Result<void*>::success(nullptr));
+    if (previous_flow) {
+        previous_flow->cancel(std::make_exception_ptr(ChildCancelledException()));
+        previous_flow->join();
+    }
+    launch_next();
+    return nullptr;
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:55-70

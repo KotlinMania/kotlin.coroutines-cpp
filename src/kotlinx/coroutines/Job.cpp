@@ -17,6 +17,11 @@
 
 namespace kotlinx {
     namespace coroutines {
+        // Transliterated from: kotlinx-coroutines-core/common/src/Job.kt:299
+        // NOTE(port): The generated frame owns this continuation during the virtual call.
+        void* Job::join(std::shared_ptr<Continuation<void*>> continuation) {
+            return join(continuation.get());
+        }
         // -------------------- Factory function implementation --------------------
 
         /**
