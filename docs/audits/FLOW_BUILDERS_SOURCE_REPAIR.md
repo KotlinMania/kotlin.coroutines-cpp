@@ -49,10 +49,14 @@ Fresh verification:
 - Final actual channel-flow consumer compilation also exits 1. Receipt:
   build/ir-recovery/flow-builders-final-channel-fixture.log. No successful fresh
   executable, callback suspension or ownership cleanup result is claimed.
-- Both full-root deep inventories are regenerated after source edits. The flow
-  builder pair remains 11/23 functions and 4/4 types, body similarity 0.04
-  (previously 0.05). The decrease is retained; symbol presence does not establish
-  body translation, and source corrections are not altered to raise a score.
+- Both full-root deep inventories are regenerated after source edits. Restoring
+  declaration namespaces changes the flow builder pair from 11/23 to 15/23
+  functions, with 4/4 types and body similarity 0.12. The intermediate selection
+  repair measured 0.04 (previously 0.05); both measurements are retained in Git.
+  Source corrections are not altered to raise a score. The final library measures
+  831/2918 functions, 359/560 types, average body similarity 0.26 and documentation
+  similarity 0.38, with 123 scoring failures. Symbol presence does not establish
+  complete body translation or execution.
 
 Remaining actual gaps include sequence surface, source range/array type mappings,
 vector capture/identity correspondence, manual frames in other as_flow overloads,
