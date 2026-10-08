@@ -1987,17 +1987,20 @@ private:
     // Lines 131-139: private suspend fun onClosedSend(element: E): Unit
     // NB: return type could've been Nothing, but it breaks TCO
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:131-139
     void* on_closed_send(E element, std::shared_ptr<Continuation<void*>> completion) {
-        std::exception_ptr ex = call_undelivered_element_catching_exception(element);
-        if (ex) {
-            // Upstream: cause?.addSuppressed(this)
-            // C++ has no Throwable.addSuppressed analogue, so the original exception is
-            // rethrown as-is — the C++ caller still observes a single exception value.
-            completion->resume_with(Result<void*>::failure(ex));
-            return COROUTINE_SUSPENDED;
-        }
-        completion->resume_with(Result<void*>::failure(send_exception()));
-        return COROUTINE_SUSPENDED;
+        return suspend_cancellable_coroutine<void>([this, element](CancellableContinuation<void>& continuation) {
+            if (on_undelivered_element_) {
+                std::unique_ptr<internal::UndeliveredElementException> exception(
+                    internal::call_undelivered_element_catching_exception(on_undelivered_element_, element));
+                if (exception) {
+                    exception->add_suppressed(send_exception());
+                    continuation.resume_with_exception(std::make_exception_ptr(*exception));
+                    return;
+                }
+            }
+            continuation.resume_with_exception(send_exception());
+        }, completion.get());
     }
 
     // -------------------------------------------------------------------------
@@ -2039,10 +2042,10 @@ private:
     // -------------------------------------------------------------------------
     // Lines 178-181: private fun onClosedSendOnNoWaiterSuspend(...)
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:178-181
     void on_closed_send_on_no_waiter_suspend(E element, CancellableContinuation<void>* cont) {
-        // Note: C++ OnUndeliveredElement takes only the element, context is implicit
         if (on_undelivered_element_) {
-            on_undelivered_element_(element);
+            internal::call_undelivered_element(on_undelivered_element_, element, *cont->get_context());
         }
         cont->resume_with(Result<void>::failure(send_exception()));
     }
@@ -2156,9 +2159,10 @@ private:
     // -------------------------------------------------------------------------
     // Lines 1493-1496: private fun onClosedSelectOnSend(element: E, select: SelectInstance<*>)
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1493-1496
     void on_closed_select_on_send(E element, selects::SelectInstance<void*>* select) {
         if (on_undelivered_element_) {
-            on_undelivered_element_(element);
+            internal::call_undelivered_element(on_undelivered_element_, element, *select->get_context());
         }
         select->select_in_registration_phase(static_cast<void*>(&CHANNEL_CLOSED()));
     }
