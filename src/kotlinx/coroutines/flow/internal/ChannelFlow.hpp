@@ -484,8 +484,10 @@ inline void* ChannelFlowOperator<S, T>::collect(FlowCollector<T>* collector, Con
         // If the resulting context happens to be the same as it was, collect directly.
         if (new_context->equals(collect_context.get())) return flow_collect(collector, completion);
         // If we don't need to change the dispatcher we can go without channels.
-        if (new_context->get(ContinuationInterceptor::type_key) ==
-            collect_context->get(ContinuationInterceptor::type_key)) {
+        auto new_interceptor = new_context->get(ContinuationInterceptor::type_key);
+        auto collect_interceptor = collect_context->get(ContinuationInterceptor::type_key);
+        if (new_interceptor ? new_interceptor->equals(collect_interceptor.get()) :
+                              collect_interceptor == nullptr) {
             return collect_with_context_undispatched(collector, std::move(new_context), completion);
         }
     }
