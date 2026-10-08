@@ -29,7 +29,6 @@
 #include <functional>
 #include <array>
 #include <iterator>
-#include <optional>
 #include <memory>
 #include <vector>
 
@@ -131,153 +130,94 @@ std::shared_ptr<Flow<T>> as_flow(std::function<T()> func) {
  * auto remote_call_flow() { return as_flow<R>(remote_call); }
  * ```
  */
+namespace detail {
+
+// NOTE(port): These generic collection bodies must remain in the header for
+// arbitrary public element/iterator types. Captured values are actual owned
+// arguments; collectors and array/storage references remain borrowed.
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:78-80
 template <typename T>
-std::shared_ptr<Flow<T>> as_flow(std::function<void*(Continuation<void*>*)> function) {
-    return internal::unsafe_flow<T>([function = std::move(function)](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:78-80
-        class Frame final : public ContinuationImpl {
-        public:
-            Frame(std::function<void*(Continuation<void*>*)> function, FlowCollector<T>* collector,
-                  Continuation<void*>* completion)
-                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                  function_(std::move(function)), collector_(collector) {}
-
-            void retain() { self_ref_ = shared_from_this(); }
-
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:79-79
-            void* invoke_suspend(Result<void*> result) override {
-                try {
-                    coroutine_begin(this)
-                    coroutine_yield_value(this, result, function_(this), result_box_);
-                    // NOTE(port): The function returns an owning T box through the Continuation ABI.
-                    value_.reset(static_cast<T*>(result_box_));
-                    coroutine_yield(this, collector_->emit(std::move(*value_), this));
-                    value_.reset();
-                    self_ref_.reset();
-                    coroutine_end(this)
-                } catch (...) {
-                    value_.reset();
-                    self_ref_.reset();
-                    throw;
-                }
-            }
-
-        private:
-            void* _label = nullptr;
-            std::function<void*(Continuation<void*>*)> function_;
-            FlowCollector<T>* collector_;
-            void* result_box_ = nullptr;
-            std::unique_ptr<T> value_;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
-        };
-        auto frame = std::make_shared<Frame>(function, collector, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
-    });
+[[clang::annotate("suspend")]]
+void* collect_function(std::function<void*(Continuation<void*>*)> function,
+                       FlowCollector<T>* collector, std::shared_ptr<Continuation<void*>> completion) {
+    void* result = dsl::suspend(function(completion.get()));
+    // NOTE(port): The ABI returns an owning T box. Transfer its value and free
+    // the box before the next suspension; the compiler retains the actual value.
+    std::unique_ptr<T> box(static_cast<T*>(result));
+    T value = std::move(*box);
+    box.reset();
+    dsl::suspend(collector->emit(std::move(value), completion.get()));
+    return nullptr;
 }
-
-/**
- * Creates a _cold_ flow that produces values from the given iterable (vector).
- *
- * The vector elements are emitted in order each time the flow is collected.
- * Each collection starts from the beginning of the vector.
- *
- * Transliterated from:
- * public fun <T> Iterable<T>.asFlow(): Flow<T>
- */
-namespace detail {
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:85-90
 template <typename T>
-class AsFlowContinuation final : public ContinuationImpl {
-public:
-    AsFlowContinuation(std::vector<T> iterable, FlowCollector<T>* collector, Continuation<void*>* completion)
-        : ContinuationImpl(std::shared_ptr<Continuation<void*>>(completion, [](Continuation<void*>*) {})),
-          iterable_(std::move(iterable)), collector_(collector) {}
-
-    void retain() { self_ref_ = shared_from_this(); }
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:85-90
-    void* invoke_suspend(Result<void*> result) override {
-        try {
-            coroutine_begin(this)
-            while (index_ < iterable_.size()) {
-                coroutine_yield(this, collector_->emit(iterable_[index_], this));
-                ++index_;
-            }
-            self_ref_.reset();
-            coroutine_end(this)
-        } catch (...) {
-            self_ref_.reset();
-            throw;
-        }
+[[clang::annotate("suspend")]]
+void* collect_iterable(std::vector<T> iterable, FlowCollector<T>* collector,
+                       std::shared_ptr<Continuation<void*>> completion) {
+    for (const auto& value : iterable) {
+        dsl::suspend(collector->emit(value, completion.get()));
     }
+    return nullptr;
+}
 
-private:
-    void* _label = nullptr;
-    std::vector<T> iterable_;
-    FlowCollector<T>* collector_;
-    size_t index_ = 0;
-    std::shared_ptr<BaseContinuationImpl> self_ref_;
-};
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:149-153,160-164,171-175
+template <typename T, std::size_t N>
+[[clang::annotate("suspend")]]
+void* collect_array(const std::array<T, N>& array, FlowCollector<T>* collector,
+                    std::shared_ptr<Continuation<void*>> completion) {
+    for (const auto& value : array) {
+        dsl::suspend(collector->emit(value, completion.get()));
+    }
+    return nullptr;
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:94-98
+template <typename Iterator>
+[[clang::annotate("suspend")]]
+void* collect_iterator(std::shared_ptr<Iterator> cursor, Iterator last,
+                       FlowCollector<typename std::iterator_traits<Iterator>::value_type>* collector,
+                       std::shared_ptr<Continuation<void*>> completion) {
+    while (*cursor != last) {
+        typename std::iterator_traits<Iterator>::value_type value = **cursor;
+        // NOTE(port): Kotlin next() consumes the element before invoking emit.
+        ++*cursor;
+        dsl::suspend(collector->emit(std::move(value), completion.get()));
+    }
+    return nullptr;
+}
 
 } // namespace detail
 
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:78-80
 template <typename T>
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:85-89
-std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
-    // Upstream:
-    //   public fun <T> Iterable<T>.asFlow(): Flow<T> = flow { forEach { value -> emit(value) } }
-    return internal::unsafe_flow<T>([iterable](FlowCollector<T>* collector, Continuation<void*>* cont) -> void* {
-        auto sm = std::make_shared<detail::AsFlowContinuation<T>>(iterable, collector, cont);
-        sm->retain();
-        return sm->start(Result<void*>::success(nullptr));
+std::shared_ptr<Flow<T>> as_flow(std::function<void*(Continuation<void*>*)> function) {
+    return internal::unsafe_flow<T>([function = std::move(function)](FlowCollector<T>* collector,
+                                                                   Continuation<void*>* completion) -> void* {
+        return detail::collect_function<T>(function, collector,
+            kotlinx::coroutines::internal::retain_continuation(completion));
     });
 }
 
+/** Creates a cold flow from an iterable; each collection starts at its beginning. */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:85-90
+template <typename T>
+std::shared_ptr<Flow<T>> as_flow(const std::vector<T>& iterable) {
+    // NOTE(port): Preserve the existing C++ vector snapshot per collection.
+    return internal::unsafe_flow<T>([iterable](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
+        return detail::collect_iterable<T>(iterable, collector,
+            kotlinx::coroutines::internal::retain_continuation(completion));
+    });
+}
 
 /** Creates a cold flow from the given array; reads its elements for each collection. */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:149-153,160-164,171-175
 template <typename T, std::size_t N>
 std::shared_ptr<Flow<T>> as_flow(const std::array<T, N>& array) {
-    // NOTE(port): This C++ reference borrows the array; the caller keeps it alive during collection.
+    // NOTE(port): This reference borrows the array; the caller keeps it alive during collection.
     return internal::unsafe_flow<T>([&array](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:150-152,161-163,172-174
-        class Frame final : public ContinuationImpl {
-        public:
-            Frame(const std::array<T, N>& array, FlowCollector<T>* collector, Continuation<void*>* completion)
-                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                  array_(array), collector_(collector) {}
-
-            void retain() { self_ref_ = shared_from_this(); }
-
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:150-152,161-163,172-174
-            void* invoke_suspend(Result<void*> result) override {
-                try {
-                    coroutine_begin(this)
-                    while (index_ < N) {
-                        coroutine_yield(this, collector_->emit(array_[index_], this));
-                        ++index_;
-                    }
-                    self_ref_.reset();
-                    coroutine_end(this)
-                } catch (...) {
-                    self_ref_.reset();
-                    throw;
-                }
-            }
-
-        private:
-            void* _label = nullptr;
-            const std::array<T, N>& array_;
-            FlowCollector<T>* collector_;
-            std::size_t index_ = 0;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
-        };
-        auto frame = std::make_shared<Frame>(array, collector, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+        return detail::collect_array<T, N>(array, collector,
+            kotlinx::coroutines::internal::retain_continuation(completion));
     });
 }
 
@@ -287,50 +227,12 @@ template <typename Iterator>
 auto as_flow(Iterator first, Iterator last)
     -> std::shared_ptr<Flow<typename std::iterator_traits<Iterator>::value_type>> {
     using T = typename std::iterator_traits<Iterator>::value_type;
-    // NOTE(port): C++ uses an iterator/sentinel pair; the pair retains its cursor across collections.
-    // The caller owns the iterated storage and must retain it during collection.
+    // NOTE(port): C++ uses an iterator/sentinel pair, retaining the consumed
+    // cursor across collections. The caller owns the iterated storage.
     auto cursor = std::make_shared<Iterator>(std::move(first));
     return internal::unsafe_flow<T>([cursor, last](FlowCollector<T>* collector, Continuation<void*>* completion) -> void* {
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:94-98
-        class Frame final : public ContinuationImpl {
-        public:
-            Frame(std::shared_ptr<Iterator> cursor, Iterator last, FlowCollector<T>* collector,
-                  Continuation<void*>* completion)
-                : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-                  cursor_(std::move(cursor)), last_(std::move(last)), collector_(collector) {}
-
-            void retain() { self_ref_ = shared_from_this(); }
-
-            // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:95-97
-            void* invoke_suspend(Result<void*> result) override {
-                try {
-                    coroutine_begin(this)
-                    while (*cursor_ != last_) {
-                        value_.emplace(**cursor_);
-                        ++*cursor_;
-                        coroutine_yield(this, collector_->emit(std::move(*value_), this));
-                        value_.reset();
-                    }
-                    self_ref_.reset();
-                    coroutine_end(this)
-                } catch (...) {
-                    value_.reset();
-                    self_ref_.reset();
-                    throw;
-                }
-            }
-
-        private:
-            void* _label = nullptr;
-            std::shared_ptr<Iterator> cursor_;
-            Iterator last_;
-            FlowCollector<T>* collector_;
-            std::optional<T> value_;
-            std::shared_ptr<BaseContinuationImpl> self_ref_;
-        };
-        auto frame = std::make_shared<Frame>(cursor, last, collector, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
+        return detail::collect_iterator<Iterator>(cursor, last, collector,
+            kotlinx::coroutines::internal::retain_continuation(completion));
     });
 }
 
@@ -388,67 +290,13 @@ std::shared_ptr<Flow<T>> empty_flow() {
     return instance;
 }
 
-namespace detail {
-
-// Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:180-184,189-193
-template <typename T>
-class RangeFlowContinuation final : public ContinuationImpl {
-public:
-    RangeFlowContinuation(T first, T last, FlowCollector<T>* collector, Continuation<void*>* completion)
-        : ContinuationImpl(kotlinx::coroutines::internal::retain_continuation(completion)),
-          current_(first), last_(last), collector_(collector) {}
-
-    void retain() { self_ref_ = shared_from_this(); }
-
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:181-183,190-192
-    void* invoke_suspend(Result<void*> result) override {
-        try {
-            coroutine_begin(this)
-            if (current_ <= last_) {
-                while (true) {
-                    coroutine_yield(this, collector_->emit(current_, this));
-                    // Kotlin's range iterator stops at its last element before incrementing.
-                    if (current_ == last_) break;
-                    ++current_;
-                }
-            }
-            self_ref_.reset();
-            coroutine_end(this)
-        } catch (...) {
-            self_ref_.reset();
-            throw;
-        }
-    }
-
-private:
-    void* _label = nullptr;
-    T current_;
-    T last_;
-    FlowCollector<T>* collector_;
-    std::shared_ptr<BaseContinuationImpl> self_ref_;
-};
-
-} // namespace detail
-
 /** Creates a cold flow from an inclusive Int range. */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:180-184
-inline std::shared_ptr<Flow<int>> as_flow_range(int first, int last) {
-    return internal::unsafe_flow<int>([first, last](FlowCollector<int>* collector, Continuation<void*>* completion) -> void* {
-        auto frame = std::make_shared<detail::RangeFlowContinuation<int>>(first, last, collector, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
-    });
-}
+std::shared_ptr<Flow<int>> as_flow_range(int first, int last);
 
 /** Creates a cold flow from an inclusive Long range. */
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Builders.kt:189-193
-inline std::shared_ptr<Flow<long>> as_flow_range(long first, long last) {
-    return internal::unsafe_flow<long>([first, last](FlowCollector<long>* collector, Continuation<void*>* completion) -> void* {
-        auto frame = std::make_shared<detail::RangeFlowContinuation<long>>(first, last, collector, completion);
-        frame->retain();
-        return frame->start(Result<void*>::success(nullptr));
-    });
-}
+std::shared_ptr<Flow<long>> as_flow_range(long first, long last);
 
 // NOTE(port): Ordinary synchronous C++ block adapter; the actual flow scope
 // supplies cancellation and waits for every child before collection completes.
