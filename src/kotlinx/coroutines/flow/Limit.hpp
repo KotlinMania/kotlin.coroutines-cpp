@@ -33,7 +33,10 @@ void* invoke_limit_predicate(Predicate& predicate, Continuation<void*>* continua
         return new bool(predicate(std::forward<Args>(args)...));
     }
 }
+} // namespace detail
 
+// NOTE(port): The source-private generic extension needs a header definition
+// for arbitrary public element types, in the source flow namespace.
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/operators/Limit.kt:70-73
 template<typename T>
 [[clang::annotate("suspend")]]
@@ -49,7 +52,6 @@ void* emit_abort(FlowCollector<T>* collector, T value, void* ownership_marker, C
     return emit_abort(collector, std::move(value), ownership_marker,
         kotlinx::coroutines::internal::retain_continuation(completion));
 }
-} // namespace detail
 
 /**
  * Returns a flow that ignores the first count elements.
@@ -178,7 +180,7 @@ std::shared_ptr<Flow<T>> take(std::shared_ptr<Flow<T>> upstream, int count) {
                 // NOTE(port): Kotlin Int increment wraps; signed C++ overflow is undefined.
                 consumed_ = consumed_ == std::numeric_limits<int>::max() ? std::numeric_limits<int>::min() : consumed_ + 1;
                 if (consumed_ < count_) return collector_->emit(std::move(value), completion);
-                return detail::emit_abort(collector_, std::move(value), &ownership_marker_, completion);
+                return emit_abort(collector_, std::move(value), &ownership_marker_, completion);
             }
         private:
             const std::shared_ptr<Flow<T>> upstream_;
