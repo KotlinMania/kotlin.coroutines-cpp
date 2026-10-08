@@ -283,6 +283,10 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
     source.insert(0, "#include <optional>\n#include <functional>\n");
     if (instantiated) source += "\n" + instantiated_entry;
     auto invocation = std::make_shared<CompilerInvocation>(compiler.getInvocation());
+    // The prefix will be imported immediately. Instantiate its referenced
+    // templates while its parser scope is still live, rather than deferring
+    // them to a future include of this prefix.
+    invocation->getLangOpts().PCHInstantiateTemplates = true;
     auto& frontend = invocation->getFrontendOpts();
     frontend.Plugins.clear();
     frontend.PluginArgs.clear();
@@ -308,11 +312,6 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
     auto owned_unit = ASTUnit::LoadFromCompilerInvocation(invocation, compiler.getPCHContainerOperations(),
         diagnostics, helper_diagnostics, files, false, CaptureDiagsKind::None, 0, TU_Prefix);
     if (!owned_unit || helper_diagnostics->hasErrorOccurred()) return fail("generated frame could not be parsed");
-    // A prefix defers pending template definitions for its eventual owner.
-    // Materialize the frame's referenced definitions before importing them;
-    // this is not the end of the owning translation unit.
-    owned_unit->getSema().PerformPendingInstantiations(/*LocalOnly=*/false, /*AtEndOfTU=*/false);
-    if (helper_diagnostics->hasErrorOccurred()) return fail("generated frame dependencies could not be instantiated");
     auto* unit = owned_unit.release();
     // Imported attributed types can retain attribute storage from the source
     // AST. Keep that AST alive for the complete owning compilation.
