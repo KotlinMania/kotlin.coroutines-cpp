@@ -2050,6 +2050,7 @@ private:
     // -------------------------------------------------------------------------
     // Lines 708-733: private suspend fun receiveOnNoWaiterSuspend(...)
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:708-733
     void* receive_on_no_waiter_suspend(
         ChannelSegment<E>* segment,
         int index,
@@ -2061,13 +2062,7 @@ private:
                 segment, index, r,
                 cont,
                 [this, cont](E element) {
-                    std::function<void(std::exception_ptr)> on_cancellation = nullptr;
-                    if (on_undelivered_element_) {
-                        on_cancellation = [this, element](std::exception_ptr) {
-                            on_undelivered_element_(element);
-                        };
-                    }
-                    cont->resume(std::move(element), on_cancellation);
+                    cont->resume(std::move(element), bind_cancellation_fun());
                 },
                 [this, cont]() { on_closed_receive_on_no_waiter_suspend(cont); }
             );
@@ -2077,6 +2072,7 @@ private:
     // -------------------------------------------------------------------------
     // Lines 762-776: private suspend fun receiveCatchingOnNoWaiterSuspend(...)
     // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:762-776
     void* receive_catching_on_no_waiter_suspend(
         ChannelSegment<E>* segment,
         int index,
@@ -2089,13 +2085,7 @@ private:
                 segment, index, r,
                 waiter.get(),
                 [this, cont](E element) {
-                    std::function<void(std::exception_ptr)> on_cancellation = nullptr;
-                    if (on_undelivered_element_) {
-                        on_cancellation = [this, element](std::exception_ptr) {
-                            on_undelivered_element_(element);
-                        };
-                    }
-                    cont->resume(ChannelResult<E>::success(std::move(element)), on_cancellation);
+                    cont->resume(ChannelResult<E>::success(std::move(element)), bind_cancellation_fun_result());
                 },
                 [this, cont]() { on_closed_receive_catching_on_no_waiter_suspend(cont); }
             );
@@ -2903,49 +2893,46 @@ public:
         return exception ? std::make_exception_ptr(*exception) : nullptr;
     }
 
-    // -------------------------------------------------------------------------
-    // Lines 2780-2782: private fun OnUndeliveredElement<E>.bindCancellationFun(element: E)
-    // Returns a cancellation handler that invokes onUndeliveredElement with the captured element.
-    // -------------------------------------------------------------------------
-    std::function<void(std::exception_ptr, E, std::shared_ptr<CoroutineContext>)>
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2780-2782
+    // NOTE(port): The ignored Any? result is bool at both hasNext call sites.
+    std::function<void(std::exception_ptr, bool, std::shared_ptr<CoroutineContext>)>
     bind_cancellation_fun(E element) {
-        if (!on_undelivered_element_) {
-            return nullptr;
-        }
-        // Note: C++ OnUndeliveredElement only takes element (context implicit)
-        return [this, element](std::exception_ptr, E, std::shared_ptr<CoroutineContext>) {
-            on_undelivered_element_(element);
+        if (!on_undelivered_element_) return nullptr;
+        return [handler = on_undelivered_element_, element = std::move(element)](
+            std::exception_ptr, bool, std::shared_ptr<CoroutineContext> context) {
+            internal::call_undelivered_element(handler, element, *context);
         };
     }
 
-    // -------------------------------------------------------------------------
-    // Lines 2784-2793: private fun OnUndeliveredElement<E>.bindCancellationFun()
-    // Returns a cancellation handler that receives the element as parameter.
-    // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2784-2784
     std::function<void(std::exception_ptr, E, std::shared_ptr<CoroutineContext>)>
     bind_cancellation_fun() {
-        if (!on_undelivered_element_) {
-            return nullptr;
-        }
-        return [this](std::exception_ptr, E element, std::shared_ptr<CoroutineContext>) {
-            on_undelivered_element_(element);
+        if (!on_undelivered_element_) return nullptr;
+        return [this](std::exception_ptr cause, E element, std::shared_ptr<CoroutineContext> context) {
+            on_cancellation_impl_do_not_call(cause, std::move(element), std::move(context));
         };
     }
 
-    // -------------------------------------------------------------------------
-    // Lines 2767-2778: private fun OnUndeliveredElement<E>.bindCancellationFunResult()
-    // For ChannelResult<E> - extracts element and invokes onUndeliveredElement.
-    // -------------------------------------------------------------------------
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2791-2793
+    void on_cancellation_impl_do_not_call(std::exception_ptr, E element,
+                                         std::shared_ptr<CoroutineContext> context) {
+        internal::call_undelivered_element(on_undelivered_element_, std::move(element), *context);
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2767-2767
     std::function<void(std::exception_ptr, ChannelResult<E>, std::shared_ptr<CoroutineContext>)>
     bind_cancellation_fun_result() {
-        if (!on_undelivered_element_) {
-            return nullptr;
-        }
-        return [this](std::exception_ptr, ChannelResult<E> result, std::shared_ptr<CoroutineContext>) {
-            if (result.is_success()) {
-                on_undelivered_element_(result.get_or_throw());
-            }
+        if (!on_undelivered_element_) return nullptr;
+        return [this](std::exception_ptr cause, ChannelResult<E> element,
+                      std::shared_ptr<CoroutineContext> context) {
+            on_cancellation_channel_result_impl_do_not_call(cause, std::move(element), std::move(context));
         };
+    }
+
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2774-2778
+    void on_cancellation_channel_result_impl_do_not_call(std::exception_ptr, ChannelResult<E> element,
+                                                        std::shared_ptr<CoroutineContext> context) {
+        internal::call_undelivered_element(on_undelivered_element_, element.get_or_throw(), *context);
     }
 
     void invoke_close_handler_internal() {
@@ -3443,20 +3430,14 @@ public:
             return elem;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1707-1720
         bool try_resume_has_next(E element) {
             auto cont = std::atomic_load_explicit(&continuation_sp_, std::memory_order_acquire);
             std::atomic_store_explicit(&continuation_sp_, std::shared_ptr<CancellableContinuationImpl<bool>>{},
                                        std::memory_order_release);
             if (!cont) return false;
             receive_result_ = new E(std::move(element));
-            std::function<void(std::exception_ptr, bool, std::shared_ptr<CoroutineContext>)> on_cancellation = nullptr;
-            if (channel_->on_undelivered_element()) {
-                auto elem_copy = *static_cast<E*>(receive_result_);
-                auto channel = channel_;
-                on_cancellation = [channel, elem_copy](std::exception_ptr, bool, std::shared_ptr<CoroutineContext>) {
-                    channel->on_undelivered_element()(elem_copy);
-                };
-            }
+            auto on_cancellation = channel_->bind_cancellation_fun(*static_cast<E*>(receive_result_));
             void* token = cont->try_resume(true, nullptr, on_cancellation);
             if (token != nullptr) {
                 cont->complete_resume(token);
@@ -3496,6 +3477,7 @@ public:
             return false;
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:1649-1674
         void* has_next_on_no_waiter_suspend(
             ChannelSegment<E>* segment,
             int index,
@@ -3511,14 +3493,7 @@ public:
                         receive_result_ = new E(std::move(element));
                         std::atomic_store_explicit(&continuation_sp_, std::shared_ptr<CancellableContinuationImpl<bool>>{},
                                                    std::memory_order_release);
-                        std::function<void(std::exception_ptr)> on_cancellation = nullptr;
-                        if (channel_->on_undelivered_element()) {
-                            auto elem_copy = *static_cast<E*>(receive_result_);
-                            auto channel = channel_;
-                            on_cancellation = [channel, elem_copy](std::exception_ptr) {
-                                channel->on_undelivered_element()(elem_copy);
-                            };
-                        }
+                        auto on_cancellation = channel_->bind_cancellation_fun(*static_cast<E*>(receive_result_));
                         cont->resume(true, on_cancellation);
                     },
                     [this]() { on_closed_has_next_no_waiter_suspend(); }
