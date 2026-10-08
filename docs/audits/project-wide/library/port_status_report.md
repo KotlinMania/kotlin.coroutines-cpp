@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 831/2918 matched (target 3033) | 28.5% |
+| Function parity | 831/2918 matched (target 3035) | 28.5% |
 | Class/type parity | 359/560 matched (target 518) | 64.1% |
-| Combined symbol parity | 1190/3478 matched (target 3551) | 34.2% |
+| Combined symbol parity | 1190/3478 matched (target 3553) | 34.2% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.38 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -231,13 +231,13 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 187 | `native.CoroutineContext` | `coroutines.UndispatchedCoroutine` | 0.21 | 9/10 matched (target 16) | `Continuation<*>::toDebugString` | 2/2 matched (target 3) | _none_ | - | 1 | 6011208.0 |
 | 188 | `selects.Select` | `selects.Select` | 0.21 | 25/30 matched (target 73) | `SelectBuilder::onTimeout`, `SelectImplementation::register`, `SelectImplementation::processResultAndInvokeBlockRecoveringException`, `CancellableContinuation<Unit>::tryResume`, `TrySelectDetailedResult` | 16/16 matched (target 22) | _none_ | - | 5 | 1054607.9 |
 | 189 | `test.CoroutineDispatcherOperatorFunInvokeTest` | `tests.CoroutineDispatcherOperatorFunInvokeTest` | 0.22 | 3/8 matched (target 12) | `CoroutineDispatcherOperatorFunInvokeTest::testThrowException`, `CoroutineDispatcherOperatorFunInvokeTest::testWithContextChildWaitSameContext`, `CoroutineDispatcherOperatorFunInvokeTest::dispatch`, `CoroutineDispatcherOperatorFunInvokeTest::isDispatchNeeded`, `CoroutineDispatcherOperatorFunInvokeTest::dispatchYield` | 2/2 matched (target 3) | _none_ | 0/2 | 5 | 51007.8 |
-| 190 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 19) | _none_ | 1/1 matched | _none_ | - | 0 | 65001308.0 |
+| 190 | `flow.Channels` | `flow.Channels` | 0.22 | 12/12 matched (target 20) | _none_ | 1/1 matched | _none_ | - | 0 | 65001308.0 |
 | 191 | `selects.SelectOld` | `selects.SelectOld` | 0.22 | 8/8 matched (target 10) | _none_ | 2/2 matched | _none_ | - | 0 | 1007.8 |
 | 192 | `sync.Mutex` | `sync.Mutex` | 0.23 | 11/16 matched (target 20) | `Mutex`, `MutexImpl::CancellableContinuationWithOwner::tryResume`, `MutexImpl::CancellableContinuationWithOwner::resume`, `MutexImpl::SelectInstanceWithOwner::trySelect`, `MutexImpl::SelectInstanceWithOwner::selectInRegistrationPhase` | 2/4 matched (target 2) | `CancellableContinuationWithOwner`, `SelectInstanceWithOwner` | - | 7 | 72007.7 |
-| 193 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 18/19 matched (target 38) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | - | 1 | 12507.6 |
-| 194 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | - | 0 | 207.6 |
-| 195 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
-| 196 | `internal.DispatchedTask` | `internal.DispatchedTask` | 0.25 | 10/10 matched (target 15) | _none_ | 2/2 matched (target 4) | _none_ | - | 0 | 1207.5 |
+| 193 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | - | 0 | 207.6 |
+| 194 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
+| 195 | `internal.DispatchedTask` | `internal.DispatchedTask` | 0.25 | 10/10 matched (target 15) | _none_ | 2/2 matched (target 4) | _none_ | - | 0 | 1207.5 |
+| 196 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.25 | 18/19 matched (target 39) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | - | 1 | 12507.5 |
 | 197 | `internal.Merge` | `internal.Merge` | 0.26 | 9/9 matched (target 30) | _none_ | 3/3 matched (target 8) | _none_ | - | 0 | 1001207.4 |
 | 198 | `sync.Semaphore` | `sync.Semaphore` | 0.26 | 18/21 matched (target 45) | `Semaphore`, `SemaphoreAndMutexImpl::acquire`, `SemaphoreAndMutexImpl::acquire` | 4/4 matched (target 9) | _none_ | - | 3 | 32507.4 |
 | 199 | `internal.LimitedDispatcher` | `internal.LimitedDispatcher` | 0.27 | 9/10 matched (target 12) | `CoroutineDispatcher::namedOrThis` | 2/2 matched (target 3) | _none_ | - | 1 | 11207.3 |
@@ -616,10 +616,10 @@ These files need significant work:
 - `flow.Channels` -> `flow.Channels` (0.22, 65 deps)
 - `selects.SelectOld` -> `selects.SelectOld` (0.22)
 - `sync.Mutex` -> `sync.Mutex` (0.23)
-- `internal.ChannelFlow` -> `internal.ChannelFlow` (0.24)
 - `internal.Synchronized.common` -> `internal.SynchronizedObject` (0.24)
 - `common.CancellableContinuationImpl` -> `coroutines.ContinuationState` (0.25)
 - `internal.DispatchedTask` -> `internal.DispatchedTask` (0.25)
+- `internal.ChannelFlow` -> `internal.ChannelFlow` (0.25)
 - `internal.Merge` -> `internal.Merge` (0.26, 1 deps)
 - `sync.Semaphore` -> `sync.Semaphore` (0.26)
 - `internal.LimitedDispatcher` -> `internal.LimitedDispatcher` (0.27)

@@ -4,6 +4,24 @@ This is the current continuation handoff, updated at Sydney's explicit request
 following an interrupted ChannelFlow source-edit turn. Read this document and
 inspect the current worktree before continuing. Older versions remain in Git.
 
+## Continuation update after the handoff
+
+Source commit e8581c99 follows the original handoff checkpoint ca037a93.
+The remaining ChannelFlow header collection adapter call is removed. A raw
+virtual collect entry forwards to an annotated owning overload that retains the
+existing flow owner and suspends scoped collection. Its scope body directly
+calls emit_all with produce_impl's owned channel; the owned emit_all projection
+forwards to the source emit_all_impl consume=true body. Zero adapter calls remain
+in ChannelFlow.hpp; four Merge consumers keep the adapter alive. The original
+handoff sequence below is historical where it mentions that header consumer.
+
+Fresh strict actual consumer and concrete class instantiation both exit 1:
+channel-flow-direct-scoped-consumer.log and channel-flow-direct-instantiation.log.
+No runtime or lifetime success is established. Updated current source audit is
+CHANNEL_FLOW_SCOPE_AND_SPILLS.md. Full-root refresh receipts use the prefix
+channel-flow-direct-final-. Read current reports for their final outcomes rather
+than relying on the earlier counts below.
+
 ## Objective and authority
 
 Workspace: `/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp`.

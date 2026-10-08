@@ -10,7 +10,7 @@ This list is complete and includes function/type detail for every matched file. 
 
 | Rank | Source | Target | Function similarity | Deps | Functions | Missing functions | Types | Missing types | SymDeficit | SrcSymbols | Priority |
 |------|--------|--------|------------|------|-----------|-------------------|-------|---------------|-----------|------------|----------|
-| 1 | `flow.Channels` | `flow.Channels` | 0.22 | 65 | 12/12 matched (target 19) | _none_ | 1/1 matched | _none_ | 0 | 13 | 65001308.0 |
+| 1 | `flow.Channels` | `flow.Channels` | 0.22 | 65 | 12/12 matched (target 20) | _none_ | 1/1 matched | _none_ | 0 | 13 | 65001308.0 |
 | 2 | `flow.Flow` | `flow.Flow` | 0.17 | 28 | 1/1 matched (target 2) | _none_ | 2/2 matched (target 4) | _none_ | 0 | 3 | 28000308.0 |
 | 3 | `internal.Concurrent` | `internal.Concurrent` | 0.32 | 14 | 6/6 matched (target 11) | _none_ | 2/3 matched (target 2) | `BenignDataRace` | 1 | 9 | 14010907.0 |
 | 4 | `native.Exceptions` | `native.Exceptions` | 0.15 | 6 | 3/4 matched (target 10) | `JobCancellationException::toString` | 1/2 matched | `CancellationException` | 2 | 6 | 6020608.5 |
@@ -182,7 +182,7 @@ This list is complete and includes function/type detail for every matched file. 
 | 170 | `flow.CombineStressTest` | `flow.CombineStressTest [STUB]` | 0.00 | 0 | 0/2 matched | `CombineStressTest::testCancellation`, `CombineStressTest::testFailure` | 1/1 matched | _none_ | 2 | 3 | 20310.0 |
 | 171 | `channels.FlowCallbackTest` | `channels.FlowCallbackTest` | 0.38 | 0 | 0/2 matched | `FlowCallbackTest::testClosedPrematurely`, `FlowCallbackTest::testNotClosedPrematurely` | 1/1 matched | _none_ | 2 | 3 | 20306.2 |
 | 172 | `test.CoroutineExceptionHandlerTest` | `tests.CoroutineExceptionHandlerTest` | 0.73 | 0 | 0/2 matched | `CoroutineExceptionHandlerTest::testJob`, `CoroutineExceptionHandlerTest::testCompletableDeferred` | 1/1 matched | _none_ | 2 | 3 | 20302.7 |
-| 173 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 0 | 18/19 matched (target 38) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | 1 | 25 | 12507.6 |
+| 173 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.25 | 0 | 18/19 matched (target 39) | `ChannelFlowOperator::toString` | 6/6 matched | _none_ | 1 | 25 | 12507.5 |
 | 174 | `common.TestCoroutineScheduler` | `tests.TestCoroutineScheduler [STUB]` | 0.00 | 0 | 18/19 matched (target 26) | `TestCoroutineScheduler::read` | 3/3 matched (target 4) | _none_ | 1 | 22 | 12210.0 |
 | 175 | `common.Builders.common` | `coroutines.Builders.common` | 0.19 | 0 | 14/14 matched (target 55) | _none_ | 5/6 matched (target 9) | `UndispatchedCoroutine` | 1 | 20 | 12008.1 |
 | 176 | `channels.BroadcastChannel` | `channels.BroadcastChannel` | 0.15 | 0 | 10/11 matched (target 37) | `BroadcastChannel` | 5/5 matched (target 6) | _none_ | 1 | 16 | 11608.5 |
@@ -395,7 +395,7 @@ These files need immediate attention:
 - **flow.Channels** → `flow.Channels`
   - Function similarity: 0.22
   - Dependencies: 65
-  - Functions: 12/12 matched (target 19)
+  - Functions: 12/12 matched (target 20)
   - Missing functions: _none_
   - Types: 1/1 matched
   - Missing types: _none_

@@ -1,6 +1,63 @@
 # ChannelFlow source scope and private spill repair
 
-## Current source authoring checkpoint — 2026-10-07
+## Direct source calls checkpoint — 2026-10-07
+
+The complete source Channels.kt and ChannelFlow.kt were reread. ca037a93 removes
+three collection-adapter calls: collect_to_fun forwards directly to collect_to;
+ChannelFlowOperator.collect_to directly suspends flow_collect with the source
+SendingCollector; collect_with_context_undispatched directly suspends the source
+context call with original_context_collector. The two member bodies retain an
+existing receiver owner and their local collector through compiler lowering.
+Their owning continuation remains the final parameter. The producer-lambda
+capture chain was inspected through Cancellable.cpp:58 and the actual
+CreatedContinuation/RestrictedCreatedContinuation bodies in IntrinsicsNative.cpp:
+block_ remains stored during suspension and is cleared on termination. This
+source inspection does not establish fresh runtime retention behavior.
+
+e8581c99 replaces the remaining ChannelFlow::collect adapter call. The raw virtual
+entry at ChannelFlow.hpp:298 forwards to the annotated owning entry at :307.
+That entry retains the existing flow owner, suspends the real scoped collection,
+and its scope body directly calls emit_all(collector, produce_impl(scope)).
+The owned channel/continuation projection at flow/Channels.hpp:204 forwards to
+the same emit_all_impl with consume=true, preserving the channel owner and a
+borrowed collector. This prevents a temporary produced channel from becoming a
+raw dangling argument. Compiler lowering must retain and clean up the entry's
+actual C++ owner; no replacement label or frame was authored.
+
+ChannelFlow.hpp now has zero collect_channel_flow calls. Its declaration and
+ChannelFlow.cpp entry remain because four actual Merge.hpp consumers still use
+it. collect_in_scope and call_with_context_undispatched adaptations also remain;
+this is not a claim that all source differences or helpers are removed.
+
+Fresh strict actual consumer and explicit instantiation of ChannelFlowOperatorImpl<int>
+and ChannelFlowOperator<int,int> both exit 1. The frontend recognizes the new
+member entry, but generated code is rejected on GNU address-of-label diagnostics;
+the actual consumer additionally exposes missing context initialization and
+unresolved generated T, alongside existing unused-parameter dependency errors.
+No warnings were suppressed and no executable ran for this checkpoint.
+Receipts: build/ir-recovery/channel-flow-direct-scoped-consumer.log and
+channel-flow-direct-instantiation.log. Earlier consumer diagnostics for ca037a93
+are retained in channel-flow-direct-source-consumer.log. Existing plugin binaries
+were reused, not rebuilt. Historical executable evidence below predates these
+changes. Retention, destruction, repeated suspension, resumed failure and
+cancellation still require fresh successful compilation and execution.
+
+The final bounds check records 50 references in ChannelFlow.hpp and 24 in
+flow/Channels.hpp; they resolve to source with valid line bounds and no prohibited
+markers. This is source-reference evidence, not an algorithm or execution test.
+Remaining gaps include source diagnostic string binding, upstream-prefixed
+to_string, broader body/comment parity and both full MLX GPU acceptance paths.
+
+Both final full-root ast_distance --deep commands exit 0, with no source edits
+during scanning. Library totals remain 831/2918 bodies, 359/560 types, average
+body similarity 0.26, documentation similarity 0.38 and 123 scoring failures.
+ChannelFlow is 18/19 bodies, 6/6 types and body similarity 0.25 (previously 0.24);
+Channels remains 12/12 bodies, 1/1 types and similarity 0.22. Added ownership
+projections increase target bodies to 39 and 20 respectively; they are C++ ABI
+adaptations, not additional Kotlin functions. Missing/provisional findings remain
+required. Scan receipts are channel-flow-direct-final-{library,compiler}-deep.log.
+
+## Earlier source authoring checkpoint — 2026-10-07
 
 The complete pinned flow/Channels.kt and flow/internal/ChannelFlow.kt and the
 existing C++ counterparts were read after rereading the docking-ring, IR lowering

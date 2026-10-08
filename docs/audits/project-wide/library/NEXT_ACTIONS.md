@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 831/2918 matched (target 3033) — 28.5%
+- **Function parity:** 831/2918 matched (target 3035) — 28.5%
 - **Class/type parity:** 359/560 matched (target 518) — 64.1%
-- **Combined symbol parity:** 1190/3478 matched (target 3551) — 34.2%
+- **Combined symbol parity:** 1190/3478 matched (target 3553) — 34.2%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.38 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -21,7 +21,7 @@ Based on AST analysis, here are the concrete next steps.
 - **Similarity:** 0.22 (needs 63% improvement)
 - **Dependencies:** 65
 - **Priority Score:** 65001308.0
-- **Functions:** 12/12 matched (target 19)
+- **Functions:** 12/12 matched (target 20)
 - **Missing functions:** _none_
 - **Types:** 1/1 matched
 - **Missing types:** _none_
@@ -64,7 +64,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.22
 - **Dependents:** 65
 - **Priority Score:** 65001308.0
-- **Functions:** 12/12 matched (target 19)
+- **Functions:** 12/12 matched (target 20)
 - **Missing functions:** _none_
 - **Types:** 1/1 matched
 - **Missing types:** _none_
@@ -2296,14 +2296,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 173. internal.ChannelFlow
 
 - **Target:** `internal.ChannelFlow`
-- **Similarity:** 0.24
+- **Similarity:** 0.25
 - **Dependents:** 0
-- **Priority Score:** 12507.6
-- **Functions:** 18/19 matched (target 38)
+- **Priority Score:** 12507.5
+- **Functions:** 18/19 matched (target 39)
 - **Missing functions:** `ChannelFlowOperator::toString`
 - **Types:** 6/6 matched
 - **Missing types:** _none_
-- **Lint issues:** 2
+- **Lint issues:** 1
 
 ### 174. common.TestCoroutineScheduler
 
