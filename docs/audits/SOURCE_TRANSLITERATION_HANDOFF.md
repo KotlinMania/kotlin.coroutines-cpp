@@ -6,6 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Current LLVM memory/location continuation — 2026-10-08:** The continuation
+from 1da27774 translates parameter reads, loads/stores with optional ordering
+and alignment, location descriptors/ranges, recursive inline debug metadata,
+block-location maps, builder restoration and zero-line reuse. Typed suspension
+entries carry their actual IR start offsets through CodeContext.location.
+The production resume-label injector now calls the translated load/store methods.
+CMake already registers these implementation files and links the shared LLVM
+package; no source-list or runtime-dependency change was needed. No configure,
+build, AST emission, runtime check or deep scan was run. Continue actual frame
+allocation, Native reference-update operations and concrete variable/function
+contexts, followed by the connected typed expression driver and initializer
+emission. See RESUME_ADDRESS_SOURCE_REPAIR.md's first section. The full goal
+remains active; executable acceptance stays deferred until the translation is ready.
+
 **Current typed-IR context continuation — 2026-10-08:** CodeContext.hpp now
 mirrors IrToBitcode's full abstract code-generation context. Private inner scopes
 forward actual operations to their outer context; suspension-point lookup binds

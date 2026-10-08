@@ -1,6 +1,47 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## LLVM memory and source-location translation — 2026-10-08
+
+The continuation after 1da27774 translates CodeGenerator.kt's param, load,
+store, optional ordering/alignment, source-location map and builder debug
+operations. LocationInfo.hpp:11 mirrors IrToBitcode.kt:2884-2887;
+LocationInfoRange at :24 mirrors CodeGenerator.kt:390-393. LLVM scope metadata
+and inline descriptors remain borrowed from the owning compiler. Each map
+entry owns its range, preserving a returned range's identity after replacement.
+VariableDebugLocation.hpp:9 supplies the actual metadata fields from
+VariableManager.kt:150; the manager algorithms are not yet translated.
+
+CodeGenerator.cpp:25 constructs actual LLVM debug metadata recursively for
+inline chains. basic_block at :151,155,159 carries start/end locations into the
+map. debug_location at :166 ports the source's zero-line reuse rule; reset at
+:174 and position at :179 expose the source operations. PositionHolder at :89
+carries the prior range into an unreachable block after a terminator and at
+:105 restores the destination block's location. The owning compiler's explicit
+location-debug policy is supplied at the LLVM boundary; no LLVM metadata
+inference substitutes for ConfigChecks.kt:30.
+
+param/load/store at :184,195,200 port CodeGenerator.kt:720-732,754-758.
+CoroutineInjection.cpp:205,212 now uses those memory operations for its actual
+persistent label field. IrToBitcode_coroutines.cpp:140,201,223 uses actual IR
+start offsets for start/dispatch/resume/continuation block locations, following
+IrToBitcode.kt:2152-2154,2289-2340. General expression-location updates still
+belong to the untranslated enclosing expression emitter.
+
+Source review of tools/kxs_inject/CMakeLists.txt:14,22,31 confirms both edited
+compiler implementations already belong to kxs-inject, KotlinxCoroutinePass and
+kxs_codegen_test and link the selected shared LLVM target. New headers need no
+source-list change or Kotlin tool/runtime dependency. The frontend CMake target
+retains its existing Clang/LLVM linkage and explicit Native test boundary.
+No configure, build, AST emission, runtime check or deep scan was run.
+
+Next connected dependencies are actual frame allocation, load_slot/store_any
+and Native reference-update calls, concrete function/variable/debug/exception
+contexts, type lowering and the normalized Clang-to-IR driver. Plain LLVM stores
+have not been substituted for Native object reference updates. Suspending typed
+initializers and partial construction remain unfinished. This is a source
+translation checkpoint; the full translation and executable paths remain open.
+
 ## Typed IR code contexts and suspension-point lookup — 2026-10-08
 
 The continuation after 79e1c3c9 translates the code-generation scope dependency
@@ -12,8 +53,8 @@ CodeContext.hpp:24 now declares the complete source interface: returns and
 return slots, loop jumps, exception handler, variable declaration/lookup,
 function/file/class/returnable-block scopes, resume-point registration, source
 locations, debug scope, lifecycle hooks and exception wrapping. Actual IR
-objects and contexts are borrowed. ExceptionHandler, VariableDebugLocation and
-LocationInfo are source-type forward declarations, not replacement implementations.
+objects and contexts are borrowed. ExceptionHandler remains a source-type forward declaration. The subsequent
+memory/location checkpoint supplies VariableDebugLocation and LocationInfo.
 The source's empty lifecycle defaults are implemented at
 IrToBitcode_coroutines.cpp:11,13.
 
@@ -27,7 +68,7 @@ The index remains code-generation metadata and is not a runtime dispatch state.
 
 using_context at :106 ports the enter, exception-wrap and finally-exit order.
 A NOTE(port) explains the explicit context parameter in place of Kotlin's mutable
-currentCodeContext. Concrete typed overloads at :194,216 consume the actual
+currentCodeContext. Concrete typed overloads at :201,223 consume the actual
 IrSuspendableExpression/IrSuspensionPoint getters, emit start/address dispatch,
 evaluate normal/resume results in their scopes and join through the existing phi
 helper. Block creation and scope entry preserve the source order.

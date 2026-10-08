@@ -1,5 +1,6 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2281-2337
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:728-732,754-758
 // Inject Kotlin/Native address dispatch into compiler-marked coroutine bodies.
 //
 // Kotlin contracts: tmp/kotlin/kotlin-native/backend.native/compiler/ir/
@@ -201,14 +202,14 @@ static bool inject_function(Function& function, Function* entry, Function* point
     org::jetbrains::kotlin::backend::konan::llvm::FunctionGenerationContext generation(wrap(&function));
     generation.position_at_end(wrap(entry_block));
     Type* pointer_type = PointerType::get(function.getContext(), 0);
-    LLVMValueRef saved_label = LLVMBuildLoad2(generation.builder(), wrap(pointer_type), wrap(label_field), "kxs_saved_label");
+    LLVMValueRef saved_label = generation.load(wrap(pointer_type), wrap(label_field), "kxs_saved_label");
     LLVMValueRef fresh = generation.icmp_eq(saved_label, LLVMConstNull(wrap(pointer_type)), "kxs_is_first");
     generation.cond_br(fresh, wrap(start), wrap(dispatch));
     generation.position_at_end(wrap(dispatch));
     generation.indirect_br(saved_label, destinations);
     for (CallInst* call : points) {
         generation.position_before(wrap(call));
-        LLVMBuildStore(generation.builder(), wrap(addresses.at(call)), wrap(label_field));
+        generation.store(wrap(addresses.at(call)), wrap(label_field));
         call->eraseFromParent();
     }
     for (auto& [id, target] : resume_blocks) {

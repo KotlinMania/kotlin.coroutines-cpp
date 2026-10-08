@@ -1,15 +1,18 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:673-678,890-907,948-964,1001-1011,1208-1250,1264-1276,1461-1463,1505-1547,1566-1599
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:390-393,616-621,673-678,720-732,754-758,890-907,948-964,1001-1011,1208-1262,1264-1276,1342-1347,1461-1463,1505-1558,1566-1599
 #pragma once
+#include "LocationInfo.hpp"
 #include <llvm-c/Core.h>
 #include <vector>
 #include <memory>
 #include <string>
 #include <functional>
 #include <utility>
+#include <optional>
 namespace org::jetbrains::kotlin::backend::konan::llvm {
-// NOTE(port): LLVM instruction emission and position state only. Kotlin runtime
-// frame generation, source-location maps and the full context remain unported.
+// NOTE(port): The LLVM boundary retains native values and source locations.
+// Runtime frame generation and the complete enclosing compiler context are
+// separate translated dependencies.
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:591-615
 class FunctionGenerationContext {
 public:
@@ -17,6 +20,13 @@ public:
     // value. Full CodeGenerator and runtime-frame initialization remain unported.
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:591-600
     explicit FunctionGenerationContext(LLVMValueRef function);
+    // NOTE(port): The caller supplies the owning compiler context's
+    // shouldContainLocationDebugInfo result at this LLVM boundary.
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:591-615
+    FunctionGenerationContext(LLVMValueRef function, bool contain_location_debug_info);
+    // NOTE(port): Expose that supplied policy to the typed IR expression boundary.
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/ConfigChecks.kt:30-30
+    bool should_contain_location_debug_info() const;
     ~FunctionGenerationContext();
     FunctionGenerationContext(const FunctionGenerationContext&) = delete;
     FunctionGenerationContext& operator=(const FunctionGenerationContext&) = delete;
@@ -32,9 +42,30 @@ public:
     void position_at_end(LLVMBasicBlockRef block);
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1582
     void position_before(LLVMValueRef instruction);
-    // NOTE(port): LocationInfo parameters and update maps remain untranslated.
+    // NOTE(port): The LLVM operand adapter has no source location argument.
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:673-678
     LLVMBasicBlockRef basic_block(const std::string& name = "label_");
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:673-678
+    LLVMBasicBlockRef basic_block(const std::string& name, LocationInfo* start_location);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:673-678
+    LLVMBasicBlockRef basic_block(const std::string& name, LocationInfo* start_location, LocationInfo* end_location);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1252-1262
+    void debug_location(LocationInfo& start_location, LocationInfo* end_location);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1342-1345
+    void reset_debug_location();
+    // NOTE(port): Retain the returned range's identity when the map replaces it.
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1347-1347
+    std::shared_ptr<LocationInfoRange> position() const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:720-720
+    LLVMValueRef param(int index) const;
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:728-732
+    LLVMValueRef load(LLVMTypeRef type, LLVMValueRef address, const std::string& name = "",
+        std::optional<LLVMAtomicOrdering> memory_order = std::nullopt,
+        std::optional<int> alignment = std::nullopt);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:754-758
+    void store(LLVMValueRef value, LLVMValueRef pointer,
+        std::optional<LLVMAtomicOrdering> memory_order = std::nullopt,
+        std::optional<int> alignment = std::nullopt);
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:890-892
     LLVMValueRef phi(LLVMTypeRef type, const std::string& name = "");
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:894-901
@@ -90,8 +121,16 @@ private:
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:1584-1594
     template <typename R>
     R preserving_position(const std::function<R()>& code);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:722-726
+    LLVMValueRef apply_memory_order_and_alignment(LLVMValueRef value,
+        std::optional<LLVMAtomicOrdering> memory_order, std::optional<int> alignment);
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt:618-621
+    void update(LLVMBasicBlockRef block, LocationInfo* start_location, LocationInfo* end_location);
     LLVMValueRef function_;
     LLVMContextRef context_;
+    const bool contain_location_debug_info_;
+    class DebugLocationState;
+    std::unique_ptr<DebugLocationState> debug_locations_;
     class PositionHolder;
     std::unique_ptr<PositionHolder> current_position_holder_;
 };

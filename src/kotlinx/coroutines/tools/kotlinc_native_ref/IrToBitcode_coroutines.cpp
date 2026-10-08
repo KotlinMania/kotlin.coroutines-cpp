@@ -1,5 +1,5 @@
 // port-lint: source kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt
-// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:120-212,299-326,895-939,2281-2340
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:120-212,299-326,895-939,2152-2154,2281-2340
 #include "IrToBitcode_coroutines.hpp"
 #include "CodeGenerator.hpp"
 #include "org/jetbrains/kotlin/ir/declarations/IrVariable.hpp"
@@ -135,6 +135,12 @@ int SuspendableExpressionScope::add_resume_point(LLVMBasicBlockRef bb_label) {
     return result;
 }
 namespace {
+// Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:2152-2154
+// NOTE(port): Read the owning compiler's supplied location-debug policy.
+LocationInfo* start_location(FunctionGenerationContext& generation, CodeContext& context, const ir::IrElement& element) {
+    if (!generation.should_contain_location_debug_info()) return nullptr;
+    return context.location(element.start_offset());
+}
 // Jump to target, passing value to its phi.
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:909-918
 void jump(FunctionGenerationContext& generation, const ContinuationBlock& target, LLVMValueRef value) {
@@ -143,11 +149,12 @@ void jump(FunctionGenerationContext& generation, const ContinuationBlock& target
 }
 // Creates a new ContinuationBlock receiving a value of the given lowered Kotlin
 // type and generates code starting from its beginning.
-// NOTE(port): LocationInfo and IrType lowering remain separate dependencies.
+// NOTE(port): The owning emitter supplies the lowered IrType and isUnit result.
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt:923-939
 ContinuationBlock continuation_block(FunctionGenerationContext& generation, LLVMTypeRef type, bool is_unit,
+    LocationInfo* location_info = nullptr,
     const std::function<void(const ContinuationBlock&)>& code = [](const ContinuationBlock&) {}) {
-    const auto entry = generation.basic_block("continuation_block");
+    const auto entry = generation.basic_block("continuation_block", location_info);
     return generation.appending_to<ContinuationBlock>(entry, [&](FunctionGenerationContext& context) {
         const auto value_phi = is_unit ? nullptr : context.phi(type);
         const auto result = ContinuationBlock{entry, value_phi};
@@ -195,8 +202,8 @@ LLVMValueRef evaluate_suspendable_expression(FunctionGenerationContext& generati
     ir::expressions::IrSuspendableExpression& expression, LLVMValueRef result_slot,
     CodeContext& outer_context, const IrExpressionEvaluator& evaluate_expression) {
     const auto suspension_point_id = evaluate_expression(expression.suspension_point_id(), outer_context, nullptr);
-    const auto start = generation.basic_block("start");
-    const auto dispatch = generation.basic_block("dispatch");
+    const auto start = generation.basic_block("start", start_location(generation, outer_context, expression.result()));
+    const auto dispatch = generation.basic_block("dispatch", start_location(generation, outer_context, expression.suspension_point_id()));
     std::vector<LLVMBasicBlockRef> resume_points;
     SuspendableExpressionScope points(resume_points);
     SuspendableExpressionCodeScope scope(outer_context, points);
@@ -217,11 +224,12 @@ LLVMValueRef evaluate_suspension_point(FunctionGenerationContext& generation,
     ir::expressions::IrSuspensionPoint& expression, LLVMTypeRef result_type,
     bool is_unit, LLVMValueRef unit_instance, CodeContext& outer_context,
     const IrExpressionEvaluator& evaluate_expression) {
-    const auto resume = generation.basic_block("resume");
+    const auto resume = generation.basic_block("resume", start_location(generation, outer_context, expression.resume_result()));
     const auto id = outer_context.add_resume_point(resume);
     SuspensionPointScope scope(outer_context, generation, expression.suspension_point_id_parameter(), resume, id);
     return using_context(scope, [&](CodeContext& context) {
-        const auto target = continuation_block(generation, result_type, is_unit);
+        const auto target = continuation_block(generation, result_type, is_unit,
+            start_location(generation, context, expression.result()));
         const auto normal_result = evaluate_expression(expression.result(), context, nullptr);
         jump(generation, target, normal_result);
         generation.position_at_end(resume);
