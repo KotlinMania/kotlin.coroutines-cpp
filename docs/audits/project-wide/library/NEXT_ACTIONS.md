@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 815/2918 matched (target 3028) — 27.9%
+- **Function parity:** 817/2918 matched (target 3030) — 28.0%
 - **Class/type parity:** 358/560 matched (target 520) — 63.9%
-- **Combined symbol parity:** 1173/3478 matched (target 3548) — 33.7%
+- **Combined symbol parity:** 1175/3478 matched (target 3550) — 33.8%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -479,21 +479,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 8
 - **Lint issues:** 2
 
-### 34. channels.ProduceTest
-
-- **Target:** `channels.ProduceTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 171910.0
-- **Functions:** 1/18 matched
-- **Missing functions:** `ProduceTest::testBasic`, `ProduceTest::testCancelWithoutCause`, `ProduceTest::testCancelWithCause`, `ProduceTest::testCancelOnCompletionUnconfined`, `ProduceTest::testCancelOnCompletion`, `ProduceTest::testCancelWhenTheChannelIsClosed`, `ProduceTest::testAwaitCloseOnlyAllowedOnce`, `ProduceTest::testInvokeOnCloseWithAwaitClose`, `ProduceTest::testAwaitConsumerCancellation`, `ProduceTest::testAwaitProducerCancellation`, `ProduceTest::testAwaitParentCancellation`, `ProduceTest::testAwaitIllegalState`, `ProduceTest::testUncaughtExceptionsInProduce`, `ProduceTest::testCancellingProduceCoroutineButNotChannel`, `ProduceTest::testReceivingValuesAfterFailingTheCoroutine`, `ProduceTest::testSilentKillerInProduce`, `ProduceTest::testProduceWithInvalidCapacity`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/17 matched
-- **TODOs:** 43
-- **Lint issues:** 1
-
-### 35. operators.BufferConflationTest
+### 34. operators.BufferConflationTest
 
 - **Target:** `operators.BufferConflationTest [STUB]`
 - **Similarity:** 0.00
@@ -506,6 +492,20 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/17 matched
 - **TODOs:** 27
 - **Lint issues:** 17
+
+### 35. channels.ProduceTest
+
+- **Target:** `channels.ProduceTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 171910.0
+- **Functions:** 1/18 matched
+- **Missing functions:** `ProduceTest::testBasic`, `ProduceTest::testCancelWithoutCause`, `ProduceTest::testCancelWithCause`, `ProduceTest::testCancelOnCompletionUnconfined`, `ProduceTest::testCancelOnCompletion`, `ProduceTest::testCancelWhenTheChannelIsClosed`, `ProduceTest::testAwaitCloseOnlyAllowedOnce`, `ProduceTest::testInvokeOnCloseWithAwaitClose`, `ProduceTest::testAwaitConsumerCancellation`, `ProduceTest::testAwaitProducerCancellation`, `ProduceTest::testAwaitParentCancellation`, `ProduceTest::testAwaitIllegalState`, `ProduceTest::testUncaughtExceptionsInProduce`, `ProduceTest::testCancellingProduceCoroutineButNotChannel`, `ProduceTest::testReceivingValuesAfterFailingTheCoroutine`, `ProduceTest::testSilentKillerInProduce`, `ProduceTest::testProduceWithInvalidCapacity`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/17 matched
+- **TODOs:** 43
+- **Lint issues:** 1
 
 ### 36. test.TestCoroutineSchedulerTest
 
@@ -703,7 +703,20 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 80
 - **Lint issues:** 3
 
-### 51. test.RunBlockingTest
+### 51. operators.TransformLatestTest
+
+- **Target:** `operators.TransformLatestTest [STUB]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 121310.0
+- **Functions:** 0/12 matched
+- **Missing functions:** `TransformLatestTest::testTransformLatest`, `TransformLatestTest::testEmission`, `TransformLatestTest::testSwitchIntuitiveBehaviour`, `TransformLatestTest::testSwitchRendezvousBuffer`, `TransformLatestTest::testSwitchBuffer`, `TransformLatestTest::testHangFlows`, `TransformLatestTest::testEmptyFlow`, `TransformLatestTest::testIsolatedContext`, `TransformLatestTest::testFailureInTransform`, `TransformLatestTest::testFailureDownstream`, `TransformLatestTest::testFailureUpstream`, `TransformLatestTest::testTake`
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Tests:** 0/12 matched
+- **TODOs:** 5
+
+### 52. test.RunBlockingTest
 
 - **Target:** `concurrent.RunBlockingTest [STUB]`
 - **Similarity:** 0.00
@@ -717,7 +730,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 52
 - **Lint issues:** 7
 
-### 52. test.WithTimeoutTest
+### 53. test.WithTimeoutTest
 
 - **Target:** `tests.WithTimeoutTest`
 - **Similarity:** 0.00
@@ -731,7 +744,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 16
 - **Lint issues:** 14
 
-### 53. channels.ConsumeTest
+### 54. channels.ConsumeTest
 
 - **Target:** `channels.ConsumeTest [STUB]`
 - **Similarity:** 0.00
@@ -744,7 +757,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/10 matched
 - **TODOs:** 29
 
-### 54. operators.BooleanTerminationTest
+### 55. operators.BooleanTerminationTest
 
 - **Target:** `operators.BooleanTerminationTest [STUB]`
 - **Similarity:** 0.00
@@ -757,7 +770,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/12 matched
 - **TODOs:** 39
 
-### 55. test.SupervisorTest
+### 56. test.SupervisorTest
 
 - **Target:** `tests.SupervisorTest [STUB]`
 - **Similarity:** 0.00
@@ -769,19 +782,6 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 0/12 matched
 - **TODOs:** 46
-
-### 56. operators.TransformLatestTest
-
-- **Target:** `operators.TransformLatestTest [STUB]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 121310.0
-- **Functions:** 0/12 matched
-- **Missing functions:** `TransformLatestTest::testTransformLatest`, `TransformLatestTest::testEmission`, `TransformLatestTest::testSwitchIntuitiveBehaviour`, `TransformLatestTest::testSwitchRendezvousBuffer`, `TransformLatestTest::testSwitchBuffer`, `TransformLatestTest::testHangFlows`, `TransformLatestTest::testEmptyFlow`, `TransformLatestTest::testIsolatedContext`, `TransformLatestTest::testFailureInTransform`, `TransformLatestTest::testFailureDownstream`, `TransformLatestTest::testFailureUpstream`, `TransformLatestTest::testTake`
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-- **Tests:** 0/12 matched
-- **TODOs:** 5
 
 ### 57. common.CancellableContinuationImpl
 
@@ -848,19 +848,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 0/11 matched
 
-### 62. channels.BufferedChannel
-
-- **Target:** `channels.BufferedChannel`
-- **Similarity:** 0.26
-- **Dependents:** 0
-- **Priority Score:** 101707.4
-- **Functions:** 102/111 matched (target 177)
-- **Missing functions:** `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `BufferedChannel::onCancellationChannelResultImplDoNotCall`, `BufferedChannel::onCancellationImplDoNotCall`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0`
-- **Types:** 6/6 matched (target 7)
-- **Missing types:** _none_
-- **Lint issues:** 38
-
-### 63. operators.DistinctUntilChangedTest
+### 62. operators.DistinctUntilChangedTest
 
 - **Target:** `operators.DistinctUntilChangedTest [STUB]`
 - **Similarity:** 0.00
@@ -874,7 +862,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 30
 - **Lint issues:** 3
 
-### 64. test.CancellableContinuationHandlersTest
+### 63. test.CancellableContinuationHandlersTest
 
 - **Target:** `tests.CancellableContinuationHandlersTest [STUB]`
 - **Similarity:** 0.00
@@ -888,7 +876,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 9
 - **Lint issues:** 4
 
-### 65. operators.CatchTest
+### 64. operators.CatchTest
 
 - **Target:** `operators.CatchTest [STUB]`
 - **Similarity:** 0.00
@@ -902,7 +890,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 36
 - **Lint issues:** 19
 
-### 66. channels.BufferedBroadcastChannelTest
+### 65. channels.BufferedBroadcastChannelTest
 
 - **Target:** `channels.BufferedBroadcastChannelTest [STUB]`
 - **Similarity:** 0.00
@@ -916,7 +904,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 89
 - **Lint issues:** 8
 
-### 67. operators.FlatMapLatestTest
+### 66. operators.FlatMapLatestTest
 
 - **Target:** `operators.FlatMapLatestTest [STUB]`
 - **Similarity:** 0.00
@@ -930,7 +918,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 34
 - **Lint issues:** 2
 
-### 68. operators.TakeTest
+### 67. operators.TakeTest
 
 - **Target:** `operators.TakeTest [STUB]`
 - **Similarity:** 0.00
@@ -944,7 +932,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 5
 - **Lint issues:** 3
 
-### 69. channels.ChannelBuildersFlowTest
+### 68. channels.ChannelBuildersFlowTest
 
 - **Target:** `channels.ChannelBuildersFlowTest`
 - **Similarity:** 0.39
@@ -957,7 +945,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/10 matched
 - **TODOs:** 16
 
-### 70. operators.FilterTrivialTest
+### 69. operators.FilterTrivialTest
 
 - **Target:** `operators.FilterTrivialTest [STUB]`
 - **Similarity:** 0.00
@@ -970,7 +958,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Tests:** 0/9 matched
 - **TODOs:** 32
 
-### 71. operators.RetryTest
+### 70. operators.RetryTest
 
 - **Target:** `operators.RetryTest [STUB]`
 - **Similarity:** 0.00
@@ -984,7 +972,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 5
 - **Lint issues:** 6
 
-### 72. test.AsyncLazyTest
+### 71. test.AsyncLazyTest
 
 - **Target:** `tests.AsyncLazyTest [STUB]`
 - **Similarity:** 0.00
@@ -998,7 +986,7 @@ Every matched file is listed below with function and type symbol parity.
 - **TODOs:** 15
 - **Lint issues:** 6
 
-### 73. channels.TestChannelKind
+### 72. channels.TestChannelKind
 
 - **Target:** `channels.TestChannelKind [ZERO]`
 - **Similarity:** 0.00
@@ -1010,6 +998,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `ChannelViaBroadcast`
 - **TODOs:** 8
 - **Lint issues:** 3
+
+### 73. channels.BufferedChannel
+
+- **Target:** `channels.BufferedChannel`
+- **Similarity:** 0.27
+- **Dependents:** 0
+- **Priority Score:** 81707.3
+- **Functions:** 104/111 matched (target 179)
+- **Missing functions:** `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0`
+- **Types:** 6/6 matched (target 7)
+- **Missing types:** _none_
+- **Lint issues:** 40
 
 ### 74. sharing.ShareInBufferTest
 

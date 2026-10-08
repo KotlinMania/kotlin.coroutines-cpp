@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 815/2918 matched (target 3028) | 27.9% |
+| Function parity | 817/2918 matched (target 3030) | 28.0% |
 | Class/type parity | 358/560 matched (target 520) | 63.9% |
-| Combined symbol parity | 1173/3478 matched (target 3548) | 33.7% |
+| Combined symbol parity | 1175/3478 matched (target 3550) | 33.8% |
 | Average function body similarity | 0.26 | inline-code cosine |
 | Average documentation similarity | 0.37 | doc text cosine |
 | Missing source functions | 683 | 0% parity until ported |
@@ -240,9 +240,9 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 196 | `internal.ChannelFlow` | `internal.ChannelFlow` | 0.24 | 18/19 matched (target 41) | `ChannelFlowOperator::toString` | 6/6 matched (target 7) | _none_ | - | 1 | 12507.6 |
 | 197 | `internal.Synchronized.common` | `internal.SynchronizedObject` | 0.24 | 1/1 matched (target 6) | _none_ | 1/1 matched | _none_ | - | 0 | 207.6 |
 | 198 | `common.CancellableContinuationImpl` | `coroutines.ContinuationState` | 0.25 | 41/50 matched (target 143) | `CancellableContinuationImpl::callCancelHandlerSafely`, `CancellableContinuationImpl::multipleHandlersError`, `CancellableContinuationImpl::alreadyResumedError`, `CancellableContinuationImpl::getExceptionalResult`, `CancellableContinuationImpl::toString`, `CancellableContinuationImpl::nameString`, `CancelHandler::UserSupplied::invoke`, `CancelHandler::UserSupplied::toString`, `CompletedContinuation::invokeHandlers` | 5/7 matched (target 15) | `UserSupplied`, `CompletedContinuation` | - | 11 | 115707.5 |
-| 199 | `channels.BufferedChannel` | `channels.BufferedChannel` | 0.26 | 102/111 matched (target 177) | `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `BufferedChannel::onCancellationChannelResultImplDoNotCall`, `BufferedChannel::onCancellationImplDoNotCall`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0` | 6/6 matched (target 7) | _none_ | - | 9 | 101707.4 |
-| 200 | `sync.Semaphore` | `sync.Semaphore` | 0.26 | 18/21 matched (target 45) | `Semaphore`, `SemaphoreAndMutexImpl::acquire`, `SemaphoreAndMutexImpl::acquire` | 4/4 matched (target 9) | _none_ | - | 3 | 32507.4 |
-| 201 | `internal.LimitedDispatcher` | `internal.LimitedDispatcher` | 0.27 | 9/10 matched (target 12) | `CoroutineDispatcher::namedOrThis` | 2/2 matched (target 3) | _none_ | - | 1 | 11207.3 |
+| 199 | `sync.Semaphore` | `sync.Semaphore` | 0.26 | 18/21 matched (target 45) | `Semaphore`, `SemaphoreAndMutexImpl::acquire`, `SemaphoreAndMutexImpl::acquire` | 4/4 matched (target 9) | _none_ | - | 3 | 32507.4 |
+| 200 | `internal.LimitedDispatcher` | `internal.LimitedDispatcher` | 0.27 | 9/10 matched (target 12) | `CoroutineDispatcher::namedOrThis` | 2/2 matched (target 3) | _none_ | - | 1 | 11207.3 |
+| 201 | `channels.BufferedChannel` | `channels.BufferedChannel` | 0.27 | 104/111 matched (target 179) | `BufferedChannel::cancel`, `BufferedChannel::cancel`, `BufferedChannel::invokeCloseHandler`, `BufferedChannel::toStringDebug`, `BufferedChannel::checkSegmentStructureInvariants`, `createSegmentFunction`, `CancellableContinuation<T>::tryResume0` | 6/6 matched (target 7) | _none_ | - | 7 | 81707.3 |
 | 202 | `common.Delay` | `coroutines.Delay` | 0.28 | 6/6 matched (target 11) | _none_ | 2/2 matched | _none_ | - | 0 | 807.2 |
 | 203 | `flow.SafeFlowTest` | `flow.SafeFlowTest` | 0.28 | 2/3 matched | `SafeFlowTest::testEmissionsFromDifferentStateMachine` | 1/1 matched | _none_ | 0/1 | 1 | 10407.2 |
 | 204 | `channels.ChannelCoroutine` | `channels.ChannelCoroutine` | 0.29 | 2/4 matched (target 18) | `ChannelCoroutine::cancel`, `ChannelCoroutine::cancel` | 1/1 matched | _none_ | - | 2 | 20507.1 |
@@ -622,9 +622,9 @@ These files need significant work:
 - `internal.ChannelFlow` -> `internal.ChannelFlow` (0.24)
 - `internal.Synchronized.common` -> `internal.SynchronizedObject` (0.24)
 - `common.CancellableContinuationImpl` -> `coroutines.ContinuationState` (0.25)
-- `channels.BufferedChannel` -> `channels.BufferedChannel` (0.26)
 - `sync.Semaphore` -> `sync.Semaphore` (0.26)
 - `internal.LimitedDispatcher` -> `internal.LimitedDispatcher` (0.27)
+- `channels.BufferedChannel` -> `channels.BufferedChannel` (0.27)
 - `common.Delay` -> `coroutines.Delay` (0.28)
 - `flow.SafeFlowTest` -> `flow.SafeFlowTest` (0.28)
 - `channels.ChannelCoroutine` -> `channels.ChannelCoroutine` (0.29)
