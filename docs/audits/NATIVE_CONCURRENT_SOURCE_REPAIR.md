@@ -6,6 +6,10 @@ its int argument and empty set construction, omitting only the unused C++ local
 binding. This does not add reserve behavior, an invented read or a suppression
 attribute. The concrete Concurrent.cpp compiles with -Wall -Wextra -Wpedantic
 -Werror, exit zero. Receipt: build/ir-recovery/concurrent-warning-visible-build.log.
+A fresh standalone build of the existing test_concurrent_native.cpp together
+with Concurrent.cpp and OnDemandAllocatingPool.cpp returns one on the latter's
+unused private loop function. The test executable was not produced or run.
+Receipt: concurrent-warning-visible-test-build.log in the same directory.
 Existing historical full-core results below predate warning suppression removal.
 
 # Native Concurrent source repair
