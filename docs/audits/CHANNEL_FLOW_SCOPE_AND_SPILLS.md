@@ -54,7 +54,7 @@ documentation similarity 0.38 and 123 scoring failures. ChannelFlow remains
 from 42 to 38 after removing the handwritten class. No measurement criterion
 was changed. Final receipts are channel-flow-authoring-final-{library,compiler}-deep.log.
 The final source-bound check covers all three edited library files: 47, 12 and
-23 ranged references respectively. These checks do not certify runtime behavior.
+22 ranged references respectively. These checks do not certify runtime behavior.
 
 Historical checkpoints below retain their original evidence.
 
