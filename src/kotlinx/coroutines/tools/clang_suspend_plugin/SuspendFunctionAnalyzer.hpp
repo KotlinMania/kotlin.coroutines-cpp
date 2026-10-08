@@ -63,6 +63,8 @@ public:
     /// Check if a statement is a suspend call (suspend(expr) or annotated).
     static bool is_suspend_call(const clang::Stmt* stmt);
     static bool is_suspend_wrapper(const clang::CallExpr* call);
+    // NOTE(port): C++ type queries have no runtime suspension operation.
+    static bool is_unevaluated_expression(const clang::Stmt* statement);
     static bool requires_overload_resolution(const clang::FunctionDecl* function);
     // NOTE(port): Clang adapter for the trailing lowered continuation parameter.
     static const clang::ParmVarDecl* continuation_parameter(const clang::FunctionDecl* function);

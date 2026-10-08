@@ -3,6 +3,7 @@
 
 #include "clang/AST/Attr.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/ExprCXX.h"
 #include "clang/AST/Stmt.h"
 #include "clang/Basic/SourceManager.h"
 
@@ -197,10 +198,26 @@ bool SuspendFunctionAnalyzer::is_suspend_wrapper(const CallExpr* call) {
     });
 }
 
+// NOTE(port): Clang evaluation contexts adapt the Kotlin IR call walk; these
+// C++ query operands are type-checked but introduce no runtime call or spill.
+bool SuspendFunctionAnalyzer::is_unevaluated_expression(const Stmt* statement) {
+    if (const auto* query = dyn_cast_or_null<UnaryExprOrTypeTraitExpr>(statement))
+        return query->isArgumentType() || !query->getArgumentExpr()->getType()->isVariablyModifiedType();
+    if (isa_and_nonnull<CXXNoexceptExpr>(statement)) return true;
+    if (const auto* query = dyn_cast_or_null<CXXTypeidExpr>(statement))
+        return !query->isPotentiallyEvaluated();
+    return false;
+}
+
 bool SuspendFunctionAnalyzer::requires_overload_resolution(const FunctionDecl* function) {
     class UnresolvedCalls : public RecursiveASTVisitor<UnresolvedCalls> {
     public:
         bool unresolved = false;
+        bool TraverseStmt(Stmt* statement) {
+            if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return true;
+            return RecursiveASTVisitor<UnresolvedCalls>::TraverseStmt(statement);
+        }
+        bool TraverseDecltypeTypeLoc(DecltypeTypeLoc, bool = true) { return true; }
         // NOTE(port): Local class member calls resolve in their own context.
         bool TraverseDecl(Decl* declaration) {
             if (declaration && (isa<RecordDecl>(declaration) || isa<FunctionDecl>(declaration))) return true;

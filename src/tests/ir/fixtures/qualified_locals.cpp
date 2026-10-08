@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <tuple>
 #include <utility>
+#include <type_traits>
+#include <typeinfo>
 using namespace kotlinx::coroutines;
 
 int alive = 0;
@@ -89,6 +91,14 @@ void* await_value(std::shared_ptr<Continuation<void*>> completion) {
     return intrinsics::get_COROUTINE_SUSPENDED();
 }
 
+bool ordinary_type_queries(std::shared_ptr<Continuation<void*>> completion) {
+    using ResultType = decltype(await_value(completion));
+    static_assert(std::is_same_v<ResultType, void*>);
+    return sizeof(await_value(completion)) == sizeof(void*) &&
+        !noexcept(await_value(completion)) &&
+        typeid(await_value(completion)) == typeid(void*);
+}
+
 [[clang::annotate("suspend")]]
 void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion) {
     using Value = QualifiedValue;
@@ -128,6 +138,21 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
     auto [from_get, from_get_second] = TupleParts{3, 4};
     auto [resource, tag] = std::make_pair(std::make_unique<QualifiedValue>(9), 1);
     QualifiedValue* resource_identity = resource.get();
+    static_assert(std::is_same_v<decltype(fixed), const QualifiedValue>);
+    static_assert(std::is_same_v<decltype((fixed)), const QualifiedValue&>);
+    static_assert(std::is_same_v<decltype(observed), volatile QualifiedValue>);
+    static_assert(std::is_same_v<decltype(head), int>);
+    static_assert(std::is_same_v<decltype((head)), int&>);
+    static_assert(std::is_same_v<decltype(items), int[2]>);
+    static_assert(std::is_same_v<decltype(first_row), int[2]>);
+    static_assert(std::is_same_v<decltype(resource), std::unique_ptr<QualifiedValue>>);
+    static_assert(std::is_same_v<decltype((resource)), std::unique_ptr<QualifiedValue>&>);
+    static_assert(sizeof(await_value(completion)) == sizeof(void*));
+    static_assert(!noexcept(await_value(completion)));
+    static_assert(noexcept(head));
+    static_assert(noexcept(resource.get()));
+    assert(noexcept(head) && noexcept(resource.get()));
+    assert(sizeof(dsl::suspend(await_value(completion))) == sizeof(void*));
     assert(binding_evaluations == 2);
     fixed_identity = std::addressof(fixed);
     observed_identity = std::addressof(observed);
@@ -181,6 +206,7 @@ int main() {
         array_copies = array_destructions = 0;
         array_sources = 0;
         auto done = std::make_shared<Done>();
+        assert(ordinary_type_queries(done) && calls == 0);
         try {
             void* result = qualified_locals(37 + mode, done);
             if (intrinsics::is_coroutine_suspended(result)) {

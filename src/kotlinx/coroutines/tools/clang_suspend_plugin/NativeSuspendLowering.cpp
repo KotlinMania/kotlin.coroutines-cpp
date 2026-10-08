@@ -273,6 +273,9 @@ private:
     }
     void collect_references(const Stmt* statement, std::vector<Replacement>& replacements, bool type_only = false) const {
         if (!statement) return;
+        // NOTE(port): Query the original operand category. A frame getter can
+        // have a different exception specification from a source variable.
+        if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) type_only = true;
         // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/LocalDeclarationPopupLowering.kt:55-59
         // NOTE(port): Capture initializers belong to this construction scope.
         // The invoke body has its own frame and binding map; rewriting it with
@@ -339,6 +342,18 @@ private:
                     auto name = location.getNameLoc();
                     references_.push_back({lowering_.offset(name), lowering_.end_offset(name), alias->second});
                 }
+                return true;
+            }
+            // NOTE(port): A frame access is an expression, not the original
+            // declaration name. Keep Clang's resolved decltype, including the
+            // special declared type of an unparenthesized structured binding.
+            bool TraverseDecltypeTypeLoc(DecltypeTypeLoc location, bool traverse_qualifier = true) {
+                auto type = location.getType().getCanonicalType();
+                if (type->isDependentType())
+                    return RecursiveASTVisitor<TemplateValues>::TraverseDecltypeTypeLoc(location, traverse_qualifier);
+                references_.push_back({lowering_.offset(location.getDecltypeLoc()),
+                    lowering_.end_offset(location.getRParenLoc()), "std::type_identity_t<" +
+                    TypeName::getFullyQualifiedName(type, lowering_.context_, lowering_.policy_) + ">"});
                 return true;
             }
             bool VisitSubstNonTypeTemplateParmExpr(SubstNonTypeTemplateParmExpr* expression) {
@@ -439,6 +454,7 @@ private:
     // execute while constructing the lambda in the enclosing function.
     bool has_suspend_calls(const Stmt* statement) const {
         if (!statement) return false;
+        if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return false;
         if (const auto* lambda = dyn_cast<LambdaExpr>(statement)) {
             for (const auto* initializer : lambda->capture_inits())
                 if (has_suspend_calls(initializer)) return true;
@@ -1067,6 +1083,12 @@ private:
     // alias bindings and object construction in their original storage category.
     void emit_declaration(const DeclStmt* statement, bool generated = false) {
         for (const Decl* declaration : statement->decls()) {
+            if (isa<StaticAssertDecl>(declaration)) {
+                // NOTE(port): Preserve the actual assertion and its typed
+                // operands; it contributes no construction or cleanup slot.
+                body_ << rewrite(statement, {}, true) << ";\n";
+                return;
+            }
             if (const auto* alias = dyn_cast<TypedefNameDecl>(declaration)) {
                 // NOTE(port): Bind the original alias declaration to a unique
                 // frame spelling; an alias has no initialization or cleanup.

@@ -23,6 +23,7 @@ public:
     // NOTE(port): Clang node dispatch supplies Kotlin IrElement.accept visitor selection.
     void accept(const Stmt* element, VisitorState data) {
         if (!element) return;
+        if (SuspendFunctionAnalyzer::is_unevaluated_expression(element)) return;
         if (const auto* returned = dyn_cast<ReturnStmt>(element)) return visit_return(returned, data);
         if (const auto* body = dyn_cast<CompoundStmt>(element)) return visit_statement_container(body, data);
         if (const auto* region = dyn_cast<CXXTryStmt>(element)) return visit_try(region, data);

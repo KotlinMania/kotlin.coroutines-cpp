@@ -16,6 +16,7 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/SaveAndRestore.h"
 
 #include "SuspendFunctionAnalyzer.hpp"
 #include "NativeSuspendLowering.hpp"
@@ -116,6 +117,8 @@ public:
     // NOTE(port): Include constructor and lambda method declarations as well
     // as free functions in the checker's containing-declaration context.
     bool TraverseDecl(Decl* declaration) {
+        llvm::SaveAndRestore<bool> evaluation(evaluated_,
+            isa_and_nonnull<FunctionDecl>(declaration) ? true : evaluated_);
         // NOTE(port): Source diagnostics precede coroutine lowering. Imported
         // COROUTINE_IMPL declarations contain checked, lowered bodies, not
         // source-local classes inheriting suspension permission.
@@ -152,9 +155,21 @@ public:
     }
 
     bool VisitCallExpr(CallExpr* expression) {
+        if (!evaluated_) return true;
         org::jetbrains::kotlin::fir::analysis::checkers::expression::FirSuspendCallChecker::check(
             expression, containing_declarations_, diags_);
         return true;
+    }
+    // NOTE(port): Unevaluated C++ operands remain checked by Clang. They do not
+    // execute a suspend call; a nested function still has its own body context.
+    bool TraverseStmt(Stmt* statement) {
+        llvm::SaveAndRestore<bool> evaluation(evaluated_,
+            evaluated_ && !SuspendFunctionAnalyzer::is_unevaluated_expression(statement));
+        return RecursiveASTVisitor::TraverseStmt(statement);
+    }
+    bool TraverseDecltypeTypeLoc(DecltypeTypeLoc location, bool traverse_qualifier = true) {
+        llvm::SaveAndRestore<bool> evaluation(evaluated_, false);
+        return RecursiveASTVisitor::TraverseDecltypeTypeLoc(location, traverse_qualifier);
     }
 
     bool VisitFunctionDecl(FunctionDecl* fd) {
@@ -200,6 +215,7 @@ public:
     const std::vector<FunctionDecl*>& suspendFunctions() const { return suspendFns_; }
 
 private:
+    bool evaluated_ = true;
     static bool hasAnnotate(const Decl* d, StringRef annotation) {
         if (!d) return false;
         for (const Attr* a : d->attrs()) {
@@ -283,6 +299,7 @@ private:
         // map is incomplete. Track the actual body path while visiting children.
         std::function<void(const Stmt*, const Expr*, bool)> visit = [&](const Stmt* statement, const Expr* root, bool already_returned) {
             if (!statement || isa<LambdaExpr>(statement)) return;
+            if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return;
             if (isa<ReturnStmt>(statement)) already_returned = true;
             if (const auto* expression = dyn_cast<Expr>(statement)) {
                 if (!root) root = expression;
