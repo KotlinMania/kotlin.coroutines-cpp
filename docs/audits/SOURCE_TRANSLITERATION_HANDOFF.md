@@ -6,6 +6,18 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest source continuation:** 8a49a5c5 translates with_index and on_each in
+Transform.hpp:544,590, removing their manual frames. 7b70ebcf preserves declared
+cv-qualification in spill fields; fd57ae36 emits loop continuation targets only
+when authored continue statements reference them. 0c735ac3 adds an executable
+qualification/identity/cleanup regression to the existing plugin harness. Actual
+consumer and fixture checks exit 1; fresh plugin build exits 2 in LLVM/Clang
+headers. Neither compiler repair has fresh executable validation. Both final
+full-root scans exit 0 and leave d73e201c reports unchanged. Transform is 12/13
+at 0.07, target 76 bodies and 8 types. Read MERGE_SOURCE_REPAIR.md's new top section
+for exact receipts. The full transliteration/state-machine goal remains active.
+
+
 **Current source continuation:** 825918fa and 07e682b0 replace filter,
 filter_not and optional map_not_null manual frames with annotated source bodies
 in Transform.hpp:170,220,452. 10da6bc6 initializes generated saved exception state

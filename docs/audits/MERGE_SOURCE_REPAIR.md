@@ -1,5 +1,54 @@
 # Merge source translation and private suspension bodies
 
+## Indexed/action source and spill qualification continuation — 2026-10-07
+
+8a49a5c5 continues the full Transform.kt translation at Transform.hpp:544,590.
+with_index's source collector now holds its per-collection index and tail emits
+the checked index/value; its annotated collect entry retains the actual collector
+owner through upstream collection. The prior WithIndexFrame continuation and
+manual label/self-cycle are removed. on_each now owns the supplied action and
+expresses the source action-before-emit sequence with annotated suspension;
+OnEachFrame and its manual spill/label/cycle are removed. Ordinary and suspending
+callable projections retain the existing API. Other Transform manual bodies remain.
+
+The consumed CoroutinesVarSpillingLowering.kt:53-66 assigns each spill field the
+variable's declared type. 7b70ebcf repairs NativeSuspendLowering.cpp:483 to retain
+C++ const/volatile qualification, including concrete and dependent field types,
+instead of stripping it and changing overload resolution when reparsing the body.
+fd57ae36 records whether an authored continue targets each lowered loop and emits
+its increment/condition target only when referenced (:1248,1275,1303,1337).
+The new no-continue loop fixture exposed the old unused-label diagnostic; this
+repair preserves normal fallthrough rather than relaxing warnings.
+
+0c735ac3 adds qualified_locals.cpp and registers it in the existing executable
+plugin harness. It checks distinct cv-qualified overloads, three immovable
+ordinary objects, stable addresses over two suspensions, and destruction after
+completion, immediate/resumed failure and a resumed CancellationException.
+Those are test requirements, not successful executable evidence. Python harness
+syntax parses; a standalone strict standard-library probe accepts the required
+optional<const/volatile Value> emplacement/reset storage. Neither establishes
+compiler lowering or either complete MLX acceptance path.
+
+Actual test_transform_suspension.cpp compilation exits 1. The new qualified
+fixture also exits 1 with the existing plugin, which reports generated GNU
+address-of-label and unused-loop-label diagnostics. A fresh final plugin build
+exits 2 in KotlinxClassMetadataPlugin on LLVM/Clang unused-parameter diagnostics,
+so the cv and loop-target repairs have not run in a fresh plugin. Strict warning
+policy is unchanged. Receipts under build/ir-recovery:
+transform-index-action-source-consumer.log, qualified-locals-source-consumer.log,
+qualified-locals-source-plugins.log and qualified-locals-final-plugins.log.
+Generic local-class/lambda declaration integration remains incomplete.
+
+Both exact full-root scans finish after the final source change, exit 0, and make
+no further report changes relative to d73e201c. No source edits run during either
+scan. Final receipts are qualified-locals-final-{library,compiler}-deep.log.
+Transform remains 12/13 bodies at similarity 0.07, with target inventory 76 bodies
+and 8 types. Library totals are 831/2918 bodies and 359/560 types at 0.26, with
+123 scoring failures; compiler totals are 592/7657 bodies and 174/1727 types at
+0.36, with 24 failures. All 33 ranged Transform and 32 ranged lowering references
+resolve; the edited source and new fixture have no prohibited markers. The full
+translation goal remains active, with no fresh runtime acceptance claim.
+
 ## Predicate and nullable-map source continuation — 2026-10-07
 
 825918fa and 07e682b0 continue the actual Transform.kt translation after reading
