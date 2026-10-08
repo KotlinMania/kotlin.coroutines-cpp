@@ -32,6 +32,7 @@ def main():
     warning_source = work / 'prefix_warnings.cpp'
     warning_text = '''#include <kotlinx/coroutines/ContinuationImpl.hpp>
 #include <kotlinx/coroutines/dsl/Suspend.hpp>
+#include <kotlinx/coroutines/Job.hpp>
 using namespace kotlinx::coroutines;
 namespace {
 void require(bool value) { if (!value) throw 1; }
