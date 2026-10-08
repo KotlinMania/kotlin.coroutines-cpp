@@ -987,6 +987,58 @@ void producer_await_close_contract() {
             CHECK(caller->failure == (cleanup_fails ? failure : nullptr));
         }
     }
+    // A failed registration still executes finally and preserves the failure.
+    {
+        auto channel = create_channel<int>(0);
+        auto producer = std::make_shared<ProducerCoroutine<int>>(EmptyCoroutineContext::instance(), channel);
+        auto caller = std::make_shared<Caller>(producer->get_coroutine_context());
+        channel->invoke_on_close([](std::exception_ptr) {});
+        int cleanups = 0;
+        bool rejected = false;
+        try { await_close<int>(producer.get(), [&] { ++cleanups; }, caller.get()); }
+        catch (const std::logic_error&) { rejected = true; }
+        CHECK(rejected && cleanups == 1 && caller->resumes == 0);
+    }
+    class QueueDispatcher final : public CoroutineDispatcher {
+    public:
+        mutable std::deque<std::shared_ptr<Runnable>> queue;
+        void dispatch(const CoroutineContext&, std::shared_ptr<Runnable> task) const override {
+            queue.push_back(std::move(task));
+        }
+        void drain() {
+            while (!queue.empty()) {
+                auto task = std::move(queue.front());
+                queue.pop_front();
+                task->run();
+            }
+        }
+    };
+    // Cancellation wins after close becomes ready but before dispatched delivery.
+    for (bool cleanup_fails : {false, true}) {
+        auto dispatcher = std::make_shared<QueueDispatcher>();
+        auto channel = create_channel<int>(0);
+        auto producer = std::make_shared<ProducerCoroutine<int>>(dispatcher, channel);
+        auto caller = std::make_shared<Caller>(producer->get_coroutine_context());
+        int cleanups = 0;
+        auto resource = std::make_shared<int>(91);
+        std::weak_ptr<int> lifetime = resource;
+        auto cleanup_failure = std::make_exception_ptr(std::runtime_error("cancelled cleanup"));
+        auto outcome = await_close<int>(producer.get(),
+            [resource, &cleanups, cleanup_fails, cleanup_failure] {
+                CHECK(*resource == 91);
+                ++cleanups;
+                if (cleanup_fails) std::rethrow_exception(cleanup_failure);
+            }, caller.get());
+        resource.reset();
+        CHECK(intrinsics::is_coroutine_suspended(outcome) && cleanups == 0);
+        channel->close(nullptr);
+        CHECK(!dispatcher->queue.empty() && caller->resumes == 0 && cleanups == 0);
+        auto cancellation = std::make_exception_ptr(CancellationException("producer cancelled"));
+        producer->cancel(cancellation);
+        dispatcher->drain();
+        CHECK(cleanups == 1 && lifetime.expired() && caller->resumes == 1);
+        CHECK(caller->failure == (cleanup_fails ? cleanup_failure : cancellation));
+    }
     auto producer = std::make_shared<ProducerCoroutine<int>>(
         EmptyCoroutineContext::instance(), create_channel<int>(0));
     Completion outsider;
@@ -997,6 +1049,55 @@ void producer_await_close_contract() {
         rejected = std::string(error.what()) == "awaitClose() can only be invoked from the producer context";
     }
     CHECK(rejected && cleanups == 0 && outsider.resumes == 0);
+}
+
+// Produce.kt:269-283: register completion before start and retain the actual
+// producing coroutine/continuation through its send suspension.
+void producer_builder_contract() {
+    class ImmediateDispatcher final : public CoroutineDispatcher {
+    public:
+        bool is_dispatch_needed(const CoroutineContext&) const override { return false; }
+        void dispatch(const CoroutineContext&, std::shared_ptr<Runnable> task) const override { task->run(); }
+    };
+    auto dispatcher = std::make_shared<ImmediateDispatcher>();
+    auto scope = create_coroutine_scope(dispatcher);
+    int completions = 0;
+    bool body_started = false;
+    bool body_finished = false;
+    std::exception_ptr observed;
+    std::function<void*(ProducerScope<int>*, std::shared_ptr<Continuation<void*>>)> block =
+        [&](ProducerScope<int>* receiver, std::shared_ptr<Continuation<void*>> continuation) -> void* {
+            CHECK(!body_started && completions == 0);
+            body_started = true;
+            CHECK(receiver->get_coroutine_context()->get(ContinuationInterceptor::type_key).get() ==
+                  static_cast<CoroutineContext::Element*>(dispatcher.get()));
+            body_finished = true;
+            return receiver->send(127, continuation.get());
+        };
+    auto channel = produce<int>(scope.get(), EmptyCoroutineContext::instance(), 0,
+        BufferOverflow::SUSPEND, CoroutineStart::DEFAULT,
+        [&](std::exception_ptr cause) {
+            CHECK(body_started && body_finished);
+            ++completions;
+            observed = cause;
+        }, block);
+    CHECK(body_started && completions == 0);
+    auto received = channel->try_receive();
+    CHECK(received.is_success() && received.get_or_throw() == 127);
+    CHECK(completions == 1 && !observed && channel->is_closed_for_receive());
+
+    // Source defaults and the public overload still use the same producer.
+    std::function<void*(ProducerScope<int>*, std::shared_ptr<Continuation<void*>>)> empty =
+        [](ProducerScope<int>*, std::shared_ptr<Continuation<void*>>) -> void* { return nullptr; };
+    auto default_channel = produce<int>(scope.get(), empty);
+    CHECK(default_channel->is_closed_for_receive());
+    int immediate_completions = 0;
+    auto public_channel = produce<int>(scope.get(), EmptyCoroutineContext::instance(), 0,
+        CoroutineStart::DEFAULT, [&](std::exception_ptr cause) {
+            CHECK(!cause);
+            ++immediate_completions;
+        }, empty);
+    CHECK(immediate_completions == 1 && public_channel->is_closed_for_receive());
 }
 
 void channel_flow_surface_contract() {
@@ -1186,6 +1287,7 @@ int main() {
         safe_collector_checked_job_cast_contract();
         channel_scope_contract();
         producer_await_close_contract();
+        producer_builder_contract();
         channel_flow_surface_contract();
         channel_flow_collect_lambda_contract();
         sending_collector_contract();
