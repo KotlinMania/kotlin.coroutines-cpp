@@ -47,6 +47,15 @@ MLX GPU acceptance paths, real IR declaration/scopes integration, diagnostic
 string representation, the missing upstream-prefixed to_string and remaining
 source/body/KDoc mismatches are still unfinished.
 
+Both final full-root ast_distance --deep commands exit 0. Library measurements
+remain 831/2918 function bodies, 359/560 types, body similarity 0.26,
+documentation similarity 0.38 and 123 scoring failures. ChannelFlow remains
+18/19 bodies and 6/6 types, body similarity 0.24; its target body inventory drops
+from 42 to 38 after removing the handwritten class. No measurement criterion
+was changed. Final receipts are channel-flow-authoring-final-{library,compiler}-deep.log.
+The final source-bound check covers all three edited library files: 47, 12 and
+23 ranged references respectively. These checks do not certify runtime behavior.
+
 Historical checkpoints below retain their original evidence.
 
 Date: 2026-10-07. Read complete common flow Channels.kt, Flow.kt,
