@@ -1,7 +1,7 @@
 === libraries/stdlib/src/kotlin/time/Duration.kt -> kotlin/time/Duration.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/time/Duration.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/time/Duration.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/time/Duration.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/src/kotlin/time/Duration.kt
+Target: ../../../../src/kotlin/time/Duration.cpp ../../../../src/kotlin/time/Duration.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.259152
@@ -216,8 +216,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/Unit.kt -> kotlinx/coroutines/Unit.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Unit.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Unit.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Unit.cpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Unit.kt
+Target: ../../../../src/kotlinx/coroutines/Unit.hpp ../../../../src/kotlinx/coroutines/Unit.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.338562
@@ -260,8 +260,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/DebugProbes.kt -> kotlinx/coroutines/DebugProbes.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/DebugProbes.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/DebugProbes.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/DebugProbes.kt
+Target: ../../../../src/kotlinx/coroutines/DebugProbes.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.038348
 translated_ast_cosine: 0.514334
@@ -334,8 +334,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/src/kotlin/coroutines/Continuation.kt -> kotlinx/coroutines/Continuation.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Continuation.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt
+Target: ../../../../src/kotlinx/coroutines/Continuation.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.513686
@@ -497,17 +497,17 @@ __ast_distance_unmapped__("getter", "get() {\n        throw NotImplementedError(
 Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:82	-	createCoroutine
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:97	-	createCoroutine
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:110	-	startCoroutine
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:123	-	startCoroutine
-MISSING_TARGET_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:140	-	suspendCoroutine
+MISSING_TARGET_REVIEW	suspend callback contract	../../../../tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:82	-	createCoroutine
+MISSING_TARGET_REVIEW	suspend callback contract	../../../../tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:97	-	createCoroutine
+MISSING_TARGET_REVIEW	suspend callback contract	../../../../tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:110	-	startCoroutine
+MISSING_TARGET_REVIEW	suspend callback contract	../../../../tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:123	-	startCoroutine
+MISSING_TARGET_REVIEW	suspend declaration	../../../../tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/Continuation.kt:140	-	suspendCoroutine
 Explicit suspension contracts reviewed: 5
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt -> kotlinx/coroutines/context_impl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/context_impl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/context_impl.cpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/CoroutineContextImpl.kt
+Target: ../../../../src/kotlinx/coroutines/context_impl.hpp ../../../../src/kotlinx/coroutines/context_impl.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.397095
@@ -687,8 +687,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt -> kotlinx/coroutines/ContinuationImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationImpl.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/ContinuationImpl.kt
+Target: ../../../../src/kotlinx/coroutines/ContinuationImpl.cpp ../../../../src/kotlinx/coroutines/ContinuationImpl.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.486932
@@ -769,8 +769,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/src/kotlin/coroutines/intrinsics/Intrinsics.kt -> kotlinx/coroutines/intrinsics/Intrinsics.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/intrinsics/Intrinsics.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Intrinsics.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/intrinsics/Intrinsics.kt
+Target: ../../../../src/kotlinx/coroutines/intrinsics/Intrinsics.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.564855
@@ -840,13 +840,13 @@ __ast_distance_unmapped__("class_declaration", "@SinceKotlin(\"1.3\")\n@Publishe
 Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
-MISSING_TARGET_REVIEW	suspend declaration	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/intrinsics/Intrinsics.kt:39	-	suspendCoroutineUninterceptedOrReturn
+MISSING_TARGET_REVIEW	suspend declaration	../../../../tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/intrinsics/Intrinsics.kt:39	-	suspendCoroutineUninterceptedOrReturn
 Explicit suspension contracts reviewed: 1
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt -> kotlinx/coroutines/ContinuationInterceptor.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationInterceptor.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/ContinuationInterceptor.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/src/kotlin/coroutines/ContinuationInterceptor.kt
+Target: ../../../../src/kotlinx/coroutines/ContinuationInterceptor.cpp ../../../../src/kotlinx/coroutines/ContinuationInterceptor.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.466515
@@ -892,8 +892,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt -> kotlinx/coroutines/intrinsics/IntrinsicsNative.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/IntrinsicsNative.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/IntrinsicsNative.cpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt
+Target: ../../../../src/kotlinx/coroutines/intrinsics/IntrinsicsNative.hpp ../../../../src/kotlinx/coroutines/intrinsics/IntrinsicsNative.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.434484
@@ -1128,26 +1128,26 @@ __ast_distance_unmapped__("function_declaration", "@Suppress(\"UNCHECKED_CAST\")
 Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:24	-	startCoroutineUninterceptedOrReturn
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:37	-	startCoroutineUninterceptedOrReturnFallback
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:61	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/IntrinsicsNative.cpp:228	startCoroutineUninterceptedOrReturn -> kotlin::coroutines::intrinsics::start_coroutine_unintercepted_or_return
+MISSING_TARGET_REVIEW	suspend callback contract	../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:24	-	startCoroutineUninterceptedOrReturn
+MISSING_TARGET_REVIEW	suspend callback contract	../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:37	-	startCoroutineUninterceptedOrReturnFallback
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:61	../../../../src/kotlinx/coroutines/intrinsics/IntrinsicsNative.cpp:228	startCoroutineUninterceptedOrReturn -> kotlin::coroutines::intrinsics::start_coroutine_unintercepted_or_return
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=1 parse=clean
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:75	-	startCoroutineUninterceptedOrReturnFallback
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:88	-	startCoroutineUninterceptedOrReturn
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:103	-	startCoroutineUninterceptedOrReturnFallback
-MISSING_TARGET_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:140	-	createCoroutineUnintercepted
-TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:175	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/IntrinsicsNative.hpp:47	createCoroutineUnintercepted -> kotlin::coroutines::intrinsics::create_coroutine_unintercepted
+MISSING_TARGET_REVIEW	suspend callback contract	../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:75	-	startCoroutineUninterceptedOrReturnFallback
+MISSING_TARGET_REVIEW	suspend callback contract	../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:88	-	startCoroutineUninterceptedOrReturn
+MISSING_TARGET_REVIEW	suspend callback contract	../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:103	-	startCoroutineUninterceptedOrReturnFallback
+MISSING_TARGET_REVIEW	suspend callback contract	../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:140	-	createCoroutineUnintercepted
+TAIL_OR_HELPER_REVIEW	suspend callback contract	../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:175	../../../../src/kotlinx/coroutines/intrinsics/IntrinsicsNative.hpp:47	createCoroutineUnintercepted -> kotlin::coroutines::intrinsics::create_coroutine_unintercepted
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=clean
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:175	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/IntrinsicsNative.cpp:199	createCoroutineUnintercepted -> kotlin::coroutines::intrinsics::create_coroutine_unintercepted
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:175	../../../../src/kotlinx/coroutines/intrinsics/IntrinsicsNative.cpp:199	createCoroutineUnintercepted -> kotlin::coroutines::intrinsics::create_coroutine_unintercepted
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=clean
-TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:175	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/IntrinsicsNative.cpp:210	createCoroutineUnintercepted -> kotlin::coroutines::intrinsics::create_coroutine_unintercepted
+TAIL_OR_HELPER_REVIEW	suspend callback contract	../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:175	../../../../src/kotlinx/coroutines/intrinsics/IntrinsicsNative.cpp:210	createCoroutineUnintercepted -> kotlin::coroutines::intrinsics::create_coroutine_unintercepted
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=clean
 Explicit suspension contracts reviewed: 8
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt -> kotlin/coroutines/cancellation/CancellationException.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt
+Target: ../../../../src/kotlin/coroutines/cancellation/CancellationException.hpp ../../../../src/kotlin/coroutines/cancellation/CancellationException.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.327263
@@ -1216,8 +1216,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/Any.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/Any.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/AnyIdentity.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/AnyToString.cpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/Any.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/AnyIdentity.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/AnyToString.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.350294
@@ -1264,8 +1264,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/Array.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/Array.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Array.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/Array.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Array.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/Array.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.343197
@@ -1326,8 +1326,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/CodeGenerator.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/CodeGenerator.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/CodeGenerator.cpp
+Source: ../../../../tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/CodeGenerator.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/CodeGenerator.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/CodeGenerator.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.271598
@@ -1662,8 +1662,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/Arrays.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/IntArray.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Arrays.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/IntArray.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/IntArray.cpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Arrays.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/IntArray.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/IntArray.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.307256
@@ -1955,8 +1955,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KType.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KType.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KType.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KType.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KType.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KType.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.294398
@@ -1992,8 +1992,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/native/Runtime.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/Runtime.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/Runtime.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/Runtime.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/Runtime.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/Runtime.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/Runtime.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/Runtime.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.570653
@@ -2113,8 +2113,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KClass.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClass.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KClass.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClass.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KClass.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClass.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.437203
@@ -2150,8 +2150,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/native-wasm/src/kotlin/collections/Map.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Map.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Map.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Map.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Map.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Map.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.427103
@@ -2233,8 +2233,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/native-wasm/src/kotlin/collections/Set.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Set.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Set.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Set.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Set.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Set.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.297698
@@ -2299,8 +2299,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/ArrayIntrinsics.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/ArrayIntrinsics.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/ArrayIntrinsics.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/ArrayIntrinsics.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/ArrayIntrinsics.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/ArrayIntrinsics.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/ArrayIntrinsics.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/ArrayIntrinsics.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.493657
@@ -2437,8 +2437,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/IrToBitcode_coroutines.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/IrToBitcode_coroutines.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/IrToBitcode_coroutines.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/llvm/IrToBitcode.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/IrToBitcode_coroutines.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/IrToBitcode_coroutines.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.030392
 translated_ast_cosine: 0.465287
@@ -2730,8 +2730,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/fir/checkers/src/org/jetbrains/kotlin/fir/analysis/checkers/expression/FirSuspendCallChecker.kt -> kotlinx/coroutines/tools/clang_suspend_plugin/FirSuspendCallChecker.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/fir/checkers/src/org/jetbrains/kotlin/fir/analysis/checkers/expression/FirSuspendCallChecker.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/FirSuspendCallChecker.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/FirSuspendCallChecker.cpp
+Source: ../../../../tmp/kotlin/compiler/fir/checkers/src/org/jetbrains/kotlin/fir/analysis/checkers/expression/FirSuspendCallChecker.kt
+Target: ../../../../src/kotlinx/coroutines/tools/clang_suspend_plugin/FirSuspendCallChecker.hpp ../../../../src/kotlinx/coroutines/tools/clang_suspend_plugin/FirSuspendCallChecker.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.493222
@@ -2792,8 +2792,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KCallable.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KCallable.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KCallable.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KCallable.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KCallable.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KCallable.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.486173
@@ -2829,8 +2829,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KProperty.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KProperty.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KProperty.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KProperty.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KProperty.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KProperty.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.553197
@@ -2892,8 +2892,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/native-wasm/src/kotlin/collections/Arrays.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Arrays.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Arrays.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Arrays.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Arrays.cpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Arrays.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Arrays.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Arrays.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.429022
@@ -3002,8 +3002,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/src/kotlin/reflect/KClassifier.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClassifier.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/reflect/KClassifier.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClassifier.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/src/kotlin/reflect/KClassifier.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClassifier.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.372348
@@ -3042,8 +3042,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/UpgradeCallableReferences.kt -> kotlinx/coroutines/tools/clang_suspend_plugin/UpgradeCallableReferences.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/UpgradeCallableReferences.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/UpgradeCallableReferences.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/UpgradeCallableReferences.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/UpgradeCallableReferences.kt
+Target: ../../../../src/kotlinx/coroutines/tools/clang_suspend_plugin/UpgradeCallableReferences.cpp ../../../../src/kotlinx/coroutines/tools/clang_suspend_plugin/UpgradeCallableReferences.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.503864
@@ -3112,8 +3112,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt -> kotlinx/coroutines/tools/clang_suspend_plugin/TailSuspendCallsCollector.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/TailSuspendCallsCollector.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/TailSuspendCallsCollector.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt
+Target: ../../../../src/kotlinx/coroutines/tools/clang_suspend_plugin/TailSuspendCallsCollector.cpp ../../../../src/kotlinx/coroutines/tools/clang_suspend_plugin/TailSuspendCallsCollector.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.017289
 translated_ast_cosine: 0.580510
@@ -3199,8 +3199,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/native-wasm/src/kotlin/collections/Iterator.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Iterator.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Iterator.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Iterator.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableIterator.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Iterator.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Iterator.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableIterator.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.332901
@@ -3267,8 +3267,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/collections/ArrayUtil.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArrayUtil.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/collections/ArrayUtil.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArrayUtil.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArrayUtil.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/NativeArrayUtil.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/NativeArrayUtil.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/collections/ArrayUtil.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArrayUtil.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArrayUtil.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/NativeArrayUtil.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/NativeArrayUtil.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.368500
@@ -3413,8 +3413,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/native-wasm/src/kotlin/collections/Collections.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Collections.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Collections.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Collections.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionFunctions.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionFunctions.cpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Collections.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Collections.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionFunctions.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionFunctions.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.398752
@@ -3603,8 +3603,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/native-wasm/src/kotlin/collections/List.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableList.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/List.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableList.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/List.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableList.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.346023
@@ -3674,8 +3674,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/generated/_ArraysNative.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArraysNative.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/generated/_ArraysNative.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArraysNative.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArraysNative.cpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/generated/_ArraysNative.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArraysNative.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/ArraysNative.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.255944
@@ -6030,8 +6030,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/native-wasm/src/kotlin/collections/RandomAccess.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/RandomAccess.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/RandomAccess.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/RandomAccess.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/RandomAccess.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/RandomAccess.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.395374
@@ -6067,8 +6067,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KAnnotatedElement.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KAnnotatedElement.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KAnnotatedElement.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KAnnotatedElement.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KAnnotatedElement.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KAnnotatedElement.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.350035
@@ -6104,8 +6104,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrElement.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElement.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrElement.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElement.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrElement.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElement.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.267189
@@ -6151,8 +6151,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeFunctionReferenceLowering.kt -> kotlinx/coroutines/tools/clang_suspend_plugin/NativeFunctionReferenceLowering.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeFunctionReferenceLowering.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/NativeFunctionReferenceLowering.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/NativeFunctionReferenceLowering.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeFunctionReferenceLowering.kt
+Target: ../../../../src/kotlinx/coroutines/tools/clang_suspend_plugin/NativeFunctionReferenceLowering.cpp ../../../../src/kotlinx/coroutines/tools/clang_suspend_plugin/NativeFunctionReferenceLowering.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.013956
 translated_ast_cosine: 0.419998
@@ -6217,8 +6217,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/concurrent/atomics/Atomics.native.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/concurrent/atomics/Atomics.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/concurrent/atomics/Atomics.native.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/concurrent/atomics/Atomics.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/concurrent/atomics/Atomics.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/concurrent/atomics/Atomics.native.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/concurrent/atomics/Atomics.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/concurrent/atomics/Atomics.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.149876
@@ -6629,8 +6629,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/KClassImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/KClassImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/KClassImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/KClassImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/KClassIdentity.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/KClassNames.cpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/KClassImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/KClassImpl.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/KClassIdentity.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/KClassNames.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.345165
@@ -6731,8 +6731,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/IrAttribute.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrAttribute.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/IrAttribute.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrAttribute.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/IrAttribute.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrAttribute.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.419326
@@ -6859,8 +6859,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/text/StringNumberConversions.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/text/StringNumberConversions.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/text/StringNumberConversions.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/text/StringNumberConversions.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/text/StringNumberConversions.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/text/StringNumberConversions.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/text/StringNumberConversions.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/text/StringNumberConversions.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.495994
@@ -7089,8 +7089,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/language.model/src/org/jetbrains/kotlin/types/Variance.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/Variance.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/language.model/src/org/jetbrains/kotlin/types/Variance.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/Variance.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/Variance.cpp
+Source: ../../../../tmp/kotlin/core/language.model/src/org/jetbrains/kotlin/types/Variance.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/Variance.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/Variance.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.014991
 translated_ast_cosine: 0.318551
@@ -7142,8 +7142,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrStatement.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrStatement.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrStatement.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrStatement.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrStatement.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrStatement.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.063246
 translated_ast_cosine: 0.831782
@@ -7183,8 +7183,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/AbstractFunctionReferenceLowering.kt -> kotlinx/coroutines/tools/clang_suspend_plugin/AbstractFunctionReferenceLowering.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/AbstractFunctionReferenceLowering.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/AbstractFunctionReferenceLowering.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/clang_suspend_plugin/AbstractFunctionReferenceLowering.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/AbstractFunctionReferenceLowering.kt
+Target: ../../../../src/kotlinx/coroutines/tools/clang_suspend_plugin/AbstractFunctionReferenceLowering.hpp ../../../../src/kotlinx/coroutines/tools/clang_suspend_plugin/AbstractFunctionReferenceLowering.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.001661
 translated_ast_cosine: 0.574813
@@ -7310,8 +7310,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/native-wasm/src/kotlin/collections/Collection.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableCollection.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Collection.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableCollection.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Collection.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableCollection.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.385468
@@ -7379,8 +7379,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/src/kotlin/collections/Collections.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionToArray.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/collections/Collections.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionToArray.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionToArray.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/src/kotlin/collections/Collections.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionToArray.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/CollectionToArray.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.030960
 translated_ast_cosine: 0.560983
@@ -7891,8 +7891,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KDeclarationContainer.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KDeclarationContainer.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KDeclarationContainer.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KDeclarationContainer.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KDeclarationContainer.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KDeclarationContainer.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.350035
@@ -7928,8 +7928,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/TypeInfoNames.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoNames.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/TypeInfoNames.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoNames.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoNames.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoNamesNative.cpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/TypeInfoNames.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoNames.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoNames.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoNamesNative.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.408706
@@ -7987,8 +7987,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/types/IrType.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/types/IrType.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/types/IrType.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/types/IrType.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/types/IrType.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/types/IrType.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/types/IrType.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/types/IrType.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.312528
@@ -8059,8 +8059,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/src/kotlin/collections/PrimitiveIterators.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/PrimitiveIterators.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/collections/PrimitiveIterators.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/PrimitiveIterators.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/PrimitiveIterators.cpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/src/kotlin/collections/PrimitiveIterators.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/PrimitiveIterators.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/PrimitiveIterators.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.176245
@@ -8387,8 +8387,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === libraries/stdlib/src/kotlin/collections/MutableCollections.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableCollections.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/src/kotlin/collections/MutableCollections.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableCollections.hpp
+Source: ../../../../tmp/kotlin/libraries/stdlib/src/kotlin/collections/MutableCollections.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/MutableCollections.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.566606
@@ -8715,8 +8715,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/TypeInfoHolder.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoHolder.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/TypeInfoHolder.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoHolder.hpp
+Source: ../../../../tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/internal/TypeInfoHolder.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/internal/TypeInfoHolder.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.045268
 translated_ast_cosine: 0.430483
@@ -8757,8 +8757,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/IrElementBase.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElementBase.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/IrElementBase.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElementBase.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElementBase.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElementBaseAttributes.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/IrElementBase.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElementBase.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElementBase.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElementBaseAttributes.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.006858
 translated_ast_cosine: 0.399969
@@ -8839,8 +8839,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/compiler.common/src/org/jetbrains/kotlin/mpp/TypeRefMarker.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/mpp/TypeRefMarker.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/mpp/TypeRefMarker.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/mpp/TypeRefMarker.hpp
+Source: ../../../../tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/mpp/TypeRefMarker.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/mpp/TypeRefMarker.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.106904
 translated_ast_cosine: 0.480911
@@ -8878,8 +8878,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/util/transform.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/util/Transform.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/util/transform.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/util/Transform.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/util/TransformIfNeeded.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/util/TransformInPlace.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/util/transform.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/util/Transform.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/util/TransformIfNeeded.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/util/TransformInPlace.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.496812
@@ -8995,8 +8995,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/symbols/IrSymbol.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrSymbol.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/symbols/IrSymbol.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrSymbol.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/symbols/IrSymbol.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrSymbol.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrSymbol.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.012188
 translated_ast_cosine: 0.335320
@@ -9094,8 +9094,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/compiler.common/src/org/jetbrains/kotlin/descriptors/Modality.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Modality.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/Modality.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Modality.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Modality.hpp
+Source: ../../../../tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/Modality.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Modality.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Modality.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.064550
 translated_ast_cosine: 0.543314
@@ -9133,8 +9133,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrBody.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrBody.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrBody.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrBody.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrBody.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrBody.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrBody.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrBody.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.049875
 translated_ast_cosine: 0.662050
@@ -9180,8 +9180,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/compiler.common/src/org/jetbrains/kotlin/descriptors/ClassKind.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ClassKind.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/ClassKind.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ClassKind.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ClassKind.cpp
+Source: ../../../../tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/ClassKind.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ClassKind.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ClassKind.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.277193
@@ -9272,8 +9272,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrVisitor.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrVisitor.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrVisitor.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrVisitor.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrVisitor.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrVisitor.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.023424
 translated_ast_cosine: 0.102266
@@ -9579,8 +9579,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/compiler.common/src/org/jetbrains/kotlin/descriptors/Visibility.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibility.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/Visibility.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibility.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibility.hpp
+Source: ../../../../tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/Visibility.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibility.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibility.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.232960
@@ -9638,8 +9638,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/visitors/Deprecated.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/Deprecated.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/visitors/Deprecated.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/Deprecated.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/visitors/Deprecated.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/Deprecated.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.148522
 translated_ast_cosine: 0.733014
@@ -9689,8 +9689,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrClass.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrClass.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrClass.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrClass.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrClass.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrClassChildren.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrClass.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrClass.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrClass.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrClassChildren.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.020362
 translated_ast_cosine: 0.346698
@@ -9739,8 +9739,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/symbols/IrSymbol.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueSymbol.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/symbols/IrSymbol.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueSymbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassSymbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassifierSymbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassifierSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrTypeParameterSymbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrTypeParameterSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueParameterSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueParameterSymbol.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrVariableSymbol.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrVariableSymbol.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/symbols/IrSymbol.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueSymbol.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueSymbol.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassSymbol.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassSymbol.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassifierSymbol.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrClassifierSymbol.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrTypeParameterSymbol.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrTypeParameterSymbol.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueParameterSymbol.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrValueParameterSymbol.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrVariableSymbol.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/IrVariableSymbol.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.009497
 translated_ast_cosine: 0.495136
@@ -10060,8 +10060,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/compiler.common/src/org/jetbrains/kotlin/descriptors/Visibilities.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibilities.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/Visibilities.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibilities.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibilities.cpp
+Source: ../../../../tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/descriptors/Visibilities.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibilities.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Visibilities.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.009241
 translated_ast_cosine: 0.249386
@@ -10144,8 +10144,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrTransformer.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrTransformer.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrTransformer.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrTransformer.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrTransformer.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrTransformer.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.126439
@@ -10459,8 +10459,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSetValue.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSetValue.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSetValue.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSetValue.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSetValue.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSetValue.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSetValue.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSetValue.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.042679
 translated_ast_cosine: 0.357728
@@ -10508,8 +10508,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrGetValue.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrGetValue.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrGetValue.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrGetValue.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrGetValue.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrGetValue.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrGetValue.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrGetValue.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.066227
 translated_ast_cosine: 0.697408
@@ -10553,8 +10553,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/descriptors/src/org/jetbrains/kotlin/descriptors/Substitutable.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Substitutable.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/Substitutable.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Substitutable.hpp
+Source: ../../../../tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/Substitutable.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/Substitutable.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.573378
@@ -10604,8 +10604,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrVariable.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrVariable.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrVariable.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrVariable.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrVariable.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrVariable.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrVariable.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrVariable.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.015089
 translated_ast_cosine: 0.377468
@@ -10654,8 +10654,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrExpression.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpression.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrExpression.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpression.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpression.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrExpression.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpression.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpression.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.587940
@@ -10701,8 +10701,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.486946
@@ -10763,8 +10763,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/compiler.common/src/org/jetbrains/kotlin/mpp/DeclarationSymbolMarkers.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/mpp/DeclarationSymbolMarkers.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/mpp/DeclarationSymbolMarkers.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/mpp/DeclarationSymbolMarkers.hpp
+Source: ../../../../tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/mpp/DeclarationSymbolMarkers.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/mpp/DeclarationSymbolMarkers.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.038278
 translated_ast_cosine: 0.278172
@@ -10842,8 +10842,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclaration.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclaration.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclaration.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclaration.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclaration.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclaration.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.462283
@@ -10885,8 +10885,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrSymbolOwner.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.031686
 translated_ast_cosine: 0.605463
@@ -10929,8 +10929,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/compiler.common/src/org/jetbrains/kotlin/types/model/TypeSystemContext.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/model/TypeSystemContext.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/types/model/TypeSystemContext.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/model/TypeSystemContext.hpp
+Source: ../../../../tmp/kotlin/core/compiler.common/src/org/jetbrains/kotlin/types/model/TypeSystemContext.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/types/model/TypeSystemContext.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.052687
 translated_ast_cosine: 0.307144
@@ -11193,8 +11193,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrVarargElement.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrVarargElement.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrVarargElement.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrVarargElement.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrVarargElement.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrVarargElement.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.115470
 translated_ast_cosine: 0.865200
@@ -11236,8 +11236,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrParameterKind.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrParameterKind.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrParameterKind.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrParameterKind.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrParameterKind.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrParameterKind.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.163663
 translated_ast_cosine: 0.913125
@@ -11273,8 +11273,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParameter.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.372616
@@ -11323,8 +11323,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrExpressionBody.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.017345
 translated_ast_cosine: 0.369652
@@ -11376,8 +11376,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrValueParameter.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueParameter.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrValueParameter.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueParameter.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueParameter.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrValueParameter.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueParameter.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueParameter.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.024289
 translated_ast_cosine: 0.294167
@@ -11432,8 +11432,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspensionPoint.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.033113
 translated_ast_cosine: 0.384048
@@ -11481,8 +11481,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/descriptors/src/org/jetbrains/kotlin/descriptors/DescriptorVisibility.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/DescriptorVisibility.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/DescriptorVisibility.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/DescriptorVisibility.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/DescriptorVisibility.cpp
+Source: ../../../../tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/DescriptorVisibility.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/DescriptorVisibility.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/DescriptorVisibility.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.216884
@@ -11550,8 +11550,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationBase.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.023338
 translated_ast_cosine: 0.511842
@@ -11592,8 +11592,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/descriptors/src/org/jetbrains/kotlin/descriptors/annotations/Annotations.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/annotations/Annotated.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/annotations/Annotations.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/annotations/Annotated.hpp
+Source: ../../../../tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/annotations/Annotations.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/annotations/Annotated.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.132068
 translated_ast_cosine: 0.514438
@@ -11680,8 +11680,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrValueDeclaration.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.047458
 translated_ast_cosine: 0.564831
@@ -11724,8 +11724,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrGetValueImpl.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.048002
 translated_ast_cosine: 0.211662
@@ -11783,8 +11783,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSetValueImpl.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.033851
 translated_ast_cosine: 0.203782
@@ -11844,8 +11844,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrVariableImpl.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.024650
 translated_ast_cosine: 0.176481
@@ -11916,8 +11916,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationParent.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationParent.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationParent.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationParent.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationParent.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationParent.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.111111
 translated_ast_cosine: 0.858315
@@ -11959,8 +11959,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/descriptors/src/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.hpp
+Source: ../../../../tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/ValueParameterDescriptor.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.039920
 translated_ast_cosine: 0.371260
@@ -12013,8 +12013,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/visitors/IrElementTransformerVoid.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.047581
@@ -12602,8 +12602,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrVariableSymbolImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrVariableSymbolImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrVariableSymbolImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrTypeParameterSymbolImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrTypeParameterSymbolImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrValueParameterSymbolImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrValueParameterSymbolImpl.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/symbols/impl/IrSymbolImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrVariableSymbolImpl.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrVariableSymbolImpl.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrTypeParameterSymbolImpl.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrTypeParameterSymbolImpl.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrValueParameterSymbolImpl.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/symbols/impl/IrValueParameterSymbolImpl.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.042934
 translated_ast_cosine: 0.376080
@@ -12705,8 +12705,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrMetadataSourceOwner.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrMetadataSourceOwner.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrMetadataSourceOwner.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrMetadataSourceOwner.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrMetadataSourceOwner.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrMetadataSourceOwner.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.072739
 translated_ast_cosine: 0.647711
@@ -12748,8 +12748,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrAnnotationContainer.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrAnnotationContainer.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrAnnotationContainer.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrAnnotationContainer.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/src/org/jetbrains/kotlin/ir/declarations/IrAnnotationContainer.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrAnnotationContainer.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.032478
 translated_ast_cosine: 0.636479
@@ -12787,8 +12787,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrDeclarationReference.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrDeclarationReference.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrDeclarationReference.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrDeclarationReference.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrDeclarationReference.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrDeclarationReference.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.045644
 translated_ast_cosine: 0.744100
@@ -12830,8 +12830,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithName.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithName.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithName.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithName.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithName.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithName.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.034503
 translated_ast_cosine: 0.552461
@@ -12873,8 +12873,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationContainer.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationContainer.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationContainer.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationContainer.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationContainer.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationContainer.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.067116
 translated_ast_cosine: 0.719618
@@ -12916,8 +12916,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrValueAccessExpression.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrValueAccessExpression.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrValueAccessExpression.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrValueAccessExpression.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrValueAccessExpression.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrValueAccessExpression.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.032686
 translated_ast_cosine: 0.425251
@@ -12959,8 +12959,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/IrSuspendableExpression.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.056857
 translated_ast_cosine: 0.360158
@@ -13008,8 +13008,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrTypeParameterImpl.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.024098
 translated_ast_cosine: 0.192628
@@ -13078,8 +13078,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.cpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspensionPointImpl.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.045015
 translated_ast_cosine: 0.213402
@@ -13139,8 +13139,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrTypeParametersContainer.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParametersContainer.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrTypeParametersContainer.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParametersContainer.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrTypeParametersContainer.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrTypeParametersContainer.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
 translated_ast_cosine: 0.687210
@@ -13180,8 +13180,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/impl/IrValueParameterImpl.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.022824
 translated_ast_cosine: 0.156573
@@ -13258,8 +13258,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithVisibility.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithVisibility.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithVisibility.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithVisibility.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithVisibility.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrDeclarationWithVisibility.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.064957
 translated_ast_cosine: 0.575490
@@ -13301,8 +13301,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrMutableAnnotationContainer.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrMutableAnnotationContainer.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrMutableAnnotationContainer.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrMutableAnnotationContainer.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrMutableAnnotationContainer.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrMutableAnnotationContainer.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.032898
 translated_ast_cosine: 0.621324
@@ -13344,8 +13344,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrPossiblyExternalDeclaration.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrPossiblyExternalDeclaration.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrPossiblyExternalDeclaration.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrPossiblyExternalDeclaration.hpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/declarations/IrPossiblyExternalDeclaration.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/declarations/IrPossiblyExternalDeclaration.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.085126
 translated_ast_cosine: 0.600429
@@ -13385,8 +13385,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === core/descriptors/src/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.cpp
+Source: ../../../../tmp/kotlin/core/descriptors/src/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/descriptors/impl/ValueParameterDescriptorImpl.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.007172
 translated_ast_cosine: 0.237086
@@ -13481,8 +13481,8 @@ Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.hpp ===
 Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.cpp
+Source: ../../../../tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.kt
+Target: ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.hpp ../../../../src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/expressions/impl/IrSuspendableExpressionImpl.cpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.036407
 translated_ast_cosine: 0.225111
