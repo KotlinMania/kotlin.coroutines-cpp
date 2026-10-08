@@ -10,6 +10,7 @@
 #include "kotlinx/coroutines/intrinsics/Intrinsics.hpp"
 #include "kotlinx/coroutines/intrinsics/Cancellable.hpp"
 #include "kotlinx/coroutines/internal/CurrentRunningCoroutine.hpp"
+#include <functional>
 #include <type_traits>
 #include <utility>
 
@@ -355,16 +356,7 @@ enum class CoroutineStart {
     UNDISPATCHED
 };
 
-/**
- * Starts the corresponding block with receiver as a coroutine with this coroutine start strategy.
- *
- * - [DEFAULT] uses [startCoroutineCancellable].
- * - [ATOMIC] uses [startCoroutine].
- * - [UNDISPATCHED] uses [startCoroutineUndispatched].
- * - [LAZY] does nothing.
- *
- * @suppress **This an internal API and should not be used from general code.**
- */
+// NOTE(port): Existing erased C++ ABI binding for the source strategy.
 // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
 void invoke(CoroutineStart start, intrinsics::ErasedSuspendFunction block,
             std::shared_ptr<Continuation<void*>> completion);
@@ -376,6 +368,16 @@ void invoke(CoroutineStart start, intrinsics::ErasedSuspendFunction block,
 // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:370-370
 bool is_lazy(CoroutineStart start);
 
+/**
+ * Starts the corresponding block with receiver as a coroutine with this coroutine start strategy.
+ *
+ * - [DEFAULT] uses [startCoroutineCancellable].
+ * - [ATOMIC] uses [startCoroutine].
+ * - [UNDISPATCHED] uses [startCoroutineUndispatched].
+ * - [LAZY] does nothing.
+ *
+ * @suppress **This an internal API and should not be used from general code.**
+ */
 // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
 // NOTE(port): The source suspend receiver function uses the existing typed ABI.
 template <typename R, typename T>
