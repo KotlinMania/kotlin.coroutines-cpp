@@ -15,7 +15,7 @@ scope completion. Child completion preserves the compiler caller's interceptor.
 
 `ChannelFlow.cpp:18` contains the concrete private CollectContinuation for the
 single suspend-call bodies at source lines 54-56, 118-121, 144-148 and 151-152.
-The typed header bindings at `ChannelFlow.hpp:245,262,326,481` retain actual
+The typed header bindings at `ChannelFlow.hpp:255,278,342,499` retain actual
 flow/channel/collector owners and invoke their source operations. The private
 algorithm and compiler labels are no longer duplicated in local header classes.
 This continues to use the existing Continuation ABI and mandatory LLVM markers.
@@ -83,3 +83,18 @@ missing. The increase in counted symbols principally corrects false file
 exclusions, rather than proving additional algorithms translated. Final scan
 receipts are `channel-source-frames-{library,compiler}-deep.log`, and refreshed
 artifacts remain under `docs/audits/project-wide/{library,compiler}`.
+
+
+## Consumed producer lambda and surface repair — 2026-10-07
+
+The complete pinned ChannelFlow.kt was read before this repair. Its source collectToFun property at :54-56 now has the actual get_collect_to_fun getter at ChannelFlow.hpp:144,255. produce_impl at :270 consumes this shared lambda, preserving source ATOMIC start. The previous duplicated producer binding is removed. The getter captures the actual receiver, keeps an existing shared owner through queued start and the existing concrete suspended-call frame, and leaves raw receivers borrowed. No new frame algorithm or decision protocol was introduced.
+
+ChannelFlow.hpp:136 repeats the fuse defaults inherited by Kotlin from FusibleFlow at source :26-30. C++ callers through concrete ChannelFlow/ChannelFlowOperatorImpl now retain the same default context, capacity and overflow contract. ChannelFlowOperatorImpl::drop_channel_operators at :388 is public as its inherited source contract requires. The create and flow_collect overrides remain protected.
+
+The committed before-control 938b9706 is rejected by Clang for all three real gaps: too few fuse arguments, protected drop_channel_operators and missing get_collect_to_fun. Receipt: build/ir-recovery/channel-flow-surface-before-build.log. The repaired test_channel_consumption.cpp:943 checks zero/one/two-argument fusion, actual upstream identity and lambda receiver retention. :966 invokes that lambda with a real ProducerCoroutine/ProducerScope through actual rendezvous send. It checks resource identity, source pending-send behavior after close, immediate send failure, suspended cancellation, once-only invocation/completion and receiver/capture release. A preceding regression wrongly expected close to abort an already pending send; Channel.kt:144-146,234-236 explicitly allows that send to complete. The corrected regression exercises that behavior rather than altering production code.
+
+The fresh complete core and seven focused targets build, and all seven CTest executables execute with zero failures (0.51 seconds). Current receipts: channel-flow-surface-final-{build,tests}.log under build/ir-recovery. The expanded fixture, actual ChannelFlow.cpp and common/internal/OnUndeliveredElement.cpp also compile and execute under AddressSanitizer/UndefinedBehaviorSanitizer with detect_stack_use_after_return=1 and no diagnostics. The fresh dependency archive is not wholly instrumented. Receipts: channel-flow-surface-sanitizer-{build,tests}.log.
+
+Both final full-root deep scans exit zero. Library evidence records 818/2918 matched functions, 358/560 types, body similarity 0.26 and 123 scoring failures. ChannelFlow retains 18/19 function names and 6/6 types, with body similarity 0.25; ChannelFlowOperator.toString remains missing. Compiler/prerequisite evidence remains 591/7657 functions, 174/1727 types, body similarity 0.36 and 24 scoring failures. Generated evidence is unchanged by the final test-only corrections and remains committed in 4c2bb297. Receipts: channel-flow-surface-{library,compiler}-deep.log. No analyzer criteria were modified.
+
+The docking-ring, IR lowering and declaration/scope designs were reread together with the full pinned NativeSuspendFunctionLowering.kt and CoroutinesVarSpillingLowering.kt, source IrToBitcode suspension scopes and the actual module injector. Existing library frames use the persistent-label/current-frame/Result contract and mandatory LLVM injection. Complete IR declaration identity/scopes, automatic spill lowering and direct shared Native/C++ frames remain unfinished compiler work. This repair does not establish either complete standalone or Native/MLX GPU acceptance path. Kanban t_8700df29 and source umbrella t_1834dcec remain open for their remaining source requirements.
