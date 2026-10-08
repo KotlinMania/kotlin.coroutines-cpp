@@ -278,6 +278,16 @@ int main() {
          '-pthread', *shlex.split(args.library_link_options), '-o', str(slicing_executable)],
         work, 'expression-slicing-compile')
     assert run([str(slicing_executable)], work, 'expression-slicing-run') == 'slicing:94; immutable reads; mutable snapshot; volatile load; effects once; resumed failure; trailing effects:44 in order\n'
+    qualified_executable = work / 'qualified-locals'
+    run([args.compiler, '-std=c++20', '-Wall', '-Wextra', '-Wpedantic', '-Werror',
+         '-I' + str(args.root / 'src'),
+         '-Xclang', '-load', '-Xclang', str(args.plugin), '-Xclang', '-add-plugin',
+         '-Xclang', 'kotlinx-suspend', '-fpass-plugin=' + str(args.ir_plugin),
+         '-O1', '-UNDEBUG', '-fsanitize=address,undefined', '-fno-sanitize-recover=all',
+         str(args.root / 'src/tests/ir/fixtures/qualified_locals.cpp'), str(args.library),
+         '-pthread', *shlex.split(args.library_link_options), '-o', str(qualified_executable)],
+        work, 'qualified-locals-compile')
+    assert run([str(qualified_executable)], work, 'qualified-locals-run') == ''
     restricted_executable = work / 'restricted-receiver'
     run([args.compiler, '-std=c++20', '-I' + str(args.root / 'src'),
          '-Xclang', '-load', '-Xclang', str(args.plugin), '-Xclang', '-add-plugin',
