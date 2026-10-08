@@ -561,14 +561,25 @@ private:
     const Expr* spelled(const Expr* expression) const {
         return expression->IgnoreUnlessSpelledInSource();
     }
-    // NOTE(port): Clang's implicit iterator operations have no independent
+    // NOTE(port): Clang's implicit iterator and decomposition operations have no independent
     // source tokens. Print their AST with retained variable references.
     // NOTE(port): C++ AST printing support; no direct Kotlin counterpart.
     std::string generated_expression(const Expr* expression) const {
         class References : public PrinterHelper {
         public:
-            explicit References(const std::map<const ValueDecl*, Slot>& variables) : variables_(variables) {}
+            References(const std::map<const ValueDecl*, Slot>& variables, const PrintingPolicy& policy)
+                : variables_(variables), policy_(policy) {}
             bool handledStmt(Stmt* statement, llvm::raw_ostream& output) override {
+                // NOTE(port): Implicit decomposition casts select get() && or
+                // the rvalue tuple overload. The pretty-printer otherwise
+                // omits this cast and changes overload resolution to lvalue.
+                if (const auto* cast = dyn_cast<ImplicitCastExpr>(statement);
+                    cast && cast->isXValue() && cast->getSubExpr()->isLValue()) {
+                    output << "std::move(";
+                    cast->getSubExpr()->printPretty(output, this, policy_);
+                    output << ")";
+                    return true;
+                }
                 auto* reference = dyn_cast<DeclRefExpr>(statement);
                 if (!reference) return false;
                 auto* variable = dyn_cast<ValueDecl>(reference->getDecl());
@@ -579,9 +590,10 @@ private:
             }
         private:
             const std::map<const ValueDecl*, Slot>& variables_;
-        } references(variables_);
+            const PrintingPolicy& policy_;
+        } references(variables_, policy_);
         if (has_suspend_calls(expression))
-            throw std::runtime_error("implicit range iterator suspension requires expression lowering");
+            throw std::runtime_error("implicit compiler expression suspension requires expression lowering");
         std::string text;
         llvm::raw_string_ostream output(text);
         expression->printPretty(output, &references, policy_);
@@ -1010,8 +1022,6 @@ private:
                     alias->getUnderlyingType().getCanonicalType(), context_, policy_) + ";");
                 continue;
             }
-            llvm::SaveAndRestore<bool> expression_scope(full_expression_, true);
-            size_t first_comma = comma_temporaries_.size();
             const auto* variable = dyn_cast<VarDecl>(declaration);
             if (!variable) throw std::runtime_error("suspend local declaration is not a variable");
             if (variable->isStaticLocal()) {
@@ -1023,79 +1033,104 @@ private:
                 body_ << rewrite(statement) << ";\n";
                 return;
             }
-            const Expr* initializer = variable->getInit();
-            const Expr* unwrapped = initializer;
-            if (unwrapped) {
-                if (const auto* cleanup = dyn_cast<ExprWithCleanups>(unwrapped)) unwrapped = cleanup->getSubExpr();
-                unwrapped = unwrapped->IgnoreParens();
-                while (const auto* cast = dyn_cast<ImplicitCastExpr>(unwrapped))
-                    unwrapped = cast->getSubExpr()->IgnoreParens();
-            }
-            const auto* temporary = dyn_cast_or_null<MaterializeTemporaryExpr>(unwrapped);
-            if (const auto* reference = initializer ? dyn_cast<LambdaExpr>(spelled(initializer)) : nullptr)
-                build_reference_class(reference);
-            Slot owner;
-            if (variable->getType()->isReferenceType() && temporary && temporary->getExtendingDecl() == variable) {
-                owner = new_slot(temporary->getSubExpr()->getType(), false, true);
-                if (!scopes_.empty()) scopes_.back().push_back(owner);
-                construct(owner, emit_expression(temporary->getSubExpr()));
-            }
-            std::string deduced_type;
-            if (auto* placeholder = variable->getType()->getContainedAutoType();
-                placeholder && variable->getType()->isDependentType()) {
-                if (!initializer) throw std::runtime_error("deduced suspend local requires an initializer");
-                // NOTE(port): Preserve C++ placeholder deduction in an unevaluated
-                // generic lambda. Clang resolves the concrete field type when the
-                // surrounding coroutine entry is instantiated.
-                std::string expression_type;
-                if (placeholder->isDecltypeAuto()) {
-                    expression_type = "decltype(" + rewrite(initializer, {}, true) + ")";
-                    // An unparenthesized id uses its declared type, rather than
-                    // the reference category of the unevaluated stand-in.
-                    if (const auto* id = dyn_cast<DeclRefExpr>(initializer->IgnoreImpCasts())) {
-                        if (const auto* original = dyn_cast<VarDecl>(id->getDecl())) {
-                            auto found = variables_.find(original);
-                            if (found != variables_.end() && !found->second.type.empty())
-                                expression_type = found->second.type +
-                                    (found->second.reference ? (original->getType()->isRValueReferenceType() ? "&&" : "&") : "");
-                            else expression_type = original->getType().getAsString(policy_);
-                        }
+            emit_variable(variable, generated);
+        }
+    }
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesVarSpillingLowering.kt:49-105
+    // NOTE(port): Retain one actual C++ variable, including implicit tuple
+    // holding variables, using the same construction and destruction rules.
+    void emit_variable(const VarDecl* variable, bool generated) {
+        llvm::SaveAndRestore<bool> expression_scope(full_expression_, true);
+        size_t first_comma = comma_temporaries_.size();
+        const Expr* initializer = variable->getInit();
+        const Expr* unwrapped = initializer;
+        if (unwrapped) {
+            if (const auto* cleanup = dyn_cast<ExprWithCleanups>(unwrapped)) unwrapped = cleanup->getSubExpr();
+            unwrapped = unwrapped->IgnoreParens();
+            while (const auto* cast = dyn_cast<ImplicitCastExpr>(unwrapped))
+                unwrapped = cast->getSubExpr()->IgnoreParens();
+        }
+        const auto* temporary = dyn_cast_or_null<MaterializeTemporaryExpr>(unwrapped);
+        if (const auto* reference = initializer ? dyn_cast<LambdaExpr>(spelled(initializer)) : nullptr)
+            build_reference_class(reference);
+        Slot owner;
+        if (variable->getType()->isReferenceType() && temporary && temporary->getExtendingDecl() == variable) {
+            owner = new_slot(temporary->getSubExpr()->getType(), false, true);
+            if (!scopes_.empty()) scopes_.back().push_back(owner);
+            construct(owner, generated ? generated_expression(temporary->getSubExpr()) :
+                                         emit_expression(temporary->getSubExpr()));
+        }
+        std::string deduced_type;
+        if (auto* placeholder = variable->getType()->getContainedAutoType();
+            placeholder && variable->getType()->isDependentType()) {
+            if (!initializer) throw std::runtime_error("deduced suspend local requires an initializer");
+            // NOTE(port): Preserve C++ placeholder deduction in an unevaluated
+            // generic lambda. Clang resolves the concrete field type when the
+            // surrounding coroutine entry is instantiated.
+            std::string expression_type;
+            if (placeholder->isDecltypeAuto()) {
+                expression_type = "decltype(" + rewrite(initializer, {}, true) + ")";
+                // An unparenthesized id uses its declared type, rather than
+                // the reference category of the unevaluated stand-in.
+                if (const auto* id = dyn_cast<DeclRefExpr>(initializer->IgnoreImpCasts())) {
+                    if (const auto* original = dyn_cast<VarDecl>(id->getDecl())) {
+                        auto found = variables_.find(original);
+                        if (found != variables_.end() && !found->second.type.empty())
+                            expression_type = found->second.type +
+                                (found->second.reference ? (original->getType()->isRValueReferenceType() ? "&&" : "&") : "");
+                        else expression_type = original->getType().getAsString(policy_);
                     }
                 }
-                else expression_type = "decltype([](" + this->declaration(variable->getType(), "_kxs_deduced") +
-                    ") -> decltype(_kxs_deduced) { return std::forward<decltype(_kxs_deduced)>(_kxs_deduced); }(" +
-                    rewrite(initializer, {}, true) + "))";
-                deduced_type = "std::remove_reference_t<" + expression_type + ">";
             }
-            bool reference = variable->getType()->isReferenceType();
-            if (auto* placeholder = variable->getType()->getContainedAutoType();
-                placeholder && placeholder->isDecltypeAuto() && variable->getType()->isDependentType())
-                {
-                    reference = initializer->isGLValue();
-                    if (const auto* id = dyn_cast<DeclRefExpr>(initializer->IgnoreImpCasts()))
-                        reference = id->getDecl()->getType()->isReferenceType();
-                }
-            auto slot = new_slot(variable->getType(), reference, false, deduced_type);
-            variables_[variable] = slot;
-            if (!scopes_.empty()) scopes_.back().push_back(slot);
-            if (!owner.name.empty()) construct(slot, owner.access);
-            else if (generated) construct(slot, generated_expression(initializer));
-            else if (slot.array) {
-                auto value = initializer ? emit_expression(initializer) : "";
-                if (initializer && isa<StringLiteral>(spelled(initializer))) value = "{" + value + "}";
-                construct(slot, value);
+            else expression_type = "decltype([](" + this->declaration(variable->getType(), "_kxs_deduced") +
+                ") -> decltype(_kxs_deduced) { return std::forward<decltype(_kxs_deduced)>(_kxs_deduced); }(" +
+                rewrite(initializer, {}, true) + "))";
+            deduced_type = "std::remove_reference_t<" + expression_type + ">";
+        }
+        bool reference = variable->getType()->isReferenceType();
+        if (auto* placeholder = variable->getType()->getContainedAutoType();
+            placeholder && placeholder->isDecltypeAuto() && variable->getType()->isDependentType())
+            {
+                reference = initializer->isGLValue();
+                if (const auto* id = dyn_cast<DeclRefExpr>(initializer->IgnoreImpCasts()))
+                    reference = id->getDecl()->getType()->isReferenceType();
             }
-            else if (!initializer) body_ << slot.name << ".emplace();\n";
-            else if (const auto* construction = dyn_cast<CXXConstructExpr>(spelled(initializer))) {
-                std::string values;
-                for (const auto& value : slice_constructor_arguments(construction)) {
-                    if (value.empty()) continue;
-                    if (!values.empty()) values += ", ";
-                    values += value;
-                }
-                body_ << slot.name << ".emplace(" << values << ");\n";
-            } else construct(slot, emit_expression(initializer));
-            clear_comma_temporaries(first_comma);
+        auto slot = new_slot(variable->getType(), reference, false, deduced_type);
+        variables_[variable] = slot;
+        if (!scopes_.empty()) scopes_.back().push_back(slot);
+        if (!owner.name.empty()) construct(slot, owner.access);
+        else if (generated) construct(slot, generated_expression(initializer));
+        else if (slot.array) {
+            auto value = initializer ? emit_expression(initializer) : "";
+            if (initializer && isa<StringLiteral>(spelled(initializer))) value = "{" + value + "}";
+            construct(slot, value);
+        }
+        else if (!initializer) body_ << slot.name << ".emplace();\n";
+        else if (const auto* construction = dyn_cast<CXXConstructExpr>(spelled(initializer))) {
+            std::string values;
+            for (const auto& value : slice_constructor_arguments(construction)) {
+                if (value.empty()) continue;
+                if (!values.empty()) values += ", ";
+                values += value;
+            }
+            body_ << slot.name << ".emplace(" << values << ");\n";
+        } else construct(slot, emit_expression(initializer));
+        clear_comma_temporaries(first_comma);
+        if (const auto* decomposition = dyn_cast<DecompositionDecl>(variable)) {
+            // NOTE(port): Clang has already selected array, member or tuple
+            // decomposition. Follow its bound declarations, not a new
+            // std::get protocol or copies of component objects.
+            for (const auto* binding : decomposition->flat_bindings()) {
+                const auto* expression = binding->getBinding();
+                if (!expression)
+                    throw std::runtime_error("structured binding requires its resolved compiler binding");
+                if (const auto* holding = binding->getHoldingVar()) emit_variable(holding, true);
+                // Member/array bindings are native lvalues, including bit
+                // fields; they must not be replaced by pointer storage.
+                Slot component{"", "(" + generated_expression(expression) + ")",
+                    binding->getType().getCanonicalType().getAsString(policy_), false};
+                variables_[binding] = component;
+            }
         }
     }
     // NOTE(port): Destroy C++ discarded comma operands at their enclosing

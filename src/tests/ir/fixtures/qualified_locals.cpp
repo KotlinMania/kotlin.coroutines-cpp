@@ -6,11 +6,14 @@
 #include <cassert>
 #include <memory>
 #include <stdexcept>
+#include <tuple>
+#include <utility>
 using namespace kotlinx::coroutines;
 
 int alive = 0;
 int mode = 0;
 int calls = 0;
+int binding_evaluations = 0;
 std::shared_ptr<Continuation<void*>> pending;
 std::weak_ptr<Continuation<void*>> frame;
 struct QualifiedValue {
@@ -24,6 +27,23 @@ struct QualifiedValue {
 private:
     int value_;
 };
+struct MemberParts {
+    int first;
+    unsigned second : 4;
+};
+struct TupleParts {
+    int first;
+    int second;
+    template <std::size_t Index> int get() && {
+        ++binding_evaluations;
+        if constexpr (Index == 0) return first;
+        else return second;
+    }
+};
+namespace std {
+template <> struct tuple_size<TupleParts> : integral_constant<size_t, 2> {};
+template <size_t Index> struct tuple_element<Index, TupleParts> { using type = int; };
+}
 const QualifiedValue* fixed_identity = nullptr;
 const volatile QualifiedValue* observed_identity = nullptr;
 const volatile QualifiedValue* both_identity = nullptr;
@@ -68,6 +88,15 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
     Fixed fixed(42);
     Observed observed(43);
     Both both(44);
+    int items[2]{3, 4};
+    auto& [head, tail] = items;
+    int* head_identity = std::addressof(head);
+    auto [member_first, member_second] = MemberParts{3, 4};
+    ++member_second;
+    auto [from_get, from_get_second] = TupleParts{3, 4};
+    auto [resource, tag] = std::make_pair(std::make_unique<QualifiedValue>(9), 1);
+    QualifiedValue* resource_identity = resource.get();
+    assert(binding_evaluations == 2);
     fixed_identity = std::addressof(fixed);
     observed_identity = std::addressof(observed);
     both_identity = std::addressof(both);
@@ -84,6 +113,11 @@ void* qualified_locals(int seed, std::shared_ptr<Continuation<void*>> completion
         assert(cached_identity == std::addressof(cached));
         assert(cached == 79 && static_initializations == 1);
         assert(*box == static_cast<Value>(increment));
+        assert(std::addressof(head) == head_identity && head_identity == &items[0]);
+        assert(head == 3 && tail == 4);
+        assert(member_first == 3 && member_second == 5);
+        assert(from_get == 3 && from_get_second == 4 && binding_evaluations == 2);
+        assert(resource.get() == resource_identity && tag == 1);
         total += fixed.read() + observed.read() + both.read() + *box;
     }
     ++finished;
@@ -107,12 +141,13 @@ struct Done final : Continuation<void*> {
 int main() {
     for (mode = 0; mode < 5; ++mode) {
         calls = 0;
+        binding_evaluations = 0;
         auto done = std::make_shared<Done>();
         try {
             void* result = qualified_locals(37 + mode, done);
             if (intrinsics::is_coroutine_suspended(result)) {
                 while (pending) {
-                    assert(alive == 3 && done->resumes == 0);
+                    assert(alive == 4 && done->resumes == 0);
                     auto held = std::move(pending);
                     if (mode == 2 && calls == 2)
                         held->resume_with(Result<void*>::failure(std::make_exception_ptr(std::runtime_error("resumed failure"))));
