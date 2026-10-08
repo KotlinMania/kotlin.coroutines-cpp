@@ -160,7 +160,7 @@ int main() {
 
     // ChannelFlow.kt:155-170: equal but distinct interceptors use the
     // undispatched path. An added name forces the full-context check to differ.
-    for (bool equal : {true, false}) {
+    for (bool equal : {true, false}) for (int outcome : {0, 1, 2, 3}) {
         class EqualDispatcher final : public QueueDispatcher {
         public:
             explicit EqualDispatcher(int value) : value_(value) {}
@@ -178,14 +178,24 @@ int main() {
         int collections = 0;
         bool undispatched_collector = false;
         bool upstream_context_seen = false;
+        kotlin::coroutines::Continuation<void*>* paused = nullptr;
+        auto resource = std::make_shared<int>(103);
+        auto resource_identity = resource.get();
+        std::weak_ptr<int> resource_lifetime = resource;
         auto source = kotlinx::coroutines::flow::unsafe_flow<int>(
-            [&](kotlinx::coroutines::flow::FlowCollector<int>* collector,
+            [&, resource](kotlinx::coroutines::flow::FlowCollector<int>* collector,
                 kotlin::coroutines::Continuation<void*>* continuation) -> void* {
+                if (resource.get() != resource_identity || *resource != 103)
+                    throw std::logic_error("undispatched resource identity changed");
                 ++collections;
                 undispatched_collector = dynamic_cast<kotlinx::coroutines::flow::internal::
                     UndispatchedContextCollector<int>*>(collector) != nullptr;
                 upstream_context_seen = continuation->get_context()->get(
                     kotlin::coroutines::ContinuationInterceptor::type_key).get() == upstream_dispatcher.get();
+                if (outcome != 0) {
+                    paused = continuation;
+                    return kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED();
+                }
                 return nullptr;
             });
         class ObservedOperator final : public kotlinx::coroutines::flow::internal::ChannelFlowOperatorImpl<int> {
@@ -209,6 +219,27 @@ int main() {
         if (collections != 1 || !upstream_context_seen || undispatched_collector != equal ||
             operated->producers != (equal ? 0 : 1) || !values.empty())
             return ownership_failure(__LINE__);
+        if (outcome != 0) {
+            if (result != kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED() ||
+                !paused || completion.completed) return ownership_failure(__LINE__);
+            std::weak_ptr<kotlinx::coroutines::flow::Flow<int>> source_lifetime = source;
+            operated.reset();
+            source.reset();
+            resource.reset();
+            if (source_lifetime.expired() || resource_lifetime.expired())
+                return ownership_failure(__LINE__);
+            auto failure = outcome == 3 ?
+                std::make_exception_ptr(kotlinx::coroutines::CancellationException("undispatched cancelled")) :
+                std::make_exception_ptr(std::runtime_error("undispatched failure"));
+            paused->resume_with(outcome >= 2 ? kotlinx::coroutines::Result<void*>::failure(failure) :
+                kotlinx::coroutines::Result<void*>::success(nullptr));
+            upstream_dispatcher->drain();
+            caller_dispatcher->drain();
+            if (!completion.completed || completion.failure != (outcome >= 2 ? failure : nullptr) ||
+                !source_lifetime.expired() || !resource_lifetime.expired())
+                return ownership_failure(__LINE__);
+            continue;
+        }
         if (equal) {
             if (result != nullptr || completion.completed) return ownership_failure(__LINE__);
         } else if (result != kotlin::coroutines::intrinsics::get_COROUTINE_SUSPENDED() ||
