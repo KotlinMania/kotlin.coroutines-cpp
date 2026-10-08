@@ -68,6 +68,9 @@ public:
     static bool is_suspend_wrapper(const clang::CallExpr* call);
     // NOTE(port): C++ type queries have no runtime suspension operation.
     static bool is_unevaluated_expression(const clang::Stmt* statement);
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+    // NOTE(port): Select Clang's resolved initialization, including implicit fields.
+    static const clang::InitListExpr* evaluated_initializer_list(const clang::InitListExpr* initializer);
     static bool requires_overload_resolution(const clang::FunctionDecl* function);
     // NOTE(port): Clang adapter for the trailing lowered continuation parameter.
     static const clang::ParmVarDecl* continuation_parameter(const clang::FunctionDecl* function);

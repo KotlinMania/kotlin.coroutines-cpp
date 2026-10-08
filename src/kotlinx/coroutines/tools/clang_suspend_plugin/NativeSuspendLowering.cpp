@@ -602,6 +602,13 @@ private:
     bool has_suspend_calls(const Stmt* statement) const {
         if (!statement) return false;
         if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return false;
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        if (const auto* initializer = dyn_cast<InitListExpr>(statement)) {
+            const auto* selected = SuspendFunctionAnalyzer::evaluated_initializer_list(initializer);
+            for (const auto* value : selected->inits())
+                if (has_suspend_calls(value)) return true;
+            return has_suspend_calls(selected->getArrayFiller());
+        }
         if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(statement))
             return has_suspend_calls(omitted->getExpr());
         // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
@@ -871,6 +878,13 @@ private:
     // bodies and unevaluated queries have separate/no execution lifetimes.
     bool has_materialized_temporaries(const Stmt* statement) const {
         if (!statement || SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return false;
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        if (const auto* initializer = dyn_cast<InitListExpr>(statement)) {
+            const auto* selected = SuspendFunctionAnalyzer::evaluated_initializer_list(initializer);
+            for (const auto* value : selected->inits())
+                if (has_materialized_temporaries(value)) return true;
+            return has_materialized_temporaries(selected->getArrayFiller());
+        }
         if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(statement))
             return has_materialized_temporaries(omitted->getExpr());
         // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
@@ -1383,6 +1397,13 @@ private:
         }
         if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(initializer)) {
             reserve_extended_temporaries(initialized->getExpr(), variable);
+            return;
+        }
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        if (const auto* list = dyn_cast<InitListExpr>(initializer)) {
+            const auto* selected = SuspendFunctionAnalyzer::evaluated_initializer_list(list);
+            for (const auto* value : selected->inits()) reserve_extended_temporaries(value, variable);
+            reserve_extended_temporaries(selected->getArrayFiller(), variable);
             return;
         }
         for (const auto* child : initializer->children()) reserve_extended_temporaries(child, variable);

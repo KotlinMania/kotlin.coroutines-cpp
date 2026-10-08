@@ -41,10 +41,36 @@ bool SuspendFunctionAnalyzer::analyze() {
     return true;
 }
 
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+// NOTE(port): Clang retains written and semantic forms of an initializer list.
+// Only the semantic form describes actual field order and selected defaults.
+const InitListExpr* SuspendFunctionAnalyzer::evaluated_initializer_list(const InitListExpr* initializer) {
+    if (initializer->isSemanticForm()) return initializer;
+    const auto* semantic = initializer->getSemanticForm();
+    return semantic ? semantic : initializer;
+}
+
 /// AST visitor to collect all local variable declarations.
 class LocalVariableCollector : public RecursiveASTVisitor<LocalVariableCollector> {
 public:
     std::vector<const VarDecl*> variables;
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+    // NOTE(port): Visit the resolved operands once, rather than both AST forms.
+    bool TraverseInitListExpr(InitListExpr* initializer) {
+        const auto* selected = SuspendFunctionAnalyzer::evaluated_initializer_list(initializer);
+        for (const auto* value : selected->inits())
+            if (!TraverseStmt(const_cast<Expr*>(value))) return false;
+        return TraverseStmt(const_cast<Expr*>(selected->getArrayFiller()));
+    }
+
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-108
+    bool TraverseCXXDefaultArgExpr(CXXDefaultArgExpr* expression) {
+        return TraverseStmt(expression->getExpr());
+    }
+    // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+    bool TraverseCXXDefaultInitExpr(CXXDefaultInitExpr* expression) {
+        return TraverseStmt(expression->getExpr());
+    }
     // NOTE(port): Local class declarations and their methods have separate
     // analysis contexts, matching Kotlin's independent class-member lowering.
     bool TraverseDecl(Decl* declaration) {
@@ -61,7 +87,10 @@ public:
 
     bool VisitVarDecl(VarDecl* vd) {
         // Only collect local variables, not parameters (handled separately).
-        if (vd->isLocalVarDecl() && !isa<ParmVarDecl>(vd)) {
+        // NOTE(port): Shared default ASTs reuse declaration identities across
+        // uses; the variable inventory records each actual VarDecl once.
+        if (vd->isLocalVarDecl() && !isa<ParmVarDecl>(vd) &&
+            std::find(variables.begin(), variables.end(), vd) == variables.end()) {
             variables.push_back(vd);
         }
         return true;
@@ -250,6 +279,15 @@ bool SuspendFunctionAnalyzer::requires_overload_resolution(const FunctionDecl* f
             if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return true;
             return RecursiveASTVisitor<UnresolvedCalls>::TraverseStmt(statement);
         }
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        // NOTE(port): Visit the resolved operands once, rather than both AST forms.
+        bool TraverseInitListExpr(InitListExpr* initializer) {
+            const auto* selected = SuspendFunctionAnalyzer::evaluated_initializer_list(initializer);
+            for (const auto* value : selected->inits())
+                if (!TraverseStmt(const_cast<Expr*>(value))) return false;
+            return TraverseStmt(const_cast<Expr*>(selected->getArrayFiller()));
+        }
+
         bool TraverseDecltypeTypeLoc(DecltypeTypeLoc, bool = true) { return true; }
         // NOTE(port): A selected default is an evaluated call operand, so its
         // dependent overloads must resolve before the caller frame is installed.
@@ -357,6 +395,15 @@ void SuspendFunctionAnalyzer::find_suspend_points() {
             if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return true;
             return RecursiveASTVisitor<SuspensionPoints>::TraverseStmt(statement);
         }
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        // NOTE(port): Visit the resolved operands once, rather than both AST forms.
+        bool TraverseInitListExpr(InitListExpr* initializer) {
+            const auto* selected = SuspendFunctionAnalyzer::evaluated_initializer_list(initializer);
+            for (const auto* value : selected->inits())
+                if (!TraverseStmt(const_cast<Expr*>(value))) return false;
+            return TraverseStmt(const_cast<Expr*>(selected->getArrayFiller()));
+        }
+
         bool TraverseDecltypeTypeLoc(DecltypeTypeLoc, bool = true) { return true; }
         // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-108
         bool TraverseCXXDefaultArgExpr(CXXDefaultArgExpr* expression) {
@@ -568,6 +615,15 @@ private:
     LiveVariables accept(const Stmt* element, LiveVariables data) {
         if (!element || SuspendFunctionAnalyzer::is_unevaluated_expression(element)) return data;
         save(element, data);
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:95-102
+        if (const auto* initializer = dyn_cast<InitListExpr>(element)) {
+            const auto* selected = SuspendFunctionAnalyzer::evaluated_initializer_list(initializer);
+            data = accept(selected->getArrayFiller(), std::move(data));
+            for (unsigned index = selected->getNumInits(); index > 0; --index)
+                data = accept(selected->getInit(index - 1), std::move(data));
+            return data;
+        }
         if (const auto* reference = dyn_cast<DeclRefExpr>(element)) {
             if (const auto* variable = dyn_cast<VarDecl>(reference->getDecl())) data.insert(variable);
             else if (const auto* binding = dyn_cast<BindingDecl>(reference->getDecl())) {

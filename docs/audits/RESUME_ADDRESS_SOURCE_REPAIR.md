@@ -1,6 +1,45 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## Resolved initializer operands in the coroutine walks — 2026-10-08
+
+The continuation after 365a046b translates the evaluated initializer contract
+from InitializersLowering.kt:34-55 into the Clang adapter. Kotlin extracts field
+initializers and copies the resulting initialization block into a constructor
+before coroutine slicing. Clang retains both written and semantic InitListExpr
+forms; its default RecursiveASTVisitor selects the written form, which may omit
+selected member defaults and other implicit initialization operands.
+
+SuspendFunctionAnalyzer::evaluated_initializer_list at
+SuspendFunctionAnalyzer.cpp:47 selects the semantic form when present. The
+local collector (:59), overload-resolution visitor (:284) and suspension-point
+visitor (:400) each traverse its operands once, without traversing the alternate
+written tree or enabling all implicit declaration bodies. Local collection also
+follows selected defaults and deduplicates actual VarDecl identities. The
+backward liveness visitor at :620 traverses the same selected operands in reverse
+initialization order, including the array-filler expression. Existing default-use
+paths remain attached to discovered suspension occurrences.
+
+NativeSuspendLowering.cpp:606,882 applies that selection to suspension and
+materialization discovery. Extended-owner reservation at :1403 uses the same
+semantic operands. This avoids treating a list with an implicit selected suspend
+call as a nonsuspending native declaration initializer.
+
+TailSuspendCallsCollector.cpp:50 follows selected list operands and default
+expressions with non-tail state, matching TailSuspendCallsCollector.kt:35-37.
+An initialization operation remains after their result, so an implicit default
+suspension cannot inherit an enclosing return's tail-call optimization.
+
+No compilation, AST emission, runtime check or deep scan was run. This source
+checkpoint repairs discovery and dataflow; it does not finish emission of
+suspending aggregate/array initialization. Typed partial construction,
+member-default receiver binding, implicit initializer source emission and repeated
+array-filler lowering still need translation. initializer_list backing arrays,
+immovable default parameters, access context, local nominal integration,
+optimized spilling and both complete executable paths remain unfinished.
+The existing frontend target already contains all three edited implementation
+files; no build-system or runtime dependency was introduced.
+
 ## Extended aggregate referents in native initialization — 2026-10-08
 
 The continuation after 425fb3bf grows the typed storage translation from

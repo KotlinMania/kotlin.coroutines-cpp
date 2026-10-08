@@ -1,5 +1,6 @@
 // port-lint: source compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt
 // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt:17-123
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
 #include "TailSuspendCallsCollector.hpp"
 #include "SuspendFunctionAnalyzer.hpp"
 #include "clang/AST/AST.h"
@@ -42,6 +43,22 @@ public:
         if (const auto* temporary = dyn_cast<CXXBindTemporaryExpr>(element)) return accept(temporary->getSubExpr(), data);
         if (const auto* cast = dyn_cast<CastExpr>(element)) return visit_type_operator(cast, data);
         if (const auto* call = dyn_cast<CallExpr>(element)) return visit_call(call, data);
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/TailSuspendCallsCollector.kt:35-37
+        // NOTE(port): Field/default evaluations precede the containing operation;
+        // a suspension inside them does not inherit that operation's tail state.
+        if (const auto* initializer = dyn_cast<InitListExpr>(element)) {
+            const auto* selected = SuspendFunctionAnalyzer::evaluated_initializer_list(initializer);
+            for (const auto* value : selected->inits()) accept(value, {data.inside_try_block, false});
+            accept(selected->getArrayFiller(), {data.inside_try_block, false});
+            return;
+        }
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/DefaultArgumentStubGenerator.kt:91-108
+        if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(element))
+            return accept(omitted->getExpr(), {data.inside_try_block, false});
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(element))
+            return accept(initialized->getExpr(), {data.inside_try_block, false});
         // NOTE(port): Local functions are moved out before Kotlin's collector.
         // In Clang, capture initializers execute here but the lambda body does not.
         if (const auto* lambda = dyn_cast<LambdaExpr>(element)) {

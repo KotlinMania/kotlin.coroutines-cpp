@@ -6,7 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current extended-aggregate continuation — 2026-10-08:** Nonsuspending
+**Current resolved-initializer continuation — 2026-10-08:** The analyzer's
+local, overload and suspension walks now use Clang's semantic initializer list
+once, including selected member defaults and the array-filler expression.
+Backward liveness, Native suspension/materialization discovery and extended-owner
+reservation use that same evaluated tree. Tail collection follows defaults as
+non-tail initialization operands. See RESUME_ADDRESS_SOURCE_REPAIR.md's first
+section for source references and Kotlin provenance. No build, AST emission,
+runtime check or deep scan was run. Next source work must translate actual
+suspending aggregate/array emission: partial construction, member-default
+receiver binding, implicit initializer expressions and repeated array fillers.
+The initializer_list backing-array and immovable/default/access dependencies
+remain open. The full translation goal remains active; acceptance is deferred.
+
+**Source checkpoint 365a046b:** Nonsuspending
 aggregate/array declaration lists preserve native element construction order.
 Clang-marked temporaries whose extending declaration is the containing variable
 now receive owning fields before that aggregate. Source and semantic-expression
