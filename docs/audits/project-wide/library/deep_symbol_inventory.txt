@@ -134,7 +134,7 @@ PRESENT function AbstractCoroutine::resumeWith at /Volumes/stuff/Projects/kotlin
 PRESENT function AbstractCoroutine::afterResume at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:113 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:193
 PRESENT function AbstractCoroutine::handleOnCompletionException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:115 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:206
 PRESENT function AbstractCoroutine::nameString at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:119 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:221
-PRESENT function AbstractCoroutine::start at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:237
+PRESENT function AbstractCoroutine::start at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:238
 EXTRA_TARGET_SYMBOL type AbstractCoroutine<Unit> at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.cpp:23
 EXTRA_TARGET_SYMBOL function AbstractCoroutine::AbstractCoroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:83
 EXTRA_TARGET_SYMBOL function AbstractCoroutine::~AbstractCoroutine at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:90
@@ -142,9 +142,9 @@ EXTRA_TARGET_SYMBOL property AbstractCoroutine::parent_context at /Volumes/stuff
 EXTRA_TARGET_SYMBOL property AbstractCoroutine::init_parent_job_flag at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:94
 EXTRA_TARGET_SYMBOL property AbstractCoroutine::init_parent_job_done at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:95
 EXTRA_TARGET_SYMBOL function AbstractCoroutine::init_parent_job_if_needed at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:99
-EXTRA_TARGET_SYMBOL function AbstractCoroutine::init_parent_job_internal at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:245
-EXTRA_TARGET_SYMBOL property AbstractCoroutine::context_mutex_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:262
-EXTRA_TARGET_SYMBOL property AbstractCoroutine::context_cache_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:263
+EXTRA_TARGET_SYMBOL function AbstractCoroutine::init_parent_job_internal at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:246
+EXTRA_TARGET_SYMBOL property AbstractCoroutine::context_mutex_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:263
+EXTRA_TARGET_SYMBOL property AbstractCoroutine::context_cache_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:264
 MISSING_FILE kotlinx-coroutines-core/common/src/Annotations.kt
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Annotations.kt:19: grammar treated hard keyword as identifier: class bytes 792:797
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Annotations.kt:43: grammar treated hard keyword as identifier: class bytes 1750:1755
@@ -547,14 +547,14 @@ PRESENT enum_variant CoroutineStart::DEFAULT at /Volumes/stuff/Projects/kotlinma
 PRESENT enum_variant CoroutineStart::LAZY at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:163 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:176
 PRESENT enum_variant CoroutineStart::ATOMIC at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:240 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:253
 PRESENT enum_variant CoroutineStart::UNDISPATCHED at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:343 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:355
-PRESENT function CoroutineStart::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:355 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:425
+PRESENT function CoroutineStart::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:355 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:428
 PRESENT property CoroutineStart::isLazy at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/CoroutineStart.kt:369 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.cpp:24
-EXTRA_TARGET_SYMBOL function retain_start_argument at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:374
-EXTRA_TARGET_SYMBOL function erase_start_block at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:387
-EXTRA_TARGET_SYMBOL type CoroutineStartExtensions at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:433
-EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:437
-EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:443
-EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::is_lazy at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:447
+EXTRA_TARGET_SYMBOL function retain_start_argument at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:375
+EXTRA_TARGET_SYMBOL function erase_start_block at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:388
+EXTRA_TARGET_SYMBOL type CoroutineStartExtensions at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:436
+EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:440
+EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::invoke at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:446
+EXTRA_TARGET_SYMBOL function CoroutineStartExtensions::is_lazy at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp:450
 MISSING_FILE kotlinx-coroutines-core/common/src/Debug.common.kt
 MISSING_SYMBOL property DEBUG at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Debug.common.kt:3
 MISSING_SYMBOL property hexAddress at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Debug.common.kt:4

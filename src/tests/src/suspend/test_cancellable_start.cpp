@@ -2,6 +2,7 @@
 // kotlin-native/runtime/src/main/kotlin/kotlin/coroutines/intrinsics/IntrinsicsNative.kt:201-202.
 #include "kotlinx/coroutines/intrinsics/Cancellable.hpp"
 #include "kotlinx/coroutines/CoroutineStart.hpp"
+#include "kotlinx/coroutines/AbstractCoroutine.hpp"
 #include <vector>
 #include "kotlinx/coroutines/CoroutineDispatcher.hpp"
 #include "kotlinx/coroutines/JobImpl.hpp"
@@ -509,6 +510,125 @@ void coroutine_start_ownership_contract() {
     CHECK(observed == 29);
 }
 
+// Source contract: CoroutineStart.kt:356-362 supplies the actual block and receiver.
+// Ordinary C++ lvalue references remain borrowed through dispatch and suspension.
+void coroutine_start_copyable_borrow_contract() {
+    struct Receiver {
+        int value = 13;
+        int* copies;
+        explicit Receiver(int* copies) : copies(copies) {}
+        Receiver(const Receiver& other) : value(other.value), copies(other.copies) { ++*copies; }
+    };
+    struct Body {
+        Receiver* expected_receiver;
+        Body* expected_body = nullptr;
+        int* copies;
+        int calls = 0;
+        Continuation<void*>* pending = nullptr;
+        std::weak_ptr<Continuation<void*>> frame_lifetime;
+        explicit Body(Receiver* receiver, int* copies) : expected_receiver(receiver), copies(copies) {}
+        Body(const Body& other)
+            : expected_receiver(other.expected_receiver), expected_body(other.expected_body), copies(other.copies) {
+            ++*copies;
+        }
+        void* operator()(Receiver& receiver, std::shared_ptr<Continuation<void*>> frame) {
+            CHECK(this == expected_body && &receiver == expected_receiver);
+            ++calls;
+            ++receiver.value;
+            pending = frame.get();
+            frame_lifetime = frame;
+            return COROUTINE_SUSPENDED;
+        }
+    };
+    for (auto mode : {CoroutineStart::DEFAULT, CoroutineStart::ATOMIC,
+                      CoroutineStart::UNDISPATCHED, CoroutineStart::LAZY}) {
+        for (bool cancelled : {false, true}) {
+            int copies = 0;
+            Receiver receiver(&copies);
+            Body body(&receiver, &copies);
+            body.expected_body = &body;
+            auto dispatcher = std::make_shared<Dispatcher>();
+            auto job = JobImpl::create(nullptr);
+            int resumes = 0, observed = 0;
+            std::exception_ptr failure;
+            auto completion = make_continuation<int>(dispatcher->operator+(job), [&](Result<int> result) {
+                ++resumes;
+                failure = result.exception_or_null();
+                if (!failure) observed = result.get_or_throw();
+            });
+            if (cancelled) job->cancel(nullptr);
+            invoke(mode, body, receiver, completion);
+            CHECK(copies == 0);
+            if (mode == CoroutineStart::DEFAULT || mode == CoroutineStart::ATOMIC) {
+                CHECK(body.calls == 0 && receiver.value == 13);
+                receiver.value = 21; // Deferred entry must observe the same receiver's updated state.
+                dispatcher->drain();
+            }
+            const bool entered = mode != CoroutineStart::LAZY && !(cancelled && mode == CoroutineStart::DEFAULT);
+            CHECK(body.calls == (entered ? 1 : 0));
+            if (entered) {
+                CHECK(!resumes && body.pending && !body.frame_lifetime.expired());
+                CHECK(receiver.value == (mode == CoroutineStart::UNDISPATCHED ? 14 : 22));
+                auto original = std::make_exception_ptr(std::runtime_error("borrowed body resumed failure"));
+                // The caller keeps both borrowed objects alive until the frame terminates.
+                if (cancelled) body.pending->resume_with(Result<void*>::failure(original));
+                else body.pending->resume_with(Result<void*>::success(new int(receiver.value)));
+                dispatcher->drain();
+                CHECK(resumes == 1 && (cancelled ? failure == original : observed == receiver.value));
+                CHECK(body.calls == 1 && body.frame_lifetime.expired());
+            } else if (mode == CoroutineStart::DEFAULT) {
+                CHECK(resumes == 1 && failure && is_cancellation_exception(failure));
+            } else {
+                CHECK(!resumes && !body.pending && dispatcher->queue.empty());
+            }
+            CHECK(copies == 0 && body.expected_receiver == &receiver);
+        }
+    }
+}
+
+// AbstractCoroutine.kt:133-135 forwards the actual block/receiver to start.
+// Its C++ by-value parameters transfer their ownership into delayed entry.
+void abstract_coroutine_owned_start_contract() {
+    class Coroutine final : public AbstractCoroutine<int> {
+    public:
+        explicit Coroutine(std::shared_ptr<CoroutineContext> context) : AbstractCoroutine<int>(context, false, true) {}
+        int observed = 0;
+        void on_completed(int value) override { observed = value; }
+    };
+    for (bool erased : {false, true}) {
+        auto dispatcher = std::make_shared<Dispatcher>();
+        auto coroutine = std::make_shared<Coroutine>(dispatcher);
+        std::weak_ptr<int> receiver_lifetime, capture_lifetime;
+        int* receiver_identity = nullptr;
+        {
+            auto receiver = std::make_shared<int>(11);
+            auto capture = std::make_shared<int>(17);
+            receiver_lifetime = receiver;
+            capture_lifetime = capture;
+            receiver_identity = receiver.get();
+            if (erased) {
+                std::function<void*(std::shared_ptr<int>, std::shared_ptr<Continuation<void*>>)> block =
+                    [capture, receiver_identity](std::shared_ptr<int> value, auto) -> void* {
+                        CHECK(value.get() == receiver_identity);
+                        return new int(*value + *capture);
+                    };
+                coroutine->start(CoroutineStart::DEFAULT, std::move(receiver), std::move(block));
+            } else {
+                std::function<int(std::shared_ptr<int>)> block =
+                    [capture, receiver_identity](std::shared_ptr<int> value) {
+                        CHECK(value.get() == receiver_identity);
+                        return *value + *capture;
+                    };
+                coroutine->start(CoroutineStart::DEFAULT, std::move(receiver), std::move(block));
+            }
+        }
+        CHECK(!receiver_lifetime.expired() && !capture_lifetime.expired() && !coroutine->is_completed());
+        dispatcher->drain();
+        CHECK(coroutine->observed == 28 && coroutine->is_completed());
+        CHECK(receiver_lifetime.expired() && capture_lifetime.expired());
+    }
+}
+
 }
 
 int main() {
@@ -522,6 +642,8 @@ int main() {
         typed_suspension_contract();
         coroutine_start_interceptor_contract();
         coroutine_start_ownership_contract();
+        coroutine_start_copyable_borrow_contract();
+        abstract_coroutine_owned_start_contract();
     } catch (const std::exception& exception) {
         std::cerr << exception.what() << '\n';
         return 1;

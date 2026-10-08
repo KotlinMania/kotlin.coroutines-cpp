@@ -369,12 +369,13 @@ bool is_lazy(CoroutineStart start);
 
 namespace internal {
 // NOTE(port): C++ callable/receiver storage is ABI adaptation. Owning arguments
-// retain their existing objects; a noncopyable lvalue remains borrowed.
+// move rvalues into owned storage; every lvalue remains borrowed, regardless of copyability.
+// Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
 template <typename Argument>
 auto retain_start_argument(Argument&& argument) {
     using Value = std::remove_reference_t<Argument>;
-    if constexpr (std::is_lvalue_reference_v<Argument> && !std::is_copy_constructible_v<Value>)
-        return std::shared_ptr<Value>(&argument, [](Value*) {});
+    if constexpr (std::is_lvalue_reference_v<Argument>)
+        return std::shared_ptr<Value>(std::addressof(argument), [](Value*) {});
     else
         return std::make_shared<std::decay_t<Argument>>(std::forward<Argument>(argument));
 }
@@ -421,6 +422,8 @@ intrinsics::ErasedSuspendFunction erase_start_block(Block&& block, R&& receiver)
 } // namespace internal
 
 // Transliterated from: kotlinx-coroutines-core/common/src/CoroutineStart.kt:356-362
+// NOTE(port): Lvalue block/receiver references must outlive completion.
+// Rvalues transfer their owned storage into the actual continuation wrapper.
 template <typename Block, typename R, typename T>
 void invoke(CoroutineStart start, Block&& block, R&& receiver, std::shared_ptr<Continuation<T>> completion) {
     if (is_lazy(start)) return; // Will start lazily; do not invoke or capture the body here.

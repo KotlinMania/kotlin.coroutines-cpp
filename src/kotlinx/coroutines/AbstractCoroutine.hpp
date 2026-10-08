@@ -226,10 +226,11 @@ namespace kotlinx::coroutines {
             return "\"" + *name + "\":" + JobSupport::name_string();
         }
 
+        // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133-135
         template <typename R>
         void start(CoroutineStart start_strategy, R receiver, std::function<T(R)> block) {
             init_parent_job_if_needed();
-            invoke(start_strategy, block, receiver, std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
+            invoke(start_strategy, std::move(block), std::forward<R>(receiver), std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
         }
 
         // Transliterated from: kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133-135
@@ -237,7 +238,7 @@ namespace kotlinx::coroutines {
         void start(CoroutineStart start_strategy, R receiver,
                    std::function<void*(R, std::shared_ptr<Continuation<void*>>)> block) {
             init_parent_job_if_needed();
-            invoke(start_strategy, std::move(block), receiver,
+            invoke(start_strategy, std::move(block), std::forward<R>(receiver),
                    std::dynamic_pointer_cast<Continuation<T>>(JobSupport::shared_from_this()));
         }
 

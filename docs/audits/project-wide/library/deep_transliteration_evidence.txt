@@ -4922,10 +4922,10 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.589790
+translated_ast_cosine: 0.585082
 function_name_parity: 1.000000
 normalized_logic: 0.000000
-documentation_correspondence: 0.025650
+documentation_correspondence: 0.025503
 span_rule_coverage: 0.000000
 unsupported_fraction (diagnostic only): 1.000000
 score: 0.000000
@@ -4938,16 +4938,16 @@ Source line	Source bytes	Emitted bytes	Node	Supported
 3	28:1079	32:32	import_list	yes
 23	1080:16639	33:16066	class_declaration	fallback
 Diagnostic: 23: unsupported class_declaration
-Function CoroutineStart::invoke:355 -> kotlinx::coroutines::invoke:451 | normalized logic: 0.000000
+Function CoroutineStart::invoke:355 -> kotlinx::coroutines::invoke:454 | normalized logic: 0.000000
   Emitted logic:
   Target logic: node:66 identifier:start type:coroutinestart node:66 identifier:block type:block node:66 identifier:receiver type:r node:66 identifier:completion identifier:std type:continuation type:sharedptr type:t node:1 node:43 identifier:islazy identifier:start node:5 node:43 identifier:invoke identifier:start node:43 identifier:internal identifier:erasestartblock type:t node:43 identifier:std identifier:forward type:block identifier:block node:43 identifier:std identifier:forward type:r identifier:receiver node:43 identifier:tovoidcontinuation node:43 identifier:std identifier:move identifier:completion
 Extra target function: kotlinx::coroutines::invoke:7
 Extra target function: kotlinx::coroutines::is_lazy:24
-Extra target function: kotlinx::coroutines::internal::retain_start_argument:400
-Extra target function: kotlinx::coroutines::internal::erase_start_block:413
-Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:463
-Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:469
-Extra target function: kotlinx::coroutines::CoroutineStartExtensions::is_lazy:473
+Extra target function: kotlinx::coroutines::internal::retain_start_argument:401
+Extra target function: kotlinx::coroutines::internal::erase_start_block:414
+Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:466
+Extra target function: kotlinx::coroutines::CoroutineStartExtensions::invoke:472
+Extra target function: kotlinx::coroutines::CoroutineStartExtensions::is_lazy:476
 === Emitted target buffer ===
 namespace kotlinx::coroutines {
 
@@ -7732,7 +7732,7 @@ Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.co
 Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.cpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp
 score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
 translated_text_cosine: 0.000000
-translated_ast_cosine: 0.490307
+translated_ast_cosine: 0.491891
 function_name_parity: 1.000000
 normalized_logic: 0.000000
 documentation_correspondence: 0.005152
@@ -7774,16 +7774,16 @@ Function AbstractCoroutine::handleOnCompletionException:115 -> kotlinx::coroutin
 Function AbstractCoroutine::nameString:119 -> kotlinx::coroutines::AbstractCoroutine::name_string:246 | normalized logic: 0.000000
   Emitted logic:
   Target logic: identifier:name operator:= node:43 identifier:coroutinename node:43 identifier:getcoroutinecontext node:1 operator:! identifier:name node:5 node:43 identifier:jobsupport identifier:namestring node:5 literal:52:"\"" operator:+ operator:* identifier:name operator:+ literal:52:"\":" operator:+ node:43 identifier:jobsupport identifier:namestring
-Function AbstractCoroutine::start:133 -> kotlinx::coroutines::AbstractCoroutine::start:255 | normalized logic: 0.000000
+Function AbstractCoroutine::start:133 -> kotlinx::coroutines::AbstractCoroutine::start:256 | normalized logic: 0.000000
   Emitted logic:
-  Target logic: node:66 identifier:startstrategy type:coroutinestart node:66 identifier:receiver type:r node:66 identifier:std type:function type:t node:66 identifier:block type:r node:43 identifier:initparentjobifneeded node:43 identifier:invoke identifier:startstrategy identifier:block identifier:receiver node:43 identifier:std identifier:dynamicpointercast type:continuation type:t node:43 identifier:jobsupport identifier:sharedfromthis
+  Target logic: node:66 identifier:startstrategy type:coroutinestart node:66 identifier:receiver type:r node:66 identifier:std type:function type:t node:66 identifier:block type:r node:43 identifier:initparentjobifneeded node:43 identifier:invoke identifier:startstrategy node:43 identifier:std identifier:move identifier:block node:43 identifier:std identifier:forward type:r identifier:receiver node:43 identifier:std identifier:dynamicpointercast type:continuation type:t node:43 identifier:jobsupport identifier:sharedfromthis
 Extra target function: kotlinx::coroutines::AbstractCoroutine::AbstractCoroutine:108
 Extra target function: kotlinx::coroutines::AbstractCoroutine::init_parent_job_if_needed:124
 Extra target function: kotlinx::coroutines::AbstractCoroutine::get_coroutine_context:134
 Extra target function: kotlinx::coroutines::AbstractCoroutine::get_context:152
 Extra target function: kotlinx::coroutines::AbstractCoroutine::is_active:156
-Extra target function: kotlinx::coroutines::AbstractCoroutine::start:262
-Extra target function: kotlinx::coroutines::AbstractCoroutine::init_parent_job_internal:270
+Extra target function: kotlinx::coroutines::AbstractCoroutine::start:263
+Extra target function: kotlinx::coroutines::AbstractCoroutine::init_parent_job_internal:271
 === Emitted target buffer ===
 __ast_distance_unmapped__("file_annotation", "@file:Suppress(\"DEPRECATION_ERROR\")")
 namespace kotlinx::coroutines {
@@ -7795,9 +7795,9 @@ __ast_distance_unmapped__("class_declaration", "@OptIn(InternalForInheritanceCor
 Parsed syntax evidence only: macros do not prove compiled IR or behavior.
 Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
 Status	Kotlin contract	Source	Target	Callable
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:230	AbstractCoroutine::start -> kotlinx::coroutines::AbstractCoroutine::start
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:231	AbstractCoroutine::start -> kotlinx::coroutines::AbstractCoroutine::start
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
-NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:237	AbstractCoroutine::start -> kotlinx::coroutines::AbstractCoroutine::start
+NO_LOCAL_LOWERING_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/AbstractCoroutine.kt:133	/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp:238	AbstractCoroutine::start -> kotlinx::coroutines::AbstractCoroutine::start
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=2 parse=provisional
 Explicit suspension contracts reviewed: 1
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.

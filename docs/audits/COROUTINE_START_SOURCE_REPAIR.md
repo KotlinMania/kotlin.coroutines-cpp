@@ -16,13 +16,13 @@ checked Jobs and delivered completion itself. It bypassed ordinary continuation
 interceptors and caught exceptions from successful completion, attempting an extra
 failure delivery. Those substitute algorithms are removed.
 
-`CoroutineStart.hpp:387` binds public generic C++ callables and receivers into
+`CoroutineStart.hpp:388` binds public generic C++ callables and receivers into
 the existing erased suspend ABI. It invokes the actual Native wrapper argument,
 returns the actual erased result or boxes an ordinary C++ result, and propagates
 exceptions to the source intrinsic. The receiving typed adapter unboxes and
-deletes those boxes. Moved callable/receiver owners remain retained; noncopyable
-lvalues stay explicitly borrowed. The existing legacy current-continuation binding
-uses that actual wrapper. `CoroutineStart.hpp:425` delegates the public receiver
+deletes those boxes. Moved callable/receiver owners remain retained; all
+lvalue references stay explicitly borrowed, regardless of copyability. The existing legacy current-continuation binding
+uses that actual wrapper. `CoroutineStart.hpp:428` delegates the public receiver
 API to the concrete selection, without moving/capturing a LAZY body. The existing
 compatibility extension class forwards to the same public entry, including typed
 continuation arguments. This generic binding is an explicit C++ ABI adaptation;
@@ -61,5 +61,60 @@ scoring failures 122. CoroutineStart records 1/1 function names, 1/1 types and
 [enum receiver report repair](AST_DISTANCE_ENUM_RECEIVER_REPAIR.md), rather than
 by changing the actual source API to satisfy a false owner-matching report.
 Public binding differences remain visible in body/parameter evidence; name
-presence and focused tests do not establish whole-library completion. The
-separate consumed Native namespace-projection findings remain visible.
+presence and focused tests do not establish whole-library completion. The formerly reported consumed Native namespace-projection gaps are repaired
+in STDLIB_COROUTINE_NAMESPACES.md; other source-body gaps remain visible.
+
+Copyable-borrow follow-up (2026-10-07): CoroutineStart.hpp:375 no longer
+copies a copyable lvalue callable or receiver. It borrows the original object
+with std::addressof, while rvalues transfer into owned storage. Kotlin's
+CoroutineStart.kt:356-362 invokes the actual supplied block and receiver;
+cloning an ordinary referenced C++ object changes that identity and its mutable
+state. C++ borrowed inputs must remain alive until the computation finishes;
+retaining their address does not transfer ownership or extend their lifetime.
+
+The regression at test_cancellable_start.cpp:515 fails against the preceding
+binding at line 560, before the source fix (the later include shifts that line
+by one). It checks copy counts, actual callable and receiver addresses, mutable
+callable state, delayed reads of the receiver's fields and suspension/resumed
+success or failure across all four start modes. DEFAULT cancellation prevents
+entry; ATOMIC and UNDISPATCHED enter despite cancellation; LAZY performs no
+captures or entry. The caller keeps the borrowed objects alive through actual
+frame termination and checks that the frame is then released.
+
+AbstractCoroutine.hpp:231,238 owns its by-value parameters. Those two start
+bindings now move their callable and forward their receiver into the wrapper,
+matching AbstractCoroutine.kt:133-135. This avoids retaining pointers to expired
+local parameter objects after the general lvalue borrowing repair. The new
+regression at test_cancellable_start.cpp:591 destroys the external receiver and
+capture handles before queued execution, then verifies pointee identity, actual
+completion result and resource release for both ordinary-result and erased-entry
+start overloads. Existing move-only rvalue ownership cases remain exercised.
+
+A build-only control shadows AbstractCoroutine.hpp with the preceding two
+parameter-forwarding expressions while retaining the repaired borrow binding.
+No production file is reverted. The instrumented control exits one at the
+receiver/capture lifetime assertion (:625) before queued entry, proving that
+both source caller changes are required. The repaired program exits zero.
+Receipts: coroutine-start-borrow-control-{build,tests}.log; isolated control:
+build/ir-recovery/coroutine-start-borrow-control/kotlinx/coroutines/AbstractCoroutine.hpp.
+
+The core and ten focused executables build after the behavior changes; all ten
+CTests finish with zero failures (2.80 seconds). The final regression fixture
+instantiates and instruments the changed header bindings with AddressSanitizer
+and UndefinedBehaviorSanitizer, the existing frontend and mandatory LLVM plugin.
+Execution exits zero with detect_stack_use_after_return=1 and no diagnostics.
+Receipts: coroutine-start-borrow-focused-{build,tests}.log,
+coroutine-start-borrow-final-build.log and
+coroutine-start-borrow-sanitizer-{build,tests}.log. Fifteen ranged source
+references across the changed library headers resolve to valid Kotlin bounds;
+neither header contains prohibited markers. Receipt:
+coroutine-start-borrow-provenance.log.
+
+Both full-root ast_distance --deep scans are refreshed after the final source
+changes; each exits zero. Library totals remain 811/2918 body names, 359/560
+types, average body similarity 0.26 and 123 scoring failures. The compiler scan
+is refreshed and unchanged. These bounded identity/lifetime cases establish
+neither full source-body parity nor the required standalone/Native MLX product
+acceptance paths. The earlier broad frontend retained-locals compilation failure
+is not repaired by this source binding change. Deep receipts:
+coroutine-start-borrow-{library,compiler}-deep.log.
