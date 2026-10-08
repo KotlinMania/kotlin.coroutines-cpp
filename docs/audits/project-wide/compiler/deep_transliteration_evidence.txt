@@ -1144,6 +1144,76 @@ TAIL_OR_HELPER_REVIEW	suspend callback contract	/Volumes/stuff/Projects/kotlinma
   Evidence: await-macro-lines=none begin-macro-lines=none marker-lines=none indirect-goto-lines=none candidates=3 parse=clean
 Explicit suspension contracts reviewed: 8
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
+=== libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt -> kotlin/coroutines/cancellation/CancellationException.hpp ===
+Locations below refer to these concatenated physical files, in order:
+Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt
+Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp
+score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.000000
+translated_ast_cosine: 0.327263
+function_name_parity: 1.000000
+normalized_logic: 0.000000
+documentation_correspondence: 0.000000
+span_rule_coverage: 0.000000
+unsupported_fraction (diagnostic only): 1.000000
+score: 0.000000
+Score evidence: provisional (unsupported rules or parse errors)
+Generated parse errors: yes (provisional)
+Target parse errors: no
+Rule hits: 9 | misses: 4 | documentation misses: 0 | supported code-byte coverage: 0.000000
+Source line	Source bytes	Emitted bytes	Node	Supported
+1	0:208	0:208	multiline_comment	yes
+6	210:248	209:253	package_header	yes
+8	250:285	254:254	import_list	yes
+10	285:304	255:321	prefix_expression	fallback
+11	305:627	322:699	class_declaration	fallback
+18	629:724	700:805	multiline_comment	yes
+21	725:991	806:1133	function_declaration	fallback
+27	993:1074	1134:1222	multiline_comment	yes
+30	1075:1314	1223:1523	function_declaration	fallback
+Diagnostic: 10: unsupported annotation
+Diagnostic: 11: unsupported class_declaration
+Diagnostic: 21: unsupported function_declaration
+Diagnostic: 30: unsupported function_declaration
+Function CancellationException:21 -> CancellationException::CancellationException:71 | normalized logic: 0.000000
+  Ordered logic sequences are equal
+Function CancellationException:30 -> CancellationException::CancellationException:74 | normalized logic: 0.000000
+  Emitted logic:
+  Target logic: node:66 identifier:message identifier:std identifier:std type:optional type:string
+Extra target function: CancellationException::CancellationException:78
+Extra target function: CancellationException::CancellationException:82
+Extra target function: CancellationException::CancellationException:87
+Extra target function: CancellationException::CancellationException:92
+Extra target function: CancellationException::CancellationException:96
+Extra target function: CancellationException::get_message:100
+Extra target function: CancellationException::get_cause:103
+Extra target function: CancellationException::equals:106
+Extra target function: CancellationException::hash_code:112
+=== Emitted target buffer ===
+/*
+ * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
+ */
+namespace kotlin::coroutines::cancellation {
+
+__ast_distance_unmapped__("annotation", "@SinceKotlin") ( "1.4" ) 
+__ast_distance_unmapped__("class_declaration", "public actual open class CancellationException : IllegalStateException {\n    public actual constructor() : super()\n    public actual constructor(message: String?) : super(message)\n    public constructor(message: String?, cause: Throwable?) : super(message, cause)\n    public constructor(cause: Throwable?) : super(cause)\n}")
+/**
+ * Creates an instance of \ref cancellation_exception with the given \ref message and \ref cause.
+ */
+__ast_distance_unmapped__("function_declaration", "@SinceKotlin(\"1.4\")\n@Deprecated(\"Provided for expect-actual matching\", level = DeprecationLevel.HIDDEN)\n@InlineOnly\npublic actual inline fun CancellationException(message: String?, cause: Throwable?): CancellationException =\n    CancellationException(message, cause)")
+/**
+ * Creates an instance of \ref cancellation_exception with the given \ref cause.
+ */
+__ast_distance_unmapped__("function_declaration", "@SinceKotlin(\"1.4\")\n@Deprecated(\"Provided for expect-actual matching\", level = DeprecationLevel.HIDDEN)\n@InlineOnly\npublic actual inline fun CancellationException(cause: Throwable?): CancellationException =\n    CancellationException(cause)")
+}
+
+=== Suspension lowering review leads ===
+Parsed syntax evidence only: macros do not prove compiled IR or behavior.
+Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
+Status	Kotlin contract	Source	Target	Callable
+Explicit suspension contracts reviewed: 0
+Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/Any.hpp ===
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Any.kt
@@ -1920,43 +1990,6 @@ Absent local lowering may be valid for direct/tail entries or helpers; follow th
 Status	Kotlin contract	Source	Target	Callable
 Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
-=== kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KClass.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClass.hpp ===
-Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KClass.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClass.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
-translated_ast_cosine: 0.437203
-function_name_parity: 0.000000
-normalized_logic: 0.000000
-documentation_correspondence: 0.115071
-span_rule_coverage: 0.000000
-unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
-Score evidence: provisional (unsupported rules or parse errors)
-Generated parse errors: yes (provisional)
-Target parse errors: no
-Rule hits: 3 | misses: 1 | documentation misses: 0 | supported code-byte coverage: 0.000000
-Source line	Source bytes	Emitted bytes	Node	Supported
-1	0:150	0:150	multiline_comment	yes
-6	152:491	151:178	package_header	yes
-16	492:2070	179:1844	class_declaration	fallback
-Diagnostic: 16: unsupported class_declaration
-=== Emitted target buffer ===
-/*
- * Copyright 2010-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license
- * that can be found in the LICENSE file.
- */
-namespace kotlin::reflect {
-__ast_distance_unmapped__("class_declaration", "public actual interface KClass<T : Any> : KDeclarationContainer, KAnnotatedElement, KClassifier {\n    /**\n     * The simple name of the class as it was declared in the source code,\n     * or `null` if the class has no name (if, for example, it is a class of an anonymous object).\n     */\n    public actual val simpleName: String?\n\n    /**\n     * The fully qualified dot-separated name of the class,\n     * or `null` if the class is local or a class of an anonymous object.\n     */\n    public actual val qualifiedName: String?\n\n    /**\n     * Returns `true` if [value] is an instance of this class on a given platform.\n     */\n    @SinceKotlin(\"1.1\")\n    public actual fun isInstance(value: Any?): Boolean\n\n    /**\n     * Returns `true` if this [KClass] instance represents the same Kotlin class as the class represented by [other].\n     * On JVM this means that all of the following conditions are satisfied:\n     *\n     * 1. [other] has the same (fully qualified) Kotlin class name as this instance.\n     * 2. [other]'s backing [Class] object is loaded with the same class loader as the [Class] object of this instance.\n     * 3. If the classes represent [Array], then [Class] objects of their element types are equal.\n     *\n     * For example, on JVM, [KClass] instances for a primitive type (`int`) and the corresponding wrapper type (`java.lang.Integer`)\n     * are considered equal, because they have the same fully qualified name \"kotlin.Int\".\n     */\n    actual override fun equals(other: Any?): Boolean // KT-24971\n\n    actual override fun hashCode(): Int // KT-24971\n}")
-}
-
-=== Suspension lowering review leads ===
-Parsed syntax evidence only: macros do not prove compiled IR or behavior.
-Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
-Status	Kotlin contract	Source	Target	Callable
-Explicit suspension contracts reviewed: 0
-Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/runtime/src/main/kotlin/kotlin/native/Runtime.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/native/Runtime.hpp ===
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/native/Runtime.kt
@@ -2070,6 +2103,192 @@ __ast_distance_unmapped__("function_declaration", "@ExperimentalNativeApi\n@Sinc
  * @return 0 for `null` object, identity hash code otherwise.
  */
 __ast_distance_unmapped__("function_declaration", "@ExperimentalNativeApi\n@GCUnsafeCall(\"Kotlin_Any_hashCode\")\n@Escapes.Nothing\npublic external fun Any?.identityHashCode(): Int")
+}
+
+=== Suspension lowering review leads ===
+Parsed syntax evidence only: macros do not prove compiled IR or behavior.
+Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
+Status	Kotlin contract	Source	Target	Callable
+Explicit suspension contracts reviewed: 0
+Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
+=== kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KClass.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClass.hpp ===
+Locations below refer to these concatenated physical files, in order:
+Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KClass.kt
+Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KClass.hpp
+score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.000000
+translated_ast_cosine: 0.437203
+function_name_parity: 0.000000
+normalized_logic: 0.000000
+documentation_correspondence: 0.115071
+span_rule_coverage: 0.000000
+unsupported_fraction (diagnostic only): 1.000000
+score: 0.000000
+Score evidence: provisional (unsupported rules or parse errors)
+Generated parse errors: yes (provisional)
+Target parse errors: no
+Rule hits: 3 | misses: 1 | documentation misses: 0 | supported code-byte coverage: 0.000000
+Source line	Source bytes	Emitted bytes	Node	Supported
+1	0:150	0:150	multiline_comment	yes
+6	152:491	151:178	package_header	yes
+16	492:2070	179:1844	class_declaration	fallback
+Diagnostic: 16: unsupported class_declaration
+=== Emitted target buffer ===
+/*
+ * Copyright 2010-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license
+ * that can be found in the LICENSE file.
+ */
+namespace kotlin::reflect {
+__ast_distance_unmapped__("class_declaration", "public actual interface KClass<T : Any> : KDeclarationContainer, KAnnotatedElement, KClassifier {\n    /**\n     * The simple name of the class as it was declared in the source code,\n     * or `null` if the class has no name (if, for example, it is a class of an anonymous object).\n     */\n    public actual val simpleName: String?\n\n    /**\n     * The fully qualified dot-separated name of the class,\n     * or `null` if the class is local or a class of an anonymous object.\n     */\n    public actual val qualifiedName: String?\n\n    /**\n     * Returns `true` if [value] is an instance of this class on a given platform.\n     */\n    @SinceKotlin(\"1.1\")\n    public actual fun isInstance(value: Any?): Boolean\n\n    /**\n     * Returns `true` if this [KClass] instance represents the same Kotlin class as the class represented by [other].\n     * On JVM this means that all of the following conditions are satisfied:\n     *\n     * 1. [other] has the same (fully qualified) Kotlin class name as this instance.\n     * 2. [other]'s backing [Class] object is loaded with the same class loader as the [Class] object of this instance.\n     * 3. If the classes represent [Array], then [Class] objects of their element types are equal.\n     *\n     * For example, on JVM, [KClass] instances for a primitive type (`int`) and the corresponding wrapper type (`java.lang.Integer`)\n     * are considered equal, because they have the same fully qualified name \"kotlin.Int\".\n     */\n    actual override fun equals(other: Any?): Boolean // KT-24971\n\n    actual override fun hashCode(): Int // KT-24971\n}")
+}
+
+=== Suspension lowering review leads ===
+Parsed syntax evidence only: macros do not prove compiled IR or behavior.
+Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
+Status	Kotlin contract	Source	Target	Callable
+Explicit suspension contracts reviewed: 0
+Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
+=== libraries/stdlib/native-wasm/src/kotlin/collections/Map.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Map.hpp ===
+Locations below refer to these concatenated physical files, in order:
+Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Map.kt
+Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Map.hpp
+score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.000000
+translated_ast_cosine: 0.427103
+function_name_parity: 0.000000
+normalized_logic: 0.000000
+documentation_correspondence: 0.028936
+span_rule_coverage: 0.000000
+unsupported_fraction (diagnostic only): 1.000000
+score: 0.000000
+Score evidence: provisional (unsupported rules or parse errors)
+Generated parse errors: yes (provisional)
+Target parse errors: no
+Rule hits: 4 | misses: 2 | documentation misses: 0 | supported code-byte coverage: 0.000000
+Source line	Source bytes	Emitted bytes	Node	Supported
+1	0:208	0:208	multiline_comment	yes
+6	210:2841	209:240	package_header	yes
+43	2842:6556	241:4102	class_declaration	fallback
+142	6558:7609	4103:5178	multiline_comment	yes
+160	7610:10768	5179:8472	class_declaration	fallback
+Diagnostic: 43: unsupported class_declaration
+Diagnostic: 160: unsupported class_declaration
+Extra target function: kotlin::collections::detail::ElementCodec<map::Entry<K, V>*>::box:96
+Extra target function: kotlin::collections::detail::ElementCodec<map::Entry<K, V>*>::unbox:98
+Extra target function: kotlin::collections::detail::ElementCodec<mutable_map::MutableEntry<K, V>*>::box:105
+Extra target function: kotlin::collections::detail::ElementCodec<mutable_map::MutableEntry<K, V>*>::unbox:107
+Extra target function: kotlin::collections::detail::NullableMapValue::take:117
+Extra target function: kotlin::collections::detail::NullableMapValue<V*>::take:126
+Extra target function: kotlin::collections::detail::NullableMapValue<std::shared_ptr<V>>::take:134
+Extra target function: kotlin::collections::detail::NullableMapValue<std::optional<V>>::take:142
+Extra target function: kotlin::collections::detail::NullableMapValue<std::any>::take:150
+Extra target function: kotlin::collections::map::Entry::key:310
+Extra target function: kotlin::collections::map::Entry::value:315
+Extra target function: kotlin::collections::mutable_map::MutableEntry::set_value:342
+Extra target function: kotlin::collections::Map::contains_key:411
+Extra target function: kotlin::collections::Map::contains_value:418
+Extra target function: kotlin::collections::Map::get:429
+Extra target function: kotlin::collections::Map::keys:438
+Extra target function: kotlin::collections::Map::values:445
+Extra target function: kotlin::collections::Map::entries:452
+Extra target function: kotlin::collections::MutableMap::put:486
+Extra target function: kotlin::collections::MutableMap::remove:498
+Extra target function: kotlin::collections::MutableMap::put_all:510
+Extra target function: kotlin::collections::MutableMap::keys:524
+Extra target function: kotlin::collections::MutableMap::values:531
+Extra target function: kotlin::collections::MutableMap::entries:538
+=== Emitted target buffer ===
+/*
+ * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
+ */
+namespace kotlin::collections {
+__ast_distance_unmapped__("class_declaration", "public actual interface Map<K, out V> {\n    // Query Operations\n    /**\n     * Returns the number of key/value pairs in the map.\n     *\n     * If a map contains more than [Int.MAX_VALUE] elements, the value of this property is unspecified.\n     * For implementations allowing to have more than [Int.MAX_VALUE] elements,\n     * it is recommended to explicitly document behavior of this property.\n     *\n     * @sample samples.collections.Maps.CoreApi.size\n     */\n    public actual val size: Int\n\n    /**\n     * Returns `true` if the map is empty (contains no elements), `false` otherwise.\n     *\n     * @sample samples.collections.Maps.CoreApi.isEmpty\n     */\n    public actual fun isEmpty(): Boolean\n\n    /**\n     * Returns `true` if the map contains the specified [key].\n     *\n     * @sample samples.collections.Maps.CoreApi.containsKey\n     */\n    public actual fun containsKey(key: K): Boolean\n\n    /**\n     * Returns `true` if the map maps one or more keys to the specified [value].\n     *\n     * @sample samples.collections.Maps.CoreApi.containsValue\n     */\n    public actual fun containsValue(value: @UnsafeVariance V): Boolean\n\n    /**\n     * Returns the value corresponding to the given [key], or `null` if such a key is not present in the map.\n     *\n     * Note that for maps supporting `null` values,\n     * the returned `null` value associated with the [key] is indistinguishable from the missing [key],\n     * so [containsKey] should be used to check if the map actually contains the [key].\n     *\n     * @sample samples.collections.Maps.CoreApi.get\n     */\n    public actual operator fun get(key: K): V?\n\n    // Views\n    /**\n     * Returns a read-only [Set] of all keys in this map.\n     *\n     * @sample samples.collections.Maps.CoreApi.keySet\n     */\n    public actual val keys: Set<K>\n\n    /**\n     * Returns a read-only [Collection] of all values in this map. Note that this collection may contain duplicate values.\n     *\n     * @sample samples.collections.Maps.CoreApi.valueSet\n     */\n    public actual val values: Collection<V>\n\n    /**\n     * Returns a read-only [Set] of all key/value pairs in this map.\n     *\n     * @sample samples.collections.Maps.CoreApi.entrySet\n     */\n    public actual val entries: Set<Map.Entry<K, V>>\n\n    /**\n     * Represents a key/value pair held by a [Map].\n     *\n     * Map entries obtained from the iteration of [Map.entries] set are not supposed to be stored separately or\n     * used long after they are obtained.\n     * The behavior of an entry is unspecified if the backing map has been modified after the entry was obtained.\n     *\n     * To create an immutable entry not connected to any map, one can use [Map.Entry.copy] function.\n     *\n     * [Entry] implementations must override [Any.toString], [Any.equals] and [Any.hashCode] functions\n     * and provide implementations such that:\n     * - [Entry.toString] should return a string representation of the key-value pair in form of `key=value`.\n     * - [Entry.equals] should consider any two instances of [Entry] equal if their keys are equal and values are equal.\n     * - [Entry.hashCode] should be computed as exclusive or (XOR) of\n     *   hash codes corresponding to a key and a value: `key.hashCode() xor value.hashCode()`\n     *\n     * @param K the type of the entry key. The entry is covariant in its key type.\n     * @param V the type of the entry value. The entry is covariant in its value type.\n     */\n    public actual interface Entry<out K, out V> {\n        /**\n         * Returns the key of this key/value pair.\n         */\n        public actual val key: K\n\n        /**\n         * Returns the value of this key/value pair.\n         */\n        public actual val value: V\n    }\n}")
+/**
+ * A collection that holds pairs of objects (keys and values) and supports retrieving
+ * the value corresponding to each key, as well as adding new, removing or updating existing pairs.
+ *
+ * Map keys are unique; the map holds only one value for each key. In contrast, the same value can be associated with several unique keys.
+ *
+ * If a particular use case does not require map's modification, a read-only counterpart, \ref Map could be used instead.
+ *
+ * \ref MutableMap extends \ref Map contact with functions allowing to add, remove and update mapping between keys and values.
+ *
+ * Unlike \ref Map, \ref keys, \ref values and \ref entries collections are all mutable, and changes in them update the map.
+ *
+ * Until stated otherwise, \ref MutableMap implementations are not thread-safe and their modification without
+ * explicit synchronization may result in data corruption, loss, and runtime errors.
+ *
+ * @param k the type of map keys. The map is invariant in its key type.
+ * @param v the type of map values. The mutable map is invariant in its value type.
+ */
+__ast_distance_unmapped__("class_declaration", "public actual interface MutableMap<K, V> : Map<K, V> {\n    // Modification Operations\n    /**\n     * Associates the specified [value] with the specified [key] in the map.\n     *\n     * If the map doesn't contain a mapping for [key], the mapping is added and the function returns `null`.\n     * If the map already contains a mapping for [key], the value for that key is replaced with the specified\n     * [value] and the function returns the previous value.\n     *\n     * @sample samples.collections.Maps.CoreApi.put\n     */\n    @IgnorableReturnValue\n    public actual fun put(key: K, value: V): V?\n\n    /**\n     * Removes the specified key and its corresponding value from this map.\n     *\n     * @return the previous value associated with the key, or `null` if the key was not present in the map.\n     *\n     * @sample samples.collections.Maps.CoreApi.remove\n     */\n    @IgnorableReturnValue\n    public actual fun remove(key: K): V?\n\n    // Bulk Modification Operations\n    /**\n     * Updates this map with key/value pairs from the specified map [from].\n     *\n     * The effect of this call is equivalent to calling [put] for each entry of [from].\n     *\n     * @sample samples.collections.Maps.CoreApi.putAll\n     */\n    public actual fun putAll(from: Map<out K, V>): Unit\n\n    /**\n     * Removes all elements from this map.\n     *\n     * @sample samples.collections.Maps.CoreApi.clear\n     */\n    public actual fun clear(): Unit\n\n    // Views\n    /**\n     * Returns a [MutableSet] of all keys in this map.\n     *\n     * @sample samples.collections.Maps.CoreApi.keySetMutable\n     */\n    actual override val keys: MutableSet<K>\n\n    /**\n     * Returns a [MutableCollection] of all values in this map. Note that this collection may contain duplicate values.\n     *\n     * @sample samples.collections.Maps.CoreApi.valueSetMutable\n     */\n    actual override val values: MutableCollection<V>\n\n    /**\n     * Returns a [MutableSet] of all key/value pairs in this map.\n     *\n     * @sample samples.collections.Maps.CoreApi.entrySetMutable\n     */\n    actual override val entries: MutableSet<MutableMap.MutableEntry<K, V>>\n\n    /**\n     * Represents a key/value pair held by a [MutableMap].\n     *\n     * Map entries obtained from the iteration of [MutableMap.entries] set are not supposed to be stored separately or\n     * used long after they are obtained.\n     * The behavior of an entry is unspecified if the backing map has been modified after the entry was obtained,\n     * except when the map was modified through the [setValue] method.\n     *\n     * To create an immutable entry not connected to any map, one can use [Map.Entry.copy] function.\n     *\n     * @param K the type of the entry key. The entry is invariant in its key type.\n     * @param V the type of the entry value. The entry is invariant in its value type.\n     */\n    public actual interface MutableEntry<K, V> : Map.Entry<K, V> {\n        /**\n         * Changes the value associated with the key of this entry.\n         *\n         * @return the previous value corresponding to the key.\n         */\n        @IgnorableReturnValue\n        public actual fun setValue(newValue: V): V\n    }\n}")
+}
+
+=== Suspension lowering review leads ===
+Parsed syntax evidence only: macros do not prove compiled IR or behavior.
+Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
+Status	Kotlin contract	Source	Target	Callable
+Explicit suspension contracts reviewed: 0
+Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
+=== libraries/stdlib/native-wasm/src/kotlin/collections/Set.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Set.hpp ===
+Locations below refer to these concatenated physical files, in order:
+Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Set.kt
+Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Set.hpp
+score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.000000
+translated_ast_cosine: 0.297698
+function_name_parity: 0.000000
+normalized_logic: 0.000000
+documentation_correspondence: 0.075902
+span_rule_coverage: 0.000000
+unsupported_fraction (diagnostic only): 1.000000
+score: 0.000000
+Score evidence: provisional (unsupported rules or parse errors)
+Generated parse errors: yes (provisional)
+Target parse errors: no
+Rule hits: 4 | misses: 2 | documentation misses: 0 | supported code-byte coverage: 0.000000
+Source line	Source bytes	Emitted bytes	Node	Supported
+1	0:208	0:208	multiline_comment	yes
+6	210:2449	209:240	package_header	yes
+40	2450:2834	241:685	class_declaration	fallback
+52	2836:3640	686:1508	multiline_comment	yes
+68	3641:4726	1509:2674	class_declaration	fallback
+Diagnostic: 40: unsupported class_declaration
+Diagnostic: 68: unsupported class_declaration
+Extra target function: kotlin::collections::Set::contains:76
+Extra target function: kotlin::collections::Set::iterator:78
+Extra target function: kotlin::collections::Set::contains_all:80
+Extra target function: kotlin::collections::MutableSet::iterator:103
+Extra target function: kotlin::collections::MutableSet::add:114
+Extra target function: kotlin::collections::MutableSet::remove:116
+Extra target function: kotlin::collections::MutableSet::add_all:118
+Extra target function: kotlin::collections::MutableSet::remove_all:120
+Extra target function: kotlin::collections::MutableSet::retain_all:122
+=== Emitted target buffer ===
+/*
+ * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
+ */
+namespace kotlin::collections {
+__ast_distance_unmapped__("class_declaration", "public actual interface Set<out E> : Collection<E> {\n    // Query Operations\n    actual override val size: Int\n\n    actual override fun isEmpty(): Boolean\n    actual override fun contains(element: @UnsafeVariance E): Boolean\n    actual override fun iterator(): Iterator<E>\n\n    // Bulk Operations\n    actual override fun containsAll(elements: Collection<@UnsafeVariance E>): Boolean\n}")
+/**
+ * A generic unordered collection of unique elements that supports adding and removing elements, iterating over them
+ * and checking if a collection contains a particular value.
+ *
+ * If a particular use case does not require set's modification,
+ * a read-only counterpart, \ref Set could be used instead.
+ *
+ * \ref MutableSet extends \ref Set contact with functions allowing to add and remove elements.
+ *
+ * Unlike \ref Set, an iterator returned by \ref iterator allows modifying the set during iteration.
+ *
+ * Until stated otherwise, \ref MutableSet implementations are not thread-safe and their modification without
+ * explicit synchronization may result in data corruption, loss, and runtime errors.
+ *
+ * @param e the type of elements contained in the set. The mutable set is invariant in its element type.
+ */
+__ast_distance_unmapped__("class_declaration", "public actual interface MutableSet<E> : Set<E>, MutableCollection<E> {\n    // Query Operations\n    actual override fun iterator(): MutableIterator<E>\n\n    // Modification Operations\n\n    /**\n     * Adds the specified element to the set.\n     *\n     * If the set doesn't contain [element], it is added to the set and the function returns `true`.\n     * If the set already contains [element], the element instance stored in the set is kept, [element] is not\n     * added, and the function returns `false`.\n     *\n     * @sample samples.collections.Collections.Sets.add\n     */\n    @IgnorableReturnValue\n    actual override fun add(element: E): Boolean\n\n    @IgnorableReturnValue\n    actual override fun remove(element: E): Boolean\n\n    // Bulk Modification Operations\n    @IgnorableReturnValue\n    actual override fun addAll(elements: Collection<E>): Boolean\n\n    @IgnorableReturnValue\n    actual override fun removeAll(elements: Collection<E>): Boolean\n    @IgnorableReturnValue\n    actual override fun retainAll(elements: Collection<E>): Boolean\n    actual override fun clear(): Unit\n}")
 }
 
 === Suspension lowering review leads ===
@@ -2509,155 +2728,6 @@ Absent local lowering may be valid for direct/tail entries or helpers; follow th
 Status	Kotlin contract	Source	Target	Callable
 Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
-=== libraries/stdlib/native-wasm/src/kotlin/collections/Map.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Map.hpp ===
-Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Map.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Map.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
-translated_ast_cosine: 0.427103
-function_name_parity: 0.000000
-normalized_logic: 0.000000
-documentation_correspondence: 0.028936
-span_rule_coverage: 0.000000
-unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
-Score evidence: provisional (unsupported rules or parse errors)
-Generated parse errors: yes (provisional)
-Target parse errors: no
-Rule hits: 4 | misses: 2 | documentation misses: 0 | supported code-byte coverage: 0.000000
-Source line	Source bytes	Emitted bytes	Node	Supported
-1	0:208	0:208	multiline_comment	yes
-6	210:2841	209:240	package_header	yes
-43	2842:6556	241:4102	class_declaration	fallback
-142	6558:7609	4103:5178	multiline_comment	yes
-160	7610:10768	5179:8472	class_declaration	fallback
-Diagnostic: 43: unsupported class_declaration
-Diagnostic: 160: unsupported class_declaration
-Extra target function: kotlin::collections::detail::ElementCodec<map::Entry<K, V>*>::box:96
-Extra target function: kotlin::collections::detail::ElementCodec<map::Entry<K, V>*>::unbox:98
-Extra target function: kotlin::collections::detail::ElementCodec<mutable_map::MutableEntry<K, V>*>::box:105
-Extra target function: kotlin::collections::detail::ElementCodec<mutable_map::MutableEntry<K, V>*>::unbox:107
-Extra target function: kotlin::collections::detail::NullableMapValue::take:117
-Extra target function: kotlin::collections::detail::NullableMapValue<V*>::take:126
-Extra target function: kotlin::collections::detail::NullableMapValue<std::shared_ptr<V>>::take:134
-Extra target function: kotlin::collections::detail::NullableMapValue<std::optional<V>>::take:142
-Extra target function: kotlin::collections::detail::NullableMapValue<std::any>::take:150
-Extra target function: kotlin::collections::map::Entry::key:310
-Extra target function: kotlin::collections::map::Entry::value:315
-Extra target function: kotlin::collections::mutable_map::MutableEntry::set_value:342
-Extra target function: kotlin::collections::Map::contains_key:411
-Extra target function: kotlin::collections::Map::contains_value:418
-Extra target function: kotlin::collections::Map::get:429
-Extra target function: kotlin::collections::Map::keys:438
-Extra target function: kotlin::collections::Map::values:445
-Extra target function: kotlin::collections::Map::entries:452
-Extra target function: kotlin::collections::MutableMap::put:486
-Extra target function: kotlin::collections::MutableMap::remove:498
-Extra target function: kotlin::collections::MutableMap::put_all:510
-Extra target function: kotlin::collections::MutableMap::keys:524
-Extra target function: kotlin::collections::MutableMap::values:531
-Extra target function: kotlin::collections::MutableMap::entries:538
-=== Emitted target buffer ===
-/*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-namespace kotlin::collections {
-__ast_distance_unmapped__("class_declaration", "public actual interface Map<K, out V> {\n    // Query Operations\n    /**\n     * Returns the number of key/value pairs in the map.\n     *\n     * If a map contains more than [Int.MAX_VALUE] elements, the value of this property is unspecified.\n     * For implementations allowing to have more than [Int.MAX_VALUE] elements,\n     * it is recommended to explicitly document behavior of this property.\n     *\n     * @sample samples.collections.Maps.CoreApi.size\n     */\n    public actual val size: Int\n\n    /**\n     * Returns `true` if the map is empty (contains no elements), `false` otherwise.\n     *\n     * @sample samples.collections.Maps.CoreApi.isEmpty\n     */\n    public actual fun isEmpty(): Boolean\n\n    /**\n     * Returns `true` if the map contains the specified [key].\n     *\n     * @sample samples.collections.Maps.CoreApi.containsKey\n     */\n    public actual fun containsKey(key: K): Boolean\n\n    /**\n     * Returns `true` if the map maps one or more keys to the specified [value].\n     *\n     * @sample samples.collections.Maps.CoreApi.containsValue\n     */\n    public actual fun containsValue(value: @UnsafeVariance V): Boolean\n\n    /**\n     * Returns the value corresponding to the given [key], or `null` if such a key is not present in the map.\n     *\n     * Note that for maps supporting `null` values,\n     * the returned `null` value associated with the [key] is indistinguishable from the missing [key],\n     * so [containsKey] should be used to check if the map actually contains the [key].\n     *\n     * @sample samples.collections.Maps.CoreApi.get\n     */\n    public actual operator fun get(key: K): V?\n\n    // Views\n    /**\n     * Returns a read-only [Set] of all keys in this map.\n     *\n     * @sample samples.collections.Maps.CoreApi.keySet\n     */\n    public actual val keys: Set<K>\n\n    /**\n     * Returns a read-only [Collection] of all values in this map. Note that this collection may contain duplicate values.\n     *\n     * @sample samples.collections.Maps.CoreApi.valueSet\n     */\n    public actual val values: Collection<V>\n\n    /**\n     * Returns a read-only [Set] of all key/value pairs in this map.\n     *\n     * @sample samples.collections.Maps.CoreApi.entrySet\n     */\n    public actual val entries: Set<Map.Entry<K, V>>\n\n    /**\n     * Represents a key/value pair held by a [Map].\n     *\n     * Map entries obtained from the iteration of [Map.entries] set are not supposed to be stored separately or\n     * used long after they are obtained.\n     * The behavior of an entry is unspecified if the backing map has been modified after the entry was obtained.\n     *\n     * To create an immutable entry not connected to any map, one can use [Map.Entry.copy] function.\n     *\n     * [Entry] implementations must override [Any.toString], [Any.equals] and [Any.hashCode] functions\n     * and provide implementations such that:\n     * - [Entry.toString] should return a string representation of the key-value pair in form of `key=value`.\n     * - [Entry.equals] should consider any two instances of [Entry] equal if their keys are equal and values are equal.\n     * - [Entry.hashCode] should be computed as exclusive or (XOR) of\n     *   hash codes corresponding to a key and a value: `key.hashCode() xor value.hashCode()`\n     *\n     * @param K the type of the entry key. The entry is covariant in its key type.\n     * @param V the type of the entry value. The entry is covariant in its value type.\n     */\n    public actual interface Entry<out K, out V> {\n        /**\n         * Returns the key of this key/value pair.\n         */\n        public actual val key: K\n\n        /**\n         * Returns the value of this key/value pair.\n         */\n        public actual val value: V\n    }\n}")
-/**
- * A collection that holds pairs of objects (keys and values) and supports retrieving
- * the value corresponding to each key, as well as adding new, removing or updating existing pairs.
- *
- * Map keys are unique; the map holds only one value for each key. In contrast, the same value can be associated with several unique keys.
- *
- * If a particular use case does not require map's modification, a read-only counterpart, \ref Map could be used instead.
- *
- * \ref MutableMap extends \ref Map contact with functions allowing to add, remove and update mapping between keys and values.
- *
- * Unlike \ref Map, \ref keys, \ref values and \ref entries collections are all mutable, and changes in them update the map.
- *
- * Until stated otherwise, \ref MutableMap implementations are not thread-safe and their modification without
- * explicit synchronization may result in data corruption, loss, and runtime errors.
- *
- * @param k the type of map keys. The map is invariant in its key type.
- * @param v the type of map values. The mutable map is invariant in its value type.
- */
-__ast_distance_unmapped__("class_declaration", "public actual interface MutableMap<K, V> : Map<K, V> {\n    // Modification Operations\n    /**\n     * Associates the specified [value] with the specified [key] in the map.\n     *\n     * If the map doesn't contain a mapping for [key], the mapping is added and the function returns `null`.\n     * If the map already contains a mapping for [key], the value for that key is replaced with the specified\n     * [value] and the function returns the previous value.\n     *\n     * @sample samples.collections.Maps.CoreApi.put\n     */\n    @IgnorableReturnValue\n    public actual fun put(key: K, value: V): V?\n\n    /**\n     * Removes the specified key and its corresponding value from this map.\n     *\n     * @return the previous value associated with the key, or `null` if the key was not present in the map.\n     *\n     * @sample samples.collections.Maps.CoreApi.remove\n     */\n    @IgnorableReturnValue\n    public actual fun remove(key: K): V?\n\n    // Bulk Modification Operations\n    /**\n     * Updates this map with key/value pairs from the specified map [from].\n     *\n     * The effect of this call is equivalent to calling [put] for each entry of [from].\n     *\n     * @sample samples.collections.Maps.CoreApi.putAll\n     */\n    public actual fun putAll(from: Map<out K, V>): Unit\n\n    /**\n     * Removes all elements from this map.\n     *\n     * @sample samples.collections.Maps.CoreApi.clear\n     */\n    public actual fun clear(): Unit\n\n    // Views\n    /**\n     * Returns a [MutableSet] of all keys in this map.\n     *\n     * @sample samples.collections.Maps.CoreApi.keySetMutable\n     */\n    actual override val keys: MutableSet<K>\n\n    /**\n     * Returns a [MutableCollection] of all values in this map. Note that this collection may contain duplicate values.\n     *\n     * @sample samples.collections.Maps.CoreApi.valueSetMutable\n     */\n    actual override val values: MutableCollection<V>\n\n    /**\n     * Returns a [MutableSet] of all key/value pairs in this map.\n     *\n     * @sample samples.collections.Maps.CoreApi.entrySetMutable\n     */\n    actual override val entries: MutableSet<MutableMap.MutableEntry<K, V>>\n\n    /**\n     * Represents a key/value pair held by a [MutableMap].\n     *\n     * Map entries obtained from the iteration of [MutableMap.entries] set are not supposed to be stored separately or\n     * used long after they are obtained.\n     * The behavior of an entry is unspecified if the backing map has been modified after the entry was obtained,\n     * except when the map was modified through the [setValue] method.\n     *\n     * To create an immutable entry not connected to any map, one can use [Map.Entry.copy] function.\n     *\n     * @param K the type of the entry key. The entry is invariant in its key type.\n     * @param V the type of the entry value. The entry is invariant in its value type.\n     */\n    public actual interface MutableEntry<K, V> : Map.Entry<K, V> {\n        /**\n         * Changes the value associated with the key of this entry.\n         *\n         * @return the previous value corresponding to the key.\n         */\n        @IgnorableReturnValue\n        public actual fun setValue(newValue: V): V\n    }\n}")
-}
-
-=== Suspension lowering review leads ===
-Parsed syntax evidence only: macros do not prove compiled IR or behavior.
-Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
-Status	Kotlin contract	Source	Target	Callable
-Explicit suspension contracts reviewed: 0
-Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
-=== libraries/stdlib/native-wasm/src/kotlin/collections/Set.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Set.hpp ===
-Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/native-wasm/src/kotlin/collections/Set.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/collections/Set.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
-translated_ast_cosine: 0.297698
-function_name_parity: 0.000000
-normalized_logic: 0.000000
-documentation_correspondence: 0.075902
-span_rule_coverage: 0.000000
-unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
-Score evidence: provisional (unsupported rules or parse errors)
-Generated parse errors: yes (provisional)
-Target parse errors: no
-Rule hits: 4 | misses: 2 | documentation misses: 0 | supported code-byte coverage: 0.000000
-Source line	Source bytes	Emitted bytes	Node	Supported
-1	0:208	0:208	multiline_comment	yes
-6	210:2449	209:240	package_header	yes
-40	2450:2834	241:685	class_declaration	fallback
-52	2836:3640	686:1508	multiline_comment	yes
-68	3641:4726	1509:2674	class_declaration	fallback
-Diagnostic: 40: unsupported class_declaration
-Diagnostic: 68: unsupported class_declaration
-Extra target function: kotlin::collections::Set::contains:76
-Extra target function: kotlin::collections::Set::iterator:78
-Extra target function: kotlin::collections::Set::contains_all:80
-Extra target function: kotlin::collections::MutableSet::iterator:103
-Extra target function: kotlin::collections::MutableSet::add:114
-Extra target function: kotlin::collections::MutableSet::remove:116
-Extra target function: kotlin::collections::MutableSet::add_all:118
-Extra target function: kotlin::collections::MutableSet::remove_all:120
-Extra target function: kotlin::collections::MutableSet::retain_all:122
-=== Emitted target buffer ===
-/*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-namespace kotlin::collections {
-__ast_distance_unmapped__("class_declaration", "public actual interface Set<out E> : Collection<E> {\n    // Query Operations\n    actual override val size: Int\n\n    actual override fun isEmpty(): Boolean\n    actual override fun contains(element: @UnsafeVariance E): Boolean\n    actual override fun iterator(): Iterator<E>\n\n    // Bulk Operations\n    actual override fun containsAll(elements: Collection<@UnsafeVariance E>): Boolean\n}")
-/**
- * A generic unordered collection of unique elements that supports adding and removing elements, iterating over them
- * and checking if a collection contains a particular value.
- *
- * If a particular use case does not require set's modification,
- * a read-only counterpart, \ref Set could be used instead.
- *
- * \ref MutableSet extends \ref Set contact with functions allowing to add and remove elements.
- *
- * Unlike \ref Set, an iterator returned by \ref iterator allows modifying the set during iteration.
- *
- * Until stated otherwise, \ref MutableSet implementations are not thread-safe and their modification without
- * explicit synchronization may result in data corruption, loss, and runtime errors.
- *
- * @param e the type of elements contained in the set. The mutable set is invariant in its element type.
- */
-__ast_distance_unmapped__("class_declaration", "public actual interface MutableSet<E> : Set<E>, MutableCollection<E> {\n    // Query Operations\n    actual override fun iterator(): MutableIterator<E>\n\n    // Modification Operations\n\n    /**\n     * Adds the specified element to the set.\n     *\n     * If the set doesn't contain [element], it is added to the set and the function returns `true`.\n     * If the set already contains [element], the element instance stored in the set is kept, [element] is not\n     * added, and the function returns `false`.\n     *\n     * @sample samples.collections.Collections.Sets.add\n     */\n    @IgnorableReturnValue\n    actual override fun add(element: E): Boolean\n\n    @IgnorableReturnValue\n    actual override fun remove(element: E): Boolean\n\n    // Bulk Modification Operations\n    @IgnorableReturnValue\n    actual override fun addAll(elements: Collection<E>): Boolean\n\n    @IgnorableReturnValue\n    actual override fun removeAll(elements: Collection<E>): Boolean\n    @IgnorableReturnValue\n    actual override fun retainAll(elements: Collection<E>): Boolean\n    actual override fun clear(): Unit\n}")
-}
-
-=== Suspension lowering review leads ===
-Parsed syntax evidence only: macros do not prove compiled IR or behavior.
-Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
-Status	Kotlin contract	Source	Target	Callable
-Explicit suspension contracts reviewed: 0
-Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === compiler/fir/checkers/src/org/jetbrains/kotlin/fir/analysis/checkers/expression/FirSuspendCallChecker.kt -> kotlinx/coroutines/tools/clang_suspend_plugin/FirSuspendCallChecker.hpp ===
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/fir/checkers/src/org/jetbrains/kotlin/fir/analysis/checkers/expression/FirSuspendCallChecker.kt
@@ -2712,6 +2782,43 @@ namespace org::jetbrains::kotlin::fir::analysis::checkers::expression {
 
 __ast_distance_unmapped__("object_declaration", "object FirSuspendCallChecker : FirQualifiedAccessExpressionChecker(MppCheckerKind.Common) {\n\n    context(context: CheckerContext, reporter: DiagnosticReporter)\n    override fun check(expression: FirQualifiedAccessExpression) {\n        val reference = expression.calleeReference.resolved ?: return\n        val symbol = reference.resolvedSymbol as? FirCallableSymbol ?: return\n        if (reference.name == StandardClassIds.Callables.suspend.callableName ||\n            symbol is FirNamedFunctionSymbol && symbol.name == StandardClassIds.Callables.suspend.callableName\n        ) {\n            checkSuspendModifierForm(expression, reference, symbol)\n        }\n\n        if (reference is FirResolvedCallableReference) {\n            checkCallableReference(expression, symbol)\n            return\n        }\n\n        when (symbol) {\n            is FirNamedFunctionSymbol -> if (!symbol.isSuspend) return\n            is FirPropertySymbol -> if (symbol.callableId != StandardClassIds.Callables.coroutineContext) return\n            else -> return\n        }\n        val enclosingSuspendFunction = findEnclosingSuspendFunction()\n        if (enclosingSuspendFunction == null) {\n            when (symbol) {\n                is FirNamedFunctionSymbol -> reporter.reportOn(expression.source, FirErrors.ILLEGAL_SUSPEND_FUNCTION_CALL, symbol)\n                is FirPropertySymbol -> reporter.reportOn(expression.source, FirErrors.ILLEGAL_SUSPEND_PROPERTY_ACCESS, symbol)\n                else -> {\n                }\n            }\n        } else {\n            if (!checkNonLocalReturnUsage(enclosingSuspendFunction)) {\n                reporter.reportOn(expression.source, FirErrors.NON_LOCAL_SUSPENSION_POINT)\n            }\n            if (isInScopeForDefaultParameterValues(enclosingSuspendFunction)) {\n                reporter.reportOn(\n                    expression.source,\n                    FirErrors.UNSUPPORTED,\n                    \"Suspend function call in default parameter value is unsupported.\"\n                )\n            }\n            if (!checkRestrictsSuspension(expression, enclosingSuspendFunction, symbol)) {\n                reporter.reportOn(expression.source, FirErrors.ILLEGAL_RESTRICTED_SUSPENDING_FUNCTION_CALL)\n            }\n        }\n    }\n\n    context(context: CheckerContext, reporter: DiagnosticReporter)\n    private fun checkSuspendModifierForm(\n        expression: FirQualifiedAccessExpression,\n        reference: FirResolvedNamedReference,\n        symbol: FirCallableSymbol<*>,\n    ) {\n        if (symbol.callableId == StandardClassIds.Callables.suspend) {\n            if (reference.name != StandardClassIds.Callables.suspend.callableName ||\n                expression.explicitReceiver != null ||\n                expression.formOfSuspendModifierForLambdaOrFun() == null\n            ) {\n                reporter.reportOn(expression.source, FirErrors.NON_MODIFIER_FORM_FOR_BUILT_IN_SUSPEND)\n            }\n        } else if (reference.name == StandardClassIds.Callables.suspend.callableName) {\n            when (expression.formOfSuspendModifierForLambdaOrFun()) {\n                SuspendCallArgumentKind.FUN -> {\n                    reporter.reportOn(expression.source, FirErrors.MODIFIER_FORM_FOR_NON_BUILT_IN_SUSPEND_FUN_ERROR)\n                }\n                SuspendCallArgumentKind.LAMBDA -> {\n                    reporter.reportOn(expression.source, FirErrors.MODIFIER_FORM_FOR_NON_BUILT_IN_SUSPEND)\n                }\n                null -> {\n                    // Nothing to do\n                }\n            }\n        }\n    }\n\n    private fun FirQualifiedAccessExpression.formOfSuspendModifierForLambdaOrFun(): SuspendCallArgumentKind? {\n        if (this !is FirFunctionCall) return null\n        val reference = this.calleeReference\n        if (reference is FirResolvedCallableReference) return null\n        if (typeArguments.any { it.isExplicit }) return null\n        if (arguments.singleOrNull().let { it is FirAnonymousFunctionExpression && it.isTrailingLambda }) {\n            // No brackets should be in a selector call\n            val callExpressionSource =\n                if (explicitReceiver == null) source\n                else source?.getChild(KtNodeTypes.CALL_EXPRESSION, index = 1, depth = 1)\n            if (callExpressionSource?.getChild(KtNodeTypes.VALUE_ARGUMENT_LIST, depth = 1) == null) {\n                return SuspendCallArgumentKind.LAMBDA\n            }\n        }\n        if (origin == FirFunctionCallOrigin.Infix) {\n            val lastArgument = arguments.lastOrNull()\n            if (lastArgument is FirAnonymousFunctionExpression && source?.getChild(KtNodeTypes.PARENTHESIZED, depth = 1) == null) {\n                return if (lastArgument.source?.lighterASTNode?.tokenType == KtNodeTypes.FUN) {\n                    SuspendCallArgumentKind.FUN\n                } else {\n                    SuspendCallArgumentKind.LAMBDA\n                }\n            }\n        }\n        return null\n    }\n\n    context(context: CheckerContext)\n    private fun findEnclosingSuspendFunction(): FirFunctionSymbol<*>? {\n        return context.containingDeclarations.lastOrNull {\n            when (it) {\n                is FirAnonymousFunctionSymbol ->\n                    if (it.isLambda) it.resolvedTypeRef.coneType.isSuspendOrKSuspendFunctionType(context.session) else it.isSuspend\n                is FirNamedFunctionSymbol ->\n                    it.isSuspend\n                else ->\n                    false\n            }\n        } as? FirFunctionSymbol\n    }\n\n    context(context: CheckerContext)\n    private fun isInScopeForDefaultParameterValues(\n        enclosingSuspendFunction: FirFunctionSymbol<*>\n    ): Boolean {\n        val valueParameters = enclosingSuspendFunction.valueParameterSymbols\n        for (declaration in context.containingDeclarations.asReversed()) {\n            when {\n                declaration is FirValueParameterSymbol && declaration in valueParameters && declaration.hasDefaultValue -> return true\n                declaration is FirAnonymousFunctionSymbol && declaration.inlineStatus == InlineStatus.Inline -> continue\n                declaration is FirFunctionSymbol && !declaration.isInline -> return false\n            }\n        }\n        return false\n    }\n\n    context(context: CheckerContext)\n    private fun checkNonLocalReturnUsage(enclosingSuspendFunction: FirFunctionSymbol<*>): Boolean {\n        for (declaration in context.containingDeclarations.asReversed()) {\n            // If we found the nearest suspend function, we're finished.\n            if (declaration == enclosingSuspendFunction) return true\n            // Local variables are okay.\n            if (declaration is FirPropertySymbol && declaration is FirLocalPropertySymbol) continue\n            // Inline lambdas are okay.\n            if (declaration is FirAnonymousFunctionSymbol && declaration.inlineStatus.returnAllowed) continue\n            // We already report UNSUPPORTED on suspend calls in value parameters default values, so they are okay for our purposes.\n            if (declaration is FirValueParameterSymbol) continue\n            // Everything else (local classes, init blocks, non-inline lambdas, etc.F) is not okay.\n            return false\n        }\n\n        return false\n    }\n\n    context(context: CheckerContext)\n    private fun checkRestrictsSuspension(\n        expression: FirQualifiedAccessExpression,\n        enclosingSuspendFunction: FirFunctionSymbol<*>,\n        calledDeclarationSymbol: FirCallableSymbol<*>,\n    ): Boolean {\n        if (expression is FirFunctionCall && isCaseMissedByK1(expression)) {\n            return true\n        }\n\n        val session = context.session\n\n        val enclosingSuspendFunctionDispatchReceiverOwnerSymbol =\n            enclosingSuspendFunction.dispatchReceiverType?.classLikeLookupTagIfAny?.toRegularClassSymbol()\n        val enclosingSuspendFunctionExtensionReceiverSymbol = enclosingSuspendFunction.receiverParameterSymbol\n        val enclosingSuspendFunctionContextParameterSymbols = enclosingSuspendFunction.contextParameterSymbols\n\n        val receiversInfo = expression.computeReceiversInfo(session, calledDeclarationSymbol)\n        for (receiverExpression in receiversInfo.expressions) {\n            if (!receiverExpression.resolvedType.isRestrictSuspensionReceiver()) continue\n            if (sameInstanceOfReceiver(receiverExpression, enclosingSuspendFunctionDispatchReceiverOwnerSymbol)) continue\n            if (sameInstanceOfReceiver(receiverExpression, enclosingSuspendFunctionExtensionReceiverSymbol)) continue\n            if (enclosingSuspendFunctionContextParameterSymbols.any { sameInstanceOfReceiver(receiverExpression, it) }) continue\n\n            return false\n        }\n\n        val restrictSuspensionSymbols: List<FirBasedSymbol<*>> =\n            listOfNotNull(enclosingSuspendFunctionExtensionReceiverSymbol?.takeIf { it.resolvedType.isRestrictSuspensionReceiver() }) +\n                    enclosingSuspendFunctionContextParameterSymbols.filter { it.resolvedReturnType.isRestrictSuspensionReceiver() }\n\n        val chosenRestrictSuspensionSymbol = when (restrictSuspensionSymbols.size) {\n            0 -> return true\n            1 -> restrictSuspensionSymbols.single()\n            else -> return false\n        }\n\n        if (sameInstanceOfReceiver(receiversInfo.dispatchReceiverExpression, chosenRestrictSuspensionSymbol)) {\n            return true\n        }\n\n        for (receiver in listOf(receiversInfo.extensionReceiver) + receiversInfo.contextParameters) {\n            if (sameInstanceOfReceiver(receiver.expression, chosenRestrictSuspensionSymbol)) {\n                if (receiver.type?.isRestrictSuspensionReceiver() == true) {\n                    return true\n                }\n            }\n        }\n\n        return false\n    }\n\n    /**\n     * This function exists because of KT-65272:\n     *\n     * ```\n     * @RestrictsSuspension\n     * object TestScope\n     *\n     * val testLambda: suspend TestScope.() -> Unit\n     *     get() = TODO()\n     *\n     * suspend fun test() {\n     *     TestScope.testLambda()        // ❌️K1 ❌️K2\n     *     testLambda(TestScope)         // ✅️K1 ❌️K2  <-- Working K1 code now fails to compile\n     *     testLambda.invoke(TestScope)  // ✅️K1 ✅️K2\n     * }\n     * ```\n     *\n     * It was decided to replicate K1 behavior for now, so function\n     * returns `true` when given an expression like `testLambda(TestScope)`:\n     * an implicit invoke call on a receiver of an extension function type\n     * such that the receiver argument is passed as a value argument.\n     */\n    private fun isCaseMissedByK1(expression: FirFunctionCall): Boolean {\n        val isInvokeFromExtensionFunctionType = expression is FirImplicitInvokeCall\n                && expression.explicitReceiver?.resolvedType?.isExtensionFunctionType == true\n\n        if (!isInvokeFromExtensionFunctionType) {\n            return false\n        }\n\n        val source = expression.source\n            ?: return false\n\n        val visualValueArgumentsCount = source\n            .getChild(KtNodeTypes.VALUE_ARGUMENT_LIST, depth = 1)\n            ?.lighterASTNode?.getChildren(source.treeStructure)\n            ?.filter { it.tokenType == KtNodeTypes.VALUE_ARGUMENT }\n            ?.size\n            ?: return false\n\n        return visualValueArgumentsCount != expression.arguments.count() - 1\n    }\n\n    private fun sameInstanceOfReceiver(\n        useSiteReceiverExpression: FirExpression?,\n        declarationSiteReceiverOwnerSymbol: FirBasedSymbol<*>?,\n    ): Boolean = when (val unwrappedReceiver = useSiteReceiverExpression?.unwrapSmartcastExpression()) {\n        null -> false\n        else if declarationSiteReceiverOwnerSymbol == null -> false\n        is FirThisReceiverExpression ->\n            unwrappedReceiver.calleeReference.boundSymbol == declarationSiteReceiverOwnerSymbol\n        is FirPropertyAccessExpression ->\n            declarationSiteReceiverOwnerSymbol is FirValueParameterSymbol\n                    && declarationSiteReceiverOwnerSymbol.isContextParameter()\n                    && unwrappedReceiver.toResolvedCallableSymbol() == declarationSiteReceiverOwnerSymbol\n        else -> false\n    }\n\n    data class ReceiversInfo(\n        val dispatchReceiverExpression: FirExpression?,\n        val extensionReceiver: ReceiverInfo,\n        val contextParameters: List<ReceiverInfo>,\n    ) {\n        val expressions: List<FirExpression> =\n            listOfNotNull(dispatchReceiverExpression, extensionReceiver.expression) + contextParameters.mapNotNull { it.expression }\n    }\n\n    data class ReceiverInfo(val expression: FirExpression?, val type: ConeKotlinType?)\n\n    private fun FirQualifiedAccessExpression.computeReceiversInfo(\n        session: FirSession,\n        calledDeclarationSymbol: FirCallableSymbol<*>\n    ): ReceiversInfo {\n        val dispatchReceiver = dispatchReceiver\n        if (this is FirImplicitInvokeCall &&\n            dispatchReceiver != null && dispatchReceiver.resolvedType.isSuspendOrKSuspendFunctionType(session)\n        ) {\n            val variableForInvoke = dispatchReceiver\n            val variableForInvokeType = variableForInvoke.resolvedType\n\n            if (!variableForInvokeType.hasContextParameters && !variableForInvokeType.isExtensionFunctionType) {\n                return ReceiversInfo(null, ReceiverInfo(null, null), emptyList())\n            }\n\n            val amountOfContexts = variableForInvokeType.contextParameterNumberForFunctionType\n            val contexts = zipReceiverInfo(\n                argumentList.arguments.take(amountOfContexts),\n                variableForInvokeType.typeArguments.take(amountOfContexts).map { it as? ConeKotlinType }\n            )\n            val extension = ReceiverInfo(\n                argumentList.arguments.getOrNull(amountOfContexts),\n                variableForInvokeType.typeArguments.getOrNull(amountOfContexts) as? ConeKotlinType\n            )\n\n            // `a.foo()` is resolved to invokeExtension, so it's been desugared to `foo.invoke(a)`\n            // And we use the first argument (`a`) as an extension receiver\n            return ReceiversInfo(null, extension, contexts)\n        }\n\n        return ReceiversInfo(\n            dispatchReceiver,\n            ReceiverInfo(extensionReceiver, calledDeclarationSymbol.resolvedReceiverType),\n            zipReceiverInfo(contextArguments, calledDeclarationSymbol.contextParameterSymbols.map { it.resolvedReturnType })\n        )\n    }\n\n    private fun zipReceiverInfo(expressions: List<FirExpression>, types: List<ConeKotlinType?>): List<ReceiverInfo> =\n        expressions.zip(types, ::ReceiverInfo)\n\n    context(reporter: DiagnosticReporter, context: CheckerContext)\n    private fun checkCallableReference(\n        expression: FirQualifiedAccessExpression,\n        symbol: FirCallableSymbol<*>,\n    ) {\n        if (symbol.callableId == StandardClassIds.Callables.coroutineContext) {\n            reporter.reportOn(\n                expression.calleeReference.source,\n                FirErrors.UNSUPPORTED,\n                \"Callable reference to suspend property is unsupported.\"\n            )\n        }\n    }\n}")
 __ast_distance_unmapped__("class_declaration", "private enum class SuspendCallArgumentKind {\n    FUN, LAMBDA\n}")
+}
+
+=== Suspension lowering review leads ===
+Parsed syntax evidence only: macros do not prove compiled IR or behavior.
+Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
+Status	Kotlin contract	Source	Target	Callable
+Explicit suspension contracts reviewed: 0
+Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
+=== kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KCallable.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KCallable.hpp ===
+Locations below refer to these concatenated physical files, in order:
+Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KCallable.kt
+Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KCallable.hpp
+score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.000000
+translated_ast_cosine: 0.486173
+function_name_parity: 0.000000
+normalized_logic: 0.000000
+documentation_correspondence: 0.232495
+span_rule_coverage: 0.000000
+unsupported_fraction (diagnostic only): 1.000000
+score: 0.000000
+Score evidence: provisional (unsupported rules or parse errors)
+Generated parse errors: yes (provisional)
+Target parse errors: no
+Rule hits: 3 | misses: 1 | documentation misses: 0 | supported code-byte coverage: 0.000000
+Source line	Source bytes	Emitted bytes	Node	Supported
+1	0:150	0:150	multiline_comment	yes
+6	152:294	151:178	package_header	yes
+13	295:947	179:905	class_declaration	fallback
+Diagnostic: 13: unsupported class_declaration
+=== Emitted target buffer ===
+/*
+ * Copyright 2010-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license
+ * that can be found in the LICENSE file.
+ */
+namespace kotlin::reflect {
+__ast_distance_unmapped__("class_declaration", "public actual interface KCallable<out R> : KAnnotatedElement {\n    /**\n     * The name of this callable as it was declared in the source code.\n     * If the callable has no name, a special invented name is created.\n     * Nameless callables include:\n     * - constructors have the name \"<init>\",\n     * - property accessors: the getter for a property named \"foo\" will have the name \"<get-foo>\",\n     *   the setter, similarly, will have the name \"<set-foo>\".\n     */\n    @kotlin.internal.IntrinsicConstEvaluation\n    public actual val name: String\n\n    /**\n     * The type of values returned by this callable.\n     */\n    public val returnType: KType\n}")
 }
 
 === Suspension lowering review leads ===
@@ -2775,43 +2882,6 @@ __ast_distance_unmapped__("class_declaration", "public actual interface KMutable
 __ast_distance_unmapped__("class_declaration", "public actual interface KMutableProperty0<V> : KProperty0<V>, KMutableProperty<V> {\n    public actual fun set(value: V)\n}")
 __ast_distance_unmapped__("class_declaration", "public actual interface KMutableProperty1<T, V> : KProperty1<T, V>, KMutableProperty<V> {\n    public actual fun set(receiver: T, value: V)\n}")
 __ast_distance_unmapped__("class_declaration", "public actual interface KMutableProperty2<D, E, V> : KProperty2<D, E, V>, KMutableProperty<V> {\n    public actual fun set(receiver1: D, receiver2: E, value: V)\n}")
-}
-
-=== Suspension lowering review leads ===
-Parsed syntax evidence only: macros do not prove compiled IR or behavior.
-Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
-Status	Kotlin contract	Source	Target	Callable
-Explicit suspension contracts reviewed: 0
-Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
-=== kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KCallable.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KCallable.hpp ===
-Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/reflect/KCallable.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/kotlin/reflect/KCallable.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
-translated_ast_cosine: 0.486173
-function_name_parity: 0.000000
-normalized_logic: 0.000000
-documentation_correspondence: 0.232495
-span_rule_coverage: 0.000000
-unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
-Score evidence: provisional (unsupported rules or parse errors)
-Generated parse errors: yes (provisional)
-Target parse errors: no
-Rule hits: 3 | misses: 1 | documentation misses: 0 | supported code-byte coverage: 0.000000
-Source line	Source bytes	Emitted bytes	Node	Supported
-1	0:150	0:150	multiline_comment	yes
-6	152:294	151:178	package_header	yes
-13	295:947	179:905	class_declaration	fallback
-Diagnostic: 13: unsupported class_declaration
-=== Emitted target buffer ===
-/*
- * Copyright 2010-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license
- * that can be found in the LICENSE file.
- */
-namespace kotlin::reflect {
-__ast_distance_unmapped__("class_declaration", "public actual interface KCallable<out R> : KAnnotatedElement {\n    /**\n     * The name of this callable as it was declared in the source code.\n     * If the callable has no name, a special invented name is created.\n     * Nameless callables include:\n     * - constructors have the name \"<init>\",\n     * - property accessors: the getter for a property named \"foo\" will have the name \"<get-foo>\",\n     *   the setter, similarly, will have the name \"<set-foo>\".\n     */\n    @kotlin.internal.IntrinsicConstEvaluation\n    public actual val name: String\n\n    /**\n     * The type of values returned by this callable.\n     */\n    public val returnType: KType\n}")
 }
 
 === Suspension lowering review leads ===
@@ -6032,6 +6102,53 @@ Absent local lowering may be valid for direct/tail entries or helpers; follow th
 Status	Kotlin contract	Source	Target	Callable
 Explicit suspension contracts reviewed: 0
 Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
+=== compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrElement.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElement.hpp ===
+Locations below refer to these concatenated physical files, in order:
+Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrElement.kt
+Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElement.hpp
+score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
+translated_text_cosine: 0.000000
+translated_ast_cosine: 0.267189
+function_name_parity: 0.000000
+normalized_logic: 0.000000
+documentation_correspondence: 0.095970
+span_rule_coverage: 0.000000
+unsupported_fraction (diagnostic only): 1.000000
+score: 0.000000
+Score evidence: provisional (unsupported rules or parse errors)
+Generated parse errors: yes (provisional)
+Target parse errors: no
+Rule hits: 6 | misses: 1 | documentation misses: 0 | supported code-byte coverage: 0.000000
+Source line	Source bytes	Emitted bytes	Node	Supported
+1	0:208	0:208	multiline_comment	yes
+6	210:301	209:300	line_comment	yes
+7	302:331	301:330	line_comment	yes
+9	333:364	331:369	package_header	yes
+11	366:633	370:370	import_list	yes
+19	634:3586	371:3441	class_declaration	fallback
+Diagnostic: 19: unsupported class_declaration
+Extra target function: org::jetbrains::kotlin::ir::IrElement::accept:63
+Extra target function: org::jetbrains::kotlin::ir::IrElement::transform:77
+Extra target function: org::jetbrains::kotlin::ir::IrElement::accept_children:94
+Extra target function: org::jetbrains::kotlin::ir::IrElement::transform_children:110
+=== Emitted target buffer ===
+/*
+ * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
+ */
+// This file was generated automatically. See compiler/ir/ir.tree/tree-generator/ReadMe.md.
+// DO NOT MODIFY IT MANUALLY.
+namespace org::jetbrains::kotlin::ir {
+
+__ast_distance_unmapped__("class_declaration", "interface IrElement {\n    /**\n     * The start offset of the syntax node from which this IR node was generated,\n     * in number of characters from the start of the source file. If there is no source information for this IR node,\n     * the [UNDEFINED_OFFSET] constant is used. In order to get the line number and the column number from this offset,\n     * [IrFileEntry.getLineNumber] and [IrFileEntry.getColumnNumber] can be used.\n     *\n     * @see IrFileEntry.getSourceRangeInfo\n     */\n    var startOffset: Int\n\n    /**\n     * The end offset of the syntax node from which this IR node was generated,\n     * in number of characters from the start of the source file. If there is no source information for this IR node,\n     * the [UNDEFINED_OFFSET] constant is used. In order to get the line number and the column number from this offset,\n     * [IrFileEntry.getLineNumber] and [IrFileEntry.getColumnNumber] can be used.\n     *\n     * @see IrFileEntry.getSourceRangeInfo\n     */\n    var endOffset: Int\n\n    /**\n     * Original element before copying. Always satisfies the following\n     * invariant: `this.attributeOwnerId == this.attributeOwnerId.attributeOwnerId`.\n     */\n    var attributeOwnerId: IrElement\n\n    /**\n     * Runs the provided [visitor] on the IR subtree with the root at this node.\n     *\n     * @param visitor The visitor to accept.\n     * @param data An arbitrary context to pass to each invocation of [visitor]'s methods.\n     * @return The value returned by the topmost `visit*` invocation.\n     */\n    fun <R, D> accept(visitor: IrVisitor<R, D>, data: D): R\n\n    /**\n     * Runs the provided [transformer] on the IR subtree with the root at this node.\n     *\n     * @param transformer The transformer to use.\n     * @param data An arbitrary context to pass to each invocation of [transformer]'s methods.\n     * @return The transformed node.\n     */\n    fun <D> transform(transformer: IrTransformer<D>, data: D): IrElement\n\n    /**\n     * Runs the provided [visitor] on subtrees with roots in this node's children.\n     *\n     * Basically, calls `accept(visitor, data)` on each child of this node.\n     *\n     * Does **not** run [visitor] on this node itself.\n     *\n     * @param visitor The visitor for children to accept.\n     * @param data An arbitrary context to pass to each invocation of [visitor]'s methods.\n     */\n    fun <D> acceptChildren(visitor: IrVisitor<Unit, D>, data: D)\n\n    /**\n     * Recursively transforms this node's children *in place* using [transformer].\n     *\n     * Basically, executes `this.child = this.child.transform(transformer, data)` for each child of this node.\n     *\n     * Does **not** run [transformer] on this node itself.\n     *\n     * @param transformer The transformer to use for transforming the children.\n     * @param data An arbitrary context to pass to each invocation of [transformer]'s methods.\n     */\n    fun <D> transformChildren(transformer: IrTransformer<D>, data: D)\n}")
+}
+
+=== Suspension lowering review leads ===
+Parsed syntax evidence only: macros do not prove compiled IR or behavior.
+Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
+Status	Kotlin contract	Source	Target	Callable
+Explicit suspension contracts reviewed: 0
+Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
 === kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeFunctionReferenceLowering.kt -> kotlinx/coroutines/tools/clang_suspend_plugin/NativeFunctionReferenceLowering.hpp ===
 Locations below refer to these concatenated physical files, in order:
 Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeFunctionReferenceLowering.kt
@@ -6090,53 +6207,6 @@ namespace org::jetbrains::kotlin::backend::konan::lower {
 
 auto is_restricted_suspension_invoke_method = __ast_distance_unmapped__("property_delegate", "by irFlag<IrFunction>(copyByDefault = true)")
 __ast_distance_unmapped__("class_declaration", "internal class NativeFunctionReferenceLowering(val generationState: NativeGenerationState) : AbstractFunctionReferenceLowering<NativeBackendContext>(generationState.context) {\n    companion object {\n        private val DECLARATION_ORIGIN_FUNCTION_REFERENCE_IMPL = IrDeclarationOriginImpl(\"FUNCTION_REFERENCE_IMPL\")\n\n        fun isLoweredFunctionReference(declaration: IrDeclaration): Boolean =\n                declaration.origin == DECLARATION_ORIGIN_FUNCTION_REFERENCE_IMPL\n    }\n\n    private val irBuiltIns = context.irBuiltIns\n    private val symbols = context.symbols\n\n    private val kFunctionImplSymbol = symbols.kFunctionImpl\n    private val kFunctionDescriptionCorrectSymbol = symbols.kFunctionDescriptionCorrect\n    private val kFunctionDescriptionLinkageErrorSymbol = symbols.kFunctionDescriptionLinkageError\n    private val kSuspendFunctionImplSymbol = symbols.kSuspendFunctionImpl\n\n    override fun postprocessClass(functionReferenceClass: IrClass, functionReference: IrRichFunctionReference) {\n        functionReferenceClass.hasSyntheticNameToBeHiddenInReflection = true\n    }\n\n    override fun postprocessInvoke(invokeFunction: IrSimpleFunction, functionReference: IrRichFunctionReference) {\n        if (functionReference.isRestrictedSuspension) {\n            invokeFunction.isRestrictedSuspensionInvokeMethod = true\n        }\n    }\n\n    override fun getReferenceClassName(reference: IrRichFunctionReference): Name {\n        val reflectionTarget = reference.reflectionTargetSymbol?.owner\n        return if (reflectionTarget == null) {\n            SpecialNames.NO_NAME_PROVIDED\n        } else {\n            val baseName = if (reference.reflectionTargetLinkageError != null) {\n                \"FUNCTION_REFERENCE_FOR_MISSING_DECLARATION$\"\n            } else {\n                \"FUNCTION_REFERENCE_FOR$${reflectionTarget.name}$\"\n            }\n            generationState.fileLowerState.getFunctionReferenceImplUniqueName(baseName).synthesizedName\n        }\n    }\n\n    override fun getSuperClassType(reference: IrRichFunctionReference): IrType {\n        return when {\n            reference.reflectionTargetSymbol == null -> irBuiltIns.anyType\n            reference.invokeFunction.isSuspend -> kSuspendFunctionImplSymbol.typeWith(listOf(reference.invokeFunction.returnType))\n            else -> kFunctionImplSymbol.typeWithArguments(listOf(reference.invokeFunction.returnType))\n        }\n    }\n\n    override fun getClassOrigin(reference: IrRichFunctionReference): IrDeclarationOrigin = DECLARATION_ORIGIN_FUNCTION_REFERENCE_IMPL\n    override fun getConstructorOrigin(reference: IrRichFunctionReference): IrDeclarationOrigin = DECLARATION_ORIGIN_FUNCTION_REFERENCE_IMPL\n    override fun getInvokeMethodOrigin(reference: IrRichFunctionReference): IrDeclarationOrigin = DECLARATION_ORIGIN_FUNCTION_REFERENCE_IMPL\n    override fun getConstructorCallOrigin(reference: IrRichFunctionReference): IrStatementOrigin? = null\n\n\n    override fun IrBuilderWithScope.generateSuperClassConstructorCall(constructor: IrConstructor, superClassType: IrType, functionReference: IrRichFunctionReference): IrDelegatingConstructorCall {\n        return irDelegatingConstructorCall(superClassType.classOrFail.owner.primaryConstructor!!).apply {\n            functionReference.reflectionTargetSymbol?.let {\n                val reflectionTargetLinkageError = functionReference.reflectionTargetLinkageError\n                val description = KFunctionDescription(functionReference)\n                arguments[0] = irKFunctionDescription(functionReference, description, reflectionTargetLinkageError)\n                typeArguments[0] = functionReference.invokeFunction.returnType\n            }\n        }\n    }\n\n    override fun generateExtraMethods(functionReferenceClass: IrClass, reference: IrRichFunctionReference) {\n        if (reference.reflectionTargetSymbol == null) return\n\n        val fields = functionReferenceClass.fields.toList()\n        if (fields.isEmpty()) return\n\n        context.addBoundValueAtOverride(functionReferenceClass, fields)\n    }\n\n    private fun IrBuilderWithScope.irKFunctionDescription(functionReference: IrRichFunctionReference, description: KFunctionDescription, reflectionTargetLinkageError: PartialLinkageCase?): IrConstantValue {\n        if (reflectionTargetLinkageError != null) {\n            val errorMessage = generationState.partialLinkageSupport.renderAndLogLinkageError(\n                    reflectionTargetLinkageError,\n                    functionReference,\n                    PLFile.determineFileFor(functionReference.invokeFunction),\n                    PartialLinkageIssueSignificance.MINOR,\n            )\n            return irConstantObject(\n                    kFunctionDescriptionLinkageErrorSymbol.owner,\n                    mapOf(\n                            \"name\" to irConstantPrimitive(irString(description.getName())),\n                            \"reflectionTargetLinkageError\" to irConstantPrimitive(irString(errorMessage))\n                    )\n            )\n        } else {\n            val kTypeGenerator = toNativeConstantReflectionBuilder(symbols)\n            return irConstantObject(\n                    kFunctionDescriptionCorrectSymbol.owner,\n                    mapOf(\n                            \"flags\" to irConstantPrimitive(irInt(description.getFlags())),\n                            \"arity\" to irConstantPrimitive(irInt(description.getArity())),\n                            \"boundValueCount\" to irConstantPrimitive(irInt(description.getBoundValueCount())),\n                            \"fqName\" to irConstantPrimitive(irString(description.getFqName())),\n                            \"name\" to irConstantPrimitive(irString(description.getName())),\n                            \"returnType\" to kTypeGenerator.irKType(description.returnType()),\n                    )\n            )\n        }\n    }\n\n    private class KFunctionDescription(\n            private val functionReference: IrRichFunctionReference,\n    ) {\n        private val functionReferenceReflectionTarget = functionReference.reflectionTargetSymbol!!.owner\n\n        // this value is used only for hashCode and equals, to distinguish different wrappers on same functions\n        fun getFlags(): Int {\n            return listOfNotNull(\n                    (1 shl 0).takeIf { functionReference.invokeFunction.isSuspend },\n                    (1 shl 1).takeIf { functionReference.hasVarargConversion },\n                    (1 shl 2).takeIf { functionReference.hasSuspendConversion },\n                    (1 shl 3).takeIf { functionReference.hasUnitConversion },\n                    (1 shl 4).takeIf { isFunInterfaceConstructorAdapter() },\n            ).sum()\n        }\n\n        fun getFqName(): String {\n            return when {\n                isFunInterfaceConstructorAdapter() -> functionReference.invokeFunction.returnType.getClass()!!.fqNameForIrSerialization.toString()\n                else -> functionReferenceReflectionTarget.computeFullName()\n            }\n        }\n\n        fun getName(): String {\n            return (functionReferenceReflectionTarget as? IrSimpleFunction?)?.customNameInReflection?.asString()\n                    ?: functionReferenceReflectionTarget.name.asString()\n        }\n\n        fun getArity(): Int {\n            return functionReference.invokeFunction.parameters.size - functionReference.boundValues.size + if (functionReference.invokeFunction.isSuspend) 1 else 0\n        }\n\n        fun getBoundValueCount(): Int {\n            return functionReference.boundValues.size\n        }\n\n        fun returnType(): IrType {\n            return functionReferenceReflectionTarget.returnType\n        }\n\n        private fun isFunInterfaceConstructorAdapter() =\n                functionReference.invokeFunction.origin == IrDeclarationOrigin.ADAPTER_FOR_FUN_INTERFACE_CONSTRUCTOR\n    }\n}")
-}
-
-=== Suspension lowering review leads ===
-Parsed syntax evidence only: macros do not prove compiled IR or behavior.
-Absent local lowering may be valid for direct/tail entries or helpers; follow their calls.
-Status	Kotlin contract	Source	Target	Callable
-Explicit suspension contracts reviewed: 0
-Inferred suspension and call-target resolution require compiler evidence; scores are unchanged by this review.
-=== compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrElement.kt -> kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElement.hpp ===
-Locations below refer to these concatenated physical files, in order:
-Source: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/compiler/ir/ir.tree/gen/org/jetbrains/kotlin/ir/IrElement.kt
-Target: /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/tools/kotlinc_native_ref/org/jetbrains/kotlin/ir/IrElement.hpp
-score_method: positional exact-token cosine after in-memory Kotlin-to-C++ emission
-translated_text_cosine: 0.000000
-translated_ast_cosine: 0.267189
-function_name_parity: 0.000000
-normalized_logic: 0.000000
-documentation_correspondence: 0.095970
-span_rule_coverage: 0.000000
-unsupported_fraction (diagnostic only): 1.000000
-score: 0.000000
-Score evidence: provisional (unsupported rules or parse errors)
-Generated parse errors: yes (provisional)
-Target parse errors: no
-Rule hits: 6 | misses: 1 | documentation misses: 0 | supported code-byte coverage: 0.000000
-Source line	Source bytes	Emitted bytes	Node	Supported
-1	0:208	0:208	multiline_comment	yes
-6	210:301	209:300	line_comment	yes
-7	302:331	301:330	line_comment	yes
-9	333:364	331:369	package_header	yes
-11	366:633	370:370	import_list	yes
-19	634:3586	371:3441	class_declaration	fallback
-Diagnostic: 19: unsupported class_declaration
-Extra target function: org::jetbrains::kotlin::ir::IrElement::accept:63
-Extra target function: org::jetbrains::kotlin::ir::IrElement::transform:77
-Extra target function: org::jetbrains::kotlin::ir::IrElement::accept_children:94
-Extra target function: org::jetbrains::kotlin::ir::IrElement::transform_children:110
-=== Emitted target buffer ===
-/*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-// This file was generated automatically. See compiler/ir/ir.tree/tree-generator/ReadMe.md.
-// DO NOT MODIFY IT MANUALLY.
-namespace org::jetbrains::kotlin::ir {
-
-__ast_distance_unmapped__("class_declaration", "interface IrElement {\n    /**\n     * The start offset of the syntax node from which this IR node was generated,\n     * in number of characters from the start of the source file. If there is no source information for this IR node,\n     * the [UNDEFINED_OFFSET] constant is used. In order to get the line number and the column number from this offset,\n     * [IrFileEntry.getLineNumber] and [IrFileEntry.getColumnNumber] can be used.\n     *\n     * @see IrFileEntry.getSourceRangeInfo\n     */\n    var startOffset: Int\n\n    /**\n     * The end offset of the syntax node from which this IR node was generated,\n     * in number of characters from the start of the source file. If there is no source information for this IR node,\n     * the [UNDEFINED_OFFSET] constant is used. In order to get the line number and the column number from this offset,\n     * [IrFileEntry.getLineNumber] and [IrFileEntry.getColumnNumber] can be used.\n     *\n     * @see IrFileEntry.getSourceRangeInfo\n     */\n    var endOffset: Int\n\n    /**\n     * Original element before copying. Always satisfies the following\n     * invariant: `this.attributeOwnerId == this.attributeOwnerId.attributeOwnerId`.\n     */\n    var attributeOwnerId: IrElement\n\n    /**\n     * Runs the provided [visitor] on the IR subtree with the root at this node.\n     *\n     * @param visitor The visitor to accept.\n     * @param data An arbitrary context to pass to each invocation of [visitor]'s methods.\n     * @return The value returned by the topmost `visit*` invocation.\n     */\n    fun <R, D> accept(visitor: IrVisitor<R, D>, data: D): R\n\n    /**\n     * Runs the provided [transformer] on the IR subtree with the root at this node.\n     *\n     * @param transformer The transformer to use.\n     * @param data An arbitrary context to pass to each invocation of [transformer]'s methods.\n     * @return The transformed node.\n     */\n    fun <D> transform(transformer: IrTransformer<D>, data: D): IrElement\n\n    /**\n     * Runs the provided [visitor] on subtrees with roots in this node's children.\n     *\n     * Basically, calls `accept(visitor, data)` on each child of this node.\n     *\n     * Does **not** run [visitor] on this node itself.\n     *\n     * @param visitor The visitor for children to accept.\n     * @param data An arbitrary context to pass to each invocation of [visitor]'s methods.\n     */\n    fun <D> acceptChildren(visitor: IrVisitor<Unit, D>, data: D)\n\n    /**\n     * Recursively transforms this node's children *in place* using [transformer].\n     *\n     * Basically, executes `this.child = this.child.transform(transformer, data)` for each child of this node.\n     *\n     * Does **not** run [transformer] on this node itself.\n     *\n     * @param transformer The transformer to use for transforming the children.\n     * @param data An arbitrary context to pass to each invocation of [transformer]'s methods.\n     */\n    fun <D> transformChildren(transformer: IrTransformer<D>, data: D)\n}")
 }
 
 === Suspension lowering review leads ===

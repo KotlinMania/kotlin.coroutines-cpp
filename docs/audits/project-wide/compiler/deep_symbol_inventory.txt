@@ -16145,10 +16145,32 @@ MISSING_SYMBOL function ScopeFunctionsTest::testWith at /Volumes/stuff/Projects/
 MISSING_SYMBOL function ScopeFunctionsTest::testRun at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/test/utils/ScopeFunctionsTest.kt:25
 MISSING_SYMBOL function ScopeFunctionsTest::testApply at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/test/utils/ScopeFunctionsTest.kt:32
 MISSING_SYMBOL function ScopeFunctionsTest::testAlso at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/kotlin-native/runtime/test/utils/ScopeFunctionsTest.kt:38
-MISSING_FILE libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt
-MISSING_SYMBOL type CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:11
+PRESENT type CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:11 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:22
 MISSING_SYMBOL function CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:21
 MISSING_SYMBOL function CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/common-non-jvm/src/kotlin/coroutines/cancellation/CancellationException.kt:30
+EXTRA_TARGET_SYMBOL property CancellationException::message_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:24
+EXTRA_TARGET_SYMBOL property CancellationException::cause_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:25
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:29
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:31
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:33
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:35
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:38
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:40
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:42
+EXTRA_TARGET_SYMBOL function CancellationException::get_cause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:47
+EXTRA_TARGET_SYMBOL function CancellationException::equals at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:52
+EXTRA_TARGET_SYMBOL function CancellationException::hash_code at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:55
+EXTRA_TARGET_SYMBOL function CancellationException::~CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.hpp:57
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp:11
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp:14
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp:18
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp:22
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp:27
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp:32
+EXTRA_TARGET_SYMBOL function CancellationException::CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp:36
+EXTRA_TARGET_SYMBOL function CancellationException::get_cause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp:43
+EXTRA_TARGET_SYMBOL function CancellationException::equals at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp:46
+EXTRA_TARGET_SYMBOL function CancellationException::hash_code at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlin/coroutines/cancellation/CancellationException.cpp:52
 MISSING_FILE libraries/stdlib/common/src/generated/_Collections.kt
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/common/src/generated/_Collections.kt:135: grammar treated hard keyword as identifier: else bytes 4056:4060
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/libraries/stdlib/common/src/generated/_Collections.kt:316: grammar treated hard keyword as identifier: else bytes 9530:9534
@@ -18209,4 +18231,4 @@ MISSING_SYMBOL property buildProperties at /Volumes/stuff/Projects/kotlinmania/k
 MISSING_SYMBOL property composeRuntimeSnapshotVersions at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/settings.gradle.kts:106
 MISSING_SYMBOL property mirrorRepo at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/settings.gradle.kts:134
 MISSING_SYMBOL property buildProperties at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlin/settings.gradle.kts:141
-Inventory totals: present=775, declaration_only=92, missing=14917
+Inventory totals: present=776, declaration_only=92, missing=14916

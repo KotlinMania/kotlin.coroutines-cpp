@@ -696,14 +696,23 @@ EXTRA_TARGET_SYMBOL function BlockingEventLoop::process_next_event at /Volumes/s
 EXTRA_TARGET_SYMBOL function BlockingEventLoop::is_empty at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/EventLoop.hpp:74
 EXTRA_TARGET_SYMBOL function BlockingEventLoop::run at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/EventLoop.hpp:75
 EXTRA_TARGET_SYMBOL function BlockingEventLoop::shutdown at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/EventLoop.hpp:76
-MISSING_FILE kotlinx-coroutines-core/common/src/Exceptions.common.kt
-MISSING_SYMBOL type CompletionHandlerException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:8
+PRESENT type CompletionHandlerException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:8 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:38
 MISSING_SYMBOL type CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:11
-MISSING_SYMBOL function CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:13
-MISSING_SYMBOL type JobCancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:15
+DECLARATION_ONLY function CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:13 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:82
+DECLARATION_ONLY type JobCancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:15 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:60
 MISSING_SYMBOL property JobCancellationException::job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:20
-MISSING_SYMBOL type CoroutinesInternalError at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:23
-MISSING_SYMBOL property RECOVER_STACK_TRACES at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:26
+PRESENT type CoroutinesInternalError at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:23 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:65
+DECLARATION_ONLY property RECOVER_STACK_TRACES at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Exceptions.common.kt:26 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:145
+EXTRA_TARGET_SYMBOL type NoSuchElementException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:27
+EXTRA_TARGET_SYMBOL function NoSuchElementException::NoSuchElementException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:29
+EXTRA_TARGET_SYMBOL property CompletionHandlerException::cause_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:40
+EXTRA_TARGET_SYMBOL function CompletionHandlerException::CompletionHandlerException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:43
+EXTRA_TARGET_SYMBOL function CompletionHandlerException::get_cause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:46
+EXTRA_TARGET_SYMBOL property CoroutinesInternalError::cause_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:67
+EXTRA_TARGET_SYMBOL function CoroutinesInternalError::CoroutinesInternalError at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:70
+EXTRA_TARGET_SYMBOL function CoroutinesInternalError::get_cause at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:73
+EXTRA_TARGET_SYMBOL function to_cancellation_exception at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:100
+EXTRA_TARGET_SYMBOL function is_cancellation_exception at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/Exceptions.hpp:130
 MISSING_FILE kotlinx-coroutines-core/common/src/Guidance.kt
 MISSING_SYMBOL function launch at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Guidance.kt:10
 MISSING_SYMBOL function async at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/Guidance.kt:27
@@ -5670,17 +5679,25 @@ MISSING_SYMBOL function EventLoopImpl::invokeOnTimeout at /Volumes/stuff/Project
 MISSING_SYMBOL function createEventLoop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/EventLoop.kt:28
 MISSING_SYMBOL property startingPoint at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/EventLoop.kt:30
 MISSING_SYMBOL function nanoTime at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/EventLoop.kt:32
-MISSING_FILE kotlinx-coroutines-core/native/src/Exceptions.kt
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt: parser errors; symbol inventory may be incomplete
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:24-24: ERROR ERROR
 MISSING_SYMBOL type_alias CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:9
-MISSING_SYMBOL function CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:11
-MISSING_SYMBOL type JobCancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:21
+PRESENT function CancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:11 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.cpp:28
+PRESENT type JobCancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:21 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.hpp:18
 MISSING_SYMBOL property JobCancellationException::actual at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:24
 MISSING_SYMBOL function JobCancellationException::toString at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:26
-MISSING_SYMBOL function JobCancellationException::equals at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:27
-MISSING_SYMBOL function JobCancellationException::hashCode at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:30
-MISSING_SYMBOL property RECOVER_STACK_TRACES at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:35
+PRESENT function JobCancellationException::equals at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:27 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.cpp:95
+PRESENT function JobCancellationException::hashCode at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:30 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.cpp:104
+PRESENT property RECOVER_STACK_TRACES at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/Exceptions.kt:35 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.cpp:114
+EXTRA_TARGET_SYMBOL type Job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.hpp:10
+EXTRA_TARGET_SYMBOL function JobCancellationException::JobCancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.hpp:21
+EXTRA_TARGET_SYMBOL function JobCancellationException::get_job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.hpp:24
+EXTRA_TARGET_SYMBOL property JobCancellationException::job_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.hpp:34
+EXTRA_TARGET_SYMBOL function string_hash_code at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.cpp:40
+EXTRA_TARGET_SYMBOL function exception_hash_code at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.cpp:54
+EXTRA_TARGET_SYMBOL function exception_equals at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.cpp:68
+EXTRA_TARGET_SYMBOL function JobCancellationException::JobCancellationException at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.cpp:87
+EXTRA_TARGET_SYMBOL function JobCancellationException::get_job at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Exceptions.cpp:92
 MISSING_SYMBOL function newFixedThreadPoolContext at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/MultithreadedDispatchers.kt:14
 MISSING_SYMBOL type WorkerDispatcher at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/MultithreadedDispatchers.kt:20
 MISSING_SYMBOL property WorkerDispatcher::worker at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/native/src/MultithreadedDispatchers.kt:21
@@ -6387,4 +6404,4 @@ MISSING_SYMBOL property isNative at /Volumes/stuff/Projects/kotlinmania/kotlin.c
 MISSING_SYMBOL property isBoundByJsTestTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:61
 MISSING_SYMBOL property isJavaAndWindows at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:63
 MISSING_SYMBOL property usesSharedEventLoop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:65
-Inventory totals: present=2467, declaration_only=112, missing=2018
+Inventory totals: present=2474, declaration_only=115, missing=2008

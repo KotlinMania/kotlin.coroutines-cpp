@@ -4,14 +4,14 @@ Based on AST analysis, here are the concrete next steps.
 
 ## Summary
 
-- **Files Present:** 108/678 (15.9%)
-- **Function parity:** 589/7657 matched (target 1147) — 7.7%
-- **Class/type parity:** 173/1727 matched (target 379) — 10.0%
-- **Combined symbol parity:** 762/9384 matched (target 1526) — 8.1%
-- **Average inline-code cosine:** 0.36 (function body across 108 matched files)
-- **Average documentation cosine:** 0.60 (doc text across 108 matched files)
+- **Files Present:** 109/678 (16.1%)
+- **Function parity:** 591/7657 matched (target 1158) — 7.7%
+- **Class/type parity:** 174/1727 matched (target 380) — 10.1%
+- **Combined symbol parity:** 765/9384 matched (target 1538) — 8.2%
+- **Average inline-code cosine:** 0.36 (function body across 109 matched files)
+- **Average documentation cosine:** 0.60 (doc text across 109 matched files)
 - **Cheat-zeroed Files:** 24
-- **Critical Issues:** 74 files with <0.60 function similarity
+- **Critical Issues:** 75 files with <0.60 function similarity
 - **Needs Review:** 2 files with 0.60-0.84 function similarity
 - **Excellent:** 32 files with >=0.85 function similarity
 
@@ -743,9 +743,9 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 
-### 49. reflect.KType
+### 49. declarations.IrAnnotationContainer
 
-- **Target:** `reflect.KType`
+- **Target:** `declarations.IrAnnotationContainer`
 - **Similarity:** 1.00
 - **Dependents:** 1
 - **Priority Score:** 1000100.0
@@ -765,18 +765,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 51. declarations.IrAnnotationContainer
-
-- **Target:** `declarations.IrAnnotationContainer`
-- **Similarity:** 1.00
-- **Dependents:** 1
-- **Priority Score:** 1000100.0
-- **Functions:** 0/0 matched
-- **Missing functions:** _none_
-- **Types:** 1/1 matched (target 3)
-- **Missing types:** _none_
-
-### 52. declarations.IrDeclarationParent
+### 51. declarations.IrDeclarationParent
 
 - **Target:** `declarations.IrDeclarationParent`
 - **Similarity:** 1.00
@@ -785,6 +774,17 @@ Every matched file is listed below with function and type symbol parity.
 - **Functions:** 0/0 matched
 - **Missing functions:** _none_
 - **Types:** 1/1 matched
+- **Missing types:** _none_
+
+### 52. reflect.KType
+
+- **Target:** `reflect.KType`
+- **Similarity:** 1.00
+- **Dependents:** 1
+- **Priority Score:** 1000100.0
+- **Functions:** 0/0 matched
+- **Missing functions:** _none_
+- **Types:** 1/1 matched (target 3)
 - **Missing types:** _none_
 
 ### 53. model.TypeSystemContext
@@ -1072,18 +1072,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 2/3 matched (target 5)
 - **Missing types:** `UnsafeDuringIrConstructionAPI`
 
-### 78. collections.Collection
-
-- **Target:** `collections.MutableCollection [ZERO]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 10210.0
-- **Functions:** 0/0 matched (target 7)
-- **Missing functions:** _none_
-- **Types:** 1/2 matched (target 3)
-- **Missing types:** `Collection`
-
-### 79. collections.List
+### 78. collections.List
 
 - **Target:** `collections.MutableList [ZERO]`
 - **Similarity:** 0.00
@@ -1093,6 +1082,17 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 1/2 matched
 - **Missing types:** `List`
+
+### 79. collections.Collection
+
+- **Target:** `collections.MutableCollection [ZERO]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 10210.0
+- **Functions:** 0/0 matched (target 7)
+- **Missing functions:** _none_
+- **Types:** 1/2 matched (target 3)
+- **Missing types:** `Collection`
 
 ### 80. descriptors.Visibilities
 
@@ -1153,7 +1153,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 1
 
-### 85. collections.Map
+### 85. collections.Iterator
+
+- **Target:** `collections.Iterator [ZERO]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 410.0
+- **Functions:** 0/0 matched (target 6)
+- **Missing functions:** _none_
+- **Types:** 4/4 matched (target 8)
+- **Missing types:** _none_
+
+### 86. collections.Map
 
 - **Target:** `collections.Map [ZERO]`
 - **Similarity:** 0.00
@@ -1164,17 +1175,6 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 4/4 matched (target 17)
 - **Missing types:** _none_
 - **Lint issues:** 3
-
-### 86. collections.Iterator
-
-- **Target:** `collections.Iterator [ZERO]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 410.0
-- **Functions:** 0/0 matched (target 6)
-- **Missing functions:** _none_
-- **Types:** 4/4 matched (target 8)
-- **Missing types:** _none_
 
 ### 87. coroutines.ContinuationInterceptor
 
@@ -1210,24 +1210,25 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 
-### 90. kotlin.Unit
+### 90. cancellation.CancellationException
+
+- **Target:** `cancellation.CancellationException`
+- **Similarity:** 0.15
+- **Dependents:** 0
+- **Priority Score:** 308.5
+- **Functions:** 2/2 matched (target 11)
+- **Missing functions:** _none_
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+- **Lint issues:** 2
+
+### 91. kotlin.Unit
 
 - **Target:** `coroutines.Unit`
 - **Similarity:** 0.98
 - **Dependents:** 0
 - **Priority Score:** 200.2
 - **Functions:** 1/1 matched (target 3)
-- **Missing functions:** _none_
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-
-### 91. impl.IrValueParameterImpl
-
-- **Target:** `impl.IrValueParameterImpl [ZERO]`
-- **Similarity:** 0.00
-- **Dependents:** 0
-- **Priority Score:** 110.0
-- **Functions:** 0/0 matched (target 32)
 - **Missing functions:** _none_
 - **Types:** 1/1 matched
 - **Missing types:** _none_
@@ -1266,7 +1267,29 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 1
 
-### 95. declarations.IrMetadataSourceOwner
+### 95. impl.IrValueParameterImpl
+
+- **Target:** `impl.IrValueParameterImpl [ZERO]`
+- **Similarity:** 0.00
+- **Dependents:** 0
+- **Priority Score:** 110.0
+- **Functions:** 0/0 matched (target 32)
+- **Missing functions:** _none_
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+
+### 96. reflect.KAnnotatedElement
+
+- **Target:** `reflect.KAnnotatedElement`
+- **Similarity:** 1.00
+- **Dependents:** 0
+- **Priority Score:** 100.0
+- **Functions:** 0/0 matched
+- **Missing functions:** _none_
+- **Types:** 1/1 matched
+- **Missing types:** _none_
+
+### 97. declarations.IrMetadataSourceOwner
 
 - **Target:** `declarations.IrMetadataSourceOwner`
 - **Similarity:** 1.00
@@ -1277,18 +1300,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 
-### 96. expressions.IrDeclarationReference
-
-- **Target:** `expressions.IrDeclarationReference`
-- **Similarity:** 1.00
-- **Dependents:** 0
-- **Priority Score:** 100.0
-- **Functions:** 0/0 matched
-- **Missing functions:** _none_
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-
-### 97. internal.TypeInfoHolder
+### 98. internal.TypeInfoHolder
 
 - **Target:** `internal.TypeInfoHolder`
 - **Similarity:** 1.00
@@ -1299,20 +1311,9 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 
-### 98. expressions.IrValueAccessExpression
+### 99. expressions.IrDeclarationReference
 
-- **Target:** `expressions.IrValueAccessExpression`
-- **Similarity:** 1.00
-- **Dependents:** 0
-- **Priority Score:** 100.0
-- **Functions:** 0/0 matched
-- **Missing functions:** _none_
-- **Types:** 1/1 matched (target 2)
-- **Missing types:** _none_
-
-### 99. reflect.KAnnotatedElement
-
-- **Target:** `reflect.KAnnotatedElement`
+- **Target:** `expressions.IrDeclarationReference`
 - **Similarity:** 1.00
 - **Dependents:** 0
 - **Priority Score:** 100.0
@@ -1332,29 +1333,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 101. reflect.KClassifier
-
-- **Target:** `reflect.KClassifier`
-- **Similarity:** 1.00
-- **Dependents:** 0
-- **Priority Score:** 100.0
-- **Functions:** 0/0 matched
-- **Missing functions:** _none_
-- **Types:** 1/1 matched
-- **Missing types:** _none_
-
-### 102. declarations.IrTypeParametersContainer
-
-- **Target:** `declarations.IrTypeParametersContainer`
-- **Similarity:** 1.00
-- **Dependents:** 0
-- **Priority Score:** 100.0
-- **Functions:** 0/0 matched
-- **Missing functions:** _none_
-- **Types:** 1/1 matched (target 3)
-- **Missing types:** _none_
-
-### 103. expressions.IrVarargElement
+### 101. expressions.IrVarargElement
 
 - **Target:** `expressions.IrVarargElement`
 - **Similarity:** 1.00
@@ -1365,7 +1344,40 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 104. declarations.IrDeclarationWithVisibility
+### 102. expressions.IrValueAccessExpression
+
+- **Target:** `expressions.IrValueAccessExpression`
+- **Similarity:** 1.00
+- **Dependents:** 0
+- **Priority Score:** 100.0
+- **Functions:** 0/0 matched
+- **Missing functions:** _none_
+- **Types:** 1/1 matched (target 2)
+- **Missing types:** _none_
+
+### 103. reflect.KCallable
+
+- **Target:** `reflect.KCallable`
+- **Similarity:** 1.00
+- **Dependents:** 0
+- **Priority Score:** 100.0
+- **Functions:** 0/0 matched
+- **Missing functions:** _none_
+- **Types:** 1/1 matched (target 2)
+- **Missing types:** _none_
+
+### 104. declarations.IrTypeParametersContainer
+
+- **Target:** `declarations.IrTypeParametersContainer`
+- **Similarity:** 1.00
+- **Dependents:** 0
+- **Priority Score:** 100.0
+- **Functions:** 0/0 matched
+- **Missing functions:** _none_
+- **Types:** 1/1 matched (target 3)
+- **Missing types:** _none_
+
+### 105. declarations.IrDeclarationWithVisibility
 
 - **Target:** `declarations.IrDeclarationWithVisibility`
 - **Similarity:** 1.00
@@ -1376,7 +1388,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 2)
 - **Missing types:** _none_
 
-### 105. declarations.IrMutableAnnotationContainer
+### 106. declarations.IrMutableAnnotationContainer
 
 - **Target:** `declarations.IrMutableAnnotationContainer`
 - **Similarity:** 1.00
@@ -1387,7 +1399,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 106. declarations.IrPossiblyExternalDeclaration
+### 107. declarations.IrPossiblyExternalDeclaration
 
 - **Target:** `declarations.IrPossiblyExternalDeclaration`
 - **Similarity:** 1.00
@@ -1398,9 +1410,9 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 107. reflect.KDeclarationContainer
+### 108. reflect.KClassifier
 
-- **Target:** `reflect.KDeclarationContainer`
+- **Target:** `reflect.KClassifier`
 - **Similarity:** 1.00
 - **Dependents:** 0
 - **Priority Score:** 100.0
@@ -1409,15 +1421,15 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched
 - **Missing types:** _none_
 
-### 108. reflect.KCallable
+### 109. reflect.KDeclarationContainer
 
-- **Target:** `reflect.KCallable`
+- **Target:** `reflect.KDeclarationContainer`
 - **Similarity:** 1.00
 - **Dependents:** 0
 - **Priority Score:** 100.0
 - **Functions:** 0/0 matched
 - **Missing functions:** _none_
-- **Types:** 1/1 matched (target 2)
+- **Types:** 1/1 matched
 - **Missing types:** _none_
 
 ## Success Criteria
