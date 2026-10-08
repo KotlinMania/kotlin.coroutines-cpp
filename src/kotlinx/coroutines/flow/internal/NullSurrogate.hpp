@@ -1,45 +1,24 @@
 #pragma once
 // port-lint: source flow/internal/NullSurrogate.kt
-/**
- * Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt
- */
-
+/** Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt */
 #include "kotlinx/coroutines/internal/Symbol.hpp"
 
-namespace kotlinx {
-namespace coroutines {
-namespace flow {
-namespace internal {
-
+namespace kotlinx::coroutines::flow::internal {
 /**
- * This value is used as a surrogate `nullptr` value when needed.
+ * This value is used as a surrogate null value when needed.
  * It should never leak to the outside world.
- * Its usage typically is paired with Symbol.unbox usages.
+ * Its usages are typically paired with Symbol.unbox.
  */
-inline ::kotlinx::coroutines::internal::Symbol& NULL_VALUE() {
-    static ::kotlinx::coroutines::internal::Symbol instance("NULL");
-    return instance;
-}
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt:12-12
+// NOTE(port): NULL is a C++ macro. This accessor exposes the actual singleton
+// through the existing C++ binding; its construction lives in .cpp.
+kotlinx::coroutines::internal::Symbol& NULL_VALUE();
 
-/**
- * Symbol used to indicate that the value is not yet initialized.
- * It should never leak to the outside world.
- */
-inline ::kotlinx::coroutines::internal::Symbol& UNINITIALIZED() {
-    static ::kotlinx::coroutines::internal::Symbol instance("UNINITIALIZED");
-    return instance;
-}
+/** Symbol indicating that a value is not yet initialized. It must not leak outside. */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt:19-19
+kotlinx::coroutines::internal::Symbol& UNINITIALIZED();
 
-/**
- * Symbol used to indicate that the flow is complete.
- * It should never leak to the outside world.
- */
-inline ::kotlinx::coroutines::internal::Symbol& DONE() {
-    static ::kotlinx::coroutines::internal::Symbol instance("DONE");
-    return instance;
-}
-
-} // namespace internal
-} // namespace flow
-} // namespace coroutines
-} // namespace kotlinx
+/** Symbol indicating that a flow is complete. It must not leak outside. */
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/NullSurrogate.kt:26-26
+kotlinx::coroutines::internal::Symbol& DONE();
+} // namespace kotlinx::coroutines::flow::internal

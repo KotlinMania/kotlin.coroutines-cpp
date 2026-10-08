@@ -284,9 +284,8 @@ public:
             if (auto cause = received_->exception_or_null()) std::rethrow_exception(cause);
             throw AbortFlowException(collect_job_.get());
         }
-        other_ = received_->get_or_throw();
+        other_ = NULL_VALUE().unbox(received_->get_or_throw());
         received_.reset();
-        // NOTE(port): std::any inside tagged ChannelResult retains nullable payloads without a GC surrogate.
         coroutine_yield_value(this, result, std::function(transform_)(value_, other_, this), result_box_);
         coroutine_yield(this, emit_result());
         coroutine_end(this)
@@ -376,7 +375,20 @@ public:
                 channels::BufferOverflow::SUSPEND, CoroutineStart::DEFAULT,
                 [source = source_second_](channels::ProducerScope<std::any>* receiver,
                                           std::shared_ptr<Continuation<void*>> continuation) {
-                    auto collector = std::make_shared<SendingCollector<std::any>>(receiver);
+                    // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Combine.kt:86-88
+                    class SecondCollector final : public FlowCollector<std::any> {
+                    public:
+                        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Combine.kt:86-88
+                        explicit SecondCollector(channels::SendChannel<std::any>* channel) : channel_(channel) {}
+                        // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Combine.kt:86-88
+                        void* emit(std::any value, Continuation<void*>* continuation) override {
+                            return channel_->send(value.has_value() ? std::move(value) : std::any(&NULL_VALUE()),
+                                                  continuation);
+                        }
+                    private:
+                        channels::SendChannel<std::any>* channel_;
+                    };
+                    auto collector = std::make_shared<SecondCollector>(receiver->get_channel());
                     return collect_combine_adapter([source, collector](Continuation<void*>* frame) {
                         return source->collect(collector.get(), frame);
                     }, continuation.get());
