@@ -676,6 +676,35 @@ void sending_collector_contract() {
     CHECK(lifetime.expired());
 }
 
+// Symbol.kt:10-14 and NullSurrogate.kt:12,19,26: unbox only the
+// actual sentinel identity, preserving other Symbols and ordinary C++ payloads.
+void symbol_unbox_contract() {
+    auto& sentinel = flow::internal::NULL_VALUE();
+    kotlinx::coroutines::internal::Symbol same_name("NULL");
+    CHECK(sentinel.to_string() == "<NULL>" && same_name.to_string() == "<NULL>");
+    CHECK(&sentinel != &same_name);
+    CHECK(&flow::internal::UNINITIALIZED() != &sentinel);
+    CHECK(&flow::internal::DONE() != &sentinel);
+    CHECK(!sentinel.unbox(std::any(&sentinel)).has_value());
+    CHECK(!sentinel.unbox(std::any(static_cast<const kotlinx::coroutines::internal::Symbol*>(&sentinel))).has_value());
+    auto other = sentinel.unbox(std::any(&same_name));
+    CHECK(std::any_cast<kotlinx::coroutines::internal::Symbol*>(other) == &same_name);
+    CHECK(!sentinel.unbox(std::any{}).has_value());
+    CHECK(std::any_cast<int>(sentinel.unbox(std::any(0))) == 0);
+    CHECK(std::any_cast<std::string>(sentinel.unbox(std::any(std::string{}))).empty());
+    int borrowed = 163;
+    CHECK(sentinel.unbox<int*>(&sentinel) == nullptr);
+    CHECK(sentinel.unbox<int*>(&borrowed) == &borrowed);
+    auto resource = std::make_shared<int>(167);
+    auto identity = resource.get();
+    std::weak_ptr<int> lifetime = resource;
+    auto boxed = sentinel.unbox(std::any(resource));
+    resource.reset();
+    CHECK(!lifetime.expired() && std::any_cast<std::shared_ptr<int>>(boxed).get() == identity);
+    boxed.reset();
+    CHECK(lifetime.expired());
+}
+
 // Combine.kt:17-80: real child collection, suspending receive/transform and batching.
 void combine_contract() {
     class QueueDispatcher final : public CoroutineDispatcher {
@@ -1442,6 +1471,7 @@ int main() {
         channel_flow_surface_contract();
         channel_flow_collect_lambda_contract();
         sending_collector_contract();
+        symbol_unbox_contract();
         combine_contract();
         zip_contract();
         cancellation_contract();
