@@ -6,7 +6,24 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current Runtime metadata continuation — 2026-10-08:** From b5b16a95,
+**Current lazy runtime-binding continuation — 2026-10-08:** From 63eeae2f,
+all forty ContextUtils.kt:445-504 lazy imports are translated, including volatile
+heap-reference, safepoint, mark traversal, RC/ObjC and continuation bindings.
+Thirty-eight getters are public; two type providers remain private. The explicit
+compiler boundary now requires should_optimize so thread-state getters select
+source optimized/_debug names. Source symbol/object-result metadata, actual
+module import, descriptor identity and failed-lazy retry are retained. Strict
+compile, Native-OFF LLVM consumer builds, existing LLVM fixture and a bounded
+ASan/UBSan declaration harness pass. The harness executes all public getters and
+both optimization policies; private providers are only compiled. Scoped deep
+ContextUtils:16/51 bodies,22/36 types,similarity0.21,target 113 bodies; property/body
+counting differs and source class emission remains provisional. Next translate
+constant/type helpers, actual frame/allocation/root operations, VariableManager,
+public object-result calls and exception emission. Generation-state entry,
+Runtime loading/caches, full-root measurements and both complete runtime paths
+remain open. See RESUME_ADDRESS_SOURCE_REPAIR.md's first section. Goal active.
+
+**Runtime metadata checkpoint 63eeae2f — 2026-10-08:** From b5b16a95,
 Runtime.hpp/.cpp translate compiler LLVM metadata: named/touch-global type lookup,
 layout/target snapshots, header/frame types, lazy ObjC/block metadata, ABI layout
 and pointer/alignment/string/byte-order properties. CodegenLlvmHelpers now takes a

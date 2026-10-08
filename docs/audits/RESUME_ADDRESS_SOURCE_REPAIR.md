@@ -1,7 +1,55 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
-## Compiler Runtime metadata and RuntimeAware wiring — 2026-10-08
+## Lazy runtime bindings for frame/root consumers — 2026-10-08
+
+Continuation from 63eeae2f translates all forty source lazy runtime-function
+properties at ContextUtils.kt:445-504. ContextUtils.hpp:377-451 exposes the
+thirty-eight public getters; the two type-provider getters remain private.
+ContextUtils.cpp:193 contains private synchronized lazy storage, with getter
+bodies at :403-681. Source function names and explicit object-result flags are
+preserved for external RC references, Native/ObjC conversion and continuation
+operations, safepoints/mark traversal, volatile heap-reference operations and
+array element addresses. LLVM handles stay borrowed; actual callable descriptors
+and their attribute providers are retained by the helper.
+
+CodegenLlvmHelpers construction at ContextUtils.cpp:317 now requires an explicit
+should_optimize policy from the enclosing compiler boundary. No default was
+invented. Thread-state getters at :445,452 select the source optimized or _debug
+symbol names. Lazy imports use the existing actual module/type/attribute import
+operation; failed evaluation can retry and repeated getters preserve descriptor
+identity. Private import helpers and getters are const, while their synchronized
+lazy storage retains the source property behavior. This supplies the missing
+UpdateVolatileHeapRef and thread-state/safepoint binding dependencies without
+inventing root-update or frame-call adapters.
+
+Fresh strict -Wall -Wextra -Werror syntax compilation and builds of
+KotlinxCoroutinePass/kxs_codegen_test passed with LLVM 23.1.2 and Native runtime
+OFF. The existing code-generation fixture verified/emitted its module. A bounded
+lazy_import_contract harness passed ASan/UBSan: it checks all thirty-eight public
+getters against source symbol names/object-result flags, imported LLVM type and
+nounwind metadata, descriptor identity, deferred imports, failed lookup/retry,
+and both optimized/debug thread-state selections. The two private type-provider
+getters are compiled but not executed by this harness. Input contains declaration
+fixtures only, not actual Native runtime implementations. No full Native or MLX
+shared-state-machine execution is claimed.
+
+Scoped ast_distance --deep completed after the source changes. ContextUtils
+remains 16/51 matched explicit bodies,22/36 types,similarity0.21, with 113 target
+function bodies. Kotlin property initializers and C++ getters are counted
+differently; the unchanged matched-body count does not erase the added source
+properties or prove them complete. Source emission remains provisional due to
+unsupported classes/generated parse errors; target parsing has no errors.
+Full-root measurements and both complete acceptance paths remain open.
+
+Next source dependencies remain the constant/type helpers, actual frame
+construction/allocation, root-update consumers, VariableManager, public
+object-result slot handling and exception emission. The generation-state entry,
+Runtime bitcode loading and IR-keyed caches are also incomplete. No substitute
+runtime, callback-based frame allocator or alternate state machine was added.
+Evidence is under build/source-continuation/llvm-source-distance.
+
+## Compiler Runtime metadata and RuntimeAware wiring — 2026-10-08 (historical 63eeae2f receipt)
 
 Continuation from b5b16a95 translates Runtime.kt:14-23,27-122 into
 Runtime.hpp:12,123 and Runtime.cpp:49-218. This is the compiler's LLVM metadata
