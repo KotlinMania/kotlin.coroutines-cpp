@@ -6,7 +6,23 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
-**Current default-occurrence continuation — 2026-10-08:** Suspension discovery
+**Current extended-aggregate continuation — 2026-10-08:** Nonsuspending
+aggregate/array declaration lists preserve native element construction order.
+Clang-marked temporaries whose extending declaration is the containing variable
+now receive owning fields before that aggregate. Source and semantic-expression
+rewriters construct those referents at their actual operands; existing lexical,
+jump and terminal cleanup destroys the aggregate before its referents. Borrowed
+external references stay borrowed. Suspension/materialization discovery and
+overload deferral now follow selected member-default expressions consistently.
+No build, AST emission, runtime check or deep scan was run. Read the first
+section of RESUME_ADDRESS_SOURCE_REPAIR.md for source locations and provenance.
+Next connected source work includes suspending aggregate/array lists, direct
+immovable subobject construction, initializer_list backing arrays and implicit
+member expression emission. Default parameter/access context, local integration
+and optimized spilling also remain unfinished. The full translation goal stays
+active; acceptance work remains deferred.
+
+**Source checkpoint 425fb3bf:** Suspension discovery
 and liveness now identify a selected default by its actual statement plus the
 enclosing CXXDefaultArgExpr/CXXDefaultInitExpr use path. Nested defaults retain
 all enclosing uses. Loop analysis merges the same occurrence; separate calls

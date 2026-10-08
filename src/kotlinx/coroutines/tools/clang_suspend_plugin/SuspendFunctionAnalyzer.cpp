@@ -1,5 +1,6 @@
 // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/optimizations/LivenessAnalysis.kt:24-267
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesLivenessAnalysis.kt:31-44
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
 #include "SuspendFunctionAnalyzer.hpp"
 #include <algorithm>
 #include <functional>
@@ -253,6 +254,10 @@ bool SuspendFunctionAnalyzer::requires_overload_resolution(const FunctionDecl* f
         // NOTE(port): A selected default is an evaluated call operand, so its
         // dependent overloads must resolve before the caller frame is installed.
         bool TraverseCXXDefaultArgExpr(CXXDefaultArgExpr* expression) {
+            return TraverseStmt(expression->getExpr());
+        }
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        bool TraverseCXXDefaultInitExpr(CXXDefaultInitExpr* expression) {
             return TraverseStmt(expression->getExpr());
         }
         bool TraverseIfStmt(IfStmt* branch) {

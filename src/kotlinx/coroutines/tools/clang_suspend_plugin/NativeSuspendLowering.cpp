@@ -2,6 +2,7 @@
 // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/AbstractSuspendFunctionsLowering.kt:55-234
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/NativeSuspendFunctionLowering.kt:119-335
 // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesVarSpillingLowering.kt:49-105
+// Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
 #include "NativeSuspendLowering.hpp"
 #include "SuspendFunctionAnalyzer.hpp"
 #include "RestrictSuspensionUtils.hpp"
@@ -369,6 +370,27 @@ private:
         // NOTE(port): Query the original operand category. A frame getter can
         // have a different exception specification from a source variable.
         if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) type_only = true;
+        // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesVarSpillingLowering.kt:49-105
+        // NOTE(port): An aggregate's reference-member temporary belongs to the
+        // source variable. Construct it at this operand, rather than creating a
+        // short-lived temporary in the destination placement new-expression.
+        if (!type_only) {
+            if (const auto* temporary = dyn_cast<MaterializeTemporaryExpr>(statement)) {
+                auto found = extended_temporaries_.find(temporary);
+                if (found != extended_temporaries_.end()) {
+                    const auto& slot = found->second;
+                    const auto* initializer = temporary->getSubExpr();
+                    const auto value = rewrite(initializer);
+                    const bool list = isa<InitListExpr>(spelled(initializer));
+                    std::string construction = "::new (static_cast<void*>(" + slot.name + ".data)) " +
+                        slot.type + (slot.array || list ? value : "(" + value + ")");
+                    std::string access = temporary->isXValue() ? "std::move(" + slot.access + ")" : slot.access;
+                    replacements.push_back({offset(temporary->getBeginLoc()), end_offset(temporary->getEndLoc()),
+                        "(" + construction + ", " + slot.name + ".engaged = true, " + access + ")"});
+                    return;
+                }
+            }
+        }
         // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/LocalDeclarationPopupLowering.kt:55-59
         // NOTE(port): Capture initializers belong to this construction scope.
         // The invoke body has its own frame and binding map; rewriting it with
@@ -582,6 +604,9 @@ private:
         if (SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return false;
         if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(statement))
             return has_suspend_calls(omitted->getExpr());
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(statement))
+            return has_suspend_calls(initialized->getExpr());
         if (const auto* branch = dyn_cast<IfStmt>(statement); branch && branch->isConstexpr()) {
             if (auto selected = branch->getNondiscardedCase(context_))
                 return has_suspend_calls(branch->getInit()) ||
@@ -739,9 +764,30 @@ private:
         class References : public PrinterHelper {
         public:
             References(const std::map<const ValueDecl*, Slot>& variables, const PrintingPolicy& policy,
-                       std::map<const OpaqueValueExpr*, std::string>& opaque_values)
-                : variables_(variables), policy_(policy), opaque_values_(opaque_values) {}
+                       std::map<const OpaqueValueExpr*, std::string>& opaque_values,
+                       const std::map<const MaterializeTemporaryExpr*, Slot>& extended_temporaries)
+                : variables_(variables), policy_(policy), opaque_values_(opaque_values),
+                  extended_temporaries_(extended_temporaries) {}
             bool handledStmt(Stmt* statement, llvm::raw_ostream& output) override {
+                // NOTE(port): Implicit compiler lists use the same extended
+                // object fields as source lists; they have no source token range.
+                if (const auto* temporary = dyn_cast<MaterializeTemporaryExpr>(statement)) {
+                    auto found = extended_temporaries_.find(temporary);
+                    if (found != extended_temporaries_.end()) {
+                        const auto& slot = found->second;
+                        const auto* initializer = temporary->getSubExpr();
+                        const bool list = isa<InitListExpr>(initializer->IgnoreUnlessSpelledInSource());
+                        output << "(::new (static_cast<void*>(" << slot.name << ".data)) " << slot.type;
+                        if (!slot.array && !list) output << "(";
+                        initializer->printPretty(output, this, policy_);
+                        if (!slot.array && !list) output << ")";
+                        output << ", " << slot.name << ".engaged = true, ";
+                        if (temporary->isXValue()) output << "std::move(" << slot.access << ")";
+                        else output << slot.access;
+                        output << ")";
+                        return true;
+                    }
+                }
                 // NOTE(port): Clang's implicit array copy has semantic element
                 // initializers, not independent source tokens. Emit one native
                 // array initializer so Clang owns partial-construction cleanup.
@@ -798,8 +844,9 @@ private:
             const std::map<const ValueDecl*, Slot>& variables_;
             const PrintingPolicy& policy_;
             std::map<const OpaqueValueExpr*, std::string>& opaque_values_;
+            const std::map<const MaterializeTemporaryExpr*, Slot>& extended_temporaries_;
             std::string array_index_;
-        } references(variables_, policy_, opaque_values);
+        } references(variables_, policy_, opaque_values, extended_temporaries_);
         if (has_suspend_calls(expression))
             throw std::runtime_error("implicit compiler expression suspension requires expression lowering");
         std::string text;
@@ -826,6 +873,9 @@ private:
         if (!statement || SuspendFunctionAnalyzer::is_unevaluated_expression(statement)) return false;
         if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(statement))
             return has_materialized_temporaries(omitted->getExpr());
+        // Transliterated from: compiler/ir/backend.common/src/org/jetbrains/kotlin/backend/common/lower/InitializersLowering.kt:34-55
+        if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(statement))
+            return has_materialized_temporaries(initialized->getExpr());
         if (const auto* lambda = dyn_cast<LambdaExpr>(statement)) {
             for (const auto* initializer : lambda->capture_inits())
                 if (has_materialized_temporaries(initializer)) return true;
@@ -1314,6 +1364,37 @@ private:
         }
     }
     // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesVarSpillingLowering.kt:49-105
+    // NOTE(port): Kotlin retained locals have no C++ reference-member lifetime
+    // extension. Reserve Clang's actual extended objects before their aggregate,
+    // so reverse field/scope cleanup destroys the aggregate before its referents.
+    void reserve_extended_temporaries(const Stmt* initializer, const VarDecl* variable) {
+        if (!initializer || SuspendFunctionAnalyzer::is_unevaluated_expression(initializer)) return;
+        if (const auto* lambda = dyn_cast<LambdaExpr>(initializer)) {
+            for (const auto* capture : lambda->capture_inits()) reserve_extended_temporaries(capture, variable);
+            return;
+        }
+        // NOTE(port): std::initializer_list's backing array is an implicit
+        // compiler binding, whose source braces cannot be replaced by an array
+        // reference. Preserve that binding and the native list conversion.
+        if (isa<CXXStdInitializerListExpr>(initializer)) return;
+        if (const auto* omitted = dyn_cast<CXXDefaultArgExpr>(initializer)) {
+            reserve_extended_temporaries(omitted->getExpr(), variable);
+            return;
+        }
+        if (const auto* initialized = dyn_cast<CXXDefaultInitExpr>(initializer)) {
+            reserve_extended_temporaries(initialized->getExpr(), variable);
+            return;
+        }
+        for (const auto* child : initializer->children()) reserve_extended_temporaries(child, variable);
+        const auto* temporary = dyn_cast<MaterializeTemporaryExpr>(initializer);
+        if (!temporary || temporary->getExtendingDecl() != variable || extended_temporaries_.contains(temporary)) return;
+        auto owner = new_slot(temporary->getSubExpr()->getType(), false, true);
+        extended_temporaries_.emplace(temporary, owner);
+        slot_variables_[owner.name] = variable;
+        if (!scopes_.empty()) scopes_.back().push_back(owner);
+    }
+
+    // Transliterated from: kotlin-native/backend.native/compiler/ir/backend.native/src/org/jetbrains/kotlin/backend/konan/lower/CoroutinesVarSpillingLowering.kt:49-105
     // NOTE(port): Retain one actual C++ variable, including implicit tuple
     // holding variables, using the same construction and destruction rules.
     void emit_variable(const VarDecl* variable, bool generated) {
@@ -1378,6 +1459,12 @@ private:
         // introduces deduction/move requirements absent from the source.
         const bool aggregate = !reference && initializer && variable->getType()->isRecordType() &&
             isa<InitListExpr>(spelled(initializer));
+        // NOTE(port): A list without suspension still executes as one native
+        // initialization expression. Its extended referents need owning fields
+        // across later suspension; slicing a suspending aggregate remains a
+        // separate typed initializer-lowering operation.
+        if ((aggregate || variable->getType()->isArrayType()) && initializer && !has_suspend_calls(initializer))
+            reserve_extended_temporaries(initializer, variable);
         auto slot = new_slot(variable->getType(), reference, aggregate, deduced_type);
         variables_[variable] = slot;
         slot_variables_[slot.name] = variable;
@@ -1387,7 +1474,12 @@ private:
             // NOTE(port): Keep braces at the destination new-expression;
             // reference-member and aggregate initialization are not a call
             // taking a synthesized temporary aggregate as an argument.
-            construct(slot, generated ? generated_expression(initializer) : emit_expression(initializer), true);
+            // Keep nonsuspending native element construction in its original
+            // list order, including partial-construction unwinding. Rewriting
+            // inserts extended referent construction at the selected operand.
+            auto value = generated ? generated_expression(initializer) :
+                !has_suspend_calls(initializer) ? rewrite(initializer) : emit_expression(initializer);
+            construct(slot, value, true);
         }
         else if (slot.array && isa_and_nonnull<ArrayInitLoopExpr>(unwrapped)) {
             const auto* copy = cast<ArrayInitLoopExpr>(unwrapped);
@@ -1400,7 +1492,7 @@ private:
         }
         else if (generated) construct(slot, generated_expression(initializer));
         else if (slot.array) {
-            auto value = initializer ? emit_expression(initializer) : "";
+            auto value = initializer ? (!has_suspend_calls(initializer) ? rewrite(initializer) : emit_expression(initializer)) : "";
             if (initializer && isa<StringLiteral>(spelled(initializer))) value = "{" + value + "}";
             construct(slot, value);
         }
@@ -1950,6 +2042,7 @@ private:
     PrintingPolicy policy_;
     SourceManager& manager_;
     std::map<const ValueDecl*, Slot> variables_;
+    std::map<const MaterializeTemporaryExpr*, Slot> extended_temporaries_;
     std::map<const LabelDecl*, LabelScope> label_scopes_;
     std::set<const LabelDecl*> addressed_labels_;
     std::map<std::string, const VarDecl*> slot_variables_;

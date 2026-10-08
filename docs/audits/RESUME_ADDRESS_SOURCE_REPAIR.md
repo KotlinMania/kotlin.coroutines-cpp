@@ -1,6 +1,51 @@
 # Compiler resume-address source repair — 2026-10-08
 
 
+## Extended aggregate referents in native initialization — 2026-10-08
+
+The continuation after 425fb3bf grows the typed storage translation from
+CoroutinesVarSpillingLowering.kt:49-105. C++ adds a lifetime contract absent from
+Kotlin GC locals: temporaries bound to aggregate reference members can belong
+to the aggregate variable's lifetime. The translated placement new-expression
+must preserve the original declaration's lifetime extension explicitly.
+
+NativeSuspendLowering.cpp:1370 adds reserve_extended_temporaries. It walks
+evaluated initializers and records only MaterializeTemporaryExpr nodes whose
+actual extending declaration is that variable. Postorder reservation places
+nested owners before their enclosing owner, and all these fields before the
+aggregate field. Owners participate in the existing lexical scope and
+slot_variables_ maps, so normal exits, declaration-bound jumps and terminal
+frame cleanup destroy the aggregate before its referents. External references
+are not given owners.
+
+collect_references at NativeSuspendLowering.cpp:368 inserts each reserved
+object's placement construction at its original operand. The engagement bit is
+set after successful construction, followed by the original lvalue/xvalue
+category. Nested references and variable substitutions still use the existing
+rewriter. generated_expression at :762 emits the same operation for compiler
+expressions without independent source tokens.
+
+Nonsuspending aggregate and array declaration lists at :1473,1495 now remain
+native initialization expressions. Their constructors, side effects and partial
+construction unwinding retain native list order; extended owners are constructed
+inside the selected operand rather than eagerly in a preceding statement. These
+owners survive subsequent suspension in the declaration's scope and do not join
+the initialization full-expression temporary list.
+
+InitializersLowering.kt:34-55 also supplies the selected member-initializer
+contract. Suspension and materialization discovery at NativeSuspendLowering.cpp:
+602,872 now unwrap CXXDefaultInitExpr, and overload-resolution deferral at
+SuspendFunctionAnalyzer.cpp:260 follows that same selected expression.
+
+No compilation, AST emission, runtime check or deep scan was run. This is source
+translation, not evidence of executed destruction or resource retention. Lists
+containing suspension still require typed aggregate/array operand slicing,
+including direct construction of immovable subobjects. std::initializer_list
+backing-array lifetime transport, implicit member expression emission, default
+parameter construction/access context, local nominal integration, optimized
+spilling and both complete MLX executable paths remain unfinished. Existing
+frontend registration consumes these sources; no CMake dependency was added.
+
 ## Default-expression occurrence identity — 2026-10-08
 
 The continuation after ca15c58b translates the identity contract used by
