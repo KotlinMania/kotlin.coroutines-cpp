@@ -1,5 +1,59 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Compile-time branch selection continuation
+
+Source checkpoint 7d077d9a continues the Kotlin expression/control traversal
+contract after reading NativeSuspendFunctionLowering.kt:197-250 and the matching
+TailSuspendCallsCollector.kt:81-86. C++ if constexpr additionally discards one
+arm before runtime coroutine construction; its init statement still executes.
+
+NativeSuspendLowering.cpp:495 excludes the discarded arm from suspension
+discovery. At :1427, statement emission uses Clang's getNondiscardedCase instead
+of constructing a runtime boolean slot and lowering both bodies. Init statements
+and condition declarations keep the actual construction/cleanup scope, including
+owning objects that must survive a suspension in the selected arm. A false
+condition without an else has an empty selected arm, while its init still runs.
+
+SuspendFunctionAnalyzer.cpp:224 defers unresolved constexpr conditions until
+instantiation and ignores discarded calls when deciding overload readiness.
+TailSuspendCallsCollector.cpp:68 visits only the selected result arm. Direct
+tail continuation edits at KotlinxSuspendPlugin.cpp:304 and retained-storage
+eligibility at :474 use the same selection. Owning init objects still require
+retained storage; discarded local types do not force it. No alternate frame or
+runtime branch selector was introduced.
+
+qualified_locals.cpp:190-225 now includes an always-false branch without an else
+whose init expression increments a counter, and a selected guarded branch with
+an immovable init object spanning actual suspension. The discarded arms contain
+suspend calls; one also contains a local class. Completion, immediate/resumed
+failure and cancellation assert exact guard construction/destruction counts and
+no extra calls. These are pending executable assertions, not a fresh runtime
+result.
+
+Strict ordinary fixture syntax and actual Clang AST emission exit 0. Direct
+strict checking of the four changed compiler translation units exits 1 in
+dependency headers, with no diagnostics located in those compiler files. The
+final plugin-unit check covers the subsequent storage eligibility adjustment.
+Fresh CMake frontend build exits 2 in dependency headers; the installed older
+plugin exits 1 at the earlier alias declaration. Receipts under build/ir-recovery:
+constexpr-branch-source-final.log, constexpr-branch-lowering.log,
+constexpr-branch-plugin-final.log, constexpr-branch-plugin-build.log and
+constexpr-branch-fixture.log. No warnings were suppressed.
+
+No fresh executable validates branch omission or guard retention/cleanup.
+Deferral does not establish the complete template specialization revisit/import
+pipeline. Dependent fields/bindings, local nominal declarations, nested invokes
+and both complete executable acceptance paths remain incomplete. Historical
+sections below describe their earlier checkpoints; the full goal stays active.
+
+Both exact full-root deep scans exit 0 without concurrent source edits. Receipts:
+constexpr-branch-library-deep.log and constexpr-branch-compiler-deep.log. Compiler
+detail inventories/evidence refresh the tail visitor's changed bodies and source
+locations. Aggregate reports remain unchanged: library 832/2918 bodies, 359/560
+types, similarity 0.26 with 123 scoring failures; compiler 592/7657 bodies,
+174/1727 types, similarity 0.36 with 24 failures. The measurements do not prove
+compiled branch selection or resource lifetimes through the complete pipeline.
+
 ## Retained local constant-value continuation
 
 Source checkpoint 12589756 continues the original-variable binding work after

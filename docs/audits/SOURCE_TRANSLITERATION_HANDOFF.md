@@ -6,6 +6,20 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** 7d077d9a preserves resolved constexpr branch
+selection in NativeSuspendLowering.cpp:495,1427, overload readiness, tail
+collection, continuation edits and storage eligibility. Discarded arms create no
+runtime branch storage; init objects retain their actual construction/cleanup
+scope. Unresolved conditions defer until instantiation, whose broader revisit/
+import pipeline remains incomplete. qualified_locals adds a false/no-else init
+counter and an owning selected-arm guard across suspension, with discarded
+calls/local class and cleanup assertions. Strict source syntax/AST emission exits
+0. Direct strict compiler checks exit 1 in dependency headers, with no source-local
+diagnostics; fresh plugin build exits 2. The older frontend rejects the alias.
+No fresh runtime validates the repair. Read RESUME_ADDRESS_SOURCE_REPAIR.md's
+new top section. Both full-root scans exit 0; compiler detail evidence refreshes,
+while aggregate reports remain unchanged. The full goal remains active.
+
 **Latest compiler continuation:** 12589756 preserves retained integral/enum
 constant reads through Clang's non-ODR-use and constant-evaluation contracts.
 NativeSuspendLowering.cpp:277,324,377 emits typed constant values in ordinary
