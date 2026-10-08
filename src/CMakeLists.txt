@@ -33,6 +33,7 @@ file(GLOB_RECURSE CORE_SOURCES CONFIGURE_DEPENDS
     "${KOTLINX_COROUTINES_SRC_ROOT}/*.cpp"
 )
 list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/time/Duration.cpp")
+list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/kotlin/coroutines/cancellation/CancellationException.cpp")
 
 # Exclude non-library sources.
 list(FILTER CORE_SOURCES EXCLUDE REGEX "/tools/")
