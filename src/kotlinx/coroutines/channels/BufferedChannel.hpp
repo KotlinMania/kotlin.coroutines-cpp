@@ -3067,7 +3067,7 @@ public:
         }
     }
 
-    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2040-2132
+    // Transliterated from: kotlinx-coroutines-core/common/src/channels/BufferedChannel.kt:2041-2134
     void remove_unprocessed_elements(ChannelSegment<E>* last_segment) {
         auto on_undelivered_element = on_undelivered_element_;
         std::exception_ptr undelivered_element_exception = nullptr;
