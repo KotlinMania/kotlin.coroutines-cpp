@@ -85,13 +85,13 @@ This list is complete and includes function/type detail for every matched file. 
 | 73 | `kotlin.Array` | `kotlin.Array` | 0.04 | 0 | 1/3 matched (target 12) | `ArrayIterator::hasNext`, `ArrayIterator::next` | 2/2 matched (target 5) | _none_ | 2 | 5 | 20509.6 |
 | 74 | `coroutines.DebugProbes` | `coroutines.DebugProbes` | 0.08 | 0 | 1/3 matched (target 1) | `probeCoroutineResumed`, `probeCoroutineSuspended` | 0/0 matched | _none_ | 2 | 3 | 20309.2 |
 | 75 | `visitors.Deprecated` | `visitors.Deprecated` | 1.00 | 0 | 0/0 matched | _none_ | 1/3 matched (target 1) | `IrElementVisitor`, `IrElementVisitorVoid` | 2 | 3 | 20300.0 |
-| 76 | `coroutines.ContinuationImpl` | `coroutines.ContinuationImpl` | 0.26 | 0 | 8/9 matched (target 18) | `CompletedContinuation::toString` | 4/4 matched (target 5) | _none_ | 1 | 13 | 11307.4 |
-| 77 | `compiler.ir.ir.tree.org.jetbrains.kotlin.ir.symbols.IrSymbol` | `symbols.IrSymbol [ZERO]` | 0.00 | 0 | 0/0 matched (target 5) | _none_ | 2/3 matched (target 5) | `UnsafeDuringIrConstructionAPI` | 1 | 3 | 10310.0 |
-| 78 | `collections.List` | `collections.MutableList [ZERO]` | 0.00 | 0 | 0/0 matched (target 13) | _none_ | 1/2 matched | `List` | 1 | 2 | 10210.0 |
-| 79 | `collections.Collection` | `collections.MutableCollection [ZERO]` | 0.00 | 0 | 0/0 matched (target 7) | _none_ | 1/2 matched (target 3) | `Collection` | 1 | 2 | 10210.0 |
-| 80 | `descriptors.Visibilities` | `descriptors.Visibilities` | 0.70 | 0 | 12/12 matched (target 23) | _none_ | 10/10 matched | _none_ | 0 | 22 | 2203.0 |
-| 81 | `collections.PrimitiveIterators` | `collections.PrimitiveIterators` | 1.00 | 0 | 8/8 matched (target 16) | _none_ | 8/8 matched | _none_ | 0 | 16 | 1600.0 |
-| 82 | `mpp.DeclarationSymbolMarkers` | `mpp.DeclarationSymbolMarkers` | 1.00 | 0 | 0/0 matched | _none_ | 15/15 matched | _none_ | 0 | 15 | 1500.0 |
+| 76 | `compiler.ir.ir.tree.org.jetbrains.kotlin.ir.symbols.IrSymbol` | `symbols.IrSymbol [ZERO]` | 0.00 | 0 | 0/0 matched (target 5) | _none_ | 2/3 matched (target 5) | `UnsafeDuringIrConstructionAPI` | 1 | 3 | 10310.0 |
+| 77 | `collections.List` | `collections.MutableList [ZERO]` | 0.00 | 0 | 0/0 matched (target 13) | _none_ | 1/2 matched | `List` | 1 | 2 | 10210.0 |
+| 78 | `collections.Collection` | `collections.MutableCollection [ZERO]` | 0.00 | 0 | 0/0 matched (target 7) | _none_ | 1/2 matched (target 3) | `Collection` | 1 | 2 | 10210.0 |
+| 79 | `descriptors.Visibilities` | `descriptors.Visibilities` | 0.70 | 0 | 12/12 matched (target 23) | _none_ | 10/10 matched | _none_ | 0 | 22 | 2203.0 |
+| 80 | `collections.PrimitiveIterators` | `collections.PrimitiveIterators` | 1.00 | 0 | 8/8 matched (target 16) | _none_ | 8/8 matched | _none_ | 0 | 16 | 1600.0 |
+| 81 | `mpp.DeclarationSymbolMarkers` | `mpp.DeclarationSymbolMarkers` | 1.00 | 0 | 0/0 matched | _none_ | 15/15 matched | _none_ | 0 | 15 | 1500.0 |
+| 82 | `coroutines.ContinuationImpl` | `coroutines.ContinuationImpl` | 0.36 | 0 | 9/9 matched (target 19) | _none_ | 4/4 matched (target 5) | _none_ | 0 | 13 | 1306.4 |
 | 83 | `descriptors.Visibility` | `descriptors.Visibility` | 0.53 | 0 | 5/5 matched (target 10) | _none_ | 1/1 matched (target 3) | _none_ | 0 | 6 | 604.7 |
 | 84 | `compiler.ir.ir.tree.org.jetbrains.kotlin.ir.symbols.impl.IrSymbolImpl` | `impl.IrSymbolImpl` | 0.14 | 0 | 3/3 matched (target 14) | _none_ | 2/2 matched | _none_ | 0 | 5 | 508.6 |
 | 85 | `collections.Iterator` | `collections.Iterator [ZERO]` | 0.00 | 0 | 0/0 matched (target 6) | _none_ | 4/4 matched (target 8) | _none_ | 0 | 4 | 410.0 |

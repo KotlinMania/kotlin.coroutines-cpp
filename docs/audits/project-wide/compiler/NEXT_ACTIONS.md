@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 109/678 (16.1%)
-- **Function parity:** 591/7657 matched (target 1158) — 7.7%
+- **Function parity:** 592/7657 matched (target 1159) — 7.7%
 - **Class/type parity:** 174/1727 matched (target 380) — 10.1%
-- **Combined symbol parity:** 765/9384 matched (target 1538) — 8.2%
+- **Combined symbol parity:** 766/9384 matched (target 1539) — 8.2%
 - **Average inline-code cosine:** 0.36 (function body across 109 matched files)
 - **Average documentation cosine:** 0.60 (doc text across 109 matched files)
 - **Cheat-zeroed Files:** 24
@@ -1049,19 +1049,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/3 matched (target 1)
 - **Missing types:** `IrElementVisitor`, `IrElementVisitorVoid`
 
-### 76. coroutines.ContinuationImpl
-
-- **Target:** `coroutines.ContinuationImpl`
-- **Similarity:** 0.26
-- **Dependents:** 0
-- **Priority Score:** 11307.4
-- **Functions:** 8/9 matched (target 18)
-- **Missing functions:** `CompletedContinuation::toString`
-- **Types:** 4/4 matched (target 5)
-- **Missing types:** _none_
-- **Lint issues:** 3
-
-### 77. compiler.ir.ir.tree.org.jetbrains.kotlin.ir.symbols.IrSymbol
+### 76. compiler.ir.ir.tree.org.jetbrains.kotlin.ir.symbols.IrSymbol
 
 - **Target:** `symbols.IrSymbol [ZERO]`
 - **Similarity:** 0.00
@@ -1072,7 +1060,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 2/3 matched (target 5)
 - **Missing types:** `UnsafeDuringIrConstructionAPI`
 
-### 78. collections.List
+### 77. collections.List
 
 - **Target:** `collections.MutableList [ZERO]`
 - **Similarity:** 0.00
@@ -1083,7 +1071,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/2 matched
 - **Missing types:** `List`
 
-### 79. collections.Collection
+### 78. collections.Collection
 
 - **Target:** `collections.MutableCollection [ZERO]`
 - **Similarity:** 0.00
@@ -1094,7 +1082,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/2 matched (target 3)
 - **Missing types:** `Collection`
 
-### 80. descriptors.Visibilities
+### 79. descriptors.Visibilities
 
 - **Target:** `descriptors.Visibilities`
 - **Similarity:** 0.70
@@ -1106,7 +1094,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 9
 
-### 81. collections.PrimitiveIterators
+### 80. collections.PrimitiveIterators
 
 - **Target:** `collections.PrimitiveIterators`
 - **Similarity:** 1.00
@@ -1118,7 +1106,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Lint issues:** 8
 
-### 82. mpp.DeclarationSymbolMarkers
+### 81. mpp.DeclarationSymbolMarkers
 
 - **Target:** `mpp.DeclarationSymbolMarkers`
 - **Similarity:** 1.00
@@ -1128,6 +1116,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 15/15 matched
 - **Missing types:** _none_
+
+### 82. coroutines.ContinuationImpl
+
+- **Target:** `coroutines.ContinuationImpl`
+- **Similarity:** 0.36
+- **Dependents:** 0
+- **Priority Score:** 1306.4
+- **Functions:** 9/9 matched (target 19)
+- **Missing functions:** _none_
+- **Types:** 4/4 matched (target 5)
+- **Missing types:** _none_
+- **Lint issues:** 2
 
 ### 83. descriptors.Visibility
 

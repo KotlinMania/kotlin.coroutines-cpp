@@ -10,9 +10,9 @@ Function counts below cover bodies; abstract/interface signatures are listed sep
 
 | Metric | Count | Percentage |
 |--------|-------|------------|
-| Function parity | 591/7657 matched (target 1158) | 7.7% |
+| Function parity | 592/7657 matched (target 1159) | 7.7% |
 | Class/type parity | 174/1727 matched (target 380) | 10.1% |
-| Combined symbol parity | 765/9384 matched (target 1538) | 8.2% |
+| Combined symbol parity | 766/9384 matched (target 1539) | 8.2% |
 | Average function body similarity | 0.36 | inline-code cosine |
 | Average documentation similarity | 0.60 | doc text cosine |
 | Missing source functions | 6080 | 0% parity until ported |
@@ -110,8 +110,8 @@ Every matched file is listed from lowest function body/parameter similarity upwa
 | 66 | `coroutines.CoroutineContextImpl` | `coroutines.context_impl` | 0.23 | 15/23 matched (target 30) | `AbstractCoroutineContextKey::isSubKey`, `EmptyCoroutineContext::readResolve`, `EmptyCoroutineContext::fold`, `EmptyCoroutineContext::plus`, `CombinedContext::fold`, `CombinedContext::writeReplace`, `CombinedContext::readObject`, `CombinedContext::Serialized::readResolve` | 4/5 matched | `Serialized` | - | 9 | 92807.7 |
 | 67 | `ir.IrElementBase` | `ir.IrElementBase` | 0.25 | 8/11 matched (target 13) | `IrElementBase::transform`, `IrElementBase::acceptChildren`, `IrElementBase::transformChildren` | 1/1 matched (target 4) | _none_ | - | 3 | 4031207.5 |
 | 68 | `collections.Arrays` | `collections.Arrays` | 0.26 | 6/10 matched (target 6) | `orEmpty`, `checkCopyOfRangeArguments`, `Array<out T>::subarrayContentToString`, `contentDeepHashCodeImpl` | 0/0 matched | _none_ | - | 4 | 41007.4 |
-| 69 | `coroutines.ContinuationImpl` | `coroutines.ContinuationImpl` | 0.26 | 8/9 matched (target 18) | `CompletedContinuation::toString` | 4/4 matched (target 5) | _none_ | - | 1 | 11307.4 |
-| 70 | `descriptors.DescriptorVisibility` | `descriptors.DescriptorVisibility` | 0.27 | 4/6 matched | `DelegatedDescriptorVisibility::mustCheckInImports`, `DelegatedDescriptorVisibility::normalize` | 1/2 matched | `DelegatedDescriptorVisibility` | - | 3 | 4030807.2 |
+| 69 | `descriptors.DescriptorVisibility` | `descriptors.DescriptorVisibility` | 0.27 | 4/6 matched | `DelegatedDescriptorVisibility::mustCheckInImports`, `DelegatedDescriptorVisibility::normalize` | 1/2 matched | `DelegatedDescriptorVisibility` | - | 3 | 4030807.2 |
+| 70 | `coroutines.ContinuationImpl` | `coroutines.ContinuationImpl` | 0.36 | 9/9 matched (target 19) | _none_ | 4/4 matched (target 5) | _none_ | - | 0 | 1306.4 |
 | 71 | `impl.ValueParameterDescriptorImpl` | `impl.ValueParameterDescriptorImpl` | 0.42 | 12/14 matched (target 21) | `ValueParameterDescriptorImpl::accept`, `ValueParameterDescriptorImpl::getOverriddenDescriptors` | 2/2 matched (target 3) | _none_ | - | 2 | 21605.8 |
 | 72 | `expressions.IrExpression` | `expressions.IrExpression` | 0.42 | 1/1 matched (target 2) | _none_ | 1/1 matched | _none_ | - | 0 | 62000204.0 |
 | 73 | `expressions.IrBody` | `expressions.IrBody` | 0.42 | 1/1 matched (target 2) | _none_ | 1/1 matched | _none_ | - | 0 | 19000206.0 |
@@ -251,8 +251,8 @@ These files need significant work:
 - `coroutines.CoroutineContextImpl` -> `coroutines.context_impl` (0.23)
 - `ir.IrElementBase` -> `ir.IrElementBase` (0.25, 4 deps)
 - `collections.Arrays` -> `collections.Arrays` (0.26)
-- `coroutines.ContinuationImpl` -> `coroutines.ContinuationImpl` (0.26)
 - `descriptors.DescriptorVisibility` -> `descriptors.DescriptorVisibility` (0.27, 4 deps)
+- `coroutines.ContinuationImpl` -> `coroutines.ContinuationImpl` (0.36)
 - `impl.ValueParameterDescriptorImpl` -> `impl.ValueParameterDescriptorImpl` (0.42)
 - `expressions.IrExpression` -> `expressions.IrExpression` (0.42, 62 deps)
 - `expressions.IrBody` -> `expressions.IrBody` (0.42, 19 deps)
