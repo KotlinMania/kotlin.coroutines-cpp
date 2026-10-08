@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 251/354 (70.9%)
-- **Function parity:** 820/2918 matched (target 3039) — 28.1%
+- **Function parity:** 813/2918 matched (target 3040) — 27.9%
 - **Class/type parity:** 359/560 matched (target 522) — 64.1%
-- **Combined symbol parity:** 1179/3478 matched (target 3561) — 33.9%
+- **Combined symbol parity:** 1172/3478 matched (target 3562) — 33.7%
 - **Average inline-code cosine:** 0.26 (function body across 142 matched files)
 - **Average documentation cosine:** 0.37 (doc text across 142 matched files)
 - **Cheat-zeroed Files:** 123
@@ -18,13 +18,14 @@ Based on AST analysis, here are the concrete next steps.
 ## Priority 1: Fix Incomplete High-Dependency Files
 
 ### 1. flow.Channels
-- **Similarity:** 0.22 (needs 63% improvement)
+- **Similarity:** 0.05 (needs 80% improvement)
 - **Dependencies:** 65
-- **Priority Score:** 65001308.0
-- **Functions:** 12/12 matched (target 23)
-- **Missing functions:** _none_
+- **Priority Score:** 65071308.0
+- **Functions:** 5/12 matched (target 24)
+- **Missing functions:** `ChannelAsFlow::markConsumed`, `ChannelAsFlow::create`, `ChannelAsFlow::dropChannelOperators`, `ChannelAsFlow::collectTo`, `ChannelAsFlow::produceImpl`, `ChannelAsFlow::collect`, `ChannelAsFlow::additionalToStringProps`
 - **Types:** 1/1 matched (target 3)
 - **Missing types:** _none_
+- **Symbol Deficit:** 7 (functions: 7, types: 0)
 - **Action:** Deep review - likely missing major functionality
 
 ### 2. flow.Flow
@@ -61,11 +62,11 @@ Every matched file is listed below with function and type symbol parity.
 ### 1. flow.Channels
 
 - **Target:** `flow.Channels`
-- **Similarity:** 0.22
+- **Similarity:** 0.05
 - **Dependents:** 65
-- **Priority Score:** 65001308.0
-- **Functions:** 12/12 matched (target 23)
-- **Missing functions:** _none_
+- **Priority Score:** 65071308.0
+- **Functions:** 5/12 matched (target 24)
+- **Missing functions:** `ChannelAsFlow::markConsumed`, `ChannelAsFlow::create`, `ChannelAsFlow::dropChannelOperators`, `ChannelAsFlow::collectTo`, `ChannelAsFlow::produceImpl`, `ChannelAsFlow::collect`, `ChannelAsFlow::additionalToStringProps`
 - **Types:** 1/1 matched (target 3)
 - **Missing types:** _none_
 - **Lint issues:** 1

@@ -1682,24 +1682,25 @@ EXTRA_TARGET_SYMBOL function CallbackFlowBuilder::CallbackFlowBuilder at /Volume
 EXTRA_TARGET_SYMBOL function CallbackFlowBuilder::collect_to at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:508
 EXTRA_TARGET_SYMBOL function CallbackFlowBuilder::create at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:555
 EXTRA_TARGET_SYMBOL property CallbackFlowBuilder::block_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/FlowBuilders.hpp:561
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:37: offset-preserving coroutine statement-macro grammar adaptation
-PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:56: offset-preserving coroutine statement-macro grammar adaptation
+PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:49: offset-preserving coroutine statement-macro grammar adaptation
+PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:68: offset-preserving coroutine statement-macro grammar adaptation
 PRESENT function emitAll at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:25 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:184
 PRESENT function emitAllImpl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:28 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:162
-PRESENT function receiveAsFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:65 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:302
-PRESENT function consumeAsFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:87 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:329
-PRESENT type ChannelAsFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:95 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:199
-PRESENT property ChannelAsFlow::channel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:96 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:273
-PRESENT property ChannelAsFlow::consume at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:97 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:274
-PRESENT property ChannelAsFlow::consumed at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:102 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:275
-PRESENT function ChannelAsFlow::markConsumed at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:104 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:215
-PRESENT function ChannelAsFlow::create at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:110 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:226
-PRESENT function ChannelAsFlow::dropChannelOperators at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:113 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:234
-PRESENT function ChannelAsFlow::collectTo at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:116 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:239
-PRESENT function ChannelAsFlow::produceImpl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:119 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:246
-PRESENT function ChannelAsFlow::collect at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:127 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:255
-PRESENT function ChannelAsFlow::additionalToStringProps at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:136 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:267
-PRESENT function produceIn at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:154 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:351
+PRESENT function receiveAsFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:65 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:306
+PRESENT function consumeAsFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:87 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:333
+MISSING_SYMBOL type ChannelAsFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:95
+MISSING_SYMBOL property ChannelAsFlow::channel at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:96
+MISSING_SYMBOL property ChannelAsFlow::consume at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:97
+MISSING_SYMBOL property ChannelAsFlow::consumed at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:102
+MISSING_SYMBOL function ChannelAsFlow::markConsumed at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:104
+MISSING_SYMBOL function ChannelAsFlow::create at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:110
+MISSING_SYMBOL function ChannelAsFlow::dropChannelOperators at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:113
+MISSING_SYMBOL function ChannelAsFlow::collectTo at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:116
+MISSING_SYMBOL function ChannelAsFlow::produceImpl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:119
+MISSING_SYMBOL function ChannelAsFlow::collect at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:127
+MISSING_SYMBOL function ChannelAsFlow::additionalToStringProps at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:136
+PRESENT function produceIn at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Channels.kt:154 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:355
+EXTRA_TARGET_SYMBOL function mark_channel_consumed at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:59
 EXTRA_TARGET_SYMBOL function emit_all_erased at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:64
 EXTRA_TARGET_SYMBOL type EmitAllArguments at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:77
 EXTRA_TARGET_SYMBOL property EmitAllArguments::receiver at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:78
@@ -1709,24 +1710,36 @@ EXTRA_TARGET_SYMBOL property EmitAllArguments::channel_owner at /Volumes/stuff/P
 EXTRA_TARGET_SYMBOL property EmitAllArguments::iterator at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:82
 EXTRA_TARGET_SYMBOL property EmitAllArguments::element at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:83
 EXTRA_TARGET_SYMBOL function bind_emit_all at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:88
-EXTRA_TARGET_SYMBOL function ChannelAsFlow::ChannelAsFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:202
-EXTRA_TARGET_SYMBOL type EmitAllContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:16
-EXTRA_TARGET_SYMBOL function EmitAllContinuation::EmitAllContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:19
-EXTRA_TARGET_SYMBOL function EmitAllContinuation::retain at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:32
-EXTRA_TARGET_SYMBOL function EmitAllContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:35
-EXTRA_TARGET_SYMBOL function EmitAllContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:62
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:74
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::make_iterator_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:75
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::has_next_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:76
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::emit_next_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:77
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::finish_emit_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:78
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::cancel_consumed_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:79
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::consume_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:80
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::has_next_box_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:81
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::more_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:82
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::cause_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:83
-EXTRA_TARGET_SYMBOL property EmitAllContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:84
-EXTRA_TARGET_SYMBOL function emit_all_erased at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:90
+EXTRA_TARGET_SYMBOL type ChannelAsFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:203
+EXTRA_TARGET_SYMBOL function ChannelAsFlow::ChannelAsFlow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:206
+EXTRA_TARGET_SYMBOL function ChannelAsFlow::mark_consumed at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:219
+EXTRA_TARGET_SYMBOL function ChannelAsFlow::create at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:225
+EXTRA_TARGET_SYMBOL function ChannelAsFlow::drop_channel_operators at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:234
+EXTRA_TARGET_SYMBOL function ChannelAsFlow::collect_to at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:240
+EXTRA_TARGET_SYMBOL function ChannelAsFlow::produce_impl at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:248
+EXTRA_TARGET_SYMBOL function ChannelAsFlow::collect at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:257
+EXTRA_TARGET_SYMBOL function ChannelAsFlow::additional_to_string_props at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:269
+EXTRA_TARGET_SYMBOL property ChannelAsFlow::channel_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:275
+EXTRA_TARGET_SYMBOL property ChannelAsFlow::consume_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:276
+EXTRA_TARGET_SYMBOL property ChannelAsFlow::consumed_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp:277
+EXTRA_TARGET_SYMBOL function mark_channel_consumed at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:14
+EXTRA_TARGET_SYMBOL type EmitAllContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:28
+EXTRA_TARGET_SYMBOL function EmitAllContinuation::EmitAllContinuation at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:31
+EXTRA_TARGET_SYMBOL function EmitAllContinuation::retain at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:44
+EXTRA_TARGET_SYMBOL function EmitAllContinuation::invoke_suspend at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:47
+EXTRA_TARGET_SYMBOL function EmitAllContinuation::release_intercepted at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:74
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::_label at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:86
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::make_iterator_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:87
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::has_next_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:88
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::emit_next_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:89
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::finish_emit_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:90
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::cancel_consumed_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:91
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::consume_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:92
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::has_next_box_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:93
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::more_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:94
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::cause_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:95
+EXTRA_TARGET_SYMBOL property EmitAllContinuation::self_ref_ at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:96
+EXTRA_TARGET_SYMBOL function emit_all_erased at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp:102
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.cpp:34: offset-preserving coroutine statement-macro grammar adaptation
 PARSER_REVIEW /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.cpp:41: offset-preserving coroutine statement-macro grammar adaptation
 PRESENT type Flow at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src/flow/Flow.kt:176 -> /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.hpp:197
@@ -6433,4 +6446,4 @@ MISSING_SYMBOL property isNative at /Volumes/stuff/Projects/kotlinmania/kotlin.c
 MISSING_SYMBOL property isBoundByJsTestTimeout at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:61
 MISSING_SYMBOL property isJavaAndWindows at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:63
 MISSING_SYMBOL property usesSharedEventLoop at /Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/test-utils/native/src/TestBase.kt:65
-Inventory totals: present=2480, declaration_only=115, missing=2002
+Inventory totals: present=2469, declaration_only=115, missing=2013
