@@ -982,7 +982,7 @@ void channel_flow_collect_lambda_contract() {
         auto producer = std::make_shared<ProducerCoroutine<int>>(EmptyCoroutineContext::instance(), channel);
         auto completion = std::make_shared<Completion>();
         CHECK(intrinsics::is_coroutine_suspended(collect(producer.get(), completion)));
-        CHECK(calls == 1 && !completion->resumes && channel->is_empty());
+        CHECK(calls == 1 && !completion->resumes && !channel->is_empty());
         operation.reset();
         upstream.reset();
         resource.reset();
