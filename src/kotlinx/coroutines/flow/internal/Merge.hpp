@@ -217,10 +217,7 @@ public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:47-49
     std::shared_ptr<ReceiveChannel<T>> produce_impl(CoroutineScope* scope) override {
         return channels::produce<T>(scope, this->context(), this->capacity(),
-            BufferOverflow::SUSPEND, CoroutineStart::DEFAULT,
-            [this](ProducerScope<T>* producer, std::shared_ptr<Continuation<void*>> completion) -> void* {
-                return collect_to(producer, std::move(completion));
-            });
+                                    this->get_collect_to_fun());
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:51-71
@@ -392,10 +389,7 @@ public:
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:85-87
     std::shared_ptr<ReceiveChannel<T>> produce_impl(CoroutineScope* scope) override {
         return channels::produce<T>(scope, this->context(), this->capacity(),
-            BufferOverflow::SUSPEND, CoroutineStart::DEFAULT,
-            [this](ProducerScope<T>* producer, std::shared_ptr<Continuation<void*>> completion) -> void* {
-                return collect_to(producer, std::move(completion));
-            });
+                                    this->get_collect_to_fun());
     }
 
     // Transliterated from: kotlinx-coroutines-core/common/src/flow/internal/Merge.kt:89-94
