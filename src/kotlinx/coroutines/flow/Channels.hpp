@@ -60,9 +60,9 @@ inline void* emit_all_impl(
     FlowCollector<T>* receiver,
     channels::ReceiveChannel<T>* channel,
     bool consume,
-    std::shared_ptr<Continuation<void*>> completion,
-    std::shared_ptr<FlowCollector<T>> receiver_owner = nullptr,
-    std::shared_ptr<channels::ReceiveChannel<T>> channel_owner = nullptr) {
+    std::shared_ptr<FlowCollector<T>> receiver_owner,
+    std::shared_ptr<channels::ReceiveChannel<T>> channel_owner,
+    std::shared_ptr<Continuation<void*>> completion) {
     // NOTE(port): Bind each actual supplied owner to its original receiver.
     if (receiver_owner) receiver = receiver_owner.get();
     if (channel_owner) channel = channel_owner.get();
@@ -99,6 +99,17 @@ inline void* emit_all_impl(
     FlowCollector<T>* receiver,
     channels::ReceiveChannel<T>* channel,
     bool consume,
+    std::shared_ptr<Continuation<void*>> completion) {
+    return emit_all_impl<T>(receiver, channel, consume, nullptr, nullptr,
+        std::move(completion));
+}
+
+// Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
+template <typename T>
+inline void* emit_all_impl(
+    FlowCollector<T>* receiver,
+    channels::ReceiveChannel<T>* channel,
+    bool consume,
     Continuation<void*>* completion) {
     return emit_all_impl<T>(receiver, channel, consume,
         kotlinx::coroutines::internal::retain_continuation(completion));
@@ -113,7 +124,7 @@ inline void* emit_all_impl(
     std::shared_ptr<Continuation<void*>> completion) {
     auto* channel_ptr = channel.get();
     return emit_all_impl<T>(receiver, channel_ptr, consume,
-        std::move(completion), nullptr, std::move(channel));
+        nullptr, std::move(channel), std::move(completion));
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
@@ -126,7 +137,7 @@ inline void* emit_all_impl(
     auto* receiver_ptr = receiver.get();
     auto* channel_ptr = channel.get();
     return emit_all_impl<T>(receiver_ptr, channel_ptr, consume,
-        std::move(completion), std::move(receiver), std::move(channel));
+        std::move(receiver), std::move(channel), std::move(completion));
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
@@ -138,7 +149,7 @@ inline void* emit_all_impl(
     std::shared_ptr<Continuation<void*>> completion) {
     auto* receiver_ptr = receiver.get();
     return emit_all_impl<T>(receiver_ptr, channel, consume,
-        std::move(completion), std::move(receiver));
+        std::move(receiver), nullptr, std::move(completion));
 }
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/Channels.kt:28-41
