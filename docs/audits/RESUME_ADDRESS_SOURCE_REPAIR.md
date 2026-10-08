@@ -1,5 +1,56 @@
 # Compiler resume-address source repair — 2026-10-07
 
+## Borrowed argument temporary lifetime continuation
+
+Source checkpoints 0f60aa5b and ee88e8f5 repair argument lifetime around the
+NativeSuspendFunctionLowering.kt:201-252 expression slicing and :254-335
+suspension-point contract, alongside CoroutinesVarSpillingLowering.kt:49-105.
+ABI return of COROUTINE_SUSPENDED is not completion of the original C++ call
+or its containing full expression.
+
+NativeSuspendLowering.cpp:649-663 now registers owned sliced values in the
+existing full-expression temporary storage. A record prvalue is constructed
+directly in aligned owning storage rather than passed through optional::emplace,
+preserving guaranteed elision for immovable ordinary C++ objects. Borrowed
+glvalues remain borrowed and acquire no ownership. At :1121-1154, transient
+argument bindings are released after the immediate/resumed logical completion
+join, rather than before the suspension result check. Owned full-expression
+temporaries are excluded from that transient cleanup and remain alive through
+any enclosing ordinary call. Failure/cancellation still uses frame cleanup.
+
+Previously a const-reference argument backed by a newly materialized object
+could be destroyed before returning COROUTINE_SUSPENDED, while the callee's
+frame still held a borrowed reference to it. There is no new runtime, adapter
+frame, ownership transfer for references, or replacement of LLVM saved-address
+dispatch in this repair.
+
+expression_slicing.cpp:54-92 adds an immovable TemporaryArgument. An enclosing
+ordinary call retains one temporary while a suspend callee borrows a second
+through two suspensions. Assertions check actual reference identity, both
+objects alive and neither destroyed while pending, completion value, and
+exact reverse destruction order (2,1). Modes cover immediate completion,
+repeated suspended completion, resumed failure, cancellation on the second
+suspension, and immediate callee failure. Each result box is owned/unboxed by
+the existing unique_ptr receivers. test_suspend_plugin.py now applies strict
+warning flags to this registered executable with its existing ASan/UBSan run.
+
+Default fixture syntax and Python AST parsing pass; these checks do not lower
+or execute the state machine. Strict direct lowering checking exits 1 in
+LLVM/Clang dependency headers with no source-local diagnostic. Fresh plugin
+build exits 2 in the metadata plugin's dependency headers. The installed older
+frontend's strict attempt exits 1 on existing coroutine-header unused parameters,
+with further generated-frame errors; it cannot validate this source repair.
+No warning was suppressed. Receipts are
+build/ir-recovery/argument-lifetime-{lowering,fixture,fixture-final,plugin-build,
+installed-frontend}.log. All new runtime assertions remain unverified by a fresh
+frontend/pass build, including object identity and cancellation cleanup.
+
+Both exact full-root deep scans completed with exit 0 after both source
+checkpoints, without concurrent source edits. Generated inventories/reports
+are unchanged: library 832/2918 bodies, 359/560 types, body similarity 0.26;
+compiler 592/7657 bodies, 174/1727 types, body similarity 0.36. Standalone
+MLX and actual Native/MLX shared-state-machine acceptance remain unproven.
+
 ## Wider constant-value spilling continuation
 
 Source checkpoint 1e50f64a continues the typed local/property contract after

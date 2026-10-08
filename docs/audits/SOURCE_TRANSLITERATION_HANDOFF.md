@@ -6,6 +6,23 @@ inspect the current worktree before continuing. Older versions remain in Git.
 
 ## Continuation update after the handoff
 
+**Latest compiler continuation:** 0f60aa5b and ee88e8f5 preserve owned argument
+temporaries through logical suspend-call completion in
+NativeSuspendLowering.cpp:649-663,1121-1154. Sliced record prvalues use direct
+owning construction for immovable types; borrowed glvalues keep their original
+ownership. Transient argument cleanup follows the completion join, and owned
+temporaries remain through the enclosing full expression. expression_slicing
+adds two immovable objects, a borrowed argument across two suspensions, exact
+reverse destruction assertions, and completion/immediate failure/resumed
+failure/second-suspension cancellation modes. Its registered executable now
+uses strict warning flags. Default syntax/Python parsing pass; direct strict
+lowering checking has only external dependency diagnostics. Fresh plugin build
+exits 2; the older frontend fails strict dependency/generated diagnostics.
+No fresh runtime validates the repair. Local nominal/dependent import and full
+executable acceptance remain unfinished. Read RESUME_ADDRESS_SOURCE_REPAIR.md's
+new top section. Both full-root deep scans exit 0 and leave generated reports
+unchanged. The full goal remains active.
+
 **Latest compiler continuation:** 1e50f64a removes the 64-bit cutoff in retained
 constant-value rewriting at NativeSuspendLowering.cpp:277-330. Wider values are
 assembled in their actual integer type; negative values use -1 - complement,
