@@ -5,7 +5,7 @@
  */
 
 #include "kotlinx/coroutines/CoroutineScope.hpp"
-#include "kotlinx/coroutines/flow/internal/FlowImpl.hpp"
+#include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
 #include <functional>
@@ -48,7 +48,7 @@ void* flow_scope(std::function<void*(CoroutineScope*, Continuation<void*>*)> blo
 template <typename R>
 std::shared_ptr<Flow<R>> scoped_flow(
     std::function<void*(CoroutineScope*, FlowCollector<R>*, Continuation<void*>*)> block) {
-    return std::make_shared<FlowImpl<R>>(
+    return unsafe_flow<R>(
         [block = std::move(block)](FlowCollector<R>* collector, Continuation<void*>* completion) -> void* {
             return flow_scope([block, collector](CoroutineScope* scope, Continuation<void*>* continuation) {
                 return block(scope, collector, continuation);

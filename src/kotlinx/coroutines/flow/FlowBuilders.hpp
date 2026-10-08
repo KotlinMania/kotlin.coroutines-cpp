@@ -18,7 +18,6 @@
 #include "kotlinx/coroutines/JobSupport.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
-#include "kotlinx/coroutines/flow/internal/FlowImpl.hpp"
 #include "kotlinx/coroutines/flow/internal/FlowCoroutine.hpp"
 #include "kotlinx/coroutines/flow/internal/SafeCollector.hpp"
 #include "kotlinx/coroutines/flow/internal/ChannelFlow.hpp"

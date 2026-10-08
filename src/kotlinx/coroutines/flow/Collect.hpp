@@ -13,6 +13,7 @@
 #include "kotlinx/coroutines/CoroutineScope.hpp"
 #include "kotlinx/coroutines/Job.hpp"
 #include "kotlinx/coroutines/Unit.hpp"
+#include "kotlinx/coroutines/dsl/Suspend.hpp"
 #include "kotlinx/coroutines/flow/Context.hpp"
 #include "kotlinx/coroutines/flow/Flow.hpp"
 #include "kotlinx/coroutines/flow/FlowCollector.hpp"
@@ -32,42 +33,17 @@ namespace internal {
 
 // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26,55-59,103-113
 // NOTE(port): Kotlin GC retains the source receiver and anonymous collectors in
-// the suspended caller. This frame retains their actual C++ owners until completion.
+// the suspended caller. Supplied C++ owners remain suspend arguments until completion;
+// the Clang frontend constructs the frame and preserves their destruction rules.
 // A raw collector supplied by emit_all remains borrowed from its caller.
 template <typename T>
+[[clang::annotate("suspend")]]
 void* collect_with_retained_arguments(std::shared_ptr<Flow<T>> upstream,
     FlowCollector<T>* collector, std::shared_ptr<FlowCollector<T>> collector_owner,
     std::shared_ptr<Continuation<void*>> completion) {
-    // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26,55-59,103-113
-    class CollectFrame final : public ContinuationImpl {
-        std::shared_ptr<Flow<T>> upstream_;
-        FlowCollector<T>* collector_;
-        std::shared_ptr<FlowCollector<T>> collector_owner_;
-        std::shared_ptr<BaseContinuationImpl> self_ref_;
-        void* _label = nullptr;
-    public:
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26,55-59,103-113
-        CollectFrame(std::shared_ptr<Flow<T>> upstream, FlowCollector<T>* collector,
-            std::shared_ptr<FlowCollector<T>> collector_owner, std::shared_ptr<Continuation<void*>> completion)
-            : ContinuationImpl(std::move(completion)),
-              upstream_(std::move(upstream)), collector_(collector), collector_owner_(std::move(collector_owner)) {}
-        void retain() { self_ref_ = shared_from_this(); }
-        // Transliterated from: kotlinx-coroutines-core/common/src/flow/terminal/Collect.kt:26,55-59,103-113
-        void* invoke_suspend(Result<void*> result) override {
-            try {
-                coroutine_begin(this)
-                coroutine_yield(this, upstream_->collect(collector_, this));
-                self_ref_.reset();
-                coroutine_end(this)
-            } catch (...) {
-                self_ref_.reset();
-                throw;
-            }
-        }
-    };
-    auto frame = std::make_shared<CollectFrame>(std::move(upstream), collector, std::move(collector_owner), std::move(completion));
-    frame->retain();
-    return frame->start(Result<void*>::success(nullptr));
+    if (collector_owner) collector = collector_owner.get();
+    dsl::suspend(upstream->collect(collector, completion.get()));
+    return nullptr;
 }
 
 } // namespace internal
