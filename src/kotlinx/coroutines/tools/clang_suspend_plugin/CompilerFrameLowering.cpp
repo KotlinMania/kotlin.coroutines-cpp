@@ -120,7 +120,7 @@ bool install_native_frame(clang::CompilerInstance& compiler, clang::FunctionDecl
     // Complete the host's queued template work before importing definitions of
     // those same entities from the helper AST. The host owns their deduction
     // and specialization state, including ordinary standard-library lambdas.
-    compiler.getSema().PerformPendingInstantiations();
+    compiler.getSema().PerformPendingInstantiations(/*LocalOnly=*/false, /*AtEndOfTU=*/false);
     // Replacing the body does not erase Sema's ODR uses of its local lambdas.
     // Complete their referenced template definitions while that body still
     // belongs to the original function and its declaration context is intact.
