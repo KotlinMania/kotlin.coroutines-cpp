@@ -6,7 +6,7 @@ The AST Distance tool has been enhanced with TypeScript support and a complete T
 
 ## What Was Completed
 
-### 1. TypeScript NPM Package Created (`/Volumes/stuff/Projects/ASTDistance/typescript/`)
+### 1. TypeScript NPM Package Created (`../ASTDistance/typescript/`)
 
 **Complete package structure:**
 
@@ -238,7 +238,7 @@ cmake --build .
 ### For NPM Publication:
 
 ```bash
-cd /Volumes/stuff/Projects/ASTDistance/typescript
+cd ../ASTDistance/typescript
 
 # Install and build
 npm install
@@ -282,10 +282,10 @@ npm publish --access public
 
 ## Documentation Files
 
-- `/Volumes/stuff/Projects/ASTDistance/typescript/README.md` - Package README
-- `/Volumes/stuff/Projects/ASTDistance/typescript/PUBLISHING.md` - Publishing guide
-- `/Volumes/stuff/Projects/ASTDistance/FEATURES.md` - Complete feature docs
-- `/Volumes/emberstuff/Projects/magentic-codex/tools/AST_DISTANCE_INTEGRATION_COMPLETE.md` - Integration summary
+- `../ASTDistance/typescript/README.md` - Package README
+- `../ASTDistance/typescript/PUBLISHING.md` - Publishing guide
+- `../ASTDistance/FEATURES.md` - Complete feature docs
+- `../magentic-codex/tools/AST_DISTANCE_INTEGRATION_COMPLETE.md` - Integration summary
 
 ## Status
 

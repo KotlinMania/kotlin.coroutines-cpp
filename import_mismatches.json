@@ -2,8 +2,8 @@
   {
     "file": "AbstractCoroutine",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/AbstractCoroutine.hpp"
+      "src/kotlinx/coroutines/AbstractCoroutine.cpp",
+      "src/kotlinx/coroutines/AbstractCoroutine.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.CoroutineStart.",
@@ -21,7 +21,7 @@
   {
     "file": "AbstractCoroutineTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AbstractCoroutineTest.cpp"
+      "src/tests/src/AbstractCoroutineTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -33,7 +33,7 @@
   {
     "file": "AbstractDispatcherConcurrencyTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/AbstractDispatcherConcurrencyTest.cpp"
+      "src/tests/src/concurrent/AbstractDispatcherConcurrencyTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.",
@@ -47,7 +47,7 @@
   {
     "file": "AbstractSharedFlow",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/AbstractSharedFlow.hpp"
+      "src/kotlinx/coroutines/flow/internal/AbstractSharedFlow.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -65,8 +65,8 @@
   {
     "file": "Annotations",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Annotations.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Annotations.hpp"
+      "src/kotlinx/coroutines/Annotations.cpp",
+      "src/kotlinx/coroutines/Annotations.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.flow."
@@ -78,7 +78,7 @@
   {
     "file": "AsyncLazyTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AsyncLazyTest.cpp"
+      "src/tests/src/AsyncLazyTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -90,7 +90,7 @@
   {
     "file": "AsyncTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AsyncTest.cpp"
+      "src/tests/src/AsyncTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -102,7 +102,7 @@
   {
     "file": "AtomicCancellationCommonTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AtomicCancellationCommonTest.cpp"
+      "src/tests/src/AtomicCancellationCommonTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.selects.",
@@ -118,7 +118,7 @@
   {
     "file": "AtomicCancellationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/AtomicCancellationTest.cpp"
+      "src/tests/src/concurrent/AtomicCancellationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.",
@@ -134,7 +134,7 @@
   {
     "file": "AwaitCancellationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AwaitCancellationTest.cpp"
+      "src/tests/src/AwaitCancellationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -146,7 +146,7 @@
   {
     "file": "AwaitTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/AwaitTest.cpp"
+      "src/tests/src/AwaitTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -158,7 +158,7 @@
   {
     "file": "BasicOperationsTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/BasicOperationsTest.cpp"
+      "src/tests/src/channels/BasicOperationsTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -172,7 +172,7 @@
   {
     "file": "BooleanTerminationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/BooleanTerminationTest.cpp"
+      "src/tests/src/flow/operators/BooleanTerminationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -184,7 +184,7 @@
   {
     "file": "Broadcast",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Broadcast.cpp"
+      "src/kotlinx/coroutines/channels/Broadcast.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -203,8 +203,8 @@
   {
     "file": "BroadcastChannel",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BroadcastChannel.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BroadcastChannel.hpp"
+      "src/kotlinx/coroutines/channels/BroadcastChannel.cpp",
+      "src/kotlinx/coroutines/channels/BroadcastChannel.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -229,7 +229,7 @@
   {
     "file": "BroadcastChannelFactoryTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/BroadcastChannelFactoryTest.cpp"
+      "src/tests/src/channels/BroadcastChannelFactoryTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -241,7 +241,7 @@
   {
     "file": "BroadcastChannelSubStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/channels/BroadcastChannelSubStressTest.cpp"
+      "src/tests/src/concurrent/channels/BroadcastChannelSubStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -255,7 +255,7 @@
   {
     "file": "BroadcastTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/BroadcastTest.cpp"
+      "src/tests/src/channels/BroadcastTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -271,7 +271,7 @@
   {
     "file": "BufferConflationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/BufferConflationTest.cpp"
+      "src/tests/src/flow/operators/BufferConflationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -287,7 +287,7 @@
   {
     "file": "BufferTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/BufferTest.cpp"
+      "src/tests/src/flow/operators/BufferTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -303,7 +303,7 @@
   {
     "file": "BufferedBroadcastChannelTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/BufferedBroadcastChannelTest.cpp"
+      "src/tests/src/channels/BufferedBroadcastChannelTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -317,8 +317,8 @@
   {
     "file": "BufferedChannel",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/BufferedChannel.hpp"
+      "src/kotlinx/coroutines/channels/BufferedChannel.cpp",
+      "src/kotlinx/coroutines/channels/BufferedChannel.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -342,7 +342,7 @@
   {
     "file": "BufferedChannelTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/BufferedChannelTest.cpp"
+      "src/tests/src/channels/BufferedChannelTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -356,7 +356,7 @@
   {
     "file": "BuilderContractsTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/BuilderContractsTest.cpp"
+      "src/tests/src/BuilderContractsTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.",
@@ -372,11 +372,11 @@
   {
     "file": "Builders",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Builders.common.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Builders.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/Builders.concurrent.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Builders.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Builders.hpp"
+      "src/kotlinx/coroutines/Builders.common.cpp",
+      "src/kotlinx/coroutines/native/Builders.cpp",
+      "src/kotlinx/coroutines/concurrent/Builders.concurrent.cpp",
+      "src/kotlinx/coroutines/flow/Builders.cpp",
+      "src/kotlinx/coroutines/Builders.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -404,7 +404,7 @@
   {
     "file": "BuildersTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/BuildersTest.cpp"
+      "src/tests/src/flow/BuildersTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -418,9 +418,9 @@
   {
     "file": "Cancellable",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Cancellable.hpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/dsl/Cancellable.hpp"
+      "src/kotlinx/coroutines/intrinsics/Cancellable.cpp",
+      "src/kotlinx/coroutines/intrinsics/Cancellable.hpp",
+      "src/kotlinx/coroutines/dsl/Cancellable.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -434,8 +434,8 @@
   {
     "file": "CancellableContinuation",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CancellableContinuation.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CancellableContinuation.hpp"
+      "src/kotlinx/coroutines/CancellableContinuation.cpp",
+      "src/kotlinx/coroutines/CancellableContinuation.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -447,7 +447,7 @@
   {
     "file": "CancellableContinuationHandlersTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CancellableContinuationHandlersTest.cpp"
+      "src/tests/src/CancellableContinuationHandlersTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal.",
@@ -461,8 +461,8 @@
   {
     "file": "CancellableContinuationImpl",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CancellableContinuationImpl.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CancellableContinuationImpl.hpp"
+      "src/kotlinx/coroutines/CancellableContinuationImpl.cpp",
+      "src/kotlinx/coroutines/CancellableContinuationImpl.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -474,7 +474,7 @@
   {
     "file": "CancellableResumeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CancellableResumeTest.cpp"
+      "src/tests/src/CancellableResumeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -486,7 +486,7 @@
   {
     "file": "CancellableTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/CancellableTest.cpp"
+      "src/tests/src/flow/operators/CancellableTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -500,7 +500,7 @@
   {
     "file": "CancelledParentAttachTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CancelledParentAttachTest.cpp"
+      "src/tests/src/CancelledParentAttachTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.",
@@ -516,7 +516,7 @@
   {
     "file": "CatchTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/CatchTest.cpp"
+      "src/tests/src/flow/operators/CatchTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -530,8 +530,8 @@
   {
     "file": "Channel",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channel.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channel.hpp"
+      "src/kotlinx/coroutines/channels/Channel.cpp",
+      "src/kotlinx/coroutines/channels/Channel.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -555,7 +555,7 @@
   {
     "file": "ChannelBufferOverflowTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ChannelBufferOverflowTest.cpp"
+      "src/tests/src/channels/ChannelBufferOverflowTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -569,7 +569,7 @@
   {
     "file": "ChannelBuildersFlowTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/channels/ChannelBuildersFlowTest.cpp"
+      "src/tests/src/flow/channels/ChannelBuildersFlowTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -585,7 +585,7 @@
   {
     "file": "ChannelCancelUndeliveredElementStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/channels/ChannelCancelUndeliveredElementStressTest.cpp"
+      "src/tests/src/concurrent/channels/ChannelCancelUndeliveredElementStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -601,8 +601,8 @@
   {
     "file": "ChannelCoroutine",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ChannelCoroutine.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ChannelCoroutine.hpp"
+      "src/kotlinx/coroutines/channels/ChannelCoroutine.cpp",
+      "src/kotlinx/coroutines/channels/ChannelCoroutine.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -614,8 +614,8 @@
   {
     "file": "ChannelFlow",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/ChannelFlow.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
+      "src/kotlinx/coroutines/flow/internal/ChannelFlow.cpp",
+      "src/kotlinx/coroutines/flow/internal/ChannelFlow.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -633,7 +633,7 @@
   {
     "file": "ChannelFlowTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/channels/ChannelFlowTest.cpp"
+      "src/tests/src/flow/channels/ChannelFlowTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -649,7 +649,7 @@
   {
     "file": "ChannelReceiveCatchingTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ChannelReceiveCatchingTest.cpp"
+      "src/tests/src/channels/ChannelReceiveCatchingTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -663,7 +663,7 @@
   {
     "file": "ChannelUndeliveredElementFailureTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ChannelUndeliveredElementFailureTest.cpp"
+      "src/tests/src/channels/ChannelUndeliveredElementFailureTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -681,7 +681,7 @@
   {
     "file": "ChannelUndeliveredElementTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ChannelUndeliveredElementTest.cpp"
+      "src/tests/src/channels/ChannelUndeliveredElementTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -695,11 +695,11 @@
   {
     "file": "Channels",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.common.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/channels/Channels.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Channels.hpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Channels.hpp"
+      "src/kotlinx/coroutines/channels/Channels.common.cpp",
+      "src/kotlinx/coroutines/flow/Channels.cpp",
+      "src/kotlinx/coroutines/concurrent/channels/Channels.cpp",
+      "src/kotlinx/coroutines/channels/Channels.hpp",
+      "src/kotlinx/coroutines/flow/Channels.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -719,7 +719,7 @@
   {
     "file": "ChunkedTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/ChunkedTest.cpp"
+      "src/tests/src/flow/operators/ChunkedTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -735,7 +735,7 @@
   {
     "file": "Collect",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Collect.cpp"
+      "src/kotlinx/coroutines/flow/Collect.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -749,7 +749,7 @@
   {
     "file": "CollectLatestTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/CollectLatestTest.cpp"
+      "src/tests/src/flow/terminal/CollectLatestTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -763,9 +763,9 @@
   {
     "file": "Combine",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Combine.hpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Combine.hpp"
+      "src/kotlinx/coroutines/flow/internal/Combine.cpp",
+      "src/kotlinx/coroutines/flow/Combine.hpp",
+      "src/kotlinx/coroutines/flow/internal/Combine.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -783,7 +783,7 @@
   {
     "file": "CombineParametersTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/CombineParametersTest.cpp"
+      "src/tests/src/flow/operators/CombineParametersTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -797,7 +797,7 @@
   {
     "file": "CombineStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/flow/CombineStressTest.cpp"
+      "src/tests/src/concurrent/flow/CombineStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -811,7 +811,7 @@
   {
     "file": "CombineTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/CombineTest.cpp"
+      "src/tests/src/flow/operators/CombineTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -829,7 +829,7 @@
   {
     "file": "CommonThreadLocalTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/CommonThreadLocalTest.cpp"
+      "src/tests/src/concurrent/CommonThreadLocalTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.exceptions.",
@@ -845,7 +845,7 @@
   {
     "file": "CompletableDeferred",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CompletableDeferred.hpp"
+      "src/kotlinx/coroutines/CompletableDeferred.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.selects."
@@ -857,7 +857,7 @@
   {
     "file": "CompletableDeferredTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CompletableDeferredTest.cpp"
+      "src/tests/src/CompletableDeferredTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -869,7 +869,7 @@
   {
     "file": "CompletableJobTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CompletableJobTest.cpp"
+      "src/tests/src/CompletableJobTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -881,7 +881,7 @@
   {
     "file": "CompletionState",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CompletionState.hpp"
+      "src/kotlinx/coroutines/CompletionState.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -893,7 +893,7 @@
   {
     "file": "ConcurrentExceptionsStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/ConcurrentExceptionsStressTest.cpp"
+      "src/tests/src/concurrent/ConcurrentExceptionsStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.exceptions.",
@@ -909,8 +909,8 @@
   {
     "file": "ConcurrentLinkedList",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/ConcurrentLinkedList.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ConcurrentLinkedList.hpp"
+      "src/kotlinx/coroutines/common/internal/ConcurrentLinkedList.cpp",
+      "src/kotlinx/coroutines/internal/ConcurrentLinkedList.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -922,8 +922,8 @@
   {
     "file": "ConcurrentTestUtilities",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/ConcurrentTestUtilities.common.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/test/ConcurrentTestUtilities.cpp"
+      "src/tests/src/concurrent/ConcurrentTestUtilities.common.cpp",
+      "src/kotlinx/coroutines/native/test/ConcurrentTestUtilities.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -935,7 +935,7 @@
   {
     "file": "ConflateTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/ConflateTest.cpp"
+      "src/tests/src/flow/operators/ConflateTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -949,7 +949,7 @@
   {
     "file": "ConflatedBroadcastChannelNotifyStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/channels/ConflatedBroadcastChannelNotifyStressTest.cpp"
+      "src/tests/src/concurrent/channels/ConflatedBroadcastChannelNotifyStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -963,7 +963,7 @@
   {
     "file": "ConflatedBroadcastChannelTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ConflatedBroadcastChannelTest.cpp"
+      "src/tests/src/channels/ConflatedBroadcastChannelTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -977,8 +977,8 @@
   {
     "file": "ConflatedBufferedChannel",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ConflatedBufferedChannel.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
+      "src/kotlinx/coroutines/channels/ConflatedBufferedChannel.cpp",
+      "src/kotlinx/coroutines/channels/ConflatedBufferedChannel.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.BufferOverflow.",
@@ -996,7 +996,7 @@
   {
     "file": "ConflatedChannelTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ConflatedChannelTest.cpp"
+      "src/tests/src/channels/ConflatedChannelTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1010,7 +1010,7 @@
   {
     "file": "ConsumeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ConsumeTest.cpp"
+      "src/tests/src/channels/ConsumeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1024,8 +1024,8 @@
   {
     "file": "Context",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Context.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Context.hpp"
+      "src/kotlinx/coroutines/flow/Context.cpp",
+      "src/kotlinx/coroutines/flow/Context.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1046,9 +1046,9 @@
   {
     "file": "CoroutineContext",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineContext.common.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/CoroutineContext.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineContext.hpp"
+      "src/kotlinx/coroutines/CoroutineContext.common.cpp",
+      "src/kotlinx/coroutines/native/CoroutineContext.cpp",
+      "src/kotlinx/coroutines/CoroutineContext.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -1060,8 +1060,8 @@
   {
     "file": "CoroutineDispatcher",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineDispatcher.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineDispatcher.hpp"
+      "src/kotlinx/coroutines/CoroutineDispatcher.cpp",
+      "src/kotlinx/coroutines/CoroutineDispatcher.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -1073,7 +1073,7 @@
   {
     "file": "CoroutineDispatcherOperatorFunInvokeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CoroutineDispatcherOperatorFunInvokeTest.cpp"
+      "src/tests/src/CoroutineDispatcherOperatorFunInvokeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1085,8 +1085,8 @@
   {
     "file": "CoroutineExceptionHandler",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineExceptionHandler.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineExceptionHandler.hpp"
+      "src/kotlinx/coroutines/CoroutineExceptionHandler.cpp",
+      "src/kotlinx/coroutines/CoroutineExceptionHandler.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -1098,8 +1098,8 @@
   {
     "file": "CoroutineExceptionHandlerImpl",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/CoroutineExceptionHandlerImpl.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/CoroutineExceptionHandlerImpl.common.cpp"
+      "src/kotlinx/coroutines/internal/CoroutineExceptionHandlerImpl.cpp",
+      "src/kotlinx/coroutines/common/CoroutineExceptionHandlerImpl.common.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -1111,7 +1111,7 @@
   {
     "file": "CoroutineExceptionHandlerTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CoroutineExceptionHandlerTest.cpp"
+      "src/tests/src/CoroutineExceptionHandlerTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1123,8 +1123,8 @@
   {
     "file": "CoroutineScope",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineScope.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineScope.hpp"
+      "src/kotlinx/coroutines/CoroutineScope.cpp",
+      "src/kotlinx/coroutines/CoroutineScope.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal.",
@@ -1138,7 +1138,7 @@
   {
     "file": "CoroutineScopeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CoroutineScopeTest.cpp"
+      "src/tests/src/CoroutineScopeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal.",
@@ -1152,8 +1152,8 @@
   {
     "file": "CoroutineStart",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/CoroutineStart.hpp"
+      "src/kotlinx/coroutines/CoroutineStart.cpp",
+      "src/kotlinx/coroutines/CoroutineStart.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.intrinsics."
@@ -1165,7 +1165,7 @@
   {
     "file": "CoroutinesTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/CoroutinesTest.cpp"
+      "src/tests/src/CoroutinesTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1177,7 +1177,7 @@
   {
     "file": "CountTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/CountTest.cpp"
+      "src/tests/src/flow/terminal/CountTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1191,7 +1191,7 @@
   {
     "file": "DebounceTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/DebounceTest.cpp"
+      "src/tests/src/flow/operators/DebounceTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1207,8 +1207,8 @@
   {
     "file": "Deferred",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Deferred.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Deferred.hpp"
+      "src/kotlinx/coroutines/Deferred.cpp",
+      "src/kotlinx/coroutines/Deferred.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.selects."
@@ -1220,10 +1220,10 @@
   {
     "file": "Delay",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Delay.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Delay.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Delay.hpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Delay.hpp"
+      "src/kotlinx/coroutines/Delay.cpp",
+      "src/kotlinx/coroutines/flow/Delay.cpp",
+      "src/kotlinx/coroutines/Delay.hpp",
+      "src/kotlinx/coroutines/flow/Delay.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1243,7 +1243,7 @@
   {
     "file": "DelayDurationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/DelayDurationTest.cpp"
+      "src/tests/src/DelayDurationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1255,7 +1255,7 @@
   {
     "file": "DelayExceptionTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/test/DelayExceptionTest.cpp"
+      "src/kotlinx/coroutines/native/test/DelayExceptionTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1267,7 +1267,7 @@
   {
     "file": "DelayTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/DelayTest.cpp"
+      "src/tests/src/DelayTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1279,7 +1279,7 @@
   {
     "file": "Deprecated",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Deprecated.cpp"
+      "src/kotlinx/coroutines/channels/Deprecated.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -1291,7 +1291,7 @@
   {
     "file": "DispatchedContinuation",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/DispatchedContinuation.hpp"
+      "src/kotlinx/coroutines/internal/DispatchedContinuation.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -1303,7 +1303,7 @@
   {
     "file": "DispatchedContinuationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/DispatchedContinuationTest.cpp"
+      "src/tests/src/DispatchedContinuationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1315,8 +1315,8 @@
   {
     "file": "DispatchedTask",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/DispatchedTask.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/DispatchedTask.hpp"
+      "src/kotlinx/coroutines/internal/DispatchedTask.cpp",
+      "src/kotlinx/coroutines/internal/DispatchedTask.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -1328,11 +1328,11 @@
   {
     "file": "Dispatchers",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Dispatchers.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Dispatchers.common.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/Dispatchers.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/Dispatchers.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Dispatchers.hpp"
+      "src/kotlinx/coroutines/Dispatchers.cpp",
+      "src/kotlinx/coroutines/Dispatchers.common.cpp",
+      "src/kotlinx/coroutines/native/Dispatchers.cpp",
+      "src/kotlinx/coroutines/concurrent/Dispatchers.cpp",
+      "src/kotlinx/coroutines/Dispatchers.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -1344,8 +1344,8 @@
   {
     "file": "Distinct",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Distinct.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Distinct.hpp"
+      "src/kotlinx/coroutines/flow/Distinct.cpp",
+      "src/kotlinx/coroutines/flow/Distinct.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.flow.internal."
@@ -1357,7 +1357,7 @@
   {
     "file": "DistinctUntilChangedTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/DistinctUntilChangedTest.cpp"
+      "src/tests/src/flow/operators/DistinctUntilChangedTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1371,7 +1371,7 @@
   {
     "file": "DropTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/DropTest.cpp"
+      "src/tests/src/flow/operators/DropTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1385,7 +1385,7 @@
   {
     "file": "DropWhileTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/DropWhileTest.cpp"
+      "src/tests/src/flow/operators/DropWhileTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1399,8 +1399,8 @@
   {
     "file": "Emitters",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Emitters.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Emitters.hpp"
+      "src/kotlinx/coroutines/flow/Emitters.cpp",
+      "src/kotlinx/coroutines/flow/Emitters.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1414,7 +1414,7 @@
   {
     "file": "EmptyContext",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/EmptyContext.cpp"
+      "src/tests/src/EmptyContext.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal.probeCoroutineCreated",
@@ -1428,8 +1428,8 @@
   {
     "file": "Errors",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Errors.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Errors.hpp"
+      "src/kotlinx/coroutines/flow/Errors.cpp",
+      "src/kotlinx/coroutines/flow/Errors.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1445,9 +1445,9 @@
   {
     "file": "EventLoop",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/EventLoop.common.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/EventLoop.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/EventLoop.hpp"
+      "src/kotlinx/coroutines/EventLoop.common.cpp",
+      "src/kotlinx/coroutines/native/EventLoop.cpp",
+      "src/kotlinx/coroutines/EventLoop.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -1459,7 +1459,7 @@
   {
     "file": "ExceptionCollector",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/internal/ExceptionCollector.cpp"
+      "src/tests/src/internal/ExceptionCollector.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1473,7 +1473,7 @@
   {
     "file": "FailedJobTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/FailedJobTest.cpp"
+      "src/tests/src/FailedJobTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1485,7 +1485,7 @@
   {
     "file": "FilterTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FilterTest.cpp"
+      "src/tests/src/flow/operators/FilterTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1501,7 +1501,7 @@
   {
     "file": "FilterTrivialTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FilterTrivialTest.cpp"
+      "src/tests/src/flow/operators/FilterTrivialTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1517,7 +1517,7 @@
   {
     "file": "FirstTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/FirstTest.cpp"
+      "src/tests/src/flow/terminal/FirstTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1537,7 +1537,7 @@
   {
     "file": "FlatMapBaseTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapBaseTest.cpp"
+      "src/tests/src/flow/operators/FlatMapBaseTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1551,7 +1551,7 @@
   {
     "file": "FlatMapConcatTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapConcatTest.cpp"
+      "src/tests/src/flow/operators/FlatMapConcatTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -1563,7 +1563,7 @@
   {
     "file": "FlatMapLatestTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapLatestTest.cpp"
+      "src/tests/src/flow/operators/FlatMapLatestTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1577,7 +1577,7 @@
   {
     "file": "FlatMapMergeBaseTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapMergeBaseTest.cpp"
+      "src/tests/src/flow/operators/FlatMapMergeBaseTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.",
@@ -1591,7 +1591,7 @@
   {
     "file": "FlatMapMergeFastPathTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapMergeFastPathTest.cpp"
+      "src/tests/src/flow/operators/FlatMapMergeFastPathTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1605,7 +1605,7 @@
   {
     "file": "FlatMapMergeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlatMapMergeTest.cpp"
+      "src/tests/src/flow/operators/FlatMapMergeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1619,7 +1619,7 @@
   {
     "file": "FlattenConcatTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlattenConcatTest.cpp"
+      "src/tests/src/flow/operators/FlattenConcatTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1633,7 +1633,7 @@
   {
     "file": "FlattenMergeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlattenMergeTest.cpp"
+      "src/tests/src/flow/operators/FlattenMergeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -1645,8 +1645,8 @@
   {
     "file": "Flow",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Flow.hpp"
+      "src/kotlinx/coroutines/flow/Flow.cpp",
+      "src/kotlinx/coroutines/flow/Flow.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1660,7 +1660,7 @@
   {
     "file": "FlowCallbackTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/channels/FlowCallbackTest.cpp"
+      "src/tests/src/flow/channels/FlowCallbackTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1676,7 +1676,7 @@
   {
     "file": "FlowCancellationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/flow/FlowCancellationTest.cpp"
+      "src/tests/src/concurrent/flow/FlowCancellationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1694,7 +1694,7 @@
   {
     "file": "FlowContextOptimizationsTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlowContextOptimizationsTest.cpp"
+      "src/tests/src/flow/operators/FlowContextOptimizationsTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1708,8 +1708,8 @@
   {
     "file": "FlowCoroutine",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowCoroutine.hpp"
+      "src/kotlinx/coroutines/flow/internal/FlowCoroutine.cpp",
+      "src/kotlinx/coroutines/flow/internal/FlowCoroutine.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1731,9 +1731,9 @@
   {
     "file": "FlowExceptions",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowExceptions.common.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowExceptions.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
+      "src/kotlinx/coroutines/flow/internal/FlowExceptions.common.cpp",
+      "src/kotlinx/coroutines/flow/internal/FlowExceptions.cpp",
+      "src/kotlinx/coroutines/flow/internal/FlowExceptions.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1747,7 +1747,7 @@
   {
     "file": "FlowInvariantsTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/FlowInvariantsTest.cpp"
+      "src/tests/src/flow/FlowInvariantsTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1765,7 +1765,7 @@
   {
     "file": "FlowOnTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/FlowOnTest.cpp"
+      "src/tests/src/flow/operators/FlowOnTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1783,7 +1783,7 @@
   {
     "file": "FlowScopeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/internal/FlowScopeTest.cpp"
+      "src/tests/src/flow/internal/FlowScopeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1797,7 +1797,7 @@
   {
     "file": "FoldTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/FoldTest.cpp"
+      "src/tests/src/flow/terminal/FoldTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1813,7 +1813,7 @@
   {
     "file": "IdFlowTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/IdFlowTest.cpp"
+      "src/tests/src/flow/IdFlowTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1829,7 +1829,7 @@
   {
     "file": "IndexedTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/IndexedTest.cpp"
+      "src/tests/src/flow/operators/IndexedTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1843,7 +1843,7 @@
   {
     "file": "InlineList",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/InlineList.cpp"
+      "src/kotlinx/coroutines/common/internal/InlineList.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.assert"
@@ -1855,8 +1855,8 @@
   {
     "file": "Job",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Job.hpp"
+      "src/kotlinx/coroutines/Job.cpp",
+      "src/kotlinx/coroutines/Job.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.selects."
@@ -1868,7 +1868,7 @@
   {
     "file": "JobExtensionsTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/JobExtensionsTest.cpp"
+      "src/tests/src/JobExtensionsTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1880,7 +1880,7 @@
   {
     "file": "JobStatesTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/JobStatesTest.cpp"
+      "src/tests/src/JobStatesTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1892,7 +1892,7 @@
   {
     "file": "JobStructuredJoinStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/JobStructuredJoinStressTest.cpp"
+      "src/tests/src/concurrent/JobStructuredJoinStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1904,8 +1904,8 @@
   {
     "file": "JobSupport",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/JobSupport.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/JobSupport.hpp"
+      "src/kotlinx/coroutines/JobSupport.cpp",
+      "src/kotlinx/coroutines/JobSupport.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal.",
@@ -1919,7 +1919,7 @@
   {
     "file": "JobTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/JobTest.cpp"
+      "src/tests/src/JobTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1931,7 +1931,7 @@
   {
     "file": "LastTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/LastTest.cpp"
+      "src/tests/src/flow/terminal/LastTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1945,7 +1945,7 @@
   {
     "file": "LaunchFlow",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/LaunchFlow.cpp"
+      "src/tests/src/LaunchFlow.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1959,7 +1959,7 @@
   {
     "file": "LaunchInTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/LaunchInTest.cpp"
+      "src/tests/src/flow/terminal/LaunchInTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -1973,7 +1973,7 @@
   {
     "file": "LaunchLazyTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/LaunchLazyTest.cpp"
+      "src/tests/src/LaunchLazyTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -1985,8 +1985,8 @@
   {
     "file": "Limit",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Limit.hpp"
+      "src/kotlinx/coroutines/flow/Limit.cpp",
+      "src/kotlinx/coroutines/flow/Limit.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2004,7 +2004,7 @@
   {
     "file": "LimitedDispatcher",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/LimitedDispatcher.cpp"
+      "src/kotlinx/coroutines/common/internal/LimitedDispatcher.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2016,7 +2016,7 @@
   {
     "file": "LimitedParallelismConcurrentTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/LimitedParallelismConcurrentTest.cpp"
+      "src/tests/src/concurrent/LimitedParallelismConcurrentTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2032,7 +2032,7 @@
   {
     "file": "LimitedParallelismSharedTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/LimitedParallelismSharedTest.cpp"
+      "src/tests/src/LimitedParallelismSharedTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -2044,8 +2044,8 @@
   {
     "file": "Lint",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Lint.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Lint.hpp"
+      "src/kotlinx/coroutines/flow/Lint.cpp",
+      "src/kotlinx/coroutines/flow/Lint.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2057,7 +2057,7 @@
   {
     "file": "LintTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/LintTest.cpp"
+      "src/tests/src/flow/operators/LintTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2071,9 +2071,9 @@
   {
     "file": "LockFreeLinkedList",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/LockFreeLinkedList.common.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/internal/LockFreeLinkedList.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/LockFreeLinkedList.hpp"
+      "src/kotlinx/coroutines/internal/LockFreeLinkedList.common.cpp",
+      "src/kotlinx/coroutines/concurrent/internal/LockFreeLinkedList.cpp",
+      "src/kotlinx/coroutines/internal/LockFreeLinkedList.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2085,7 +2085,7 @@
   {
     "file": "LockFreeTaskQueue",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/LockFreeTaskQueue.cpp"
+      "src/kotlinx/coroutines/common/internal/LockFreeTaskQueue.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2097,7 +2097,7 @@
   {
     "file": "Logic",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Logic.cpp"
+      "src/kotlinx/coroutines/flow/Logic.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2109,8 +2109,8 @@
   {
     "file": "MainCoroutineDispatcher",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/MainCoroutineDispatcher.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/MainCoroutineDispatcher.hpp"
+      "src/kotlinx/coroutines/MainCoroutineDispatcher.cpp",
+      "src/kotlinx/coroutines/MainCoroutineDispatcher.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -2122,7 +2122,7 @@
   {
     "file": "MainDispatcherFactory",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/MainDispatcherFactory.cpp"
+      "src/kotlinx/coroutines/common/internal/MainDispatcherFactory.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2134,7 +2134,7 @@
   {
     "file": "MainDispatcherTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/test/MainDispatcherTest.cpp"
+      "src/kotlinx/coroutines/native/test/MainDispatcherTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -2146,7 +2146,7 @@
   {
     "file": "MainDispatcherTestBase",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/MainDispatcherTestBase.cpp"
+      "src/tests/src/MainDispatcherTestBase.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2158,7 +2158,7 @@
   {
     "file": "MapNotNullTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/MapNotNullTest.cpp"
+      "src/tests/src/flow/operators/MapNotNullTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2174,7 +2174,7 @@
   {
     "file": "MapTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/MapTest.cpp"
+      "src/tests/src/flow/operators/MapTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2190,10 +2190,10 @@
   {
     "file": "Merge",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Merge.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Merge.hpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/Merge.hpp"
+      "src/kotlinx/coroutines/flow/Merge.cpp",
+      "src/kotlinx/coroutines/flow/internal/Merge.cpp",
+      "src/kotlinx/coroutines/flow/Merge.hpp",
+      "src/kotlinx/coroutines/flow/internal/Merge.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2217,7 +2217,7 @@
   {
     "file": "MergeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/MergeTest.cpp"
+      "src/tests/src/flow/operators/MergeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2233,7 +2233,7 @@
   {
     "file": "Migration",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Migration.cpp"
+      "src/kotlinx/coroutines/flow/Migration.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2245,9 +2245,9 @@
   {
     "file": "MultithreadedDispatchers",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/MultithreadedDispatchers.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/concurrent/MultithreadedDispatchers.common.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/MultithreadedDispatchers.hpp"
+      "src/kotlinx/coroutines/native/MultithreadedDispatchers.cpp",
+      "src/kotlinx/coroutines/concurrent/MultithreadedDispatchers.common.cpp",
+      "src/kotlinx/coroutines/MultithreadedDispatchers.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.",
@@ -2261,7 +2261,7 @@
   {
     "file": "MultithreadedDispatchersTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/test/MultithreadedDispatchersTest.cpp"
+      "src/kotlinx/coroutines/native/test/MultithreadedDispatchersTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.",
@@ -2275,8 +2275,8 @@
   {
     "file": "Mutex",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Mutex.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Mutex.hpp"
+      "src/kotlinx/coroutines/sync/Mutex.cpp",
+      "src/kotlinx/coroutines/sync/Mutex.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2292,7 +2292,7 @@
   {
     "file": "MutexStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/sync/MutexStressTest.cpp"
+      "src/tests/src/concurrent/sync/MutexStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2310,7 +2310,7 @@
   {
     "file": "NamedDispatcher",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/NamedDispatcher.cpp"
+      "src/kotlinx/coroutines/common/internal/NamedDispatcher.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines",
@@ -2326,8 +2326,8 @@
   {
     "file": "NonCancellable",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/NonCancellable.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/NonCancellable.hpp"
+      "src/kotlinx/coroutines/NonCancellable.cpp",
+      "src/kotlinx/coroutines/NonCancellable.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.selects."
@@ -2339,8 +2339,8 @@
   {
     "file": "NopCollector",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NopCollector.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NopCollector.hpp"
+      "src/kotlinx/coroutines/flow/internal/NopCollector.cpp",
+      "src/kotlinx/coroutines/flow/internal/NopCollector.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.flow."
@@ -2352,7 +2352,7 @@
   {
     "file": "NullSurrogate",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/NullSurrogate.cpp"
+      "src/kotlinx/coroutines/flow/internal/NullSurrogate.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -2364,7 +2364,7 @@
   {
     "file": "OnCompletionTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/OnCompletionTest.cpp"
+      "src/tests/src/flow/operators/OnCompletionTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2382,7 +2382,7 @@
   {
     "file": "OnEachTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/OnEachTest.cpp"
+      "src/tests/src/flow/operators/OnEachTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2398,7 +2398,7 @@
   {
     "file": "OnEmptyTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/OnEmptyTest.cpp"
+      "src/tests/src/flow/operators/OnEmptyTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2412,7 +2412,7 @@
   {
     "file": "OnStartTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/OnStartTest.cpp"
+      "src/tests/src/flow/operators/OnStartTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2426,7 +2426,7 @@
   {
     "file": "OnTimeout",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/OnTimeout.cpp"
+      "src/kotlinx/coroutines/selects/OnTimeout.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2438,7 +2438,7 @@
   {
     "file": "OnUndeliveredElement",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/common/internal/OnUndeliveredElement.cpp"
+      "src/kotlinx/coroutines/common/internal/OnUndeliveredElement.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2450,8 +2450,8 @@
   {
     "file": "Produce",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/channels/Produce.hpp"
+      "src/kotlinx/coroutines/channels/Produce.cpp",
+      "src/kotlinx/coroutines/channels/Produce.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2465,7 +2465,7 @@
   {
     "file": "ProduceConsumeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ProduceConsumeTest.cpp"
+      "src/tests/src/channels/ProduceConsumeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2479,7 +2479,7 @@
   {
     "file": "ProduceTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/ProduceTest.cpp"
+      "src/tests/src/channels/ProduceTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2495,7 +2495,7 @@
   {
     "file": "Reduce",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Reduce.cpp"
+      "src/kotlinx/coroutines/flow/Reduce.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.flow.internal.",
@@ -2511,7 +2511,7 @@
   {
     "file": "ReduceTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/ReduceTest.cpp"
+      "src/tests/src/flow/terminal/ReduceTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2527,7 +2527,7 @@
   {
     "file": "ReportingSupervisorJob",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/internal/ReportingSupervisorJob.cpp"
+      "src/tests/src/internal/ReportingSupervisorJob.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2539,7 +2539,7 @@
   {
     "file": "RetryTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/RetryTest.cpp"
+      "src/tests/src/flow/operators/RetryTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2553,7 +2553,7 @@
   {
     "file": "RunBlockingTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/RunBlockingTest.cpp"
+      "src/tests/src/concurrent/RunBlockingTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.exceptions.",
@@ -2567,7 +2567,7 @@
   {
     "file": "RunTestTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/RunTestTest.cpp"
+      "src/tests/src/RunTestTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2585,9 +2585,9 @@
   {
     "file": "SafeCollector",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.common.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SafeCollector.hpp"
+      "src/kotlinx/coroutines/flow/internal/SafeCollector.common.cpp",
+      "src/kotlinx/coroutines/flow/internal/SafeCollector.cpp",
+      "src/kotlinx/coroutines/flow/internal/SafeCollector.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2605,7 +2605,7 @@
   {
     "file": "SafeFlowTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/SafeFlowTest.cpp"
+      "src/tests/src/flow/SafeFlowTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2619,7 +2619,7 @@
   {
     "file": "SampleTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/SampleTest.cpp"
+      "src/tests/src/flow/operators/SampleTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2635,7 +2635,7 @@
   {
     "file": "ScanTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/ScanTest.cpp"
+      "src/tests/src/flow/operators/ScanTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2651,7 +2651,7 @@
   {
     "file": "Scopes",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Scopes.cpp"
+      "src/kotlinx/coroutines/internal/Scopes.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2663,8 +2663,8 @@
   {
     "file": "Select",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/Select.hpp"
+      "src/kotlinx/coroutines/selects/Select.cpp",
+      "src/kotlinx/coroutines/selects/Select.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2682,7 +2682,7 @@
   {
     "file": "SelectBiasTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectBiasTest.cpp"
+      "src/tests/src/selects/SelectBiasTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2696,7 +2696,7 @@
   {
     "file": "SelectBufferedChannelTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectBufferedChannelTest.cpp"
+      "src/tests/src/selects/SelectBufferedChannelTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2712,7 +2712,7 @@
   {
     "file": "SelectChannelStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/selects/SelectChannelStressTest.cpp"
+      "src/tests/src/concurrent/selects/SelectChannelStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2728,7 +2728,7 @@
   {
     "file": "SelectDeferredTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectDeferredTest.cpp"
+      "src/tests/src/selects/SelectDeferredTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2742,7 +2742,7 @@
   {
     "file": "SelectJobTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectJobTest.cpp"
+      "src/tests/src/selects/SelectJobTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2756,7 +2756,7 @@
   {
     "file": "SelectLoopTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectLoopTest.cpp"
+      "src/tests/src/selects/SelectLoopTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2772,7 +2772,7 @@
   {
     "file": "SelectMutexStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/selects/SelectMutexStressTest.cpp"
+      "src/tests/src/concurrent/selects/SelectMutexStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2788,7 +2788,7 @@
   {
     "file": "SelectMutexTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectMutexTest.cpp"
+      "src/tests/src/selects/SelectMutexTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2804,7 +2804,7 @@
   {
     "file": "SelectOld",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/SelectOld.cpp"
+      "src/kotlinx/coroutines/selects/SelectOld.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -2816,7 +2816,7 @@
   {
     "file": "SelectOldTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectOldTest.cpp"
+      "src/tests/src/selects/SelectOldTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2830,7 +2830,7 @@
   {
     "file": "SelectRendezvousChannelTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectRendezvousChannelTest.cpp"
+      "src/tests/src/selects/SelectRendezvousChannelTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2846,7 +2846,7 @@
   {
     "file": "SelectTimeoutDurationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectTimeoutDurationTest.cpp"
+      "src/tests/src/selects/SelectTimeoutDurationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2860,7 +2860,7 @@
   {
     "file": "SelectTimeoutTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectTimeoutTest.cpp"
+      "src/tests/src/selects/SelectTimeoutTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2874,7 +2874,7 @@
   {
     "file": "SelectUnlimitedChannelTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/selects/SelectUnlimitedChannelTest.cpp"
+      "src/tests/src/selects/SelectUnlimitedChannelTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2890,8 +2890,8 @@
   {
     "file": "Semaphore",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Semaphore.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/sync/Semaphore.hpp"
+      "src/kotlinx/coroutines/sync/Semaphore.cpp",
+      "src/kotlinx/coroutines/sync/Semaphore.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2907,7 +2907,7 @@
   {
     "file": "SemaphoreStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/sync/SemaphoreStressTest.cpp"
+      "src/tests/src/concurrent/sync/SemaphoreStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2923,7 +2923,7 @@
   {
     "file": "SemaphoreTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/sync/SemaphoreTest.cpp"
+      "src/tests/src/sync/SemaphoreTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2937,7 +2937,7 @@
   {
     "file": "SendReceiveStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/SendReceiveStressTest.cpp"
+      "src/tests/src/channels/SendReceiveStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2951,8 +2951,8 @@
   {
     "file": "SendingCollector",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SendingCollector.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/internal/SendingCollector.hpp"
+      "src/kotlinx/coroutines/flow/internal/SendingCollector.cpp",
+      "src/kotlinx/coroutines/flow/internal/SendingCollector.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2968,7 +2968,7 @@
   {
     "file": "Share",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Share.cpp"
+      "src/kotlinx/coroutines/flow/Share.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2984,7 +2984,7 @@
   {
     "file": "ShareInBufferTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/ShareInBufferTest.cpp"
+      "src/tests/src/flow/sharing/ShareInBufferTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -2998,7 +2998,7 @@
   {
     "file": "ShareInConflationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/ShareInConflationTest.cpp"
+      "src/tests/src/flow/sharing/ShareInConflationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3014,7 +3014,7 @@
   {
     "file": "ShareInFusionTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/ShareInFusionTest.cpp"
+      "src/tests/src/flow/sharing/ShareInFusionTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3030,7 +3030,7 @@
   {
     "file": "ShareInTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/ShareInTest.cpp"
+      "src/tests/src/flow/sharing/ShareInTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3046,7 +3046,7 @@
   {
     "file": "SharedFlow",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/SharedFlow.hpp"
+      "src/kotlinx/coroutines/flow/SharedFlow.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3064,7 +3064,7 @@
   {
     "file": "SharedFlowBaseline",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/benchmarks/SharedFlowBaseline.cpp"
+      "src/tests/src/benchmarks/SharedFlowBaseline.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3078,7 +3078,7 @@
   {
     "file": "SharedFlowScenarioTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/SharedFlowScenarioTest.cpp"
+      "src/tests/src/flow/sharing/SharedFlowScenarioTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3094,7 +3094,7 @@
   {
     "file": "SharedFlowTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/SharedFlowTest.cpp"
+      "src/tests/src/flow/sharing/SharedFlowTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3110,8 +3110,8 @@
   {
     "file": "SharingStarted",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/SharingStarted.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/SharingStarted.hpp"
+      "src/kotlinx/coroutines/flow/SharingStarted.cpp",
+      "src/kotlinx/coroutines/flow/SharingStarted.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3127,7 +3127,7 @@
   {
     "file": "SharingStartedTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/SharingStartedTest.cpp"
+      "src/tests/src/flow/sharing/SharingStartedTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3141,7 +3141,7 @@
   {
     "file": "SharingStartedWhileSubscribedTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/SharingStartedWhileSubscribedTest.cpp"
+      "src/tests/src/flow/sharing/SharingStartedWhileSubscribedTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3155,7 +3155,7 @@
   {
     "file": "SingleTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/SingleTest.cpp"
+      "src/tests/src/flow/terminal/SingleTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3169,7 +3169,7 @@
   {
     "file": "StandardTestDispatcherTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/StandardTestDispatcherTest.cpp"
+      "src/tests/src/StandardTestDispatcherTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3185,8 +3185,8 @@
   {
     "file": "StateFlow",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/StateFlow.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/StateFlow.hpp"
+      "src/kotlinx/coroutines/flow/StateFlow.cpp",
+      "src/kotlinx/coroutines/flow/StateFlow.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3204,7 +3204,7 @@
   {
     "file": "StateFlowCommonStressTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/flow/StateFlowCommonStressTest.cpp"
+      "src/tests/src/concurrent/flow/StateFlowCommonStressTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3218,7 +3218,7 @@
   {
     "file": "StateFlowTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/StateFlowTest.cpp"
+      "src/tests/src/flow/sharing/StateFlowTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3234,7 +3234,7 @@
   {
     "file": "StateFlowUpdateCommonTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/flow/StateFlowUpdateCommonTest.cpp"
+      "src/tests/src/concurrent/flow/StateFlowUpdateCommonTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3250,7 +3250,7 @@
   {
     "file": "StateInTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/sharing/StateInTest.cpp"
+      "src/tests/src/flow/sharing/StateInTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3266,8 +3266,8 @@
   {
     "file": "Supervisor",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Supervisor.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Supervisor.hpp"
+      "src/kotlinx/coroutines/Supervisor.cpp",
+      "src/kotlinx/coroutines/Supervisor.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal.",
@@ -3281,7 +3281,7 @@
   {
     "file": "SupervisorTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/SupervisorTest.cpp"
+      "src/tests/src/SupervisorTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -3293,8 +3293,8 @@
   {
     "file": "Synchronized",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Synchronized.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/Synchronized.common.cpp"
+      "src/kotlinx/coroutines/internal/Synchronized.cpp",
+      "src/kotlinx/coroutines/internal/Synchronized.common.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -3306,7 +3306,7 @@
   {
     "file": "TakeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TakeTest.cpp"
+      "src/tests/src/flow/operators/TakeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3320,7 +3320,7 @@
   {
     "file": "TakeWhileTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TakeWhileTest.cpp"
+      "src/tests/src/flow/operators/TakeWhileTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3334,8 +3334,8 @@
   {
     "file": "TestBase",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestBase.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/testing/TestBase.hpp"
+      "src/tests/src/TestBase.cpp",
+      "src/kotlinx/coroutines/testing/TestBase.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3351,9 +3351,9 @@
   {
     "file": "TestBuilders",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestBuilders.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/internal/TestBuilders.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/test/TestBuilders.hpp"
+      "src/tests/src/TestBuilders.cpp",
+      "src/tests/src/internal/TestBuilders.cpp",
+      "src/kotlinx/coroutines/test/TestBuilders.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3367,7 +3367,7 @@
   {
     "file": "TestChannelKind",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/TestChannelKind.cpp"
+      "src/tests/src/channels/TestChannelKind.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3381,7 +3381,7 @@
   {
     "file": "TestCoroutineScheduler",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestCoroutineScheduler.cpp"
+      "src/tests/src/TestCoroutineScheduler.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3403,7 +3403,7 @@
   {
     "file": "TestCoroutineSchedulerTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestCoroutineSchedulerTest.cpp"
+      "src/tests/src/TestCoroutineSchedulerTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3417,7 +3417,7 @@
   {
     "file": "TestDispatcher",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/test/TestDispatcher.hpp"
+      "src/kotlinx/coroutines/test/TestDispatcher.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -3429,7 +3429,7 @@
   {
     "file": "TestDispatchers",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestDispatchers.cpp"
+      "src/tests/src/TestDispatchers.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3443,7 +3443,7 @@
   {
     "file": "TestMainDispatcher",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/internal/TestMainDispatcher.cpp"
+      "src/tests/src/internal/TestMainDispatcher.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3457,8 +3457,8 @@
   {
     "file": "TestScope",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestScope.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/test/TestScope.hpp"
+      "src/tests/src/TestScope.cpp",
+      "src/kotlinx/coroutines/test/TestScope.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3474,7 +3474,7 @@
   {
     "file": "TestScopeTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/TestScopeTest.cpp"
+      "src/tests/src/TestScopeTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3492,8 +3492,8 @@
   {
     "file": "ThreadSafeHeap",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ThreadSafeHeap.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/internal/ThreadSafeHeap.hpp"
+      "src/kotlinx/coroutines/internal/ThreadSafeHeap.cpp",
+      "src/kotlinx/coroutines/internal/ThreadSafeHeap.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -3505,7 +3505,7 @@
   {
     "file": "Timeout",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Timeout.cpp"
+      "src/kotlinx/coroutines/Timeout.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal.",
@@ -3521,7 +3521,7 @@
   {
     "file": "TimeoutTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TimeoutTest.cpp"
+      "src/tests/src/flow/operators/TimeoutTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3537,7 +3537,7 @@
   {
     "file": "ToCollectionTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/terminal/ToCollectionTest.cpp"
+      "src/tests/src/flow/terminal/ToCollectionTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3551,8 +3551,8 @@
   {
     "file": "Transform",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Transform.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Transform.hpp"
+      "src/kotlinx/coroutines/flow/Transform.cpp",
+      "src/kotlinx/coroutines/flow/Transform.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3570,7 +3570,7 @@
   {
     "file": "TransformLatestTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TransformLatestTest.cpp"
+      "src/tests/src/flow/operators/TransformLatestTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3584,7 +3584,7 @@
   {
     "file": "TransformTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TransformTest.cpp"
+      "src/tests/src/flow/operators/TransformTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3598,7 +3598,7 @@
   {
     "file": "TransformWhileTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/TransformWhileTest.cpp"
+      "src/tests/src/flow/operators/TransformWhileTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3612,7 +3612,7 @@
   {
     "file": "TrySendBlockingTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/concurrent/channels/TrySendBlockingTest.cpp"
+      "src/tests/src/concurrent/channels/TrySendBlockingTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3626,7 +3626,7 @@
   {
     "file": "UnconfinedTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/UnconfinedTest.cpp"
+      "src/tests/src/UnconfinedTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -3638,7 +3638,7 @@
   {
     "file": "UnconfinedTestDispatcherTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/UnconfinedTestDispatcherTest.cpp"
+      "src/tests/src/UnconfinedTestDispatcherTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3654,7 +3654,7 @@
   {
     "file": "Undispatched",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/intrinsics/Undispatched.cpp"
+      "src/kotlinx/coroutines/intrinsics/Undispatched.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3668,7 +3668,7 @@
   {
     "file": "UndispatchedResultTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/UndispatchedResultTest.cpp"
+      "src/tests/src/UndispatchedResultTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -3680,7 +3680,7 @@
   {
     "file": "UnlimitedChannelTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/channels/UnlimitedChannelTest.cpp"
+      "src/tests/src/channels/UnlimitedChannelTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",
@@ -3694,7 +3694,7 @@
   {
     "file": "VirtualTime",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/VirtualTime.cpp"
+      "src/tests/src/flow/VirtualTime.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -3706,8 +3706,8 @@
   {
     "file": "Waiter",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Waiter.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Waiter.hpp"
+      "src/kotlinx/coroutines/Waiter.cpp",
+      "src/kotlinx/coroutines/Waiter.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal",
@@ -3723,7 +3723,7 @@
   {
     "file": "WhileSelect",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/selects/WhileSelect.cpp"
+      "src/kotlinx/coroutines/selects/WhileSelect.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines."
@@ -3735,7 +3735,7 @@
   {
     "file": "WithContextTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/WithContextTest.cpp"
+      "src/tests/src/WithContextTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -3747,7 +3747,7 @@
   {
     "file": "WithTimeoutDurationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/WithTimeoutDurationTest.cpp"
+      "src/tests/src/WithTimeoutDurationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -3759,7 +3759,7 @@
   {
     "file": "WithTimeoutOrNullDurationTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/WithTimeoutOrNullDurationTest.cpp"
+      "src/tests/src/WithTimeoutOrNullDurationTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.",
@@ -3773,7 +3773,7 @@
   {
     "file": "WithTimeoutOrNullTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/WithTimeoutOrNullTest.cpp"
+      "src/tests/src/WithTimeoutOrNullTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.",
@@ -3787,7 +3787,7 @@
   {
     "file": "WithTimeoutTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/WithTimeoutTest.cpp"
+      "src/tests/src/WithTimeoutTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.testing."
@@ -3799,7 +3799,7 @@
   {
     "file": "WorkerTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/native/test/WorkerTest.cpp"
+      "src/kotlinx/coroutines/native/test/WorkerTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.channels.",
@@ -3813,8 +3813,8 @@
   {
     "file": "Yield",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Yield.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/Yield.hpp"
+      "src/kotlinx/coroutines/Yield.cpp",
+      "src/kotlinx/coroutines/Yield.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.internal."
@@ -3826,8 +3826,8 @@
   {
     "file": "Zip",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Zip.cpp",
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/kotlinx/coroutines/flow/Zip.hpp"
+      "src/kotlinx/coroutines/flow/Zip.cpp",
+      "src/kotlinx/coroutines/flow/Zip.hpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.flow.flow",
@@ -3843,7 +3843,7 @@
   {
     "file": "ZipTest",
     "cpp_files": [
-      "/Volumes/stuff/Projects/kotlin.coroutines-cpp/src/tests/src/flow/operators/ZipTest.cpp"
+      "src/tests/src/flow/operators/ZipTest.cpp"
     ],
     "missing_imports": [
       "kotlinx.coroutines.",

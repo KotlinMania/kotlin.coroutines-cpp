@@ -179,7 +179,7 @@ Final local gates passed with the existing strict compiler flags:
 
 Build/test logs, full CTest transcripts, source/binary hashes, before/after AST
 reports, raw/cleaned IR and a repeatable IR-check script are retained under
-`/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-limit-repair/`.
+`../automation-artifacts/2026-10-04-limit-repair/`.
 Iris's second read-only source comparison reported no confirmed suspension,
 ownership or Boolean-result divergence; the executable receipts above are the
 acceptance evidence.
@@ -245,7 +245,7 @@ namespace/provenance and missing-source checks continue to pass.
 
 Before/after probes, complete comparison output, all build/CTest logs, source
 copy manifests and source/binary hashes are retained under
-`/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-ast-limit-score/`.
+`../automation-artifacts/2026-10-04-ast-limit-score/`.
 Only local commits and developer executables were produced; no push, release,
 deployment or workflow changes were performed.
 
@@ -306,7 +306,7 @@ Validation for this documentation follow-up:
 Reproducible Kotlin/C++ harnesses, original-source hash/adaptation receipt,
 bytecode verification, full state traces, lexical/documentation checks, build and
 test logs are under
-`/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-limit-doc-parity/`.
+`../automation-artifacts/2026-10-04-limit-doc-parity/`.
 The prior full Debug 25/25 and optimized ASan 33/33 gates are historical results
 above; this follow-up reran the affected Limit/IR gates, not the whole suite.
 No other production files, continuation ABI or algorithms changed. The parent
@@ -388,7 +388,7 @@ executed baseline runtime regression.
 
 Evidence, source/binary hashes, full raw/cleaned IR, exact offline harnesses,
 traces, documentation examples, scorer output and build/test logs are retained at
-/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-iris-logic-handoff/.
+../automation-artifacts/2026-10-04-iris-logic-handoff/.
 The original Iris receipt's claims of zero leaks, zero unmatched target functions
 and a clean uncommitted tree were corrected explicitly. The umbrella and seven
 other originally linked production repairs remain open. The only workflow is
@@ -461,7 +461,7 @@ remaining Collect stack collectors still need attention. Those partial advances
 are preserved, with no new runtime completion claim.
 
 Exact commands, source/scorer hashes, complete stdout/stderr and findings are
-under /Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-epic-staleness/.
+under ../automation-artifacts/2026-10-04-epic-staleness/.
 This is static staleness verification; no runtime tests, compiler builds, source
 implementation edits, scorer repairs, namespace overrides, worker dispatches or
 pushes were performed. Earlier runtime receipts remain valid only for their
@@ -553,7 +553,7 @@ parent audit t_0dd3c2ad also guards card closure. The seven-area epic is not com
 The only workflow, .github/workflows/codeql.yml, retains weekly schedule and manual
 dispatch and is unchanged. No push, PR, release, deployment or remote workflow change
 was performed. Evidence is under
-/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-transform-repair/.
+../automation-artifacts/2026-10-04-transform-repair/.
 
 
 ## Transform comment translation completion — 2026-10-04
@@ -584,7 +584,7 @@ not increase the weighted word-frequency score; the more complete source example
 are retained instead of tuning prose or hiding ABI documentation. Scoring weights
 and executable binary remain unchanged. Raw before/after reports, exact examples,
 code-control comparison and receipts are under
-/Volumes/stuff/Projects/kotlinmania/automation-artifacts/2026-10-04-transform-comments/.
+../automation-artifacts/2026-10-04-transform-comments/.
 The existing runtime-class representation and original choreography gaps remain.
 
 

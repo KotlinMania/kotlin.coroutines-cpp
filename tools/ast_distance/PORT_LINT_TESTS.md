@@ -76,7 +76,7 @@ The system correctly prioritizes matching in this order:
 
 ```bash
 # Run unit tests
-cd /Volumes/emberstuff/Projects/codex-kotlin
+cd ../codex-kotlin
 g++ -std=c++20 -I. /tmp/test_port_lint.cpp -o /tmp/test_port_lint
 /tmp/test_port_lint
 

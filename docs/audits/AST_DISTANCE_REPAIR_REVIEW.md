@@ -8,7 +8,7 @@ previous imported prebuilt executable and refreshes the ignored
 `tools/ast_distance/ast_distance` executable after a successful build. Builds do
 not fetch grammars. Project warning gates remain enabled.
 
-Source provenance: `/Volumes/games/ASTDistance`, commits `0f97023`, `11d0785`,
+Source provenance: `ASTDistance`, commits `0f97023`, `11d0785`,
 `200ee14`, `230b05f`, `f1b82d8`, `0b1204a`, `564c9e4`, `05dc06c` and `7932358`. Unrelated in-flight Python/Rust aliases and the
 separate symbol-audit command in that checkout were excluded. Existing local
 port-lint compatibility functions were retained.

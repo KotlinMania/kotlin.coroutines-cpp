@@ -2,11 +2,11 @@
   "type": "port",
   "name": "kotlin.coroutines-cpp",
   "source": {
-    "path": "/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src",
+    "path": "tmp/kotlinx.coroutines/kotlinx-coroutines-core/common/src",
     "lang": "kotlin"
   },
   "target": {
-    "path": "/Volumes/stuff/Projects/kotlinmania/kotlin.coroutines-cpp/src/kotlinx/coroutines",
+    "path": "src/kotlinx/coroutines",
     "lang": "cpp"
   },
   "checks": {

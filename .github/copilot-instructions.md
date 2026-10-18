@@ -64,7 +64,7 @@ g++ --version
 
 ### Bootstrap and Build
 ```bash
-cd /Volumes/stuff/Projects/kotlin.coroutines-cpp
+cd .
 
 # Configure CMake (creates build/ directory)
 cmake -B build -DCMAKE_BUILD_TYPE=Release
